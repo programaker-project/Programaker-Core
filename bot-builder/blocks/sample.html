@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta codification="utf-8" />
+        <title>Bot designer</title>
+        <script src="./blockly_vertical.js"></script>
+        <script src="./blocks.js"></script>
+        <script src="./blocks_vertical.js"></script>
+        <script src="./msg_en.js"></script>
+        <style>
+         html, body {
+             width: 100%;
+             height: 100%;
+         }
+
+         #workspace {
+             width: 100%;
+             height: 90%;
+         }
+        </style>
+    </head>
+    <body onload="startBlocks()">
+        <div id="workspace"></div>
+        <xml id="toolbox-simple" style="display: none">
+            <block type="operator_random">
+                <value name="FROM">
+                    <shadow type="math_number">
+                        <field name="NUM">1</field>
+                    </shadow>
+                </value>
+                <value name="TO">
+                    <shadow type="math_number">
+                        <field name="NUM">10</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="operator_lt">
+                <value name="OPERAND1">
+                    <shadow type="text">
+                        <field name="TEXT"></field>
+                    </shadow>
+                </value>
+                <value name="OPERAND2">
+                    <shadow type="text">
+                        <field name="TEXT"></field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="operator_equals">
+                <value name="OPERAND1">
+                    <shadow type="text">
+                        <field name="TEXT"></field>
+                    </shadow>
+                </value>
+                <value name="OPERAND2">
+                    <shadow type="text">
+                        <field name="TEXT"></field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="operator_gt">
+                <value name="OPERAND1">
+                    <shadow type="text">
+                        <field name="TEXT"></field>
+                    </shadow>
+                </value>
+                <value name="OPERAND2">
+                    <shadow type="text">
+                        <field name="TEXT"></field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="operator_and"></block>
+            <block type="operator_or"></block>
+            <block type="operator_not"></block>
+            <block type="operator_join">
+                <value name="STRING1">
+                    <shadow type="text">
+                        <field name="TEXT">hello</field>
+                    </shadow>
+                </value>
+                <value name="STRING2">
+                    <shadow type="text">
+                        <field name="TEXT">world</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="operator_letter_of">
+                <value name="LETTER">
+                    <shadow type="math_whole_number">
+                        <field name="NUM">1</field>
+                    </shadow>
+                </value>
+                <value name="STRING">
+                    <shadow type="text">
+                        <field name="TEXT">world</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="operator_length">
+                <value name="STRING">
+                    <shadow type="text">
+                        <field name="TEXT">world</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="operator_mod">
+                <value name="NUM1">
+                    <shadow type="math_number">
+                        <field name="NUM"></field>
+                    </shadow>
+                </value>
+                <value name="NUM2">
+                    <shadow type="math_number">
+                        <field name="NUM"></field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="operator_round">
+                <value name="NUM">
+                    <shadow type="math_number">
+                        <field name="NUM"></field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="operator_mathop">
+                <value name="OPERATOR">
+                    <shadow type="operator_mathop_menu"></shadow>
+                </value>
+                <value name="NUM">
+                    <shadow type="math_number">
+                        <field name="NUM"></field>
+                    </shadow>
+                </value>
+            </block>
+        </xml>
+
+        <script>
+
+         function getToolbox(){
+             var match = location.search.match(/toolbox=([^&]+)/);
+             return document.getElementById('toolbox-' + (match ? match[1] : 'categories'));
+         }
+
+         function startBlocks(){
+             var rtl = false;
+             var toolbox = getToolbox();
+             var side = 'start';
+             var soundsEnabled = false;
+
+             var workspace = Blockly.inject('workspace', {
+                 comments: false,
+                 disable: false,
+                 collapse: false,
+                 media: '../media/',
+                 readOnly: false,
+                 rtl: rtl,
+                 scrollbars: true,
+                 toolbox: toolbox,
+                 toolboxPosition: side == 'top' || side == 'start' ? 'start' : 'end',
+                 horizontalLayout: side == 'top' || side == 'bottom',
+                 sounds: soundsEnabled,
+                 zoom: {
+                     controls: true,
+                     wheel: true,
+                     startScale: 0.75,
+                     maxScale: 4,
+                     minScale: 0.25,
+                     scaleSpeed: 1.1
+                 },
+                 colours: {
+                     fieldShadow: 'rgba(255, 255, 255, 0.3)',
+                     dragShadowOpacity: 0.6
+                 }
+             });
+         }
+        </script>
+    </body>
+</html>
