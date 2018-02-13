@@ -1,6 +1,6 @@
 [submodule "bot-builder/blocks/scratch-blocks"]
 	path = bot-builder/blocks/scratch-blocks
-	url = https://github.com/LLK/scratch-blocks
+	url = https://code.codigoparallevar.com/kenkeiras/scratch-blocks.git
 [submodule "bot-builder/blocks/closure-library"]
 	path = bot-builder/blocks/closure-library
 	url = https://github.com/google/closure-library
