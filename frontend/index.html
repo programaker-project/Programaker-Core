@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta codification="utf-8" />
+        <title>Bot designer</title>
+        <script src="blocks/blockly_vertical.js"></script>
+        <script src="blocks/blocks.js"></script>
+        <script src="blocks/blocks_vertical.js"></script>
+        <script src="blocks/msg_en.js"></script>
+
+        <script src="js/workspace.js"></script>
+        <script src="js/initial.js"></script>
+
+        <script src="js/custom_blocks.js"></script>
+        <script src="js/custom_toolbox.js"></script>
+        <link rel="stylesheet" href="css/base.css">
+    </head>
+    <body>
+        <div id="workspace"></div>
+        <div id="control_bar">
+            <center>
+                <h1>Bot-o-matic</h1>
+                <input type="text" placeholder="Telegram bot token" id="telegram_bot_token" />
+                <br />
+                <input type="button" value="Run" id="run_bot_button" />
+            </center>
+        </div>
+    </body>
+</html>
