@@ -8,8 +8,24 @@
     }
 
     function onRunBot() {
+        var token = document.getElementById('telegram_bot_token').value;
+
         var xml = Blockly.Xml.workspaceToDom(workspace);
-        console.log(Blockly.Xml.domToPrettyText(xml));
+        var content = Blockly.Xml.domToPrettyText(xml);
+
+        var http = new XMLHttpRequest();
+        var url = "/api/bot_orders/set";
+        http.open("POST", url, true);
+
+        //Send the proper header information along with the request
+        http.setRequestHeader("Content-type", "application/json");
+
+        http.onreadystatechange = (function() {//Call a function when the state changes.
+            if(http.readyState == 4 && http.status == 200) {
+                console.log(http.responseText);
+            }
+        });
+        http.send(JSON.stringify({"commands": content, "token": token}));
     }
 
     function startBlocks(){

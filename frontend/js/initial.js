@@ -18,14 +18,14 @@ function load_initial(workspace) {
                                 '<block type="control_repeat" id="|AoIPI?l~ZV5sb=e*u!a">' +
                                   '<value name="TIMES">' +
                                     '<shadow type="math_whole_number" id="%0I=YYi0R40B1oa9T]]:">' +
-                                      '<field name="NUM">10</field>' +
+                                      '<field name="NUM">3</field>' +
                                     '</shadow>' +
                                   '</value>' +
                                   '<statement name="SUBSTACK">' +
                                     '<block type="chat_say" id="uDyM42Cu2wj0cP6#%0p;">' +
                                       '<value name="VALUE">' +
                                         '<shadow type="text" id="H[;b%1{ck!.0]CsrTuNe">' +
-                                          '<field name="TEXT">Are we done?</field>' +
+                                          '<field name="TEXT">Are we ready?</field>' +
                                         '</shadow>' +
                                       '</value>' +
                                     '</block>' +
