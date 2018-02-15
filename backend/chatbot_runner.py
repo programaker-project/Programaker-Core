@@ -11,12 +11,12 @@ def can_run_alternative(update, alternative, variables):
 
     return False
 
-def run_program_with_offset(bot, update, program, state, offset):
+def run_program_with_offset(bot, update, program, state, update_offset):
     chat = update.message.chat_id
     state = copy.deepcopy(state)
 
-    while offset < len(program):
-        instruction = program[offset]
+    while update_offset < len(program):
+        instruction = program[update_offset]
         if instruction.type == 'chat_say':
             bot.send_message(chat, instruction.fields[0].value)
 
@@ -24,8 +24,8 @@ def run_program_with_offset(bot, update, program, state, offset):
             for i in range(int(instruction.fields[0].value)):
                 run_program_with_offset(bot, update, instruction.inner_program, state, 0)
 
-        offset += 1
-    return offset, state
+        update_offset += 1
+    return update_offset, state
 
 def run_alternative(bot, update, program, state):
     new_offset, state = run_program_with_offset(bot, update, program, state, 1)
@@ -39,11 +39,11 @@ def run(token, serialized_commands, state):
     else:
         state = json.loads(state)
 
-    offset = state.get('update_offset', 0)
+    update_offset = state.get('update_offset', 0)
 
     bot = telegram.Bot(token)
     commands = command_parser.parse(serialized_commands)
-    updates = bot.get_updates(offset=offset + 1)
+    updates = bot.get_updates(offset=update_offset + 1)
 
     for update in updates:
         for alternative in commands.ast:
@@ -52,5 +52,5 @@ def run(token, serialized_commands, state):
                 break
 
 
-        state['update_offset'] = max(update.update_id, state['update_offset'])
+        state['update_offset'] = max(update.update_id, update_offset)
     return json.dumps(state)
