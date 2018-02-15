@@ -44,6 +44,22 @@ function load_initial(workspace) {
                             '</block>' +
                           '</next>' +
                         '</block>' +
+                        '<block type="chat_whenreceivecommand" id="yDWo5LobTxX%!N~$GQ[*" x="420" y="183">' +
+                          '<value name="VALUE">' +
+                            '<shadow type="text" id="j2VB1F:+HvxR:!.9TcDV">' +
+                              '<field name="TEXT">/hello</field>' +
+                            '</shadow>' +
+                          '</value>' +
+                          '<next>' +
+                            '<block type="chat_say" id="Ig!`m9btC)RVBh{4!P-X">' +
+                              '<value name="VALUE">' +
+                                '<shadow type="text" id="]`?bpfE,[~Cfs.qKA)Q/">' +
+                                  '<field name="TEXT">Hi there</field>' +
+                                '</shadow>' +
+                              '</value>' +
+                            '</block>' +
+                          '</next>' +
+                        '</block>' +
                       '</xml>');
 
     var xml = Blockly.Xml.textToDom(initialXML);

@@ -17,6 +17,36 @@ def register_commands_for_token(token, commands):
     db.commit()
     db.close()
 
+
+def set_state(token, state):
+    db = sqlite3.connect(DB_FILE)
+    cur = db.cursor()
+
+    cur.execute('''
+    UPDATE chatbots
+    SET state=?
+    WHERE token=?
+    ''', (state, token))
+
+    db.commit()
+    db.close()
+
+
+def get_chatbots():
+    db = sqlite3.connect(DB_FILE)
+    cur = db.cursor()
+
+    cur.execute('''
+    SELECT token, commands, state
+    FROM chatbots;
+    ''')
+
+    result = cur.fetchall()
+    db.close()
+
+    return result
+
+
 def init():
     db = sqlite3.connect(DB_FILE)
     cur = db.cursor()
