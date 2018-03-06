@@ -1,0 +1,624 @@
+swagger: '2.0'
+info:
+  description: Auto-mate REST API specification.
+  version: 0.0.0
+  title: auto-mate API
+  termsOfService: 'https://auto-mate.spiral.systems/terms/'
+  contact:
+    email: auto-mate@spiral.systems
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+host: api.auto-mate.spiral.systems
+basePath: /v0
+tags:
+  - name: user
+    description: User management
+  - name: group
+    description: Group management
+  - name: program
+    description: Programmed behaviours
+  - name: bot
+    description: Bot management
+  - name: rest-api
+    description: REST API requester operations
+  - name: web-scrapper
+    description: Web scrapper service operations
+schemes:
+  - https
+paths:
+  /users:
+    put:
+      tags:
+        - user
+      summary: '*IMPORANT*: Cannot be called just through REST API. Register user'
+      operationId: register_user
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Created user object
+          required: true
+          schema:
+            $ref: '#/definitions/UserRegisterInformation'
+      responses:
+        '201':
+          description: User registered
+          schema:
+            $ref: '#/definitions/UserInformation'
+  '/users/{user_id}':
+    get:
+      tags:
+        - user
+      summary: Get information from user
+      description: Get all available information from user
+      operationId: get_user_information
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user queried
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/UserInformation'
+        '404':
+          description: User not found
+
+  /groups:
+    put:
+      tags:
+        - group
+      summary: Register group
+      operationId: register_group
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Created group object
+          required: true
+          schema:
+            $ref: '#/definitions/GroupRegisterInformation'
+      responses:
+        '201':
+          description: Group registered
+          schema:
+            $ref: '#/definitions/GroupInformation'
+      security:
+        - api_key: []
+  '/groups/{group_id}':
+    get:
+      tags:
+        - group
+      summary: Get information from group
+      description: Get all available information from group
+      operationId: get_group_information
+      produces:
+        - application/json
+      parameters:
+        - name: group_id
+          in: path
+          description: Id of the group queried
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/GroupInformation'
+        '404':
+          description: Group not found
+
+  '/users/{user_id}/programs':
+    put:
+      tags:
+        - program
+      summary: Create program
+      operationId: create_program
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who creates the program
+          required: true
+          type: integer
+        - in: body
+          name: body
+          description: Created program object
+          required: true
+          schema:
+            $ref: '#/definitions/ProgramCreateInformation'
+      security:
+        - api_key: []
+      responses:
+        '201':
+          description: Program created
+          schema:
+            $ref: '#/definitions/ProgramInformation'
+  '/users/{user_id}/programs/{program_id}':
+    get:
+      tags:
+        - program
+      summary: Get program
+      operationId: get_program
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who maintains the program
+          required: true
+          type: integer
+        - name: program_id
+          in: path
+          description: Id of the program
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/ProgramInformation'
+    post:
+      tags:
+        - program
+      summary: Update program
+      operationId: update_program
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who maintains the program
+          required: true
+          type: integer
+        - name: program_id
+          in: path
+          description: "program"
+          required: true
+          type: integer
+        - in: body
+          name: body
+          description: Created program object
+          required: true
+          schema:
+            $ref: '#/definitions/ProgramCreateInformation'
+      security:
+        - api_key: []
+      responses:
+        '200':
+          description: Program updated
+          schema:
+            $ref: '#/definitions/ProgramInformation'
+
+  '/users/{user_id}/bots':
+    put:
+      tags:
+        - bot
+      summary: Create bot
+      operationId: create_bot
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who creates the bot
+          required: true
+          type: integer
+        - in: body
+          name: body
+          description: Created bot object
+          required: true
+          schema:
+            $ref: '#/definitions/BotCreateInformation'
+      security:
+        - api_key: []
+      responses:
+        '201':
+          description: Bot created
+          schema:
+            $ref: '#/definitions/BotInformation'
+  '/users/{user_id}/bots/{bot_id}':
+    get:
+      tags:
+        - bot
+      summary: Get bot
+      operationId: get_bot
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who maintains the bot
+          required: true
+          type: integer
+        - name: bot_id
+          in: path
+          description: Id of the bot
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/BotInformation'
+    post:
+      tags:
+        - bot
+      summary: Update bot
+      operationId: update_bot
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who maintains the bot
+          required: true
+          type: integer
+        - name: bot_id
+          in: path
+          description: Id of the bot
+          required: true
+          type: integer
+        - in: body
+          name: body
+          description: Created bot object
+          required: true
+          schema:
+            $ref: '#/definitions/BotCreateInformation'
+      security:
+        - api_key: []
+      responses:
+        '200':
+          description: Bot updated
+          schema:
+            $ref: '#/definitions/BotInformation'
+
+  '/users/{user_id}/rest_apis':
+    put:
+      tags:
+        - rest-api
+      summary: Create REST API
+      operationId: create_rest_api
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who creates the REST API
+          required: true
+          type: integer
+        - in: body
+          name: body
+          description: Created REST API object
+          required: true
+          schema:
+            $ref: '#/definitions/RestApiCreateInformation'
+      security:
+        - api_key: []
+      responses:
+        '201':
+          description: REST API created
+          schema:
+            $ref: '#/definitions/RestApiInformation'
+  '/users/{user_id}/rest_apis/{rest_api_id}':
+    get:
+      tags:
+        - rest-api
+      summary: Get REST API
+      operationId: get_rest_api
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who maintains the REST API
+          required: true
+          type: integer
+        - name: rest_api_id
+          in: path
+          description: Id of the REST API
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/RestApiInformation'
+    post:
+      tags:
+        - rest-api
+      summary: Update REST API
+      operationId: update_rest_api
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who maintains the REST API
+          required: true
+          type: integer
+        - name: rest_api_id
+          in: path
+          description: Id of the REST API
+          required: true
+          type: integer
+        - in: body
+          name: body
+          description: Created REST API object
+          required: true
+          schema:
+            $ref: '#/definitions/RestApiCreateInformation'
+      security:
+        - api_key: []
+      responses:
+        '200':
+          description: REST API updated
+          schema:
+            $ref: '#/definitions/RestApiInformation'
+
+  '/users/{user_id}/web_scrappers':
+    put:
+      tags:
+        - web-scrapper
+      summary: Create web scrapper
+      operationId: create_web_scrapper
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who creates the web scrapper
+          required: true
+          type: integer
+        - in: body
+          name: body
+          description: Created web scrapper object
+          required: true
+          schema:
+            $ref: '#/definitions/WebScrapperCreateInformation'
+      security:
+        - api_key: []
+      responses:
+        '201':
+          description: Web scrapper created
+          schema:
+            $ref: '#/definitions/WebScrapperInformation'
+  '/users/{user_id}/web_scrappers/{web_scrapper_id}':
+    get:
+      tags:
+        - web-scrapper
+      summary: Get web scrapper
+      operationId: get_web_scrapper
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who maintains the web scrapper
+          required: true
+          type: integer
+        - name: web_scrapper_id
+          in: path
+          description: Id of the web scrapper
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/WebScrapperInformation'
+    post:
+      tags:
+        - web-scrapper
+      summary: Update web scrapper
+      operationId: update_web_scrapper
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: path
+          description: Id of the user who maintains the web scrapper
+          required: true
+          type: integer
+        - name: web_scrapper_id
+          in: path
+          description: Id of the web scrapper
+          required: true
+          type: integer
+        - in: body
+          name: body
+          description: Created web scrapper object
+          required: true
+          schema:
+            $ref: '#/definitions/WebScrapperCreateInformation'
+      security:
+        - api_key: []
+      responses:
+        '200':
+          description: Web scrapper updated
+          schema:
+            $ref: '#/definitions/WebScrapperInformation'
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api_key
+    in: header
+definitions:
+  UserRegisterInformation:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+  GroupRegisterInformation:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+  ProgramCreateInformation:
+    type: object
+    properties:
+      name:
+        type: string
+      code:
+        type: object
+      description:
+        type: string
+  BotCreateInformation:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+  RestApiCreateInformation:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+  WebScrapperCreateInformation:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+  NameIdAndUrl:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+  UserInformation:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+      groups:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+      bots:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+      programs:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+      rest_api_services:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+      web_scrapper_services:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+  GroupInformation:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+      groups:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+      bots:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+      programs:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+      rest_api_services:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+      web_scrapper_services:
+        type: array
+        items:
+          $ref: '#/definitions/NameIdAndUrl'
+  ProgramInformation:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+      code:
+        type: object
+  BotInformation:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+      description:
+        type: string
+  RestApiInformation:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+      description:
+        type: string
+  WebScrapperInformation:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+      description:
+        type: string
+  ApiResponse:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      type:
+        type: string
+      message:
+        type: string
+externalDocs:
+  description: Find out more about Swagger
+  url: 'http://swagger.io'
