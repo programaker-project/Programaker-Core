@@ -1,6 +1,6 @@
-[submodule "bot-builder/blocks/scratch-blocks"]
-	path = frontend/blocks/scratch-blocks
+[submodule "frontend/plaza/src/app/blocks/scratch-blocks"]
+	path = frontend/src/app/blocks/scratch-blocks
 	url = https://github.com/LLK/scratch-blocks
-[submodule "bot-builder/blocks/closure-library"]
-	path = frontend/blocks/closure-library
+[submodule "frontend/plaza/src/app/blocks/closure-library"]
+	path = frontend/src/app/blocks/closure-library
 	url = https://github.com/google/closure-library

@@ -1,6 +1,6 @@
-.PHONY: all build
+.PHONY: all build-blocks
 
-all:
+all: build-blocks
 
-build:
-	make -C blocks $@
+build-blocks:
+	make -C src/app/blocks build

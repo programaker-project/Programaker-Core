@@ -1,0 +1,157 @@
+/* You can add global styles to this file, and also import other style files */
+@import 'material_theme';
+
+html, body, my-app, mat-sidenav-container, .app-content {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+mat-sidenav, .full-height {
+    height: 100%;
+}
+
+mat-sidenav.mat-sidenav {
+    background-color: #F5F5F5;
+}
+
+mat-toolbar-row {
+    text-align: center;
+    font-size: large;
+}
+
+.centered {
+    text-align: center;
+}
+
+.viewer {
+    margin-left: 1em;
+}
+
+.grid {
+    padding: 1em;
+}
+
+form {
+    padding: 1em;
+}
+
+form > mat-card {
+    margin-bottom: 1em;
+}
+
+li {
+    list-style: none;
+}
+
+mat-input-container.full-size {
+    width: 100%;
+}
+
+mat-card[mat-ink-ripple] {
+    position: relative;
+}
+
+mat-card.not-persisted {
+    background-color: #444;
+    color: #eee;
+}
+
+mat-card.failed {
+    background-color: orangered;
+}
+
+.no-top-margin {
+    margin-top: 0;
+}
+
+mat-card.module {
+    margin-bottom: 1ex;
+    text-align: center;
+}
+
+.login-form {
+    margin-top: 2em;
+    max-width: 40em;
+}
+
+.accept-cancel {
+    text-align: center;
+}
+
+.call-to-action {
+    background-color: orange !important;
+    color: white !important;
+}
+
+mat-card.call-to-action > h4 {
+    font-weight: bold;
+    text-align: center;
+}
+
+.actionable-icon {
+    margin-right: 1ex;
+}
+
+.actionable-icon > mat-icon {
+    vertical-align: sub;
+}
+
+.test-result {
+    whitespace: pre;
+    padding: 1em;
+    background-color: #eeeeee;
+    border-radius: 5px;
+}
+
+.test-result {
+    line-height: 1.5em;
+}
+
+.tagged-json-type-null {
+    color: red;
+}
+
+.tagged-json-type-boolean {
+    font-style: italic;
+}
+
+.tagged-json-type-number {
+    font-style: italic;
+}
+
+.tagged-json-map-key .tagged-json-type-string {
+    border-bottom: 2px solid green;
+}
+
+.tagged-json-type-string {
+    border-bottom: 2px solid orange;
+}
+
+.tagged-json-type-list::before {
+    content: "[\A";
+}
+
+.tagged-json-type-list::after {
+    content: "]";
+}
+
+.tagged-json-type-map::before {
+    content: "{\A";
+}
+
+.tagged-json-type-map::after {
+    content: "}";
+}
+
+.tagged-json-list-element::after {
+    content: ",\A";
+}
+
+.tagged-json-map-key::after {
+    content: ": ";
+}
+
+.tagged-json-map-value::after {
+    content: ",\A";
+}

@@ -1,0 +1,38 @@
+<div class="grid grid-pad">
+    <mat-card class="col-sm-12">
+        <h4 *ngIf="program !== undefined"> {{program.name}} </h4>
+        <h4 *ngIf="program === undefined"> Loading program... </h4>
+    </mat-card>
+
+    <mat-card class="col-sm-12">
+        <div class="col-sm-12">
+            <mat-form-field class="col-sm-6">
+                <input mdInput placeholder="Input"
+                       [(ngModel)]="currentFillingInput"
+                       [ngModelOptions]="{standalone: true}" />
+            </mat-form-field>
+            <span class="col-sm-2"></span>
+            <button mat-raised-button [disabled]="currentFillingInput.length < 1" (click)="addExample()" class="col-sm-4">
+                <mat-icon class="mat-24">add</mat-icon>Add example
+            </button>
+        </div>
+    </mat-card>
+
+
+    <div class="col-sm-12">
+        <h3>Examples</h3>
+        <mat-card *ngFor="let example of examples" class="col-sm-12"
+                 [class.failed]="example.failed"
+                 [class.not-persisted]="!example.failed &&example.id == null">
+            <div class="example-text"> {{example.text}} </div>
+        </mat-card>
+    </div>
+
+    <div class="col-sm-12 centered">
+        <span class="col-sm-4"></span>
+        <button class="col-sm-4"
+                color="primary" mat-button mat-raised-button
+                (click)="goBack()">Return</button>
+        <span class="col-sm-4"></span>
+    </div>
+</div>

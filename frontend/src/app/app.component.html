@@ -1,0 +1,30 @@
+<div class="app-content">
+    <mat-toolbar color="primary">
+        <span role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span>
+        <span> {{title}} </span>
+        <span class="example-fill-remaining-space"></span>
+    </mat-toolbar>
+    <mat-sidenav-container>
+        <mat-sidenav #sidenav mode="side" opened="true">
+            <mat-toolbar class="mat-medium-tall">
+                <button mat-button (click)="gotoDashboard()">
+                    Bots
+                </button>
+            </mat-toolbar>
+            <mat-toolbar class="mat-medium-tall">
+                <button mat-button (click)="gotoPrograms()">
+                    Programs
+                </button>
+            </mat-toolbar>
+            <mat-toolbar class="mat-medium-tall">
+                <button mat-button (click)="gotoServices()">
+                    Services
+                </button>
+            </mat-toolbar>
+        </mat-sidenav>
+
+        <div class="viewer">
+            <router-outlet></router-outlet>
+        </div>
+    </mat-sidenav-container>
+</div>

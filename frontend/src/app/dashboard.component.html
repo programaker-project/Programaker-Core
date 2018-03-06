@@ -1,0 +1,12 @@
+<div class="grid grid-pad">
+    <div class="col-sm-4">
+        <mat-card role="button" (click)="addBot()" class="module bot call-to-action">
+            <h4>Add your own!</h4>
+        </mat-card>
+    </div>
+    <div *ngFor="let bot of bots" class="col-sm-4">
+        <mat-card class="module bot">
+            <h4>{{bot.name}}</h4>
+        </mat-card>
+    </div>
+</div>

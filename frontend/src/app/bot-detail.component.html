@@ -1,0 +1,11 @@
+<div *ngIf="bot">
+    <h2>{{bot.name}} details </h2>
+    <div>
+        <label>id:</label> {{bot.id}}
+    </div>
+    <div>
+        <label>name:</label>
+        <input [(ngModel)]="bot.name" placeholder="name" />
+    </div>
+    <button (click)="goBack()">Back!</button>
+</div>

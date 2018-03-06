@@ -1,0 +1,12 @@
+<div class="grid grid-pad">
+    <div class="col-sm-4">
+        <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
+            <h4>Add your own!</h4>
+        </mat-card>
+    </div>
+    <div *ngFor="let program of programs" class="col-sm-4">
+        <mat-card role="button" class="module program" (click)="gotoProgram(program.id)">
+            <h4>{{program.name}}</h4>
+        </mat-card>
+    </div>
+</div>

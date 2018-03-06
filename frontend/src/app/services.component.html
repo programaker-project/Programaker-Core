@@ -1,0 +1,12 @@
+<div class="grid grid-pad">
+    <div class="col-sm-4">
+        <mat-card role="button" (click)="addService()" class="module service call-to-action">
+            <h4>Add your own!</h4>
+        </mat-card>
+    </div>
+    <div *ngFor="let service of services" class="col-sm-4">
+        <mat-card class="module service">
+            <h4>{{service.name}}</h4>
+        </mat-card>
+    </div>
+</div>
