@@ -2,10 +2,19 @@
     <mat-toolbar color="primary">
         <span role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span>
         <span> {{title}} </span>
-        <span class="example-fill-remaining-space"></span>
+        <span class="floating-elements">
+            <span class="login-indicator">
+                <div class="username" *ngIf="loggedIn">
+                    {{ username }}
+                </div>
+                <div *ngIf="!loggedIn">
+                    <a class="action-link" (click)="gotoLogin()">Login</a>
+                </div>
+            </span>
+        </span>
     </mat-toolbar>
     <mat-sidenav-container>
-        <mat-sidenav #sidenav mode="side" opened="true">
+        <mat-sidenav #sidenav mode="side" opened="false">
             <mat-toolbar class="mat-medium-tall">
                 <button mat-button (click)="gotoDashboard()">
                     Bots

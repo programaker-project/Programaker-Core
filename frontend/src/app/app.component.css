@@ -1,3 +1,17 @@
+.login-indicator {
+    float: right;
+}
+
+a.action-link {
+    color: orange;
+    font-weight: bold;
+    font-size: smaller;
+}
+
+.floating-elements {
+    width: 100%;
+}
+
 .selected {
     background-color: #cfd8dc !important;
     color: white;
