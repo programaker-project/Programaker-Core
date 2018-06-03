@@ -1,0 +1,20 @@
+{application, automate_rest_api,
+ [ {description, "Auto-mate REST API."}
+ , {vsn, "0.0.0"}
+ , {registered, []}
+ , {mod, { automate_rest_api_app, [] }}
+ , {applications, [ kernel
+                  , stdlib
+                  , ssl
+                  , inets
+                  , cowboy
+                  , jiffy
+                  ]}
+
+ , {env, [ {port, 8080} ]}
+ , {modules, []}
+
+ , {maintaniners, []}
+ , {licenses, ["Apache 2.0"]}
+ , {links, []}
+]}.
