@@ -1,7 +1,9 @@
 -module(automate_storage).
 
 %% API exports
--export([create_user/3]).
+-export([ create_user/3
+        , login_user/2
+        ]).
 -export([start_link/0]).
 
 %% Structures
@@ -37,6 +39,26 @@ create_user(Username, Password, Email) ->
             { error, Reason }
     end.
 
+login_user(Username, Password) ->
+    case get_userid_and_password_from_username(Username) of
+        {ok, #registered_user_entry{ id=UserId
+                                   , password=StoredPassword
+                                   }} ->
+            case libsodium_crypto_pwhash:str_verify(StoredPassword, Password) =:= 0 of
+                true ->
+                    SessionToken = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+                    ok = add_token_to_user(UserId, SessionToken),
+                    { ok, SessionToken };
+                _ ->
+                    {error, invalid_user_password}
+            end;
+        {error, no_user_found} ->
+            {error, invalid_user_password};
+
+        {error, Reason} ->
+            { error, Reason }
+    end.
+
 start_link() ->
     Nodes = [node()],
     mnesia:stop(),
@@ -55,6 +77,47 @@ cipher_password(Plaintext) ->
     MemlimitSensitive = libsodium_crypto_pwhash:memlimit_sensitive(), % 536870912
     HashedPassword = libsodium_crypto_pwhash:str(Password, OpslimitSensitive, MemlimitSensitive),
     HashedPassword.
+
+add_token_to_user(UserId, SessionToken) ->
+    StartTime = erlang:system_time(second),
+    Transaction = fun() ->
+                          mnesia:write(?USER_SESSIONS_TABLE
+                                      , #user_session_entry{ session_id=SessionToken
+                                                           , user_id=UserId
+                                                           , session_start_time=StartTime
+                                          }
+                                      , write)
+                  end,
+    {atomic, Result} = mnesia:transaction(Transaction),
+    Result.
+
+get_userid_and_password_from_username(Username) ->
+    MatchHead = #registered_user_entry{ id='$1'
+                                      , username='$2'
+                                      , password='$3'
+                                      , email='_'
+                                      },
+    %% Check that neither the id, username or email matches another
+    Guard = {'==', '$2', Username},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    Transaction = fun() ->
+                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
+                              [UserId] ->
+                                  mnesia:read(?REGISTERED_USERS_TABLE, UserId);
+                              [] ->
+                                  []
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [Result] } ->
+            {ok, Result};
+        { atomic, [] } ->
+            {error, no_user_found};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
 
 prepare_nodes(Nodes) ->
     %% Global structure
@@ -102,7 +165,8 @@ save_unique_user(UserData) ->
     MatchHead = #registered_user_entry{ id='$1'
                                       , username='$2'
                                       , password='_'
-                                      , email='$3'},
+                                      , email='$3'
+                                      },
 
     %% Check that neither the id, username or email matches another
     GuardId = {'==', '$1', UserId},

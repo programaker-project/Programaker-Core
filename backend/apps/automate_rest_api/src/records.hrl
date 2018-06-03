@@ -8,3 +8,8 @@
         , password
         , username
         }).
+
+-record(login_rec,
+        { password
+        , username
+        }).
