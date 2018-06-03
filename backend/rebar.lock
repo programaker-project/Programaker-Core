@@ -10,7 +10,15 @@
   {git,"https://github.com/davisp/jiffy",
        {ref,"031f9dbbf6c31b83585569cd290504f006540a77"}},
   0},
+ {<<"libsodium">>,
+  {git,"git://github.com/potatosalad/erlang-libsodium.git",
+       {ref,"aacf353461c27fc8732f69ecfcf1aaed9d81d366"}},
+  0},
  {<<"ranch">>,
   {git,"https://github.com/ninenines/ranch",
        {ref,"55c2a9d623454f372a15e99721a37093d8773b48"}},
-  1}].
+  1},
+ {<<"uuid">>,
+  {git,"https://github.com/avtobiff/erlang-uuid.git",
+       {ref,"1fdc1b367902da71b774a34ae15690811ac17b99"}},
+  0}].

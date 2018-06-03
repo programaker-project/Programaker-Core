@@ -9,6 +9,7 @@
                   , inets
                   , cowboy
                   , jiffy
+                  , automate_storage
                   ]}
 
  , {env, [ {port, 8080} ]}

@@ -8,14 +8,24 @@
         , content_types_accepted/2
         , options/2
         ]).
+-export([resource_exists/2]).
 
 -export([accept_json_modify_collection/2]).
 -include("./records.hrl").
 
+-record(registration_seq, { rest_session,
+                            registration_data
+                          }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
-init(Req, Opts) ->
-    {cowboy_rest, Req, Opts}.
+init(Req, _Opts) ->
+    {cowboy_rest, Req
+    , #registration_seq{ rest_session=undefined
+                       , registration_data=undefined}}.
+
+resource_exists(Req, State) ->
+    io:format("Exists!~n"),
+    {false, Req, State}.
 
 %% -spec is_authorized(cowboy_req:req(),_) -> {'true' | {'false', binary()}, cowboy_req:req(),_}.
 %% is_authorized(Req, State) ->
@@ -45,17 +55,44 @@ content_types_accepted(Req, State) ->
 
 %%%% POST
 %
--spec accept_json_modify_collection(cowboy_req:req(),#rest_session{}) -> {'true',cowboy_req:req(),_}.
+-spec accept_json_modify_collection(cowboy_req:req(),#registration_seq{})
+      -> {'true',cowboy_req:req(),_}.
 accept_json_modify_collection(Req, Session) ->
     case cowboy_req:has_body(Req) of
         true ->
             {ok, Body, Req2} = read_body(Req),
             io:fwrite("--->~p ~n", [Body]),
-            io:fwrite("-+->~p ~n", [jiffy:decode(Body, [return_maps])]),
-            {true, Req2, Session};
+            Parsed = [jiffy:decode(Body, [return_maps])],
+            io:fwrite("-+->~p ~n", Parsed),
+            case to_register_data(Parsed) of
+                { ok, RegistrationData } ->
+                    case automate_rest_api_backend:register_user(RegistrationData) of
+                        { ok, UserUrl } ->
+                            { {true, UserUrl }, Req2, Session#registration_seq{
+                                                        registration_data=RegistrationData} };
+                        {error, Reason} ->
+                            io:format("Error registering: ~p~n", [Reason]),
+                            { false, Req2, Session}
+                    end;
+                { error, _Reason } ->
+                    { false, Req2, Session }
+            end;
         false ->
             {false, Req, Session }
     end.
+
+to_register_data([#{ <<"email">> := Email
+                   , <<"password">> := Password
+                   , <<"username">> := Username
+                   }]) ->
+    { ok, #registration_rec{ password=Password
+                           , username=Username
+                           , email=Email
+                           } };
+
+to_register_data(X) ->
+    io:format("Found on register: ~p~n", [X]),
+    { error, "Data structures not matching" }.
 
 read_body(Req0) ->
     read_body(Req0, <<>>).

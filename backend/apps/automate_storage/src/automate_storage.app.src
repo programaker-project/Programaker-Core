@@ -1,0 +1,15 @@
+{application, automate_storage, [
+    {description, "Auto-mate storage node."},
+    {vsn, "0.0.0"},
+    {registered, []},
+    {mod, { automate_storage_app, [] }},
+    {applications, [ kernel
+                   , stdlib
+                   , mnesia
+    ]},
+    {env, [
+    ]},
+    {modules, []},
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+]}.

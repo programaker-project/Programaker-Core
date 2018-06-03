@@ -5,6 +5,9 @@
 /*.ez
 *.beam
 
+# Mnesia directories
+Mnesia.*
+
 # Generated on crash by the VM
 erl_crash.dump
 
