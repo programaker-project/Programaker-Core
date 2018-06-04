@@ -12,6 +12,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatFormFieldModule } from '@angular/material';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -60,6 +61,7 @@ import 'hammerjs';
         MatInputModule,
         MatSlideToggleModule,
         MatMenuModule,
+        MatFormFieldModule,
 
         BrowserAnimationsModule,
 
