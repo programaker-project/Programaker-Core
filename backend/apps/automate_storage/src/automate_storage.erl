@@ -3,6 +3,7 @@
 %% API exports
 -export([ create_user/3
         , login_user/2
+        , get_session/1
         ]).
 -export([start_link/0]).
 
@@ -57,6 +58,21 @@ login_user(Username, Password) ->
 
         {error, Reason} ->
             { error, Reason }
+    end.
+
+get_session(SessionId) when is_binary(SessionId) ->
+    Transaction = fun() ->
+                          mnesia:read(?USER_SESSIONS_TABLE
+                                     , SessionId)
+                  end,
+    {atomic, Result} = mnesia:transaction(Transaction),
+    case Result of
+        [Session] ->
+            { ok, Session };
+        [] ->
+            { error, session_not_found };
+        _ ->
+            { error, collision_on_session_id }
     end.
 
 start_link() ->

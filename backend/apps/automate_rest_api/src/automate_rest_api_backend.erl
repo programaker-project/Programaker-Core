@@ -3,6 +3,7 @@
 %% API exports
 -export([ register_user/1
         , login_user/1
+        , is_valid_token/1
         ]).
 
 %% Definitions
@@ -32,6 +33,17 @@ login_user(#login_rec{ password=Password
             { ok, Token };
         { error, Reason } ->
             { error, Reason }
+    end.
+
+is_valid_token(Token) when is_binary(Token) ->
+    case automate_storage:get_session(Token) of
+        { ok, _ } ->
+            true;
+        { error, session_not_found } ->
+            false;
+        { error, Reason } ->
+            io:format("Error getting session: ~p~n", [Reason]),
+            false
     end.
 
 %%====================================================================
