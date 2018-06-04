@@ -18,7 +18,7 @@ import { SessionService } from './session.service';
 
 @Component({
     // moduleId: module.id,
-    selector: 'my-add-bots',
+    selector: 'app-my-add-bots',
     templateUrl: './add-bot.component.html',
     providers: [BotService, ServiceService, ProgramService],
 })
@@ -27,7 +27,7 @@ import { SessionService } from './session.service';
 export class AddBotComponent {
 
 
-    private createBotUrl = "https://wireup.hivemind.ai/api/bots/create";
+    private createBotUrl = 'https://wireup.hivemind.ai/api/bots/create';
 
     telegram: TelegramChannel;
     example: string;
@@ -56,23 +56,22 @@ export class AddBotComponent {
         this.serviceService = serviceService;
         this.sessionService = sessionService;
 
-        this.bot = { name: "", id: null };
-        this.example = "";
-        this.telegram = { token: "", activated: false };
+        this.bot = { name: '', id: null };
+        this.example = '';
+        this.telegram = { token: '', activated: false };
         this.programServicePairs = [];
 
         this.programs = [];
         this.services = [];
     }
 
-    ngOnInit(): void {
+    OnInit(): void {
         this.sessionService.getSession()
             .then(session => {
                 this.session = session;
-                if (!session.active){
+                if (!session.active) {
                     this.router.navigate(['/login']);
-                }
-                else {
+                } else {
                     this.programService.getPrograms().then((programs) => this.programs = programs);
                     this.serviceService.getServices().then((services) => this.services = services);
                 }
@@ -112,7 +111,7 @@ export class AddBotComponent {
 
 
     create(): void {
-        var buttons = document.getElementsByClassName("createButton");
+        const buttons = document.getElementsByClassName('createButton');
         this.toIndeterminateProgressbar(buttons[0]);
 
         this.http.post(this.createBotUrl, { bot: this.bot,

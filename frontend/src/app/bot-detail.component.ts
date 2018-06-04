@@ -6,13 +6,13 @@ import { BotService } from './bot.service';
 import 'rxjs/add/operator/switchMap';
 
 @Component({
-    selector: 'my-bot-detail',
+    selector: 'app-my-bot-detail',
     templateUrl: './bot-detail.component.html',
     providers: [BotService]
 })
 
 export class BotDetailComponent implements OnInit {
-    @Input() bot : Bot;
+    @Input() bot: Bot;
 
     ngOnInit(): void {
         this.route.params

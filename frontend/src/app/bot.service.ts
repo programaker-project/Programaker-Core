@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Bot } from './bot';
 import { Http } from '@angular/http';
+import * as API from './api-config';
 import 'rxjs/add/operator/toPromise';
 
 @Injectable()
 export class BotService {
-    private getBotsUrl = "/api/bots/";
+    private getBotsUrl = API.ApiRoot + '/bots/';
 
     constructor(
         private http: Http,

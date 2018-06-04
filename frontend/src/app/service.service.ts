@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Service } from './service';
 import { Http } from '@angular/http';
+import * as API from './api-config';
 import 'rxjs/add/operator/toPromise';
 
 @Injectable()
 export class ServiceService {
-    private getServicesUrl = "/api/services/";
+    private getServicesUrl = API.ApiRoot + '/services/';
 
     constructor(
         private http: Http,

@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Program, ProgramExample } from './program';
 import { Http } from '@angular/http';
+import * as API from './api-config';
 import 'rxjs/add/operator/toPromise';
 
 @Injectable()
 export class ProgramService {
-    private getProgramsUrl = "/api/programs/";
-    private getExamplesForProgramRootUrl = "/api/programs/examples/";
-    private addExampleToProgramRootUrl = "/api/programs/examples/";
+    private getProgramsUrl = API.ApiRoot + '/programs/';
+    private getExamplesForProgramRootUrl = '/api/programs/examples/';
+    private addExampleToProgramRootUrl = '/api/programs/examples/';
 
     constructor(
         private http: Http,

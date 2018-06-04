@@ -1,1 +1,9 @@
+# Build files
 build
+
+# Temporary/editor files
+.vscode
+*.bak
+*~
+*.swp
+*#*

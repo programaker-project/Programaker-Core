@@ -6,14 +6,16 @@ import { SessionService } from './session.service';
 import 'rxjs/add/operator/switchMap';
 
 @Component({
-    selector: 'my-login-form',
+    selector: 'app-my-login-form',
     templateUrl: './login-form.component.html',
     providers: [SessionService]
 })
 
 export class LoginFormComponent implements OnInit {
     username: string;
+    email: string;
     password: string;
+    repeatPassword: string;
     isLogInMode: boolean;
     isSignUpMode: boolean;
     session: Session = null;
@@ -44,7 +46,9 @@ export class LoginFormComponent implements OnInit {
         this.route = route;
         this.location = location;
         this.username = '';
+        this.email = '';
         this.password = '';
+        this.repeatPassword = '';
         this.goLogInMode();
     }
 
@@ -67,7 +71,7 @@ export class LoginFormComponent implements OnInit {
     }
 
     doSignUp(): void {
-        this.sessionService.register(this.username, this.password).then(success => {
+        this.sessionService.register(this.username, this.email, this.password).then(success => {
             if (success) {
                 this.router.navigate(['/']);
             }
