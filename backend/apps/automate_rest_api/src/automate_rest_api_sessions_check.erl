@@ -13,15 +13,12 @@
 
 -include("./records.hrl").
 
--record(login_seq, { rest_session,
-                     login_data
-                   }).
+-record(check_seq, { username }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     {cowboy_rest, Req
-    , #login_seq{ rest_session=undefined
-                , login_data=undefined}}.
+    , #check_seq{ username=undefined }}.
 
 content_types_provided(Req, State) ->
     {[ {<<"application/json">>, to_json}
@@ -38,25 +35,32 @@ allowed_methods(Req, State) ->
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
-    io:format("Authorizing~n", []),
     Req1 = automate_rest_api_cors:set_headers(Req),
-    case cowboy_req:header(<<"authorization">>, Req, undefined) of
-        undefined ->
-            { {false, <<"Authorization header not found">>} , Req1, State };
-        X ->
-            case automate_rest_api_backend:is_valid_token(X) of
-                true ->
-                    { true, Req1, State };
-                false ->
-                    { { false, <<"Authorization not correct">>}, Req1, State }
+    case cowboy_req:method(Req1) of
+        %% Don't do authentication if it's just asking for options
+        <<"OPTIONS">> ->
+            { true, Req1, State };
+        _ ->
+            case cowboy_req:header(<<"authorization">>, Req, undefined) of
+                undefined ->
+                    { {false, <<"Authorization header not found">>} , Req1, State };
+                X ->
+                    case automate_rest_api_backend:is_valid_token(X) of
+                        {true, Username} ->
+                            { true, Req1, #check_seq{username=Username} };
+                        false ->
+                            { { false, <<"Authorization not correct">>}, Req1, State }
+                    end
             end
     end.
 
 %% GET handler
--spec to_json(cowboy_req:req(), #rest_session{}) -> {binary(),cowboy_req:req(),_}.
+-spec to_json(cowboy_req:req(), #check_seq{}) -> {binary(),cowboy_req:req(),_}.
 to_json(Req, State) ->
-    Output = jiffy:encode(#{ <<"success">> => true }),
-    Res1 = cowboy_req:set_resp_body(Output, Req),
-    Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
-    Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
-    { true, Res3, State }.
+    #check_seq{username=Username} = State,
+
+    Output = jiffy:encode(#{ <<"success">> => true, <<"username">> => Username }),
+    Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
+    Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
+
+    { Output, Res2, State }.

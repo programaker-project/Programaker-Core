@@ -3,24 +3,14 @@
 %% API exports
 -export([ create_user/3
         , login_user/2
-        , get_session/1
+        , get_session_username/1
         ]).
 -export([start_link/0]).
 
 %% Structures
 -define(REGISTERED_USERS_TABLE, automate_registered_users).
 -define(USER_SESSIONS_TABLE, automate_user_sessions).
-
--record(registered_user_entry, { id
-                               , username
-                               , password
-                               , email
-                               }).
-
--record(user_session_entry, { session_id
-                            , user_id
-                            , session_start_time
-                            }).
+-include("./records.hrl").
 
 %%====================================================================
 %% API functions
@@ -60,20 +50,24 @@ login_user(Username, Password) ->
             { error, Reason }
     end.
 
-get_session(SessionId) when is_binary(SessionId) ->
+get_session_username(SessionId) when is_binary(SessionId) ->
     Transaction = fun() ->
-                          mnesia:read(?USER_SESSIONS_TABLE
-                                     , SessionId)
+                          case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
+                              [] ->
+                                  { error, session_not_found };
+                              [#user_session_entry{ user_id=UserId } | _] ->
+                                  case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
+                                      [] ->
+                                          %% TODO log event, this shouldn't happen
+                                          { error, session_not_found };
+                                      [#registered_user_entry{username=Username} | _] ->
+                                          {ok, Username}
+                                  end
+                          end
                   end,
+
     {atomic, Result} = mnesia:transaction(Transaction),
-    case Result of
-        [Session] ->
-            { ok, Session };
-        [] ->
-            { error, session_not_found };
-        _ ->
-            { error, collision_on_session_id }
-    end.
+    Result.
 
 start_link() ->
     Nodes = [node()],

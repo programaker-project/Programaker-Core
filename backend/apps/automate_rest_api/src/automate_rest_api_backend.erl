@@ -36,9 +36,9 @@ login_user(#login_rec{ password=Password
     end.
 
 is_valid_token(Token) when is_binary(Token) ->
-    case automate_storage:get_session(Token) of
-        { ok, _ } ->
-            true;
+    case automate_storage:get_session_username(Token) of
+        { ok, Username } ->
+            {true, Username};
         { error, session_not_found } ->
             false;
         { error, Reason } ->
