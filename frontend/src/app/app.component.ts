@@ -1,36 +1,55 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { SessionService } from './session.service';
+import { Session } from './session';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'my-app',
     templateUrl: './app.component.html',
     styleUrls: [
         'app.component.css'
-    ]
+    ],
+    providers: [SessionService]
 })
 
 export class AppComponent {
-    title = 'Auto-mate';
+    sessionSubscription: Subscription;
+    username: string;
+    loggedIn: boolean;
+    title = 'WireUp';
 
     constructor(
-        private router: Router
+        private router: Router,
+        private session: SessionService
     ) {
         this.router = router;
+        this.session = session;
+        this.loggedIn = false;
+
+        this.sessionSubscription = this.session.observe().subscribe((newSession: Session) => {
+            if (newSession !== null) {
+                this.loggedIn = newSession.active;
+                if (newSession.active) {
+                    this.username = newSession.username;
+                }
+            }
+        });
     }
 
-    gotoLogin() : void {
+    gotoLogin(): void {
         this.router.navigate(['/login']);
     }
 
-    gotoDashboard() : void {
+    gotoDashboard(): void {
         this.router.navigate(['/dashboard']);
     }
 
-    gotoPrograms() : void {
+    gotoPrograms(): void {
         this.router.navigate(['/programs']);
     }
 
-    gotoServices() : void {
+    gotoServices(): void {
         this.router.navigate(['/services']);
     }
 }

@@ -32,10 +32,9 @@ export class DashboardComponent {
         this.sessionService.getSession()
             .then(session => {
                 this.session = session;
-                if (!session.active){
+                if (!session.active) {
                     this.router.navigate(['/login']);
-                }
-                else {
+                } else {
                     this.botService.getBots()
                         .then(bots => this.bots = bots.slice(0, 4));
                 }

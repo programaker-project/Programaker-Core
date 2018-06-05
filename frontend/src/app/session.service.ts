@@ -3,17 +3,29 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Session } from './session';
 import 'rxjs/add/operator/toPromise';
 import * as API from './api-config';
+import { Observable } from 'rxjs/Observable';
+import { Subscriber, ReplaySubject } from 'rxjs';
 
 @Injectable()
 export class SessionService {
     checkSessionUrl = API.ApiRoot + '/sessions/check';
     loginUrl = API.ApiRoot + '/sessions/login';
     registerUrl = API.ApiRoot + '/sessions/register';
+    sessionObservable: ReplaySubject<Session>;
 
     constructor(
         private http: HttpClient,
     ) {
         this.http = http;
+
+        this.sessionObservable = new ReplaySubject<Session>(1);
+
+        // Prefill the replayer
+        this.sessionObservable.next(new Session(false, null));
+    }
+
+    observe(): ReplaySubject<Session> {
+        return this.sessionObservable;
     }
 
     storeToken(token: string) {
@@ -44,14 +56,18 @@ export class SessionService {
     }
 
     getSession(): Promise<Session> {
-      if (this.getToken() === null){
+      if (this.getToken() === null) {
         return Promise.resolve(null);
       }
 
       return (this.http
               .get(this.checkSessionUrl, {headers: this.getAuthHeader()})
               .map((response) => {
-                  const session = response as Session;
+                  const check = response as any;
+                  const session = new Session(check.success, check.username);
+
+                  this.sessionObservable.next(session);
+
                   return session;
               })
               .toPromise());
@@ -66,6 +82,10 @@ export class SessionService {
                   const data = response as any;
                   if (data.success) {
                       this.storeToken(data.token);
+
+                      const newSession = new Session(true, username);
+                      this.sessionObservable.next(newSession);
+
                       return true;
                   }
                   return false;
@@ -85,7 +105,14 @@ export class SessionService {
                                  , email: email
                                  }),
                   { headers  })
-                .map(response => (response as any).success)
+                .map(response => {
+                    if ((response as any).success) {
+                        this.sessionObservable.next(new Session(true, username));
+                        return true;
+                    }
+
+                    return false;
+                })
                 .toPromise());
     }
 
