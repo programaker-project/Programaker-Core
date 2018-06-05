@@ -28,22 +28,17 @@ init(Req, _Opts) ->
 
 %% CORS
 options(Req, State) ->
-    Req1 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"GET, POST, OPTIONS">>, Req),
-    Req2 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"*">>, Req1),
-    Req3 = cowboy_req:set_resp_header(<<"Access-Control-Max-Age">>, <<"3600">>, Req2),
-    Req4 = cowboy_req:set_resp_header(<<"Access-Control-Allow-Headers">>,
-                                      <<"authorization, content-type, xsrf-token">>, Req3),
-    Req5 = cowboy_req:set_resp_header(<<"Access-Control-Expose-Headers">>,
-                                      <<"xsrf-token">>, Req4),
-    {ok, Req5, State}.
+    Res = automate_rest_api_cors:set_headers(Req),
+    {ok, Res, State}.
 
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
-    {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
+    Res = automate_rest_api_cors:set_headers(Req),
+    io:fwrite("[Login] Asking for methods~n", []),
+    {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Res, State}.
 
 content_types_accepted(Req, State) ->
-    io:fwrite("Control types accepted~n", []),
+    io:fwrite("[Login] Control types accepted~n", []),
 	{[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
    Req, State}.
 
@@ -60,7 +55,9 @@ accept_json_modify_collection(Req, Session) ->
                 { ok, LoginData } ->
                     case automate_rest_api_backend:login_user(LoginData) of
                         { ok, Token } ->
-                            Output = jiffy:encode(#{ <<"token">> => Token }),
+                            Output = jiffy:encode(#{ <<"token">> => Token
+                                                   , <<"success">> => true
+                                                   }),
                             Res1 = cowboy_req:set_resp_body(Output, Req2),
                             Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
                             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),

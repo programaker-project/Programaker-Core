@@ -29,14 +29,8 @@ content_types_provided(Req, State) ->
 
 %% CORS
 options(Req, State) ->
-    Req1 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"GET, OPTIONS">>, Req),
-    Req2 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"*">>, Req1),
-    Req3 = cowboy_req:set_resp_header(<<"Access-Control-Max-Age">>, <<"3600">>, Req2),
-    Req4 = cowboy_req:set_resp_header(<<"Access-Control-Allow-Headers">>,
-                                      <<"authorization, content-type, xsrf-token">>, Req3),
-    Req5 = cowboy_req:set_resp_header(<<"Access-Control-Expose-Headers">>,
-                                      <<"xsrf-token">>, Req4),
-    {ok, Req5, State}.
+    Req1 = automate_rest_api_cors:set_headers(Req),
+    {ok, Req1, State}.
 
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
@@ -44,15 +38,17 @@ allowed_methods(Req, State) ->
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
+    io:format("Authorizing~n", []),
+    Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:header(<<"authorization">>, Req, undefined) of
         undefined ->
-            { {false, <<"Authorization header not found">>} , Req, State };
+            { {false, <<"Authorization header not found">>} , Req1, State };
         X ->
             case automate_rest_api_backend:is_valid_token(X) of
                 true ->
-                    { true, Req, State };
+                    { true, Req1, State };
                 false ->
-                    { { false, <<"Authorization not correct">>}, Req, State }
+                    { { false, <<"Authorization not correct">>}, Req1, State }
             end
     end.
 
