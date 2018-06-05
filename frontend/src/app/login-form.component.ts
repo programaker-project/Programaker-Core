@@ -68,6 +68,9 @@ export class LoginFormComponent implements OnInit {
                 this.router.navigate(['/']);
             }
         })
+        .catch(reason => {
+          console.log("Error on login:", reason);
+        })
     }
 
     doSignUp(): void {
