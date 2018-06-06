@@ -4,8 +4,8 @@
         <span> {{title}} </span>
         <span class="floating-elements">
             <span class="login-indicator">
-                <div class="username" *ngIf="loggedIn">
-                    {{ username }}
+                <div class="username-display" *ngIf="loggedIn">
+                    Hi, {{ username }}!
                 </div>
                 <div *ngIf="!loggedIn">
                     <a class="action-link" (click)="gotoLogin()">Login</a>

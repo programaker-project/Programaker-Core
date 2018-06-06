@@ -24,7 +24,7 @@ export class LoginFormComponent implements OnInit {
         this.sessionService.getSession()
             .then(session => {
                 this.session = session;
-                if (session.active){
+                if (session.active) {
                     this.router.navigate(['/']);
                 }
             });
@@ -69,7 +69,7 @@ export class LoginFormComponent implements OnInit {
             }
         })
         .catch(reason => {
-          console.log("Error on login:", reason);
+          console.log('Error on login:', reason);
         })
     }
 

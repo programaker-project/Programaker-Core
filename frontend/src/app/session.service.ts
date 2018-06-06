@@ -4,28 +4,17 @@ import { Session } from './session';
 import 'rxjs/add/operator/toPromise';
 import * as API from './api-config';
 import { Observable } from 'rxjs/Observable';
-import { Subscriber, ReplaySubject } from 'rxjs';
 
 @Injectable()
 export class SessionService {
     checkSessionUrl = API.ApiRoot + '/sessions/check';
     loginUrl = API.ApiRoot + '/sessions/login';
     registerUrl = API.ApiRoot + '/sessions/register';
-    sessionObservable: ReplaySubject<Session>;
 
     constructor(
         private http: HttpClient,
     ) {
         this.http = http;
-
-        this.sessionObservable = new ReplaySubject<Session>(1);
-
-        // Prefill the replayer
-        this.sessionObservable.next(new Session(false, null));
-    }
-
-    observe(): ReplaySubject<Session> {
-        return this.sessionObservable;
     }
 
     storeToken(token: string) {
@@ -66,8 +55,6 @@ export class SessionService {
                   const check = response as any;
                   const session = new Session(check.success, check.username);
 
-                  this.sessionObservable.next(session);
-
                   return session;
               })
               .toPromise());
@@ -84,7 +71,6 @@ export class SessionService {
                       this.storeToken(data.token);
 
                       const newSession = new Session(true, username);
-                      this.sessionObservable.next(newSession);
 
                       return true;
                   }
@@ -107,7 +93,6 @@ export class SessionService {
                   { headers  })
                 .map(response => {
                     if ((response as any).success) {
-                        this.sessionObservable.next(new Session(true, username));
                         return true;
                     }
 

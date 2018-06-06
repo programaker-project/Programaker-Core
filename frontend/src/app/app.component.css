@@ -12,6 +12,10 @@ a.action-link {
     width: 100%;
 }
 
+.username-display {
+    font-size: smaller;
+}
+
 .selected {
     background-color: #cfd8dc !important;
     color: white;

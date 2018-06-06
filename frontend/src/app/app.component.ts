@@ -27,7 +27,8 @@ export class AppComponent {
         this.session = session;
         this.loggedIn = false;
 
-        this.sessionSubscription = this.session.observe().subscribe((newSession: Session) => {
+        this.session.getSession().then((newSession: Session) => {
+            console.log('Session:', newSession);
             if (newSession !== null) {
                 this.loggedIn = newSession.active;
                 if (newSession.active) {
