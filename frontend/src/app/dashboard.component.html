@@ -1,12 +1,81 @@
-<div class="grid grid-pad">
-    <div class="col-sm-4">
-        <mat-card role="button" (click)="addBot()" class="module bot call-to-action">
-            <h4>Add your own!</h4>
-        </mat-card>
+<div id="dashboard">
+  <div class="collection-grid">
+      <h1 class="collection-name">
+          Programs
+      </h1>
+      <div class="grid grid-pad">
+          <div class="row">
+            <div *ngFor="let program of programs" class="col-sm-4">
+                <mat-card class="module program">
+                    <h4>{{program.name}}</h4>
+                </mat-card>
+            </div>
+            <div class="col-sm-4">
+                <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
+                    <h4>Add one!</h4>
+                </mat-card>
+            </div>
+          </div>
+      </div>
+  </div>
+
+  <div class="collection-grid">
+      <h1 class="collection-name">
+          Service accounts
+      </h1>
+      <div class="grid grid-pad">
+          <div class="row">
+            <div *ngFor="let service of services" class="col-sm-4">
+                <mat-card class="module service">
+                    <h4>{{service.name}}</h4>
+                </mat-card>
+            </div>
+            <div class="col-sm-4">
+                <mat-card role="button" (click)="addService()" class="module service call-to-action">
+                    <h4>Add one!</h4>
+                </mat-card>
+            </div>
+          </div>
+      </div>
+  </div>
+
+  <div class="collection-grid">
+    <h1 class="collection-name">
+        Monitors
+    </h1>
+    <div class="grid grid-pad">
+      <div class="row">
+        <div *ngFor="let monitor of monitors" class="col-sm-4">
+            <mat-card class="module monitor">
+                <h4>{{monitor.name}}</h4>
+            </mat-card>
+        </div>
+        <div class="col-sm-4">
+            <mat-card role="button" (click)="addMonitor()" class="module monitor call-to-action">
+                <h4>Add one!</h4>
+            </mat-card>
+        </div>
+      </div>
     </div>
-    <div *ngFor="let bot of bots" class="col-sm-4">
-        <mat-card class="module bot">
-            <h4>{{bot.name}}</h4>
-        </mat-card>
+  </div>
+
+  <div class="collection-grid">
+    <h1 class="collection-name">
+        APIs
+    </h1>
+    <div class="grid grid-pad">
+      <div class="row">
+        <div *ngFor="let api of apis" class="col-sm-4">
+            <mat-card class="module api">
+                <h4>{{api.name}}</h4>
+            </mat-card>
+        </div>
+        <div class="col-sm-4">
+            <mat-card role="button" (click)="addAPI()" class="module api call-to-action">
+                <h4>Add one!</h4>
+            </mat-card>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
