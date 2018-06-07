@@ -5,3 +5,10 @@
 .app-content {
     overflow: hidden;
 }
+.program-name .program-title {
+  vertical-align: middle;
+}
+
+.program-name .back-arrow {
+    vertical-align: middle;
+}
