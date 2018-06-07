@@ -21,12 +21,11 @@ import { AlertModule } from 'ng2-bootstrap';
 
 import { AppComponent } from './app.component';
 import { DashboardComponent } from './dashboard.component';
-import { BotDetailComponent } from './bot-detail.component';
-import { AddProgramsComponent } from './add-programs.component';
+
 import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
 import { AddServicesComponent } from './add-services.component';
-import { AddBotComponent } from './add-bot.component';
+
 import { ServicesComponent } from './services.component';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -40,11 +39,8 @@ import 'hammerjs';
     declarations: [
         AppComponent,
         DashboardComponent,
-        BotDetailComponent,
         ProgramsComponent,
         ProgramDetailComponent,
-        AddProgramsComponent,
-        AddBotComponent,
         AddServicesComponent,
         ServicesComponent,
         LoginFormComponent,

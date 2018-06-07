@@ -8,3 +8,10 @@
                             , user_id
                             , session_start_time
                             }).
+
+-record(user_program_entry, { id
+                            , user_id
+                            , program_name
+                            , program_type
+                            , program_content
+                            }).

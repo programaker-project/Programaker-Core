@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 
 @Component({
     // moduleId: module.id,
-    selector: 'my-services',
+    selector: 'app-my-services',
     templateUrl: './services.component.html',
     providers: [ServiceService]
 })

@@ -5,7 +5,7 @@ import { Session } from './session';
 import { Subscription } from 'rxjs';
 
 @Component({
-    selector: 'my-app',
+    selector: 'app-my-app',
     templateUrl: './app.component.html',
     styleUrls: [
         'app.component.css'

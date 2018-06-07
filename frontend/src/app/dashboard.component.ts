@@ -1,32 +1,32 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { Bot } from './bot';
-import { BotService } from './bot.service';
+import { ProgramMetadata } from './program';
+import { ProgramService } from './program.service';
 
 import { Session } from './session';
 import { SessionService } from './session.service';
 
 @Component({
     // moduleId: module.id,
-    selector: 'my-dashboard',
+    selector: 'app-my-dashboard',
     templateUrl: './dashboard.component.html',
-    providers: [BotService, SessionService],
+    providers: [ProgramService, SessionService],
     styleUrls: [
       'dashboard.component.css'
   ],
 })
 
 export class DashboardComponent {
-    bots: Bot[] = [];
+    programs: ProgramMetadata[] = [];
     session: Session = null;
 
     constructor(
-        private botService: BotService,
+        private programService: ProgramService,
         private sessionService: SessionService,
         private router: Router,
     ) {
-        this.botService = botService;
+        this.programService = programService;
         this.sessionService = sessionService;
         this.router = router;
     }
@@ -38,14 +38,18 @@ export class DashboardComponent {
                 if (!session.active) {
                     this.router.navigate(['/login']);
                 } else {
-                    this.botService.getBots()
-                        .then(bots => this.bots = bots.slice(0, 4));
+                    this.programService.getPrograms()
+                        .then(programs => this.programs = programs);
                 }
             })
     }
 
 
-    addBot(): void {
-        this.router.navigate(['/bots/add']);
+    addProgram(): void {
+        this.programService.createProgram().then(program => {
+            this.sessionService.getSession().then(session =>
+                this.router.navigate([ '/users/' + session.username
+                                     + '/programs/' + program.id]));
+        });
     }
 }

@@ -4,6 +4,7 @@
 -export([ register_user/1
         , login_user/1
         , is_valid_token/1
+        , create_program/1
         ]).
 
 %% Definitions
@@ -46,8 +47,24 @@ is_valid_token(Token) when is_binary(Token) ->
             false
     end.
 
+create_program(Username) ->
+    ProgramName = generate_program_name(),
+    case automate_storage:create_program(Username, ProgramName) of
+        { ok, ProgramId } ->
+            { ok, { ProgramId
+                  , ProgramName
+                  , generate_url_for_program_name(Username, ProgramName) } }
+    end.
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
 generate_url_from_userid(UserId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s", [UserId]))).
+
+%% *TODO* generate more interesting names.
+generate_program_name() ->
+    binary:list_to_bin(uuid:to_string(uuid:uuid4())).
+
+generate_url_for_program_name(Username, ProgramName) ->
+    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/programs/~s", [Username, ProgramName]))).

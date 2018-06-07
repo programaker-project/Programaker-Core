@@ -1,13 +1,12 @@
-export class Program {
-    id: number;
+export class ProgramMetadata {
+    id: string;
     name: string;
+    link: string;
 }
 
-export class ProgramExample {
-    id: number;
-    text: string;
-}
+type ProgramType = 'scratch_program';
 
-export class UnpersistedProgramExample extends ProgramExample {
-    failed: boolean;
+export class ProgramContent extends ProgramMetadata {
+    program_type: ProgramType;
+    program_content: any;
 }

@@ -4,9 +4,11 @@ import { Session } from './session';
 import 'rxjs/add/operator/toPromise';
 import * as API from './api-config';
 import { Observable } from 'rxjs/Observable';
+import { ApiRoot } from './api-config';
 
 @Injectable()
 export class SessionService {
+    static EstablishedSession: Session = undefined;
     checkSessionUrl = API.ApiRoot + '/sessions/check';
     loginUrl = API.ApiRoot + '/sessions/login';
     registerUrl = API.ApiRoot + '/sessions/register';
@@ -29,19 +31,30 @@ export class SessionService {
         return token;
     }
 
+    async getUserApiRoot(): Promise<string> {
+        // tslint:disable-next-line:no-debugger
+        let session = SessionService.EstablishedSession;
+        if (session === undefined) {
+            session = await this.getSession();
+        }
+
+        return API.ApiRoot + '/users/' + session.username;
+    }
+
+
     getAuthHeader(): HttpHeaders {
-      const headers = new HttpHeaders();
+        const headers = new HttpHeaders();
 
-      const token = this.getToken();
-      if (token !== null) {
-         return headers.append('authorization', token);
-      }
+        const token = this.getToken();
+        if (token !== null) {
+            return headers.append('authorization', token);
+        }
 
-      return headers;
+        return headers;
     }
 
     addJsonContentType(headers: HttpHeaders): HttpHeaders {
-      return headers.append('content-type', 'application/json');
+        return headers.append('content-type', 'application/json');
     }
 
     getSession(): Promise<Session> {
@@ -53,7 +66,9 @@ export class SessionService {
               .get(this.checkSessionUrl, {headers: this.getAuthHeader()})
               .map((response) => {
                   const check = response as any;
-                  const session = new Session(check.success, check.username);
+                  const session = new Session(check.success,
+                                              check.username);
+                  SessionService.EstablishedSession = session;
 
                   return session;
               })

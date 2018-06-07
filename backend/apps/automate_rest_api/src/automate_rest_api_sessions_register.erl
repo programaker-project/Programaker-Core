@@ -24,7 +24,6 @@ init(Req, _Opts) ->
                        , registration_data=undefined}}.
 
 resource_exists(Req, State) ->
-    io:format("Exists!~n"),
     {false, Req, State}.
 
 %% -spec is_authorized(cowboy_req:req(),_) -> {'true' | {'false', binary()}, cowboy_req:req(),_}.
@@ -34,14 +33,8 @@ resource_exists(Req, State) ->
 %% CORS
 options(Req, State) ->
     io:format("Added CORS: ok~n", []),
-    Req1 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"GET, POST, OPTIONS">>, Req),
-    Req2 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"*">>, Req1),
-    Req3 = cowboy_req:set_resp_header(<<"Access-Control-Max-Age">>, <<"3600">>, Req2),
-    Req4 = cowboy_req:set_resp_header(<<"Access-Control-Allow-Headers">>,
-                                      <<"authorization, content-type, xsrf-token">>, Req3),
-    Req5 = cowboy_req:set_resp_header(<<"Access-Control-Expose-Headers">>,
-                                      <<"xsrf-token">>, Req4),
-    {ok, Req5, State}.
+    Res = automate_rest_api_cors:set_headers(Req),
+    {ok, Res, State}.
 
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->

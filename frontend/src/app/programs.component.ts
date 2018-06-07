@@ -1,20 +1,20 @@
 import { Component } from '@angular/core';
 import { OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { Program } from './program';
+import { ProgramMetadata } from './program';
 // import { ProgramDetailComponent } from './program-detail.component';
 import { ProgramService } from './program.service';
 
 @Component({
-    selector: 'my-programs',
+    selector: 'app-my-programs',
     templateUrl: './programs.component.html',
     styleUrls: ['./app.component.css'],
     providers: [ProgramService]
 })
 
 export class ProgramsComponent implements OnInit {
-    programs: Program[];
-    selectedProgram: Program;
+    programs: ProgramMetadata[];
+    selectedProgram: ProgramMetadata;
 
     constructor(
         private programService: ProgramService,
@@ -24,7 +24,7 @@ export class ProgramsComponent implements OnInit {
         this.router = router;
     }
 
-    getPrograms() : Promise<Program[]> {
+    getPrograms() : Promise<ProgramMetadata[]> {
         return this.programService.getPrograms().then((programs) => this.programs = programs);
     }
 
@@ -40,7 +40,7 @@ export class ProgramsComponent implements OnInit {
         this.router.navigate(['/programs/' + programId]);
     }
 
-    onSelect(program: Program): void {
+    onSelect(program: ProgramMetadata): void {
         this.selectedProgram = program;
     }
 
