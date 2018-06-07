@@ -5,6 +5,7 @@
         , login_user/2
         , get_session_username/1
         , create_program/2
+        , get_program/2
         ]).
 -export([start_link/0]).
 
@@ -90,6 +91,9 @@ create_program(Username, ProgramName) ->
     end.
 
 
+get_program(Username, ProgramName) ->
+    retrieve_program(Username, ProgramName).
+
 start_link() ->
     Nodes = [node()],
     mnesia:stop(),
@@ -151,7 +155,6 @@ get_userid_and_password_from_username(Username) ->
                                       , password='$3'
                                       , email='_'
                                       },
-    %% Check that neither the id, username or email matches another
     Guard = {'==', '$2', Username},
     ResultColumn = '$1',
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
@@ -181,6 +184,55 @@ store_new_program(UserProgram) ->
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
+
+retrieve_program(Username, ProgramName) ->
+    Transaction = fun() ->
+                          %% Find userid with that name
+                          UserMatchHead = #registered_user_entry{ id='$1'
+                                                                , username='$2'
+                                                                , password='_'
+                                                                , email='_'
+                                                                },
+                          UserGuard = {'==', '$2', Username},
+                          UserResultColumn = '$1',
+                          UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
+
+                          case mnesia:select(?REGISTERED_USERS_TABLE, UserMatcher) of
+                              [] ->
+                                  [];
+                              [UserId] ->
+
+                                  %% Find program with userId and name
+                                  ProgramMatchHead = #user_program_entry{ id='$1'
+                                                                        , user_id='$2'
+                                                                        , program_name='$3'
+                                                                        , program_type='_'
+                                                                        , program_content='_'
+                                                                        },
+                                  ProgramGuard = {'andthen'
+                                                 , {'==', '$2', UserId}
+                                                 , {'==', '$3', ProgramName}},
+                                  ProgramResultColumn = '$1',
+                                  ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultColumn]}],
+
+                                  case mnesia:select(?USER_PROGRAMS_TABLE, ProgramMatcher) of
+                                      [] ->
+                                          [];
+
+                                      [ProgramId] ->
+                                          mnesia:read(?USER_PROGRAMS_TABLE, ProgramId)
+                                  end
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [Result] } ->
+            {ok, Result};
+        { atomic, [] } ->
+            {error, not_found};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 
 %%====================================================================
 %% Startup functions

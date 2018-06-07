@@ -5,10 +5,12 @@
         , login_user/1
         , is_valid_token/1
         , create_program/1
+        , get_program/2
         ]).
 
 %% Definitions
 -include("./records.hrl").
+-include("../../automate_storage/src/records.hrl").
 
 %%====================================================================
 %% API functions
@@ -56,6 +58,14 @@ create_program(Username) ->
                   , generate_url_for_program_name(Username, ProgramName) } }
     end.
 
+get_program(Username, ProgramName) ->
+    case automate_storage:get_program(Username, ProgramName) of
+        {ok, ProgramData} ->
+            {ok, program_entry_to_program(ProgramData)};
+        X ->
+            X
+    end.
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -68,3 +78,17 @@ generate_program_name() ->
 
 generate_url_for_program_name(Username, ProgramName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/programs/~s", [Username, ProgramName]))).
+
+
+program_entry_to_program(#user_program_entry{ id=Id
+                                            , user_id=UserId
+                                            , program_name=ProgramName
+                                            , program_type=ProgramType
+                                            , program_content=ProgramContent
+                                            }) ->
+    #user_program{ id=Id
+                 , user_id=UserId
+                 , program_name=ProgramName
+                 , program_type=ProgramType
+                 , program_content=ProgramContent
+                 }.

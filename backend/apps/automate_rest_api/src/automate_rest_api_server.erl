@@ -22,7 +22,7 @@ start_link() ->
                         , {"/api/v0/users/:user_id", automate_rest_api_users_specific, []}
 
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
-                        , {"/api/v0/users/:user_id/programs/:bot_id", automate_rest_api_programs_specific, []}
+                        , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
                         ]}
                  ]),
 

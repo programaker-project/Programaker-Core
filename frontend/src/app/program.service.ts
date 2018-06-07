@@ -42,7 +42,7 @@ export class ProgramService {
 
     getProgram(user_id: string, program_id: string): Promise<ProgramMetadata> {
         return this.getRetrieveProgramUrl(user_id, program_id).then(url =>
-            this.http.get(url)
+            this.http.get(url, {headers: this.sessionService.getAuthHeader()})
                 .map(response => response as ProgramContent)
                 .toPromise());
     }

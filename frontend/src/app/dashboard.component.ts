@@ -49,7 +49,7 @@ export class DashboardComponent {
         this.programService.createProgram().then(program => {
             this.sessionService.getSession().then(session =>
                 this.router.navigate([ '/users/' + session.username
-                                     + '/programs/' + program.id]));
+                                     + '/programs/' + program.name]));
         });
     }
 }

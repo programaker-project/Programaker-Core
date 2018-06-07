@@ -13,3 +13,10 @@
         { password
         , username
         }).
+
+-record(user_program, { id
+                      , user_id
+                      , program_name
+                      , program_type
+                      , program_content
+                      }).
