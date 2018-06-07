@@ -13,8 +13,8 @@ import { SessionService } from './session.service';
     templateUrl: './dashboard.component.html',
     providers: [ProgramService, SessionService],
     styleUrls: [
-      'dashboard.component.css'
-  ],
+        'dashboard.component.css'
+    ],
 })
 
 export class DashboardComponent {

@@ -1,9 +1,11 @@
 <div class="program-pad">
-    <h1 class="program-name">
-        <a href (click)="goBack()"><mat-icon>arrow_back_ios</mat-icon></a>
-        <span *ngIf="program !== undefined">{{program.name}}</span>
-        <span *ngIf="program === undefined">Loading program...</span>
-    </h1>
+    <div id="program-header">
+        <h1 class="program-name">
+            <a href (click)="goBack()"><mat-icon>arrow_back_ios</mat-icon></a>
+            <span *ngIf="program !== undefined">{{program.name}}</span>
+            <span *ngIf="program === undefined">Loading program...</span>
+        </h1>
+    </div>
 
-
+    <div id="workspace"></div>
 </div>

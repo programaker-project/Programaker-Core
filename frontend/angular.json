@@ -30,7 +30,6 @@
               "src/app/blocks/blocks.js",
               "src/app/blocks/blocks_vertical.js",
               "src/app/blocks/msg_en.js",
-              "src/app/js/workspace.js",
               "src/app/js/initial.js",
               "src/app/js/custom_blocks.js",
               "src/app/js/custom_toolbox.js"

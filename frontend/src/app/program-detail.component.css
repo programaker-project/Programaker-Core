@@ -1,0 +1,7 @@
+.program-pad #workspace {
+    width: 100%;
+}
+
+.app-content {
+    overflow: hidden;
+}
