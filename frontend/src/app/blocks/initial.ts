@@ -1,5 +1,7 @@
-function load_initial(workspace) {
-    var initialXML = ('<xml xmlns="http://www.w3.org/1999/xhtml">' +
+/// <reference path="./blockly-core.d.ts" />
+
+function load_initial(workspace: Blockly.Workspace) {
+    const initialXML = ('<xml xmlns="http://www.w3.org/1999/xhtml">' +
                         '<variables></variables>' +
                         '<block type="chat_whenreceivecommand" id="0(/MVL`$~*P5(O%5s8#3" x="153" y="94">' +
                           '<value name="VALUE">' +
@@ -62,6 +64,8 @@ function load_initial(workspace) {
                         '</block>' +
                       '</xml>');
 
-    var xml = Blockly.Xml.textToDom(initialXML);
+    const xml = Blockly.Xml.textToDom(initialXML);
     Blockly.Xml.domToWorkspace(xml, workspace);
 }
+
+export { load_initial };

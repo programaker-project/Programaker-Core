@@ -4,6 +4,7 @@ import { Location } from '@angular/common';
 import { ProgramMetadata, ProgramContent } from './program';
 import { ProgramService } from './program.service';
 import 'rxjs/add/operator/switchMap';
+import { load_initial } from './blocks/initial';
 
 @Component({
     selector: 'app-my-program-detail',
@@ -44,7 +45,7 @@ export class ProgramDetailComponent implements OnInit {
 
     prepareWorkspace() {
         // Avoid initializing it twice
-        if (this.workspace !== undefined){
+        if (this.workspace !== undefined) {
             return;
         }
 
@@ -53,7 +54,7 @@ export class ProgramDetailComponent implements OnInit {
         const side = 'bottom';
         const soundsEnabled = false;
 
-        this.workspace = (Blockly).inject('workspace', {
+        this.workspace = Blockly.inject('workspace', {
             comments: false,
             disable: false,
             collapse: true,
@@ -83,7 +84,7 @@ export class ProgramDetailComponent implements OnInit {
         window.onresize = () => this.calculate_size(workspace);
         this.calculate_size(workspace);
 
-        Function('load_initial(this.workspace);')();
+        load_initial(this.workspace);
     }
 
     calculate_size(workspace: HTMLElement) {
