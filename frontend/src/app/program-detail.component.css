@@ -6,7 +6,11 @@
     overflow: hidden;
 }
 .program-name .program-title {
-  vertical-align: middle;
+    vertical-align: middle;
+}
+
+.program-name > a {
+    padding-left: 1ex;
 }
 
 .program-name .back-arrow {

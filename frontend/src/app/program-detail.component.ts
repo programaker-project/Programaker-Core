@@ -49,6 +49,10 @@ export class ProgramDetailComponent implements OnInit {
             return;
         }
 
+        const workspaceElement = document.getElementById('workspace')
+        window.onresize = () => this.calculate_size(workspaceElement);
+        this.calculate_size(workspaceElement);
+
         const rtl = false;
         const toolbox = null;
         const side = 'bottom';
@@ -79,12 +83,6 @@ export class ProgramDetailComponent implements OnInit {
                 dragShadowOpacity: 0.6
             }
         });
-
-        const workspace = document.getElementById('workspace')
-        window.onresize = () => this.calculate_size(workspace);
-        this.calculate_size(workspace);
-
-        load_initial(this.workspace);
     }
 
     calculate_size(workspace: HTMLElement) {
@@ -109,7 +107,6 @@ export class ProgramDetailComponent implements OnInit {
 
         return { x: xPosition, y: yPosition };
     }
-
 
     goBack(): boolean {
         history.go(-1);
