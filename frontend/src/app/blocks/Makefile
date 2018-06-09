@@ -1,4 +1,4 @@
-.PHONY: all build javascript media
+.PHONY: all build javascript media clean-and-update
 
 all: build
 
@@ -7,6 +7,11 @@ build: javascript  media
 javascript: blockly_horizontal.js blockly_vertical.js blocks_horizontal.js blocks_vertical.js msg_en.js blocks.js
 
 media: media/sprites.png
+
+# Update scratch version removing and external & build files
+clean-and-update:
+	cd scratch-blocks && git clean -fdx .
+	cd scratch-blocks && git pull
 
 # Files to be copied
 blocks_horizontal.js: scratch-blocks/blocks_compressed_horizontal.js
