@@ -10,22 +10,46 @@ media: media/sprites.png
 
 # Files to be copied
 blocks_horizontal.js: scratch-blocks/blocks_compressed_horizontal.js
-	cp -v $< $@
+	if [ "`wc -l $< | cut -d\  -f1`" -gt 10 ]; then \
+	    cp -v $< $@;                            	\
+	else                                        	\
+	    echo "Error in $<"; exit 1;                	\
+	fi
 
 blockly_horizontal.js: scratch-blocks/blockly_compressed_horizontal.js
-	cp -v $< $@
+	if [ "`wc -l $< | cut -d\  -f1`" -gt 10 ]; then \
+	    cp -v $< $@;                            	\
+	else                                        	\
+	    echo "Error in $<"; exit 1;                	\
+	fi
 
 blocks_vertical.js: scratch-blocks/blocks_compressed_vertical.js
-	cp -v $< $@
+	if [ "`wc -l $< | cut -d\  -f1`" -gt 10 ]; then \
+	    cp -v $< $@;                            	\
+	else                                        	\
+	    echo "Error in $<"; exit 1;                	\
+	fi
 
 blockly_vertical.js: scratch-blocks/blockly_compressed_vertical.js
-	cp -v $< $@
+	if [ "`wc -l $< | cut -d\  -f1`" -gt 10 ]; then \
+	    cp -v $< $@;                            	\
+	else                                        	\
+	    echo "Error in $<"; exit 1;                	\
+	fi
 
 blocks.js: scratch-blocks/blocks_compressed.js
-	cp -v $< $@
+	if [ "`wc -l $< | cut -d\  -f1`" -gt 10 ]; then \
+	    cp -v $< $@;                            	\
+	else                                        	\
+	    echo "Error in $<"; exit 1;                	\
+	fi
 
 msg_en.js: scratch-blocks/msg/js/en.js
-	cp -v $< $@
+	if [ "`wc -l $< | cut -d\  -f1`" -gt 10 ]; then \
+	    cp -v $< $@;                            	\
+	else                                        	\
+	    echo "Error in $<"; exit 1;                	\
+	fi
 
 media/sprites.png: scratch-blocks/package.json
 	cp -Rv scratch-blocks/media/ media/
