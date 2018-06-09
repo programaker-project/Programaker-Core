@@ -4,7 +4,7 @@ export class ProgramMetadata {
     link: string;
 }
 
-type ProgramType = 'scratch_program';
+export type ProgramType = 'scratch_program';
 
 export class ProgramContent extends ProgramMetadata {
     program_type: ProgramType;

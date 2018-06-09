@@ -28,7 +28,6 @@ export class AppComponent {
         this.loggedIn = false;
 
         this.session.getSession().then((newSession: Session) => {
-            console.log('Session:', newSession);
             if (newSession !== null) {
                 this.loggedIn = newSession.active;
                 if (newSession.active) {

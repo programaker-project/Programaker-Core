@@ -5,7 +5,8 @@ import { ProgramMetadata, ProgramContent } from './program';
 import { ProgramService } from './program.service';
 import 'rxjs/add/operator/switchMap';
 import { load_initial } from './blocks/initial';
-
+import { ContentType } from './content-type';
+/// <reference path="./blocks/blockly-core.d.ts" />
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
@@ -18,7 +19,8 @@ import { load_initial } from './blocks/initial';
 export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
     currentFillingInput: string;
-    workspace: any;
+    workspace: Blockly.Workspace;
+    programUserId: string;
 
     constructor (
       private programService: ProgramService,
@@ -33,6 +35,7 @@ export class ProgramDetailComponent implements OnInit {
     ngOnInit(): void {
         this.route.params
             .switchMap((params: Params) => {
+                this.programUserId = params['user_id'];
                 return this.programService.getProgram(params['user_id'], params['program_id']);
             })
             .subscribe(program => {
@@ -111,5 +114,16 @@ export class ProgramDetailComponent implements OnInit {
     goBack(): boolean {
         history.go(-1);
         return false;
+    }
+
+    sendProgram() {
+        const xml = Blockly.Xml.workspaceToDom(this.workspace);
+        const content = Blockly.Xml.domToPrettyText(xml);
+
+        this.programService.updateProgram(this.programUserId,
+                                          this.program,
+                                          'scratch_program',
+                                          content,
+                                          ContentType.Xml);
     }
 }

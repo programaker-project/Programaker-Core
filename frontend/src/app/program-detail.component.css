@@ -9,6 +9,11 @@
     vertical-align: middle;
 }
 
+.program-name {
+    display: inline;
+    padding-right: 2em;
+}
+
 .program-name > a {
     padding-left: 1ex;
 }

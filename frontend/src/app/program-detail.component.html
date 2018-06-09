@@ -5,6 +5,10 @@
             <span class="program-title" *ngIf="program !== undefined">{{program.name}}</span>
             <span class="program-title" *ngIf="program === undefined">Loading program...</span>
         </h1>
+        <button color="primary" (click)="sendProgram()" mat-button>
+            <mat-icon class="action-icon">play_arrow</mat-icon>
+            Start
+        </button>
     </div>
 
     <div id="workspace"></div>

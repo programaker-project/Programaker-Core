@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { ProgramMetadata, ProgramContent } from './program';
+import { ProgramMetadata, ProgramContent, ProgramType } from './program';
 import * as API from './api-config';
 import 'rxjs/add/operator/toPromise';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
+import { ContentType } from './content-type';
 
 @Injectable()
 export class ProgramService {
@@ -29,15 +30,20 @@ export class ProgramService {
     }
 
     async getRetrieveProgramUrl(_user_id: string, program_id: string) {
-        const userApiRoot = await this.sessionService.getUserApiRoot();
-        return userApiRoot + '/programs/' + program_id;
+      const userApiRoot = await this.sessionService.getUserApiRoot();
+      return userApiRoot + '/programs/' + program_id;
+    }
+
+    async getUpdateProgramUrl(programUserName: string, program_id: string) {
+      const userApiRoot = await this.sessionService.getApiRootForUser(programUserName);
+      return userApiRoot + '/programs/' + program_id;
     }
 
     getPrograms(): Promise<ProgramMetadata[]> {
-      return this.getListProgramsUrl().then(url =>
-        this.http.get(url, {headers: this.sessionService.getAuthHeader()})
-                .map(response => response as ProgramMetadata[])
-                .toPromise());
+        return this.getListProgramsUrl().then(url =>
+          this.http.get(url, {headers: this.sessionService.getAuthHeader()})
+                  .map(response => response as ProgramMetadata[])
+                  .toPromise());
     }
 
     getProgram(user_id: string, program_id: string): Promise<ProgramContent> {
@@ -57,5 +63,24 @@ export class ProgramService {
                     return response as ProgramMetadata;
                 })
                 .toPromise());
+    }
+
+    updateProgram(username: string,
+                  program: ProgramMetadata,
+                  programType: ProgramType,
+                  content: string,
+                  contentType: ContentType): Promise<boolean> {
+        return this.getUpdateProgramUrl(username, program.id).then(url =>
+            this.http
+                .put(url, content,
+                     {headers: this.sessionService.addContentType(
+                       this.sessionService.getAuthHeader(),
+                       contentType)})
+                .map(response => {
+                    return true;
+                })
+                .toPromise()
+                .catch(_ => false)
+        );
     }
 }

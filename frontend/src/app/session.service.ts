@@ -5,6 +5,7 @@ import 'rxjs/add/operator/toPromise';
 import * as API from './api-config';
 import { Observable } from 'rxjs/Observable';
 import { ApiRoot } from './api-config';
+import { ContentType } from './content-type';
 
 @Injectable()
 export class SessionService {
@@ -38,9 +39,12 @@ export class SessionService {
             session = await this.getSession();
         }
 
-        return API.ApiRoot + '/users/' + session.username;
+        return this.getApiRootForUser(session.username);
     }
 
+    getApiRootForUser(username: string): string {
+        return API.ApiRoot + '/users/' + username;
+    }
 
     getAuthHeader(): HttpHeaders {
         const headers = new HttpHeaders();
@@ -54,7 +58,11 @@ export class SessionService {
     }
 
     addJsonContentType(headers: HttpHeaders): HttpHeaders {
-        return headers.append('content-type', 'application/json');
+        return this.addContentType(headers, ContentType.Json);
+    }
+
+    addContentType(headers: HttpHeaders, contentType: ContentType): HttpHeaders {
+        return headers.append('content-type', contentType);
     }
 
     getSession(): Promise<Session> {
