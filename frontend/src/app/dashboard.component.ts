@@ -47,9 +47,13 @@ export class DashboardComponent {
 
     addProgram(): void {
         this.programService.createProgram().then(program => {
-            this.sessionService.getSession().then(session =>
-                this.router.navigate([ '/users/' + session.username
-                                     + '/programs/' + program.name]));
+            this.openProgram(program);
         });
+    }
+
+    openProgram(program: ProgramMetadata): void {
+        this.sessionService.getSession().then(session =>
+            this.router.navigate([ '/users/' + session.username
+                                 + '/programs/' + program.name]));
     }
 }

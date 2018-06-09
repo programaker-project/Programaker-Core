@@ -6,6 +6,7 @@
         , is_valid_token/1
         , create_program/1
         , get_program/2
+        , lists_programs_from_username/1
         ]).
 
 %% Definitions
@@ -62,6 +63,19 @@ get_program(Username, ProgramName) ->
     case automate_storage:get_program(Username, ProgramName) of
         {ok, ProgramData} ->
             {ok, program_entry_to_program(ProgramData)};
+        X ->
+            X
+    end.
+
+-spec lists_programs_from_username(string()) -> {'ok', [ #program_metadata{} ] }.
+lists_programs_from_username(Username) ->
+    case automate_storage:lists_programs_from_username(Username) of
+        {ok, Programs} ->
+            {ok, [#program_metadata{ id=ProgramId
+                                   , name=ProgramName
+                                   , link=generate_url_for_program_name(Username, ProgramName)
+                                   }
+                  || {ProgramId, ProgramName} <- Programs]};
         X ->
             X
     end.

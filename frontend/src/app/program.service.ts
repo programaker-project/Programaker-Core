@@ -34,8 +34,8 @@ export class ProgramService {
     }
 
     getPrograms(): Promise<ProgramMetadata[]> {
-      return this.getCreateProgramsUrl().then(url =>
-        this.http.get(url)
+      return this.getListProgramsUrl().then(url =>
+        this.http.get(url, {headers: this.sessionService.getAuthHeader()})
                 .map(response => response as ProgramMetadata[])
                 .toPromise());
     }

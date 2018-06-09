@@ -6,7 +6,7 @@
       <div class="grid grid-pad">
           <div class="row">
             <div *ngFor="let program of programs" class="col-sm-4">
-                <mat-card class="module program">
+                <mat-card role="button" (click)="openProgram(program)" class="module program">
                     <h4>{{program.name}}</h4>
                 </mat-card>
             </div>

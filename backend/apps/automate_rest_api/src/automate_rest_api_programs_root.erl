@@ -7,10 +7,14 @@
 -export([ allowed_methods/2
         , options/2
         , is_authorized/2
+        , content_types_provided/2
         , content_types_accepted/2
+        , resource_exists/2
         ]).
--export([accept_json_create_program/2]).
--export([resource_exists/2]).
+
+-export([ accept_json_create_program/2
+        , to_json/2
+        ]).
 
 -include("./records.hrl").
 
@@ -23,7 +27,12 @@ init(Req, _Opts) ->
     , #create_program_seq{ username=UserId }}.
 
 resource_exists(Req, State) ->
-    {false, Req, State}.
+    case cowboy_req:method(Req) of
+        <<"POST">> ->
+            { false, Req, State };
+        _ ->
+            { true, Req, State}
+    end.
 
 %% CORS
 options(Req, State) ->
@@ -84,3 +93,41 @@ accept_json_create_program(Req, State) ->
             { {true, ProgramUrl }, Res3, State }
     end.
 
+%% GET handler
+content_types_provided(Req, State) ->
+    io:fwrite("Control types accepted~n", []),
+    {[{{<<"application">>, <<"json">>, []}, to_json}],
+     Req, State}.
+
+-spec to_json(cowboy_req:req(), #create_program_seq{})
+                                   -> {'true',cowboy_req:req(),_}.
+to_json(Req, State) ->
+    #create_program_seq{username=Username} = State,
+    case automate_rest_api_backend:lists_programs_from_username(Username) of
+        { ok, Programs } ->
+
+            Output = jiffy:encode(encode_program_list(Programs)),
+            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
+            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
+
+            { Output, Res2, State }
+    end.
+
+
+encode_program_list(Programs) ->
+    encode_program_list(Programs, []).
+
+
+encode_program_list([], Acc) ->
+    lists:reverse(Acc);
+
+encode_program_list([H | T], Acc) ->
+    #program_metadata{ id=Id
+                     , name=Name
+                     , link=Link
+                     } = H,
+    AsDictionary = #{ <<"id">> => Id
+                    , <<"name">> => Name
+                    , <<"link">> =>  Link
+                    },
+    encode_program_list(T, [AsDictionary | Acc]).

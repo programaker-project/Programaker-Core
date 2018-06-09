@@ -20,3 +20,8 @@
                       , program_type
                       , program_content
                       }).
+
+-record(program_metadata, { id
+                          , name
+                          , link
+                          }).
