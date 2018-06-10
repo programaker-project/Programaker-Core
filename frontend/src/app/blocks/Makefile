@@ -4,7 +4,7 @@ all: build
 
 build: javascript  media
 
-javascript: blockly_horizontal.js blockly_vertical.js blocks_horizontal.js blocks_vertical.js msg_en.js blocks.js
+javascript: blockly_horizontal.js blockly_vertical.js blocks_horizontal.js blocks_vertical.js msg_en.js messages.js blocks.js
 
 media: media/sprites.png
 
@@ -58,6 +58,9 @@ msg_en.js: scratch-blocks/msg/js/en.js
 
 media/sprites.png: scratch-blocks/package.json
 	cp -Rv scratch-blocks/media/ media/
+
+messages.js: scratch-blocks/msg/messages.js
+	cp -Rv $< $@
 
 # Intermediate files
 scratch-blocks/msg/js/en.js: scratch-blocks/blocks_compressed.js

@@ -27,6 +27,7 @@ goog.require('Blockly.Blocks');
 /**
  * @fileoverview Provide a default toolbox XML.
  */
+Blockly.Blocks.factoryDefaultToolbox = Blockly.Blocks.defaultToolbox;
 
 Blockly.Blocks.defaultToolbox = '<xml id="toolbox-categories" style="display: none">'+
   '<category name="Chat" colour="#5555CC" secondaryColour="#333377">'+

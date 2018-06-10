@@ -27,9 +27,10 @@
             ],
             "scripts": [
               "src/app/blocks/blockly_vertical.js",
+              "src/app/blocks/messages.js",
+              "src/app/blocks/msg_en.js",
               "src/app/blocks/blocks.js",
               "src/app/blocks/blocks_vertical.js",
-              "src/app/blocks/msg_en.js",
               "src/app/js/custom_blocks.js",
               "src/app/js/custom_toolbox.js"
             ]
