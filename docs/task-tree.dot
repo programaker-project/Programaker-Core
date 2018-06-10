@@ -7,6 +7,9 @@ digraph {
     first_deploy[label="First deploy", shape=diamond, style=filled, color=red, fontcolor=white];
 
     web_monitor_bot[label="Web monitor bot", shape=diamond];
+    first_demo[label="First demo", shape=diamond, style=filled, color=orange];
+    first_public_demo[label="First public demo", shape=diamond, style=filled, color=orange];
+
     generic_rest_chatbot[label="Generic REST chatbot", shape=diamond];
     text_based_program_bot[label="Text based bot program", shape=diamond];
 
@@ -18,7 +21,7 @@ digraph {
     bot_renaming[label="Bot renaming"];
     unit_tested_api[label="Unit tested API"];
 
-    program_variables[label="Program variables"];
+    program_variables[label="Program variables", color=green, fontcolor=green];
     stored_variables[label="Stored variables"];
     function_definition[label="Function definition"];
 
@@ -31,6 +34,10 @@ digraph {
 
     text_program_parser[label="Text program parser\n[Hard!]"];
     generic_program_description[label="Generic program description"];
+
+    high_availability[label="High availability"];
+
+    other_chat_platform_support[label="Other chat platform support"];
 
     // Dependencies
     program_execution -> program_variables;
@@ -57,6 +64,15 @@ digraph {
 
     web_monitor_bot -> telegram_bot;
     web_monitor_bot -> web_monitor_execution;
+    first_demo -> web_monitor_bot;
+    // First demo has to work for sure, so unit-testing is *required* at this point
+    first_demo -> unit_tested_api;
+    // It also requires a working deployment
+    first_demo -> first_deploy;
+
+    first_public_demo -> first_demo;
+    first_public_demo -> high_availability;
+    first_public_demo -> other_chat_platform_support;
 
     generic_rest_execution -> generic_rest_description;
 
