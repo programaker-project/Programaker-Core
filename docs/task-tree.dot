@@ -1,0 +1,72 @@
+digraph {
+    rankdir=LR;
+
+    // Milestones
+    telegram_bot[label="Telegram bot", shape=diamond];
+    // First big (publicly deployed) milestone
+    first_deploy[label="First deploy", shape=diamond, style=filled, color=red, fontcolor=white];
+
+    web_monitor_bot[label="Web monitor bot", shape=diamond];
+    generic_rest_chatbot[label="Generic REST chatbot", shape=diamond];
+    text_based_program_bot[label="Text based bot program", shape=diamond];
+
+    // Tasks
+    program_execution[label="Program execution"];
+    telegram_api_support[label="Telegram API support"];
+    debugging_support[label="Debugging support"];
+
+    bot_renaming[label="Bot renaming"];
+    unit_tested_api[label="Unit tested API"];
+
+    program_variables[label="Program variables"];
+    stored_variables[label="Stored variables"];
+    function_definition[label="Function definition"];
+
+    web_monitor_selector[label="Web monitor selector"];
+    web_monitor_description[label="Web monitor descriptor"];
+    web_monitor_execution[label="Web monitor execution"];
+
+    generic_rest_execution[label="Generic REST execution"];
+    generic_rest_description[label="Generic REST description"];
+
+    text_program_parser[label="Text program parser\n[Hard!]"];
+    generic_program_description[label="Generic program description"];
+
+    // Dependencies
+    program_execution -> program_variables;
+    stored_variables -> program_variables;
+
+    program_execution -> stored_variables;
+    stored_variables -> program_execution;
+
+    // First (internal) milestone
+    telegram_api_support -> program_execution;
+
+    telegram_bot -> program_execution;
+    telegram_bot -> telegram_api_support;
+
+    // No reason to deploy before something is doable 
+    first_deploy -> telegram_bot;
+    first_deploy -> bot_renaming;
+
+    // We should have the tests before the deploy, but we can delay it
+    first_deploy -> unit_tested_api[style=dotted];
+
+    web_monitor_description -> web_monitor_selector;
+    web_monitor_execution -> web_monitor_description;
+
+    web_monitor_bot -> telegram_bot;
+    web_monitor_bot -> web_monitor_execution;
+
+    generic_rest_execution -> generic_rest_description;
+
+    generic_rest_chatbot -> telegram_bot;
+    generic_rest_chatbot -> generic_rest_execution;
+
+    generic_program_description -> program_execution;
+    text_based_program_bot -> telegram_bot;
+    text_based_program_bot -> generic_program_description;
+    text_based_program_bot -> text_program_parser;
+
+    debugging_support -> program_execution;
+}
