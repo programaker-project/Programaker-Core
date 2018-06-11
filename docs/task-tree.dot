@@ -48,6 +48,7 @@ digraph {
 
     // First (internal) milestone
     telegram_api_support -> program_execution;
+    program_execution -> telegram_api_support;
 
     telegram_bot -> program_execution;
     telegram_bot -> telegram_api_support;

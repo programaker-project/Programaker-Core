@@ -1,0 +1,16 @@
+{application, automate_bot_engine, [
+    {description, "Auto-mate bot engine module."},
+    {vsn, "0.0.0"},
+    {registered, []},
+    {mod, { automate_bot_engine_app, [] }},
+    {applications, [ kernel
+                   , stdlib
+                   , automate_storage
+                   , pe4kin
+    ]},
+    {env, [
+    ]},
+    {modules, []},
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+]}.

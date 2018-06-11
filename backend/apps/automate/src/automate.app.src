@@ -5,6 +5,7 @@
     {applications, [ kernel
                    , stdlib
                    , automate_rest_api
+                   , automate_bot_engine
     ]},
     {env, [
     ]},

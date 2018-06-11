@@ -10,6 +10,7 @@ Mnesia.*
 
 # Generated on crash by the VM
 erl_crash.dump
+*.crashdump
 
 # Generated on crash by NPM
 npm-debug.log
