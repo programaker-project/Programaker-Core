@@ -70,9 +70,9 @@ export class ProgramService {
                   programType: ProgramType,
                   content: string,
                   contentType: ContentType): Promise<boolean> {
-        return this.getUpdateProgramUrl(username, program.id).then(url =>
+        return this.getUpdateProgramUrl(username, program.name).then(url =>
             this.http
-                .put(url, content,
+                .put(url, JSON.stringify({type: programType, content: content}),
                      {headers: this.sessionService.addContentType(
                        this.sessionService.getAuthHeader(),
                        contentType)})

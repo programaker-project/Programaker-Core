@@ -7,6 +7,8 @@ import 'rxjs/add/operator/switchMap';
 import { load_initial } from './blocks/initial';
 import { ContentType } from './content-type';
 /// <reference path="./blocks/blockly-core.d.ts" />
+import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
+
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
@@ -118,12 +120,11 @@ export class ProgramDetailComponent implements OnInit {
 
     sendProgram() {
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
-        const content = Blockly.Xml.domToPrettyText(xml);
 
         this.programService.updateProgram(this.programUserId,
                                           this.program,
                                           'scratch_program',
-                                          content,
-                                          ContentType.Xml);
+                                          ScratchProgramSerializer.ToJson(xml),
+                                          ContentType.Json);
     }
 }
