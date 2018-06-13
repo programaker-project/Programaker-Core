@@ -8,8 +8,12 @@
         , options/2
         , is_authorized/2
         , content_types_provided/2
+        , content_types_accepted/2
         ]).
--export([to_json/2]).
+
+-export([ to_json/2
+        , accept_json_program/2
+        ]).
 
 -include("./records.hrl").
 
@@ -19,21 +23,21 @@
 init(Req, _Opts) ->
     UserId = cowboy_req:binding(user_id, Req),
     ProgramName = cowboy_req:binding(program_id, Req),
-    {cowboy_rest, Req
+    Req1 = automate_rest_api_cors:set_headers(Req),
+    {cowboy_rest, Req1
     , #get_program_seq{ username=UserId
                       , program_name=ProgramName
                       }}.
 
 %% CORS
 options(Req, State) ->
-    Req1 = automate_rest_api_cors:set_headers(Req),
-    {ok, Req1, State}.
+    {ok, Req, State}.
 
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
-    {[<<"GET">>, <<"POST">>, <<"OPTIONS">>], Req, State}.
+    io:fwrite("[SPProgram]Asking for methods~n", []),
+    {[<<"GET">>, <<"PUT">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
@@ -84,11 +88,61 @@ program_to_json(#user_program{ id=Id
                              , user_id=UserId
                              , program_name=ProgramName
                              , program_type=ProgramType
-                             , program_content=ProgramContent
+                             , program_parsed=ProgramParsed
+                             , program_orig=ProgramOrig
                              }) ->
     jiffy:encode(#{ <<"id">> => Id
                   , <<"owner">> => UserId
                   , <<"name">> => ProgramName
                   , <<"type">> => ProgramType
-                  , <<"content">> => ProgramContent
+                  , <<"parsed">> => ProgramParsed
+                  , <<"orig">> => ProgramOrig
                   }).
+
+
+%% PUT handler
+content_types_accepted(Req, State) ->
+    io:fwrite("[PUT] User > program > ID~n", []),
+    {[{{<<"application">>, <<"json">>, []}, accept_json_program}],
+     Req, State}.
+
+accept_json_program(Req, State) ->
+    #get_program_seq{program_name=ProgramName, username=Username} = State,
+
+    {ok, Body, Req1} = read_body(Req),
+    Parsed = [jiffy:decode(Body, [return_maps])],
+    Program = decode_program(Parsed),
+    case automate_rest_api_backend:update_program(Username, ProgramName, Program) of
+        ok ->
+            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
+            { true, Req2, State };
+        { error, Reason } ->
+            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
+            { false, Req2, State }
+    end.
+
+
+decode_program([#{ <<"type">> := ProgramType
+                 , <<"orig">> := ProgramOrig
+                 , <<"parsed">> := ProgramParsed
+                 }]) ->
+    #program_content { type=ProgramType
+                     , orig=ProgramOrig
+                     , parsed=ProgramParsed
+                     }.
+
+
+send_json_output(Output, Req) ->
+    Res1 = cowboy_req:set_resp_body(Output, Req),
+    Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
+    cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2).
+
+
+read_body(Req0) ->
+    read_body(Req0, <<>>).
+
+read_body(Req0, Acc) ->
+    case cowboy_req:read_body(Req0) of
+        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
+        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
+    end.

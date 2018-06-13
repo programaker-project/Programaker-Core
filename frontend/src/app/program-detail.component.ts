@@ -41,11 +41,17 @@ export class ProgramDetailComponent implements OnInit {
                 return this.programService.getProgram(params['user_id'], params['program_id']);
             })
             .subscribe(program => {
-                this.program = program;
                 this.prepareWorkspace();
+                this.program = program;
+                this.load_program(program);
             });
 
         this.currentFillingInput = '';
+    }
+
+    load_program(program: ProgramContent) {
+        const xml = Blockly.Xml.textToDom(program.orig);
+        Blockly.Xml.domToWorkspace(xml, this.workspace);
     }
 
     prepareWorkspace() {

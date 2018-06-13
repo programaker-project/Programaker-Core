@@ -13,5 +13,11 @@
                             , user_id
                             , program_name
                             , program_type
-                            , program_content
+                            , program_parsed
+                            , program_orig
                             }).
+
+-record(stored_program_content, { type
+                                , orig
+                                , parsed
+                                }).

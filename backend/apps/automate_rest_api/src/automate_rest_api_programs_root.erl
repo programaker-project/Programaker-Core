@@ -95,7 +95,7 @@ accept_json_create_program(Req, State) ->
 
 %% GET handler
 content_types_provided(Req, State) ->
-    io:fwrite("Control types accepted~n", []),
+    io:fwrite("Control types provided~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 

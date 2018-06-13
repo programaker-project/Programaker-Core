@@ -7,6 +7,7 @@
         , create_program/1
         , get_program/2
         , lists_programs_from_username/1
+        , update_program/3
         ]).
 
 %% Definitions
@@ -80,6 +81,20 @@ lists_programs_from_username(Username) ->
             X
     end.
 
+update_program(Username, ProgramName,
+               #program_content{ orig=Orig
+                               , parsed=Parsed
+                               , type=Type }) ->
+    case automate_storage:update_program(Username, ProgramName,
+                                         #stored_program_content{ orig=Orig
+                                                                , parsed=Parsed
+                                                                , type=Type }) of
+        { ok, ProgramId } ->
+            automate_bot_engine_launcher:update_program(ProgramId);
+        { error, Reason } ->
+            {error, Reason}
+    end.
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -98,11 +113,13 @@ program_entry_to_program(#user_program_entry{ id=Id
                                             , user_id=UserId
                                             , program_name=ProgramName
                                             , program_type=ProgramType
-                                            , program_content=ProgramContent
+                                            , program_parsed=ProgramParsed
+                                            , program_orig=ProgramOrig
                                             }) ->
     #user_program{ id=Id
                  , user_id=UserId
                  , program_name=ProgramName
                  , program_type=ProgramType
-                 , program_content=ProgramContent
+                 , program_parsed=ProgramParsed
+                 , program_orig=ProgramOrig
                  }.

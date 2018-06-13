@@ -18,10 +18,16 @@
                       , user_id
                       , program_name
                       , program_type
-                      , program_content
+                      , program_parsed
+                      , program_orig
                       }).
 
 -record(program_metadata, { id
                           , name
                           , link
                           }).
+
+-record(program_content, { type
+                         , orig
+                         , parsed
+                         }).

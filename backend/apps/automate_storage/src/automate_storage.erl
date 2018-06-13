@@ -7,6 +7,7 @@
         , create_program/2
         , get_program/2
         , lists_programs_from_username/1
+        , update_program/3
         ]).
 -export([start_link/0]).
 
@@ -82,7 +83,8 @@ create_program(Username, ProgramName) ->
                                      , user_id=UserId
                                      , program_name=ProgramName
                                      , program_type=?DEFAULT_PROGRAM_TYPE
-                                     , program_content=undefined
+                                     , program_parsed=undefined
+                                     , program_orig=undefined
                                      },
     case store_new_program(UserProgram) of
         ok ->
@@ -105,6 +107,10 @@ lists_programs_from_username(Username) ->
         X ->
             X
     end.
+
+-spec update_program(string(), string(), #stored_program_content{}) -> { 'ok', string() } | { 'error', any() }.
+update_program(Username, ProgramName, Content)->
+    store_new_program_content(Username, ProgramName, Content).
 
 %% Exposed startup entrypoint
 start_link() ->
@@ -220,7 +226,8 @@ retrieve_program(Username, ProgramName) ->
                                                                         , user_id='$2'
                                                                         , program_name='$3'
                                                                         , program_type='_'
-                                                                        , program_content='_'
+                                                                        , program_parsed='_'
+                                                                        , program_orig='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -268,7 +275,8 @@ retrieve_program_list_from_username(Username) ->
                                                                         , user_id='$2'
                                                                         , program_name='$3'
                                                                         , program_type='_'
-                                                                        , program_content='_'
+                                                                        , program_parsed='_'
+                                                                        , program_orig='_'
                                                                         },
                                   ProgramGuard = {'==', '$2', UserId},
                                   ProgramResultsColumn = '$1',
@@ -286,6 +294,73 @@ retrieve_program_list_from_username(Username) ->
         { aborted, Reason } ->
             {error, mnesia:error_description(Reason)}
     end.
+
+-spec store_new_program_content(string(), string(), #stored_program_content{}) -> { 'ok', string() } | { 'error', any() }.
+store_new_program_content(Username, ProgramName,
+                          #stored_program_content{ orig=ProgramOrig
+                                                 , parsed=ProgramParsed
+                                                 , type=ProgramType
+                                                 })->
+        Transaction = fun() ->
+                          %% Find userid with that name
+                          UserMatchHead = #registered_user_entry{ id='$1'
+                                                                , username='$2'
+                                                                , password='_'
+                                                                , email='_'
+                                                                },
+                          UserGuard = {'==', '$2', Username},
+                          UserResultColumn = '$1',
+                          UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
+
+                          case mnesia:select(?REGISTERED_USERS_TABLE, UserMatcher) of
+                              [] ->
+                                  [];
+                              [UserId] ->
+
+                                  %% Find program with userId and name
+                                  ProgramMatchHead = #user_program_entry{ id='$1'
+                                                                        , user_id='$2'
+                                                                        , program_name='$3'
+                                                                        , program_type='_'
+                                                                        , program_parsed='_'
+                                                                        , program_orig='_'
+                                                                        },
+                                  ProgramGuard = {'andthen'
+                                                 , {'==', '$2', UserId}
+                                                 , {'==', '$3', ProgramName}},
+                                  ProgramResultColumn = '$1',
+                                  ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultColumn]}],
+
+                                  case mnesia:select(?USER_PROGRAMS_TABLE, ProgramMatcher) of
+                                      [] ->
+                                          [];
+
+                                      [ProgramId] ->
+                                          case mnesia:write(?USER_PROGRAMS_TABLE,
+                                                            #user_program_entry{ id=ProgramId
+                                                                               , user_id=UserId
+                                                                               , program_name=ProgramName
+                                                                               , program_type=ProgramType
+                                                                               , program_parsed=ProgramParsed
+                                                                               , program_orig=ProgramOrig
+                                                                               }, write) of
+                                              ok ->
+                                                  { ok, ProgramId };
+                                              X ->
+                                                  X
+                                          end
+                                  end
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, {ok, Result} } ->
+            {ok, Result};
+        { atomic, [] } ->
+            {error, not_found};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 
 %%====================================================================
 %% Startup functions

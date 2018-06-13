@@ -1,9 +1,10 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_bot_engine top level supervisor.
+%% @doc automate_bot_engine simple runner. Takes a task to be run and
+%%      executes it forever.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_bot_engine_sup).
+-module(automate_bot_engine_runner).
 
 -behaviour(supervisor).
 
@@ -28,22 +29,14 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_one, 0, 1},
-           [ #{ id => automate_bot_engine_runner_sup
-              , start => {automate_bot_engine_runner_sup, start_link, []}
+    {ok, { {simple_one_for_one, 0, 1},
+           [ #{ id => automate_bot_engine_runner
+              , start => {automate_bot_engine_runner, start_link, []}
               , restart => permanent
               , shutdown => 2000
-              , type => supervisor
-              , modules => [automate_bot_engine_runner_sup]
+              , type => worker
+              , modules => [automate_bot_engine_runner]
               }
-           , #{ id => automate_bot_engine_telegram_sup
-              , start => {automate_bot_engine_telegram_sup, start_link, []}
-              , restart => permanent
-              , shutdown => 2000
-              , type => supervisor
-              , modules => [automate_bot_engine_telegram_sup]
-              }
-
            ]} }.
 
 %%====================================================================
