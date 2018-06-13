@@ -362,6 +362,42 @@ store_new_program_content(Username, ProgramName,
     end.
 
 
+save_unique_user(UserData) ->
+    #registered_user_entry{ id=UserId
+                          , username=Username
+                          , email=Email
+                          } = UserData,
+
+    MatchHead = #registered_user_entry{ id='$1'
+                                      , username='$2'
+                                      , password='_'
+                                      , email='$3'
+                                      },
+
+    %% Check that neither the id, username or email matches another
+    GuardId = {'==', '$1', UserId},
+    GuardUsername = {'==', '$2', Username},
+    GuardEmail = {'==', '$3', Email},
+    Guard = {'orelse', GuardId, GuardUsername, GuardEmail},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    Transaction = fun() ->
+                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
+                              [] ->
+                                  mnesia:write(?REGISTERED_USERS_TABLE, UserData, write);
+                              _ ->
+                                  {error, colliding_element }
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
 %%====================================================================
 %% Startup functions
 %%====================================================================
@@ -414,38 +450,3 @@ build_tables(Nodes) ->
                  ok
          end,
     ok.
-
-save_unique_user(UserData) ->
-    #registered_user_entry{ id=UserId
-                          , username=Username
-                          , email=Email
-                          } = UserData,
-
-    MatchHead = #registered_user_entry{ id='$1'
-                                      , username='$2'
-                                      , password='_'
-                                      , email='$3'
-                                      },
-
-    %% Check that neither the id, username or email matches another
-    GuardId = {'==', '$1', UserId},
-    GuardUsername = {'==', '$2', Username},
-    GuardEmail = {'==', '$3', Email},
-    Guard = {'orelse', GuardId, GuardUsername, GuardEmail},
-    ResultColumn = '$1',
-    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
-
-    Transaction = fun() ->
-                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
-                              [] ->
-                                  mnesia:write(?REGISTERED_USERS_TABLE, UserData, write);
-                              _ ->
-                                  {error, colliding_element }
-                          end
-                  end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
-    end.
