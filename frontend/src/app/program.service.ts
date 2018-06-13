@@ -66,16 +66,13 @@ export class ProgramService {
     }
 
     updateProgram(username: string,
-                  program: ProgramMetadata,
-                  programType: ProgramType,
-                  content: string,
-                  contentType: ContentType): Promise<boolean> {
+                  program: ProgramContent): Promise<boolean> {
         return this.getUpdateProgramUrl(username, program.name).then(url =>
             this.http
-                .put(url, JSON.stringify({type: programType, content: content}),
+                .put(url, JSON.stringify({type: program.type, orig: program.orig, parsed: program.parsed}),
                      {headers: this.sessionService.addContentType(
-                       this.sessionService.getAuthHeader(),
-                       contentType)})
+                                  this.sessionService.getAuthHeader(),
+                                     ContentType.Json)})
                 .map(response => {
                     return true;
                 })

@@ -2,9 +2,7 @@ export default class ScratchProgramSerializer {
     // ====================================================
     // External API
     // ====================================================
-    static ToJson(xml: Element): any {
-        const content = Blockly.Xml.domToPrettyText(xml);
-
+    static ToJson(xml: Element): { parsed: any, orig: any } {
         const subelements = Array.from(xml.childNodes);
         const variables = subelements.shift();
         const blocks = subelements;
@@ -14,7 +12,10 @@ export default class ScratchProgramSerializer {
            blocks: blocks.map(block => ScratchProgramSerializer.serializeBlock(block as HTMLElement)),
         };
 
-        return serialized;
+        return {
+          parsed: serialized,
+          orig: Blockly.Xml.domToPrettyText(xml),
+        };
     }
 
     // ====================================================

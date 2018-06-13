@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { Location } from '@angular/common';
-import { ProgramMetadata, ProgramContent } from './program';
+import { ProgramMetadata, ProgramContent, ScratchProgram } from './program';
 import { ProgramService } from './program.service';
 import 'rxjs/add/operator/switchMap';
 import { load_initial } from './blocks/initial';
@@ -121,10 +121,10 @@ export class ProgramDetailComponent implements OnInit {
     sendProgram() {
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
 
-        this.programService.updateProgram(this.programUserId,
-                                          this.program,
-                                          'scratch_program',
-                                          ScratchProgramSerializer.ToJson(xml),
-                                          ContentType.Json);
+        const serialized = ScratchProgramSerializer.ToJson(xml);
+        const program = new ScratchProgram(this.program,
+                                            serialized.parsed,
+                                            serialized.orig);
+        this.programService.updateProgram(this.programUserId, program);
     }
 }
