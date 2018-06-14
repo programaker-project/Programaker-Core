@@ -8,6 +8,8 @@
         , get_program/2
         , lists_programs_from_username/1
         , update_program/3
+        , get_program_pid/1
+        , register_program_runner/2
         ]).
 -export([start_link/0]).
 
@@ -15,6 +17,7 @@
 -define(REGISTERED_USERS_TABLE, automate_registered_users).
 -define(USER_SESSIONS_TABLE, automate_user_sessions).
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
+-define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
 -include("./records.hrl").
 
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
@@ -111,6 +114,43 @@ lists_programs_from_username(Username) ->
 -spec update_program(string(), string(), #stored_program_content{}) -> { 'ok', string() } | { 'error', any() }.
 update_program(Username, ProgramName, Content)->
     store_new_program_content(Username, ProgramName, Content).
+
+-spec get_program_pid(string()) -> {'ok', pid()} | {error, not_running}.
+get_program_pid(ProgramId) ->
+    case get_running_program_id(ProgramId) of
+        [#running_program_entry{runner_pid=PID}] ->
+            {ok, PID};
+        [] ->
+            {error, not_running};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+-spec register_program_runner(string(), pid()) -> 'ok' | {error, not_running}.
+register_program_runner(ProgramId, Pid) ->
+    Transaction = fun() ->
+                          case mnesia:read(?RUNNING_PROGRAMS_TABLE, ProgramId) of
+                              [] ->
+                                  mnesia:write(?RUNNING_PROGRAMS_TABLE,
+                                               #running_program_entry{ program_id=ProgramId
+                                                                     , runner_pid=Pid
+                                                                     , variables=#{}
+                                                                     , stats=#{}
+                                                                     }, write);
+                              [Program] ->
+                                  mnesia:write(?RUNNING_PROGRAMS_TABLE,
+                                               Program#running_program_entry{runner_pid=Pid}, write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            io:format("Register result: ~p~n", [Result]),
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
 
 %% Exposed startup entrypoint
 start_link() ->
@@ -397,7 +437,16 @@ save_unique_user(UserData) ->
             {error, mnesia:error_description(Reason)}
     end.
 
-
+get_running_program_id(ProgramId) ->
+    Transaction = fun() ->
+                          mnesia:read(?RUNNING_PROGRAMS_TABLE, ProgramId)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
 %%====================================================================
 %% Startup functions
 %%====================================================================
@@ -442,6 +491,19 @@ build_tables(Nodes) ->
                                   [ {attributes, record_info(fields, user_program_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, user_program_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    %% Running programs table
+    ok = case mnesia:create_table(?RUNNING_PROGRAMS_TABLE,
+                                  [ {attributes, record_info(fields, running_program_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, running_program_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->

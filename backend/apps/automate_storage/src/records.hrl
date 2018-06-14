@@ -21,3 +21,9 @@
                                 , orig
                                 , parsed
                                 }).
+
+-record(running_program_entry, { program_id
+                               , runner_pid
+                               , variables
+                               , stats
+                               }).
