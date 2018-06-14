@@ -35,8 +35,6 @@
                               {error, Error :: term()} |
                               ignore.
 start_link(BotName) ->
-    pe4kin_receiver:subscribe(BotName, ?MODULE),
-    pe4kin_receiver:start_http_poll(BotName, #{limit=>100, timeout=>60}),
     gen_server:start_link( {local, ?SERVER}, ?MODULE
                          , [BotName]
                          , []).
@@ -58,6 +56,8 @@ start_link(BotName) ->
                               ignore.
 init([BotName]) ->
     process_flag(trap_exit, true),
+    pe4kin_receiver:subscribe(BotName, self()),
+    pe4kin_receiver:start_http_poll(BotName, #{limit=>100, timeout=>60}),
     {ok, #state{ bot_name=BotName }}.
 
 %%--------------------------------------------------------------------

@@ -376,19 +376,15 @@ store_new_program_content(Username, ProgramName,
                                           [];
 
                                       [ProgramId] ->
-                                          case mnesia:write(?USER_PROGRAMS_TABLE,
+                                          ok = mnesia:write(?USER_PROGRAMS_TABLE,
                                                             #user_program_entry{ id=ProgramId
                                                                                , user_id=UserId
                                                                                , program_name=ProgramName
                                                                                , program_type=ProgramType
                                                                                , program_parsed=ProgramParsed
                                                                                , program_orig=ProgramOrig
-                                                                               }, write) of
-                                              ok ->
-                                                  { ok, ProgramId };
-                                              X ->
-                                                  X
-                                          end
+                                                                               }, write),
+                                          { ok, ProgramId }
                                   end
                           end
                   end,

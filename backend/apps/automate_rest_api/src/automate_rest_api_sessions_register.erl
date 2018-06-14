@@ -49,7 +49,7 @@ content_types_accepted(Req, State) ->
 %%%% POST
 %
 -spec accept_json_modify_collection(cowboy_req:req(),#registration_seq{})
-      -> {'true',cowboy_req:req(),_}.
+                                   -> {'false' | {'true', binary()},cowboy_req:req(),#registration_seq{}}.
 accept_json_modify_collection(Req, Session) ->
     case cowboy_req:has_body(Req) of
         true ->

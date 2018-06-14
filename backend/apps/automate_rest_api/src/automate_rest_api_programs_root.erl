@@ -75,7 +75,7 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 -spec accept_json_create_program(cowboy_req:req(), #create_program_seq{})
-                                   -> {'true',cowboy_req:req(),_}.
+                                -> {{'true', binary()},cowboy_req:req(), #create_program_seq{}}.
 accept_json_create_program(Req, State) ->
     #create_program_seq{username=Username} = State,
     case automate_rest_api_backend:create_program(Username) of
@@ -100,7 +100,7 @@ content_types_provided(Req, State) ->
      Req, State}.
 
 -spec to_json(cowboy_req:req(), #create_program_seq{})
-                                   -> {'true',cowboy_req:req(),_}.
+             -> {binary(),cowboy_req:req(), #create_program_seq{}}.
 to_json(Req, State) ->
     #create_program_seq{username=Username} = State,
     case automate_rest_api_backend:lists_programs_from_username(Username) of

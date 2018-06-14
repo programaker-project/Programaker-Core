@@ -76,9 +76,7 @@ lists_programs_from_username(Username) ->
                                    , name=ProgramName
                                    , link=generate_url_for_program_name(Username, ProgramName)
                                    }
-                  || {ProgramId, ProgramName} <- Programs]};
-        X ->
-            X
+                  || {ProgramId, ProgramName} <- Programs]}
     end.
 
 update_program(Username, ProgramName,
