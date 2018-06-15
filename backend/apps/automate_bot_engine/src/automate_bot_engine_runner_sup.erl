@@ -36,6 +36,7 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
+    automate_storage:clear_running_programs(),
     {ok, { {simple_one_for_one, 3, 60},
            [ #{ id => automate_bot_engine_runner
               , start => {automate_bot_engine_runner, start_link, []}

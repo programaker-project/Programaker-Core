@@ -10,6 +10,8 @@
         , update_program/3
         , get_program_pid/1
         , register_program_runner/2
+        , get_program_from_id/1
+        , clear_running_programs/0
         ]).
 -export([start_link/0]).
 
@@ -151,6 +153,27 @@ register_program_runner(ProgramId, Pid) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+get_program_from_id(ProgramId) ->
+    Transaction = fun() ->
+                          mnesia:read(?USER_PROGRAMS_TABLE, ProgramId)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [Result] } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
+clear_running_programs() ->
+    case mnesia:clear_table(?RUNNING_PROGRAMS_TABLE) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
 
 %% Exposed startup entrypoint
 start_link() ->
