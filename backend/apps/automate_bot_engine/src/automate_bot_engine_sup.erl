@@ -28,23 +28,26 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_one, 0, 1},
-           [ #{ id => automate_bot_engine_runner_sup
-              , start => {automate_bot_engine_runner_sup, start_link, []}
-              , restart => permanent
-              , shutdown => 2000
-              , type => supervisor
-              , modules => [automate_bot_engine_runner_sup]
-              }
-           , #{ id => automate_bot_engine_telegram_sup
-              , start => {automate_bot_engine_telegram_sup, start_link, []}
-              , restart => permanent
-              , shutdown => 2000
-              , type => supervisor
-              , modules => [automate_bot_engine_telegram_sup]
-              }
-
-           ]} }.
+    ChildSpecs = [ #{ id => automate_bot_engine_runner_sup
+                    , start => {automate_bot_engine_runner_sup, start_link, []}
+                    , restart => permanent
+                    , shutdown => 2000
+                    , type => supervisor
+                    , modules => [automate_bot_engine_runner_sup]
+                    }],
+    ChildSpecsWithTelegram = case automate_bot_engine_telegram:is_enabled() of
+                                 true ->
+                                     [ #{ id => automate_bot_engine_telegram_sup
+                                        , start => {automate_bot_engine_telegram_sup, start_link, []}
+                                        , restart => permanent
+                                        , shutdown => 2000
+                                        , type => supervisor
+                                        , modules => [automate_bot_engine_telegram_sup]
+                                        } | ChildSpecs ];
+                                 false ->
+                                     ChildSpecs
+                             end,
+    {ok, { {one_for_one, 0, 1}, ChildSpecsWithTelegram} }.
 
 %%====================================================================
 %% Internal functions
