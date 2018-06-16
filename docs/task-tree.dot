@@ -13,6 +13,8 @@ digraph {
     generic_rest_chatbot[label="Generic REST chatbot", shape=diamond];
     text_based_program_bot[label="Text based bot program", shape=diamond];
 
+    offline_development[label="Offline development", shape=diamond, style=filled, color=lightblue];
+
     // Tasks
     program_execution[label="Program execution"];
     telegram_api_support[label="Telegram API support"];
@@ -38,6 +40,8 @@ digraph {
     high_availability[label="High availability"];
 
     other_chat_platform_support[label="Other chat platform support"];
+    only_local_resources[label="Only local resources\n(for interface)"];
+    local_program_input_interface[label="Local program input interface"];
 
     // Dependencies
     program_execution -> program_variables;
@@ -86,4 +90,8 @@ digraph {
     text_based_program_bot -> text_program_parser;
 
     debugging_support -> program_execution;
+
+    offline_development -> program_execution;
+    offline_development -> only_local_resources;
+    offline_development -> local_program_input_interface;
 }
