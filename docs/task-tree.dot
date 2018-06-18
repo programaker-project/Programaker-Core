@@ -14,11 +14,11 @@ digraph {
     text_based_program_bot[label="Text based bot program", shape=diamond];
 
     offline_development[label="Offline development", shape=diamond, style=filled, color=lightblue];
+    debugging_support[label="Online debugging support", shape=diamond, style=filled, color=lightblue];
 
     // Tasks
     program_execution[label="Program execution"];
     telegram_api_support[label="Telegram API support"];
-    debugging_support[label="Debugging support"];
 
     bot_renaming[label="Bot renaming"];
     unit_tested_api[label="Unit tested API"];
@@ -42,6 +42,9 @@ digraph {
     other_chat_platform_support[label="Other chat platform support"];
     only_local_resources[label="Only local resources\n(for interface)", color=green, fontcolor=green];
     local_program_input_interface[label="Local program input interface"];
+
+    show_variable_state[label="Show variable state"];
+    show_current_execution_step[label="Show current execution step"];
 
     // Dependencies
     program_execution -> program_variables;
@@ -94,4 +97,9 @@ digraph {
     offline_development -> program_execution;
     offline_development -> only_local_resources;
     offline_development -> local_program_input_interface;
+
+    show_current_execution_step -> program_execution;
+    show_variable_state -> stored_variables;
+    debugging_support -> show_variable_state;
+    debugging_support -> show_current_execution_step;
 }
