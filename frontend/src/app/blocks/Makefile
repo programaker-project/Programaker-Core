@@ -1,8 +1,8 @@
-.PHONY: all build javascript media clean-and-update
+.PHONY: all build default-python-2 javascript media clean-and-update
 
 all: build
 
-build: javascript  media
+build: javascript media
 
 javascript: blockly_horizontal.js blockly_vertical.js blocks_horizontal.js blocks_vertical.js msg_en.js messages.js blocks.js
 
@@ -74,7 +74,7 @@ scratch-blocks/blocks_compressed_vertical.js: scratch-blocks/blocks_compressed.j
 scratch-blocks/blockly_compressed_vertical.js: scratch-blocks/blocks_compressed.js
 
 # Root canary file
-scratch-blocks/blocks_compressed.js: closure-library/package.json scratch-blocks/package.json
+scratch-blocks/blocks_compressed.js: default-python-2 closure-library/package.json scratch-blocks/package.json
 	cd scratch-blocks && npm install
 
 # Pull submodules if needed
@@ -83,3 +83,8 @@ closure-library/package.json:
 
 scratch-blocks/package.json:
 	git submodule update --init --recursive scratch-blocks
+
+# Check that default python installation is python2 (required by scratch)
+default-python-2:
+	(python -V 2>&1|grep 'Python 2') || \
+	(echo 'Scratch builder requires `python2` as default `python` executable'; false)
