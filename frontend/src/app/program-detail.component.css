@@ -5,6 +5,19 @@
 .app-content {
     overflow: hidden;
 }
+
+#program-header {
+    border-bottom: 1px solid #AAA;
+}
+
+button#program-start-button {
+    vertical-align: super;
+}
+
+button#program-start-button .action-icon {
+    vertical-align: top;
+}
+
 .program-name .program-title {
     vertical-align: middle;
 }
