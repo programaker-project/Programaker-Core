@@ -13,7 +13,9 @@ import { SessionService } from './session.service';
     templateUrl: './dashboard.component.html',
     providers: [ProgramService, SessionService],
     styleUrls: [
-        'dashboard.component.css'
+        'dashboard.component.css',
+        'libs/css/material-icons.css',
+        'libs/css/bootstrap.min.css',
     ],
 })
 

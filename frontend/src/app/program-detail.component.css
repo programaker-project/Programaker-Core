@@ -9,6 +9,10 @@
     vertical-align: middle;
 }
 
+.program-title {
+    font-size: 1.15rem;
+}
+
 .program-name {
     display: inline;
     padding-right: 2em;

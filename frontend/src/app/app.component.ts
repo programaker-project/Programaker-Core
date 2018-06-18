@@ -8,7 +8,9 @@ import { Subscription } from 'rxjs';
     selector: 'app-my-app',
     templateUrl: './app.component.html',
     styleUrls: [
-        'app.component.css'
+        'app.component.css',
+        'libs/css/material-icons.css',
+        'libs/css/bootstrap.min.css',
     ],
     providers: [SessionService]
 })

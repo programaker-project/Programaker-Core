@@ -40,7 +40,7 @@ digraph {
     high_availability[label="High availability"];
 
     other_chat_platform_support[label="Other chat platform support"];
-    only_local_resources[label="Only local resources\n(for interface)"];
+    only_local_resources[label="Only local resources\n(for interface)", color=green, fontcolor=green];
     local_program_input_interface[label="Local program input interface"];
 
     // Dependencies

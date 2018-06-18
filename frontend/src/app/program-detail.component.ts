@@ -14,7 +14,9 @@ import ScratchProgramSerializer from './program_serialization/scratch-program-se
     templateUrl: './program-detail.component.html',
     providers: [ProgramService],
     styleUrls: [
-        'program-detail.component.css'
+        'program-detail.component.css',
+        'libs/css/material-icons.css',
+        'libs/css/bootstrap.min.css',
     ],
 })
 

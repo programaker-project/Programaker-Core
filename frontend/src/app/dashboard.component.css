@@ -1,3 +1,8 @@
 .collection-grid {
     padding: 1em;
 }
+
+mat-card.module > h4 {
+    overflow: hidden;
+    font-size: 1.15rem;
+}
