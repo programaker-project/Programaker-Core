@@ -7,11 +7,14 @@ import { ProgramService } from './program.service';
 import { Session } from './session';
 import { SessionService } from './session.service';
 
+import { AvailableService } from './service';
+import { ServiceService } from './service.service';
+
 @Component({
     // moduleId: module.id,
     selector: 'app-my-dashboard',
     templateUrl: './dashboard.component.html',
-    providers: [ProgramService, SessionService],
+    providers: [ProgramService, SessionService, ServiceService],
     styleUrls: [
         'dashboard.component.css',
         'libs/css/material-icons.css',
@@ -21,14 +24,17 @@ import { SessionService } from './session.service';
 
 export class DashboardComponent {
     programs: ProgramMetadata[] = [];
+    services: AvailableService[] = [];
     session: Session = null;
 
     constructor(
         private programService: ProgramService,
+        private serviceService: ServiceService,
         private sessionService: SessionService,
         private router: Router,
     ) {
         this.programService = programService;
+        this.serviceService = serviceService;
         this.sessionService = sessionService;
         this.router = router;
     }
@@ -42,6 +48,9 @@ export class DashboardComponent {
                 } else {
                     this.programService.getPrograms()
                         .then(programs => this.programs = programs);
+
+                    this.serviceService.getAvailableServices()
+                        .then(services => this.services = services);
                 }
             })
     }

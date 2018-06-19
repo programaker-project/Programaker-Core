@@ -8,6 +8,7 @@
         , get_program/2
         , lists_programs_from_username/1
         , update_program/3
+        , list_services_from_username/1
         ]).
 
 %% Definitions
@@ -93,6 +94,10 @@ update_program(Username, ProgramName,
             {error, Reason}
     end.
 
+-spec list_services_from_username(string()) -> {'ok', [ #service_metadata{} ]}.
+list_services_from_username(Username) ->
+    {ok, get_telegram_services_from_username(Username)}.
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -121,3 +126,23 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , program_parsed=ProgramParsed
                  , program_orig=ProgramOrig
                  }.
+
+-spec get_telegram_services_from_username(string()) -> [ #service_metadata{} ].
+get_telegram_services_from_username(Username) ->
+    DefaultId = automate_bot_engine_telegram:get_platform_id(),
+    DefaultName = automate_bot_engine_telegram:get_platform_name(),
+    case automate_bot_engine_telegram:is_enabled() of
+        true ->
+            {ok, HasEnabled} = automate_bot_engine_telegram:user_has_enabled_platform(Username),
+            [ #service_metadata{ id=DefaultId
+                               , name=DefaultName
+                               , link=generate_url_from_service(Username, DefaultId)
+                               , enabled=HasEnabled
+                               } ];
+        false ->
+            []
+    end.
+
+-spec generate_url_from_service(binary(), binary()) -> binary().
+generate_url_from_service(Username, ServiceId) ->
+    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/~s", [Username, ServiceId]))).

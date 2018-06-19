@@ -22,8 +22,11 @@ export class ServicesComponent {
     }
 
     ngOnInit(): void {
-        this.serviceService.getServices()
-            .then(services => this.services = services);
+        this.serviceService.getAvailableServices()
+            .then(services => {
+                this.services = services;
+            })
+            .catch(e => console.log(e));
     }
 
     addService() : void {

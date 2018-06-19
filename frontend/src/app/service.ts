@@ -3,6 +3,10 @@ class Service {
     name: string;
 }
 
+class AvailableService extends Service {
+    enabled: boolean;
+}
+
 class RequestInput {
     name: string;
     defaultValue: string;
@@ -15,4 +19,4 @@ class Request {
     headers: RequestInput[];
 }
 
-export { Service, RequestInput, Request };
+export { Service, AvailableService, RequestInput, Request };

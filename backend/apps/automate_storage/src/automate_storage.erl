@@ -12,6 +12,7 @@
         , register_program_runner/2
         , get_program_from_id/1
         , clear_running_programs/0
+        , user_has_registered_service/2
         ]).
 -export([start_link/0]).
 
@@ -20,6 +21,9 @@
 -define(USER_SESSIONS_TABLE, automate_user_sessions).
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
+-define(EXISTING_SERVICES_TABLE, automate_existing_services).
+-define(REGISTERED_SERVICES_TABLE, automate_registered_services).
+
 -include("./records.hrl").
 
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
@@ -173,6 +177,18 @@ clear_running_programs() ->
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
+    end.
+
+user_has_registered_service(Username, ServiceId) ->
+    case try_get_user_registered_service(Username, ServiceId) of
+        {ok, true} ->
+            {ok, true};
+        {ok, false} ->
+            {ok, false};
+        {ok, not_found} ->
+            {ok, false};
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 %% Exposed startup entrypoint
@@ -466,6 +482,53 @@ get_running_program_id(ProgramId) ->
         { aborted, Reason } ->
             {error, mnesia:error_description(Reason)}
     end.
+
+try_get_user_registered_service(Username, ServiceId) ->
+    MatchHead = #registered_user_entry{ id='$1'
+                                      , username='$2'
+                                      , password='_'
+                                      , email='_'
+                                      },
+
+    %% Check that neither the id, username or email matches another
+    GuardUsername = {'==', '$2', Username},
+    Guard = GuardUsername,
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    Transaction = fun() ->
+                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
+                              [UserId] ->
+                                  ServiceMatchHead = #registered_service_entry{ registration_id='_'
+                                                                              , service_id='$1'
+                                                                              , user_id='$2'
+                                                                              , enabled='$3'
+                                                                              },
+
+                                  %% Check that neither the id, username or email matches another
+                                  GuardService = {'==', '$1', ServiceId},
+                                  GuardUserId = {'==', '$2', UserId},
+                                  ServiceGuard = {'andthen', GuardService, GuardUserId},
+                                  ServiceResultColumn = '$3',
+                                  ServiceMatcher = [{ServiceMatchHead, [ServiceGuard], [ServiceResultColumn]}],
+
+                                  case mnesia:select(?REGISTERED_SERVICES_TABLE, ServiceMatcher) of
+                                      [IsEnabled] ->
+                                          { ok, IsEnabled };
+                                      [] ->
+                                          {ok, not_found}
+                                  end;
+                              [] ->
+                                  {ok, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 %%====================================================================
 %% Startup functions
 %%====================================================================
@@ -523,6 +586,32 @@ build_tables(Nodes) ->
                                   [ {attributes, record_info(fields, running_program_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, running_program_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    %% Existing services table
+    ok = case mnesia:create_table(?EXISTING_SERVICES_TABLE,
+                                  [ {attributes, record_info(fields, existing_service_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, existing_service_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    %% Registered services table
+    ok = case mnesia:create_table(?REGISTERED_SERVICES_TABLE,
+                                  [ {attributes, record_info(fields, registered_service_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, registered_service_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->

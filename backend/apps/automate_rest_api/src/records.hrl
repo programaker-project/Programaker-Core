@@ -27,6 +27,12 @@
                           , link
                           }).
 
+-record(service_metadata, { id
+                          , name
+                          , link
+                          , enabled
+                          }).
+
 -record(program_content, { type
                          , orig
                          , parsed

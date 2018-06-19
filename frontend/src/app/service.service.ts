@@ -1,30 +1,31 @@
 import { Injectable } from '@angular/core';
-import { Service } from './service';
-import { Http } from '@angular/http';
+import { Service, AvailableService } from './service';
 import * as API from './api-config';
 import 'rxjs/add/operator/toPromise';
+import { SessionService } from './session.service';
+import { HttpClient } from '@angular/common/http';
 
 @Injectable()
 export class ServiceService {
     private getServicesUrl = API.ApiRoot + '/services/';
 
     constructor(
-        private http: Http,
+        private http: HttpClient,
+        private sessionService: SessionService,
     ) {
         this.http = http;
+        this.sessionService = sessionService;
     }
 
-
-    getServices(): Promise<Service[]> {
-        return (this.http
-                .get(this.getServicesUrl)
-                .map(response => response.json().map(e => ({ name: e.name, id: e.id })))
-                .toPromise());
+    async getListAvailableServicesUrl() {
+        const userApiRoot = await this.sessionService.getUserApiRoot();
+        return userApiRoot + '/services/';
     }
 
-
-    getService(id: number): Promise<Service> {
-        return this.getServices()
-            .then((services) => services.find((service) => service.id === id));
+    getAvailableServices(): Promise<AvailableService[]> {
+        return this.getListAvailableServicesUrl().then(
+            url => this.http.get(url, { headers: this.sessionService.getAuthHeader()})
+                            .map(response => response as AvailableService[])
+                            .toPromise());
     }
 }

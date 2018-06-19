@@ -27,3 +27,13 @@
                                , variables
                                , stats
                                }).
+
+-record(existing_service_entry, { id :: binary()
+                                , name ::  binary()
+                                }).
+
+-record(registered_service_entry, { registration_id :: binary()
+                                  , service_id :: binary()
+                                  , user_id :: binary()
+                                  , enabled :: boolean()
+                                  }).
