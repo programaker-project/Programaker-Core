@@ -16,6 +16,8 @@ digraph {
     offline_development[label="Offline development", shape=diamond, style=filled, color=lightblue];
     debugging_support[label="Online debugging support", shape=diamond, style=filled, color=lightblue];
 
+    important_todos[label="Important TO-DOs", shape=diamond];
+
     // Tasks
     program_execution[label="Program execution"];
     telegram_api_support[label="Telegram API support"];
@@ -46,6 +48,13 @@ digraph {
     show_variable_state[label="Show variable state"];
     show_current_execution_step[label="Show current execution step"];
 
+    add_csrf_tokens[label="Add CSRF tokens"];
+    security_testing[label="Security testing"];
+    secure_everything[label="Secure everything"];
+
+    internal_service_register[label="Internal service register"];
+    abstract_database[label="Abstract database"];
+
     // Dependencies
     program_execution -> program_variables;
     stored_variables -> program_variables;
@@ -72,12 +81,19 @@ digraph {
 
     web_monitor_bot -> telegram_bot;
     web_monitor_bot -> web_monitor_execution;
+
+    important_todos -> secure_everything[style="dotted"];
+    important_todos -> internal_service_register;
+    important_todos -> abstract_database;
+
     first_demo -> web_monitor_bot;
+    first_demo -> important_todos;
     // First demo has to work for sure, so unit-testing is *required* at this point
     first_demo -> unit_tested_api;
     // It also requires a working deployment
     first_demo -> first_deploy;
 
+    first_public_demo -> secure_everything;
     first_public_demo -> first_demo;
     first_public_demo -> high_availability;
     first_public_demo -> other_chat_platform_support;
@@ -102,4 +118,8 @@ digraph {
     show_variable_state -> stored_variables;
     debugging_support -> show_variable_state;
     debugging_support -> show_current_execution_step;
+
+    // Security
+    secure_everything -> security_testing;
+    secure_everything -> add_csrf_tokens;
 }
