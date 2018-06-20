@@ -1,3 +1,5 @@
+import { HowToEnableServiceDialogComponent } from "./HowToEnableServiceDialogComponent";
+
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
@@ -7,8 +9,9 @@ import { ProgramService } from './program.service';
 import { Session } from './session';
 import { SessionService } from './session.service';
 
-import { AvailableService } from './service';
+import { AvailableService, ServiceEnableHowTo } from './service';
 import { ServiceService } from './service.service';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
     // moduleId: module.id,
@@ -32,6 +35,7 @@ export class DashboardComponent {
         private serviceService: ServiceService,
         private sessionService: SessionService,
         private router: Router,
+        public dialog: MatDialog,
     ) {
         this.programService = programService;
         this.serviceService = serviceService;
@@ -66,5 +70,24 @@ export class DashboardComponent {
         this.sessionService.getSession().then(session =>
             this.router.navigate([ '/users/' + session.username
                                  + '/programs/' + program.name]));
+    }
+
+    enableService(service: AvailableService): void {
+        this.serviceService.getHowToEnable(service)
+            .then(howToEnable => this.showHowToEnable(howToEnable));
+    }
+
+    showHowToEnable(howTo: ServiceEnableHowTo): void {
+        if (howTo.method === 'external') {
+            this.showHowToDialog(howTo);
+        }
+    }
+
+    showHowToDialog(howTo: ServiceEnableHowTo): void {
+        const dialogRef = this.dialog.open(HowToEnableServiceDialogComponent, {
+            data: howTo
+        });
+
+        dialogRef.afterClosed().subscribe(result => {});
     }
 }

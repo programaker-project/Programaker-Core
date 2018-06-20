@@ -14,6 +14,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatFormFieldModule } from '@angular/material';
+import { MatDialogModule } from '@angular/material/dialog';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -34,6 +35,7 @@ import { LoginFormComponent } from './login-form.component';
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
 import 'hammerjs';
+import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
 
 @NgModule({
     declarations: [
@@ -44,6 +46,10 @@ import 'hammerjs';
         AddServicesComponent,
         ServicesComponent,
         LoginFormComponent,
+
+        // Dialogs
+        HowToEnableServiceDialogComponent,
+
         // Pipes
         SummarizeJSON,
         SelectFromJSON,
@@ -59,6 +65,7 @@ import 'hammerjs';
         MatSlideToggleModule,
         MatMenuModule,
         MatFormFieldModule,
+        MatDialogModule,
 
         BrowserAnimationsModule,
 
@@ -71,6 +78,9 @@ import 'hammerjs';
     ],
     exports: [
         AddServicesComponent,
+    ],
+    entryComponents: [
+        HowToEnableServiceDialogComponent,
     ],
     providers: [],
     bootstrap: [AppComponent],

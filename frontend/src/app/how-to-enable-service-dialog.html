@@ -1,0 +1,7 @@
+<h2 mat-dialog-title>How to enable <span class="service-name">{{ service.name }}</span> service</h2>
+<mat-dialog-content>Send the following message to <a rel="noopener noreferrer" target="_blank" href="{{ bot_link }}" class="service-name">{{ service.extra.bot_name }}</a>. <br/>
+    <div class="message-example">/start {{ service.extra.token}} </div>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button class="confirmation" mat-button mat-dialog-close>OK</button>
+</mat-dialog-actions>

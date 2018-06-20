@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Service, AvailableService } from './service';
+import { Service, AvailableService, ServiceEnableHowTo } from './service';
 import * as API from './api-config';
 import 'rxjs/add/operator/toPromise';
 import { SessionService } from './session.service';
@@ -22,10 +22,21 @@ export class ServiceService {
         return userApiRoot + '/services/';
     }
 
+    async getServiceEnableHowToUrl(service: AvailableService) {
+        return API.ApiHost + service.link + '/how-to-enable';
+    }
+
     getAvailableServices(): Promise<AvailableService[]> {
         return this.getListAvailableServicesUrl().then(
             url => this.http.get(url, { headers: this.sessionService.getAuthHeader()})
                             .map(response => response as AvailableService[])
+                            .toPromise());
+    }
+
+    getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {
+        return this.getServiceEnableHowToUrl(service).then(
+            url => this.http.get(url, {headers: this.sessionService.getAuthHeader()})
+                            .map(response => response as ServiceEnableHowTo)
                             .toPromise());
     }
 }

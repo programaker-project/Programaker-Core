@@ -27,7 +27,8 @@
           <div class="row">
             <div *ngFor="let service of services" class="col-sm-4">
                 <mat-card class="module service"
-                          [class.not-enabled]="!service.enabled">
+                          [class.not-enabled]="!service.enabled"
+                          (click)="enableService(service)">
                     <h4>{{service.name}}</h4>
                     <div class="letter-call-to-action" *ngIf="!service.enabled">[click to enable]</div>
                 </mat-card>
