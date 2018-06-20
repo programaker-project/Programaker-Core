@@ -9,7 +9,7 @@ javascript: blockly_horizontal.js blockly_vertical.js blocks_horizontal.js block
 media: media/sprites.png
 
 # Update scratch version removing and external & build files
-clean-and-update:
+clean-and-update: default-python-2
 	cd scratch-blocks && git clean -fdx .
 	cd scratch-blocks && git stash save "Stashed for clean&update."
 	cd scratch-blocks && git pull
