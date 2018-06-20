@@ -37,3 +37,8 @@
                                   , user_id :: binary()
                                   , enabled :: boolean()
                                   }).
+
+-record(service_registration_token, { token :: binary()
+                                    , service_id :: binary()
+                                    , user_id :: binary()
+                                    }).

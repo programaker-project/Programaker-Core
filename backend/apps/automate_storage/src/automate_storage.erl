@@ -13,6 +13,7 @@
         , get_program_from_id/1
         , clear_running_programs/0
         , user_has_registered_service/2
+        , get_or_gen_registration_token/2
         ]).
 -export([start_link/0]).
 
@@ -23,6 +24,7 @@
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
 -define(EXISTING_SERVICES_TABLE, automate_existing_services).
 -define(REGISTERED_SERVICES_TABLE, automate_registered_services).
+-define(SERVICE_REGISTRATION_TOKEN_TABLE, automate_service_registration_token_table).
 
 -include("./records.hrl").
 
@@ -187,6 +189,23 @@ user_has_registered_service(Username, ServiceId) ->
             {ok, false};
         {ok, not_found} ->
             {ok, false};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+
+-spec get_or_gen_registration_token(binary(), binary()) -> {ok, binary()}.
+get_or_gen_registration_token(Username, ServiceId) ->
+    case get_registration_token(Username, ServiceId) of
+        {ok, Token} ->
+            {ok, Token};
+        {error, not_found} ->
+            case gen_registration_token(Username, ServiceId) of
+                {ok, Token} ->
+                    {ok, Token};
+                {error, Reason} ->
+                    {error, Reason}
+            end;
         {error, Reason} ->
             {error, Reason}
     end.
@@ -529,6 +548,88 @@ try_get_user_registered_service(Username, ServiceId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec get_registration_token(binary(), binary()) -> {ok, binary()} | { error, not_found }.
+get_registration_token(Username, ServiceId) ->
+    MatchHead = #registered_user_entry{ id='$1'
+                                      , username='$2'
+                                      , password='_'
+                                      , email='_'
+                                      },
+
+    %% Check that neither the id, username or email matches another
+    GuardUsername = {'==', '$2', Username},
+    Guard = GuardUsername,
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    Transaction = fun() ->
+                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
+                              [UserId] ->
+                                  TokenMatchHead = #service_registration_token{ token='$1'
+                                                                              , service_id='$2'
+                                                                              , user_id='$3'
+                                                                              },
+
+                                  %% Check that neither the id, username or email matches another
+                                  GuardService = {'==', '$2', ServiceId},
+                                  GuardUserId = {'==', '$3', UserId},
+                                  TokenGuard = {'andthen', GuardService, GuardUserId},
+                                  TokenResultColumn = '$1',
+                                  TokenMatcher = [{TokenMatchHead, [TokenGuard], [TokenResultColumn]}],
+
+                                  case mnesia:select(?SERVICE_REGISTRATION_TOKEN_TABLE, TokenMatcher) of
+                                      [Token] ->
+                                          { ok, Token };
+                                      [] ->
+                                          {error, not_found}
+                                  end;
+                              [] ->
+                                  {ok, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
+-spec gen_registration_token(binary(), binary()) -> {ok, binary()}.
+gen_registration_token(Username, ServiceId) ->
+    Token = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+    MatchHead = #registered_user_entry{ id='$1'
+                                      , username='$2'
+                                      , password='_'
+                                      , email='_'
+                                      },
+
+    %% Check that neither the id, username or email matches another
+    GuardUsername = {'==', '$2', Username},
+    Guard = GuardUsername,
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+    Transaction = fun() ->
+                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
+                              [UserId] ->
+                                  TokenRegistration = #service_registration_token{ token=Token
+                                                                                 , service_id=ServiceId
+                                                                                 , user_id=UserId
+                                                                                 },
+                                  ok = mnesia:write(?SERVICE_REGISTRATION_TOKEN_TABLE, TokenRegistration, write),
+                                  {ok, Token};
+                              [] ->
+                                  {ok, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
 %%====================================================================
 %% Startup functions
 %%====================================================================
@@ -612,6 +713,19 @@ build_tables(Nodes) ->
                                   [ {attributes, record_info(fields, registered_service_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, registered_service_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    %% Service registration token table
+    ok = case mnesia:create_table(?SERVICE_REGISTRATION_TOKEN_TABLE,
+                                  [ {attributes, record_info(fields, service_registration_token)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, service_registration_token }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->

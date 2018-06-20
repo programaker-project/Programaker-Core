@@ -9,6 +9,7 @@
         , lists_programs_from_username/1
         , update_program/3
         , list_services_from_username/1
+        , get_service_enable_how_to/2
         ]).
 
 %% Definitions
@@ -98,6 +99,19 @@ update_program(Username, ProgramName,
 list_services_from_username(Username) ->
     {ok, get_telegram_services_from_username(Username)}.
 
+
+get_service_enable_how_to(Username, ServiceId) ->
+    case get_platform_service_how_to(Username, ServiceId) of
+        {ok, HowTo} ->
+            {ok, HowTo};
+        {error, not_found} ->
+            %% TODO: Implement user-defined services
+            io:format("[Error] Non platform service required~n"),
+            {error, not_found};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -146,3 +160,29 @@ get_telegram_services_from_username(Username) ->
 -spec generate_url_from_service(binary(), binary()) -> binary().
 generate_url_from_service(Username, ServiceId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/~s", [Username, ServiceId]))).
+
+-spec get_platform_service_how_to(binary(), binary()) -> {ok, #service_enable_how_to{}} | {error, any()}.
+get_platform_service_how_to(Username, ServiceId)  ->
+    TelegramPlatformId = automate_bot_engine_telegram:get_platform_id(),
+
+    case ServiceId of
+        TelegramPlatformId ->
+            get_telegram_platform_enable_how_to(Username);
+
+        _ ->
+            {error, not_found}
+    end.
+
+-spec get_telegram_platform_enable_how_to(binary()) -> {ok, #service_enable_how_to{}}.
+get_telegram_platform_enable_how_to(Username) ->
+    {ok, RegistrationToken} = automate_bot_engine_telegram:get_registration_token(Username),
+    BotName = automate_bot_engine_telegram:get_bot_name(),
+    case get_telegram_services_from_username(Username) of
+        [ Service | _] ->
+            {ok, #service_enable_how_to{ service=Service
+                                       , method='external'
+                                       , extra=#service_enable_extra_telegram{ token=RegistrationToken
+                                                                             , bot_name=BotName
+                                                                             }
+                                       }}
+    end.

@@ -37,3 +37,12 @@
                          , orig
                          , parsed
                          }).
+
+-record(service_enable_extra_telegram, { token :: binary()
+                                       , bot_name :: binary()
+                                       }).
+
+-record(service_enable_how_to, { service :: #service_metadata{}
+                               , method :: 'external'
+                               , extra :: #service_enable_extra_telegram{}
+                               }).
