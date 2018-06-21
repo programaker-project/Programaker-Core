@@ -17,6 +17,10 @@ mat-card.not-enabled {
     color: white;
 }
 
+mat-card.enabled {
+    border: 1ex solid greenyellow;
+}
+
 
 div.letter-call-to-action {
     background-color: darkorange;
