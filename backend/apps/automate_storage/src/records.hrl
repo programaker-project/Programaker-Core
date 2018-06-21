@@ -42,3 +42,7 @@
                                     , service_id :: binary()
                                     , user_id :: binary()
                                     }).
+
+-record(telegram_service_registration_entry, { telegram_user_id
+                                             , internal_user_id
+                                             }).

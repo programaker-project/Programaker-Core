@@ -159,17 +159,41 @@ format_status(_Opt, Status) ->
 %%%===================================================================
 handle_telegram_update({pe4kin_update,
                         BotName,
-                        #{<<"message">> :=
-                              #{<<"chat">> := #{ <<"id">> := ChatId },
-                                <<"date">> := _MessageDate,
-                                <<"from">> := _Sender,
-                                <<"message_id">> := _MessageId,
-                                <<"text">> := Content},
-                          <<"update_id">> := _UpdateId}}) ->
-    WinkEmoji = pe4kin_emoji:name_to_char('wink'),
-    ResponseText = unicode:characters_to_binary([Content, " you too", WinkEmoji]),
-    io:format("Answering with ~s~n", [ResponseText]),
-    {ok, _} = pe4kin:send_message(BotName, #{chat_id => ChatId, text => ResponseText});
+                        Message = #{<<"message">> :=
+                                        #{<<"chat">> := #{ <<"id">> := ChatId },
+                                          <<"date">> := _MessageDate,
+                                          <<"from">> := #{ <<"id">> := FromId },
+                                          <<"message_id">> := _MessageId,
+                                          <<"text">> := Content},
+                                    <<"update_id">> := _UpdateId}}) ->
+    case automate_bot_engine_telegram:telegram_user_to_internal(FromId) of
+        {ok, InternalUser} ->
+            UserData = jiffy:encode(InternalUser),
+            ResponseText = <<"Hey, ", UserData/binary, "!">>,
+            {ok, _} = pe4kin:send_message(BotName, #{chat_id => ChatId, text => ResponseText});
+        {error, not_found} ->
+            handle_from_new_user(Message, Content, FromId, ChatId, BotName)
+    end;
 
 handle_telegram_update({pe4kin_update, _BotName, Message}) ->
     io:format("[Telegram Demux]Unknown message format: ~p~n", [Message]).
+
+handle_from_new_user(_Message, <<"/register ", RawRegistrationToken/binary>>, UserId, ChatId, BotName) ->
+    RegistrationToken = string:trim(RawRegistrationToken, both, " \n"),
+    case automate_bot_engine_telegram:register_user(UserId, RegistrationToken) of
+        ok ->
+            ResponseText = <<"Welcome! You're registered!\nNow you can use this bot in your programs.">>,
+            {ok, _} = pe4kin:send_message(BotName, #{chat_id => ChatId, text => ResponseText});
+        {error, not_found} ->
+            ResponseText = <<"Hm... We didn't found a match for that token.\nMaybe check your spelling ;)">>,
+            {ok, _} = pe4kin:send_message(BotName, #{chat_id => ChatId, text => ResponseText})
+    end;
+
+handle_from_new_user(_Message, <<"/start">>, _UserId, ChatId, BotName) ->
+    ResponseText = <<"Hi! I'm a bot in the making, ask @kenkeiras for more info if you want to know how to program me ;).">>,
+    {ok, _} = pe4kin:send_message(BotName, #{chat_id => ChatId, text => ResponseText});
+
+handle_from_new_user(_Message, _Content, _UserId, ChatId, BotName) ->
+    ResponseText = <<"Sorry, I didnt get that!\nSay /start to see what can I do.">>,
+    {ok, _} = pe4kin:send_message(BotName, #{chat_id => ChatId, text => ResponseText}).
+

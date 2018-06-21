@@ -12,6 +12,8 @@
         , get_platform_name/0
         , get_bot_name/0
         , get_registration_token/1
+        , telegram_user_to_internal/1
+        , register_user/2
         ]).
 
 -define(APPLICATION, automate_bot_engine).
@@ -45,3 +47,11 @@ get_bot_name() ->
 -spec get_registration_token(binary()) -> {ok, binary()}.
 get_registration_token(Username) ->
     automate_storage:get_or_gen_registration_token(Username, get_platform_id()).
+
+
+-spec telegram_user_to_internal(binary()) -> {ok, binary()} | {error, not_found}.
+telegram_user_to_internal(TelegramId) ->
+    automate_storage:get_internal_user_for_telegram_id(TelegramId).
+
+register_user(TelegramUserId, RegistrationToken) ->
+    automate_storage:finish_telegram_registration(TelegramUserId, RegistrationToken).

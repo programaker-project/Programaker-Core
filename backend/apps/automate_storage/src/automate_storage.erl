@@ -14,6 +14,8 @@
         , clear_running_programs/0
         , user_has_registered_service/2
         , get_or_gen_registration_token/2
+        , get_internal_user_for_telegram_id/1
+        , finish_telegram_registration/2
         ]).
 -export([start_link/0]).
 
@@ -25,6 +27,7 @@
 -define(EXISTING_SERVICES_TABLE, automate_existing_services).
 -define(REGISTERED_SERVICES_TABLE, automate_registered_services).
 -define(SERVICE_REGISTRATION_TOKEN_TABLE, automate_service_registration_token_table).
+-define(TELEGRAM_SERVICE_REGISTRATION_TABLE, automate_telegram_service_registration_table).
 
 -include("./records.hrl").
 
@@ -34,7 +37,7 @@
 %% API functions
 %%====================================================================
 create_user(Username, Password, Email) ->
-    UserId = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+    UserId = generate_id(),
     CipheredPassword = cipher_password(Password),
     RegisteredUserData = #registered_user_entry{ id=UserId
                                                , username=Username
@@ -55,7 +58,7 @@ login_user(Username, Password) ->
                                    }} ->
             case libsodium_crypto_pwhash:str_verify(StoredPassword, Password) =:= 0 of
                 true ->
-                    SessionToken = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+                    SessionToken = generate_id(),
                     ok = add_token_to_user(UserId, SessionToken),
                     { ok, SessionToken };
                 _ ->
@@ -89,7 +92,7 @@ get_session_username(SessionId) when is_binary(SessionId) ->
 
 create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
-    ProgramId = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+    ProgramId = generate_id(),
     UserProgram = #user_program_entry{ id=ProgramId
                                      , user_id=UserId
                                      , program_name=ProgramName
@@ -209,6 +212,25 @@ get_or_gen_registration_token(Username, ServiceId) ->
         {error, Reason} ->
             {error, Reason}
     end.
+
+-spec get_internal_user_for_telegram_id(binary()) -> {ok, binary()} | {error, not_found}.
+get_internal_user_for_telegram_id(TelegramId) ->
+    Transaction = fun() ->
+                          mnesia:read(?TELEGRAM_SERVICE_REGISTRATION_TABLE, TelegramId)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [#telegram_service_registration_entry{internal_user_id=UserId}] } ->
+            {ok, UserId};
+        { atomic, [] } ->
+            {error, not_found};
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec finish_telegram_registration(binary(), binary()) -> {ok} | {error, not_found}.
+finish_telegram_registration(TelegramUserId, RegistrationToken) ->
+    finish_telegram_registration_store(RegistrationToken, TelegramUserId).
 
 %% Exposed startup entrypoint
 start_link() ->
@@ -597,7 +619,7 @@ get_registration_token(Username, ServiceId) ->
 
 -spec gen_registration_token(binary(), binary()) -> {ok, binary()}.
 gen_registration_token(Username, ServiceId) ->
-    Token = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+    Token = generate_id(),
     MatchHead = #registered_user_entry{ id='$1'
                                       , username='$2'
                                       , password='_'
@@ -629,6 +651,66 @@ gen_registration_token(Username, ServiceId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec finish_telegram_registration_store(binary(), binary()) -> {ok} | {error, not_found}.
+finish_telegram_registration_store(RegistrationToken, TelegramUserId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?SERVICE_REGISTRATION_TOKEN_TABLE, RegistrationToken) of
+                              [#service_registration_token{ service_id=ServiceId
+                                                          , user_id=UserId
+                                                          }] ->
+                                  case automate_bot_engine_telegram:get_platform_id() of
+                                      ServiceId ->
+                                          ok = mnesia:write(?TELEGRAM_SERVICE_REGISTRATION_TABLE,
+                                                            #telegram_service_registration_entry{ telegram_user_id=TelegramUserId
+                                                                                                , internal_user_id=UserId
+                                                                                                }, write),
+
+                                          ServiceMatchHead = #registered_service_entry{ registration_id='$1'
+                                                                                      , service_id='$2'
+                                                                                      , user_id='$3'
+                                                                                      , enabled='_'
+                                                                                      },
+
+                                          %% Retrieve telegram service entry for user
+                                          GuardService = {'==', '$2', ServiceId},
+                                          GuardUserId = {'==', '$3', UserId},
+                                          ServiceGuard = {'andthen', GuardService, GuardUserId},
+                                          ServiceResultColumn = '$1',
+                                          ServiceMatcher = [{ServiceMatchHead, [ServiceGuard], [ServiceResultColumn]}],
+
+                                          case mnesia:select(?REGISTERED_SERVICES_TABLE, ServiceMatcher) of
+                                              [RegisteredServiceId] ->
+                                                  [Service] = mnesia:read(?REGISTERED_SERVICES_TABLE, RegisteredServiceId),
+                                                  mnesia:write(?REGISTERED_SERVICES_TABLE,
+                                                               Service#registered_service_entry{enabled=true},
+                                                               write);
+                                              [] ->
+                                                  mnesia:write(?REGISTERED_SERVICES_TABLE,
+                                                               #registered_service_entry{ registration_id=generate_id()
+                                                                                        , service_id=ServiceId
+                                                                                        , user_id=UserId
+                                                                                        , enabled=true
+                                                                                        },
+                                                               write)
+                                          end;
+                                      _ ->
+                                          %% TODO log appropiately (matched with token from another service)
+                                          io:format("[Error] Matched token on another service~n"),
+                                          mnesia:abort({error, not_found})
+                                  end;
+                              _ ->
+                                  io:format("[Error] No token match~n"),
+                                  mnesia:abort({error, not_found})
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, {error, Reason} } ->
+            {error, Reason};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
 
 %%====================================================================
 %% Startup functions
@@ -733,4 +815,19 @@ build_tables(Nodes) ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
+    %% TelegramId -> InternalId matches
+    ok = case mnesia:create_table(?TELEGRAM_SERVICE_REGISTRATION_TABLE,
+                                  [ { attributes, record_info(fields, telegram_service_registration_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, telegram_service_registration_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
     ok.
+
+generate_id() ->
+    binary:list_to_bin(uuid:to_string(uuid:uuid4())).
