@@ -26,7 +26,10 @@ start(ProgramId) ->
     ok.
 
 start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+    Result = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
+    ok = start_running_programs(),
+    Result.
+
 
 %%====================================================================
 %% Supervisor callbacks
@@ -36,7 +39,6 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    automate_storage:clear_running_programs(),
     {ok, { {simple_one_for_one, 3, 60},
            [ #{ id => automate_bot_engine_runner
               , start => {automate_bot_engine_runner, start_link, []}
@@ -50,3 +52,9 @@ init([]) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+start_running_programs() ->
+    {ok, Ids} = automate_storage:dirty_list_running_programs(),
+    lists:foreach(fun(ProgramId) ->
+                          ok = start(ProgramId)
+                  end, Ids),
+    ok.

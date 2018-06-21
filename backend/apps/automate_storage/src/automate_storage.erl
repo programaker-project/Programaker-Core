@@ -11,11 +11,11 @@
         , get_program_pid/1
         , register_program_runner/2
         , get_program_from_id/1
-        , clear_running_programs/0
         , user_has_registered_service/2
         , get_or_gen_registration_token/2
         , get_internal_user_for_telegram_id/1
         , finish_telegram_registration/2
+        , dirty_list_running_programs/0
         ]).
 -export([start_link/0]).
 
@@ -175,14 +175,8 @@ get_program_from_id(ProgramId) ->
     end.
 
 
-clear_running_programs() ->
-    case mnesia:clear_table(?RUNNING_PROGRAMS_TABLE) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
-            {error, mnesia:error_description(Reason)}
-    end.
+dirty_list_running_programs() ->
+    {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
 
 user_has_registered_service(Username, ServiceId) ->
     case try_get_user_registered_service(Username, ServiceId) of
