@@ -168,9 +168,7 @@ handle_telegram_update({pe4kin_update,
                                     <<"update_id">> := _UpdateId}}) ->
     case automate_bot_engine_telegram:telegram_user_to_internal(FromId) of
         {ok, InternalUser} ->
-            UserData = jiffy:encode(InternalUser),
-            ResponseText = <<"Hey, ", UserData/binary, "!">>,
-            {ok, _} = pe4kin:send_message(BotName, #{chat_id => ChatId, text => ResponseText});
+            automate_bot_engine_launcher:user_sent_telegram_message(InternalUser, ChatId, Content);
         {error, not_found} ->
             handle_from_new_user(Message, Content, FromId, ChatId, BotName)
     end;

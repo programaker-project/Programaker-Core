@@ -12,6 +12,7 @@
 -export([ update/1
         , loop/1
         , start_link/1
+        , user_sent_message/3
         ]).
 
 -define(SERVER, ?MODULE).
@@ -43,6 +44,10 @@ update(Pid) ->
         {?SERVER, X} ->
             X
     end.
+
+user_sent_message(Pid, ChatId, Content) ->
+    io:format("[~p] Message: ~p~n", [Pid, {telegram_received_message, {ChatId, Content}}]),
+    Pid ! {telegram_received_message, {ChatId, Content}}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -77,7 +82,7 @@ init(ProgramId) ->
     automate_storage:register_program_runner(ProgramId, self()),
     Program = automate_storage:get_program_from_id(ProgramId),
     {ok, ProgramState} = initialize_program(Program),
-    self() ! ?TICK_SIGNAL,
+    self() ! {?TICK_SIGNAL, {}},
     loop(#state{ program_id=ProgramId
                , program=ProgramState
                , check_next_action=fun(_, _) -> continue end
@@ -110,9 +115,9 @@ run_tick(State = #state{ program=Program }, Message) ->
                }.
 
 build_check_next_action(ExpectedMessages) ->
-    fun(_, Message) ->
-            io:format("Received ~p expecting ~p~n", [Message, ExpectedMessages]),
-            case lists:member(Message, ExpectedMessages) of
+    fun(_, {Type, _Content}) ->
+            io:format("Received ~p expecting ~p :: ~p~n", [Type, ExpectedMessages, lists:member(Type, ExpectedMessages)]),
+            case lists:member(Type, ExpectedMessages) of
                 true ->
                     continue;
                 _ ->
@@ -127,7 +132,7 @@ run_instructions(#state{ program=#program_state{ subprograms=Subprograms} }, Mes
     %% Trigger now the timer signal if needed
     case lists:member(?TICK_SIGNAL, ExpectedMessages) of
         true ->
-            timer:send_after(?MILLIS_PER_TICK, self(), ?TICK_SIGNAL);
+            timer:send_after(?MILLIS_PER_TICK, self(), {?TICK_SIGNAL, {}});
         _ ->
             ok
     end,
@@ -151,7 +156,7 @@ run_subprogram(Subprogram, Message) ->
     run_instruction(Instruction, Message, Subprogram).
 
 run_instruction( #{ <<"type">> := <<"chat_whenreceivecommand">> }
-               , telegram_received_message
+               , {telegram_received_message, _Content}
                , Subprogram) ->
     io:format("We got it!!!!!~n", []),
     {did_run, increment_position(Subprogram)};
@@ -164,7 +169,7 @@ run_instruction( #{ <<"type">> := <<"chat_whenreceivecommand">> }
 
 
 run_instruction( #{ <<"type">> := Type }
-               , ?TICK_SIGNAL
+               , {?TICK_SIGNAL, _}
                , Subprogram) ->
     io:format("Running along on ~p~n", [Type]),
     {did_run, increment_position(Subprogram)}.

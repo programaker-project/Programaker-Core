@@ -7,6 +7,7 @@
         , create_program/2
         , get_program/2
         , lists_programs_from_username/1
+        , list_programs_from_userid/1
         , update_program/3
         , get_program_pid/1
         , register_program_runner/2
@@ -115,6 +116,15 @@ get_program(Username, ProgramName) ->
 -spec lists_programs_from_username(string()) -> {'ok', [ { string(), string() } ] }.
 lists_programs_from_username(Username) ->
     case retrieve_program_list_from_username(Username) of
+        {ok, Programs} ->
+            { ok
+            , [{Id, Name} || [#user_program_entry{id=Id, program_name=Name}] <- Programs]};
+        X ->
+            X
+    end.
+
+list_programs_from_userid(Userid) ->
+    case retrieve_program_list_from_userid(Userid) of
         {ok, Programs} ->
             { ok
             , [{Id, Name} || [#user_program_entry{id=Id, program_name=Name}] <- Programs]};
@@ -399,6 +409,32 @@ retrieve_program_list_from_username(Username) ->
                                   Results = mnesia:select(?USER_PROGRAMS_TABLE, ProgramMatcher),
                                   [mnesia:read(?USER_PROGRAMS_TABLE, ResultId) || ResultId <- Results]
                           end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, { error, Reason }} ->
+            {error, Reason };
+        { atomic, Result } ->
+            {ok, Result};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+retrieve_program_list_from_userid(UserId) ->
+    Transaction = fun() ->
+                          %% Find program with userId and name
+                          ProgramMatchHead = #user_program_entry{ id='$1'
+                                                                , user_id='$2'
+                                                                , program_name='$3'
+                                                                , program_type='_'
+                                                                , program_parsed='_'
+                                                                , program_orig='_'
+                                                                },
+                          ProgramGuard = {'==', '$2', UserId},
+                          ProgramResultsColumn = '$1',
+                          ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultsColumn]}],
+
+                          Results = mnesia:select(?USER_PROGRAMS_TABLE, ProgramMatcher),
+                          [mnesia:read(?USER_PROGRAMS_TABLE, ResultId) || ResultId <- Results]
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, { error, Reason }} ->
