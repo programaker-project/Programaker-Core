@@ -19,16 +19,8 @@
 -define(MILLIS_PER_TICK, 100).
 -define(TICK_SIGNAL, tick).
 -include("../../automate_storage/src/records.hrl").
+-include("program_records.hrl").
 
--record(subprogram_state, { subid
-                            %% Note that erlang 1-indexes lists!
-                            %% For this reason, position also starts on 1.
-                          , position
-                          , ast
-                          }).
--record(program_state, { variables
-                       , subprograms
-                       }).
 -record(state, { program_id
                , program
                , check_next_action
@@ -81,7 +73,7 @@ init(ProgramId) ->
     io:format("Starting ~p~n", [ProgramId]),
     automate_storage:register_program_runner(ProgramId, self()),
     Program = automate_storage:get_program_from_id(ProgramId),
-    {ok, ProgramState} = initialize_program(Program),
+    {ok, ProgramState} = automate_engine_program_decoder:initialize_program(Program),
     self() ! {?TICK_SIGNAL, {}},
     loop(#state{ program_id=ProgramId
                , program=ProgramState
@@ -251,29 +243,3 @@ resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | _]) wh
 
 resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
     resolve_subblock_with_position(lists:nth(Position, Contents), T).
-
-
--spec initialize_program(#user_program_entry{}) -> {ok, #program_state{}}.
-initialize_program(#user_program_entry{
-                      program_parsed=#{ <<"variables">> := Variables
-                                      , <<"blocks">> := Blocks
-                                      }}) ->
-    { ok
-    , #program_state{ variables=Variables
-                    , subprograms=enumerate_map(
-                                    fun(SubId, Block) ->
-                                            #subprogram_state{ subid=SubId
-                                                             , position=[1]
-                                                             , ast=Block
-                                                             }
-                                    end, Blocks)
-                    }}.
-
-enumerate_map(F, List) ->
-    enumerate_map(F, List, 1, []).
-
-enumerate_map(_, [], _, Acc) ->
-    lists:reverse(Acc);
-enumerate_map(F, [H | T], Count, Acc) ->
-    enumerate_map(F, T, Count + 1, [F(Count, H) | Acc]).
-
