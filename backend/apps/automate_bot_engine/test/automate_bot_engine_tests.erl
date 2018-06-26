@@ -8,6 +8,7 @@
 %% Data structures
 -include("../../automate_storage/src/records.hrl").
 -include("../src/program_records.hrl").
+-include("../src/instructions.hrl").
 
 %% Test data
 -include("single_line_program.hrl").
@@ -51,6 +52,7 @@ stop(ok) ->
 
 tests(_SetupResult) ->
     [ {"[Bot runner][Initialization] Single line program initialization", fun single_line_program_initialization/0}
+    , {"[Bot runner][Signals] Wait for telegram command signal", fun wait_for_telegram_command_signal/0}
     ].
 
 
@@ -61,3 +63,12 @@ single_line_program_initialization() ->
     Expected = ?SINGLE_LINE_PROGRAM_INITIALIZATION,
 
     {ok, Expected} = automate_bot_engine_program_decoder:initialize_program(Program).
+
+%% Signals
+wait_for_telegram_command_signal() ->
+    Program = #program_state{ triggers=[#program_trigger{ condition=#{ ?TYPE => ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
+                                                                     }
+                                                        }]},
+    Expected = [?SIGNAL_TELEGRAM_MESSAGE_RECEIVED],
+
+    {ok, Expected} = automate_bot_engine_triggers:get_expected_actions(Program).
