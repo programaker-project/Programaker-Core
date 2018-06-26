@@ -12,5 +12,5 @@ echo "[INFO] Building FRONTEND"
 pushd frontend
 make
 npm install .
-npm build
-npm lint
+npm run build
+npm run lint
