@@ -16,10 +16,9 @@
         ]).
 
 -define(SERVER, ?MODULE).
--define(MILLIS_PER_TICK, 100).
--define(TICK_SIGNAL, tick).
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
+-include("instructions.hrl").
 
 -record(state, { program_id
                , program
@@ -38,8 +37,8 @@ update(Pid) ->
     end.
 
 user_sent_message(Pid, ChatId, Content) ->
-    io:format("[~p] Message: ~p~n", [Pid, {telegram_received_message, {ChatId, Content}}]),
-    Pid ! {telegram_received_message, {ChatId, Content}}.
+    io:format("[~p] Message: ~p~n", [Pid, {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content}}]),
+    Pid ! {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content}}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -74,7 +73,7 @@ init(ProgramId) ->
     automate_storage:register_program_runner(ProgramId, self()),
     Program = automate_storage:get_program_from_id(ProgramId),
     {ok, ProgramState} = automate_bot_engine_program_decoder:initialize_program(Program),
-    self() ! {?TICK_SIGNAL, {}},
+    self() ! {?SIGNAL_PROGRAM_TICK, {}},
     loop(#state{ program_id=ProgramId
                , program=ProgramState
                , check_next_action=fun(_, _) -> continue end
@@ -101,10 +100,29 @@ loop(State = #state{check_next_action = CheckContinue}) ->
 
 -spec run_tick(#state{}, any()) -> #state{}.
 run_tick(State = #state{ program=Program }, Message) ->
-    {ok, {NonRunnedPrograms, RunnedPrograms, ExpectedMessages}} = run_instructions(State, Message),
-    State#state{ program=Program#program_state{ subprograms=NonRunnedPrograms ++ RunnedPrograms }
-               , check_next_action=build_check_next_action(ExpectedMessages)
+    #program_state{threads=OriginalThreads} = Program,
+    TriggeredThreads = automate_bot_engine_triggers:get_triggered_threads(Program, Message),
+
+    Threads = TriggeredThreads ++ OriginalThreads,
+
+    {ok, {NonRunnedPrograms, RunnedPrograms}} = automate_bot_engine_operations:run_threads(Threads, State, Message),
+
+    {ok, TriggersExpectedSignals} = automate_bot_engine_triggers:get_expected_actions(Program),
+    {ok, ThreadsExpectedSignals} = automate_bot_engine_operations:get_expected_actions(Threads),
+    ExpectedSignals = TriggersExpectedSignals ++ ThreadsExpectedSignals,
+
+    %% Trigger now the timer signal if needed
+    case lists:member(?SIGNAL_PROGRAM_TICK, ExpectedSignals) of
+        true ->
+            timer:send_after(?MILLIS_PER_TICK, self(), {?SIGNAL_PROGRAM_TICK, {}});
+        _ ->
+            ok
+    end,
+
+    State#state{ program=Program#program_state{ threads=NonRunnedPrograms ++ RunnedPrograms }
+               , check_next_action=build_check_next_action(ExpectedSignals)
                }.
+
 
 build_check_next_action(ExpectedMessages) ->
     fun(_, {Type, _Content}) ->
@@ -116,130 +134,3 @@ build_check_next_action(ExpectedMessages) ->
                     skip
             end
     end.
-
-run_instructions(#state{ program=#program_state{ subprograms=Subprograms} }, Message) ->
-    {NonRunnedPrograms, RunnedPrograms } = run_all_subprograms(Subprograms, Message),
-    ExpectedMessages = get_expected_messages(NonRunnedPrograms ++ RunnedPrograms),
-
-    %% Trigger now the timer signal if needed
-    case lists:member(?TICK_SIGNAL, ExpectedMessages) of
-        true ->
-            timer:send_after(?MILLIS_PER_TICK, self(), {?TICK_SIGNAL, {}});
-        _ ->
-            ok
-    end,
-    {ok, {NonRunnedPrograms, RunnedPrograms, ExpectedMessages}}.
-
-run_all_subprograms(Subprograms, Message) ->
-    run_all_subprograms(Subprograms, Message, [], []).
-
-run_all_subprograms([], _, AccNonRunned, AccRunned) ->
-    {AccNonRunned, AccRunned};
-run_all_subprograms([Subprogram | T], Message, AccNonRunned, AccRunned) ->
-    case run_subprogram(Subprogram, Message) of
-        { did_run, NextSubprogramState } ->
-            run_all_subprograms(T, Message, AccNonRunned, [NextSubprogramState | AccRunned]);
-        { did_not_run, NextSubprogramState } ->
-            run_all_subprograms(T, Message, [NextSubprogramState | AccNonRunned], AccRunned)
-    end.
-
-run_subprogram(Subprogram, Message) ->
-    {ok, Instruction} = get_instruction(Subprogram),
-    run_instruction(Instruction, Message, Subprogram).
-
-run_instruction( #{ <<"type">> := <<"chat_whenreceivecommand">> }
-               , {telegram_received_message, _Content}
-               , Subprogram) ->
-    io:format("We got it!!!!!~n", []),
-    {did_run, increment_position(Subprogram)};
-
-run_instruction( #{ <<"type">> := <<"chat_whenreceivecommand">> }
-               , _
-               , Subprogram) ->
-    io:format("Waiting for ~p...~n", [telegram_received_message]),
-    {did_not_run, Subprogram};
-
-
-run_instruction( #{ <<"type">> := Type }
-               , {?TICK_SIGNAL, _}
-               , Subprogram) ->
-    io:format("Running along on ~p~n", [Type]),
-    {did_run, increment_position(Subprogram)}.
-
-
-get_expected_messages(Programs) ->
-    AllExpectedMessages = get_all_expected_messages(Programs, []),
-    AllExpectedMessages.
-
-get_all_expected_messages([], Acc) ->
-    Acc;
-get_all_expected_messages([Subprogram=#subprogram_state{} | T], Acc) ->
-    get_all_expected_messages(T, [get_expected_messages_for_subprogram(Subprogram) | Acc]).
-
-get_expected_messages_for_subprogram(Subprogram) ->
-    {ok, Instruction} = get_instruction(Subprogram),
-    get_expected_messages_for_instruction(Instruction).
-
-get_expected_messages_for_instruction(#{ <<"type">> := <<"chat_whenreceivecommand">> }) ->
-    telegram_received_message;
-
-get_expected_messages_for_instruction(Instruction) ->
-    io:format("Instruction: ~p~n", [Instruction]),
-    ?TICK_SIGNAL.
-
-increment_position(Program = #subprogram_state{position=Position}) ->
-    IncrementedInnermost = increment_innermost(Position),
-    BackToParent = back_to_parent(Position),
-    FollowInSameLevelState = Program#subprogram_state{position=IncrementedInnermost},
-    BackToParentState = Program#subprogram_state{position=BackToParent},
-    case get_instruction(FollowInSameLevelState) of
-        {ok, _} ->
-            FollowInSameLevelState;
-        {error, element_not_found} ->
-            BackToParentState
-    end.
-
-back_to_parent([]) ->
-    [1];
-back_to_parent(List) ->
-    case lists:reverse(List) of
-        [_] ->  %% When reached the end, restart
-            [1];
-        [_ | Tail] ->
-            lists:reverse(Tail)
-    end.
-
-increment_innermost([]) ->
-    [];
-increment_innermost(List)->
-    [Latest | Tail] = lists:reverse(List),
-    lists:reverse([Latest + 1 | Tail]).
-
--spec get_instruction(#program_state{}) -> {ok, map()} | {error, element_not_found}.
-get_instruction(#subprogram_state{ ast=_Ast, position=[]}) ->
-    {error, not_initialized};
-
-get_instruction(#subprogram_state{ ast=Ast, position=Position}) ->
-    case resolve_block_with_position(Ast, Position) of
-        {ok, Block} ->
-            {ok, Block};
-        {error, Reason} ->
-            {error, Reason}
-    end.
-
--spec resolve_block_with_position(list(), list()) -> {ok, map()}.
-resolve_block_with_position(Ast, [Position | _]) when Position > length(Ast) ->
-    {error, element_not_found};
-
-resolve_block_with_position(Ast, [Position | T]) ->
-    resolve_subblock_with_position(lists:nth(Position, Ast), T).
-
--spec resolve_subblock_with_position(list(), list()) -> {ok, map()}.
-resolve_subblock_with_position(Element, []) ->
-    {ok, Element};
-
-resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | _]) when Position > length(Contents) ->
-    {error, element_not_found};
-
-resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
-    resolve_subblock_with_position(lists:nth(Position, Contents), T).

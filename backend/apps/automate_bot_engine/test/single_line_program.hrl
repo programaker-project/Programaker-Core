@@ -107,7 +107,7 @@
 
 -define(SINGLE_LINE_PROGRAM_INITIALIZATION,
         #program_state{ variables=?SINGLE_LINE_PROGRAM_VARIABLES
-                      , subprograms=[]
+                      , threads=[]
                       , triggers=[#program_trigger{ condition=?SINGLE_LINE_PROGRAM_TRIGGER
                                                   , subprogram=?SINGLE_LINE_PROGRAM_INSTRUCTIONS
                                                   }
