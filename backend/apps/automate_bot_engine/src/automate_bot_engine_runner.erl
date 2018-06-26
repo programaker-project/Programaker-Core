@@ -73,7 +73,7 @@ init(ProgramId) ->
     io:format("Starting ~p~n", [ProgramId]),
     automate_storage:register_program_runner(ProgramId, self()),
     Program = automate_storage:get_program_from_id(ProgramId),
-    {ok, ProgramState} = automate_engine_program_decoder:initialize_program(Program),
+    {ok, ProgramState} = automate_bot_engine_program_decoder:initialize_program(Program),
     self() ! {?TICK_SIGNAL, {}},
     loop(#state{ program_id=ProgramId
                , program=ProgramState
