@@ -76,11 +76,12 @@ scratch-blocks/blockly_compressed_vertical.js: scratch-blocks/blocks_compressed.
 
 # Root canary file
 scratch-blocks/blocks_compressed.js: default-python-2 closure-library/package.json scratch-blocks/package.json
-	cd scratch-blocks && npm install
+	cd scratch-blocks && npm install && python2 build.py
 
 # Pull submodules if needed
 closure-library/package.json:
 	git submodule update --init --recursive closure-library
+	npm install
 
 scratch-blocks/package.json:
 	git submodule update --init --recursive scratch-blocks
