@@ -109,9 +109,20 @@ run_tick(State = #state{ program=Program }, Message) ->
 
     {ok, TriggersExpectedSignals} = automate_bot_engine_triggers:get_expected_actions(Program),
     {ok, ThreadsExpectedSignals} = automate_bot_engine_operations:get_expected_actions(Threads),
+    ExpectedSignals = TriggersExpectedSignals ++ ThreadsExpectedSignals,
+
+    %% Trigger now the timer signal if needed
+    case lists:member(?SIGNAL_PROGRAM_TICK, ExpectedSignals) of
+        true ->
+            timer:send_after(?MILLIS_PER_TICK, self(), {?SIGNAL_PROGRAM_TICK, {}});
+        _ ->
+            ok
+    end,
+
     State#state{ program=Program#program_state{ threads=NonRunnedPrograms ++ RunnedPrograms }
-               , check_next_action=build_check_next_action(TriggersExpectedSignals ++ ThreadsExpectedSignals)
+               , check_next_action=build_check_next_action(ExpectedSignals)
                }.
+
 
 build_check_next_action(ExpectedMessages) ->
     fun(_, {Type, _Content}) ->

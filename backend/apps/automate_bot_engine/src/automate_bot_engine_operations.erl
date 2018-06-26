@@ -18,8 +18,9 @@ get_expected_signals(#program_state{threads=Threads}) ->
     {ok, get_expected_signals_from_threads(Threads)}.
 
 -spec run_threads([#program_thread{}], #program_state{}, {atom(), any()}) -> {ok, {[#program_thread{}], [#program_thread{}]}}.
-run_threads(_Threads, _State, _Message) ->
-    {ok, [], []}.
+run_threads(Threads, State, Message) ->
+    { _Stopped, RanThisTick, DidNotRanThisTick } = run_and_split_threads(Threads, State, Message),
+    {ok, RanThisTick, DidNotRanThisTick}.
 
 %%%===================================================================
 %%% Internal functions
@@ -64,3 +65,81 @@ resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | _]) wh
 
 resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
     resolve_subblock_with_position(lists:nth(Position, Contents), T).
+
+
+-spec run_and_split_threads([#program_thread{}], #program_state{}, { atom(), any() })
+                           -> {[#program_thread{}], [#program_thread{}], [#program_thread{}]}.
+run_and_split_threads(Threads, State, Message) ->
+    partition_threads(Threads, State, Message, {[], [], []}).
+
+-spec partition_threads([#program_thread{}], #program_state{}, { atom(), any() },
+                        {[#program_thread{}], [#program_thread{}], [#program_thread{}]})
+                       -> {[#program_thread{}], [#program_thread{}], [#program_thread{}]}.
+partition_threads([], _State, _Message, { Stopped, RanThisTick, DidNotRanThisTick }) ->
+    { Stopped, RanThisTick, DidNotRanThisTick };
+
+partition_threads([Thread | T], State, Message, { Stopped, RanThisTick, DidNotRanThisTick }) ->
+    case run_thread(Thread, State, Message) of
+        { stopped, _Reason } ->
+            partition_threads(T, State, Message, { [Thread | Stopped], RanThisTick, DidNotRanThisTick });
+        { did_not_run, _Reason } ->
+            partition_threads(T, State, Message, { Stopped, RanThisTick, [Thread | DidNotRanThisTick] });
+        { ran_this_tick, NewThreadState } ->
+            partition_threads(T, State, Message, { Stopped, [NewThreadState | RanThisTick], DidNotRanThisTick })
+    end.
+
+-spec run_thread(#program_thread{}, #program_state{}, {atom(), any()})
+                -> {stopped, thread_finished} | {did_not_run, waiting} | {ran_this_tick, #program_thread{}}.
+run_thread(Thread, State, Message ) ->
+    case get_instruction(Thread) of
+        {ok, Instruction} ->
+            run_instruction(Instruction, Thread, State, Message);
+        {error, element_not_found} ->
+            {stopped, thread_finished}
+    end.
+
+
+run_instruction(#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread, _State, { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {_UserId, SignalContent} }) ->
+    case automate_bot_engine_variables:resolve_argument(Argument) of
+        {ok, SignalContent} ->
+            {ran_this_tick, increment_position(Thread)};
+        {ok, _} ->
+            {did_not_run, waiting};
+        {error, _Reason} ->
+            {did_not_run, waiting}
+    end;
+
+
+run_instruction(_Instruction, _Thread, _State, _Message) ->
+    {did_not_run, waiting}.
+
+
+increment_position(Thread = #program_thread{position=Position}) ->
+    IncrementedInnermost = increment_innermost(Position),
+    BackToParent = back_to_parent(Position),
+    FollowInSameLevelState = Thread#program_thread{position=IncrementedInnermost},
+    BackToParentState = Thread#program_thread{position=BackToParent},
+    case get_instruction(FollowInSameLevelState) of
+        {ok, _} ->
+            FollowInSameLevelState;
+        {error, element_not_found} ->
+            BackToParentState
+    end.
+
+back_to_parent([]) ->
+    [1];
+back_to_parent(List) ->
+    case lists:reverse(List) of
+        [_] ->  %% End reached, leave empty to remove on next iteration
+            [];
+        [_ | Tail] ->
+            lists:reverse(Tail)
+    end.
+
+increment_innermost([]) ->
+    [];
+increment_innermost(List)->
+    [Latest | Tail] = lists:reverse(List),
+    lists:reverse([Latest + 1 | Tail]).

@@ -55,6 +55,7 @@ tests(_SetupResult) ->
     , {"[Bot runner][Signals] Wait for telegram command signal", fun wait_for_telegram_command_signal/0}
     , {"[Bot runner][Resolution] Constant argument resolution", fun constant_argument_resolution/0}
     , {"[Bot runner][Triggers] Trigger thread with telegram command", fun trigger_thread_with_telegram_command/0}
+    , {"[Bot runner][Threads] Run a thread a single tick", fun run_thread_single_tick/0}
     ].
 
 
@@ -94,3 +95,26 @@ trigger_thread_with_telegram_command() ->
                                                         }]},
     {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, { 0123, example }}),
     #program_thread{ position=[1], program=[#{ ?TYPE := example }] } = Thread.
+
+run_thread_single_tick() ->
+    %% As no other operation is yet implemented we'll use the trigger as one for this test
+    %% TODO: Use a real operation
+    WaitForTelegramCommandInstruction = #{ ?TYPE => ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
+                                         , ?ARGUMENTS => [#{ ?TYPE => ?VARIABLE_CONSTANT
+                                                           , ?VALUE => example
+                                                           }
+                                                         ]
+                                         },
+    TelegramCommandSignal = { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, { 0123, example }},
+
+    Program = #program_state{ triggers=[#program_trigger{ condition=WaitForTelegramCommandInstruction
+                                                        , subprogram=[WaitForTelegramCommandInstruction]
+                                                        }]},
+
+    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, TelegramCommandSignal),
+    #program_thread{ position=[1], program=[WaitForTelegramCommandInstruction] } = Thread,
+
+    {ok, Ran, NotRun} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
+                                                           TelegramCommandSignal),
+    [#program_thread{position=[]}] = Ran,
+    [] = NotRun.

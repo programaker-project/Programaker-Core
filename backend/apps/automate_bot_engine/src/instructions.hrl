@@ -27,4 +27,4 @@
 -define(SIGNAL_PROGRAM_TICK, tick).
 
 %%%% Operation parameters
--define(MILLIS_PER_TICK, 100).
+-define(MILLIS_PER_TICK, 10).
