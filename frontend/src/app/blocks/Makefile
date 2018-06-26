@@ -1,4 +1,4 @@
-COMPRESSION?=uncompressed
+COMPRESSION?=compressed
 
 .PHONY: all build default-python-2 javascript media clean-and-update
 
