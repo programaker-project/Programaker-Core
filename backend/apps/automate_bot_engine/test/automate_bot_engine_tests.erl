@@ -53,6 +53,8 @@ stop(ok) ->
 tests(_SetupResult) ->
     [ {"[Bot runner][Initialization] Single line program initialization", fun single_line_program_initialization/0}
     , {"[Bot runner][Signals] Wait for telegram command signal", fun wait_for_telegram_command_signal/0}
+    , {"[Bot runner][Resolution] Constant argument resolution", fun constant_argument_resolution/0}
+    , {"[Bot runner][Triggers] Trigger thread with telegram command", fun trigger_thread_with_telegram_command/0}
     ].
 
 
@@ -71,4 +73,24 @@ wait_for_telegram_command_signal() ->
                                                         }]},
     Expected = [?SIGNAL_TELEGRAM_MESSAGE_RECEIVED],
 
-    {ok, Expected} = automate_bot_engine_triggers:get_expected_actions(Program).
+    {ok, Expected} = automate_bot_engine_triggers:get_expected_signals(Program).
+
+%% Argument resolution
+constant_argument_resolution() ->
+    Value = example,
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(#{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                  , ?VALUE => Value
+                                                                  }).
+
+%% Threads
+trigger_thread_with_telegram_command() ->
+    Program = #program_state{ triggers=[#program_trigger{ condition=#{ ?TYPE => ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
+                                                                     , ?ARGUMENTS => [#{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                                       , ?VALUE => example
+                                                                                       }
+                                                                                     ]
+                                                                     }
+                                                        , subprogram=[#{ ?TYPE => example }]
+                                                        }]},
+    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, { 0123, example }}),
+    #program_thread{ position=[1], program=[#{ ?TYPE := example }] } = Thread.

@@ -18,7 +18,7 @@ initialize_program(#user_program_entry{
                                       }}) ->
     { ok
     , #program_state{ variables=Variables
-                    , subprograms=[]
+                    , threads=[]
                     , triggers=get_triggers(Blocks)
                     }}.
 
