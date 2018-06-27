@@ -35,8 +35,6 @@ get_expected_signals_from_threads(Threads) ->
 -spec get_expected_action_from_thread(#program_thread{}) -> atom().
 get_expected_action_from_thread(Thread) ->
     case get_instruction(Thread) of
-        {error, not_initialized} ->
-            none;
         {error, element_not_found} ->
             none;
         {ok, Operation} ->
@@ -48,7 +46,7 @@ get_expected_action_from_operation(_) ->
 
 -spec get_instruction(#program_state{}) -> {ok, map()} | {error, element_not_found}.
 get_instruction(#program_thread{ position=[]}) ->
-    {error, not_initialized};
+    {error, element_not_found};
 
 get_instruction(#program_thread{ program=Program, position=Position}) ->
     case resolve_block_with_position(Program, Position) of
