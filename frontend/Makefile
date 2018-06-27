@@ -5,8 +5,12 @@ FONTS_LIBS_PATH=src/app/libs/fonts
 
 all: libs
 
-libs: $(CSS_LIBS_PATH)/material-icons.css \
+libs: $(CSS_LIBS_PATH)/bootstrap.min.css \
+	  $(CSS_LIBS_PATH)/material-icons.css \
 	  $(FONTS_LIBS_PATH)/material-icons.ttf
+
+$(CSS_LIBS_PATH)/bootstrap.min.css: node_modules/bootstrap/dist/css/bootstrap.min.css
+	cp -v $< $@
 
 $(CSS_LIBS_PATH)/material-icons.css:
 	wget 'https://fonts.googleapis.com/icon?family=Material+Icons' -O- \
