@@ -27,12 +27,21 @@ run_threads(Threads, State, Message) ->
 %%%===================================================================
 -spec get_expected_signals_from_threads([#program_thread{}]) -> [atom()].
 get_expected_signals_from_threads(Threads) ->
-    [get_expected_action_from_thread(Thread) || Thread <- Threads ].
+    [Signal ||
+        Signal <- [get_expected_action_from_thread(Thread) || Thread <- Threads ],
+        Signal =/= none
+    ].
 
 -spec get_expected_action_from_thread(#program_thread{}) -> atom().
 get_expected_action_from_thread(Thread) ->
-    {ok, Operation} = get_instruction(Thread),
-    get_expected_action_from_operation(Operation).
+    case get_instruction(Thread) of
+        {error, not_initialized} ->
+            none;
+        {error, element_not_found} ->
+            none;
+        {ok, Operation} ->
+            get_expected_action_from_operation(Operation)
+    end.
 
 get_expected_action_from_operation(_) ->
     ?SIGNAL_PROGRAM_TICK.
