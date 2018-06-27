@@ -27,4 +27,8 @@
 -define(SIGNAL_PROGRAM_TICK, tick).
 
 %%%% Operation parameters
--define(MILLIS_PER_TICK, 10).
+-define(MILLIS_PER_TICK, 100).
+
+%%%% Thread memory values
+-define(TELEGRAM_CHAT_ID, telegram_chat_id).
+-define(TELEGRAM_BOT_NAME, telegram_bot_name).

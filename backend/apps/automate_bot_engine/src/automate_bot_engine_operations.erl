@@ -102,7 +102,8 @@ run_thread(Thread, State, Message ) ->
 run_instruction(#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
                  , ?ARGUMENTS := [Argument]
                  }, Thread, _State, { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {_UserId, SignalContent} }) ->
-    case automate_bot_engine_variables:resolve_argument(Argument) of
+    Expected = automate_bot_engine_variables:resolve_argument(Argument),
+    case Expected of
         {ok, SignalContent} ->
             {ran_this_tick, increment_position(Thread)};
         {ok, _} ->
@@ -112,7 +113,25 @@ run_instruction(#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
     end;
 
 
-run_instruction(_Instruction, _Thread, _State, _Message) ->
+run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread, _State, _Message) ->
+
+    {ok, Message} = automate_bot_engine_variables:resolve_argument(Argument),
+    case automate_bot_engine_variables:retrieve_thread_values(Thread, [ ?TELEGRAM_CHAT_ID
+                                                                      , ?TELEGRAM_BOT_NAME
+                                                                      ]) of
+        {ok, [ChatId, BotName]} ->
+            {ok, _} = pe4kin:send_message(BotName, #{chat_id => ChatId, text => Message});
+        {error, Reason} ->
+            %% TODO report error to user
+            io:format("Error: ~p~n", [Reason])
+    end,
+    {ran_this_tick, increment_position(Thread)};
+
+run_instruction(Instruction, _Thread, _State, _Message) ->
+    #{ ?TYPE := Type } = Instruction,
+    io:format("Unhandled instruction, type: ~p~n", [Type]),
     {did_not_run, waiting}.
 
 

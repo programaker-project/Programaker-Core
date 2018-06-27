@@ -12,7 +12,7 @@
 -export([ update/1
         , loop/1
         , start_link/1
-        , user_sent_message/3
+        , user_sent_message/4
         ]).
 
 -define(SERVER, ?MODULE).
@@ -36,9 +36,9 @@ update(Pid) ->
             X
     end.
 
-user_sent_message(Pid, ChatId, Content) ->
-    io:format("[~p] Message: ~p~n", [Pid, {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content}}]),
-    Pid ! {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content}}.
+user_sent_message(Pid, ChatId, Content, BotName) ->
+    io:format("[~p] Message: ~p~n", [Pid, {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName}}]),
+    Pid ! {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName}}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -121,7 +121,7 @@ run_tick(State = #state{ program=Program }, Message) ->
             ok
     end,
 
-    State#state{ program=Program#program_state{ threads=NonRunnedPrograms ++ RunnedPrograms }
+    State#state{ program=Program#program_state{ threads=ThreadsAfter }
                , check_next_action=build_check_next_action(ExpectedSignals)
                }.
 

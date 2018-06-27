@@ -4,6 +4,7 @@
 
 -record(program_thread, { position :: [integer()]
                         , program  :: [any()]
+                        , global_memory :: map()
                         }).
 
 -record(program_state, { variables   :: [any()]

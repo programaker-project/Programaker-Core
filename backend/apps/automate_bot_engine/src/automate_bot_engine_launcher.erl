@@ -8,7 +8,7 @@
 
 %% API
 -export([ update_program/1
-        , user_sent_telegram_message/3
+        , user_sent_telegram_message/4
         ]).
 
 %%====================================================================
@@ -27,12 +27,12 @@ update_program(ProgramId) ->
             automate_bot_engine_runner_sup:start(ProgramId)
     end.
 
-user_sent_telegram_message(InternalUserId, ChatId, Content) ->
+user_sent_telegram_message(InternalUserId, ChatId, Content, BotName) ->
     case automate_storage:list_programs_from_userid(InternalUserId) of
         {ok, Programs} ->
             lists:map(fun({ProgramId, _ProgramName}) ->
                               {ok, Pid} = automate_storage:get_program_pid(ProgramId),
-                              automate_bot_engine_runner:user_sent_message(Pid, ChatId, Content)
+                              automate_bot_engine_runner:user_sent_message(Pid, ChatId, Content, BotName)
                       end, Programs)
     end.
 %%====================================================================
