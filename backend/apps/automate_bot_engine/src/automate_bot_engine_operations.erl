@@ -170,6 +170,28 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
             {ran_this_tick, increment_position(NextIteration)}
     end;
 
+run_instruction(#{ ?TYPE := ?COMMAND_WAIT
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Seconds} = automate_bot_engine_variables:resolve_argument(Argument),
+    StartTime = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+                    {ok, MemoryValue} ->
+                        MemoryValue;
+                    {error, not_found} ->
+                        erlang:monotonic_time(millisecond)
+            end,
+
+    WaitFinished = StartTime + binary_to_integer(Seconds) * 1000 > erlang:monotonic_time(millisecond),
+    case WaitFinished of
+        true ->
+            NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            {ran_this_tick, increment_position(NextIteration)};
+        false ->
+            NextIteration = automate_bot_engine_variables:set_instruction_memory(Thread, StartTime),
+            {did_not_run, NextIteration}
+    end;
+
 run_instruction(Instruction, _Thread, _State, _Message) ->
     #{ ?TYPE := Type } = Instruction,
     io:format("Unhandled instruction, type: ~p~n", [Type]),
