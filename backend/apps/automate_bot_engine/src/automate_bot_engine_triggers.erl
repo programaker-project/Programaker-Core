@@ -66,8 +66,8 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECE
                                                                      ),
             io:format("Thread: ~p~n", [Thread]),
             {true, T2};
-        {ok, _} ->
-            io:format("No match~n", []),
+        {ok, Found} ->
+            io:format("No match. Expected “~p”, found “~p”~n", [Content, Found]),
             false;
         {error, Reason} ->
             io:format("Error: ~p~n", [Reason]),

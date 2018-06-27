@@ -65,7 +65,7 @@ single_line_program_initialization() ->
     Program  = ?SINGLE_LINE_PROGRAM,
     Expected = ?SINGLE_LINE_PROGRAM_INITIALIZATION,
 
-    {ok, Expected} = automate_bot_engine_program_decoder:initialize_program(Program).
+    {ok, Expected} = automate_bot_engine_program_decoder:initialize_program(?SINGLE_LINE_PROGRAM_ID, Program).
 
 %% Signals
 wait_for_telegram_command_signal() ->
@@ -93,28 +93,41 @@ trigger_thread_with_telegram_command() ->
                                                                      }
                                                         , subprogram=[#{ ?TYPE => example }]
                                                         }]},
-    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, { 0123, example }}),
+    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED
+                                                                                 , { 0123, example, botname }}),
     #program_thread{ position=[1], program=[#{ ?TYPE := example }] } = Thread.
 
 run_thread_single_tick() ->
-    %% As no other operation is yet implemented we'll use the trigger as one for this test
-    %% TODO: Use a real operation
     WaitForTelegramCommandInstruction = #{ ?TYPE => ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
                                          , ?ARGUMENTS => [#{ ?TYPE => ?VARIABLE_CONSTANT
                                                            , ?VALUE => example
                                                            }
                                                          ]
                                          },
-    TelegramCommandSignal = { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, { 0123, example }},
+    ChatSayInstruction = #{ ?TYPE => ?COMMAND_CHAT_SAY
+                                         , ?ARGUMENTS => [#{ ?TYPE => ?VARIABLE_CONSTANT
+                                                           , ?VALUE => answer
+                                                           }
+                                                         ]
+                                         },
+    TelegramCommandSignal = { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED
+                            , { 0123, example, botname }},
 
     Program = #program_state{ triggers=[#program_trigger{ condition=WaitForTelegramCommandInstruction
-                                                        , subprogram=[WaitForTelegramCommandInstruction]
+                                                        , subprogram=[ChatSayInstruction]
                                                         }]},
 
     {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, TelegramCommandSignal),
-    #program_thread{ position=[1], program=[WaitForTelegramCommandInstruction] } = Thread,
 
-    {ok, {Ran, NotRun}} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
-                                                           TelegramCommandSignal),
-    [#program_thread{position=[]}] = Ran,
-    [] = NotRun.
+    %% Unexpected signal, does not run
+    #program_thread{ position=[1], program=[ChatSayInstruction] } = Thread,
+    {ok, {Ran1, NotRun1}} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
+                                                                       TelegramCommandSignal),
+    [] = Ran1,
+    [#program_thread{position=[1]}] = NotRun1,
+
+    %% Expected signal, does run
+    {ok, {Ran2, NotRun2}} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
+                                                                       {?SIGNAL_PROGRAM_TICK, none}),
+    [#program_thread{position=[]}] = Ran2,
+    [] = NotRun2.

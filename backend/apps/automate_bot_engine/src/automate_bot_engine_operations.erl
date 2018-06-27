@@ -122,14 +122,14 @@ run_instruction(#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
 
 run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY
                  , ?ARGUMENTS := [Argument]
-                 }, Thread, _State, _Message) ->
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Message} = automate_bot_engine_variables:resolve_argument(Argument),
     case automate_bot_engine_variables:retrieve_thread_values(Thread, [ ?TELEGRAM_CHAT_ID
                                                                       , ?TELEGRAM_BOT_NAME
                                                                       ]) of
         {ok, [ChatId, BotName]} ->
-            {ok, _} = pe4kin:send_message(BotName, #{chat_id => ChatId, text => Message});
+            {ok, _} = answer_message(BotName, #{chat_id => ChatId, text => Message});
         {error, Reason} ->
             %% TODO report error to user
             io:format("Error: ~p~n", [Reason])
@@ -169,3 +169,13 @@ increment_innermost([]) ->
 increment_innermost(List)->
     [Latest | Tail] = lists:reverse(List),
     lists:reverse([Latest + 1 | Tail]).
+
+
+
+-ifdef(TEST).
+   answer_message(BotName, Params) ->
+         {ok, skipped}.
+-else.
+answer_message(BotName, Params) ->
+    {ok, _} = pe4kin:send_message(BotName, Params).
+-endif.
