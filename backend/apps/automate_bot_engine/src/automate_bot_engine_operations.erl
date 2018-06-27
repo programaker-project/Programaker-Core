@@ -148,6 +148,28 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY
     end,
     {ran_this_tick, increment_position(Thread)};
 
+run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{ position=Position }, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Times} = automate_bot_engine_variables:resolve_argument(Argument),
+    Value = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+                {ok, MemoryValue} ->
+                    MemoryValue;
+                {error, not_found} ->
+                    0
+            end,
+    case Value < Times of
+        true ->
+            NextIteration = automate_bot_engine_variables:set_instruction_memory(Thread#program_thread{ position=Position ++ [1] }
+                                                                                , Value + 1
+                                                                                ),
+            {ran_this_tick, NextIteration};
+        false ->
+            NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            {ran_this_tick, increment_position(NextIteration)}
+    end;
+
 run_instruction(Instruction, _Thread, _State, _Message) ->
     #{ ?TYPE := Type } = Instruction,
     io:format("Unhandled instruction, type: ~p~n", [Type]),

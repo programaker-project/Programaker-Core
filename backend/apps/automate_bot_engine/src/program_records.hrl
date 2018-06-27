@@ -6,6 +6,7 @@
                         , program  :: [any()]
                         , global_memory :: map()
                         , variables :: map()
+                        , instruction_memory :: map()
                         }).
 
 -record(program_state, { program_id  :: binary()
