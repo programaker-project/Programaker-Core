@@ -1,14 +1,14 @@
-import { Pipe } from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 import { GetTypeOfJson, JSONType } from './json';
 
 @Pipe({
     name: 'SummarizeJSON',
 })
 
-export class SummarizeJSON {
+export class SummarizeJSON implements PipeTransform {
     transform(element) {
-        var jtype = GetTypeOfJson(element);
-        switch(jtype){
+        const jtype = GetTypeOfJson(element);
+        switch (jtype) {
         case JSONType.Null:
         case JSONType.Boolean:
         case JSONType.Number:
@@ -17,7 +17,7 @@ export class SummarizeJSON {
         case JSONType.String:
             {
                 if (element.length > 10) {
-                    element = element.substr(0, 10) + "…";
+                    element = element.substr(0, 10) + '…';
                 }
 
                 return element;
@@ -28,8 +28,12 @@ export class SummarizeJSON {
 
         case JSONType.Map:
             {
-                var transformed = {};
-                for (var key in element){
+                const transformed = {};
+                for (const key in element) {
+                    if (!element.hasOwnProperty(key)) {
+                        continue;
+                    }
+
                     transformed[key] = this.transform(element[key]);
                 }
 

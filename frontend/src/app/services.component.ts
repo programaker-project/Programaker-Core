@@ -21,6 +21,7 @@ export class ServicesComponent {
         this.router = router;
     }
 
+    // tslint:disable-next-line:use-life-cycle-interface
     ngOnInit(): void {
         this.serviceService.getAvailableServices()
             .then(services => {
@@ -29,7 +30,7 @@ export class ServicesComponent {
             .catch(e => console.log(e));
     }
 
-    addService() : void {
+    addService(): void {
         this.router.navigate(['/services/add']);
     }
 }

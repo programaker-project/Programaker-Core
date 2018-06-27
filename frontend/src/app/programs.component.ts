@@ -24,7 +24,7 @@ export class ProgramsComponent implements OnInit {
         this.router = router;
     }
 
-    getPrograms() : Promise<ProgramMetadata[]> {
+    getPrograms(): Promise<ProgramMetadata[]> {
         return this.programService.getPrograms().then((programs) => this.programs = programs);
     }
 
@@ -32,7 +32,7 @@ export class ProgramsComponent implements OnInit {
         this.router.navigate(['/detail', this.selectedProgram.id]);
     }
 
-    ngOnInit() : void {
+    ngOnInit(): void {
         this.getPrograms();
     }
 
@@ -44,7 +44,7 @@ export class ProgramsComponent implements OnInit {
         this.selectedProgram = program;
     }
 
-    addProgram() : void {
+    addProgram(): void {
         this.router.navigate(['/programs/add']);
     }
 }

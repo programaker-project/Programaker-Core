@@ -13,15 +13,15 @@ import { SessionService } from './session.service';
 
 @Component({
     // moduleId: module.id,
-    selector: 'my-add-services',
+    selector: 'app-my-add-services',
     templateUrl: './add-services.component.html',
     providers: [ServiceService],
 })
 
 export class AddServicesComponent {
 
-    private testServiceUrl = "https://wireup.hivemind.ai/api/services/test";
-    private createServiceUrl = "https://wireup.hivemind.ai/api/services/create";
+    private testServiceUrl = 'https://wireup.hivemind.ai/api/services/test';
+    private createServiceUrl = 'https://wireup.hivemind.ai/api/services/create';
 
     session: Session;
     service: Service;
@@ -41,29 +41,27 @@ export class AddServicesComponent {
         private router: Router,
         private sessionService: SessionService,
     ) {
-        (function(comp){
-            eval('window.AddServiceComponent = comp');
-        })(this);
         this.location = location;
         this.http = http;
         this.snackbar = snackbar;
         this.router = router;
         this.sessionService = sessionService;
 
-        this.service = <Service>{ name: "" };
-        this.request = <Request>{ url: "", method: "GET",
+        this.service = <Service>{ name: '' };
+        this.request = <Request>{ url: '', method: 'GET',
                                   inputs: [], headers: []};
-        this.currentFillingInput = "";
-        this.currentFillingHeader = "";
-        this.resultPhrase = "";
-        this.resolved = "";
+        this.currentFillingInput = '';
+        this.currentFillingHeader = '';
+        this.resultPhrase = '';
+        this.resolved = '';
     }
 
+    // tslint:disable-next-line:use-life-cycle-interface
     ngOnInit(): void {
         this.sessionService.getSession()
             .then(session => {
                 this.session = session;
-                if (!session.active){
+                if (!session.active) {
                     this.router.navigate(['/login']);
                 }
             });
@@ -74,33 +72,33 @@ export class AddServicesComponent {
     }
 
     selectMethodGet(): void {
-        this.request.method = "GET";
+        this.request.method = 'GET';
     }
 
     selectMethodPost(): void {
-        this.request.method = "POST";
+        this.request.method = 'POST';
     }
 
     addInput(): void {
-        var input = this.currentFillingInput.trim();
-        if (input.length > 0){
-            var newInput = <RequestInput>{
+        const input = this.currentFillingInput.trim();
+        if (input.length > 0) {
+            const newInput = <RequestInput>{
                 name: input,
-                defaultValue: "",
+                defaultValue: '',
             };
-            this.currentFillingInput = "";
+            this.currentFillingInput = '';
             this.request.inputs.push(newInput);
         }
     }
 
     addHeader(): void {
-        var input = this.currentFillingHeader.trim();
-        if (input.length > 0){
-            var newInput = <RequestInput>{
+        const input = this.currentFillingHeader.trim();
+        if (input.length > 0) {
+            const newInput = <RequestInput>{
                 name: input,
-                defaultValue: "",
+                defaultValue: '',
             };
-            this.currentFillingHeader = "";
+            this.currentFillingHeader = '';
             this.request.headers.push(newInput);
         }
     }
@@ -118,10 +116,10 @@ export class AddServicesComponent {
 
 
     getJSONSelector(element): string[] {
-        var selector = [];
-        while ((element.tagName !== 'BODY') && (element.getAttribute("key") !== '')) {
-            if (element.getAttribute("key") !== null){
-                selector.push(element.getAttribute("key"));
+        const selector = [];
+        while ((element.tagName !== 'BODY') && (element.getAttribute('key') !== '')) {
+            if (element.getAttribute('key') !== null) {
+                selector.push(element.getAttribute('key'));
             }
 
             element = element.parentNode;
@@ -133,18 +131,18 @@ export class AddServicesComponent {
 
 
     selectorToString(selector: string[]): string {
-        var fullSelector = ["element"].concat(selector);
+        const fullSelector = ['element'].concat(selector);
         return (fullSelector
-                .map(e =>(e
-                          .replace(">", "\\>")
-                          .replace("}", "\\}")))
+                .map(e => (e
+                          .replace('>', '\\>')
+                          .replace('}', '\\}')))
                 .join('>'));
     }
 
 
     evalSelector(selector: string[], data: string): string {
-        var step = data;
-        for (var i = 1; i < selector.length; i++){
+        let step = data;
+        for (let i = 1; i < selector.length; i++) {
             console.log(i, selector, step);
             step = step[selector[i]];
         }
@@ -155,38 +153,33 @@ export class AddServicesComponent {
 
     resolveSelectors(phrase: string, data: string): string {
 
-        var result = [];
-        for (var i = 0; i < phrase.length; i++){
-            if ((phrase[i] == '\\') && (phrase.length > i + 1)){
+        const result = [];
+        for (let i = 0; i < phrase.length; i++) {
+            if ((phrase[i] === '\\') && (phrase.length > i + 1)) {
                 result.push(phrase[i + 1]);
                 i++;
-            }
-            else if (phrase[i] != '{') {
+            } else if (phrase[i] !== '{') {
                 result.push(phrase[i]);
-            }
-            else {
-                var selectorParts = [];
-                var selector = [];
+            } else {
+                const selectorParts = [];
+                let selector = [];
                 i++;
 
                 for (; i < phrase.length; i++) {
-                    if ((phrase[i] == '\\') && (phrase.length > i + 1)){
+                    if ((phrase[i] === '\\') && (phrase.length > i + 1)) {
                         selector.push(phrase[i + 1]);
                         i++;
-                    }
-                    else if (phrase[i] == '>'){
+                    } else if (phrase[i] === '>') {
                         selectorParts.push(selector.join(''));
                         selector = [];
-                    }
-                    else if (phrase[i] != '}') {
+                    } else if (phrase[i] !== '}') {
                         selector.push(phrase[i]);
-                    }
-                    else {
+                    } else {
                         break;
                     }
                 }
 
-                if (selector.length > 0){
+                if (selector.length > 0) {
                     selectorParts.push(selector.join(''));
                     selector = [];
                 }
@@ -200,22 +193,22 @@ export class AddServicesComponent {
 
 
     addElement(element): void {
-        var selector = this.getJSONSelector(element);
+        const selector = this.getJSONSelector(element);
         console.log(selector);
-        if (this.resultPhrase.length > 0){
-            this.resultPhrase += " ";
+        if (this.resultPhrase.length > 0) {
+            this.resultPhrase += ' ';
         }
 
-        this.resultPhrase += "{" + this.selectorToString(selector) + "}";
+        this.resultPhrase += '{' + this.selectorToString(selector) + '}';
         console.log(this.selectorToString(selector));
         console.log(this.resultPhrase);
-        var resolved = this.resolved = this.resolveSelectors(this.resultPhrase, this.testExample);
+        const resolved = this.resolved = this.resolveSelectors(this.resultPhrase, this.testExample);
         this.snackbar.open(resolved, null, { duration: 2000, });
     }
 
 
     test(): void {
-        var buttons = document.getElementsByClassName("continueButton");
+        const buttons = document.getElementsByClassName('continueButton');
         this.toIndeterminateProgressbar(buttons[0]);
 
         this.http.post(this.testServiceUrl, this.request)
@@ -231,7 +224,7 @@ export class AddServicesComponent {
 
 
     create(): void {
-        var buttons = document.getElementsByClassName("createButton");
+        const buttons = document.getElementsByClassName('createButton');
         this.toIndeterminateProgressbar(buttons[0]);
 
         this.http.post(this.createServiceUrl, { request: this.request, service: this.service, result: this.resultPhrase })

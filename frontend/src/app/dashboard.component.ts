@@ -1,4 +1,4 @@
-import { HowToEnableServiceDialogComponent } from "./HowToEnableServiceDialogComponent";
+import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
 
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
@@ -43,6 +43,7 @@ export class DashboardComponent {
         this.router = router;
     }
 
+    // tslint:disable-next-line:use-life-cycle-interface
     ngOnInit(): void {
         this.sessionService.getSession()
             .then(session => {

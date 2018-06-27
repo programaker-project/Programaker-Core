@@ -11,7 +11,7 @@ export class ProgramContent extends ProgramMetadata {
     parsed: any;
     orig: any;
 
-    constructor (metadata: ProgramMetadata, parsed: any, orig: any, type: ProgramType){
+    constructor (metadata: ProgramMetadata, parsed: any, orig: any, type: ProgramType) {
       super();
 
       this.id = metadata.id;
