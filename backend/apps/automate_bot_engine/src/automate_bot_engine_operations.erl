@@ -120,6 +120,18 @@ run_instruction(#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
     end;
 
 
+run_instruction(#{ ?TYPE := ?COMMAND_SET_VARIABLE
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_VARIABLE
+                                    , ?VALUE := VariableName
+                                    }
+                                 , ValueArgument
+                                 ]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArgument),
+    {ok, NewThreadState } = automate_bot_engine_variables:set_thread_variable(Thread, VariableName, Value),
+    {ran_this_tick, increment_position(NewThreadState)};
+
 run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY
                  , ?ARGUMENTS := [Argument]
                  }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
@@ -173,8 +185,8 @@ increment_innermost(List)->
 
 
 -ifdef(TEST).
-   answer_message(BotName, Params) ->
-         {ok, skipped}.
+answer_message(_BotName, _Params) ->
+    {ok, skipped}.
 -else.
 answer_message(BotName, Params) ->
     {ok, _} = pe4kin:send_message(BotName, Params).

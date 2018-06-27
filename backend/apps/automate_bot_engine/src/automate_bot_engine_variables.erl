@@ -3,6 +3,7 @@
 %% API
 -export([ resolve_argument/1
         , set_thread_value/3
+        , set_thread_variable/3
         , retrieve_thread_value/2
         , retrieve_thread_values/2
         ]).
@@ -37,6 +38,10 @@ retrieve_thread_values(Thread, Keys) ->
 -spec set_thread_value(#program_thread{}, atom(), any()) -> {ok, #program_thread{}}.
 set_thread_value(Thread = #program_thread{ global_memory=Global }, Key, Value) ->
     {ok, Thread#program_thread{ global_memory=Global#{ Key => Value } } }.
+
+-spec set_thread_variable(#program_thread{}, atom(), any()) -> {ok, #program_thread{}}.
+set_thread_variable(Thread = #program_thread{ variables=Variables }, Key, Value) ->
+    {ok, Thread#program_thread{ variables=Variables#{ Key => Value } } }.
 
 %%%===================================================================
 %%% Internal values

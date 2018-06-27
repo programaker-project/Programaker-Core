@@ -53,6 +53,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECE
             Thread = #program_thread{ position=[1]
                                     , program=Program
                                     , global_memory=#{}
+                                    , variables=#{}
                                     },
 
             {ok, T1} = automate_bot_engine_variables:set_thread_value( Thread

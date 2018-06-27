@@ -5,6 +5,7 @@
 -record(program_thread, { position :: [integer()]
                         , program  :: [any()]
                         , global_memory :: map()
+                        , variables :: map()
                         }).
 
 -record(program_state, { program_id  :: binary()
