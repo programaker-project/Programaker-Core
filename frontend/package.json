@@ -38,6 +38,7 @@
     "@types/jasmine": "2.8.7",
     "@types/node": "^10.3.0",
     "codelyzer": "~4.3.0",
+    "google-closure-library": "^20180506.0.0",
     "jasmine-core": "~3.1.0",
     "jasmine-spec-reporter": "~4.2.1",
     "karma": "~2.0.2",
@@ -47,6 +48,7 @@
     "karma-jasmine": "^1.1.2",
     "karma-jasmine-html-reporter": "^1.1.0",
     "protractor": "^5.3.2",
+    "scratch-blocks": "0.1.0-prerelease.1530023760",
     "ts-node": "~6.0.5",
     "tslint": "~5.10.0",
     "typescript": "^2.7.2"

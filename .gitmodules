@@ -1,6 +1,0 @@
-[submodule "frontend/plaza/src/app/blocks/scratch-blocks"]
-	path = frontend/src/app/blocks/scratch-blocks
-	url = https://github.com/LLK/scratch-blocks
-[submodule "frontend/plaza/src/app/blocks/closure-library"]
-	path = frontend/src/app/blocks/closure-library
-	url = https://github.com/google/closure-library

@@ -1,9 +1,9 @@
 CSS_LIBS_PATH=src/app/libs/css
 FONTS_LIBS_PATH=src/app/libs/fonts
 
-.PHONY: all build-blocks libs
+.PHONY: all libs
 
-all: build-blocks libs
+all: libs
 
 libs: $(CSS_LIBS_PATH)/bootstrap.min.css \
 	  $(CSS_LIBS_PATH)/material-icons.css \
@@ -20,6 +20,3 @@ $(CSS_LIBS_PATH)/material-icons.css:
 $(FONTS_LIBS_PATH)/material-icons.ttf: $(CSS_LIBS_PATH)/material-icons.css
 	wget `grep Original $< | cut -d':' -f2-|cut -d' ' -f2` -O $@
 	touch $@
-
-build-blocks:
-	make -C src/app/blocks build

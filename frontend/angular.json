@@ -26,11 +26,11 @@
               "src/material_theme.scss"
             ],
             "scripts": [
-              "src/app/blocks/blockly_vertical.js",
-              "src/app/blocks/messages.js",
-              "src/app/blocks/msg_en.js",
-              "src/app/blocks/blocks.js",
-              "src/app/blocks/blocks_vertical.js",
+              "node_modules/scratch-blocks/blockly_compressed_vertical.js",
+              "node_modules/scratch-blocks/msg/messages.js",
+              "node_modules/scratch-blocks/msg/js/en.js",
+              "node_modules/scratch-blocks/blocks_compressed.js",
+              "node_modules/scratch-blocks/blocks_compressed_vertical.js",
               "src/app/js/custom_blocks.js",
               "src/app/js/custom_toolbox.js"
             ]
