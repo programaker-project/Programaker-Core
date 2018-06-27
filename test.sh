@@ -10,7 +10,7 @@ popd
 
 echo "[INFO] Building FRONTEND"
 pushd frontend
-make
 npm install .
+make
 npm run build
 npm run lint
