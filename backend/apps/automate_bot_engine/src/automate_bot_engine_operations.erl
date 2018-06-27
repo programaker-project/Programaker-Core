@@ -13,14 +13,14 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec get_expected_signals(#program_state{}) -> {ok, [atom()]}.
-get_expected_signals(#program_state{threads=Threads}) ->
+-spec get_expected_signals([#program_thread{}]) -> {ok, [atom()]}.
+get_expected_signals(Threads) ->
     {ok, get_expected_signals_from_threads(Threads)}.
 
 -spec run_threads([#program_thread{}], #program_state{}, {atom(), any()}) -> {ok, {[#program_thread{}], [#program_thread{}]}}.
 run_threads(Threads, State, Message) ->
     { _Stopped, RanThisTick, DidNotRanThisTick } = run_and_split_threads(Threads, State, Message),
-    {ok, RanThisTick, DidNotRanThisTick}.
+    {ok, {RanThisTick, DidNotRanThisTick}}.
 
 %%%===================================================================
 %%% Internal functions

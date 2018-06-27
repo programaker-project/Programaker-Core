@@ -87,7 +87,7 @@ loop(State = #state{check_next_action = CheckContinue}) ->
             ?SERVER:loop(State);
         {quit, _From} ->
             ok;
-        X ->
+        X = {_, _} ->
             NextState = case apply(CheckContinue, [State, X]) of
                             continue ->
                                 run_tick(State, X);
@@ -101,14 +101,16 @@ loop(State = #state{check_next_action = CheckContinue}) ->
 -spec run_tick(#state{}, any()) -> #state{}.
 run_tick(State = #state{ program=Program }, Message) ->
     #program_state{threads=OriginalThreads} = Program,
-    TriggeredThreads = automate_bot_engine_triggers:get_triggered_threads(Program, Message),
+    {ok, TriggeredThreads} = automate_bot_engine_triggers:get_triggered_threads(Program, Message),
 
-    Threads = TriggeredThreads ++ OriginalThreads,
+    ThreadsBefore = TriggeredThreads ++ OriginalThreads,
 
-    {ok, {NonRunnedPrograms, RunnedPrograms}} = automate_bot_engine_operations:run_threads(Threads, State, Message),
+    {ok, {NonRunnedPrograms, RunnedPrograms}} = automate_bot_engine_operations:run_threads(ThreadsBefore, State, Message),
 
-    {ok, TriggersExpectedSignals} = automate_bot_engine_triggers:get_expected_actions(Program),
-    {ok, ThreadsExpectedSignals} = automate_bot_engine_operations:get_expected_actions(Threads),
+    ThreadsAfter = NonRunnedPrograms ++ RunnedPrograms,
+
+    {ok, TriggersExpectedSignals} = automate_bot_engine_triggers:get_expected_signals(Program),
+    {ok, ThreadsExpectedSignals} = automate_bot_engine_operations:get_expected_signals(ThreadsAfter),
     ExpectedSignals = TriggersExpectedSignals ++ ThreadsExpectedSignals,
 
     %% Trigger now the timer signal if needed

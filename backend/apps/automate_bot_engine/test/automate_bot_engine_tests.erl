@@ -114,7 +114,7 @@ run_thread_single_tick() ->
     {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, TelegramCommandSignal),
     #program_thread{ position=[1], program=[WaitForTelegramCommandInstruction] } = Thread,
 
-    {ok, Ran, NotRun} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
+    {ok, {Ran, NotRun}} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
                                                            TelegramCommandSignal),
     [#program_thread{position=[]}] = Ran,
     [] = NotRun.
