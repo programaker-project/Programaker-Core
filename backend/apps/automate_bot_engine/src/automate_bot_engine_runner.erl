@@ -20,8 +20,7 @@
 -include("program_records.hrl").
 -include("instructions.hrl").
 
--record(state, { program_id
-               , program
+-record(state, { program
                , check_next_action
                }).
 
@@ -72,19 +71,31 @@ init(ProgramId) ->
     io:format("Starting ~p~n", [ProgramId]),
     automate_storage:register_program_runner(ProgramId, self()),
     Program = automate_storage:get_program_from_id(ProgramId),
-    {ok, ProgramState} = automate_bot_engine_program_decoder:initialize_program(Program),
+    {ok, ProgramState} = automate_bot_engine_program_decoder:initialize_program(ProgramId, Program),
+
     self() ! {?SIGNAL_PROGRAM_TICK, {}},
-    loop(#state{ program_id=ProgramId
-               , program=ProgramState
+    loop(#state{ program=ProgramState
                , check_next_action=fun(_, _) -> continue end
                }).
 
+-spec update_state(#program_state{}) -> #state{}.
+update_state(State = #program_state{ program_id=ProgramId } ) ->
+    Program = automate_storage:get_program_from_id(ProgramId),
+    {ok, RestartedProgram} = automate_bot_engine_program_decoder:update_program(State, Program),
+
+    self() ! {?SIGNAL_PROGRAM_TICK, {}},
+    #state{ program=RestartedProgram
+          , check_next_action=fun(_, _) -> continue end
+          }.
+
 -spec loop(#state{}) -> no_return().
-loop(State = #state{check_next_action = CheckContinue}) ->
+loop(State = #state{ check_next_action = CheckContinue
+                   , program = Program
+                   }) ->
     receive
         {update, From} ->
             From ! {?SERVER, ok},
-            ?SERVER:loop(State);
+            ?SERVER:loop(update_state(Program));
         {quit, _From} ->
             ok;
         X = {_, _} ->
