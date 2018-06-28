@@ -20,7 +20,7 @@ digraph {
 
     // Tasks
     program_execution[label="Program execution"];
-    telegram_api_support[label="Telegram API support"];
+    telegram_api_support[label="Telegram API support", color=green, fontcolor=green];
 
     bot_renaming[label="Bot renaming"];
     unit_tested_api[label="Unit tested API"];
