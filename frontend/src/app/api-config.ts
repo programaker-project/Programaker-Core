@@ -1,4 +1,6 @@
-const ApiHost = 'http://127.0.0.1:8888';
+import { environment } from '../../environments/environment';
+
+const ApiHost = environment.ApiHost;
 const ApiRoot = ApiHost + '/api/v0';
 
 export { ApiHost, ApiRoot };
