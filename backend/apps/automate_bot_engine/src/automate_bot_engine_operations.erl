@@ -94,6 +94,8 @@ partition_threads([Thread | T], State, Message, { Stopped, RanThisTick, DidNotRa
     case run_thread(Thread, State, Message) of
         { stopped, _Reason } ->
             partition_threads(T, State, Message, { [Thread | Stopped], RanThisTick, DidNotRanThisTick });
+        { did_not_run, {new_state, NewThreadState} } ->
+            partition_threads(T, State, Message, { Stopped, RanThisTick, [NewThreadState | DidNotRanThisTick] });
         { did_not_run, _Reason } ->
             partition_threads(T, State, Message, { Stopped, RanThisTick, [Thread | DidNotRanThisTick] });
         { ran_this_tick, NewThreadState } ->
@@ -208,14 +210,14 @@ run_instruction(#{ ?TYPE := ?COMMAND_WAIT
                         erlang:monotonic_time(millisecond)
             end,
 
-    WaitFinished = StartTime + binary_to_integer(Seconds) * 1000 > erlang:monotonic_time(millisecond),
+    WaitFinished = StartTime + binary_to_integer(Seconds) * 1000 < erlang:monotonic_time(millisecond),
     case WaitFinished of
         true ->
             NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
             {ran_this_tick, increment_position(NextIteration)};
         false ->
             NextIteration = automate_bot_engine_variables:set_instruction_memory(Thread, StartTime),
-            {did_not_run, NextIteration}
+            {did_not_run, {new_state, NextIteration}}
     end;
 
 run_instruction(Instruction, _Thread, _State, _Message) ->
