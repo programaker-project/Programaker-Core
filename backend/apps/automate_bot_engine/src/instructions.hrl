@@ -14,8 +14,9 @@
 -define(COMMAND_SET_VARIABLE, <<"data_setvariableto">>).
 -define(COMMAND_CHANGE_VARIABLE, <<"data_changevariableby">>).
 -define(COMMAND_WAIT, <<"control_wait">>).
--define(COMMAND_JOIN, <<"operation_join">>).
+-define(COMMAND_JOIN, <<"operator_join">>).
 -define(COMMAND_REPEAT, <<"control_repeat">>).
+-define(COMMAND_DATA_VARIABLE, <<"data_variable">>).
 
 %% Variables
 -define(VARIABLE_BLOCK, <<"block">>).
@@ -27,4 +28,8 @@
 -define(SIGNAL_PROGRAM_TICK, tick).
 
 %%%% Operation parameters
--define(MILLIS_PER_TICK, 10).
+-define(MILLIS_PER_TICK, 100).
+
+%%%% Thread memory values
+-define(TELEGRAM_CHAT_ID, telegram_chat_id).
+-define(TELEGRAM_BOT_NAME, telegram_bot_name).

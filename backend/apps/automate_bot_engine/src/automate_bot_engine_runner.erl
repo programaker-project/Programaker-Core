@@ -12,7 +12,7 @@
 -export([ update/1
         , loop/1
         , start_link/1
-        , user_sent_message/3
+        , user_sent_message/4
         ]).
 
 -define(SERVER, ?MODULE).
@@ -20,8 +20,7 @@
 -include("program_records.hrl").
 -include("instructions.hrl").
 
--record(state, { program_id
-               , program
+-record(state, { program
                , check_next_action
                }).
 
@@ -36,9 +35,9 @@ update(Pid) ->
             X
     end.
 
-user_sent_message(Pid, ChatId, Content) ->
-    io:format("[~p] Message: ~p~n", [Pid, {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content}}]),
-    Pid ! {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content}}.
+user_sent_message(Pid, ChatId, Content, BotName) ->
+    io:format("[~p] Message: ~p~n", [Pid, {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName}}]),
+    Pid ! {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName}}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -72,22 +71,34 @@ init(ProgramId) ->
     io:format("Starting ~p~n", [ProgramId]),
     automate_storage:register_program_runner(ProgramId, self()),
     Program = automate_storage:get_program_from_id(ProgramId),
-    {ok, ProgramState} = automate_bot_engine_program_decoder:initialize_program(Program),
+    {ok, ProgramState} = automate_bot_engine_program_decoder:initialize_program(ProgramId, Program),
+
     self() ! {?SIGNAL_PROGRAM_TICK, {}},
-    loop(#state{ program_id=ProgramId
-               , program=ProgramState
+    loop(#state{ program=ProgramState
                , check_next_action=fun(_, _) -> continue end
                }).
 
+-spec update_state(#program_state{}) -> #state{}.
+update_state(State = #program_state{ program_id=ProgramId } ) ->
+    Program = automate_storage:get_program_from_id(ProgramId),
+    {ok, RestartedProgram} = automate_bot_engine_program_decoder:update_program(State, Program),
+
+    self() ! {?SIGNAL_PROGRAM_TICK, {}},
+    #state{ program=RestartedProgram
+          , check_next_action=fun(_, _) -> continue end
+          }.
+
 -spec loop(#state{}) -> no_return().
-loop(State = #state{check_next_action = CheckContinue}) ->
+loop(State = #state{ check_next_action = CheckContinue
+                   , program = Program
+                   }) ->
     receive
         {update, From} ->
             From ! {?SERVER, ok},
-            ?SERVER:loop(State);
+            ?SERVER:loop(update_state(Program));
         {quit, _From} ->
             ok;
-        X ->
+        X = {_, _} ->
             NextState = case apply(CheckContinue, [State, X]) of
                             continue ->
                                 run_tick(State, X);
@@ -101,14 +112,16 @@ loop(State = #state{check_next_action = CheckContinue}) ->
 -spec run_tick(#state{}, any()) -> #state{}.
 run_tick(State = #state{ program=Program }, Message) ->
     #program_state{threads=OriginalThreads} = Program,
-    TriggeredThreads = automate_bot_engine_triggers:get_triggered_threads(Program, Message),
+    {ok, TriggeredThreads} = automate_bot_engine_triggers:get_triggered_threads(Program, Message),
 
-    Threads = TriggeredThreads ++ OriginalThreads,
+    ThreadsBefore = TriggeredThreads ++ OriginalThreads,
 
-    {ok, {NonRunnedPrograms, RunnedPrograms}} = automate_bot_engine_operations:run_threads(Threads, State, Message),
+    {ok, {NonRunnedPrograms, RunnedPrograms}} = automate_bot_engine_operations:run_threads(ThreadsBefore, State, Message),
 
-    {ok, TriggersExpectedSignals} = automate_bot_engine_triggers:get_expected_actions(Program),
-    {ok, ThreadsExpectedSignals} = automate_bot_engine_operations:get_expected_actions(Threads),
+    ThreadsAfter = NonRunnedPrograms ++ RunnedPrograms,
+
+    {ok, TriggersExpectedSignals} = automate_bot_engine_triggers:get_expected_signals(Program),
+    {ok, ThreadsExpectedSignals} = automate_bot_engine_operations:get_expected_signals(ThreadsAfter),
     ExpectedSignals = TriggersExpectedSignals ++ ThreadsExpectedSignals,
 
     %% Trigger now the timer signal if needed
@@ -119,7 +132,7 @@ run_tick(State = #state{ program=Program }, Message) ->
             ok
     end,
 
-    State#state{ program=Program#program_state{ threads=NonRunnedPrograms ++ RunnedPrograms }
+    State#state{ program=Program#program_state{ threads=ThreadsAfter }
                , check_next_action=build_check_next_action(ExpectedSignals)
                }.
 

@@ -46,17 +46,37 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECE
                                             }
                                , subprogram=Program
                                },
-               { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {_UserId, Content} }) ->
+               { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName} }) ->
+
     case automate_bot_engine_variables:resolve_argument(Argument) of
         {ok, Content} ->
-            {true, #program_thread{ position=[1], program=Program }};
-        {ok, _} ->
+            Thread = #program_thread{ position=[1]
+                                    , program=Program
+                                    , global_memory=#{}
+                                    , variables=#{}
+                                    , instruction_memory=#{}
+                                    },
+
+            {ok, T1} = automate_bot_engine_variables:set_thread_value( Thread
+                                                                     , ?TELEGRAM_BOT_NAME
+                                                                     , BotName
+                                                                     ),
+
+            {ok, T2} = automate_bot_engine_variables:set_thread_value( T1
+                                                                     , ?TELEGRAM_CHAT_ID
+                                                                     , ChatId
+                                                                     ),
+            io:format("Thread: ~p~n", [Thread]),
+            {true, T2};
+        {ok, Found} ->
+            io:format("No match. Expected “~p”, found “~p”~n", [Content, Found]),
             false;
-        {error, _Reason} ->
+        {error, Reason} ->
+            io:format("Error: ~p~n", [Reason]),
             false
     end;
 
 %% If no match is found, don't create a thread
-trigger_thread(_Trigger, _Message) ->
+trigger_thread(_Trigger, Message) ->
+    io:format("No trigger (~p)~n", [Message]),
     false.
-

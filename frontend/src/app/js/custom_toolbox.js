@@ -73,12 +73,12 @@ Blockly.Blocks.defaultToolbox = '<xml id="toolbox-categories" style="display: no
         '</shadow>'+
       '</value>'+
     '</block>'+
-    '<block type="control_forever" id="control_forever"></block>'+
-    '<block type="control_if" id="control_if"></block>'+
-    '<block type="control_if_else" id="control_if_else"></block>'+
-    '<block type="control_wait_until" id="control_wait_until"></block>'+
-    '<block type="control_repeat_until" id="control_repeat_until"></block>'+
-    '<block type="control_stop" id="control_stop"></block>'+
+    // '<block type="control_forever" id="control_forever"></block>'+
+    // '<block type="control_if" id="control_if"></block>'+
+    // '<block type="control_if_else" id="control_if_else"></block>'+
+    // '<block type="control_wait_until" id="control_wait_until"></block>'+
+    // '<block type="control_repeat_until" id="control_repeat_until"></block>'+
+    // '<block type="control_stop" id="control_stop"></block>'+
   //   '<block type="control_start_as_clone" id="control_start_as_clone"></block>'+
   //   '<block type="control_create_clone_of" id="control_create_clone_of">'+
   //     '<value name="CLONE_OPTION">'+
@@ -128,105 +128,105 @@ Blockly.Blocks.defaultToolbox = '<xml id="toolbox-categories" style="display: no
   //   '<block type="sensing_dayssince2000" id="sensing_dayssince2000"></block>'+
   // '</category>'+
   '<category name="Operators" colour="#40BF4A" secondaryColour="#389438">'+
-    '<block type="operator_add" id="operator_add">'+
-      '<value name="NUM1">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="NUM2">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_subtract" id="operator_subtract">'+
-      '<value name="NUM1">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="NUM2">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_multiply" id="operator_multiply">'+
-      '<value name="NUM1">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="NUM2">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_divide" id="operator_divide">'+
-      '<value name="NUM1">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="NUM2">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_random" id="operator_random">'+
-      '<value name="FROM">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM">1</field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="TO">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM">10</field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_lt" id="operator_lt">'+
-      '<value name="OPERAND1">'+
-        '<shadow type="text">'+
-          '<field name="TEXT"></field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="OPERAND2">'+
-        '<shadow type="text">'+
-          '<field name="TEXT"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_equals" id="operator_equals">'+
-      '<value name="OPERAND1">'+
-        '<shadow type="text">'+
-          '<field name="TEXT"></field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="OPERAND2">'+
-        '<shadow type="text">'+
-          '<field name="TEXT"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_gt" id="operator_gt">'+
-      '<value name="OPERAND1">'+
-        '<shadow type="text">'+
-          '<field name="TEXT"></field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="OPERAND2">'+
-        '<shadow type="text">'+
-          '<field name="TEXT"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_and" id="operator_and"></block>'+
-    '<block type="operator_or" id="operator_or"></block>'+
-    '<block type="operator_not" id="operator_not"></block>'+
+//     '<block type="operator_add" id="operator_add">'+
+//       '<value name="NUM1">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="NUM2">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_subtract" id="operator_subtract">'+
+//       '<value name="NUM1">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="NUM2">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_multiply" id="operator_multiply">'+
+//       '<value name="NUM1">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="NUM2">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_divide" id="operator_divide">'+
+//       '<value name="NUM1">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="NUM2">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_random" id="operator_random">'+
+//       '<value name="FROM">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM">1</field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="TO">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM">10</field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_lt" id="operator_lt">'+
+//       '<value name="OPERAND1">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="OPERAND2">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_equals" id="operator_equals">'+
+//       '<value name="OPERAND1">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="OPERAND2">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_gt" id="operator_gt">'+
+//       '<value name="OPERAND1">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="OPERAND2">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_and" id="operator_and"></block>'+
+//     '<block type="operator_or" id="operator_or"></block>'+
+//     '<block type="operator_not" id="operator_not"></block>'+
     '<block type="operator_join" id="operator_join">'+
       '<value name="STRING1">'+
         '<shadow type="text">'+
@@ -239,63 +239,63 @@ Blockly.Blocks.defaultToolbox = '<xml id="toolbox-categories" style="display: no
         '</shadow>'+
       '</value>'+
     '</block>'+
-    '<block type="operator_letter_of" id="operator_letter_of">'+
-      '<value name="LETTER">'+
-        '<shadow type="math_whole_number">'+
-          '<field name="NUM">1</field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="STRING">'+
-        '<shadow type="text">'+
-          '<field name="TEXT">world</field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_length" id="operator_length">'+
-      '<value name="STRING">'+
-        '<shadow type="text">'+
-          '<field name="TEXT">world</field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_contains" id="operator_contains">'+
-      '<value name="STRING1">'+
-        '<shadow type="text">'+
-          '<field name="TEXT">hello</field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="STRING2">'+
-        '<shadow type="text">'+
-          '<field name="TEXT">world</field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_mod" id="operator_mod">'+
-      '<value name="NUM1">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-      '<value name="NUM2">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_round" id="operator_round">'+
-      '<value name="NUM">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
-    '<block type="operator_mathop" id="operator_mathop">'+
-      '<value name="NUM">'+
-        '<shadow type="math_number">'+
-          '<field name="NUM"></field>'+
-        '</shadow>'+
-      '</value>'+
-    '</block>'+
+//     '<block type="operator_letter_of" id="operator_letter_of">'+
+//       '<value name="LETTER">'+
+//         '<shadow type="math_whole_number">'+
+//           '<field name="NUM">1</field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="STRING">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT">world</field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_length" id="operator_length">'+
+//       '<value name="STRING">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT">world</field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_contains" id="operator_contains">'+
+//       '<value name="STRING1">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT">hello</field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="STRING2">'+
+//         '<shadow type="text">'+
+//           '<field name="TEXT">world</field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_mod" id="operator_mod">'+
+//       '<value name="NUM1">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//       '<value name="NUM2">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_round" id="operator_round">'+
+//       '<value name="NUM">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
+//     '<block type="operator_mathop" id="operator_mathop">'+
+//       '<value name="NUM">'+
+//         '<shadow type="math_number">'+
+//           '<field name="NUM"></field>'+
+//         '</shadow>'+
+//       '</value>'+
+//     '</block>'+
   '</category>'+
   '<category name="Variables" colour="#FF8C1A" secondaryColour="#DB6E00" custom="VARIABLE">' +
   '</category>' +

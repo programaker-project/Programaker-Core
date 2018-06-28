@@ -168,7 +168,7 @@ handle_telegram_update({pe4kin_update,
                                     <<"update_id">> := _UpdateId}}) ->
     case automate_bot_engine_telegram:telegram_user_to_internal(FromId) of
         {ok, InternalUser} ->
-            automate_bot_engine_launcher:user_sent_telegram_message(InternalUser, ChatId, Content);
+            automate_bot_engine_launcher:user_sent_telegram_message(InternalUser, ChatId, Content, BotName);
         {error, not_found} ->
             handle_from_new_user(Message, Content, FromId, ChatId, BotName)
     end;

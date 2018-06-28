@@ -3,6 +3,7 @@
 %% API
 -export([ get_expected_signals/1
         , run_threads/3
+        , get_result/2
         ]).
 
 -define(SERVER, ?MODULE).
@@ -13,33 +14,44 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec get_expected_signals(#program_state{}) -> {ok, [atom()]}.
-get_expected_signals(#program_state{threads=Threads}) ->
+-spec get_expected_signals([#program_thread{}]) -> {ok, [atom()]}.
+get_expected_signals(Threads) ->
     {ok, get_expected_signals_from_threads(Threads)}.
 
 -spec run_threads([#program_thread{}], #program_state{}, {atom(), any()}) -> {ok, {[#program_thread{}], [#program_thread{}]}}.
 run_threads(Threads, State, Message) ->
     { _Stopped, RanThisTick, DidNotRanThisTick } = run_and_split_threads(Threads, State, Message),
-    {ok, RanThisTick, DidNotRanThisTick}.
+    {ok, {RanThisTick, DidNotRanThisTick}}.
+
+-spec get_block_result(map(), #program_thread{}) -> {ok, any()} | {error, not_found}.
+get_result(Operation, Thread) ->
+    get_block_result(Operation, Thread).
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 -spec get_expected_signals_from_threads([#program_thread{}]) -> [atom()].
 get_expected_signals_from_threads(Threads) ->
-    [get_expected_action_from_thread(Thread) || Thread <- Threads ].
+    [Signal ||
+        Signal <- [get_expected_action_from_thread(Thread) || Thread <- Threads ],
+        Signal =/= none
+    ].
 
 -spec get_expected_action_from_thread(#program_thread{}) -> atom().
 get_expected_action_from_thread(Thread) ->
-    {ok, Operation} = get_instruction(Thread),
-    get_expected_action_from_operation(Operation).
+    case get_instruction(Thread) of
+        {error, element_not_found} ->
+            none;
+        {ok, Operation} ->
+            get_expected_action_from_operation(Operation)
+    end.
 
 get_expected_action_from_operation(_) ->
     ?SIGNAL_PROGRAM_TICK.
 
 -spec get_instruction(#program_state{}) -> {ok, map()} | {error, element_not_found}.
 get_instruction(#program_thread{ position=[]}) ->
-    {error, not_initialized};
+    {error, element_not_found};
 
 get_instruction(#program_thread{ program=Program, position=Position}) ->
     case resolve_block_with_position(Program, Position) of
@@ -102,7 +114,8 @@ run_thread(Thread, State, Message ) ->
 run_instruction(#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
                  , ?ARGUMENTS := [Argument]
                  }, Thread, _State, { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {_UserId, SignalContent} }) ->
-    case automate_bot_engine_variables:resolve_argument(Argument) of
+    Expected = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    case Expected of
         {ok, SignalContent} ->
             {ran_this_tick, increment_position(Thread)};
         {ok, _} ->
@@ -112,7 +125,102 @@ run_instruction(#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
     end;
 
 
-run_instruction(_Instruction, _Thread, _State, _Message) ->
+run_instruction(#{ ?TYPE := ?COMMAND_SET_VARIABLE
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_VARIABLE
+                                    , ?VALUE := VariableName
+                                    }
+                                 , ValueArgument
+                                 ]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
+    {ok, NewThreadState } = automate_bot_engine_variables:set_thread_variable(Thread, VariableName, Value),
+    {ran_this_tick, increment_position(NewThreadState)};
+
+
+run_instruction(#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_VARIABLE
+                                    , ?VALUE := VariableName
+                                    }
+                                 , ValueArgument
+                                 ]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Change} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
+    NewValue = case automate_bot_engine_variables:get_thread_variable(Thread, VariableName) of
+                   {ok, PrevValue} ->
+                       automate_bot_engine_values:add(PrevValue, Change);
+                   {error, not_found} ->
+                       Change
+               end,
+    {ok, NewThreadState } = automate_bot_engine_variables:set_thread_variable(Thread, VariableName, NewValue),
+    {ran_this_tick, increment_position(NewThreadState)};
+
+run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Message} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    case automate_bot_engine_variables:retrieve_thread_values(Thread, [ ?TELEGRAM_CHAT_ID
+                                                                      , ?TELEGRAM_BOT_NAME
+                                                                      ]) of
+        {ok, [ChatId, BotName]} ->
+            {ok, _} = answer_message(BotName, #{chat_id => ChatId, text => Message});
+        {error, Reason} ->
+            %% TODO report error to user
+            io:format("Error: ~p~n", [Reason])
+    end,
+    {ran_this_tick, increment_position(Thread)};
+
+run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{ position=Position }, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, TimesStr} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    {Times, <<"">>} = string:to_integer(TimesStr),
+
+    Value = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+                {ok, MemoryValue} ->
+                    MemoryValue;
+                {error, not_found} ->
+                    0
+            end,
+    case Value < Times of
+        true ->
+            NextIteration = automate_bot_engine_variables:set_instruction_memory( Thread
+                                                                                , Value + 1
+                                                                                ),
+            {ran_this_tick, NextIteration#program_thread{ position=Position ++ [1] }};
+        false ->
+            NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            {ran_this_tick, increment_position(NextIteration)}
+    end;
+
+run_instruction(#{ ?TYPE := ?COMMAND_WAIT
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Seconds} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    StartTime = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+                    {ok, MemoryValue} ->
+                        MemoryValue;
+                    {error, not_found} ->
+                        erlang:monotonic_time(millisecond)
+            end,
+
+    WaitFinished = StartTime + binary_to_integer(Seconds) * 1000 > erlang:monotonic_time(millisecond),
+    case WaitFinished of
+        true ->
+            NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            {ran_this_tick, increment_position(NextIteration)};
+        false ->
+            NextIteration = automate_bot_engine_variables:set_instruction_memory(Thread, StartTime),
+            {did_not_run, NextIteration}
+    end;
+
+run_instruction(Instruction, _Thread, _State, _Message) ->
+    #{ ?TYPE := Type } = Instruction,
+    io:format("Unhandled instruction, type: ~p~n", [Type]),
     {did_not_run, waiting}.
 
 
@@ -143,3 +251,42 @@ increment_innermost([]) ->
 increment_innermost(List)->
     [Latest | Tail] = lists:reverse(List),
     lists:reverse([Latest + 1 | Tail]).
+
+
+
+-ifdef(TEST).
+answer_message(_BotName, _Params) ->
+    {ok, skipped}.
+-else.
+answer_message(BotName, Params) ->
+    {ok, _} = pe4kin:send_message(BotName, Params).
+-endif.
+
+
+get_block_result(#{ ?TYPE := ?COMMAND_JOIN
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            {ok, automate_bot_engine_values:add(FirstValue, SecondValue)};
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_DATA_VARIABLE
+                  , ?ARGUMENTS := [ Value
+                                  ]
+                  }, Thread) ->
+    automate_bot_engine_variables:resolve_argument(Value, Thread);
+
+get_block_result(Block=#{ ?TYPE := ?COMMAND_JOIN }, _Thread) ->
+    io:format("Result from JOIN: ~p~n", [Block]),
+    erlang:abort();
+
+get_block_result(Block, _Thread) ->
+    io:format("Result from: ~p~n", [Block]),
+    erlang:abort().
