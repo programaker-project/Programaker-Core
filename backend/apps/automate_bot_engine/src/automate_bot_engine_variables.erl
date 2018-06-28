@@ -2,8 +2,10 @@
 
 %% API
 -export([ resolve_argument/1
+        , resolve_argument/2
 
         , set_thread_value/3
+        , get_thread_variable/2
         , set_thread_variable/3
 
         , retrieve_thread_value/2
@@ -22,10 +24,27 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec resolve_argument(map()) -> {ok, any()} | {error, not_found}.
 resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
                   , ?VALUE := Value
                   }) ->
     {ok, Value}.
+
+-spec resolve_argument(map(), #program_thread{}) -> {ok, any()} | {error, not_found}.
+resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
+                  , ?VALUE := Value
+                  }, _Thread) ->
+    {ok, Value};
+
+resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
+                  , ?VALUE := [Operator]
+                  }, Thread) ->
+    automate_bot_engine_operations:get_result(Operator, Thread);
+
+resolve_argument(#{ ?TYPE := ?VARIABLE_VARIABLE
+                  , ?VALUE := VariableName
+                  }, Thread) ->
+    get_thread_variable(Thread, VariableName).
 
 
 -spec retrieve_thread_value(#program_thread{}, atom()) -> {ok, any()} | {error, any()}.
@@ -49,6 +68,14 @@ set_thread_value(Thread = #program_thread{ global_memory=Global }, Key, Value) -
 set_thread_variable(Thread = #program_thread{ variables=Variables }, Key, Value) ->
     {ok, Thread#program_thread{ variables=Variables#{ Key => Value } } }.
 
+-spec get_thread_variable(#program_thread{}, atom()) -> {ok, any()} | {error, not_}.
+get_thread_variable(#program_thread{variables=Variables}, Key) ->
+    case maps:find(Key, Variables) of
+        X = {ok, _Result} ->
+            X;
+        _ ->
+            {error, not_found}
+    end.
 
 -spec retrieve_instruction_memory(#program_thread{}) -> {ok, any()} | {error, not_found}.
 retrieve_instruction_memory(#program_thread{ instruction_memory=Memory, position=Position }) ->

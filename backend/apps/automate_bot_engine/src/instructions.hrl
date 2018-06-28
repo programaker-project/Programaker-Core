@@ -14,8 +14,9 @@
 -define(COMMAND_SET_VARIABLE, <<"data_setvariableto">>).
 -define(COMMAND_CHANGE_VARIABLE, <<"data_changevariableby">>).
 -define(COMMAND_WAIT, <<"control_wait">>).
--define(COMMAND_JOIN, <<"operation_join">>).
+-define(COMMAND_JOIN, <<"operator_join">>).
 -define(COMMAND_REPEAT, <<"control_repeat">>).
+-define(COMMAND_DATA_VARIABLE, <<"data_variable">>).
 
 %% Variables
 -define(VARIABLE_BLOCK, <<"block">>).
