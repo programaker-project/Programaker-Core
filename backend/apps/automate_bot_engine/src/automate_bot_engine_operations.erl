@@ -176,7 +176,9 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
                  , ?ARGUMENTS := [Argument]
                  }, Thread=#program_thread{ position=Position }, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, Times} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    {ok, TimesStr} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    {Times, <<"">>} = string:to_integer(TimesStr),
+
     Value = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
                 {ok, MemoryValue} ->
                     MemoryValue;
@@ -185,10 +187,10 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
             end,
     case Value < Times of
         true ->
-            NextIteration = automate_bot_engine_variables:set_instruction_memory(Thread#program_thread{ position=Position ++ [1] }
+            NextIteration = automate_bot_engine_variables:set_instruction_memory( Thread
                                                                                 , Value + 1
                                                                                 ),
-            {ran_this_tick, NextIteration};
+            {ran_this_tick, NextIteration#program_thread{ position=Position ++ [1] }};
         false ->
             NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
             {ran_this_tick, increment_position(NextIteration)}
