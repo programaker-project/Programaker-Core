@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Session } from './session';
 import 'rxjs/add/operator/toPromise';
+import 'rxjs/add/operator/map';
 import * as API from './api-config';
 import { Observable } from 'rxjs/Observable';
 import { ApiRoot } from './api-config';

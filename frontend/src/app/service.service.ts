@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Service, AvailableService, ServiceEnableHowTo } from './service';
 import * as API from './api-config';
 import 'rxjs/add/operator/toPromise';
+import 'rxjs/add/operator/map';
 import { SessionService } from './session.service';
 import { HttpClient } from '@angular/common/http';
 
