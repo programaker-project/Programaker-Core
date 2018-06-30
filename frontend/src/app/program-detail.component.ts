@@ -25,6 +25,11 @@ export class ProgramDetailComponent implements OnInit {
     currentFillingInput: string;
     workspace: Blockly.Workspace;
     programUserId: string;
+    menuBlockHidden: boolean;
+
+    HIDDEN_BACKGROUND_COLOR = '#888';
+    HIDDEN_BORDER_COLOR = '#222';
+    HIDDEN_TEXT_LABEL = 'Show/Hide';
 
     constructor (
       private programService: ProgramService,
@@ -96,6 +101,9 @@ export class ProgramDetailComponent implements OnInit {
                 dragShadowOpacity: 0.6
             }
         });
+
+        this.add_show_hide_block_menu();
+        this.hide_block_menu();
     }
 
     calculate_size(workspace: HTMLElement) {
@@ -119,6 +127,71 @@ export class ProgramDetailComponent implements OnInit {
         }
 
         return { x: xPosition, y: yPosition };
+    }
+
+    add_show_hide_block_menu(): void {
+        const menu = document.getElementsByClassName('scratchCategoryMenu')[0];
+
+        // Unselect element
+        const selected = menu.getElementsByClassName('categorySelected');
+        for (let i = 0; i < selected.length; i++) {
+            selected[i].className = selected[i].className.replace(/\bcategorySelected\b/, '').trim();
+        }
+
+        // Add a new element
+        const hideButton = document.createElement('div');
+        hideButton.className = 'scratchCategoryMenuRow';
+        hideButton.onclick = () => this.toggle_block_menu();
+
+        const menuItem = document.createElement('div');
+        menuItem.className = 'scratchCategoryMenuItem';
+
+        const itemBubble = document.createElement('div');
+        itemBubble.className = 'scratchCategoryItemBubble';
+        itemBubble.style.backgroundColor = this.HIDDEN_BACKGROUND_COLOR;
+        itemBubble.style.borderColor = this.HIDDEN_BORDER_COLOR;
+
+        const itemLabel = document.createElement('div');
+        itemLabel.className = 'scratchCategoryMenuItemLabel';
+        itemLabel.innerText = this.HIDDEN_TEXT_LABEL;
+
+        menuItem.appendChild(itemBubble);
+        menuItem.appendChild(itemLabel);
+
+        hideButton.appendChild(menuItem);
+        menu.insertBefore(hideButton, menu.children[0]);
+    }
+
+    hide_block_menu() {
+        this.menuBlockHidden = true;
+        Array.from(document.getElementsByClassName('blocklyFlyout'))
+            .forEach(e => {
+                (e as HTMLElement).style.display = 'none';
+            });
+        Array.from(document.getElementsByClassName('blocklyFlyoutScrollbar'))
+            .forEach(e => {
+                (e as HTMLElement).style.display = 'none';
+            });
+    }
+
+    show_block_menu() {
+        this.menuBlockHidden = false;
+        Array.from(document.getElementsByClassName('blocklyFlyout'))
+            .forEach(e => {
+                (e as HTMLElement).style.display = 'block';
+            });
+        Array.from(document.getElementsByClassName('blocklyFlyoutScrollbar'))
+            .forEach(e => {
+                (e as HTMLElement).style.display = 'block';
+            });
+    }
+
+    toggle_block_menu() {
+        if (this.menuBlockHidden) {
+            this.show_block_menu();
+        } else {
+            this.hide_block_menu();
+        }
     }
 
     goBack(): boolean {
