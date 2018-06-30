@@ -19,7 +19,9 @@
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
-    {cowboy_rest, Req
+    io:format("Added CORS: ok~n", []),
+    Res = automate_rest_api_cors:set_headers(Req),
+    {cowboy_rest, Res
     , #registration_seq{ rest_session=undefined
                        , registration_data=undefined}}.
 
@@ -32,9 +34,7 @@ resource_exists(Req, State) ->
 
 %% CORS
 options(Req, State) ->
-    io:format("Added CORS: ok~n", []),
-    Res = automate_rest_api_cors:set_headers(Req),
-    {ok, Res, State}.
+    {ok, Req, State}.
 
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->

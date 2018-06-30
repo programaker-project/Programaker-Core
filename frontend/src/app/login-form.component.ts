@@ -74,10 +74,24 @@ export class LoginFormComponent implements OnInit {
     }
 
     doSignUp(): void {
-        this.sessionService.register(this.username, this.email, this.password).then(success => {
+        const username = this.username;
+        const email = this.email;
+        const password = this.password;
+        this.sessionService.register(username, email, password).then(success => {
             if (success) {
-                this.router.navigate(['/']);
+                this.sessionService.login(username, password)
+                .then(loginSuccess => {
+                    if (loginSuccess) {
+                        this.router.navigate(['/']);
+                    }
+                })
+                .catch(reason => {
+                    console.log('Error on login:', reason);
+                  })
             }
+        })
+        .catch(e => {
+            console.log('Exception signing up', e);
         })
     }
 }

@@ -117,11 +117,7 @@ export class SessionService {
                                  }),
                   { headers  })
                 .map(response => {
-                    if ((response as any).success) {
-                        return true;
-                    }
-
-                    return false;
+                    return true;
                 })
                 .toPromise());
     }

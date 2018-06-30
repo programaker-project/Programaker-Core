@@ -58,6 +58,10 @@ export class DashboardComponent {
                         .then(services => this.services = services);
                 }
             })
+            .catch(e => {
+                console.log('Error getting session', e);
+                this.router.navigate(['/login']);
+            })
     }
 
 
