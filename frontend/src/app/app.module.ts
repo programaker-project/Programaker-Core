@@ -18,7 +18,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
-import { AlertModule } from 'ng2-bootstrap';
+import { AlertModule } from 'ngx-bootstrap';
 
 import { AppComponent } from './app.component';
 import { DashboardComponent } from './dashboard.component';

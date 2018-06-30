@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { ProgramMetadata, ProgramContent, ProgramType } from './program';
 import * as API from './api-config';
 import 'rxjs/add/operator/toPromise';
+import 'rxjs/add/operator/map';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
