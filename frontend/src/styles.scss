@@ -155,3 +155,7 @@ mat-card.call-to-action > h4 {
 .tagged-json-map-value::after {
     content: ",\A";
 }
+
+#nprogress .bar {
+    background-color: #deff00 !important;
+}

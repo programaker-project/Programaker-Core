@@ -27,6 +27,7 @@
     "core-js": "^2.5.7",
     "hammerjs": "^2.0.8",
     "ngx-bootstrap": "^3.0.1",
+    "nprogress": "^0.2.0",
     "rxjs": "^6.2.1",
     "rxjs-compat": "^6.2.1",
     "zone.js": "^0.8.26"

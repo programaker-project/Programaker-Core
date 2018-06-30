@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Session } from './session';
 import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/map';
+import * as progbar from './ui/progbar';
 import * as API from './api-config';
 import { Observable } from 'rxjs/Observable';
 import { ApiRoot } from './api-config';
@@ -85,7 +86,7 @@ export class SessionService {
     }
 
     login(username: string, password: string): Promise<boolean> {
-        return (this.http
+        return progbar.track(this.http
                 .post(this.loginUrl,
                       JSON.stringify({username: username, password: password}),
                       {headers: this.addJsonContentType(this.getAuthHeader())})
@@ -107,7 +108,7 @@ export class SessionService {
     register(username: string, email: string, password: string): Promise<boolean> {
         const headers = this.addJsonContentType(new HttpHeaders());
 
-        return (this.http
+        return progbar.track(this.http
                 .post(
                   this.registerUrl,
                   JSON.stringify({ username: username
