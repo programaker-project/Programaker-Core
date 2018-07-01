@@ -67,7 +67,7 @@ export class ProgramDetailComponent implements OnInit {
             return;
         }
 
-        const workspaceElement = document.getElementById('workspace')
+        const workspaceElement = document.getElementById('workspace');
         window.onresize = () => this.calculate_size(workspaceElement);
         this.calculate_size(workspaceElement);
 
@@ -117,6 +117,20 @@ export class ProgramDetailComponent implements OnInit {
         setTimeout(() => {
             this.hide_block_menu();
         }, 0);
+
+        // Patch blockly.hideChaff to ignore events where
+        // resize is produced by a soft-keyboard element
+        // see https://github.com/LLK/scratch-blocks/issues/1345
+        const originalHideChaff = Blockly.hideChaff;
+        Blockly.hideChaff = (opt_allowToolbox: boolean) => {
+            if ((document.activeElement as any).type === 'text') {
+                // Skip this event as it was probably produced
+                // by a soft-keyboard showing up
+                return;
+            }
+
+            return originalHideChaff(opt_allowToolbox);
+        }
     }
 
     calculate_size(workspace: HTMLElement) {
