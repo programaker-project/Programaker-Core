@@ -103,7 +103,20 @@ export class ProgramDetailComponent implements OnInit {
         });
 
         this.add_show_hide_block_menu();
-        this.hide_block_menu();
+
+        // HACK#1
+        // Defer a hide action, this is to compsensate for (what feels like)
+        // scratch deferring re-setting the visibility of the sidebar
+        // after the creation.
+        // As we trigger it from a timeout it'll get caught after
+        // scratch does the re-set.
+        //
+        // This unconsistency makes the screen flicker where the sidebar
+        // would be, for this reason this solution *must not* be final.
+        // Registered as Gitea issue #8.
+        setTimeout(() => {
+            this.hide_block_menu();
+        }, 0);
     }
 
     calculate_size(workspace: HTMLElement) {
