@@ -68,6 +68,7 @@ export class ProgramDetailComponent implements OnInit {
         }
 
         const workspaceElement = document.getElementById('workspace');
+        this.hide_workspace(workspaceElement);
         window.onresize = () => this.calculate_size(workspaceElement);
         this.calculate_size(workspaceElement);
 
@@ -111,10 +112,11 @@ export class ProgramDetailComponent implements OnInit {
         // As we trigger it from a timeout it'll get caught after
         // scratch does the re-set.
         //
-        // This unconsistency makes the screen flicker where the sidebar
-        // would be, for this reason this solution *must not* be final.
-        // Registered as Gitea issue #8.
+        // This unconsistency would make make the screen flicker where the
+        //  sidebar would be. To compensate for this we set the visibility
+        //  of the workspace to 'hidden' until the process has finished.
         setTimeout(() => {
+            this.show_workspace(workspaceElement);
             this.hide_block_menu();
         }, 0);
 
@@ -219,6 +221,14 @@ export class ProgramDetailComponent implements OnInit {
         } else {
             this.hide_block_menu();
         }
+    }
+
+    show_workspace(workspace: HTMLElement) {
+        workspace.style.visibility = 'visible';
+    }
+
+    hide_workspace(workspace: HTMLElement) {
+        workspace.style.visibility = 'hidden';
     }
 
     goBack(): boolean {
