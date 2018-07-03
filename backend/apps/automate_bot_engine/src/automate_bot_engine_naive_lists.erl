@@ -70,8 +70,11 @@ naive_insert_nth_into_list(Left, [Moved | T], ToGo, Value) when ToGo > 0 ->
 naive_replace_nth_into_list(Left, [_Discarded | Right], 1, Value) ->
     lists:reverse(Left) ++ [Value | Right];
 
-naive_replace_nth_into_list(Left, [], _, Value)->
+naive_replace_nth_into_list(Left, [], 1, Value)->
     lists:reverse([Value | Left]);
+
+naive_replace_nth_into_list(Left, [], _, _Value)->
+    lists:reverse(Left);
 
 naive_replace_nth_into_list(Left, [Moved | T], ToGo, Value) when ToGo > 0 ->
     naive_replace_nth_into_list([Moved | Left], T, ToGo - 1, Value).
