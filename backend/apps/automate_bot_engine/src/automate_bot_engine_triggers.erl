@@ -19,9 +19,9 @@ get_expected_signals(#program_state{triggers=Triggers}) ->
 
 
 -spec get_triggered_threads(#program_state{}, {atom(), any()}) -> {ok, [#program_thread{}]}.
-get_triggered_threads(#program_state{triggers=Triggers}, Signal) ->
+get_triggered_threads(#program_state{triggers=Triggers, program_id=ProgramId}, Signal) ->
     { ok
-    , lists:filtermap(fun(Thread) -> trigger_thread(Thread, Signal) end,
+    , lists:filtermap(fun(Thread) -> trigger_thread(Thread, Signal, ProgramId) end,
                       Triggers)}.
 
 %%%===================================================================
@@ -40,21 +40,22 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?COMMAND
 
 %%%% Thread creation
 %% Telegram
--spec trigger_thread(#program_trigger{}, {atom(), any()}) -> 'false' | {'true', #program_thread{}}.
+-spec trigger_thread(#program_trigger{}, {atom(), any()}, binary()) -> 'false' | {'true', #program_thread{}}.
 trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
                                             , ?ARGUMENTS := [Argument]
                                             }
                                , subprogram=Program
                                },
-               { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName} }) ->
+               { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName} },
+               ProgramId) ->
 
     case automate_bot_engine_variables:resolve_argument(Argument) of
         {ok, Content} ->
             Thread = #program_thread{ position=[1]
                                     , program=Program
                                     , global_memory=#{}
-                                    , variables=#{}
                                     , instruction_memory=#{}
+                                    , program_id=ProgramId
                                     },
 
             {ok, T1} = automate_bot_engine_variables:set_thread_value( Thread
@@ -77,6 +78,6 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECE
     end;
 
 %% If no match is found, don't create a thread
-trigger_thread(_Trigger, Message) ->
+trigger_thread(_Trigger, Message, _ProgramId) ->
     io:format("No trigger (~p)~n", [Message]),
     false.

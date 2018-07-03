@@ -46,3 +46,7 @@
 -record(telegram_service_registration_entry, { telegram_user_id
                                              , internal_user_id
                                              }).
+
+-record(program_variable_table_entry, { id :: { binary(), binary() } % { program id, variable name }
+                                      , value :: any()
+                                      }).

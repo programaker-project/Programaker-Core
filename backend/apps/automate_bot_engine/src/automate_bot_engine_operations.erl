@@ -136,7 +136,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_SET_VARIABLE
                  }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
-    {ok, NewThreadState } = automate_bot_engine_variables:set_thread_variable(Thread, VariableName, Value),
+    {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, VariableName, Value),
     {ran_this_tick, increment_position(NewThreadState)};
 
 
@@ -149,13 +149,13 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                  }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Change} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
-    NewValue = case automate_bot_engine_variables:get_thread_variable(Thread, VariableName) of
+    NewValue = case automate_bot_engine_variables:get_program_variable(Thread, VariableName) of
                    {ok, PrevValue} ->
                        automate_bot_engine_values:add(PrevValue, Change);
                    {error, not_found} ->
                        Change
                end,
-    {ok, NewThreadState } = automate_bot_engine_variables:set_thread_variable(Thread, VariableName, NewValue),
+    {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, VariableName, NewValue),
     {ran_this_tick, increment_position(NewThreadState)};
 
 run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY

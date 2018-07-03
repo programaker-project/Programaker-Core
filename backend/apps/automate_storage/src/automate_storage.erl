@@ -17,6 +17,9 @@
         , get_internal_user_for_telegram_id/1
         , finish_telegram_registration/2
         , dirty_list_running_programs/0
+
+        , set_program_variable/3
+        , get_program_variable/2
         ]).
 -export([start_link/0]).
 
@@ -29,6 +32,7 @@
 -define(REGISTERED_SERVICES_TABLE, automate_registered_services).
 -define(SERVICE_REGISTRATION_TOKEN_TABLE, automate_service_registration_token_table).
 -define(TELEGRAM_SERVICE_REGISTRATION_TABLE, automate_telegram_service_registration_table).
+-define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
 
 -include("./records.hrl").
 
@@ -235,6 +239,37 @@ get_internal_user_for_telegram_id(TelegramId) ->
 -spec finish_telegram_registration(binary(), binary()) -> {ok} | {error, not_found}.
 finish_telegram_registration(TelegramUserId, RegistrationToken) ->
     finish_telegram_registration_store(RegistrationToken, TelegramUserId).
+
+-spec set_program_variable(binary(), atom(), any()) -> ok.
+set_program_variable(ProgramId, Key, Value) ->
+    Transaction = fun() ->
+                          mnesia:write(?PROGRAM_VARIABLE_TABLE, #program_variable_table_entry{ id={ProgramId, Key}
+                                                                                             , value=Value
+                                                                                             },
+                                       write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, ok } ->
+            ok;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec get_program_variable(binary(), atom()) -> {ok, any()} | {error, not_found}.
+get_program_variable(ProgramId, Key) ->
+    Transaction = fun() ->
+                          mnesia:read(?PROGRAM_VARIABLE_TABLE, {ProgramId, Key})
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [#program_variable_table_entry{value=Value}] } ->
+            {ok, Value};
+        { atomic, [] } ->
+            {error, not_found};
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
 
 %% Exposed startup entrypoint
 start_link() ->
@@ -850,6 +885,18 @@ build_tables(Nodes) ->
                                   [ { attributes, record_info(fields, telegram_service_registration_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, telegram_service_registration_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+    %% TelegramId -> InternalId matches
+    ok = case mnesia:create_table(?PROGRAM_VARIABLE_TABLE,
+                                  [ { attributes, record_info(fields, program_variable_table_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, program_variable_table_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->
