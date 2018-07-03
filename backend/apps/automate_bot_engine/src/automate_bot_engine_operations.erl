@@ -220,11 +220,102 @@ run_instruction(#{ ?TYPE := ?COMMAND_WAIT
             {did_not_run, {new_state, NextIteration}}
     end;
 
-run_instruction(Instruction, _Thread, _State, _Message) ->
-    #{ ?TYPE := Type } = Instruction,
-    io:format("Unhandled instruction, type: ~p~n", [Type]),
-    {did_not_run, waiting}.
+run_instruction(#{ ?TYPE := ?COMMAND_ADD_TO_LIST
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                    , ?VALUE := ListName
+                                    }
+                                 , NewValueArg
+                                 ]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
 
+    {ok, NewValue} = automate_bot_engine_variables:resolve_argument(NewValueArg, Thread),
+    ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
+                      {ok, Value} ->
+                          Value;
+                      {error, not_found} ->
+                          []
+                  end,
+
+    %% TODO (optimization) avoid using list++list
+    ValueAfter = ValueBefore ++ [NewValue],
+
+    {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, ListName, ValueAfter),
+    {ran_this_tick, increment_position(NewThreadState)};
+
+run_instruction(#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                    , ?VALUE := ListName
+                                    }
+                                 , IndexValueArg
+                                 ]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexValueArg, Thread),
+    Index = to_int(IndexValue),
+    ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
+                      {ok, Value} ->
+                          Value;
+                      {error, not_found} ->
+                          []
+                  end,
+
+    ValueAfter = automate_bot_engine_naive_lists:remove_nth(ValueBefore, Index),
+
+    {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, ListName, ValueAfter),
+    {ran_this_tick, increment_position(NewThreadState)};
+
+run_instruction(#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                    , ?VALUE := ListName
+                                    }
+                                 , ValueArg
+                                 , IndexArg
+                                 ]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread),
+    Index = to_int(IndexValue),
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
+    ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
+                      {ok, ListOnDB} ->
+                          ListOnDB;
+                      {error, not_found} ->
+                          []
+                  end,
+
+    ValueAfter = automate_bot_engine_naive_lists:insert_nth(ValueBefore, Index, Value),
+
+    {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, ListName, ValueAfter),
+    {ran_this_tick, increment_position(NewThreadState)};
+
+run_instruction(#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                    , ?VALUE := ListName
+                                    }
+                                 , IndexArg
+                                 , ValueArg
+                                 ]
+                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread),
+    Index = to_int(IndexValue),
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
+    ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
+                      {ok, ListOnDB} ->
+                          ListOnDB;
+                      {error, not_found} ->
+                          []
+                  end,
+
+    ValueAfter = automate_bot_engine_naive_lists:replace_nth(ValueBefore, Index, Value),
+
+    {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, ListName, ValueAfter),
+    {ran_this_tick, increment_position(NewThreadState)};
+
+
+run_instruction(Instruction, _Thread, _State, _Message) ->
+    io:format("Unhandled instruction: ~p~n", [Instruction]),
+    {did_not_run, waiting}.
 
 increment_position(Thread = #program_thread{position=Position}) ->
     IncrementedInnermost = increment_innermost(Position),
@@ -237,6 +328,13 @@ increment_position(Thread = #program_thread{position=Position}) ->
         {error, element_not_found} ->
             BackToParentState
     end.
+
+
+to_int(Value) when is_integer(Value) ->
+    Value;
+to_int(Value) when is_binary(Value) ->
+    {IntValue, <<"">>} = string:to_integer(Value),
+    IntValue.
 
 back_to_parent([]) ->
     [1];
@@ -284,6 +382,50 @@ get_block_result(#{ ?TYPE := ?COMMAND_DATA_VARIABLE
                                   ]
                   }, Thread) ->
     automate_bot_engine_variables:resolve_argument(Value, Thread);
+
+get_block_result(#{ ?TYPE := ?COMMAND_ITEM_OF_LIST
+                  , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                     , ?VALUE := ListName
+                                     }
+                                  , IndexArg
+                                  ]
+                  }, Thread) ->
+    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread),
+    Index = to_int(IndexValue),
+    case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
+        {ok, List} ->
+            automate_bot_engine_naive_lists:get_nth(List, Index);
+        {error, not_found} ->
+            []
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_LENGTH_OF_LIST
+                  , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                     , ?VALUE := ListName
+                                     }
+                                  ]
+                  }, Thread) ->
+    case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
+        {ok, List} ->
+            automate_bot_engine_naive_lists:get_length(List);
+        {error, not_found} ->
+            []
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
+                  , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                     , ?VALUE := ListName
+                                     }
+                                  , ValueArg
+                                  ]
+                  }, Thread) ->
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
+    case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
+        {ok, List} ->
+            {ok, automate_bot_engine_naive_lists:contains(List, Value)};
+        {error, not_found} ->
+            {ok, false}
+    end;
 
 get_block_result(Block=#{ ?TYPE := ?COMMAND_JOIN }, _Thread) ->
     io:format("Result from JOIN: ~p~n", [Block]),
