@@ -52,6 +52,8 @@ to_int(Value) when is_binary(Value) ->
     case string:to_integer(Value) of
         {Int, <<"">>} when is_integer(Int) ->
             {ok, Int};
+        {_Int, _} when is_integer(_Int) ->
+            {error, no_total_match};
         X = {error, _Reason} ->
             X
     end.
@@ -64,6 +66,8 @@ to_float(Value) when is_binary(Value) ->
             case string:to_integer(Value) of
                 {Int, <<"">>} when is_integer(Int) ->
                     {ok, erlang:float(Int)};
+                {_Int, _} when is_integer(_Int) ->
+                    {error, no_total_match};
                 X = {error, _Reason} ->
                     X
             end

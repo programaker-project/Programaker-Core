@@ -31,6 +31,7 @@
 -define(COMMAND_INSERT_AT_LIST, <<"data_insertatlist">>).
 -define(COMMAND_REPLACE_VALUE_AT_INDEX, <<"data_replaceitemoflist">>).
 -define(COMMAND_ITEM_OF_LIST, <<"data_itemoflist">>).
+-define(COMMAND_ITEMNUM_OF_LIST, <<"data_itemnumoflist">>).
 -define(COMMAND_LENGTH_OF_LIST, <<"data_lengthoflist">>).
 -define(COMMAND_LIST_CONTAINS_ITEM, <<"data_listcontainsitem">>).
 

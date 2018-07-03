@@ -109,11 +109,18 @@ tests(_SetupResult) ->
       %% Contains
     , {"[Naive lists][Contains] Not contains empty", fun not_contains_empty/0}
     , {"[Naive lists][Contains] Contains first", fun contains_first/0}
-    , {"[Naive lists][Contains] Not contains first", fun not_contains_first/0}
+    , {"[Naive lists][Contains] Not contains first", fun not_contains_one/0}
     , {"[Naive lists][Contains] Contains second", fun contains_second/0}
-    , {"[Naive lists][Contains] Not contains second", fun not_contains_second/0}
     , {"[Naive lists][Contains] Contains fifth", fun contains_fifth/0}
-    , {"[Naive lists][Contains] Not contains fifth", fun not_contains_fifth/0}
+    , {"[Naive lists][Contains] Not contains fifth", fun not_contains_five/0}
+
+      %% Find
+    , {"[Naive lists][Find] Not find empty", fun not_find_empty/0}
+    , {"[Naive lists][Find] Find first", fun find_first/0}
+    , {"[Naive lists][Find] Not find first", fun not_find_one/0}
+    , {"[Naive lists][Find] Find second", fun find_second/0}
+    , {"[Naive lists][Find] Find fifth", fun find_fifth/0}
+    , {"[Naive lists][Find] Not find fifth", fun not_find_five/0}
     ].
 
 %%%% Removal
@@ -334,17 +341,33 @@ not_contains_empty() ->
 contains_first() ->
     true = automate_bot_engine_naive_lists:contains([5], 5).
 
-not_contains_first() ->
+not_contains_one() ->
     false = automate_bot_engine_naive_lists:contains([5], fake).
 
 contains_second() ->
     true = automate_bot_engine_naive_lists:contains([5, 4, 3, 2, 1], 4).
 
-not_contains_second() ->
-    false = automate_bot_engine_naive_lists:contains([5, 4, 3, 2, 1], fake).
-
 contains_fifth() ->
     true = automate_bot_engine_naive_lists:contains([5, 4, 3, 2, 1], 1).
 
-not_contains_fifth() ->
+not_contains_five() ->
     false = automate_bot_engine_naive_lists:contains([5, 4, 3, 2, 1], fake).
+
+%% Containing
+not_find_empty() ->
+    {error, not_found} = automate_bot_engine_naive_lists:get_item_num([], fake).
+
+find_first() ->
+    {ok, 1} = automate_bot_engine_naive_lists:get_item_num([5], 5).
+
+not_find_one() ->
+    {error, not_found} = automate_bot_engine_naive_lists:get_item_num([5], fake).
+
+find_second() ->
+    {ok, 2} = automate_bot_engine_naive_lists:get_item_num([5, 4, 3, 2, 1], 4).
+
+find_fifth() ->
+    {ok, 5} = automate_bot_engine_naive_lists:get_item_num([5, 4, 3, 2, 1], 1).
+
+not_find_five() ->
+    {error, not_found} = automate_bot_engine_naive_lists:get_item_num([5, 4, 3, 2, 1], fake).

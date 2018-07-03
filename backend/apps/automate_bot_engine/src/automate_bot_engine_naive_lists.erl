@@ -7,6 +7,7 @@
         , get_nth/2
         , get_length/1
         , contains/2
+        , get_item_num/2
         ]).
 
 %%%===================================================================
@@ -43,6 +44,9 @@ contains(List, Value) ->
     lists:any(fun (E) -> automate_bot_engine_typing:is_equivalent(E, Value) end,
               List).
 
+-spec get_item_num([any()], any()) -> {ok, number()} | {error, not_found}.
+get_item_num(List, Value) ->
+    find_item(List, Value, 1).
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -78,4 +82,15 @@ naive_replace_nth_into_list(Left, [], _, _Value)->
 
 naive_replace_nth_into_list(Left, [Moved | T], ToGo, Value) when ToGo > 0 ->
     naive_replace_nth_into_list([Moved | Left], T, ToGo - 1, Value).
+
+-spec find_item([any()], any(), number()) -> {ok, number()} | {error, not_found}.
+find_item([Value | _ ], Value, Index) ->
+    {ok, Index};
+
+find_item([], _, _) ->
+    {error, not_found};
+
+find_item([_ | T ], Value, Index) ->
+    find_item(T, Value, Index + 1).
+
 

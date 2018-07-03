@@ -396,7 +396,22 @@ get_block_result(#{ ?TYPE := ?COMMAND_ITEM_OF_LIST
         {ok, List} ->
             automate_bot_engine_naive_lists:get_nth(List, Index);
         {error, not_found} ->
-            []
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_ITEMNUM_OF_LIST
+                  , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                     , ?VALUE := ListName
+                                     }
+                                  , ValueArg
+                                  ]
+                  }, Thread) ->
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
+    case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
+        {ok, List} ->
+            automate_bot_engine_naive_lists:get_item_num(List, Value);
+        {error, not_found} ->
+            {error, not_found}
     end;
 
 get_block_result(#{ ?TYPE := ?COMMAND_LENGTH_OF_LIST
