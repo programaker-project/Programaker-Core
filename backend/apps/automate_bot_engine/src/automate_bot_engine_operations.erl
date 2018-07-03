@@ -179,7 +179,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
                  }, Thread=#program_thread{ position=Position }, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, TimesStr} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
-    {Times, <<"">>} = string:to_integer(TimesStr),
+    Times = to_int(TimesStr),
 
     Value = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
                 {ok, MemoryValue} ->
