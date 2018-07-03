@@ -120,6 +120,22 @@ export class ProgramDetailComponent implements OnInit {
             this.hide_block_menu();
         }, 0);
 
+        this.patch_blockly();
+    }
+
+    /**
+     * Patch in changes made to adapt blockly/scratch to this use case.
+     */
+    patch_blockly() {
+        // Patch show/hide variable (and list) blocks.
+        // This blocks are not used (as of now) as the frontend does
+        // not run the program and there's no point in showing
+        // that in the background.
+        (Blockly as any).DataCategory.addShowVariable = (_1, _2) => {};
+        (Blockly as any).DataCategory.addHideVariable = (_1, _2) => {};
+        (Blockly as any).DataCategory.addShowList = (_1, _2) => {};
+        (Blockly as any).DataCategory.addHideList = (_1, _2) => {};
+
         // Patch blockly.hideChaff to ignore events where
         // resize is produced by a soft-keyboard element
         // see https://github.com/LLK/scratch-blocks/issues/1345
