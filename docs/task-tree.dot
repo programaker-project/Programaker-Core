@@ -2,7 +2,7 @@ digraph {
     rankdir=LR;
 
     // Milestones
-    telegram_bot[label="Telegram bot", shape=diamond];
+    telegram_bot[label="Telegram bot", shape=diamond, color=green, fontcolor=green];
     // First big (publicly deployed) milestone
     first_deploy[label="First deploy", shape=diamond, style=filled, color=red, fontcolor=white];
 
@@ -19,14 +19,14 @@ digraph {
     important_todos[label="Important TO-DOs", shape=diamond];
 
     // Tasks
-    program_execution[label="Program execution"];
+    program_execution[label="Program execution", color=green, fontcolor=green];
     telegram_api_support[label="Telegram API support", color=green, fontcolor=green];
 
     bot_renaming[label="Bot renaming"];
     unit_tested_api[label="Unit tested API"];
 
     program_variables[label="Program variables", color=green, fontcolor=green];
-    stored_variables[label="Stored variables"];
+    stored_variables[label="Stored variables", color=green, fontcolor=green];
     function_definition[label="Function definition"];
 
     web_monitor_selector[label="Web monitor selector"];
