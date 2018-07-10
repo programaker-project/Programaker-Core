@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="plaza.css" />
+    </head>
+
+    <body>
+        <div class="login no-token">
+            <form class="login" action="#">
+                <table>
+                    <tr>
+                        <td>
+                            <label for="login_username">Username:</label>
+                        </td>
+                        <td>
+                            <input placeholder="username" type="text" name="login_username" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="login_password">Password:</label>
+                        </td>
+                        <td>
+                            <input placeholder="password" type="password" name="login_password" />
+                        </td>
+                    </tr>
+                </table>
+                <input type="submit" class="login-button" value="Login" />
+
+                <em>or <a href="#" class="swap-to-signup">signup</a></em>
+            </form>
+        </div>
+
+        <div class="signup no-token">
+            <form class="signup" action="#">
+                <table>
+                    <tr>
+                        <td>
+                            <label for="signup_username">Username:</label>
+                        </td>
+                        <td>
+                            <input placeholder="username" type="text" name="signup_username" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="login_password">Password:</label>
+                        </td>
+                        <td>
+                            <input placeholder="password" type="password" name="signup_password" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                        </td>
+                        <td>
+                            <input placeholder="repeat password" type="password" name="signup_repeat_password" />
+                        </td>
+                    </tr>
+                </table>
+                <input type="submit" class="signup-button" value="Signup" />
+
+                <em>or <a href="#" class="swap-to-login">login</a></em>
+            </form>
+        </div>
+        <div class="with-token actuable add-site-button-bar">
+            <a href="#" class="add-site-button">Add current site</a>
+        </div>
+        <!-- <div class="with-token actuable synchronize-button-bar">
+             <a href="#" class="synchronize-button">Synchronize</a>
+             </div> -->
+        <div id="knowledge-list" class="with-token">
+        </div>
+        <div class="dialog add-site-dialog">
+            <form action="#">
+                <table>
+                    <tr>
+                        <td>
+                            <label for="title">Title</label>
+                        </td>
+                        <td>
+                            <input type="text" name="add-site-title" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="url">URL</label>
+                        </td>
+                        <td>
+                            <input type="url" name="add-site-url" />
+                        </td>
+                    </tr>
+                </table>
+                <input type="submit" class="add-site-submit-button" value="Add" />
+            </form>
+        </div>
+        <script src="plaza.js"></script>
+    </body>
+</html>

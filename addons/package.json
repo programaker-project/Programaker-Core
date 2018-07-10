@@ -1,0 +1,18 @@
+{
+  "name": "plaza-addon",
+  "version": "0.0.1",
+  "description": "Companion addon for plaza.",
+  "main": "background.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "lint": "tslint --project .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "tslint": "^5.10.0",
+    "typescript": "^2.9.2"
+  }
+}
