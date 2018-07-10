@@ -14,6 +14,7 @@
         , get_registration_token/1
         , telegram_user_to_internal/1
         , register_user/2
+        , send_message/2
         ]).
 
 -define(APPLICATION, automate_bot_engine).
@@ -31,6 +32,22 @@ get_platform_name() ->
 
 get_platform_id() ->
     <<"__telegram-platform-im-bot">>.
+
+
+-spec send_message(binary(), map()) -> {ok, _}.
+-ifdef(TEST).
+send_message(BotName, Params) ->
+    {ok, ignored_on_testing}.
+-else.
+send_message(BotName, Params) ->
+    try pe4kin:send_message(BotName, Params) of
+        {ok, Response} ->
+            {ok, Response}
+    catch X:Y ->
+            io:format("Error sending message: ~p~n", [{error, {X, Y}}]),
+            {ok, error_ignored}
+    end.
+-endif.
 
 
 -spec user_has_enabled_platform(binary()) -> {'ok', 'true' | 'false'} | {error, any()}.

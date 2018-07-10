@@ -49,7 +49,7 @@ get_expected_action_from_thread(Thread) ->
 get_expected_action_from_operation(_) ->
     ?SIGNAL_PROGRAM_TICK.
 
--spec get_instruction(#program_state{}) -> {ok, map()} | {error, element_not_found}.
+-spec get_instruction(#program_thread{}) -> {ok, map()} | {error, element_not_found}.
 get_instruction(#program_thread{ position=[]}) ->
     {error, element_not_found};
 
@@ -61,7 +61,7 @@ get_instruction(#program_thread{ program=Program, position=Position}) ->
             {error, Reason}
     end.
 
--spec resolve_block_with_position(list(), list()) -> {ok, map()}.
+-spec resolve_block_with_position(list(), list()) -> {ok, map()} | {error, element_not_found}.
 resolve_block_with_position(Ast, [Position | _]) when Position > length(Ast) ->
     {error, element_not_found};
 
@@ -103,7 +103,9 @@ partition_threads([Thread | T], State, Message, { Stopped, RanThisTick, DidNotRa
     end.
 
 -spec run_thread(#program_thread{}, #program_state{}, {atom(), any()})
-                -> {stopped, thread_finished} | {did_not_run, waiting} | {ran_this_tick, #program_thread{}}.
+                -> {stopped, thread_finished} | {did_not_run, waiting}
+                       | {did_not_run, {new_state, #program_thread{}}}
+                       | {ran_this_tick, #program_thread{}}.
 run_thread(Thread, State, Message ) ->
     case get_instruction(Thread) of
         {ok, Instruction} ->
@@ -167,7 +169,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY
                                                                       , ?TELEGRAM_BOT_NAME
                                                                       ]) of
         {ok, [ChatId, BotName]} ->
-            {ok, _} = answer_message(BotName, #{chat_id => ChatId, text => Message});
+            {ok, _} = automate_bot_engine_telegram:send_message(BotName, #{chat_id => ChatId, text => Message});
         {error, Reason} ->
             %% TODO report error to user
             io:format("Error: ~p~n", [Reason])
@@ -353,16 +355,6 @@ increment_innermost(List)->
     lists:reverse([Latest + 1 | Tail]).
 
 
-
--ifdef(TEST).
-answer_message(_BotName, _Params) ->
-    {ok, skipped}.
--else.
-answer_message(BotName, Params) ->
-    {ok, _} = pe4kin:send_message(BotName, Params).
--endif.
-
-
 get_block_result(#{ ?TYPE := ?COMMAND_JOIN
                   , ?ARGUMENTS := [ First
                                   , Second
@@ -442,10 +434,6 @@ get_block_result(#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
             {ok, false}
     end;
 
-get_block_result(Block=#{ ?TYPE := ?COMMAND_JOIN }, _Thread) ->
-    io:format("Result from JOIN: ~p~n", [Block]),
-    erlang:abort();
-
 get_block_result(Block, _Thread) ->
     io:format("Result from: ~p~n", [Block]),
-    erlang:abort().
+    erlang:error(bad_operation).

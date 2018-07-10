@@ -24,7 +24,7 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec resolve_argument(map()) -> {ok, any()} | {error, not_found}.
+-spec resolve_argument(map()) -> {ok, any()}.
 resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
                   , ?VALUE := Value
                   }) ->
@@ -69,7 +69,7 @@ set_program_variable(Thread = #program_thread{ program_id=ProgramId }, Key, Valu
     ok = automate_storage:set_program_variable(ProgramId, Key, Value),
     {ok, Thread}.
 
--spec get_program_variable(#program_thread{}, atom()) -> {ok, any()} | {error, not_}.
+-spec get_program_variable(#program_thread{}, atom()) -> {ok, any()} | {error, not_found}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
     automate_storage:get_program_variable(ProgramId, Key).
 

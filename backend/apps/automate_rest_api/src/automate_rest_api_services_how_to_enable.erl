@@ -77,7 +77,14 @@ to_json(Req, State) ->
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            { Output, Res2, State }
+            { Output, Res2, State };
+        {error, not_found} ->
+            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
+            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
+
+            %% TODO: Return 404
+            { jiffy:encode(#{ <<"success">> => false, <<"message">> => <<"Service not found">> }),
+              Res2, State }
     end.
 
 

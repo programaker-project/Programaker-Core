@@ -44,7 +44,7 @@ update_program(State,
 get_triggers(Blocks) ->
     [get_trigger(Block) || Block <- Blocks].
 
--spec get_trigger(map()) -> #program_trigger{}.
+-spec get_trigger([any() | any()]) -> #program_trigger{}.
 get_trigger([Trigger | Program]) ->
     #program_trigger{ condition=Trigger
                     , subprogram=Program

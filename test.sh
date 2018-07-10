@@ -6,6 +6,7 @@ time rebar3 compile
 echo "[INFO] Testing BACKEND"
 time rebar3 eunit -c
 time rebar3 cover -v
+time rebar3 dialyzer
 popd
 
 echo "[INFO] Building FRONTEND"

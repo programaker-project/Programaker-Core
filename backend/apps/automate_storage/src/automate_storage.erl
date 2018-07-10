@@ -117,7 +117,7 @@ get_program(Username, ProgramName) ->
     retrieve_program(Username, ProgramName).
 
 
--spec lists_programs_from_username(string()) -> {'ok', [ { string(), string() } ] }.
+-spec lists_programs_from_username(binary()) -> {'ok', [ { binary(), binary() } ] }.
 lists_programs_from_username(Username) ->
     case retrieve_program_list_from_username(Username) of
         {ok, Programs} ->
@@ -136,11 +136,11 @@ list_programs_from_userid(Userid) ->
             X
     end.
 
--spec update_program(string(), string(), #stored_program_content{}) -> { 'ok', string() } | { 'error', any() }.
+-spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program(Username, ProgramName, Content)->
     store_new_program_content(Username, ProgramName, Content).
 
--spec get_program_pid(string()) -> {'ok', pid()} | {error, not_running}.
+-spec get_program_pid(binary()) -> {'ok', pid()} | {error, not_running}.
 get_program_pid(ProgramId) ->
     case get_running_program_id(ProgramId) of
         [#running_program_entry{runner_pid=PID}] ->
@@ -151,7 +151,7 @@ get_program_pid(ProgramId) ->
             {error, Reason}
     end.
 
--spec register_program_runner(string(), pid()) -> 'ok' | {error, not_running}.
+-spec register_program_runner(binary(), pid()) -> 'ok' | {error, not_running}.
 register_program_runner(ProgramId, Pid) ->
     Transaction = fun() ->
                           case mnesia:read(?RUNNING_PROGRAMS_TABLE, ProgramId) of
@@ -213,12 +213,8 @@ get_or_gen_registration_token(Username, ServiceId) ->
         {error, not_found} ->
             case gen_registration_token(Username, ServiceId) of
                 {ok, Token} ->
-                    {ok, Token};
-                {error, Reason} ->
-                    {error, Reason}
-            end;
-        {error, Reason} ->
-            {error, Reason}
+                    {ok, Token}
+            end
     end.
 
 -spec get_internal_user_for_telegram_id(binary()) -> {ok, binary()} | {error, not_found}.
@@ -236,11 +232,11 @@ get_internal_user_for_telegram_id(TelegramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec finish_telegram_registration(binary(), binary()) -> {ok} | {error, not_found}.
+-spec finish_telegram_registration(binary(), binary()) -> ok | {error, not_found}.
 finish_telegram_registration(TelegramUserId, RegistrationToken) ->
     finish_telegram_registration_store(RegistrationToken, TelegramUserId).
 
--spec set_program_variable(binary(), atom(), any()) -> ok.
+-spec set_program_variable(binary(), atom(), any()) -> ok | {error, any()}.
 set_program_variable(ProgramId, Key, Value) ->
     Transaction = fun() ->
                           mnesia:write(?PROGRAM_VARIABLE_TABLE, #program_variable_table_entry{ id={ProgramId, Key}
@@ -480,7 +476,7 @@ retrieve_program_list_from_userid(UserId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec store_new_program_content(string(), string(), #stored_program_content{}) -> { 'ok', string() } | { 'error', any() }.
+-spec store_new_program_content(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 store_new_program_content(Username, ProgramName,
                           #stored_program_content{ orig=ProgramOrig
                                                  , parsed=ProgramParsed
@@ -716,7 +712,7 @@ gen_registration_token(Username, ServiceId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec finish_telegram_registration_store(binary(), binary()) -> {ok} | {error, not_found}.
+-spec finish_telegram_registration_store(binary(), binary()) -> ok | {error, not_found}.
 finish_telegram_registration_store(RegistrationToken, TelegramUserId) ->
     Transaction = fun() ->
                           case mnesia:read(?SERVICE_REGISTRATION_TOKEN_TABLE, RegistrationToken) of

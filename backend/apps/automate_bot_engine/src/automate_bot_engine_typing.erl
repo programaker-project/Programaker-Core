@@ -8,17 +8,8 @@
 %%% API
 %%%===================================================================
 %% ToDo: Implement support for lists (now the result it's just false)
--spec is_equivalent(binary(), binary()) -> boolean();   % Equality
-                   (number(), number()) -> boolean(); % Equality
-                   (boolean(), boolean()) -> boolean(); % Equality
-
-                   (binary(), number()) -> boolean();  % Convert to float
-                   (number(), binary()) -> boolean();
-
-                   (binary(), boolean()) -> boolean();  % Convert to boolean
-                   (boolean(), binary()) -> boolean();
-
-                   (_, _) -> false. % Everything else is false
+-spec is_equivalent(binary() | number() | boolean(),
+                    binary() | number() | boolean()) -> boolean().
 %% Simple
 is_equivalent(V1, V2) when (is_binary(V1) and is_binary(V2)) or
                            (is_number(V1) and is_number(V2)) or

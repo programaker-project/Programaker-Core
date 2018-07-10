@@ -62,11 +62,11 @@ start_link(ProgramId) ->
 %% Initializes the server
 %% @end
 %%--------------------------------------------------------------------
--spec init(Args :: term()) -> {ok, State :: term()} |
-                              {ok, State :: term(), Timeout :: timeout()} |
-                              {ok, State :: term(), hibernate} |
-                              {stop, Reason :: term()} |
-                              ignore.
+-spec init(binary()) -> {ok, State :: term()} |
+                        {ok, State :: term(), Timeout :: timeout()} |
+                        {ok, State :: term(), hibernate} |
+                        {stop, Reason :: term()} |
+                        ignore.
 init(ProgramId) ->
     io:format("Starting ~p~n", [ProgramId]),
     automate_storage:register_program_runner(ProgramId, self()),
@@ -116,7 +116,7 @@ run_tick(State = #state{ program=Program }, Message) ->
 
     ThreadsBefore = TriggeredThreads ++ OriginalThreads,
 
-    {ok, {NonRunnedPrograms, RunnedPrograms}} = automate_bot_engine_operations:run_threads(ThreadsBefore, State, Message),
+    {ok, {NonRunnedPrograms, RunnedPrograms}} = automate_bot_engine_operations:run_threads(ThreadsBefore, Program, Message),
 
     ThreadsAfter = NonRunnedPrograms ++ RunnedPrograms,
 

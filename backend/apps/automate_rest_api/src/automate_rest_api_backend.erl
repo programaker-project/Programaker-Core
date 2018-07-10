@@ -70,7 +70,7 @@ get_program(Username, ProgramName) ->
             X
     end.
 
--spec lists_programs_from_username(string()) -> {'ok', [ #program_metadata{} ] }.
+-spec lists_programs_from_username(binary()) -> {'ok', [ #program_metadata{} ] }.
 lists_programs_from_username(Username) ->
     case automate_storage:lists_programs_from_username(Username) of
         {ok, Programs} ->
@@ -95,11 +95,12 @@ update_program(Username, ProgramName,
             {error, Reason}
     end.
 
--spec list_services_from_username(string()) -> {'ok', [ #service_metadata{} ]}.
+-spec list_services_from_username(binary()) -> {'ok', [ #service_metadata{} ]}.
 list_services_from_username(Username) ->
     {ok, get_telegram_services_from_username(Username)}.
 
 
+-spec get_service_enable_how_to(binary(), binary()) -> {ok, #service_enable_how_to{}} | {error, not_found}.
 get_service_enable_how_to(Username, ServiceId) ->
     case get_platform_service_how_to(Username, ServiceId) of
         {ok, HowTo} ->
@@ -107,9 +108,7 @@ get_service_enable_how_to(Username, ServiceId) ->
         {error, not_found} ->
             %% TODO: Implement user-defined services
             io:format("[Error] Non platform service required~n"),
-            {error, not_found};
-        {error, Reason} ->
-            {error, Reason}
+            {error, not_found}
     end.
 
 %%====================================================================
@@ -141,7 +140,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , program_orig=ProgramOrig
                  }.
 
--spec get_telegram_services_from_username(string()) -> [ #service_metadata{} ].
+-spec get_telegram_services_from_username(binary()) -> [ #service_metadata{} ].
 get_telegram_services_from_username(Username) ->
     DefaultId = automate_bot_engine_telegram:get_platform_id(),
     DefaultName = automate_bot_engine_telegram:get_platform_name(),
@@ -161,7 +160,7 @@ get_telegram_services_from_username(Username) ->
 generate_url_from_service(Username, ServiceId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/~s", [Username, ServiceId]))).
 
--spec get_platform_service_how_to(binary(), binary()) -> {ok, #service_enable_how_to{}} | {error, any()}.
+-spec get_platform_service_how_to(binary(), binary()) -> {ok, #service_enable_how_to{}} | {error, not_found}.
 get_platform_service_how_to(Username, ServiceId)  ->
     TelegramPlatformId = automate_bot_engine_telegram:get_platform_id(),
 

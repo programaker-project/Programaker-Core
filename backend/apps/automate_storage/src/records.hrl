@@ -1,3 +1,5 @@
+-define(MNESIA_SELECTOR, '_' | '$1'| '$2'| '$3'| '$4').
+
 -record(registered_user_entry, { id
                                , username
                                , password
@@ -32,15 +34,15 @@
                                 , name ::  binary()
                                 }).
 
--record(registered_service_entry, { registration_id :: binary()
-                                  , service_id :: binary()
-                                  , user_id :: binary()
-                                  , enabled :: boolean()
+-record(registered_service_entry, { registration_id :: binary() | ?MNESIA_SELECTOR
+                                  , service_id :: binary()      | ?MNESIA_SELECTOR
+                                  , user_id :: binary()         | ?MNESIA_SELECTOR
+                                  , enabled :: boolean()        | ?MNESIA_SELECTOR
                                   }).
 
--record(service_registration_token, { token :: binary()
-                                    , service_id :: binary()
-                                    , user_id :: binary()
+-record(service_registration_token, { token :: binary()         | ?MNESIA_SELECTOR
+                                    , service_id :: binary()    | ?MNESIA_SELECTOR
+                                    , user_id :: binary()       | ?MNESIA_SELECTOR
                                     }).
 
 -record(telegram_service_registration_entry, { telegram_user_id

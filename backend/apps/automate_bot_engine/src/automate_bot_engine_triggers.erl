@@ -46,11 +46,11 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECE
                                             }
                                , subprogram=Program
                                },
-               { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName} },
+               { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, MessageContent, BotName} },
                ProgramId) ->
 
     case automate_bot_engine_variables:resolve_argument(Argument) of
-        {ok, Content} ->
+        {ok, MessageContent} ->
             Thread = #program_thread{ position=[1]
                                     , program=Program
                                     , global_memory=#{}
@@ -70,10 +70,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECE
             io:format("Thread: ~p~n", [Thread]),
             {true, T2};
         {ok, Found} ->
-            io:format("No match. Expected “~p”, found “~p”~n", [Content, Found]),
-            false;
-        {error, Reason} ->
-            io:format("Error: ~p~n", [Reason]),
+            io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
             false
     end;
 
