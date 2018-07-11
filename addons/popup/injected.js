@@ -1,100 +1,37 @@
 (function(){
-    console.log("DEBUG " + document.location);
+    try {
+        const build_xpath = (node) => {
+            console.log(node);
+            if (node.parentElement === null) {
+                return `/${node.tagName.toLowerCase()}`;
+            }
 
-    var selection = window.getSelection();
-    var selected = selection.anchorNode;
-    var node = selected;
+            const parent = node.parentElement;
+            const sameLevel = Array.from(parent.childNodes);
+            const sameType = sameLevel.filter((e) => e.tagName === node.tagName);
+            const index = sameType.indexOf(node);
 
-    var ascension = [];
-    while (node !== document){
-        ascension.push(node);
-        console.log("DEBUG " + node + " " + node.tagName + " "  + node.id + " "  + node.classList);
-        node = node.parentNode;
+            return (build_xpath(parent) + '/'
+                    + `${node.tagName.toLowerCase()}[${index + 1}]`);
+        }
+
+        const selection = window.getSelection();
+        const selected = selection.anchorNode;
+
+        console.log(selected);
+        const xpath = build_xpath(selected);
+
+        const data = {
+            selector_type: "xpath_v1",
+            value: xpath,
+        };
+
+        console.log(JSON.stringify({ data }));
+
+        const value = document.evaluate( xpath, document, null, XPathResult.ANY_TYPE, null ).iterateNext();
+        console.log("Value:", value);
     }
-
-    console.log("DEBUG " + ascension);
-
-    var validField = (function (field){
-        // Void field
-        if (((field + "") === "") || (field === undefined) || (field === null)){
-            return false;
-        }
-
-        field += "";
-
-        // Fields not containing ':'
-        return field.indexOf(":") == -1;
-    });
-
-    var route = [];
-    var selector = "";
-
-    for (var i = ascension.length - 1; i >= 0; i--){
-        var step = ascension[i];
-
-        console.log("DEBUG " + i + " " + step);
-        if (false && validField(step.id)){
-            route.push({id: step.id});
-            console.log("DEBUG " + "--> {id: " + step.id + " }");
-
-            selector += "#" + step.id + " ";
-        }
-        else if ((validField(step.classList)) && (step.classList.length > 0)){
-            // @TODO better logic, decision trees?
-            route.push({class: step.classList[0]});
-            console.log("DEBUG " + "--> {class: " + step.classList[0] + " }");
-
-            selector += "." + step.classList[0] + " ";
-        }
-        else if (validField(step.tagName)) {
-            route.push({tag: step.tagName});
-            console.log("DEBUG " + "--> {tag: " + step.tagName + " }");
-
-            selector += step.tagName.toLowerCase() + " ";
-        }
+    catch (e){
+        console.error(e);
     }
-
-
-    console.log("DEBUG " + selector);
-    console.log("DEBUG " + "Testing...");
-    var elements = document.querySelectorAll(selector);
-    console.log("DEBUG " + elements.length + " elements");
-
-    var nth = "";
-    var expected = "";
-    for (var i = 0; i < elements.length; i++){
-        console.log("DEBUG " + elements[i] + " => "
-                    + selection.containsNode(elements[i], true));
-
-        if (selection.containsNode(elements[i], true)){
-            nth = ", \"nth\": " + (i + 1);
-            console.log(elements[i].textContent);
-            expected = elements[i].textContent;
-            break;
-        }
-    }
-
-
-    var expected_image = "";
-    var nth_image = "";
-    var images = document.querySelectorAll(selector + " img");
-    console.log("DEBUG " + images.length + " images");
-    for (var i = 0; i < images.length; i++){
-        if (selection.containsNode(images[i])){
-            nth_image = ", \"nth_image\": " + (i + 1);
-            expected_image = ", \"expected_image\": \"" + images[i].src + "\"";
-            break;
-        }
-    }
-
-
-    console.log("DATA {\"selector\": \"" + selector.trim() + "\","
-                + "\"url\":  \"" + document.location + "\","
-                + "\"images\": " + (expected_image.length > 0) + ","
-                + "\"expected\": \"" + expected.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-                + expected_image
-                + nth
-                + nth_image
-                + "}");
-
 })();
