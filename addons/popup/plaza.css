@@ -4,69 +4,8 @@ html, body {
     min-width: 200px;
 }
 
-form {
-}
-
-div.login, .dialog {
-}
-
-.add-site-button-bar {
-    background-color: teal;
-    padding: 1ex;
-    text-align: center;
-}
-
-.add-site-button-bar > a {
-    color: white;
-    text-decoration: none;
-    text-shadow: 1px 1px black;
-    font-weight: bold;
-}
-
-.synchronize-button-bar {
-    background-color: #444;
-    padding: 1ex;
-    text-align: center;
-}
-
-.hidden {
-    display: none;
-}
-
-.actuable {
-    cursor: pointer;
-}
-
-.synchronize-button-bar > a {
-    color: white;
-    text-decoration: none;
-    text-shadow: 1px 1px black;
-    font-weight: bold;
-}
-
-#knowledge-list ul {
-    list-style: none;
-    padding: 0.5ex;
-}
-
-#knowledge-list ul li {
-    margin-bottom: 1ex;
-    border-bottom: 1px solid #444;
-    padding-bottom: 1ex;
-}
-
-#knowledge-list ul li a {
-    text-decoration: none;
-}
-
-#knowledge-list h1 {
-    margin: 0px;
-    padding: 0.5ex;
-    font-size: small;
-    text-align: center;
-    background-color: darkseagreen;
-    color: white;
-    text-shadow: 1px 1px #222;
+.no-token, .with-token {
+    // display: none;
 }
 
 input[type="submit"] {

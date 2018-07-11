@@ -1,3 +1,4 @@
+import * as BrowserApi from './BrowserApi';
 import * as PlazaApi from "./PlazaApi";
 import * as Storage from "./Storage";
 
@@ -14,16 +15,45 @@ function login() {
 }
 
 function show_ready() {
-    // TODO
-    console.log("Ready!");
+    (Array.from(document
+        .getElementsByClassName("no-token"))
+        .forEach((e: HTMLElement) => {
+            e.style.display = "none";
+    }));
+
+    (Array.from(document
+        .getElementsByClassName("with-token"))
+        .forEach((e: HTMLElement) => {
+            e.style.display = "block";
+    }));
+}
+
+function show_login() {
+    (Array.from(document
+        .getElementsByClassName("no-token"))
+        .forEach((e: HTMLElement) => {
+            e.style.display = "block";
+    }));
+
+    (Array.from(document
+        .getElementsByClassName("with-token"))
+        .forEach((e: HTMLElement) => {
+            e.style.display = "none";
+    }));
 }
 
 function check_token() {
     Storage.get_auth_token().then((token) => {
-        console.log("Got token!");
+        show_ready();
+        BrowserApi.get_current_tab()
+            .then((tab) => {
+                BrowserApi.run_on_tab(tab, "injected.js");
+            }, (error) => {
+                console.error("Error requesting tab:", error);
+            });
     })
     .catch(() => {
-        console.log("No token! :(");
+        show_login();
     });
 }
 
