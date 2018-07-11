@@ -25,3 +25,7 @@ export function run_on_tab(tab, file: string) {
         file,
     });
 }
+
+export function close_popup() {
+    window.close();
+}

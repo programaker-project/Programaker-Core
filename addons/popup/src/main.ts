@@ -48,6 +48,7 @@ function check_token() {
         BrowserApi.get_current_tab()
             .then((tab) => {
                 BrowserApi.run_on_tab(tab, "injected.js");
+                BrowserApi.close_popup();
             }, (error) => {
                 console.error("Error requesting tab:", error);
             });
