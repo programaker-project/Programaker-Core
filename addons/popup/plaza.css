@@ -5,7 +5,7 @@ html, body {
 }
 
 .no-token, .with-token {
-    // display: none;
+    display: none;
 }
 
 input[type="submit"] {
