@@ -29,9 +29,11 @@ digraph {
     stored_variables[label="Stored variables", color=green, fontcolor=green];
     function_definition[label="Function definition"];
 
-    web_monitor_selector[label="Web monitor selector"];
-    web_monitor_description[label="Web monitor descriptor"];
+    web_monitor_selector[label="Web monitor selector", color=green, fontcolor=green];
+    web_monitor_description[label="Web monitor descriptor", color=green, fontcolor=green];
+    web_monitor_storage[label="Web monitor storage"];
     web_monitor_execution[label="Web monitor execution"];
+    web_monitor_result_querying[label="Web monitor result querying"];
 
     generic_rest_execution[label="Generic REST execution"];
     generic_rest_description[label="Generic REST description"];
@@ -77,7 +79,9 @@ digraph {
     first_deploy -> unit_tested_api[style=dotted];
 
     web_monitor_description -> web_monitor_selector;
-    web_monitor_execution -> web_monitor_description;
+    web_monitor_storage -> web_monitor_description;
+    web_monitor_execution -> web_monitor_storage;
+    web_monitor_result_querying -> web_monitor_execution;
 
     web_monitor_bot -> telegram_bot;
     web_monitor_bot -> web_monitor_execution;
