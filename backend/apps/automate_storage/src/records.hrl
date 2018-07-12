@@ -19,6 +19,13 @@
                             , program_orig
                             }).
 
+-record(monitor_entry, { id :: binary() | 'none'
+                       , user_id :: binary() | 'none'
+                       , type :: binary()
+                       , name :: binary()
+                       , value :: any()
+                       }).
+
 -record(stored_program_content, { type
                                 , orig
                                 , parsed

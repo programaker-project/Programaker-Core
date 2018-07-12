@@ -4,6 +4,7 @@
 -export([ create_user/3
         , login_user/2
         , get_session_username/1
+        , create_monitor/2
         , create_program/2
         , get_program/2
         , lists_programs_from_username/1
@@ -26,6 +27,7 @@
 %% Structures
 -define(REGISTERED_USERS_TABLE, automate_registered_users).
 -define(USER_SESSIONS_TABLE, automate_user_sessions).
+-define(USER_MONITORS_TABLE, automate_user_monitors).
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
 -define(EXISTING_SERVICES_TABLE, automate_existing_services).
@@ -94,6 +96,19 @@ get_session_username(SessionId) when is_binary(SessionId) ->
 
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
+
+-spec create_monitor(binary(), #monitor_entry{}) -> {ok, binary()} | {error, any()}.
+create_monitor(Username, MonitorDescriptor=#monitor_entry{ id=none, user_id=none }) ->
+    {ok, UserId} = get_userid_from_username(Username),
+    MonitorId = generate_id(),
+    Monitor = MonitorDescriptor#monitor_entry{ id=MonitorId, user_id=UserId },
+    case store_new_monitor(Monitor) of
+        ok ->
+            { ok, MonitorId };
+        {error, Reason} ->
+            { error, Reason }
+    end.
+
 
 create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
@@ -349,6 +364,15 @@ get_userid_and_password_from_username(Username) ->
         { aborted, Reason } ->
             {error, mnesia:error_description(Reason)}
     end.
+
+store_new_monitor(Monitor) ->
+    Transaction = fun() ->
+                          mnesia:write(?USER_MONITORS_TABLE
+                                      , Monitor
+                                      , write)
+                  end,
+    {atomic, Result} = mnesia:transaction(Transaction),
+    Result.
 
 store_new_program(UserProgram) ->
     Transaction = fun() ->
@@ -804,6 +828,19 @@ build_tables(Nodes) ->
                                   [ {attributes, record_info(fields, user_session_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, user_session_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    %% User monitors table
+    ok = case mnesia:create_table(?USER_MONITORS_TABLE,
+                                  [ {attributes, record_info(fields, monitor_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, monitor_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->

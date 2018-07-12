@@ -31,7 +31,7 @@ digraph {
 
     web_monitor_selector[label="Web monitor selector", color=green, fontcolor=green];
     web_monitor_description[label="Web monitor descriptor", color=green, fontcolor=green];
-    web_monitor_storage[label="Web monitor storage"];
+    web_monitor_storage[label="Web monitor storage", color=green, fontcolor=green];
     web_monitor_execution[label="Web monitor execution"];
     web_monitor_result_querying[label="Web monitor result querying"];
 

@@ -26,6 +26,8 @@ start_link() ->
 
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}
                         , {"/api/v0/users/:user_id/services/:service_id/how-to-enable", automate_rest_api_services_how_to_enable, []}
+
+                        , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}
                         ]}
                  ]),
 
