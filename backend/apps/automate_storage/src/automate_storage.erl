@@ -5,6 +5,9 @@
         , login_user/2
         , get_session_username/1
         , create_monitor/2
+        , get_monitor_from_id/1
+        , dirty_list_monitors/0
+
         , create_program/2
         , get_program/2
         , lists_programs_from_username/1
@@ -109,6 +112,20 @@ create_monitor(Username, MonitorDescriptor=#monitor_entry{ id=none, user_id=none
             { error, Reason }
     end.
 
+dirty_list_monitors() ->
+    {ok, mnesia:dirty_all_keys(?USER_MONITORS_TABLE)}.
+
+get_monitor_from_id(MonitorId) ->
+    Transaction = fun() ->
+                          mnesia:read(?USER_MONITORS_TABLE, MonitorId)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [Result] } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
 
 create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
