@@ -7,13 +7,13 @@
 -export([ allowed_methods/2
         , options/2
         , is_authorized/2
-        %% , content_types_provided/2
+        , content_types_provided/2
         , content_types_accepted/2
         , resource_exists/2
         ]).
 
 -export([ accept_json_create_monitor/2
-        %% , to_json/2
+        , to_json/2
         ]).
 
 -include("./records.hrl").
@@ -114,3 +114,43 @@ read_body(Req0, Acc) ->
         {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
         {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
     end.
+
+
+
+%% GET handler
+content_types_provided(Req, State) ->
+    io:fwrite("Control types provided~n", []),
+    {[{{<<"application">>, <<"json">>, []}, to_json}],
+     Req, State}.
+
+-spec to_json(cowboy_req:req(), #state{})
+             -> {binary(),cowboy_req:req(), #state{}}.
+to_json(Req, State) ->
+    #state{username=Username} = State,
+    case automate_rest_api_backend:lists_monitors_from_username(Username) of
+        { ok, Monitors } ->
+
+            Output = jiffy:encode(encode_monitors_list(Monitors)),
+            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
+            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
+
+            { Output, Res2, State }
+    end.
+
+
+encode_monitors_list(Monitors) ->
+    encode_monitors_list(Monitors, []).
+
+encode_monitors_list([], Acc) ->
+    lists:reverse(Acc);
+
+encode_monitors_list([H | T], Acc) ->
+    #monitor_metadata{ id=Id
+                     , name=Name
+                     , link=Link
+                     } = H,
+    AsDictionary = #{ <<"id">> => Id
+                    , <<"name">> => Name
+                    , <<"link">> =>  Link
+                    },
+    encode_monitors_list(T, [AsDictionary | Acc]).

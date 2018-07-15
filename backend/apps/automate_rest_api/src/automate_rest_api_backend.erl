@@ -5,6 +5,7 @@
         , login_user/1
         , is_valid_token/1
         , create_monitor/2
+        , lists_monitors_from_username/1
         , create_program/1
         , get_program/2
         , lists_programs_from_username/1
@@ -64,6 +65,17 @@ create_monitor(Username, #monitor_descriptor{ type=Type, name=Name, value=Value 
                                                                  }) of
         { ok, MonitorId } ->
             { ok, { MonitorId, Name } }
+    end.
+
+-spec lists_monitors_from_username(binary()) -> {'ok', [ #monitor_metadata{} ] }.
+lists_monitors_from_username(Username) ->
+    case automate_storage:lists_monitors_from_username(Username) of
+        {ok, Monitors} ->
+            {ok, [#monitor_metadata{ id=Id
+                                   , name=Name
+                                   , link=generate_url_for_monitor_name(Username, Name)
+                                   }
+                  || {Id, Name} <- Monitors]}
     end.
 
 create_program(Username) ->
@@ -137,6 +149,8 @@ generate_program_name() ->
 generate_url_for_program_name(Username, ProgramName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/programs/~s", [Username, ProgramName]))).
 
+generate_url_for_monitor_name(Username, MonitorName) ->
+    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/monitors/~s", [Username, MonitorName]))).
 
 program_entry_to_program(#user_program_entry{ id=Id
                                             , user_id=UserId

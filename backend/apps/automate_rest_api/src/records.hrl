@@ -34,6 +34,7 @@
 
 -record(monitor_metadata, { id
                           , name
+                          , link
                           }).
 
 -record(monitor_descriptor, { type :: binary()

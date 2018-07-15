@@ -7,6 +7,7 @@
         , create_monitor/2
         , get_monitor_from_id/1
         , dirty_list_monitors/0
+        , lists_monitors_from_username/1
 
         , create_program/2
         , get_program/2
@@ -126,6 +127,17 @@ get_monitor_from_id(MonitorId) ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
+
+-spec lists_monitors_from_username(binary()) -> {'ok', [ { binary(), binary() } ] }.
+lists_monitors_from_username(Username) ->
+    case retrieve_monitors_list_from_username(Username) of
+        {ok, Monitors} ->
+            { ok
+            , [{Id, Name} || [#monitor_entry{id=Id, name=Name}] <- Monitors]};
+        X ->
+            X
+    end.
+
 
 create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
@@ -391,6 +403,47 @@ store_new_monitor(Monitor) ->
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
 
+retrieve_monitors_list_from_username(Username) ->
+    Transaction = fun() ->
+                          %% Find userid with that name
+                          UserMatchHead = #registered_user_entry{ id='$1'
+                                                                , username='$2'
+                                                                , password='_'
+                                                                , email='_'
+                                                                },
+                          UserGuard = {'==', '$2', Username},
+                          UserResultColumn = '$1',
+                          UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
+
+                          case mnesia:select(?REGISTERED_USERS_TABLE, UserMatcher) of
+                              [] ->
+                                  {error, user_not_found};
+                              [UserId] ->
+
+                                  %% Find program with userId and name
+                                  MonitorMatchHead = #monitor_entry{ id='$1'
+                                                                   , user_id='$2'
+                                                                   , name='_'
+                                                                   , type='_'
+                                                                   , value='_'
+                                                                   },
+                                  MonitorGuard = {'==', '$2', UserId},
+                                  MonitorResultsColumn = '$1',
+                                  MonitorMatcher = [{MonitorMatchHead, [MonitorGuard], [MonitorResultsColumn]}],
+
+                                  Results = mnesia:select(?USER_MONITORS_TABLE, MonitorMatcher),
+                                  [mnesia:read(?USER_MONITORS_TABLE, ResultId) || ResultId <- Results]
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, { error, Reason }} ->
+            {error, Reason };
+        { atomic, Result } ->
+            {ok, Result};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 store_new_program(UserProgram) ->
     Transaction = fun() ->
                           mnesia:write(?USER_PROGRAMS_TABLE
@@ -469,7 +522,7 @@ retrieve_program_list_from_username(Username) ->
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
                                                                         , user_id='$2'
-                                                                        , program_name='$3'
+                                                                        , program_name='_'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
                                                                         , program_orig='_'

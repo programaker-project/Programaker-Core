@@ -19,11 +19,11 @@
                             , program_orig
                             }).
 
--record(monitor_entry, { id :: binary() | 'none'
-                       , user_id :: binary() | 'none'
-                       , type :: binary()
-                       , name :: binary()
-                       , value :: any()
+-record(monitor_entry, { id :: binary() | 'none'      | ?MNESIA_SELECTOR
+                       , user_id :: binary() | 'none' | ?MNESIA_SELECTOR
+                       , type :: binary()             | ?MNESIA_SELECTOR
+                       , name :: binary()             | ?MNESIA_SELECTOR
+                       , value :: any()               | ?MNESIA_SELECTOR
                        }).
 
 -record(stored_program_content, { type
