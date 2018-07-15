@@ -1,4 +1,4 @@
-import * as BrowserApi from './BrowserApi';
+import * as BrowserApi from "./BrowserApi";
 import * as PlazaApi from "./PlazaApi";
 import * as Storage from "./Storage";
 
