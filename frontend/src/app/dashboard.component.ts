@@ -13,11 +13,14 @@ import { AvailableService, ServiceEnableHowTo } from './service';
 import { ServiceService } from './service.service';
 import { MatDialog } from '@angular/material/dialog';
 
+import { MonitorMetadata } from './monitor';
+import { MonitorService } from './monitor.service';
+
 @Component({
     // moduleId: module.id,
     selector: 'app-my-dashboard',
     templateUrl: './dashboard.component.html',
-    providers: [ProgramService, SessionService, ServiceService],
+    providers: [MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'dashboard.component.css',
         'libs/css/material-icons.css',
@@ -28,17 +31,20 @@ import { MatDialog } from '@angular/material/dialog';
 export class DashboardComponent {
     programs: ProgramMetadata[] = [];
     services: AvailableService[] = [];
+    monitors: MonitorMetadata[] = [];
     session: Session = null;
 
     constructor(
         private programService: ProgramService,
         private serviceService: ServiceService,
+        private monitorService: MonitorService,
         private sessionService: SessionService,
         private router: Router,
         public dialog: MatDialog,
     ) {
         this.programService = programService;
         this.serviceService = serviceService;
+        this.monitorService = monitorService;
         this.sessionService = sessionService;
         this.router = router;
     }
@@ -56,6 +62,9 @@ export class DashboardComponent {
 
                     this.serviceService.getAvailableServices()
                         .then(services => this.services = services);
+
+                    this.monitorService.getMonitors()
+                        .then(monitors => this.monitors = monitors);
                 }
             })
             .catch(e => {
