@@ -36,7 +36,6 @@ export class MonitorService {
         return this.getListMonitorsUrl().then((url) =>
           this.http.get(url, {headers: this.sessionService.getAuthHeader()})
                   .map((response) => {
-                      console.log(response);
                       return response as MonitorMetadata[]
                   })
                   .toPromise());

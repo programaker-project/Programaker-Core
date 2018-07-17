@@ -4,15 +4,17 @@ import { Location } from '@angular/common';
 import { ProgramMetadata, ProgramContent, ScratchProgram } from './program';
 import { ProgramService } from './program.service';
 import 'rxjs/add/operator/switchMap';
-import { load_initial } from './blocks/initial';
+import { Toolbox } from './blocks/Toolbox';
 import { ContentType } from './content-type';
+import * as progbar from './ui/progbar';
 /// <reference path="./blocks/blockly-core.d.ts" />
 import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
+import { MonitorService } from './monitor.service';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [ProgramService],
+    providers: [MonitorService, ProgramService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
@@ -32,27 +34,32 @@ export class ProgramDetailComponent implements OnInit {
     HIDDEN_TEXT_LABEL = 'Show/Hide';
 
     constructor (
+      private monitorService: MonitorService,
       private programService: ProgramService,
       private route: ActivatedRoute,
       private location: Location
   ) {
+      this.monitorService = monitorService;
       this.programService = programService;
       this.route = route;
       this.location = location;
   }
 
     ngOnInit(): void {
-        this.route.params
-            .switchMap((params: Params) => {
-                this.programUserId = params['user_id'];
-                return this.programService.getProgram(params['user_id'], params['program_id']);
-            })
-            .subscribe(program => {
-                this.prepareWorkspace();
-                this.program = program;
-                this.load_program(program);
-            });
-
+        progbar.track(new Promise((resolve) => {
+            this.route.params
+                .switchMap((params: Params) => {
+                    this.programUserId = params['user_id'];
+                    return this.programService.getProgram(params['user_id'], params['program_id']);
+                })
+                .subscribe(program => {
+                    this.prepareWorkspace().then(() => {
+                        this.program = program;
+                        this.load_program(program);
+                        resolve();
+                    });
+                });
+        }));
         this.currentFillingInput = '';
     }
 
@@ -61,7 +68,11 @@ export class ProgramDetailComponent implements OnInit {
         Blockly.Xml.domToWorkspace(xml, this.workspace);
     }
 
-    prepareWorkspace() {
+    prepareWorkspace(): Promise<void> {
+        return new Toolbox(this.monitorService).inject().then(() => { this.injectWorkspace(); });
+    }
+
+    injectWorkspace() {
         // Avoid initializing it twice
         if (this.workspace !== undefined) {
             return;
