@@ -8,6 +8,8 @@
                    , automate_storage
                    , ssl
                    , inets
+                   , mochiweb
+                   , mochiweb_xpath
     ]},
     {env, [
     ]},
