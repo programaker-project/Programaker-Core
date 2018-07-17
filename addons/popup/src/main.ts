@@ -8,7 +8,7 @@ function login() {
 
     console.log("Loging in:", username);
     PlazaApi.get_token(username, password)
-        .then((token) => Storage.save_auth_token(token))
+        .then((token) => Storage.save_auth_token(username, token))
         .then(() => show_ready());
 
     return false;
@@ -43,12 +43,14 @@ function show_login() {
 }
 
 function check_token() {
-    Storage.get_auth_token().then((token) => {
+    Storage.get_auth_token().then(([username, token]) => {
         show_ready();
         BrowserApi.get_current_tab()
             .then((tab) => {
-                BrowserApi.run_on_tab(tab, "injected.js");
-                BrowserApi.close_popup();
+                BrowserApi.run_on_tab(tab, "injected.js", () => {
+                    BrowserApi.send_message_to_tab(tab, {plazaInjectedOptions: { username, token }});
+                    BrowserApi.close_popup();
+                });
             }, (error) => {
                 console.error("Error requesting tab:", error);
             });

@@ -27,13 +27,13 @@ function get_db(): Promise<IDBDatabase> {
     });
 }
 
-export function save_auth_token(token: string): Promise<void> {
+export function save_auth_token(username: string, token: string): Promise<void> {
     return get_db().then((db) => {
         return new Promise<void>((resolve) => {
             const transaction = db.transaction([AUTH_TOKEN_STORE], "readwrite");
             const storage = transaction.objectStore(AUTH_TOKEN_STORE);
 
-            storage.add(token);
+            storage.add({ username, token });
 
             console.log("Saving");
             transaction.oncomplete = (e) => {
@@ -44,9 +44,9 @@ export function save_auth_token(token: string): Promise<void> {
     });
 }
 
-export function get_auth_token(): Promise<string> {
+export function get_auth_token(): Promise<[string, string]> {
     return get_db().then((db) => {
-        return new Promise<string>((resolve, reject) => {
+        return new Promise<[string, string]>((resolve, reject) => {
             try {
                 const transaction = db.transaction([AUTH_TOKEN_STORE], "readonly");
                 const storage = transaction.objectStore(AUTH_TOKEN_STORE);
@@ -57,7 +57,9 @@ export function get_auth_token(): Promise<string> {
 
                     if (cursor) {
                         if (!resolved) {
-                            resolve(cursor.value);
+                            const value = cursor.value;
+
+                            resolve([value.username, value.token]);
                         }
                         resolved = true;
                         cursor.continue();

@@ -1,4 +1,5 @@
-declare var window: Window;
+declare const window: Window;
+declare const Components;
 
 let entry;
 if (("browser" in window)) {
@@ -20,10 +21,19 @@ export function get_current_tab(): Promise<any> {
     });
 }
 
-export function run_on_tab(tab, file: string) {
+export function run_on_tab(tab, file: string, cb: () => void) {
     Browser.tabs.executeScript(tab.id, {
         file,
+    }, () => {
+        console.log("CB", cb);
+        if (cb) {
+            cb();
+        }
     });
+}
+
+export function send_message_to_tab(tab, data: any) {
+    Browser.tabs.sendMessage(tab.id, data);
 }
 
 export function close_popup() {
