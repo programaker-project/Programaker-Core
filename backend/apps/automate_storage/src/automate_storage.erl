@@ -116,6 +116,8 @@ create_monitor(Username, MonitorDescriptor=#monitor_entry{ id=none, user_id=none
 dirty_list_monitors() ->
     {ok, mnesia:dirty_all_keys(?USER_MONITORS_TABLE)}.
 
+
+-spec get_monitor_from_id(binary()) -> #monitor_entry{} | {error, any()}.
 get_monitor_from_id(MonitorId) ->
     Transaction = fun() ->
                           mnesia:read(?USER_MONITORS_TABLE, MonitorId)

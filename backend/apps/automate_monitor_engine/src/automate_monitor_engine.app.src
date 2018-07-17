@@ -6,6 +6,8 @@
     {applications, [ kernel
                    , stdlib
                    , automate_storage
+                   , ssl
+                   , inets
     ]},
     {env, [
     ]},
