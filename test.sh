@@ -19,6 +19,7 @@ popd
 
 echo "[INFO] Building addon"
 pushd addons
+npm install .
 npm run build
 npm run lint
 popd
