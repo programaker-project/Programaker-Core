@@ -27,16 +27,26 @@
                           , link
                           }).
 
+-record(program_content, { type
+                         , orig
+                         , parsed
+                         }).
+
+-record(monitor_metadata, { id
+                          , name
+                          , link
+                          }).
+
+-record(monitor_descriptor, { type :: binary()
+                            , name :: binary()
+                            , value :: any()
+                            }).
+
 -record(service_metadata, { id
                           , name
                           , link
                           , enabled
                           }).
-
--record(program_content, { type
-                         , orig
-                         , parsed
-                         }).
 
 -record(service_enable_extra_telegram, { token :: binary()
                                        , bot_name :: binary()

@@ -38,8 +38,7 @@
       </div>
   </div>
 
-  <!--
-  <div class="collection-grid">
+  <div *ngIf="monitors !== undefined && monitors.length > 0" class="collection-grid">
     <h1 class="collection-name">
         Monitors
     </h1>
@@ -50,15 +49,18 @@
                 <h4>{{monitor.name}}</h4>
             </mat-card>
         </div>
+        <!--
         <div class="col-sm-4">
             <mat-card role="button" (click)="addMonitor()" class="module monitor call-to-action">
                 <h4>Add one!</h4>
             </mat-card>
         </div>
+        -->
       </div>
     </div>
   </div>
 
+  <!--
   <div class="collection-grid">
     <h1 class="collection-name">
         APIs

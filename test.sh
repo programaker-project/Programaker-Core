@@ -15,3 +15,10 @@ npm install .
 make
 npm run build
 npm run lint
+popd
+
+echo "[INFO] Building addon"
+pushd addons
+npm run build
+npm run lint
+popd

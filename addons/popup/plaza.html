@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="plaza.css" />
+    </head>
+
+    <body>
+        <div class="login no-token">
+            <form class="login" action="#">
+                <table>
+                    <tr>
+                        <td>
+                            <label for="login_username">Username:</label>
+                        </td>
+                        <td>
+                            <input placeholder="username" type="text" name="login_username" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="login_password">Password:</label>
+                        </td>
+                        <td>
+                            <input placeholder="password" type="password" name="login_password" />
+                        </td>
+                    </tr>
+                </table>
+                <input type="submit" class="login-button" value="Login" />
+            </form>
+        </div>
+        <div class="add-selection with-token">
+            <input class="add-selection-button" type="button" value="Add selection" />
+        </div>
+        <div class="default with-token">
+            Select something and open this again...
+        </div>
+        <script src="plaza.js"></script>
+    </body>
+</html>

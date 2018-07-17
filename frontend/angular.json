@@ -33,8 +33,6 @@
               "node_modules/scratch-blocks/blocks_compressed.js",
               "node_modules/scratch-blocks/blocks_compressed_vertical.js",
               "node_modules/nprogress/nprogress.js",
-              "src/app/js/custom_blocks.js",
-              "src/app/js/custom_toolbox.js"
             ]
           },
           "configurations": {

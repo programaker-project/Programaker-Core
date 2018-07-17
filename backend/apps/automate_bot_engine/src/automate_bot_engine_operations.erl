@@ -162,7 +162,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
 
 run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY
                  , ?ARGUMENTS := [Argument]
-                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, _State, _Signal) ->
 
     {ok, Message} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
     case automate_bot_engine_variables:retrieve_thread_values(Thread, [ ?TELEGRAM_CHAT_ID
@@ -354,7 +354,7 @@ increment_innermost(List)->
     [Latest | Tail] = lists:reverse(List),
     lists:reverse([Latest + 1 | Tail]).
 
-
+%% Operators
 get_block_result(#{ ?TYPE := ?COMMAND_JOIN
                   , ?ARGUMENTS := [ First
                                   , Second
@@ -369,12 +369,14 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
             {error, not_found}
     end;
 
+%% Variables
 get_block_result(#{ ?TYPE := ?COMMAND_DATA_VARIABLE
                   , ?ARGUMENTS := [ Value
                                   ]
                   }, Thread) ->
     automate_bot_engine_variables:resolve_argument(Value, Thread);
 
+%% List
 get_block_result(#{ ?TYPE := ?COMMAND_ITEM_OF_LIST
                   , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
                                      , ?VALUE := ListName
@@ -434,6 +436,17 @@ get_block_result(#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
             {ok, false}
     end;
 
+get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
+                  , ?ARGUMENTS := []
+                  }, _Thread) ->
+    case automate_monitor_engine:get_last_monitor_result(MonitorId) of
+        {ok, Result} ->
+            {ok, Result};
+        {error, not_found} ->
+            {ok, false}
+    end;
+
+%% Faaail
 get_block_result(Block, _Thread) ->
     io:format("Result from: ~p~n", [Block]),
     erlang:error(bad_operation).

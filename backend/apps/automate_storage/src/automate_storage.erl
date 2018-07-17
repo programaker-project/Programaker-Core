@@ -4,6 +4,11 @@
 -export([ create_user/3
         , login_user/2
         , get_session_username/1
+        , create_monitor/2
+        , get_monitor_from_id/1
+        , dirty_list_monitors/0
+        , lists_monitors_from_username/1
+
         , create_program/2
         , get_program/2
         , lists_programs_from_username/1
@@ -26,6 +31,7 @@
 %% Structures
 -define(REGISTERED_USERS_TABLE, automate_registered_users).
 -define(USER_SESSIONS_TABLE, automate_user_sessions).
+-define(USER_MONITORS_TABLE, automate_user_monitors).
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
 -define(EXISTING_SERVICES_TABLE, automate_existing_services).
@@ -94,6 +100,46 @@ get_session_username(SessionId) when is_binary(SessionId) ->
 
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
+
+-spec create_monitor(binary(), #monitor_entry{}) -> {ok, binary()} | {error, any()}.
+create_monitor(Username, MonitorDescriptor=#monitor_entry{ id=none, user_id=none }) ->
+    {ok, UserId} = get_userid_from_username(Username),
+    MonitorId = generate_id(),
+    Monitor = MonitorDescriptor#monitor_entry{ id=MonitorId, user_id=UserId },
+    case store_new_monitor(Monitor) of
+        ok ->
+            { ok, MonitorId };
+        {error, Reason} ->
+            { error, Reason }
+    end.
+
+dirty_list_monitors() ->
+    {ok, mnesia:dirty_all_keys(?USER_MONITORS_TABLE)}.
+
+
+-spec get_monitor_from_id(binary()) -> #monitor_entry{} | {error, any()}.
+get_monitor_from_id(MonitorId) ->
+    Transaction = fun() ->
+                          mnesia:read(?USER_MONITORS_TABLE, MonitorId)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [Result] } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec lists_monitors_from_username(binary()) -> {'ok', [ { binary(), binary() } ] }.
+lists_monitors_from_username(Username) ->
+    case retrieve_monitors_list_from_username(Username) of
+        {ok, Monitors} ->
+            { ok
+            , [{Id, Name} || [#monitor_entry{id=Id, name=Name}] <- Monitors]};
+        X ->
+            X
+    end.
+
 
 create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
@@ -350,6 +396,56 @@ get_userid_and_password_from_username(Username) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+store_new_monitor(Monitor) ->
+    Transaction = fun() ->
+                          mnesia:write(?USER_MONITORS_TABLE
+                                      , Monitor
+                                      , write)
+                  end,
+    {atomic, Result} = mnesia:transaction(Transaction),
+    Result.
+
+retrieve_monitors_list_from_username(Username) ->
+    Transaction = fun() ->
+                          %% Find userid with that name
+                          UserMatchHead = #registered_user_entry{ id='$1'
+                                                                , username='$2'
+                                                                , password='_'
+                                                                , email='_'
+                                                                },
+                          UserGuard = {'==', '$2', Username},
+                          UserResultColumn = '$1',
+                          UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
+
+                          case mnesia:select(?REGISTERED_USERS_TABLE, UserMatcher) of
+                              [] ->
+                                  {error, user_not_found};
+                              [UserId] ->
+
+                                  %% Find program with userId and name
+                                  MonitorMatchHead = #monitor_entry{ id='$1'
+                                                                   , user_id='$2'
+                                                                   , name='_'
+                                                                   , type='_'
+                                                                   , value='_'
+                                                                   },
+                                  MonitorGuard = {'==', '$2', UserId},
+                                  MonitorResultsColumn = '$1',
+                                  MonitorMatcher = [{MonitorMatchHead, [MonitorGuard], [MonitorResultsColumn]}],
+
+                                  Results = mnesia:select(?USER_MONITORS_TABLE, MonitorMatcher),
+                                  [mnesia:read(?USER_MONITORS_TABLE, ResultId) || ResultId <- Results]
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, { error, Reason }} ->
+            {error, Reason };
+        { atomic, Result } ->
+            {ok, Result};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 store_new_program(UserProgram) ->
     Transaction = fun() ->
                           mnesia:write(?USER_PROGRAMS_TABLE
@@ -428,7 +524,7 @@ retrieve_program_list_from_username(Username) ->
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
                                                                         , user_id='$2'
-                                                                        , program_name='$3'
+                                                                        , program_name='_'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
@@ -804,6 +900,19 @@ build_tables(Nodes) ->
                                   [ {attributes, record_info(fields, user_session_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, user_session_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    %% User monitors table
+    ok = case mnesia:create_table(?USER_MONITORS_TABLE,
+                                  [ {attributes, record_info(fields, monitor_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, monitor_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->

@@ -1,0 +1,13 @@
+html, body {
+    margin: 0px;
+    padding: 0px;
+    min-width: 200px;
+}
+
+.no-token, .with-token {
+    display: none;
+}
+
+input[type="submit"] {
+    text-align: center;
+}

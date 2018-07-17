@@ -19,6 +19,13 @@
                             , program_orig
                             }).
 
+-record(monitor_entry, { id :: binary() | 'none'      | ?MNESIA_SELECTOR
+                       , user_id :: binary() | 'none' | ?MNESIA_SELECTOR
+                       , type :: binary()             | ?MNESIA_SELECTOR
+                       , name :: binary()             | ?MNESIA_SELECTOR
+                       , value :: any()               | ?MNESIA_SELECTOR
+                       }).
+
 -record(stored_program_content, { type
                                 , orig
                                 , parsed

@@ -1,0 +1,17 @@
+{application, automate_monitor_engine, [
+    {description, "Auto-mate monitor engine module."},
+    {vsn, "0.0.0"},
+    {registered, []},
+    {mod, { automate_monitor_engine_app, [] }},
+    {applications, [ kernel
+                   , stdlib
+                   , automate_storage
+                   , ssl
+                   , inets
+    ]},
+    {env, [
+    ]},
+    {modules, []},
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+]}.
