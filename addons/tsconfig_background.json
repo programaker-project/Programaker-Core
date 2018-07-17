@@ -1,10 +1,10 @@
 {
   "compileOnSave": false,
   "files": [
-    "./popup/src/main.ts"
+    "./src/Background.ts"
   ],
   "compilerOptions": {
-    "outFile": "./popup/plaza.js",
+    "outFile": "./background.js",
     "sourceMap": true,
     "module": "amd",
     "declaration": false,

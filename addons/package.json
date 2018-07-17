@@ -4,8 +4,7 @@
   "description": "Companion addon for plaza.",
   "main": "background.js",
   "scripts": {
-    "build": "tsc-bundle --project tsconfig.json",
-    "watch": "tsc-bundle --project tsconfig.json --watch",
+    "build": "tsc-bundle --project tsconfig_background.json && tsc-bundle --project tsconfig_popup.json&& tsc-bundle --project tsconfig_injected.json",
     "lint": "tslint --project .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

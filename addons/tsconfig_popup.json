@@ -1,0 +1,19 @@
+{
+  "compileOnSave": false,
+  "files": [
+    "./src/Popup.ts"
+  ],
+  "compilerOptions": {
+    "outFile": "./popup/plaza.js",
+    "sourceMap": true,
+    "module": "amd",
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "lib": [
+      "es2016",
+      "dom"
+    ]
+  }
+}

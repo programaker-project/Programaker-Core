@@ -1,4 +1,5 @@
-const API_ROOT = "https://plaza.spiral.systems/api/v0";
+// const API_ROOT = "https://plaza.spiral.systems/api/v0";
+const API_ROOT = "http://127.0.0.1:8888/api/v0";
 
 export function get_token(username: string, password: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -29,6 +30,36 @@ export function get_token(username: string, password: string): Promise<string> {
 
         xmlhttp.open("POST", API_ROOT + "/sessions/login");
         xmlhttp.setRequestHeader("Content-Type", "application/json");
+        xmlhttp.send(JSON.stringify(payload));
+    });
+}
+
+export function send_xpath_monitor(username: string, token: string, payload: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+        const xmlhttp = new XMLHttpRequest();
+
+        xmlhttp.onreadystatechange = () => {
+            if (xmlhttp.readyState === XMLHttpRequest.DONE ) {
+                if (xmlhttp.status === 200) {
+                    resolve(JSON.parse(xmlhttp.response));
+                } else if (xmlhttp.status === 400) {
+                    reject({
+                        message: "Error code 400",
+                        status: xmlhttp.status,
+                    });
+                }
+            } else {
+                console.log("something else other than 200 was returned: ", xmlhttp.status);
+                reject({
+                    message: "something else other than 200 was returned: " + xmlhttp.status,
+                    status: xmlhttp.status,
+                });
+            }
+        };
+
+        xmlhttp.open("POST", API_ROOT + "/users/" + username + "/monitors/");
+        xmlhttp.setRequestHeader("Content-Type", "application/json");
+        xmlhttp.setRequestHeader("Authorization", token);
         xmlhttp.send(JSON.stringify(payload));
     });
 }
