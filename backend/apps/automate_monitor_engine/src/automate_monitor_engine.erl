@@ -37,10 +37,14 @@ get_monitor_result(<<"xpath_v1">>, #{ <<"url">> := Url
                        Orig ! Result
                end),
     receive
-        {exit, _, _} ->
+        {'EXIT', _, _} ->
+            {error, not_found};
+        {error, not_found} ->
             {error, not_found};
         {ok, Result} ->
-            {ok, Result}
+            {ok, Result};
+        X ->
+            X
     end;
 
 get_monitor_result(Type, Value) ->
