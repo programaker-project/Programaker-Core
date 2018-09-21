@@ -18,6 +18,8 @@ start_link() ->
                         , {"/api/v0/sessions/check", automate_rest_api_sessions_check, []}
                         , {"/api/v0/sessions/login", automate_rest_api_sessions_login, []}
 
+                        , {"/api/v0/ping", automate_rest_api_ping, []}
+
                         , {"/api/v0/users", automate_rest_api_users_root, []}
                         , {"/api/v0/users/:user_id", automate_rest_api_users_specific, []}
 
