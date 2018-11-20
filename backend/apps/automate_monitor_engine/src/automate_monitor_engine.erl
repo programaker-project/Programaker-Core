@@ -6,6 +6,7 @@
         ]).
 
 -define(SERVER, ?MODULE).
+-define(WAIT_FOR_PID_TIMEOUT, 1000).
 -include("../../automate_storage/src/records.hrl").
 
 %%%===================================================================
@@ -32,18 +33,23 @@ get_monitor_result(<<"xpath_v1">>, #{ <<"url">> := Url
     %% may have a relatively large memory footprint
     Orig = self(),
     process_flag(trap_exit, true),
-    spawn_link(fun() ->
+    NewPid = spawn_link(fun() ->
                        Result = resolve_xpath(Url, XPath),
                        Orig ! Result
                end),
     receive
-        {'EXIT', _, _} ->
+        ExitCode = {'EXIT', _, _} ->
+            io:format("Exited: ~p~n", [ExitCode]),
             {error, not_found};
         {error, not_found} ->
+            wait_for_pid(NewPid),
             {error, not_found};
         {ok, Result} ->
+            wait_for_pid(NewPid),
             {ok, Result};
         X ->
+            io:format("Unexpected: ~p~n", [X]),
+            wait_for_pid(NewPid),
             X
     end;
 
@@ -51,6 +57,26 @@ get_monitor_result(Type, Value) ->
     io:format("Unknown monitor: ~p~n  ~p~n", [Type, Value]),
     erlang:error(badarg).
 
+wait_for_pid(Pid) ->
+    process_flag(trap_exit, true),
+    io:format("Waiting for ~p, alive? ~p~n", [Pid, is_process_alive(Pid)]),
+    case is_process_alive(Pid) of
+        false ->
+            receive {'EXIT', Pid, _} ->
+                io:format("Previously exited~n"),
+                ok
+            after 0 ->
+                %% Stop immediately if exit message not received
+                ok
+            end;
+        true ->
+            receive {'EXIT', Pid, _} ->
+                io:format("Got exited~n"),
+                ok
+            after ?WAIT_FOR_PID_TIMEOUT ->
+                timeout
+            end
+    end.
 
 %%%===================================================================
 %%% Internal functions
