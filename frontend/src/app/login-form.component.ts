@@ -19,6 +19,7 @@ export class LoginFormComponent implements OnInit {
     isLogInMode: boolean;
     isSignUpMode: boolean;
     session: Session = null;
+    errorMessage = '';
 
     ngOnInit(): void {
         this.sessionService.getSession()
@@ -69,7 +70,11 @@ export class LoginFormComponent implements OnInit {
             }
         })
         .catch(reason => {
-          console.log('Error on login:', reason);
+            this.errorMessage = 'Login error';
+            if (reason.status === 400) {
+                this.errorMessage += ': Invalid user/password'
+            }
+            console.log('Error on login:', reason);
         })
     }
 

@@ -83,6 +83,13 @@ mat-card.module {
     margin: 0 auto;
 }
 
+.error-message {
+    padding: 1ex;
+    text-align: center;
+    color: #dd1100;
+    font-weight: bold;
+}
+
 .accept-cancel {
     text-align: center;
 }
