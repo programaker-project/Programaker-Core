@@ -20,8 +20,8 @@ import { SessionService } from './session.service';
 
 export class AddServicesComponent {
 
-    private testServiceUrl = 'https://wireup.hivemind.ai/api/services/test';
-    private createServiceUrl = 'https://wireup.hivemind.ai/api/services/create';
+    private testServiceUrl = 'https://plaza.spiral.systems/api/services/test';
+    private createServiceUrl = 'https://plaza.spiral.systems/api/services/create';
 
     session: Session;
     service: Service;

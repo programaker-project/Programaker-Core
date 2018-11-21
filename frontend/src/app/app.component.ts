@@ -19,7 +19,7 @@ export class AppComponent {
     sessionSubscription: Subscription;
     username: string;
     loggedIn: boolean;
-    title = 'WireUp';
+    title = 'Plaza';
 
     constructor(
         private router: Router,
