@@ -8,6 +8,10 @@ const MonitorSecondaryColor = '#773377';
 export class Toolbox {
     monitorService: MonitorService;
 
+    static alreadyRegisteredException(e: Error): boolean {
+        return e.message.match(/Error: Extension .* is already registered./) !== null;
+    }
+
     constructor(
         monitorService: MonitorService
     ) {
@@ -61,11 +65,19 @@ export class Toolbox {
             }
         };
 
-        Blockly.Extensions.register('colours_chat',
-                            function() {
-                                this.setColourFromRawValues_('#5555CC', '#333377', '#0000FF');
-                            });
-   }
+        try {
+            Blockly.Extensions.register('colours_chat',
+                                function() {
+                                    this.setColourFromRawValues_('#5555CC', '#333377', '#0000FF');
+                                });
+        } catch (e) {
+            // If the extension was registered before
+            // this would have thrown an inocous exception
+            if (!Toolbox.alreadyRegisteredException(e)) {
+                throw e;
+            }
+        }
+    }
 
     injectMonitorBlocks(monitors: MonitorMetadata[]) {
         for (const monitor of monitors) {
@@ -82,12 +94,20 @@ export class Toolbox {
         }
 
         if (monitors.length > 0) {
-            Blockly.Extensions.register('colours_monitor',
-                                        function() {
-                                            this.setColourFromRawValues_(MonitorPrimaryColor,
-                                                                         MonitorSecondaryColor,
-                                                                         '#FF00FF');
-                                        });
+            try {
+                Blockly.Extensions.register('colours_monitor',
+                                            function() {
+                                                this.setColourFromRawValues_(MonitorPrimaryColor,
+                                                                            MonitorSecondaryColor,
+                                                                            '#FF00FF');
+                                            });
+            } catch (e) {
+                // If the extension was registered before
+                // this would have thrown an inocous exception
+                if (!Toolbox.alreadyRegisteredException(e)) {
+                    throw e;
+                }
+            }
         }
     }
 
