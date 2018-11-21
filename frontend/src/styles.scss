@@ -7,6 +7,10 @@ html, body, my-app, mat-sidenav-container, .app-content {
   height: 100%;
 }
 
+body {
+    background-color: #fafafa;
+}
+
 .app-content {
     height: auto;
 }
@@ -72,6 +76,10 @@ mat-card.failed {
 mat-card.module {
     margin-bottom: 1ex;
     text-align: center;
+}
+
+app-my-login-form {
+    padding: 1ex;
 }
 
 .login-form {
