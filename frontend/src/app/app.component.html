@@ -5,7 +5,7 @@
         <span class="floating-elements">
             <span class="login-indicator">
                 <div class="username-display" *ngIf="loggedIn">
-                    Hi, {{ username }}!
+                    <a class="action-link" (click)="logout()">Logout</a>
                 </div>
                 <div *ngIf="!loggedIn">
                     <a class="action-link" (click)="gotoLogin()">Login</a>

@@ -43,6 +43,12 @@ export class AppComponent {
         this.router.navigate(['/login']);
     }
 
+    logout(): void {
+        this.session.logout();
+        this.loggedIn = false;
+        this.gotoLogin();
+    }
+
     gotoDashboard(): void {
         this.router.navigate(['/dashboard']);
     }

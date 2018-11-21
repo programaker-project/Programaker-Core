@@ -27,6 +27,11 @@ export class SessionService {
         storage.setItem('session.service.token', token);
     }
 
+    removeToken() {
+        const storage = window.localStorage;
+        storage.removeItem('session.service.token');
+    }
+
     getToken(): string {
         const storage = window.localStorage;
         const token = storage.getItem('session.service.token');
@@ -102,6 +107,11 @@ export class SessionService {
                   return false;
                 })
                 .toPromise());
+    }
+
+    logout() {
+        this.removeToken();
+        SessionService.EstablishedSession = undefined;
     }
 
 
