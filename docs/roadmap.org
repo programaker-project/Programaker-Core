@@ -6,6 +6,7 @@
 **** (Internal) Mechanism to publish to channels
 **** Monitors for input
 ***** HTTP monitors
+***** Telegram monitors
 **** Api client for output
 *** Agents connect to monitoring through channel
 *** Service registry

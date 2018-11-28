@@ -1,5 +1,5 @@
 [ { automate_rest_api, [{port, 8888}]}
-, { automate_bot_telegram, [ { telegram_enabled, false }
+, { automate_bot_engine, [ { telegram_enabled, false }
                            , { telegram_token, <<"@INSERT HERE TELEGRAM TOKEN@">> }
                            , { telegram_bot_name, <<"@INSERT HERE SERVICE TELEGRAM BOT NAME@">> }
                            ]}
