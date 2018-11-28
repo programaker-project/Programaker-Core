@@ -1,0 +1,27 @@
+* Roadmap
+** Channel support
+*** Working base channels 
+**** (Internal) Mechanism to create channels
+**** (Internal) Mechanism to list channels
+**** (Internal) Mechanism to publish to channels
+**** Monitors for input
+***** HTTP monitors
+**** Api client for output
+*** Agents connect to monitoring through channel
+*** Service registry
+**** Unified interface to query available services (for frontend) 
+**** Unified interface to call services (from agents)
+*** Agents access services through registry
+*** Persistence queues
+    Makes clients not lose data while on dowtime
+*** Public API to call services
+    With this and persistent queues we can have external agents.
+** In the future
+*** Support for more services
+**** Mail
+**** Generic REST
+**** ...
+*** VM based agents
+*** History DB
+    A database to keep the history of all the elements found by a monitor.
+    (Up to a number of elements?)
