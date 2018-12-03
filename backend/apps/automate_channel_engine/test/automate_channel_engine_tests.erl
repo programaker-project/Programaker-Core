@@ -36,7 +36,7 @@ setup() ->
 
 %% @doc App infrastructure teardown.
 %% @end
-stop({NodeName, Pid}) ->
+stop({NodeName, _Pid}) ->
     application:stop(automate_channel_engine),
     mnesia:stop(),
     ok = mnesia:delete_schema(?TEST_NODES),
@@ -48,6 +48,7 @@ stop({NodeName, Pid}) ->
 tests(_SetupResult) ->
     [ {"[Channel creation] Create two channels, IDs are different", fun channel_creation_different_names/0}
     , {"[Message sending] Register on a channel, message it", fun simple_listen_send/0}
+    , {"[Message sending] Register twice on a channel, message it", fun simple_double_listen_send/0}
     ].
 
 
@@ -72,6 +73,34 @@ simple_listen_send() ->
           end),
     receive {channel_msg, ReceivedMessage} ->
             Message = ReceivedMessage
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end.
+
+simple_double_listen_send() ->
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
+    Message = simple_message,
+
+    Pid = self(),
+    automate_channel_engine:listen_channel(ChannelId,
+                                           fun (Msg) ->
+                                                   Pid ! { channel_msg, Msg }
+                                           end),
+
+    automate_channel_engine:listen_channel(ChannelId,
+                                           fun (Msg) ->
+                                                   Pid ! { channel_msg2, Msg }
+                                           end),
+    spawn(fun () ->
+                  automate_channel_engine:send_to_channel(ChannelId, Message)
+          end),
+    receive {channel_msg, ReceivedMessage} ->
+            Message = ReceivedMessage
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end,
+    receive {channel_msg2, ReceivedMessage2} ->
+            Message = ReceivedMessage2
     after ?RECEIVE_TIMEOUT ->
             ct:fail(timeout)
     end.

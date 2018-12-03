@@ -46,7 +46,7 @@ start_link() ->
                                   [ { attributes, record_info(fields, listeners_table_entry)}
                                   , { ram_copies, Nodes }
                                   , { record_name, listeners_table_entry }
-                                  , { type, set }
+                                  , { type, bag }
                                   ]) of
              { atomic, ok } ->
                  ok;
