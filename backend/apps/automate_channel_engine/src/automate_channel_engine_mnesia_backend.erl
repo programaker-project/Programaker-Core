@@ -58,7 +58,6 @@ start_link() ->
 -spec register_channel(binary()) -> ok | {error, term(), string()}.
 register_channel(ChannelId) ->
     Entry = #live_channels_table_entry{live_channel_id=ChannelId, stats=7},
-    io:fwrite("%%%%% ~p~n", [record_info(fields, live_channels_table_entry)]),
     Transaction = fun() ->
                           ok = mnesia:write(?LIVE_CHANNELS_TABLE, Entry, write)
                   end,
