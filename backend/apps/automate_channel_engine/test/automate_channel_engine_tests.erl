@@ -49,6 +49,7 @@ tests(_SetupResult) ->
     [ {"[Channel creation] Create two channels, IDs are different", fun channel_creation_different_names/0}
     , {"[Message sending] Register on a channel, message it", fun simple_listen_send/0}
     , {"[Message sending] Register twice on a channel, message it", fun simple_double_listen_send/0}
+    , {"[Housekeeping] Register twice on a channel, close one thread", fun register_twice_close_one/0}
     ].
 
 
@@ -59,6 +60,7 @@ channel_creation_different_names() ->
     {ok, ChannelId2} = automate_channel_engine:create_channel(),
     true = (ChannelId1 =/= ChannelId2).
 
+%%%% Message sending
 simple_listen_send() ->
     {ok, ChannelId} = automate_channel_engine:create_channel(),
     Message = simple_message,
@@ -104,3 +106,25 @@ simple_double_listen_send() ->
     after ?RECEIVE_TIMEOUT ->
             ct:fail(timeout)
     end.
+
+
+%%%% Housekeeping
+register_twice_close_one() ->
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
+    process_flag(trap_exit, true),
+
+    spawn_link(fun() ->
+                  automate_channel_engine:listen_channel(
+                    ChannelId,
+                    fun(_) ->
+                            ct:fail(shouldnt_happen)
+                    end)
+               end),
+
+    receive {'EXIT', _, _} ->
+            ok
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end,
+
+    automate_channel_engine:send_to_channel(ChannelId, test).
