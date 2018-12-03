@@ -985,6 +985,7 @@ build_tables(Nodes) ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
+
     %% TelegramId -> InternalId matches
     ok = case mnesia:create_table(?TELEGRAM_SERVICE_REGISTRATION_TABLE,
                                   [ { attributes, record_info(fields, telegram_service_registration_entry)}
@@ -996,20 +997,7 @@ build_tables(Nodes) ->
                  ok;
              { aborted, { already_exists, _ }} ->
                  ok
-         end,
-    %% TelegramId -> InternalId matches
-    ok = case mnesia:create_table(?PROGRAM_VARIABLE_TABLE,
-                                  [ { attributes, record_info(fields, program_variable_table_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, program_variable_table_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-    ok.
+         end.
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).

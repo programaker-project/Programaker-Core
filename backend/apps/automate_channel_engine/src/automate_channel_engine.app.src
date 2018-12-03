@@ -1,0 +1,15 @@
+{application, automate_channel_engine, [
+    {description, "Auto-mate channel engine module."},
+    {vsn, "0.0.0"},
+    {registered, []},
+    {mod, { automate_channel_engine_app, [] }},
+    {applications, [ kernel
+                   , stdlib
+                   , automate_storage
+    ]},
+    {env, [
+    ]},
+    {modules, []},
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+]}.

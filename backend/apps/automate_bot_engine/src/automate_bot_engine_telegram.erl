@@ -24,6 +24,7 @@
 %%====================================================================
 
 is_enabled() ->
+    io:format("==> ~p~n", [application:get_env(?APPLICATION)]),
     {ok, Enabled} = application:get_env(?APPLICATION, telegram_enabled),
     Enabled.
 
