@@ -1,12 +1,8 @@
 %%%-------------------------------------------------------------------
-%%% @author kenkeiras <kenkeiras@becho>
-%%% @copyright (C) 2018, kenkeiras
-%%% @doc
-%%%
+%%% @doc Demuxer from telegram messages to individual users.
 %%% @end
-%%% Created : 11 Jun 2018 by kenkeiras <kenkeiras@becho>
 %%%-------------------------------------------------------------------
--module(automate_bot_engine_telegram_demux).
+-module(automate_services_telegram_demux).
 
 -behaviour(gen_server).
 
@@ -166,9 +162,9 @@ handle_telegram_update({pe4kin_update,
                                           <<"message_id">> := _MessageId,
                                           <<"text">> := Content},
                                     <<"update_id">> := _UpdateId}}) ->
-    case automate_bot_engine_telegram:telegram_user_to_internal(FromId) of
+    case automate_services_telegram_telegram:telegram_user_to_internal(FromId) of
         {ok, InternalUser} ->
-            automate_bot_engine_launcher:user_sent_telegram_message(InternalUser, ChatId, Content, BotName);
+            automate_services_telegram_launcher:user_sent_telegram_message(InternalUser, ChatId, Content, BotName);
         {error, not_found} ->
             handle_from_new_user(Message, Content, FromId, ChatId, BotName)
     end;
@@ -179,23 +175,23 @@ handle_telegram_update({pe4kin_update, _BotName, Message}) ->
 -spec handle_from_new_user(map(),_,_,_,_) -> 'ok'.
 handle_from_new_user(_Message, <<"/register ", RawRegistrationToken/binary>>, UserId, ChatId, BotName) ->
     RegistrationToken = string:trim(RawRegistrationToken, both, " \n"),
-    case automate_bot_engine_telegram:register_user(UserId, RegistrationToken) of
+    case automate_services_telegram_telegram:register_user(UserId, RegistrationToken) of
         ok ->
             ResponseText = <<"Welcome! You're registered!\nNow you can use this bot in your programs.">>,
-            {ok, _} = automate_bot_engine_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
+            {ok, _} = automate_services_telegram_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
             ok;
         {error, not_found} ->
             ResponseText = <<"Hm... We didn't found a match for that token.\nMaybe check your spelling ;)">>,
-            {ok, _} = automate_bot_engine_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
+            {ok, _} = automate_services_telegram_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
             ok
     end;
 
 handle_from_new_user(_Message, <<"/start">>, _UserId, ChatId, BotName) ->
     ResponseText = <<"Hi! I'm a bot in the making, ask @kenkeiras for more info if you want to know how to program me ;).">>,
-    {ok, _} = automate_bot_engine_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
+    {ok, _} = automate_services_telegram_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
     ok;
 
 handle_from_new_user(_Message, _Content, _UserId, ChatId, BotName) ->
     ResponseText = <<"Sorry, I didnt get that!\nSay /start to see what can I do.">>,
-    {ok, _} = automate_bot_engine_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
+    {ok, _} = automate_services_telegram_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
     ok.

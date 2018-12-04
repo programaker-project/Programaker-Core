@@ -169,7 +169,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY
                                                                       , ?TELEGRAM_BOT_NAME
                                                                       ]) of
         {ok, [ChatId, BotName]} ->
-            {ok, _} = automate_bot_engine_telegram:send_message(BotName, #{chat_id => ChatId, text => Message});
+            {ok, _} = automate_services_telegram:send_message(BotName, #{chat_id => ChatId, text => Message});
         {error, Reason} ->
             %% TODO report error to user
             io:format("Error: ~p~n", [Reason])

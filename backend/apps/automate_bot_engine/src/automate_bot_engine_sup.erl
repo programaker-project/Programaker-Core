@@ -35,19 +35,7 @@ init([]) ->
                     , type => supervisor
                     , modules => [automate_bot_engine_runner_sup]
                     }],
-    ChildSpecsWithTelegram = case automate_bot_engine_telegram:is_enabled() of
-                                 true ->
-                                     [ #{ id => automate_bot_engine_telegram_sup
-                                        , start => {automate_bot_engine_telegram_sup, start_link, []}
-                                        , restart => permanent
-                                        , shutdown => 2000
-                                        , type => supervisor
-                                        , modules => [automate_bot_engine_telegram_sup]
-                                        } | ChildSpecs ];
-                                 false ->
-                                     ChildSpecs
-                             end,
-    {ok, { {one_for_one, 0, 1}, ChildSpecsWithTelegram} }.
+    {ok, { {one_for_one, 0, 1}, ChildSpecs} }.
 
 %%====================================================================
 %% Internal functions

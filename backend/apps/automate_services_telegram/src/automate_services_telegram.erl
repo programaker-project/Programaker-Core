@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_bot_engine top level supervisor.
+%% @doc automate_services_telegram top level supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_bot_engine_telegram).
+-module(automate_services_telegram).
 
 %% API
 -export([ is_enabled/0
@@ -17,7 +17,7 @@
         , send_message/2
         ]).
 
--define(APPLICATION, automate_bot_engine).
+-define(APPLICATION, automate_services_telegram).
 
 %%====================================================================
 %% API functions
