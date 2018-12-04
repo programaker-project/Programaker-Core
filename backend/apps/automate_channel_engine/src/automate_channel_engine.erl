@@ -41,9 +41,13 @@ listen_channel(ChannelId, Pid) ->
 
 -spec send_to_channel(binary(), any()) -> ok.
 send_to_channel(ChannelId, Message) ->
-    {ok, Listeners} = automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId),
-    [Pid ! {channel_engine, ChannelId, Message}  || Pid <- Listeners],
-    ok.
+    case automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId) of
+        {ok, Listeners} ->
+            [Pid ! {channel_engine, ChannelId, Message}  || Pid <- Listeners],
+            ok;
+        X ->
+            X
+    end.
 
 %%====================================================================
 %% GenServer API
@@ -98,5 +102,5 @@ generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
 
 %% @TODO Replace by a real log call
-log(Message, Args) ->
+log(_Message, _Args) ->
     ok.

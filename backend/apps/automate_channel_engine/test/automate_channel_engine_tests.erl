@@ -11,6 +11,7 @@
 -define(TEST_NODES, [node()]).
 -define(RECEIVE_TIMEOUT, 100).
 -define(FAST_RECEIVE_TIMEOUT, 10).
+-define(INEXISTENT_CHANNEL, <<"00000000-0000-0000-0000-000000000000">>).
 
 %%====================================================================
 %% Test API
@@ -51,6 +52,8 @@ tests(_SetupResult) ->
     , {"[Message sending] Register on a channel, message it", fun simple_listen_send/0}
     , {"[Message sending] Register twice on a channel, message it", fun simple_double_listen_send/0}
     , {"[Housekeeping] Register on on a channel, then close", fun register_and_close/0}
+    , {"[Errors] Channel not found on listening", fun channel_not_found_on_listening/0}
+    , {"[Errors] Channel not found on sending", fun channel_not_found_on_sending/0}
     ].
 
 
@@ -99,7 +102,6 @@ simple_double_listen_send() ->
             ok
     end.
 
-
 %%%% Housekeeping
 register_and_close() ->
     {ok, ChannelId} = automate_channel_engine:create_channel(),
@@ -121,3 +123,10 @@ register_and_close() ->
 
     Result = automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId),
     ?assertMatch({ok, []}, Result).
+
+%%%% Errors
+channel_not_found_on_listening() ->
+    ?assertMatch({error, channel_not_found}, automate_channel_engine:listen_channel(?INEXISTENT_CHANNEL, self())).
+
+channel_not_found_on_sending() ->
+    ?assertMatch({error, channel_not_found}, automate_channel_engine:send_to_channel(?INEXISTENT_CHANNEL, test)).
