@@ -59,23 +59,20 @@ tests(_SetupResult) ->
 channel_creation_different_names() ->
     {ok, ChannelId1} = automate_channel_engine:create_channel(),
     {ok, ChannelId2} = automate_channel_engine:create_channel(),
-    true = (ChannelId1 =/= ChannelId2).
+    ?assertNotMatch(ChannelId1, ChannelId2).
 
 %%%% Message sending
 simple_listen_send() ->
     {ok, ChannelId} = automate_channel_engine:create_channel(),
     Message = simple_message,
-    process_flag(trap_exit, true),
 
     ok = automate_channel_engine:listen_channel(ChannelId, self()),
-    Pid = spawn_link(fun () ->
+    spawn_link(fun () ->
                              automate_channel_engine:send_to_channel(ChannelId, Message)
                      end),
     receive
         {channel_engine, ChannelId, ReceivedMessage} ->
-            Message = ReceivedMessage;
-        {'EXIT', _, Reason} ->
-            ct:fail(wat)
+            ?assertMatch(Message, ReceivedMessage)
     after 1000 ->
             ct:fail(timeout2)
     end.
@@ -95,8 +92,7 @@ simple_double_listen_send() ->
             ct:fail(timeout)
     end,
 
-    %% Even if we register twice, we should only receive it once?
-
+    %% Even if we register twice, we should only receive it once
     receive {channel_engine, ChannelId, _} ->
             ct:fail(timeout)
     after ?FAST_RECEIVE_TIMEOUT ->
@@ -113,7 +109,7 @@ register_and_close() ->
                              ok = automate_channel_engine:listen_channel(ChannelId, self())
                end),
 
-    receive {'EXIT', Pid, Reason} ->
+    receive {'EXIT', Pid, normal} ->
             ok
     after ?RECEIVE_TIMEOUT ->
             ct:fail(timeout)
@@ -124,4 +120,4 @@ register_and_close() ->
     automate_channel_engine:ping(),
 
     Result = automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId),
-    {ok, []} = Result.
+    ?assertMatch({ok, []}, Result).
