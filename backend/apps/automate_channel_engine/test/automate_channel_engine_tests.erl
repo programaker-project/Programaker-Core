@@ -10,6 +10,7 @@
 
 -define(TEST_NODES, [node()]).
 -define(RECEIVE_TIMEOUT, 100).
+-define(FAST_RECEIVE_TIMEOUT, 10).
 
 %%====================================================================
 %% Test API
@@ -49,7 +50,7 @@ tests(_SetupResult) ->
     [ {"[Channel creation] Create two channels, IDs are different", fun channel_creation_different_names/0}
     , {"[Message sending] Register on a channel, message it", fun simple_listen_send/0}
     , {"[Message sending] Register twice on a channel, message it", fun simple_double_listen_send/0}
-    , {"[Housekeeping] Register twice on a channel, close one thread", fun register_twice_close_one/0}
+    , {"[Housekeeping] Register on on a channel, then close", fun register_and_close/0}
     ].
 
 
@@ -64,67 +65,63 @@ channel_creation_different_names() ->
 simple_listen_send() ->
     {ok, ChannelId} = automate_channel_engine:create_channel(),
     Message = simple_message,
+    process_flag(trap_exit, true),
 
-    Pid = self(),
-    automate_channel_engine:listen_channel(ChannelId,
-                                           fun (Msg) ->
-                                                   Pid ! { channel_msg, Msg }
-                                           end),
-    spawn(fun () ->
-                  automate_channel_engine:send_to_channel(ChannelId, Message)
-          end),
-    receive {channel_msg, ReceivedMessage} ->
-            Message = ReceivedMessage
-    after ?RECEIVE_TIMEOUT ->
-            ct:fail(timeout)
+    ok = automate_channel_engine:listen_channel(ChannelId, self()),
+    Pid = spawn_link(fun () ->
+                             automate_channel_engine:send_to_channel(ChannelId, Message)
+                     end),
+    receive
+        {channel_engine, ChannelId, ReceivedMessage} ->
+            Message = ReceivedMessage;
+        {'EXIT', _, Reason} ->
+            ct:fail(wat)
+    after 1000 ->
+            ct:fail(timeout2)
     end.
 
 simple_double_listen_send() ->
     {ok, ChannelId} = automate_channel_engine:create_channel(),
     Message = simple_message,
 
-    Pid = self(),
-    automate_channel_engine:listen_channel(ChannelId,
-                                           fun (Msg) ->
-                                                   Pid ! { channel_msg, Msg }
-                                           end),
-
-    automate_channel_engine:listen_channel(ChannelId,
-                                           fun (Msg) ->
-                                                   Pid ! { channel_msg2, Msg }
-                                           end),
+    ok = automate_channel_engine:listen_channel(ChannelId, self()),
+    ok = automate_channel_engine:listen_channel(ChannelId, self()),
     spawn(fun () ->
                   automate_channel_engine:send_to_channel(ChannelId, Message)
           end),
-    receive {channel_msg, ReceivedMessage} ->
+    receive {channel_engine, ChannelId, ReceivedMessage} ->
             Message = ReceivedMessage
     after ?RECEIVE_TIMEOUT ->
             ct:fail(timeout)
     end,
-    receive {channel_msg2, ReceivedMessage2} ->
-            Message = ReceivedMessage2
-    after ?RECEIVE_TIMEOUT ->
+
+    %% Even if we register twice, we should only receive it once?
+
+    receive {channel_engine, ChannelId, _} ->
             ct:fail(timeout)
+    after ?FAST_RECEIVE_TIMEOUT ->
+            ok
     end.
 
 
 %%%% Housekeeping
-register_twice_close_one() ->
+register_and_close() ->
     {ok, ChannelId} = automate_channel_engine:create_channel(),
     process_flag(trap_exit, true),
 
-    spawn_link(fun() ->
-                  automate_channel_engine:listen_channel(
-                    ChannelId,
-                    fun(_) ->
-                            ct:fail(shouldnt_happen)
-                    end)
+    Pid = spawn_link(fun() ->
+                             ok = automate_channel_engine:listen_channel(ChannelId, self())
                end),
 
-    receive {'EXIT', _, _} ->
+    receive {'EXIT', Pid, Reason} ->
             ok
     after ?RECEIVE_TIMEOUT ->
             ct:fail(timeout)
     end,
 
-    automate_channel_engine:send_to_channel(ChannelId, test).
+    %% We use a ping to check that the channel_engine also processed the
+    %% spawned process 'EXIT'
+    automate_channel_engine:ping(),
+
+    Result = automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId),
+    {ok, []} = Result.
