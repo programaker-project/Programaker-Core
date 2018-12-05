@@ -19,8 +19,8 @@
                                    , stats :: [_]
                                    }).
 
--record(listeners_table_entry, { live_channel_id :: binary()
-                               , pid :: pid()
+-record(listeners_table_entry, { live_channel_id :: binary() | '$1' | '$2'
+                               , pid :: pid() | '$1' | '$2'
                                }).
 
 
@@ -56,7 +56,7 @@ start_link() ->
 
 -spec register_channel(binary()) -> ok | {error, term(), string()}.
 register_channel(ChannelId) ->
-    Entry = #live_channels_table_entry{live_channel_id=ChannelId, stats=7},
+    Entry = #live_channels_table_entry{live_channel_id=ChannelId, stats=[]},
     Transaction = fun() ->
                           ok = mnesia:write(?LIVE_CHANNELS_TABLE, Entry, write)
                   end,
