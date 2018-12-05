@@ -7,7 +7,7 @@
                    , stdlib
                    , automate_storage
                    , pe4kin
-                   , automate_service_telegram
+                   , automate_services_telegram
     ]},
     {env, [
     ]},
