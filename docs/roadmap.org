@@ -1,28 +1,28 @@
 * Roadmap
 ** Channel support
 *** Working base channels 
-**** (Internal) Mechanism to create channels
-**** (Internal) Mechanism to list channels
-**** (Internal) Mechanism to publish to channels
-**** Monitors for input
-***** HTTP monitors
-***** Telegram monitors
-**** Api client for output
+**** DONE (Internal) Mechanism to create channels
+**** DONE (Internal) Mechanism to list channels
+**** DONE (Internal) Mechanism to publish to channels
+**** Service registry
+***** Unified interface to call services (from agents)
+**** Monitor registry
+***** Move Telegram monitors
+***** Move HTTP monitors
 *** Agents connect to monitoring through channel
-*** Service registry
-**** Unified interface to query available services (for frontend) 
-**** Unified interface to call services (from agents)
-*** Agents access services through registry
+*** API-based agents
+**** API-based interface for monitor listening
+**** Unified interface to query available services (for API) 
+    With this and persistent queues we can have fully external agents.
 *** Persistence queues
     Makes clients not lose data while on dowtime
-*** Public API to call services
-    With this and persistent queues we can have external agents.
 ** In the future
 *** Support for more services
 **** Mail
-**** Generic REST
+**** Generic REST calls
 **** ...
 *** VM based agents
+    More complex languages
 *** History DB
     A database to keep the history of all the elements found by a monitor.
     (Up to a number of elements?)
