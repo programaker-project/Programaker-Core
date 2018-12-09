@@ -6,6 +6,8 @@
    {mod, { automate_service_registry_app, [] }},
    {applications, [ kernel
                   , stdlib
+                  , mnesia
+                  , automate_storage
                   ]},
    {env, [
          ]},

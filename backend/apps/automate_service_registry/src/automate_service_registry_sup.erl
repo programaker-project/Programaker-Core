@@ -30,7 +30,14 @@ start_link() ->
 init([]) ->
 
     {ok, { {one_for_all, 0, 1},
-           []} }.
+           [ #{ id => automate_service_registry_mnesia_backend
+              , start => {automate_service_registry_mnesia_backend, start_link, []}
+              , restart => permanent
+              , shutdown => 2000
+              , type => worker
+              , modules => [automate_service_registry_mnesia_backend]
+              }
+           ]} }.
 
 %%====================================================================
 %% Internal functions

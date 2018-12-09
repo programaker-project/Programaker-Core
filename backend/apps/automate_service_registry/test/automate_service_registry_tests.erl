@@ -5,7 +5,8 @@
 -module(automate_service_registry_tests).
 -include_lib("eunit/include/eunit.hrl").
 
--define(TEST_SERVICE_NAME, <<"test-service">>).
+-define(APPLICATION, automate_service_registry).
+-define(TEST_NODES, [node()]).
 
 %%====================================================================
 %% Test API
@@ -26,11 +27,14 @@ setup() ->
     %% Use a custom node name to avoid overwriting the actual databases
     net_kernel:start([?MODULE, shortnames]),
 
-    {NodeName}.
+    {ok, Pid} = application:ensure_all_started(?APPLICATION),
+
+    {NodeName, Pid}.
 
 %% @doc App infrastructure teardown.
 %% @end
-stop({NodeName}) ->
+stop({NodeName, _Pid}) ->
+    application:stop(?APPLICATION),
 
     %% %% Restore the original node name
     net_kernel:start([NodeName, shortnames]),
@@ -47,6 +51,7 @@ tests(_SetupResult) ->
 %% Register a service available for everyone
 %% After that query it to check that it's returned.
 register_global_service() ->
-    {ok, ServiceId} = automate_service_registry:register(automate_service_registry_test_service, ?TEST_SERVICE_NAME),
+    TestServiceName = automate_service_registry_test_service:get_name(),
+    {ok, ServiceId} = automate_service_registry:register(automate_service_registry_test_service),
     {ok, Services} = automate_service_registry:get_all_services(),
-    ?assertMatch([{ServiceId, ?TEST_SERVICE_NAME}], Services).
+    ?assertMatch(#{ServiceId := #{ name := TestServiceName }}, Services).
