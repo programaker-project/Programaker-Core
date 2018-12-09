@@ -1,0 +1,15 @@
+{application,
+ automate_service_registry,
+ [ {description, "Auto-mate service registry."},
+   {vsn, "0.0.0"},
+   {registered, []},
+   {mod, { automate_service_registry_app, [] }},
+   {applications, [ kernel
+                  , stdlib
+                  ]},
+   {env, [
+         ]},
+   {modules, []},
+   {licenses, ["Apache 2.0"]},
+   {links, []}
+ ]}.
