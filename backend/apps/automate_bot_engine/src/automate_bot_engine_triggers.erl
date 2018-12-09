@@ -36,7 +36,10 @@ get_expected_signals_from_triggers(Triggers) ->
 -spec get_expected_action_from_trigger(#program_trigger{}) -> atom().
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
                                                              }}) ->
-    ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED.
+    ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED;
+
+get_expected_action_from_trigger(_Trigger) ->
+    ?SIGNAL_PROGRAM_TICK.
 
 %%%% Thread creation
 %% Telegram
