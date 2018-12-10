@@ -43,7 +43,7 @@ register_public(ServiceModule) ->
 register_private(ServiceModule) ->
     Uuid = ServiceModule:get_uuid(),
     ok = ?BACKEND:register(Uuid,
-                           private, %% Private
+                           false, %% Private
                            #{ name => ServiceModule:get_name()
                             , description => ServiceModule:get_description()
                             , module => ServiceModule
