@@ -14,6 +14,7 @@
 
 -include("records.hrl").
 -define(SERVICE_REGISTRY_TABLE, automate_service_registry_services_table).
+-define(USER_SERVICE_ALLOWANCE_TABLE, automate_service_registry_user_service_allowance_table).
 
 %%====================================================================
 %% API
@@ -27,6 +28,17 @@ start_link() ->
                                   , { disc_copies, Nodes }
                                   , { record_name, services_table_entry }
                                   , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+    ok = case mnesia:create_table(?USER_SERVICE_ALLOWANCE_TABLE,
+                                  [ { attributes, record_info(fields, user_service_allowance_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, user_service_allowance_entry }
+                                  , { type, bag }
                                   ]) of
              { atomic, ok } ->
                  ok;
@@ -81,11 +93,53 @@ list_all_public() ->
 
 -spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
 allow_user(ServiceId, UserId) ->
-    ok.
+    Transaction = fun() ->
+                           ok = mnesia:write(?USER_SERVICE_ALLOWANCE_TABLE,
+                                             #user_service_allowance_entry{ service_id=ServiceId
+                                                                          , user_id=UserId
+                                                                          },
+                                             write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
 
 -spec get_all_services_for_user(binary()) -> {ok, [service_info_map()]} | {error, term(), string()}.
 get_all_services_for_user(UserId) ->
-    {ok, #{}}.
+    MatchHead = #services_table_entry{ id='_'
+                                     , public='$1'
+                                     , name='_'
+                                     , description='_'
+                                     , module='_'
+                                     },
+    %% Check that the public setting is the one selected
+    Guards = [{'==', '$1', true}],
+    ResultColumn = '$_',
+    PublicMatcher = [{MatchHead, Guards, [ResultColumn]}],
+
+    AllowancesMatcherHead = #user_service_allowance_entry{ service_id='$1', user_id='$2' },
+    AllowancesGuards = [{'==', '$2', UserId }],
+    AllowancesResultColumn = '$1',
+    AllowancesMatcher = [{AllowancesMatcherHead, AllowancesGuards, [AllowancesResultColumn]}],
+
+    Transaction = fun() ->
+                          Public = mnesia:select(?SERVICE_REGISTRY_TABLE, PublicMatcher),
+                          UserAllowanceIds = mnesia:select(?USER_SERVICE_ALLOWANCE_TABLE, AllowancesMatcher),
+                          UserAllowances = [ lists:nth(1, mnesia:read(?SERVICE_REGISTRY_TABLE, ServiceId))
+                                             || ServiceId <- UserAllowanceIds
+                                           ],
+                          {Public, UserAllowances}
+                  end,
+
+    case mnesia:transaction(Transaction) of
+        {atomic, {Public, UserAllowances}} ->
+            {ok, convert_to_map(Public ++ UserAllowances)};
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
 
 %%====================================================================
 %% Internal functions
@@ -93,6 +147,7 @@ get_all_services_for_user(UserId) ->
 
 -spec convert_to_map([#services_table_entry{}]) -> service_info_map().
 convert_to_map(TableEntries) ->
+    io:fwrite("Entries: ~p~n", [TableEntries]),
     convert_to_map(TableEntries, #{}).
 
 -spec convert_to_map([#services_table_entry{}], service_info_map()) ->
@@ -107,6 +162,8 @@ convert_to_map([#services_table_entry{ id=Id
                 | T], Acc) ->
     convert_to_map(
       T,
-      maps:put(Id,
-               #{ name => Name, description => Description, module => Module },
-               Acc)).
+      Acc#{ Id => #{ name => Name
+                   , description => Description
+                   , module => Module
+                   }}
+     ).

@@ -25,3 +25,7 @@
                                             , description := binary()
                                             , module := module()
                                             } }.
+
+-record(user_service_allowance_entry, { service_id :: binary() | ?SELECTOR_VALUES
+                                      , user_id :: binary()    | ?SELECTOR_VALUES
+                                      }).
