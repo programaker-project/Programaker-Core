@@ -7,6 +7,8 @@
 
 -define(APPLICATION, automate_service_registry).
 -define(TEST_NODES, [node()]).
+-define(ALLOWED_USER, <<"allowed user">>).
+-define(UNAUTHORISED_USER, <<"unauthorised user">>).
 
 %%====================================================================
 %% Test API
@@ -44,11 +46,11 @@ tests(_SetupResult) ->
     [ { "[Service registry] Register a global service, query it"
       , fun register_global_service/0}
     , { "[Permissioned registry] Register a service for a user, query it"
-      , fun register_service_to_user/0}
-    %% , { "[Permissioned registry] Register a service for a user, query it with an associated user"
-    %%   , fun register_service_to_user_correct_user/0 }
-    %% , { "[Permissioned registry] Register a service for a user, query it with other user"
-    %%   , fun register_service_to_user_not_showing/0}
+      , fun register_service_to_user_no_user/0}
+    , { "[Permissioned registry] Register a service for a user, query it with an associated user"
+      , fun register_service_to_user_correct_user/0 }
+    , { "[Permissioned registry] Register a service for a user, query it with other user"
+      , fun register_service_to_user_unauthorised/0}
     ].
 
 
@@ -58,11 +60,23 @@ tests(_SetupResult) ->
 register_global_service() ->
     TestServiceName = automate_service_registry_test_service:get_name(),
     {ok, ServiceId} = automate_service_registry:register_public(automate_service_registry_test_service),
-    {ok, Services} = automate_service_registry:get_all_services(),
+    {ok, Services} = automate_service_registry:get_all_public_services(),
     ?assertMatch(#{ServiceId := #{ name := TestServiceName }}, Services).
 
 %%%% Permissioned service registration
-register_service_to_user() ->
+register_service_to_user_no_user() ->
     {ok, ServiceId} = automate_service_registry:register_private(automate_service_registry_test_service),
-    {ok, Services} = automate_service_registry:get_all_services(),
-    ?assertMatch(#{}, Services).
+    {ok, Services} = automate_service_registry:get_all_public_services(),
+    ?assertNotMatch(#{ServiceId := _}, Services).
+
+register_service_to_user_correct_user() ->
+    {ok, ServiceId} = automate_service_registry:register_private(automate_service_registry_test_service),
+    ok = automate_service_registry:allow_user(ServiceId, ?ALLOWED_USER),
+    {ok, Services} = automate_service_registry:get_all_services_for_user(?ALLOWED_USER),
+    ?assertMatch(#{ServiceId := _}, Services).
+
+register_service_to_user_unauthorised() ->
+    {ok, ServiceId} = automate_service_registry:register_private(automate_service_registry_test_service),
+    ok = automate_service_registry:allow_user(ServiceId, ?ALLOWED_USER),
+    {ok, Services} = automate_service_registry:get_all_services_for_user(?UNAUTHORISED_USER),
+    ?assertNotMatch(#{ServiceId := _}, Services).

@@ -8,22 +8,12 @@
 -export([ start_link/0
         , register/3
         , list_all_public/0
+        , get_all_services_for_user/1
+        , allow_user/2
         ]).
 
+-include("records.hrl").
 -define(SERVICE_REGISTRY_TABLE, automate_service_registry_services_table).
--define(SELECTOR_VALUES, '_' | '$1' | '$2').
-
--record(services_table_entry, { id :: binary()          | ?SELECTOR_VALUES
-                              , public :: boolean()     | ?SELECTOR_VALUES
-                              , name :: binary()        | ?SELECTOR_VALUES
-                              , description :: binary() | ?SELECTOR_VALUES
-                              , module :: module()      | ?SELECTOR_VALUES
-                              }).
-
--type service_info_map() :: #{ binary() := #{ name := binary()
-                                            , description := binary()
-                                            , module := module()
-                                            } }.
 
 %%====================================================================
 %% API
@@ -88,6 +78,14 @@ list_all_public() ->
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
+
+-spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
+allow_user(ServiceId, UserId) ->
+    ok.
+
+-spec get_all_services_for_user(binary()) -> {ok, [service_info_map()]} | {error, term(), string()}.
+get_all_services_for_user(UserId) ->
+    {ok, #{}}.
 
 %%====================================================================
 %% Internal functions
