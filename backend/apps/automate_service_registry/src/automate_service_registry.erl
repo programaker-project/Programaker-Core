@@ -6,8 +6,9 @@
 -module(automate_service_registry).
 
 %% API
--export([ register/1
-        , get_all_services/0
+-export([ get_all_services/0
+        , register_public/1
+        , register_private/1
         ]).
 
 -define(SERVER, ?MODULE).
@@ -15,17 +16,30 @@
 %%====================================================================
 %% API functions
 %%====================================================================
-register(ServiceModule) ->
+get_all_services() ->
+    automate_service_registry_mnesia_backend:list_all_public().
+
+-spec register_public(module()) -> {ok, binary()}.
+register_public(ServiceModule) ->
     Uuid = ServiceModule:get_uuid(),
     ok = automate_service_registry_mnesia_backend:register(Uuid,
+                                                           true, %% Public
                                                            #{ name => ServiceModule:get_name()
                                                             , description => ServiceModule:get_description()
                                                             , module => ServiceModule
                                                             }),
     {ok, Uuid}.
 
-get_all_services() ->
-    automate_service_registry_mnesia_backend:list_all().
+-spec register_private(module()) -> {ok, binary()}.
+register_private(ServiceModule) ->
+    Uuid = ServiceModule:get_uuid(),
+    ok = automate_service_registry_mnesia_backend:register(Uuid,
+                                                           private, %% Private
+                                                           #{ name => ServiceModule:get_name()
+                                                            , description => ServiceModule:get_description()
+                                                            , module => ServiceModule
+                                                            }),
+    {ok, Uuid}.
 
 %%====================================================================
 %% Internal functions

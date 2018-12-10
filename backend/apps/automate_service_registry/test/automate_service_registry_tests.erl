@@ -41,9 +41,14 @@ stop({NodeName, _Pid}) ->
     ok.
 
 tests(_SetupResult) ->
-    [ {"[Service registry] Register a global service, query it", fun register_global_service/0}
-    %% , {"[Permissioned registry] Register a service for a user, query it", fun register_service_to_user/0}
-    %% , {"[Permissioned registry] Register a service for a user, query it with other user", fun register_service_to_user_not_showing/0}
+    [ { "[Service registry] Register a global service, query it"
+      , fun register_global_service/0}
+    , { "[Permissioned registry] Register a service for a user, query it"
+      , fun register_service_to_user/0}
+    %% , { "[Permissioned registry] Register a service for a user, query it with an associated user"
+    %%   , fun register_service_to_user_correct_user/0 }
+    %% , { "[Permissioned registry] Register a service for a user, query it with other user"
+    %%   , fun register_service_to_user_not_showing/0}
     ].
 
 
@@ -52,6 +57,12 @@ tests(_SetupResult) ->
 %% After that query it to check that it's returned.
 register_global_service() ->
     TestServiceName = automate_service_registry_test_service:get_name(),
-    {ok, ServiceId} = automate_service_registry:register(automate_service_registry_test_service),
+    {ok, ServiceId} = automate_service_registry:register_public(automate_service_registry_test_service),
     {ok, Services} = automate_service_registry:get_all_services(),
     ?assertMatch(#{ServiceId := #{ name := TestServiceName }}, Services).
+
+%%%% Permissioned service registration
+register_service_to_user() ->
+    {ok, ServiceId} = automate_service_registry:register_private(automate_service_registry_test_service),
+    {ok, Services} = automate_service_registry:get_all_services(),
+    ?assertMatch(#{}, Services).

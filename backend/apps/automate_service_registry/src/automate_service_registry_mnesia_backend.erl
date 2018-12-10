@@ -6,16 +6,18 @@
 -module(automate_service_registry_mnesia_backend).
 
 -export([ start_link/0
-        , register/2
-        , list_all/0
+        , register/3
+        , list_all_public/0
         ]).
 
 -define(SERVICE_REGISTRY_TABLE, automate_service_registry_services_table).
+-define(SELECTOR_VALUES, '_' | '$1' | '$2').
 
--record(services_table_entry, { id :: binary()          | '$1'
-                              , name :: binary()        | '$_'
-                              , description :: binary() | '$_'
-                              , module :: module()      | '$_'
+-record(services_table_entry, { id :: binary()          | ?SELECTOR_VALUES
+                              , public :: boolean()     | ?SELECTOR_VALUES
+                              , name :: binary()        | ?SELECTOR_VALUES
+                              , description :: binary() | ?SELECTOR_VALUES
+                              , module :: module()      | ?SELECTOR_VALUES
                               }).
 
 -type service_info_map() :: #{ binary() := #{ name := binary()
@@ -43,13 +45,15 @@ start_link() ->
          end,
     ignore.
 
--spec register(binary(), #{ name := binary(), description := binary(), module := module()}) -> ok | {error, term(), string()}.
-register(ServiceUuid, #{ name := Name, description := Description, module := Module }) ->
+-spec register(binary(), boolean(), #{ name := binary(), description := binary(), module := module()}) -> ok | {error, term(), string()}.
+register(ServiceUuid, Public, #{ name := Name, description := Description, module := Module }) ->
     Entry = #services_table_entry{ id=ServiceUuid
-                                , name=Name
-                                , description=Description
-                                , module=Module
-                                },
+                                 , public=Public
+                                 , name=Name
+                                 , description=Description
+                                 , module=Module
+                                 },
+
     Transaction = fun() ->
                           ok = mnesia:write(?SERVICE_REGISTRY_TABLE, Entry, write)
                   end,
@@ -61,15 +65,22 @@ register(ServiceUuid, #{ name := Name, description := Description, module := Mod
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec list_all() -> {ok, [service_info_map()]} | {error, term(), string()}.
-list_all() ->
+-spec list_all_public() -> {ok, [service_info_map()]} | {error, term(), string()}.
+list_all_public() ->
+    MatchHead = #services_table_entry{ id='_'
+                                     , public='$1'
+                                     , name='_'
+                                     , description='_'
+                                     , module='_'
+                                     },
+    %% Check that the public setting is the one selected
+    Guards = [{'==', '$1', true}],
+    ResultColumn = '$_',
+    Matcher = [{MatchHead, Guards, [ResultColumn]}],
+
     Transaction = fun() ->
-                          on_all(?SERVICE_REGISTRY_TABLE,
-                                 fun(Id) ->
-                                         [Result] = mnesia:read(?SERVICE_REGISTRY_TABLE, Id),
-                                         Result
-                                 end)
-    end,
+                          mnesia:select(?SERVICE_REGISTRY_TABLE, Matcher)
+                  end,
 
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
@@ -81,10 +92,6 @@ list_all() ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-
-on_all(Tab, Callback) ->
-    Results = mnesia:all_keys(Tab),
-    [Callback(Object) || Object <- Results].
 
 -spec convert_to_map([#services_table_entry{}]) -> service_info_map().
 convert_to_map(TableEntries) ->
