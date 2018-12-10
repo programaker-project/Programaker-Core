@@ -51,6 +51,8 @@ tests(_SetupResult) ->
       , fun register_service_to_user_correct_user/0 }
     , { "[Permissioned registry] Register a service for a user, query it with other user"
       , fun register_service_to_user_unauthorised/0}
+    , { "[Permissioned registry] Allow a user to use an already public service, query it"
+      , fun register_service_doubly_authorised/0 }
     ].
 
 
@@ -80,3 +82,10 @@ register_service_to_user_unauthorised() ->
     ok = automate_service_registry:allow_user(ServiceId, ?ALLOWED_USER),
     {ok, Services} = automate_service_registry:get_all_services_for_user(?UNAUTHORISED_USER),
     ?assertNotMatch(#{ServiceId := _}, Services).
+
+%%%% Doubly authorised
+register_service_doubly_authorised() ->
+    {ok, ServiceId} = automate_service_registry:register_public(automate_service_registry_test_service),
+    ok = automate_service_registry:allow_user(ServiceId, ?ALLOWED_USER),
+    {ok, Services} = automate_service_registry:get_all_services_for_user(?ALLOWED_USER),
+    ?assertMatch(#{ServiceId := _}, Services).
