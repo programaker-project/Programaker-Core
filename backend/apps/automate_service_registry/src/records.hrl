@@ -21,10 +21,11 @@
                               , module :: module()      | ?SELECTOR_VALUES
                               }).
 
--type service_info_map() :: #{ binary() := #{ name := binary()
-                                            , description := binary()
-                                            , module := module()
-                                            } }.
+-type service_entry() :: #{ name := binary()
+                          , description := binary()
+                          , module := module()
+                          }.
+-type service_info_map() :: #{ binary() := service_entry() }.
 
 -record(user_service_allowance_entry, { service_id :: binary() | ?SELECTOR_VALUES
                                       , user_id :: binary()    | ?SELECTOR_VALUES

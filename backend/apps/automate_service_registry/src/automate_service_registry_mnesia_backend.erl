@@ -108,7 +108,7 @@ allow_user(ServiceId, UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_all_services_for_user(binary()) -> {ok, [service_info_map()]} | {error, term(), string()}.
+-spec get_all_services_for_user(binary()) -> {ok, service_info_map()} | {error, term(), string()}.
 get_all_services_for_user(UserId) ->
     MatchHead = #services_table_entry{ id='_'
                                      , public='$1'
@@ -142,7 +142,7 @@ get_all_services_for_user(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_service_by_id(binary(), binary()) -> {ok, service_info_map()} | {error, not_found}.
+-spec get_service_by_id(binary(), binary()) -> {ok, service_entry()} | {error, not_found}.
 get_service_by_id(ServiceId, _UserId) ->
     Transaction = fun() ->
                           %% TODO: Check user permissions

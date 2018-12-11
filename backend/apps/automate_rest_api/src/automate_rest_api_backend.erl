@@ -120,14 +120,18 @@ update_program(Username, ProgramName,
             {error, Reason}
     end.
 
--spec list_services_from_username(binary()) -> {'ok', [ #service_metadata{} ]}.
+-spec list_services_from_username(binary()) -> {'ok', [ #service_metadata{} ]} | {error, term(), binary()}.
 list_services_from_username(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
-    {ok, Services} = automate_service_registry:get_all_services_for_user(UserId),
-    {ok, get_services_metadata(Services, Username)}.
+    case  automate_service_registry:get_all_services_for_user(UserId) of
+        {ok, Services} ->
+            {ok, get_services_metadata(Services, Username)};
+        E = {error, _, _} ->
+            E
+    end.
 
 
--spec get_service_enable_how_to(binary(), binary()) -> {ok, #service_enable_how_to{}} | {error, not_found}.
+-spec get_service_enable_how_to(binary(), binary()) -> {ok, binary() | none} | {error, not_found}.
 get_service_enable_how_to(Username, ServiceId) ->
     case get_platform_service_how_to(Username, ServiceId) of
         {ok, HowTo} ->
@@ -189,12 +193,12 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , program_orig=ProgramOrig
                  }.
 
--spec generate_url_from_service(binary(), binary()) -> binary().
-generate_url_from_service(Username, ServiceId) ->
-    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/~s", [Username, ServiceId]))).
-
--spec get_platform_service_how_to(binary(), binary()) -> {ok, #service_enable_how_to{}} | {error, not_found}.
+-spec get_platform_service_how_to(binary(), binary()) -> {ok, binary() | none} | {error, not_found}.
 get_platform_service_how_to(Username, ServiceId)  ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    Module:get_how_to_enable(#{ user_id => UserId, user_name => Username}).
+    case automate_service_registry:get_service_by_id(ServiceId, UserId) of
+        E = {error, not_found} ->
+            E;
+        {ok, #{ module := Module }} ->
+            Module:get_how_to_enable(#{ user_id => UserId, user_name => Username})
+    end.

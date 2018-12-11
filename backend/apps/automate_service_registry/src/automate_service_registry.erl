@@ -25,11 +25,11 @@
 get_all_public_services() ->
     ?BACKEND:list_all_public().
 
--spec get_all_services_for_user(binary()) -> {ok, [service_info_map()]} | {error, term(), string()}.
+-spec get_all_services_for_user(binary()) -> {ok, service_info_map()} | {error, term(), string()}.
 get_all_services_for_user(UserId) ->
     ?BACKEND:get_all_services_for_user(UserId).
 
--spec get_service_by_id(binary(), binary()) -> {ok, service_info_map()} | {error, not_found}.
+-spec get_service_by_id(binary(), binary()) -> {ok, service_entry()} | {error, not_found}.
 get_service_by_id(ServiceId, UserId) ->
     ?BACKEND:get_service_by_id(ServiceId, UserId).
 

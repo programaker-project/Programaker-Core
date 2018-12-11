@@ -129,12 +129,13 @@ get_how_to_enable(#{ user_name := Username }) ->
     BotName = get_bot_name(),
     case get_telegram_services_from_username(Username) of
         [ Service | _] ->
-            {ok, #service_enable_how_to{ service=Service
-                                       , method='external'
-                                       , extra=#service_enable_extra_telegram{ token=RegistrationToken
-                                                                             , bot_name=BotName
-                                                                             }
-                                       }}
+            %% TODO: remove extra step
+            {ok, how_to_to_json(#service_enable_how_to{ service=Service
+                                                      , method='external'
+                                                      , extra=#service_enable_extra_telegram{ token=RegistrationToken
+                                                                                            , bot_name=BotName
+                                                                                            }
+                                                      })}
     end.
 
 %%====================================================================
@@ -159,3 +160,30 @@ get_telegram_services_from_username(Username) ->
         false ->
             []
     end.
+
+
+how_to_to_json(#service_enable_how_to{ service=Service
+                                     , method=Method
+                                     , extra=#service_enable_extra_telegram{ token=Token
+                                                                           , bot_name=BotName
+                                                                           }
+                                     }) ->
+    #service_metadata{ id=Id
+                     , name=Name
+                     , link=Link
+                     , enabled=Enabled
+                     } = Service,
+    ServiceAsDictionary = #{ <<"id">> => Id
+                           , <<"name">> => Name
+                           , <<"link">> =>  Link
+                           , <<"enabled">> => Enabled
+                           },
+
+    jiffy:encode(#{ <<"service">> => ServiceAsDictionary
+                  , <<"method">> => Method
+                  , <<"extra">> => #{ <<"token">> => Token
+                                    , <<"bot_name">> => BotName
+                                    , <<"service_type">> => <<"registration_bot">>
+                                    }
+                  }).
+
