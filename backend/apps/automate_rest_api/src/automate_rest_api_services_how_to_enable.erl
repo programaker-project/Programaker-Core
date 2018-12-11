@@ -15,17 +15,17 @@
 
 -include("./records.hrl").
 
--record(state, { username, service_name }).
+-record(state, { username, service_id }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     UserId = cowboy_req:binding(user_id, Req),
-    ServiceName = cowboy_req:binding(service_id, Req),
+    ServiceId = cowboy_req:binding(service_id, Req),
     Req1 = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Req1
     , #state{ username=UserId
-                      , service_name=ServiceName
-                      }}.
+            , service_id=ServiceId
+            }}.
 
 %% CORS
 options(Req, State) ->
@@ -69,8 +69,9 @@ content_types_provided(Req, State) ->
 -spec to_json(cowboy_req:req(), #state{})
                                    -> {binary(),cowboy_req:req(), #state{}}.
 to_json(Req, State) ->
-    #state{username=Username, service_name=ServiceName} = State,
-    case automate_rest_api_backend:get_service_enable_how_to(Username, ServiceName) of
+    #state{username=Username, service_id=ServiceId} = State,
+    io:fwrite("?? ~p~n", [ServiceId]),
+    case automate_rest_api_backend:get_service_enable_how_to(Username, ServiceId) of
         { ok, HowTo } ->
             Output = how_to_to_json(HowTo),
 

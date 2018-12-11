@@ -15,7 +15,13 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-    automate_services_telegram_sup:start_link().
+    case automate_services_telegram:is_enabled() of
+        true ->
+            {ok, _} = automate_service_registry:register_public(automate_services_telegram),
+            automate_services_telegram_sup:start_link();
+        false ->
+            ignore
+    end.
 
 %%--------------------------------------------------------------------
 stop(_State) ->

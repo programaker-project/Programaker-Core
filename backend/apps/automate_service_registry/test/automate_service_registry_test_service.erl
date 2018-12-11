@@ -8,10 +8,11 @@
 
 -export([ start_link/0
         , get_description/0
-        , is_available_to_user/1
         , get_actions/0
         , get_uuid/0
         , get_name/0
+        , is_enabled_for_user/1
+        , get_how_to_enable/1
         ]).
 
 
@@ -30,11 +31,13 @@ start_link() ->
 get_description() ->
     <<"Test module for service registry unit tests.">>.
 
-is_available_to_user(_User) ->
-    %% Available to anyone
-    true.
-
 get_actions() ->
     [
     ].
 
+is_enabled_for_user(_Username) ->
+    %% Available to anyone
+    true.
+
+get_how_to_enable(_Userdata) ->
+    none.

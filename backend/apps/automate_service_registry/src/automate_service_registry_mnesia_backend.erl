@@ -10,6 +10,7 @@
         , list_all_public/0
         , get_all_services_for_user/1
         , allow_user/2
+        , get_service_by_id/2
         ]).
 
 -include("records.hrl").
@@ -141,6 +142,27 @@ get_all_services_for_user(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+-spec get_service_by_id(binary(), binary()) -> {ok, service_info_map()} | {error, not_found}.
+get_service_by_id(ServiceId, _UserId) ->
+    Transaction = fun() ->
+                          %% TODO: Check user permissions
+                          case mnesia:read(?SERVICE_REGISTRY_TABLE, ServiceId) of
+                              [] ->
+                                  {error, not_found};
+                              [Result] ->
+                                  {ok, Result}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, {ok, Result}} ->
+            {ok, entry_to_map(Result)};
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -155,15 +177,18 @@ convert_to_map(TableEntries) ->
 convert_to_map([], Acc) ->
     Acc;
 
-convert_to_map([#services_table_entry{ id=Id
-                                     , name=Name
-                                     , description=Description
-                                     , module=Module}
-                | T], Acc) ->
+convert_to_map([H = #services_table_entry{ id=Id } | T], Acc) ->
     convert_to_map(
       T,
-      Acc#{ Id => #{ name => Name
-                   , description => Description
-                   , module => Module
-                   }}
+      Acc#{ Id => entry_to_map(H) }
      ).
+
+entry_to_map(#services_table_entry{ id=_
+                                  , name=Name
+                                  , description=Description
+                                  , module=Module}
+            ) ->
+    #{ name => Name
+     , description => Description
+     , module => Module
+     }.

@@ -175,23 +175,23 @@ handle_telegram_update({pe4kin_update, _BotName, Message}) ->
 -spec handle_from_new_user(map(),_,_,_,_) -> 'ok'.
 handle_from_new_user(_Message, <<"/register ", RawRegistrationToken/binary>>, UserId, ChatId, BotName) ->
     RegistrationToken = string:trim(RawRegistrationToken, both, " \n"),
-    case automate_services_telegram_telegram:register_user(UserId, RegistrationToken) of
+    case automate_services_telegram:register_user(UserId, RegistrationToken) of
         ok ->
             ResponseText = <<"Welcome! You're registered!\nNow you can use this bot in your programs.">>,
-            {ok, _} = automate_services_telegram_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
+            {ok, _} = automate_services_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
             ok;
         {error, not_found} ->
             ResponseText = <<"Hm... We didn't found a match for that token.\nMaybe check your spelling ;)">>,
-            {ok, _} = automate_services_telegram_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
+            {ok, _} = automate_services_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
             ok
     end;
 
 handle_from_new_user(_Message, <<"/start">>, _UserId, ChatId, BotName) ->
     ResponseText = <<"Hi! I'm a bot in the making, ask @kenkeiras for more info if you want to know how to program me ;).">>,
-    {ok, _} = automate_services_telegram_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
+    {ok, _} = automate_services_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
     ok;
 
 handle_from_new_user(_Message, _Content, _UserId, ChatId, BotName) ->
     ResponseText = <<"Sorry, I didnt get that!\nSay /start to see what can I do.">>,
-    {ok, _} = automate_services_telegram_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
+    {ok, _} = automate_services_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
     ok.

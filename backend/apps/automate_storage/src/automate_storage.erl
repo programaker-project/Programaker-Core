@@ -8,6 +8,7 @@
         , get_monitor_from_id/1
         , dirty_list_monitors/0
         , lists_monitors_from_username/1
+        , get_userid_from_username/1
 
         , create_program/2
         , get_program/2
@@ -313,6 +314,30 @@ get_program_variable(ProgramId, Key) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec get_userid_from_username(binary()) -> {ok, binary()}.
+get_userid_from_username(Username) ->
+    MatchHead = #registered_user_entry{ id='$1'
+                                      , username='$2'
+                                      , password='_'
+                                      , email='_'
+                                      },
+    %% Check that neither the id, username or email matches another
+    Guard = {'==', '$2', Username},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    Transaction = fun() ->
+                          mnesia:select(?REGISTERED_USERS_TABLE, Matcher)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [Result] } ->
+            {ok, Result};
+        { atomic, [] } ->
+            {error, no_user_found};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 %% Exposed startup entrypoint
 start_link() ->
     Nodes = [node()],
@@ -345,29 +370,6 @@ add_token_to_user(UserId, SessionToken) ->
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
-
-get_userid_from_username(Username) ->
-    MatchHead = #registered_user_entry{ id='$1'
-                                      , username='$2'
-                                      , password='_'
-                                      , email='_'
-                                      },
-    %% Check that neither the id, username or email matches another
-    Guard = {'==', '$2', Username},
-    ResultColumn = '$1',
-    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
-
-    Transaction = fun() ->
-                          mnesia:select(?REGISTERED_USERS_TABLE, Matcher)
-                  end,
-    case mnesia:transaction(Transaction) of
-        { atomic, [Result] } ->
-            {ok, Result};
-        { atomic, [] } ->
-            {error, no_user_found};
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
-    end.
 
 get_userid_and_password_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'
@@ -815,7 +817,7 @@ finish_telegram_registration_store(RegistrationToken, TelegramUserId) ->
                               [#service_registration_token{ service_id=ServiceId
                                                           , user_id=UserId
                                                           }] ->
-                                  case automate_bot_engine_telegram:get_platform_id() of
+                                  case automate_services_telegram:get_platform_id() of
                                       ServiceId ->
                                           ok = mnesia:write(?TELEGRAM_SERVICE_REGISTRATION_TABLE,
                                                             #telegram_service_registration_entry{ telegram_user_id=TelegramUserId

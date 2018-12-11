@@ -8,6 +8,7 @@
 %% API
 -export([ get_all_public_services/0
         , get_all_services_for_user/1
+        , get_service_by_id/2
         , register_public/1
         , register_private/1
         , allow_user/2
@@ -27,6 +28,10 @@ get_all_public_services() ->
 -spec get_all_services_for_user(binary()) -> {ok, [service_info_map()]} | {error, term(), string()}.
 get_all_services_for_user(UserId) ->
     ?BACKEND:get_all_services_for_user(UserId).
+
+-spec get_service_by_id(binary(), binary()) -> {ok, service_info_map()} | {error, not_found}.
+get_service_by_id(ServiceId, UserId) ->
+    ?BACKEND:get_service_by_id(ServiceId, UserId).
 
 -spec register_public(module()) -> {ok, binary()}.
 register_public(ServiceModule) ->
