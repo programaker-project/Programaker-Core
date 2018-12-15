@@ -28,6 +28,7 @@
         ]).
 
 
+-define(STORAGE, automate_services_telegram_storage).
 -define(APPLICATION, automate_services_telegram).
 
 
@@ -77,11 +78,9 @@ send_message(BotName, Params) ->
     end.
 -endif.
 
-
 -spec user_has_enabled_platform(binary()) -> {'ok', 'true' | 'false'} | {error, any()}.
 user_has_enabled_platform(Username) ->
-    automate_storage:user_has_registered_service(Username, get_platform_id()).
-
+    ?STORAGE:user_has_registered(Username).
 
 -spec get_bot_name() -> binary().
 get_bot_name() ->
@@ -91,15 +90,15 @@ get_bot_name() ->
 
 -spec get_registration_token(binary()) -> {ok, binary()}.
 get_registration_token(Username) ->
-    automate_storage:get_or_gen_registration_token(Username, get_platform_id()).
+    automate_service_user_registration:get_or_gen_registration_token(Username, get_platform_id()).
 
 
 -spec telegram_user_to_internal(binary()) -> {ok, binary()} | {error, not_found}.
 telegram_user_to_internal(TelegramId) ->
-    automate_storage:get_internal_user_for_telegram_id(TelegramId).
+    ?STORAGE:get_internal_user_for_telegram_id(TelegramId).
 
 register_user(TelegramUserId, RegistrationToken) ->
-    automate_storage:finish_telegram_registration(TelegramUserId, RegistrationToken).
+    ?STORAGE:finish_telegram_registration(TelegramUserId, RegistrationToken).
 
 
 %%====================================================================

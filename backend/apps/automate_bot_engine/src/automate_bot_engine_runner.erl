@@ -12,7 +12,6 @@
 -export([ update/1
         , loop/1
         , start_link/1
-        , user_sent_message/4
         ]).
 
 -define(SERVER, ?MODULE).
@@ -34,10 +33,6 @@ update(Pid) ->
         {?SERVER, X} ->
             X
     end.
-
-user_sent_message(Pid, ChatId, Content, BotName) ->
-    io:format("[~p] Message: ~p~n", [Pid, {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName}}]),
-    Pid ! {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName}}.
 
 %%--------------------------------------------------------------------
 %% @doc

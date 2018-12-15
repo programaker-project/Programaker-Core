@@ -47,6 +47,13 @@ init([]) ->
                , type => worker
                , modules => [automate_services_telegram_demux]
                }
+           , # { id => automate_services_telegram_storage
+               , start => {automate_services_telegram_storage, start_link, []}
+               , restart => permanent
+               , shutdown => 2000
+               , type => worker
+               , modules => [automate_services_telegram_storage]
+               }
            ]} }.
 
 %%====================================================================

@@ -114,21 +114,6 @@ run_thread(Thread, State, Message ) ->
             {stopped, thread_finished}
     end.
 
-
-run_instruction(#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
-                 , ?ARGUMENTS := [Argument]
-                 }, Thread, _State, { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {_UserId, SignalContent} }) ->
-    Expected = automate_bot_engine_variables:resolve_argument(Argument, Thread),
-    case Expected of
-        {ok, SignalContent} ->
-            {ran_this_tick, increment_position(Thread)};
-        {ok, _} ->
-            {did_not_run, waiting};
-        {error, _Reason} ->
-            {did_not_run, waiting}
-    end;
-
-
 run_instruction(#{ ?TYPE := ?COMMAND_SET_VARIABLE
                  , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_VARIABLE
                                     , ?VALUE := VariableName
@@ -159,22 +144,6 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                end,
     {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, VariableName, NewValue),
     {ran_this_tick, increment_position(NewThreadState)};
-
-run_instruction(#{ ?TYPE := ?COMMAND_CHAT_SAY
-                 , ?ARGUMENTS := [Argument]
-                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
-
-    {ok, Message} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
-    case automate_bot_engine_variables:retrieve_thread_values(Thread, [ ?TELEGRAM_CHAT_ID
-                                                                      , ?TELEGRAM_BOT_NAME
-                                                                      ]) of
-        {ok, [ChatId, BotName]} ->
-            {ok, _} = automate_services_telegram:send_message(BotName, #{chat_id => ChatId, text => Message});
-        {error, Reason} ->
-            %% TODO report error to user
-            io:format("Error: ~p~n", [Reason])
-    end,
-    {ran_this_tick, increment_position(Thread)};
 
 run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
                  , ?ARGUMENTS := [Argument]
@@ -314,6 +283,12 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
     {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, ListName, ValueAfter),
     {ran_this_tick, increment_position(NewThreadState)};
 
+%% TODO: Really call the services
+run_instruction(Instruction = #{ ?TYPE := ?COMMAND_CALL_SERVICE
+                               , ?ARGUMENTS := Arguments
+                               }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+    io:format("Unhandled call to service: ~p~n", [Instruction]),
+    {ran_this_tick, increment_position(Thread)};
 
 run_instruction(Instruction, _Thread, _State, _Message) ->
     io:format("Unhandled instruction: ~p~n", [Instruction]),

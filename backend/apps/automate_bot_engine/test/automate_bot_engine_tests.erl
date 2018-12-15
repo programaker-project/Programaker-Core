@@ -14,6 +14,7 @@
 -include("single_line_program.hrl").
 
 -define(TEST_NODES, [node()]).
+-define(TEST_MONITOR, <<"__test_monitor__">>).
 
 %%====================================================================
 %% Test API
@@ -52,9 +53,9 @@ stop(ok) ->
 
 tests(_SetupResult) ->
     [ {"[Bot runner][Initialization] Single line program initialization", fun single_line_program_initialization/0}
-    , {"[Bot runner][Signals] Wait for telegram command signal", fun wait_for_telegram_command_signal/0}
+    , {"[Bot runner][Signals] Wait for channel signal", fun wait_for_channel_signal/0}
     , {"[Bot runner][Resolution] Constant argument resolution", fun constant_argument_resolution/0}
-    , {"[Bot runner][Triggers] Trigger thread with telegram command", fun trigger_thread_with_telegram_command/0}
+    , {"[Bot runner][Triggers] Trigger thread with channel signal", fun trigger_thread_with_channel_signal/0}
     , {"[Bot runner][Threads] Run a thread a single tick", fun run_thread_single_tick/0}
     ].
 
@@ -65,69 +66,80 @@ single_line_program_initialization() ->
     Program  = ?SINGLE_LINE_PROGRAM,
     Expected = ?SINGLE_LINE_PROGRAM_INITIALIZATION,
 
-    {ok, Expected} = automate_bot_engine_program_decoder:initialize_program(?SINGLE_LINE_PROGRAM_ID, Program).
+    ?assertMatch({ok, Expected},
+                 automate_bot_engine_program_decoder:initialize_program(?SINGLE_LINE_PROGRAM_ID, Program)).
 
 %% Signals
-wait_for_telegram_command_signal() ->
-    Program = #program_state{ triggers=[#program_trigger{ condition=#{ ?TYPE => ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
+wait_for_channel_signal() ->
+    Program = #program_state{ triggers=[#program_trigger{ condition=#{ ?TYPE => ?WAIT_FOR_MONITOR
+                                                                     , ?ARGUMENTS =>
+                                                                           #{ ?MONITOR_ID => ?TEST_MONITOR
+                                                                            , ?MONITOR_EXPECTED_VALUE => ?MONITOR_ANY_VALUE
+                                                                            }
                                                                      }
                                                         }]},
-    Expected = [?SIGNAL_TELEGRAM_MESSAGE_RECEIVED],
+    Expected = [?TRIGGERED_BY_MONITOR],
 
-    {ok, Expected} = automate_bot_engine_triggers:get_expected_signals(Program).
+    ?assertMatch({ok, Expected},
+                 automate_bot_engine_triggers:get_expected_signals(Program)).
 
 %% Argument resolution
 constant_argument_resolution() ->
     Value = example,
-    {ok, Value} = automate_bot_engine_variables:resolve_argument(#{ ?TYPE => ?VARIABLE_CONSTANT
-                                                                  , ?VALUE => Value
-                                                                  }).
+    ?assertMatch({ok, Value}, automate_bot_engine_variables:resolve_argument(#{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                              , ?VALUE => Value
+                                                                              })).
 
 %% Threads
-trigger_thread_with_telegram_command() ->
-    Program = #program_state{ triggers=[#program_trigger{ condition=#{ ?TYPE => ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
-                                                                     , ?ARGUMENTS => [#{ ?TYPE => ?VARIABLE_CONSTANT
-                                                                                       , ?VALUE => example
-                                                                                       }
-                                                                                     ]
-                                                                     }
-                                                        , subprogram=[#{ ?TYPE => example }]
-                                                        }]},
-    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED
-                                                                                 , { 0123, example, botname }}),
-    #program_thread{ position=[1], program=[#{ ?TYPE := example }] } = Thread.
+trigger_thread_with_channel_signal() ->
+    Program = #program_state{ triggers=[#program_trigger{
+                                           condition=#{ ?TYPE => ?WAIT_FOR_MONITOR
+                                                      , ?ARGUMENTS => #{ ?MONITOR_ID => ?TEST_MONITOR
+                                                                       , ?MONITOR_EXPECTED_VALUE =>
+                                                                             #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                              , ?VALUE => example
+                                                                              }
+                                                                       }
+                                                      }
+                                          , subprogram=[#{ ?TYPE => example }]
+                                          }]},
+
+    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, { ?TRIGGERED_BY_MONITOR
+                                                                                 , { ?TEST_MONITOR, example }}),
+    ?assertMatch(#program_thread{ position=[1], program=[#{ ?TYPE := example }] }, Thread).
 
 run_thread_single_tick() ->
-    WaitForTelegramCommandInstruction = #{ ?TYPE => ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
-                                         , ?ARGUMENTS => [#{ ?TYPE => ?VARIABLE_CONSTANT
-                                                           , ?VALUE => example
-                                                           }
-                                                         ]
-                                         },
-    ChatSayInstruction = #{ ?TYPE => ?COMMAND_CHAT_SAY
-                                         , ?ARGUMENTS => [#{ ?TYPE => ?VARIABLE_CONSTANT
-                                                           , ?VALUE => answer
-                                                           }
-                                                         ]
-                                         },
-    TelegramCommandSignal = { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED
-                            , { 0123, example, botname }},
+    WaitForMonitorInstruction = #{ ?TYPE => ?WAIT_FOR_MONITOR
+                                 , ?ARGUMENTS => #{ ?MONITOR_ID => ?TEST_MONITOR
+                                                  , ?MONITOR_EXPECTED_VALUE => #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                                , ?VALUE => example
+                                                                                }
+                                                  }
+                                 },
+    CallServiceInstruction = #{ ?TYPE => ?COMMAND_CALL_SERVICE
+                              , ?ARGUMENTS => [#{ ?TYPE => ?VARIABLE_CONSTANT
+                                                , ?VALUE => answer
+                                                }
+                                              ]
+                              },
+    TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
+                           , { ?TEST_MONITOR, example }},
 
-    Program = #program_state{ triggers=[#program_trigger{ condition=WaitForTelegramCommandInstruction
-                                                        , subprogram=[ChatSayInstruction]
+    Program = #program_state{ triggers=[#program_trigger{ condition=WaitForMonitorInstruction
+                                                        , subprogram=[CallServiceInstruction]
                                                         }]},
 
-    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, TelegramCommandSignal),
+    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, TriggerMonitorSignal),
 
-    %% Unexpected signal, does not run
-    #program_thread{ position=[1], program=[ChatSayInstruction] } = Thread,
+    %% Unexpected signal (for the thread already started), does not run
+    #program_thread{ position=[1], program=[CallServiceInstruction] } = Thread,
     {ok, {Ran1, NotRun1}} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
-                                                                       TelegramCommandSignal),
-    [] = Ran1,
-    [#program_thread{position=[1]}] = NotRun1,
+                                                                       {TriggerMonitorSignal, none}),
+    ?assertMatch([], Ran1),
+    ?assertMatch([#program_thread{position=[1]}], NotRun1),
 
     %% Expected signal, does run
     {ok, {Ran2, NotRun2}} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
                                                                        {?SIGNAL_PROGRAM_TICK, none}),
-    [#program_thread{position=[]}] = Ran2,
-    [] = NotRun2.
+    ?assertMatch([#program_thread{position=[]}], Ran2),
+    ?assertMatch([], NotRun2).

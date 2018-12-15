@@ -34,22 +34,51 @@ get_expected_signals_from_triggers(Triggers) ->
     [get_expected_action_from_trigger(Trigger) || Trigger <- Triggers ].
 
 -spec get_expected_action_from_trigger(#program_trigger{}) -> atom().
-get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
+%% TODO: return a more specific monitor
+get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                                                              }}) ->
-    ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED;
-
+    ?TRIGGERED_BY_MONITOR;
 get_expected_action_from_trigger(_Trigger) ->
     ?SIGNAL_PROGRAM_TICK.
 
 %%%% Thread creation
-%% Telegram
+%%% Monitors
+%% If any value is OK
 -spec trigger_thread(#program_trigger{}, {atom(), any()}, binary()) -> 'false' | {'true', #program_thread{}}.
-trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECEIVED_COMMAND
-                                            , ?ARGUMENTS := [Argument]
+trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                            , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId
+                                                             , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
+                                                             }
                                             }
                                , subprogram=Program
                                },
-               { ?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, MessageContent, BotName} },
+               { ?TRIGGERED_BY_MONITOR, {MonitorId, _Value} },
+               ProgramId) ->
+
+    Thread = #program_thread{ position=[1]
+                            , program=Program
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            },
+
+    %% @TODO associate monitor value, like
+    %% {ok, T1} = automate_bot_engine_variables:set_thread_value( Thread
+    %%                                                          , ?TELEGRAM_BOT_NAME
+    %%                                                          , BotName
+    %%                                                          ),
+    io:format("Thread: ~p~n", [Thread]),
+    {true, Thread};
+
+%% With matching value
+trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                            , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId
+                                                             , ?MONITOR_EXPECTED_VALUE := Argument
+                                                             }
+                                            }
+                               , subprogram=Program
+                               },
+               { ?TRIGGERED_BY_MONITOR, {MonitorId, MessageContent} },
                ProgramId) ->
 
     case automate_bot_engine_variables:resolve_argument(Argument) of
@@ -61,23 +90,27 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?COMMAND_TELEGRAM_ON_RECE
                                     , program_id=ProgramId
                                     },
 
-            {ok, T1} = automate_bot_engine_variables:set_thread_value( Thread
-                                                                     , ?TELEGRAM_BOT_NAME
-                                                                     , BotName
-                                                                     ),
-
-            {ok, T2} = automate_bot_engine_variables:set_thread_value( T1
-                                                                     , ?TELEGRAM_CHAT_ID
-                                                                     , ChatId
-                                                                     ),
+            %% @TODO associate monitor value, like
+            %% {ok, T1} = automate_bot_engine_variables:set_thread_value( Thread
+            %%                                                          , ?TELEGRAM_BOT_NAME
+            %%                                                          , BotName
+            %%                                                          ),
             io:format("Thread: ~p~n", [Thread]),
-            {true, T2};
+            {true, Thread};
         {ok, Found} ->
             io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
             false
     end;
 
 %% If no match is found, don't create a thread
-trigger_thread(_Trigger, Message, _ProgramId) ->
-    io:format("No trigger (~p)~n", [Message]),
+trigger_thread(Trigger, Message, ProgramId) ->
+    notify_trigger_not_matched(Trigger, Message, ProgramId),
     false.
+
+-ifdef(TEST).
+notify_trigger_not_matched(Trigger, Message, ProgramId) ->
+    io:format("Trigger (~p) not matching (~p) ~n", [Message, Trigger]).
+-else.
+notify_trigger_not_matched(_Trigger, Message, _ProgramId) ->
+    io:format("No trigger (~p), ~n", [Message]).
+-endif.

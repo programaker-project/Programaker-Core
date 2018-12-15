@@ -164,7 +164,8 @@ handle_telegram_update({pe4kin_update,
                                     <<"update_id">> := _UpdateId}}) ->
     case automate_services_telegram:telegram_user_to_internal(FromId) of
         {ok, InternalUser} ->
-            automate_bot_engine_launcher:user_sent_telegram_message(InternalUser, ChatId, Content, BotName);
+            {ok, ChannelId} = automate_services_telegram_storage:get_or_gen_user_channel(InternalUser),
+            automate_channel_engine:send_to_channel(ChannelId, Content);
         {error, not_found} ->
             handle_from_new_user(Message, Content, FromId, ChatId, BotName)
     end;
@@ -187,6 +188,7 @@ handle_from_new_user(_Message, <<"/register ", RawRegistrationToken/binary>>, Us
     end;
 
 handle_from_new_user(_Message, <<"/start">>, _UserId, ChatId, BotName) ->
+    %% TODO: Allow to configure owner nickname
     ResponseText = <<"Hi! I'm a bot in the making, ask @kenkeiras for more info if you want to know how to program me ;).">>,
     {ok, _} = automate_services_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
     ok;
