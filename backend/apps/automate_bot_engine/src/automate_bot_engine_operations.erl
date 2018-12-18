@@ -284,7 +284,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
     {ran_this_tick, increment_position(NewThreadState)};
 
 %% TODO: Really call the services
-run_instruction(Instruction = #{ ?TYPE := ?COMMAND_CALL_SERVICE
+run_instruction(#{ ?TYPE := ?COMMAND_CALL_SERVICE
                                , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
                                                 , ?SERVICE_ACTION := Action
                                                 , ?SERVICE_CALL_VALUES := Values

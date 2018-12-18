@@ -10,7 +10,7 @@
 %%====================================================================
 %% API functions
 %%====================================================================
--spec link_program('_', binary()) -> {ok, '_'}.
+-spec link_program(program(), binary()) -> {ok, program()}.
 link_program(Program = #{ <<"blocks">> := Blocks },
              UserId) ->
     io:fwrite("Linking: ~p~n", [Program]),

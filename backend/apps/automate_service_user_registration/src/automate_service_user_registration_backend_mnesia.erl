@@ -54,7 +54,7 @@ get_registration_token(Username, ServiceId) ->
                                       [] ->
                                           {error, not_found}
                                   end;
-                              {error, not_found} ->
+                              {error, no_user_found} ->
                                   {error, not_found}
                           end
                   end,
@@ -78,7 +78,7 @@ gen_registration_token(Username, ServiceId) ->
                                                                                  },
                                   ok = mnesia:write(?SERVICE_REGISTRATION_TOKEN_TABLE, TokenRegistration, write),
                                   {ok, Token};
-                              {error, not_found} ->
+                              {error, no_user_found} ->
                                   {ok, not_found}
                           end
                   end,

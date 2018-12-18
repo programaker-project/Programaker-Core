@@ -261,7 +261,7 @@ get_program_variable(ProgramId, Key) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec get_userid_from_username(binary()) -> {ok, binary()} | {error, not_found}.
+-spec get_userid_from_username(binary()) -> {ok, binary()} | {error, no_user_found}.
 get_userid_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'
                                       , username='$2'

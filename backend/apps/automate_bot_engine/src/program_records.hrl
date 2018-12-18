@@ -13,7 +13,7 @@
                              }).
 
 -record(program_state, { program_id  :: binary()
-                       , permissions :: #program_permissions{}
+                       , permissions :: #program_permissions{} | undefined
                        , variables   :: [any()]
                        , threads     :: [#program_thread{}]
                        , triggers    :: [#program_trigger{}]
