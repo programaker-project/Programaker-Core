@@ -32,7 +32,6 @@ get_triggered_threads(#program_state{triggers=Triggers, program_id=ProgramId}, S
 %%%% Expected signals
 -spec get_expected_signals_from_triggers([#program_trigger{}]) -> [atom()].
 get_expected_signals_from_triggers(Triggers) ->
-    io:fwrite("\033[47;30mTriggers: ~p\033[0m~n", [Triggers]),
     [get_expected_action_from_trigger(Trigger) || Trigger <- Triggers ].
 
 -spec get_expected_action_from_trigger(#program_trigger{}) -> atom().
@@ -41,7 +40,6 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FO
                                                              , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId }
                                                              }}) ->
 
-    io:fwrite("\033[41;37mListening to ~p\033[0m~n", [MonitorId]),
     automate_channel_engine:listen_channel(MonitorId, self()),
     ?TRIGGERED_BY_MONITOR;
 
@@ -69,12 +67,6 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                             , program_id=ProgramId
                             },
 
-    %% @TODO associate monitor value, like
-    %% {ok, T1} = automate_bot_engine_variables:set_thread_value( Thread
-    %%                                                          , ?TELEGRAM_BOT_NAME
-    %%                                                          , BotName
-    %%                                                          ),
-    io:format("Thread: ~p~n", [Thread]),
     {true, Thread};
 
 %% With matching value
@@ -99,7 +91,6 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
 
             {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
                                 Thread, MonitorId, FullMessage),
-            io:format("Thread: ~p~n", [NewThread]),
             {true, NewThread};
         {ok, Found} ->
             io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),

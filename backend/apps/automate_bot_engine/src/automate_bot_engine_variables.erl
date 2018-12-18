@@ -136,7 +136,6 @@ set_memory([H | T], V, Mem) ->
 
 -spec get_thread_value(#program_thread{}, [atom()|binary()]) -> {ok, any()} | {error, not_found}.
 get_thread_value(#program_thread{ global_memory=Global }, Key) when is_list(Key) ->
-    io:fwrite("Find ~p on ~p~n", [Key, Global]),
     get_memory(Key, Global).
 
 -spec get_memory([atom()|binary()], map()) -> {ok, any()} | {error, not_found}.
