@@ -52,5 +52,12 @@
 -define(MONITOR_ANY_VALUE, any_value).
 
 %% Fields
--define(MONITOR_ID, monitor_id).
--define(MONITOR_EXPECTED_VALUE, monitor_expected_value).
+-define(MONITOR_ID, <<"monitor_id">>).
+-define(MONITOR_EXPECTED_VALUE, <<"monitor_expected_value">>).
+
+%%%% Services
+-define(SERVICE_ID, <<"service_id">>).
+-define(SERVICE_CALL_VALUES, <<"service_call_values">>).
+-define(SERVICE_ACTION, <<"service_action">>).
+
+-define(LAST_MONITOR_VALUES, <<"__last_monitor_values__">>).

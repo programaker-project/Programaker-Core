@@ -15,6 +15,7 @@
 
 -define(SERVER, ?MODULE).
 
+-include("records.hrl").
 -record(state, { bot_name }).
 
 %%%===================================================================
@@ -165,7 +166,11 @@ handle_telegram_update({pe4kin_update,
     case automate_services_telegram:telegram_user_to_internal(FromId) of
         {ok, InternalUser} ->
             {ok, ChannelId} = automate_services_telegram_storage:get_or_gen_user_channel(InternalUser),
-            automate_channel_engine:send_to_channel(ChannelId, Content);
+            io:format("Demuxing telegram user ~p to channel ~p~n",  [FromId, ChannelId]),
+            automate_channel_engine:send_to_channel(ChannelId, #{ ?TELEGRAM_MESSAGE_CONTENT => Content
+                                                                , ?TELEGRAM_MESSAGE_CHAT_ID => ChatId
+                                                                , ?TELEGRAM_MESSAGE_BOT_NAME => BotName
+                                                                });
         {error, not_found} ->
             handle_from_new_user(Message, Content, FromId, ChatId, BotName)
     end;

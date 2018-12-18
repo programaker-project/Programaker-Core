@@ -285,13 +285,26 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
 
 %% TODO: Really call the services
 run_instruction(Instruction = #{ ?TYPE := ?COMMAND_CALL_SERVICE
-                               , ?ARGUMENTS := Arguments
-                               }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
-    io:format("Unhandled call to service: ~p~n", [Instruction]),
-    {ran_this_tick, increment_position(Thread)};
+                               , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
+                                                , ?SERVICE_ACTION := Action
+                                                , ?SERVICE_CALL_VALUES := Values
+                                                }
+                               }, Thread,
+                #program_state{permissions=Permissions},
+                {?SIGNAL_PROGRAM_TICK, _}) ->
 
-run_instruction(Instruction, _Thread, _State, _Message) ->
-    io:format("Unhandled instruction: ~p~n", [Instruction]),
+    UserId = case Permissions of
+                 undefined ->  % For simplification on test cases
+                     undefined;
+                 #program_permissions{ owner_user_id=OwnerUserId } ->
+                     OwnerUserId
+             end,
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, NewThread} = Module:call(Action, Values, Thread, UserId),
+    {ran_this_tick, increment_position(NewThread)};
+
+run_instruction(Instruction, _Thread, _State, Message) ->
+    io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
     {did_not_run, waiting}.
 
 increment_position(Thread = #program_thread{position=Position}) ->

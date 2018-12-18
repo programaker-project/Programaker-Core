@@ -9,6 +9,7 @@
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
 -include("instructions.hrl").
+-include("../../automate_channel_engine/src/records.hrl").
 
 %%%===================================================================
 %%% API
@@ -31,13 +32,19 @@ get_triggered_threads(#program_state{triggers=Triggers, program_id=ProgramId}, S
 %%%% Expected signals
 -spec get_expected_signals_from_triggers([#program_trigger{}]) -> [atom()].
 get_expected_signals_from_triggers(Triggers) ->
+    io:fwrite("\033[47;30mTriggers: ~p\033[0m~n", [Triggers]),
     [get_expected_action_from_trigger(Trigger) || Trigger <- Triggers ].
 
 -spec get_expected_action_from_trigger(#program_trigger{}) -> atom().
 %% TODO: return a more specific monitor
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
+                                                             , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId }
                                                              }}) ->
+
+    io:fwrite("\033[41;37mListening to ~p\033[0m~n", [MonitorId]),
+    automate_channel_engine:listen_channel(MonitorId, self()),
     ?TRIGGERED_BY_MONITOR;
+
 get_expected_action_from_trigger(_Trigger) ->
     ?SIGNAL_PROGRAM_TICK.
 
@@ -78,7 +85,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                             }
                                , subprogram=Program
                                },
-               { ?TRIGGERED_BY_MONITOR, {MonitorId, MessageContent} },
+               { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }} },
                ProgramId) ->
 
     case automate_bot_engine_variables:resolve_argument(Argument) of
@@ -90,13 +97,10 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                     , program_id=ProgramId
                                     },
 
-            %% @TODO associate monitor value, like
-            %% {ok, T1} = automate_bot_engine_variables:set_thread_value( Thread
-            %%                                                          , ?TELEGRAM_BOT_NAME
-            %%                                                          , BotName
-            %%                                                          ),
-            io:format("Thread: ~p~n", [Thread]),
-            {true, Thread};
+            {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
+                                Thread, MonitorId, FullMessage),
+            io:format("Thread: ~p~n", [NewThread]),
+            {true, NewThread};
         {ok, Found} ->
             io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
             false

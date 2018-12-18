@@ -9,12 +9,16 @@
 -include("../../automate_storage/src/records.hrl").
 -include("../src/program_records.hrl").
 -include("../src/instructions.hrl").
+-include("../../automate_channel_engine/src/records.hrl").
 
 %% Test data
 -include("single_line_program.hrl").
 
+-define(APPLICATION, automate_bot_engine).
 -define(TEST_NODES, [node()]).
 -define(TEST_MONITOR, <<"__test_monitor__">>).
+-define(TEST_SERVICE, automate_service_registry_test_service:get_uuid()).
+-define(TEST_SERVICE_ACTION, test_action).
 
 %%====================================================================
 %% Test API
@@ -30,26 +34,24 @@ session_manager_test_() ->
 %% @doc App infrastructure setup.
 %% @end
 setup() ->
-    %% NodeName = node(),
+    NodeName = node(),
 
     %% %% Use a custom node name to avoid overwriting the actual databases
     %% net_kernel:start([?MODULE, shortnames]),
-    %% hivemind_app:install(),
-    %% {ok, Pid} = hivemind_app:start(),
 
-    %% {NodeName, Pid}.
-    ok.
+    %% {ok, Pid} = application:ensure_all_started(?APPLICATION),
+
+    {NodeName}.
 
 %% @doc App infrastructure teardown.
 %% @end
-%% stop({NodeName, Pid}) ->
-stop(ok) ->
-    %% hivemind_app:stop(Pid),
-    %% ok = mnesia:delete_schema(?TEST_NODES),
+stop({NodeName}) ->
+    %% application:stop(?APPLICATION),
 
     %% %% Restore the original node name
-    %% net_kernel:start([NodeName, shortnames]).
+    %% net_kernel:start([NodeName, shortnames]),
     ok.
+
 
 tests(_SetupResult) ->
     [ {"[Bot runner][Initialization] Single line program initialization", fun single_line_program_initialization/0}
@@ -60,14 +62,18 @@ tests(_SetupResult) ->
     ].
 
 
+
+remove_permissions(Program=#program_state{}) ->
+    Program#program_state{ permissions=undefined }.
+
 %%%% Bot runner
 %% Initialization
 single_line_program_initialization() ->
     Program  = ?SINGLE_LINE_PROGRAM,
     Expected = ?SINGLE_LINE_PROGRAM_INITIALIZATION,
+    {ok, Obtained} = automate_bot_engine_program_decoder:initialize_program(?SINGLE_LINE_PROGRAM_ID, Program),
 
-    ?assertMatch({ok, Expected},
-                 automate_bot_engine_program_decoder:initialize_program(?SINGLE_LINE_PROGRAM_ID, Program)).
+    ?assertMatch(Expected, remove_permissions(Obtained)).
 
 %% Signals
 wait_for_channel_signal() ->
@@ -104,8 +110,10 @@ trigger_thread_with_channel_signal() ->
                                           , subprogram=[#{ ?TYPE => example }]
                                           }]},
 
-    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, { ?TRIGGERED_BY_MONITOR
-                                                                                 , { ?TEST_MONITOR, example }}),
+    {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program,
+                                                                        { ?TRIGGERED_BY_MONITOR
+                                                                        , { ?TEST_MONITOR,
+                                                                            #{ ?CHANNEL_MESSAGE_CONTENT => example } }}),
     ?assertMatch(#program_thread{ position=[1], program=[#{ ?TYPE := example }] }, Thread).
 
 run_thread_single_tick() ->
@@ -116,14 +124,20 @@ run_thread_single_tick() ->
                                                                                 }
                                                   }
                                  },
+
+    %% Register test service
+    {ok, ServiceId} = automate_service_registry:register_public(automate_service_registry_test_service),
+
     CallServiceInstruction = #{ ?TYPE => ?COMMAND_CALL_SERVICE
-                              , ?ARGUMENTS => [#{ ?TYPE => ?VARIABLE_CONSTANT
-                                                , ?VALUE => answer
-                                                }
-                                              ]
+                              , ?ARGUMENTS => #{ ?SERVICE_ID => ServiceId
+                                               , ?SERVICE_ACTION => ?TEST_SERVICE_ACTION
+                                               , ?SERVICE_CALL_VALUES => #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                          , ?VALUE => answer
+                                                                          }
+                                               }
                               },
     TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
-                           , { ?TEST_MONITOR, example }},
+                           , { ?TEST_MONITOR, #{ ?CHANNEL_MESSAGE_CONTENT => example }}},
 
     Program = #program_state{ triggers=[#program_trigger{ condition=WaitForMonitorInstruction
                                                         , subprogram=[CallServiceInstruction]
@@ -134,7 +148,7 @@ run_thread_single_tick() ->
     %% Unexpected signal (for the thread already started), does not run
     #program_thread{ position=[1], program=[CallServiceInstruction] } = Thread,
     {ok, {Ran1, NotRun1}} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
-                                                                       {TriggerMonitorSignal, none}),
+                                                                       TriggerMonitorSignal),
     ?assertMatch([], Ran1),
     ?assertMatch([#program_thread{position=[1]}], NotRun1),
 

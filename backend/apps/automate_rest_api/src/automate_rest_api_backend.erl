@@ -110,9 +110,13 @@ update_program(Username, ProgramName,
                #program_content{ orig=Orig
                                , parsed=Parsed
                                , type=Type }) ->
+
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, Linked} = automate_program_linker:link_program(Parsed, UserId),
+    io:fwrite("Linked program: ~p~n", [Linked]),
     case automate_storage:update_program(Username, ProgramName,
                                          #stored_program_content{ orig=Orig
-                                                                , parsed=Parsed
+                                                                , parsed=Linked
                                                                 , type=Type }) of
         { ok, ProgramId } ->
             automate_bot_engine_launcher:update_program(ProgramId);

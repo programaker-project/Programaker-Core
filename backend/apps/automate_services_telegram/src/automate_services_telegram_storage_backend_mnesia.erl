@@ -151,12 +151,12 @@ get_or_gen_user_channel(UserId) ->
     ServiceMatcher = [{MatchHead, [Guard], [ResultColumn]}],
 
     Transaction = fun() ->
-                          case mnesia:select(?TELEGRAM_SERVICE_REGISTRATION_TABLE, ServiceMatcher) of
+                          case mnesia:select(?TELEGRAM_SERVICE_USER_CHANNEL_TABLE, ServiceMatcher) of
                               [ChannelId] ->
                                   {ok, ChannelId};
                               [] ->
                                   {ok, ChannelId} = automate_channel_engine:create_channel(),
-                                  ok = mnesia:write(?TELEGRAM_SERVICE_REGISTRATION_TABLE,
+                                  ok = mnesia:write(?TELEGRAM_SERVICE_USER_CHANNEL_TABLE,
                                                     #telegram_service_user_channel_entry{ internal_user_id=UserId
                                                                                         , channel_id=ChannelId
                                                                                         }, write),
@@ -167,6 +167,6 @@ get_or_gen_user_channel(UserId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
+            {error, Reason, mnesia:error_description(Reason)}
     end.
 

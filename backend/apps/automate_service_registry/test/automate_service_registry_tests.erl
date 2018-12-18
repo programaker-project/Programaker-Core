@@ -38,7 +38,7 @@ setup() ->
 stop({NodeName, _Pid}) ->
     application:stop(?APPLICATION),
 
-    %% %% Restore the original node name
+    %% Restore the original node name
     net_kernel:start([NodeName, shortnames]),
     ok.
 

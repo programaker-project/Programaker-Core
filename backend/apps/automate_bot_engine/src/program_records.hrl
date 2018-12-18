@@ -9,7 +9,11 @@
                         , program_id :: binary()      % ID of the program being run
                         }).
 
+-record(program_permissions, { owner_user_id :: binary()
+                             }).
+
 -record(program_state, { program_id  :: binary()
+                       , permissions :: #program_permissions{}
                        , variables   :: [any()]
                        , threads     :: [#program_thread{}]
                        , triggers    :: [#program_trigger{}]

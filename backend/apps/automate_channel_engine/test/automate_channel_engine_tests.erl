@@ -40,10 +40,8 @@ setup() ->
 %% @end
 stop({NodeName, _Pid}) ->
     application:stop(automate_channel_engine),
-    mnesia:stop(),
-    ok = mnesia:delete_schema(?TEST_NODES),
 
-    %% %% Restore the original node name
+    %% Restore the original node name
     net_kernel:start([NodeName, shortnames]),
     ok.
 

@@ -1,0 +1,1 @@
+-define(FROM_SERVICE, <<"from_service">>).

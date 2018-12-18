@@ -20,39 +20,25 @@
 %% Service API
 -export([ start_link/0
         , get_description/0
-        , get_actions/0
         , get_uuid/0
         , get_name/0
         , is_enabled_for_user/1
         , get_how_to_enable/1
+        , get_monitor_id/1
+        , call/4
         ]).
 
 
 -define(STORAGE, automate_services_telegram_storage).
 -define(APPLICATION, automate_services_telegram).
-
-
--record(service_metadata, { id
-                          , name
-                          , link
-                          , enabled
-                          }).
-
--record(service_enable_extra_telegram, { token :: binary()
-                                       , bot_name :: binary()
-                                       }).
-
--record(service_enable_how_to, { service :: #service_metadata{}
-                               , method :: 'external'
-                               , extra :: #service_enable_extra_telegram{}
-                               }).
+-include("records.hrl").
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
 is_enabled() ->
-    io:format("==> ~p~n", [application:get_env(?APPLICATION)]),
+    io:format("Telegram configuration: ~p~n", [application:get_all_env()]),
     {ok, Enabled} = application:get_env(?APPLICATION, telegram_enabled),
     Enabled.
 
@@ -116,9 +102,18 @@ get_name() ->
 get_description() ->
     <<"Global telegram service.">>.
 
-get_actions() ->
-    [
-    ].
+get_monitor_id(UserId) ->
+    automate_services_telegram_storage:get_or_gen_user_channel(UserId).
+
+call(send_chat, Values, Thread, UserId) ->
+    {ok, UserMonitor} = get_monitor_id(UserId),
+    {ok, LastData} = automate_bot_engine_variables:get_last_monitor_value(Thread, UserMonitor),
+    #{ ?TELEGRAM_MESSAGE_CHAT_ID := ChatId
+     , ?TELEGRAM_MESSAGE_BOT_NAME := BotName
+     } = LastData,
+    {ok, Arg} = automate_bot_engine_variables:resolve_argument(lists:nth(1, Values)),
+    send_message(BotName, #{ chat_id => ChatId, text => Arg }),
+    {ok, Thread}.
 
 is_enabled_for_user(Username) ->
     user_has_enabled_platform(Username).

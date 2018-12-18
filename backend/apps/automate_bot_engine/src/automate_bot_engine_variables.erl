@@ -8,6 +8,9 @@
         , get_program_variable/2
         , set_program_variable/3
 
+        , set_last_monitor_value/3
+        , get_last_monitor_value/2
+
         , retrieve_thread_value/2
         , retrieve_thread_values/2
 
@@ -60,7 +63,10 @@ retrieve_thread_value(#program_thread{ global_memory=Global }, Key) ->
 retrieve_thread_values(Thread, Keys) ->
     retrieve_thread_values(Thread, Keys, []).
 
--spec set_thread_value(#program_thread{}, atom(), any()) -> {ok, #program_thread{}}.
+-spec set_thread_value(#program_thread{}, atom() | [binary()], any()) -> {ok, #program_thread{}}.
+set_thread_value(Thread = #program_thread{}, Key, Value) when is_list(Key) ->
+    set_thread_nested_value(Thread, Key, Value);
+
 set_thread_value(Thread = #program_thread{ global_memory=Global }, Key, Value) ->
     {ok, Thread#program_thread{ global_memory=Global#{ Key => Value } } }.
 
@@ -72,6 +78,14 @@ set_program_variable(Thread = #program_thread{ program_id=ProgramId }, Key, Valu
 -spec get_program_variable(#program_thread{}, atom()) -> {ok, any()} | {error, not_found}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
     automate_storage:get_program_variable(ProgramId, Key).
+
+-spec set_last_monitor_value(#program_thread{}, binary(), any()) -> {ok, #program_thread{}}.
+set_last_monitor_value(Thread, MonitorId, Value) ->
+    set_thread_value(Thread, [?LAST_MONITOR_VALUES, MonitorId], Value).
+
+-spec get_last_monitor_value(#program_thread{}, binary()) -> {ok, any()} | {error, not_found}.
+get_last_monitor_value(Thread, MonitorId) ->
+    get_thread_value(Thread, [?LAST_MONITOR_VALUES, MonitorId]).
 
 -spec retrieve_instruction_memory(#program_thread{}) -> {ok, any()} | {error, not_found}.
 retrieve_instruction_memory(#program_thread{ instruction_memory=Memory, position=Position }) ->
@@ -102,4 +116,42 @@ retrieve_thread_values(Thread, [Key | T], Acc) ->
             retrieve_thread_values(Thread, T, [Value | Acc]);
         Error = {error, _} ->
             Error
+    end.
+
+-spec set_thread_nested_value(#program_thread{}, [binary()], any()) -> {ok, #program_thread{}}.
+set_thread_nested_value(Thread = #program_thread{ global_memory=Global }, Key, Value) ->
+    {ok, Thread#program_thread{ global_memory=set_memory(Key, Value, Global)} }.
+
+-spec set_memory([binary()], any(), map()) -> map().
+set_memory([H], V, Mem) ->
+    Mem#{ H => V };
+set_memory([H | T], V, Mem) ->
+    SubMem = case Mem of
+        #{ H := SubValue } ->
+            SubValue;
+        _ ->
+            #{}
+    end,
+    Mem#{ H => set_memory(T, V, SubMem) }.
+
+-spec get_thread_value(#program_thread{}, [atom()|binary()]) -> {ok, any()} | {error, not_found}.
+get_thread_value(#program_thread{ global_memory=Global }, Key) when is_list(Key) ->
+    io:fwrite("Find ~p on ~p~n", [Key, Global]),
+    get_memory(Key, Global).
+
+-spec get_memory([atom()|binary()], map()) -> {ok, any()} | {error, not_found}.
+get_memory([H], Mem) ->
+    case Mem of
+        #{ H := V } ->
+            {ok, V};
+        _ ->
+            {error, not_found}
+    end;
+
+get_memory([H | T], Mem) ->
+    case Mem of
+        #{ H := SubMem } ->
+            get_memory(T, SubMem);
+        _ ->
+            {error, not_found}
     end.
