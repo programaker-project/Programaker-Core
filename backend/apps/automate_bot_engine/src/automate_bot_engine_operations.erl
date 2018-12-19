@@ -300,7 +300,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_CALL_SERVICE
                      OwnerUserId
              end,
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, NewThread} = Module:call(Action, Values, Thread, UserId),
+    {ok, NewThread, Value} = Module:call(Action, Values, Thread, UserId),
     {ran_this_tick, increment_position(NewThread)};
 
 run_instruction(Instruction, _Thread, _State, Message) ->
@@ -434,7 +434,19 @@ get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
             {ok, false}
     end;
 
-%% Faaail
+get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
+                 , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
+                                  , ?SERVICE_ACTION := Action
+                                  , ?SERVICE_CALL_VALUES := Values
+                                  }
+                 }, Thread=#program_thread{ program_id=PID }) ->
+
+    #user_program_entry{ user_id=UserId } = automate_storage:get_program_from_id(PID),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, NewThread, Value} = Module:call(Action, Values, Thread, UserId),
+    {ok, Value};
+
+%% Fail
 get_block_result(Block, _Thread) ->
     io:format("Result from: ~p~n", [Block]),
     erlang:error(bad_operation).

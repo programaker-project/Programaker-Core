@@ -113,7 +113,7 @@ call(send_chat, Values, Thread, UserId) ->
      } = LastData,
     {ok, Arg} = automate_bot_engine_variables:resolve_argument(lists:nth(1, Values), Thread),
     send_message(BotName, #{ chat_id => ChatId, text => Arg }),
-    {ok, Thread}.
+    {ok, Thread, none}.
 
 is_enabled_for_user(Username) ->
     user_has_enabled_platform(Username).

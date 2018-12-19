@@ -1,4 +1,4 @@
-const API_ROOT = "https://plaza.spiral.systems/api/v0";
+const API_ROOT = "http://127.0.0.1:8888/api/v0";
 
 export function get_token(username: string, password: string): Promise<string> {
     return new Promise((resolve, reject) => {

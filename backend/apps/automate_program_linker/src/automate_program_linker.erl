@@ -22,23 +22,28 @@ relink_subprogram(Subprogram, UserId) ->
     lists:map(fun (Block) -> relink_block(Block, UserId) end, Subprogram).
 
 %% Relink chat_say
-relink_block(Block=#{ ?TYPE := <<"chat_say">>, ?ARGUMENTS := Arguments }, _UserId) ->
+relink_block(Block=#{ ?TYPE := <<"chat_say">>, ?ARGUMENTS := Arguments }, UserId) ->
     Block#{ ?TYPE := ?COMMAND_CALL_SERVICE
           , ?ARGUMENTS := #{ ?SERVICE_ACTION => send_chat
                            , ?SERVICE_ID => automate_services_telegram:get_uuid()
-                           , ?SERVICE_CALL_VALUES => Arguments
+                           , ?SERVICE_CALL_VALUES => lists:map(
+                                                       fun(Arg) ->
+                                                               relink_block_values(Arg, UserId)
+                                                       end,
+                                                       Arguments)
                            }
           };
 
+
 %% Relink service monitor
 relink_block(Block, UserId) ->
-    relink_block_args(Block, UserId).
+    B1 = relink_block_args(Block, UserId),
+    relink_block_values(B1, UserId).
 
 relink_block_args(Block=#{ ?ARGUMENTS := Arguments
                          }, UserId) when is_map(Arguments) ->
     B1 = relink_monitor_id(Block, UserId),
     B1;
-
 
 relink_block_args(Block, _UserId) ->
     Block.
@@ -51,3 +56,28 @@ relink_monitor_id(Block=#{ ?ARGUMENTS := Args=
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = Module:get_monitor_id(UserId),
     Block#{ ?ARGUMENTS := Args#{ ?MONITOR_ID :=  MonitorId } }.
+
+%%%% Relink values
+relink_block_values(Block=#{ ?VALUE := Value
+                           }, _UserId) when is_list(Value) ->
+    io:fwrite("Relinking: ~p~n", [Block]),
+    Block#{ ?VALUE => lists:map(fun relink_value/1, Value) };
+
+relink_block_values(Block, _UserId) ->
+    io:fwrite("Cannot relink: ~p~n", [Block]),
+    Block.
+
+
+%% Relink time_get_utc_hour
+relink_value(Value = #{ ?TYPE := <<"time_get_utc_hour">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_utc_hour
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+%% No relinking
+relink_value(Value) ->
+    Value.

@@ -44,4 +44,4 @@ get_how_to_enable(_Userdata) ->
 
 call(_Action, _Values, Thread, _UserId) ->
     %% No change
-    {ok, Thread}.
+    {ok, Thread, none}.

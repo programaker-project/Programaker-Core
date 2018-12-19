@@ -48,7 +48,7 @@ export function get_auth_token(): Promise<[string, string]> {
     return get_db().then((db) => {
         return new Promise<[string, string]>((resolve, reject) => {
             try {
-                const transaction = db.transaction([AUTH_TOKEN_STORE], "readonly");
+                const transaction = db.transaction([AUTH_TOKEN_STORE], "readwrite");
                 const storage = transaction.objectStore(AUTH_TOKEN_STORE);
 
                 let resolved = false;

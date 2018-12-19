@@ -28,6 +28,38 @@ export class Toolbox {
     injectBlocks(monitors: MonitorMetadata[]) {
         this.injectChatBlocks();
         this.injectMonitorBlocks(monitors);
+        this.injectTimeBlocks();
+    }
+
+    injectTimeBlocks() {
+        Blockly.Blocks['time_get_utc_hour'] = {
+            init: function() {
+                this.jsonInit({
+                    'id': 'time_get_utc_hour',
+                    'message0': 'Get current UTC hour',
+                    'args0': [
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'output_string']
+                });
+            }
+        };
+
+        try {
+            Blockly.Extensions.register('colours_time',  // Name of the new category
+                                        function() {
+                                            this.setColourFromRawValues_('#85CCB3',  // Block inner color
+                                                                         '#1D1D5F',  // Category circle border color
+                                                                         '#1D1D5F'   // Block border color
+                                                                        );
+                                        });
+        } catch (e) {
+            // If the extension was registered before
+            // this would have thrown an inocous exception
+            if (!Toolbox.alreadyRegisteredException(e)) {
+                throw e;
+            }
+        }
     }
 
     injectChatBlocks() {
@@ -357,12 +389,20 @@ export class Toolbox {
 
         const monitorsCategory = this.buildMonitorsCategory(monitors);
 
+        const timeCategory = '<category name="Time" colour="#85CCB3" secondaryColour="#1D1D5F">' +
+            // Note the block id on both the type and id.
+            '<block type="time_get_utc_hour" id="time_get_utc_hour">' +
+            '</block>' +
+            '</category>';
+
+
         Blockly.Blocks.defaultToolbox = [
             '<xml id="toolbox-categories" style="display: none">',
             chatCategory,
             eventsCategory,
             controlCategory,
             monitorsCategory,
+            timeCategory,
             operatorsCategory,
             variablesCategory,
             proceduresCategory,

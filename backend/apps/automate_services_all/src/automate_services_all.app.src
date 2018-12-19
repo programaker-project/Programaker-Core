@@ -3,6 +3,7 @@
     {vsn, "0.0.0"},
     {registered, []},
     {applications, [ automate_services_telegram
+                   , automate_services_time
     ]},
     {env, [
     ]},

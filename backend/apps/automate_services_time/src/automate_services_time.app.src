@@ -1,0 +1,14 @@
+{application, automate_services_time,
+ [
+  {description, "Auto-mate timekeeping service."},
+  {vsn, "0.0.0"},
+  {registered, []},
+  {mod, { automate_services_time_app, [] }},
+  {applications, [ automate_service_registry
+                 ]},
+  {env, [
+        ]},
+  {modules, []},
+  {licenses, ["Apache 2.0"]},
+  {links, []}
+ ]}.
