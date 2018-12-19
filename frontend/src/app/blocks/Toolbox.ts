@@ -36,7 +36,33 @@ export class Toolbox {
             init: function() {
                 this.jsonInit({
                     'id': 'time_get_utc_hour',
-                    'message0': 'Get current UTC hour',
+                    'message0': 'UTC hour',
+                    'args0': [
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'output_string']
+                });
+            }
+        };
+
+        Blockly.Blocks['time_get_utc_minute'] = {
+            init: function() {
+                this.jsonInit({
+                    'id': 'time_get_utc_minute',
+                    'message0': 'UTC minute',
+                    'args0': [
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'output_string']
+                });
+            }
+        };
+
+        Blockly.Blocks['time_get_utc_seconds'] = {
+            init: function() {
+                this.jsonInit({
+                    'id': 'time_get_utc_seconds',
+                    'message0': 'UTC seconds',
                     'args0': [
                     ],
                     'category': Blockly.Categories.event,
@@ -391,8 +417,9 @@ export class Toolbox {
 
         const timeCategory = '<category name="Time" colour="#85CCB3" secondaryColour="#1D1D5F">' +
             // Note the block id on both the type and id.
-            '<block type="time_get_utc_hour" id="time_get_utc_hour">' +
-            '</block>' +
+            '<block type="time_get_utc_hour" id="time_get_utc_hour"></block>' +
+            '<block type="time_get_utc_minute" id="time_get_utc_minute"></block>' +
+            '<block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>' +
             '</category>';
 
 

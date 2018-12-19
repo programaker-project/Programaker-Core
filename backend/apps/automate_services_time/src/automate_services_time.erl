@@ -34,12 +34,20 @@ get_description() ->
     <<"Timekeeping service.">>.
 
 %% No monitor associated with this service
-get_monitor_id(UserId) ->
+get_monitor_id(_UserId) ->
     {error, not_found}.
 
 call(get_utc_hour, _Values, Thread, _UserId) ->
     {{_Y1970, _Mon, _Day}, {Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
-    {ok, Thread, Hour}.
+    {ok, Thread, Hour};
+
+call(get_utc_minute, _Values, Thread, _UserId) ->
+    {{_Y1970, _Mon, _Day}, {_Hour, Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    {ok, Thread, Min};
+
+call(get_utc_seconds, _Values, Thread, _UserId) ->
+    {{_Y1970, _Mon, _Day}, {_Hour, _Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    {ok, Thread, Sec}.
 
 %% Is enabled for all users
 is_enabled_for_user(_Username) ->

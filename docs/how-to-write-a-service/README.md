@@ -86,9 +86,7 @@ To fix this we can use the `linker`, for that open the file `backend/apps/automa
 We'll add a new case above this block:
 
 ```erlang
-%% No relinking
-relink_value(Value) ->
-    Value.
+%%%% ^^^ Service linking
 ```
 
 To to this, write this above of that block:
@@ -165,7 +163,7 @@ get_description() ->
     <<"Timekeeping service.">>.
 
 %% No monitor associated with this service
-get_monitor_id(UserId) ->
+get_monitor_id(_UserId) ->
     {error, not_found}.
 
 call(get_utc_hour, _Values, Thread, _UserId) ->

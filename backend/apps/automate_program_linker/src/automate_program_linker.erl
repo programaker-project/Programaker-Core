@@ -68,7 +68,7 @@ relink_block_values(Block, _UserId) ->
     Block.
 
 
-%% Relink time_get_utc_hour
+%% Relink time
 relink_value(Value = #{ ?TYPE := <<"time_get_utc_hour">>
                       }) ->
     #{ ?TYPE => ?COMMAND_CALL_SERVICE
@@ -77,6 +77,33 @@ relink_value(Value = #{ ?TYPE := <<"time_get_utc_hour">>
                       , ?SERVICE_CALL_VALUES => Value
                       }
      };
+
+relink_value(Value = #{ ?TYPE := <<"time_get_utc_minute">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_utc_minute
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+relink_value(Value = #{ ?TYPE := <<"time_get_utc_seconds">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_utc_seconds
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+%%%% ^^^ Service linking
+relink_value(Block=#{ ?ARGUMENTS := Arguments }) ->
+    io:fwrite("---> ~p~n", [Block]),
+    Block#{ ?ARGUMENTS => lists:map(fun relink_value/1, Arguments) };
+
+relink_value(Block=#{ ?VALUE := Values }) when is_list(Values) ->
+    io:fwrite("===> ~p~n", [Block]),
+    Block#{ ?VALUE => lists:map(fun relink_value/1, Values) };
 
 %% No relinking
 relink_value(Value) ->
