@@ -10,6 +10,8 @@
                   , cowboy
                   , jiffy
                   , automate_storage
+                  , automate_channel_engine
+                  %% , automate_program_linker %% Not an application, just a module
                   ]}
 
  , {env, [ {port, 8080} ]}

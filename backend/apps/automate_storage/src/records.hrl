@@ -31,8 +31,11 @@
                                 , parsed
                                 }).
 
--record(running_program_entry, { program_id
-                               , runner_pid
+-type program_id() :: binary().
+-type running_program_pid() :: pid().
+
+-record(running_program_entry, { program_id :: program_id()
+                               , runner_pid :: running_program_pid()
                                , variables
                                , stats
                                }).
@@ -47,15 +50,8 @@
                                   , enabled :: boolean()        | ?MNESIA_SELECTOR
                                   }).
 
--record(service_registration_token, { token :: binary()         | ?MNESIA_SELECTOR
-                                    , service_id :: binary()    | ?MNESIA_SELECTOR
-                                    , user_id :: binary()       | ?MNESIA_SELECTOR
-                                    }).
-
--record(telegram_service_registration_entry, { telegram_user_id
-                                             , internal_user_id
-                                             }).
-
 -record(program_variable_table_entry, { id :: { binary(), binary() } % { program id, variable name }
                                       , value :: any()
                                       }).
+
+

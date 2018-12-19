@@ -1,5 +1,5 @@
-declare const browser;
 import { IXPathDescriptor } from "./PlazaApi.types";
+import { Browser } from "./BrowserApi";
 
 function build_xpath(node: HTMLElement): string {
     if (node.parentElement === null) {
@@ -71,7 +71,7 @@ class SelectorScreen {
     }
 
     public send_response(message) {
-        browser.runtime.sendMessage({
+        Browser.runtime.sendMessage({
             command: "addMonitor",
             message,
             token: this.options.token,
@@ -277,7 +277,7 @@ try {
     const selectorScreen = new SelectorScreen();
     selectorScreen.draw();
 
-    browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    Browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const scriptOptions = message.plazaInjectedOptions;
         if (scriptOptions) {
             selectorScreen.set_options(scriptOptions);

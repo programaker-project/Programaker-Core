@@ -26,7 +26,7 @@ export default class ScratchProgramSerializer {
             chain = [];
         }
 
-        const cleanedElement = {
+        let cleanedElement = {
             id: block.id,
             type: block.getAttribute('type'),
             args: Array.from(block.childNodes)
@@ -34,6 +34,9 @@ export default class ScratchProgramSerializer {
                 .map(node => ScratchProgramSerializer.serializeArg(node as HTMLElement)),
             contents: [],
         };
+
+        ScratchProgramSerializer.replaceServices(cleanedElement);
+        ScratchProgramSerializer.replaceMonitors(cleanedElement);
 
         const contents = Array.from(block.childNodes).filter((x: HTMLElement) => x.tagName === 'STATEMENT');
         if (contents.length > 0) {
@@ -48,6 +51,25 @@ export default class ScratchProgramSerializer {
         }
 
         return chain;
+    }
+
+    static replaceServices(element) {
+
+    }
+
+    static replaceMonitors(element) {
+        switch (element.type) {
+
+            case "chat_whenreceivecommand":
+                // This implies a call to a monitor
+                {
+                    element.type = "wait_for_monitor";
+                    element.args = {
+                        "monitor_id": { "from_service": "c8062378-9b53-4962-b4f4-e5a71e34d335" }, // Telegram monitor ID
+                        "monitor_expected_value": element.args[0]
+                    }
+                }
+        }
     }
 
     static serializeArg(argument: HTMLElement): any {

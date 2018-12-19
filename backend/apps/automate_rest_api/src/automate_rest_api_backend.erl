@@ -110,9 +110,13 @@ update_program(Username, ProgramName,
                #program_content{ orig=Orig
                                , parsed=Parsed
                                , type=Type }) ->
+
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, Linked} = automate_program_linker:link_program(Parsed, UserId),
+    io:fwrite("Linked program: ~p~n", [Linked]),
     case automate_storage:update_program(Username, ProgramName,
                                          #stored_program_content{ orig=Orig
-                                                                , parsed=Parsed
+                                                                , parsed=Linked
                                                                 , type=Type }) of
         { ok, ProgramId } ->
             automate_bot_engine_launcher:update_program(ProgramId);
@@ -120,12 +124,18 @@ update_program(Username, ProgramName,
             {error, Reason}
     end.
 
--spec list_services_from_username(binary()) -> {'ok', [ #service_metadata{} ]}.
+-spec list_services_from_username(binary()) -> {'ok', [ #service_metadata{} ]} | {error, term(), binary()}.
 list_services_from_username(Username) ->
-    {ok, get_telegram_services_from_username(Username)}.
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    case  automate_service_registry:get_all_services_for_user(UserId) of
+        {ok, Services} ->
+            {ok, get_services_metadata(Services, Username)};
+        E = {error, _, _} ->
+            E
+    end.
 
 
--spec get_service_enable_how_to(binary(), binary()) -> {ok, #service_enable_how_to{}} | {error, not_found}.
+-spec get_service_enable_how_to(binary(), binary()) -> {ok, binary() | none} | {error, not_found}.
 get_service_enable_how_to(Username, ServiceId) ->
     case get_platform_service_how_to(Username, ServiceId) of
         {ok, HowTo} ->
@@ -139,6 +149,26 @@ get_service_enable_how_to(Username, ServiceId) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+get_services_metadata(Services, Username) ->
+    lists:map(fun ({K, V}) -> get_service_metadata(K, V, Username) end,
+              maps:to_list(Services)).
+
+get_service_metadata(Id
+                    , #{ name := Name
+                       , description := _Description
+                       , module := Module
+                       }
+                    , Username) ->
+    {ok, Enabled} = Module:is_enabled_for_user(Username),
+    #service_metadata{ id=Id
+                     , name=Name
+                     , link=generate_url_for_service_id(Username, Id)
+                     , enabled=Enabled
+                     }.
+
+generate_url_for_service_id(Username, ServiceId) ->
+    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/id/~s", [Username, ServiceId]))).
+
 generate_url_from_userid(UserId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s", [UserId]))).
 
@@ -167,48 +197,12 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , program_orig=ProgramOrig
                  }.
 
--spec get_telegram_services_from_username(binary()) -> [ #service_metadata{} ].
-get_telegram_services_from_username(Username) ->
-    DefaultId = automate_bot_engine_telegram:get_platform_id(),
-    DefaultName = automate_bot_engine_telegram:get_platform_name(),
-    case automate_bot_engine_telegram:is_enabled() of
-        true ->
-            {ok, HasEnabled} = automate_bot_engine_telegram:user_has_enabled_platform(Username),
-            [ #service_metadata{ id=DefaultId
-                               , name=DefaultName
-                               , link=generate_url_from_service(Username, DefaultId)
-                               , enabled=HasEnabled
-                               } ];
-        false ->
-            []
-    end.
-
--spec generate_url_from_service(binary(), binary()) -> binary().
-generate_url_from_service(Username, ServiceId) ->
-    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/~s", [Username, ServiceId]))).
-
--spec get_platform_service_how_to(binary(), binary()) -> {ok, #service_enable_how_to{}} | {error, not_found}.
+-spec get_platform_service_how_to(binary(), binary()) -> {ok, binary() | none} | {error, not_found}.
 get_platform_service_how_to(Username, ServiceId)  ->
-    TelegramPlatformId = automate_bot_engine_telegram:get_platform_id(),
-
-    case ServiceId of
-        TelegramPlatformId ->
-            get_telegram_platform_enable_how_to(Username);
-
-        _ ->
-            {error, not_found}
-    end.
-
--spec get_telegram_platform_enable_how_to(binary()) -> {ok, #service_enable_how_to{}}.
-get_telegram_platform_enable_how_to(Username) ->
-    {ok, RegistrationToken} = automate_bot_engine_telegram:get_registration_token(Username),
-    BotName = automate_bot_engine_telegram:get_bot_name(),
-    case get_telegram_services_from_username(Username) of
-        [ Service | _] ->
-            {ok, #service_enable_how_to{ service=Service
-                                       , method='external'
-                                       , extra=#service_enable_extra_telegram{ token=RegistrationToken
-                                                                             , bot_name=BotName
-                                                                             }
-                                       }}
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    case automate_service_registry:get_service_by_id(ServiceId, UserId) of
+        E = {error, not_found} ->
+            E;
+        {ok, #{ module := Module }} ->
+            Module:get_how_to_enable(#{ user_id => UserId, user_name => Username})
     end.

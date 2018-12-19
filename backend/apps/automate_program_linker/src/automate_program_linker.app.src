@@ -1,0 +1,14 @@
+{application, automate_program_linker,
+ [
+  {description, "Auto-mate program linker."},
+  {vsn, "0.0.0"},
+  {registered, []},
+  {applications, [ automate_channel_engine
+                 , automate_services_telegram %% as in, it uses knowledge from inside it
+                 ]},
+  {env, [
+        ]},
+  {modules, []},
+  {licenses, ["Apache 2.0"]},
+  {links, []}
+ ]}.

@@ -6,12 +6,9 @@
 -define(VALUE, <<"value">>).
 
 %%%% Command types
-%% Triggers
--define(COMMAND_TELEGRAM_ON_RECEIVED_COMMAND, <<"chat_whenreceivecommand">>).
-
 %%%%  Operations
-%% Chat
--define(COMMAND_CHAT_SAY, <<"chat_say">>).
+%% Call service
+-define(COMMAND_CALL_SERVICE, <<"command_call_service">>).
 
 %% General control
 -define(COMMAND_WAIT, <<"control_wait">>).
@@ -42,12 +39,25 @@
 -define(VARIABLE_LIST, <<"list">>).
 
 %%%% Signal types
--define(SIGNAL_TELEGRAM_MESSAGE_RECEIVED, telegram_received_message).
 -define(SIGNAL_PROGRAM_TICK, tick).
 
 %%%% Operation parameters
 -define(MILLIS_PER_TICK, 100).
 
-%%%% Thread memory values
--define(TELEGRAM_CHAT_ID, telegram_chat_id).
--define(TELEGRAM_BOT_NAME, telegram_bot_name).
+%%%% Monitors
+%% Values
+-define(WAIT_FOR_MONITOR, <<"wait_for_monitor">>).
+-define(WAIT_FOR_MONITOR_COMMAND, ?WAIT_FOR_MONITOR).
+-define(TRIGGERED_BY_MONITOR, triggered_by_monitor).
+-define(MONITOR_ANY_VALUE, any_value).
+
+%% Fields
+-define(MONITOR_ID, <<"monitor_id">>).
+-define(MONITOR_EXPECTED_VALUE, <<"monitor_expected_value">>).
+
+%%%% Services
+-define(SERVICE_ID, <<"service_id">>).
+-define(SERVICE_CALL_VALUES, <<"service_call_values">>).
+-define(SERVICE_ACTION, <<"service_action">>).
+
+-define(LAST_MONITOR_VALUES, <<"__last_monitor_values__">>).

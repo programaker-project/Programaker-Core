@@ -14,14 +14,16 @@
 %%%===================================================================
 -spec initialize_program(binary(), #user_program_entry{}) -> {ok, #program_state{}}.
 initialize_program(ProgramId,
-                   #user_program_entry{
-                      program_parsed=#{ <<"variables">> := Variables
-                                      , <<"blocks">> := Blocks
-                                      }}) ->
+                   #user_program_entry
+                   { user_id=OwnerUserId
+                   , program_parsed=#{ <<"variables">> := Variables
+                                     , <<"blocks">> := Blocks
+                                     }}) ->
     { ok
     , #program_state{ program_id=ProgramId
                     , variables=Variables
                     , threads=[]
+                    , permissions=#program_permissions{ owner_user_id=OwnerUserId }
                     , triggers=get_triggers(Blocks)
                     }}.
 

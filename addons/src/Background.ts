@@ -1,8 +1,7 @@
-declare const browser;
-
+import { Browser } from "./BrowserApi";
 import * as PlazaApi from "./PlazaApi";
 
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+Browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.command === "addMonitor") {
         const token = message.token;
         const payload = message.message;

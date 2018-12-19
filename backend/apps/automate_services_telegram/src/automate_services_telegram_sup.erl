@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_bot_engine top level supervisor.
+%% @doc automate_services_telegram top level supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_bot_engine_telegram_sup).
+-module(automate_services_telegram_sup).
 
 -behaviour(supervisor).
 
@@ -14,7 +14,7 @@
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
--define(APPLICATION, automate_bot_engine).
+-define(APPLICATION, automate_services_telegram).
 
 %%====================================================================
 %% API functions
@@ -40,14 +40,20 @@ init([]) ->
               , type => worker
               , modules => [pe4kin_telegram_handler]
               }
-           , # { id => automate_bot_engine_telegram_demux
-               , start => {automate_bot_engine_telegram_demux, start_link, [BotName]}
+           , # { id => automate_services_telegram_demux
+               , start => {automate_services_telegram_demux, start_link, [BotName]}
                , restart => permanent
                , shutdown => 2000
                , type => worker
-               , modules => [automate_bot_engine_telegram_demux]
+               , modules => [automate_services_telegram_demux]
                }
-
+           , # { id => automate_services_telegram_storage
+               , start => {automate_services_telegram_storage, start_link, []}
+               , restart => permanent
+               , shutdown => 2000
+               , type => worker
+               , modules => [automate_services_telegram_storage]
+               }
            ]} }.
 
 %%====================================================================

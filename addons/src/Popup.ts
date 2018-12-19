@@ -47,7 +47,7 @@ function check_token() {
         show_ready();
         BrowserApi.get_current_tab()
             .then((tab) => {
-                BrowserApi.run_on_tab(tab, "injected.js", () => {
+                BrowserApi.run_on_tab(tab, "/popup/injected.js", () => {
                     BrowserApi.send_message_to_tab(tab, {plazaInjectedOptions: { username, token }});
                     BrowserApi.close_popup();
                 });

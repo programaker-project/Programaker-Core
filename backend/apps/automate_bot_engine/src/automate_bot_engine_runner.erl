@@ -12,7 +12,6 @@
 -export([ update/1
         , loop/1
         , start_link/1
-        , user_sent_message/4
         ]).
 
 -define(SERVER, ?MODULE).
@@ -34,10 +33,6 @@ update(Pid) ->
         {?SERVER, X} ->
             X
     end.
-
-user_sent_message(Pid, ChatId, Content, BotName) ->
-    io:format("[~p] Message: ~p~n", [Pid, {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName}}]),
-    Pid ! {?SIGNAL_TELEGRAM_MESSAGE_RECEIVED, {ChatId, Content, BotName}}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -98,15 +93,22 @@ loop(State = #state{ check_next_action = CheckContinue
             ?SERVER:loop(update_state(Program));
         {quit, _From} ->
             ok;
-        X = {_, _} ->
-            NextState = case apply(CheckContinue, [State, X]) of
+        X = {Signal, Message} ->
+            NextState = case apply(CheckContinue, [State, {Signal, Message}]) of
                             continue ->
-                                run_tick(State, X);
+                                run_tick(State, {Signal, Message});
                             _ ->
-                                io:format("Ignoring ~p~n", [X]),
+                                io:format("\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [X]),
                                 State
                         end,
-            loop(NextState)
+            loop(NextState);
+        {channel_engine, MonitorId, Message} ->
+            %% Reemit so this will understand it
+            self() ! {?TRIGGERED_BY_MONITOR, { MonitorId, Message }},
+            loop(State);
+        Unknown ->
+            io:fwrite("\033[47;30mIgnoring ~p\033[0m~n", [Unknown]),
+            loop(State)
     end.
 
 -spec run_tick(#state{}, any()) -> #state{}.

@@ -14,7 +14,7 @@ function get_db(): Promise<IDBDatabase> {
         });
 
         request.onerror = (event) => {
-            console.error(event);
+            console.error("Error opening DB:", event, "with code: ", request.error);
             reject(event);
         };
 

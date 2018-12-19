@@ -6,7 +6,7 @@
     {applications, [ kernel
                    , stdlib
                    , automate_storage
-                   , pe4kin
+                   , automate_services_all
     ]},
     {env, [
     ]},
