@@ -11,8 +11,10 @@
   "author": "",
   "license": "UNLICENSED",
   "devDependencies": {
+    "tsc": "^1.20150623.0",
     "tslint": "^5.10.0",
     "typescript": "^2.9.2",
     "typescript-bundle": "^0.8.9"
-  }
+  },
+  "dependencies": {}
 }
