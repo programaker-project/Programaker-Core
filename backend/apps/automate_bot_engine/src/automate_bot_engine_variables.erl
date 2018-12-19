@@ -31,7 +31,13 @@
 resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
                   , ?VALUE := Value
                   }) ->
-    {ok, Value}.
+    {ok, Value};
+
+resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
+                  , ?VALUE := [ #{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
+                                 }]
+                  }) ->
+    automate_monitor_engine:get_last_monitor_result(MonitorId).
 
 -spec resolve_argument(map(), #program_thread{}) -> {ok, any()} | {error, not_found}.
 resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
