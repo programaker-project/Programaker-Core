@@ -1,8 +1,7 @@
 -module(automate_bot_engine_variables).
 
 %% API
--export([ resolve_argument/1
-        , resolve_argument/2
+-export([ resolve_argument/2
 
         , set_thread_value/3
         , get_program_variable/2
@@ -27,17 +26,12 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec resolve_argument(map()) -> {ok, any()}.
-resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
-                  , ?VALUE := Value
-                  }) ->
-    {ok, Value};
 
-resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
-                  , ?VALUE := [ #{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
-                                 }]
-                  }) ->
-    automate_monitor_engine:get_last_monitor_result(MonitorId).
+%% resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
+%%                   , ?VALUE := [ #{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
+%%                                  }]
+%%                   }) ->
+%%     automate_monitor_engine:get_last_monitor_result(MonitorId).
 
 -spec resolve_argument(map(), #program_thread{}) -> {ok, any()} | {error, not_found}.
 resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT

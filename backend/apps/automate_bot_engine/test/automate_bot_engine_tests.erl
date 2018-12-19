@@ -94,7 +94,7 @@ constant_argument_resolution() ->
     Value = example,
     ?assertMatch({ok, Value}, automate_bot_engine_variables:resolve_argument(#{ ?TYPE => ?VARIABLE_CONSTANT
                                                                               , ?VALUE => Value
-                                                                              })).
+                                                                              }, #program_thread{})).
 
 %% Threads
 trigger_thread_with_channel_signal() ->

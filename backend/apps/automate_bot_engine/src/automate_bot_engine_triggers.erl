@@ -80,14 +80,15 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }} },
                ProgramId) ->
 
-    case automate_bot_engine_variables:resolve_argument(Argument) of
+    Thread = #program_thread{ position=[1]
+                            , program=Program
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            },
+
+    case automate_bot_engine_variables:resolve_argument(Argument, Thread) of
         {ok, MessageContent} ->
-            Thread = #program_thread{ position=[1]
-                                    , program=Program
-                                    , global_memory=#{}
-                                    , instruction_memory=#{}
-                                    , program_id=ProgramId
-                                    },
 
             {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
                                 Thread, MonitorId, FullMessage),

@@ -111,7 +111,7 @@ call(send_chat, Values, Thread, UserId) ->
     #{ ?TELEGRAM_MESSAGE_CHAT_ID := ChatId
      , ?TELEGRAM_MESSAGE_BOT_NAME := BotName
      } = LastData,
-    {ok, Arg} = automate_bot_engine_variables:resolve_argument(lists:nth(1, Values)),
+    {ok, Arg} = automate_bot_engine_variables:resolve_argument(lists:nth(1, Values), Thread),
     send_message(BotName, #{ chat_id => ChatId, text => Arg }),
     {ok, Thread}.
 
