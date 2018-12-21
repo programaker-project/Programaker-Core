@@ -11,11 +11,15 @@
         , get_all_services_for_user/1
         , allow_user/2
         , get_service_by_id/2
+
+        , get_config_for_service/2
+        , set_config_for_service/3
         ]).
 
 -include("records.hrl").
 -define(SERVICE_REGISTRY_TABLE, automate_service_registry_services_table).
 -define(USER_SERVICE_ALLOWANCE_TABLE, automate_service_registry_user_service_allowance_table).
+-define(SERVICE_CONFIGURATION_TABLE, automate_service_registry_service_configuration_table).
 
 %%====================================================================
 %% API
@@ -39,6 +43,17 @@ start_link() ->
                                   [ { attributes, record_info(fields, user_service_allowance_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, user_service_allowance_entry }
+                                  , { type, bag }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+    ok = case mnesia:create_table(?SERVICE_CONFIGURATION_TABLE,
+                                  [ { attributes, record_info(fields, service_configuration_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, service_configuration_entry }
                                   , { type, bag }
                                   ]) of
              { atomic, ok } ->
@@ -162,6 +177,40 @@ get_service_by_id(ServiceId, _UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+
+-spec get_config_for_service(binary(), atom()) -> {ok, any()} | {error, not_found}.
+get_config_for_service(ServiceId, Property) ->
+    Transaction = fun() ->
+                          %% TODO: Check user permissions
+                          case mnesia:read(?SERVICE_CONFIGURATION_TABLE, {ServiceId, Property}) of
+                              [] ->
+                                  {error, not_found};
+                              [#service_configuration_entry{value=Value}] ->
+                                  {ok, Value}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+-spec set_config_for_service(binary(), atom(), any()) -> ok.
+set_config_for_service(ServiceId, Property, Value) ->
+    Transaction = fun() ->
+                          %% TODO: Check user permissions
+                          mnesia:write(?SERVICE_CONFIGURATION_TABLE,
+                                       #service_configuration_entry{ configuration_id={ServiceId, Property}
+                                                                   , value=Value
+                                                                   }, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
 
 %%====================================================================
 %% Internal functions

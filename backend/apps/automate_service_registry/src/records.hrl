@@ -30,3 +30,7 @@
 -record(user_service_allowance_entry, { service_id :: binary() | ?SELECTOR_VALUES
                                       , user_id :: binary()    | ?SELECTOR_VALUES
                                       }).
+
+-record(service_configuration_entry, { configuration_id :: { binary(), atom() } %% Uuid, entry
+                                     , value :: any()
+                                     }).

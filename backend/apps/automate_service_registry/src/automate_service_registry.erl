@@ -12,6 +12,9 @@
         , register_public/1
         , register_private/1
         , allow_user/2
+
+        , get_config_for_service/2
+        , set_config_for_service/3
         ]).
 
 -define(SERVER, ?MODULE).
@@ -58,6 +61,14 @@ register_private(ServiceModule) ->
 -spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
 allow_user(ServiceId, UserId) ->
     ?BACKEND:allow_user(ServiceId, UserId).
+
+-spec get_config_for_service(binary(), atom()) -> {ok, any()} | {error, not_found}.
+get_config_for_service(ServiceId, Property) ->
+    ?BACKEND:get_config_for_service(ServiceId, Property).
+
+-spec set_config_for_service(binary(), atom(), any()) -> ok.
+set_config_for_service(ServiceId, Property, Value) ->
+    ?BACKEND:set_config_for_service(ServiceId, Property, Value).
 
 %%====================================================================
 %% Internal functions
