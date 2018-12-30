@@ -159,12 +159,17 @@ get_service_metadata(Id
                        , module := Module
                        }
                     , Username) ->
-    {ok, Enabled} = Module:is_enabled_for_user(Username),
-    #service_metadata{ id=Id
-                     , name=Name
-                     , link=generate_url_for_service_id(Username, Id)
-                     , enabled=Enabled
-                     }.
+    try Module:is_enabled_for_user(Username) of
+        {ok, Enabled} ->
+            #service_metadata{ id=Id
+                             , name=Name
+                             , link=generate_url_for_service_id(Username, Id)
+                             , enabled=Enabled
+                             }
+    catch X:Y ->
+            io:fwrite("Error: ~p:~p~n", [X, Y]),
+            none
+    end.
 
 generate_url_for_service_id(Username, ServiceId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/id/~s", [Username, ServiceId]))).

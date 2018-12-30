@@ -94,6 +94,8 @@ encode_service_list(Services) ->
 encode_service_list([], Acc) ->
     lists:reverse(Acc);
 
+encode_service_list([none | T], Acc) ->
+    encode_service_list(T, Acc);
 encode_service_list([H | T], Acc) ->
     #service_metadata{ id=Id
                      , name=Name
