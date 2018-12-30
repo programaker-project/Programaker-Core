@@ -12,6 +12,8 @@
                   , automate_storage
                   , automate_channel_engine
                   %% , automate_program_linker %% Not an application, just a module
+
+                  , prometheus
                   ]}
 
  , {env, [ {port, 8080} ]}
