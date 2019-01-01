@@ -15,6 +15,7 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
+    automate_rest_api_metrics:prepare(),
     automate_rest_api_sup:start_link().
 
 %%--------------------------------------------------------------------
