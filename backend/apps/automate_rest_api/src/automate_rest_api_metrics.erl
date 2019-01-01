@@ -60,9 +60,19 @@ collect() ->
     lists:foreach(fun (S) ->
                           prometheus_boolean:set(automate_service, [S],
                                                  whereis(S) =/= undefined)
-                  end, Services).
+                  end, Services),
+
+    Bots = supervisor:count_children(automate_bot_engine_runner_sup),
+    prometheus_gauge:set(automate_bot_count, [total],
+                           proplists:get_value(workers, Bots)),
+
+    prometheus_gauge:set(automate_bot_count, [running],
+                           proplists:get_value(active, Bots)),
+
+    ok.
 
 prepare() ->
     prometheus_boolean:new([{name, automate_service}, {labels, [name]}, {help, "State of automate service."}]),
+    prometheus_gauge:new([{name, automate_bot_count}, {labels, [state]}, {help, "State of automate bots running."}]),
 
     ok.
