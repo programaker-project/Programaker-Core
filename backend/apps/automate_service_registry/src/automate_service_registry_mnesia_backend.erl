@@ -14,6 +14,8 @@
 
         , get_config_for_service/2
         , set_config_for_service/3
+
+        , count_all_services/0
         ]).
 
 -include("records.hrl").
@@ -211,6 +213,10 @@ set_config_for_service(ServiceId, Property, Value) ->
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
+
+-spec count_all_services() -> number().
+count_all_services() ->
+    length(mnesia:dirty_all_keys(?SERVICE_REGISTRY_TABLE)).
 
 %%====================================================================
 %% Internal functions

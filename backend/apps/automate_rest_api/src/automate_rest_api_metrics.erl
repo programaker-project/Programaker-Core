@@ -79,6 +79,14 @@ collect() ->
     prometheus_gauge:set(automate_monitor_count, [running],
                            proplists:get_value(active, Monitors)),
 
+    %% Services
+    {ok, PublicServices} = automate_service_registry:get_all_public_services(),
+    prometheus_gauge:set(automate_service_count, [public],
+                         maps:size(PublicServices)),
+
+    prometheus_gauge:set(automate_service_count, [all],
+                         automate_service_registry:count_all_services()),
+
     %% Users
     prometheus_gauge:set(automate_user_count, [registered],
                          automate_storage_stats:count_users()),
@@ -90,6 +98,7 @@ prepare() ->
 
     prometheus_gauge:new([{name, automate_bot_count}, {labels, [state]}, {help, "Automate's bot."}]),
     prometheus_gauge:new([{name, automate_monitor_count}, {labels, [state]}, {help, "Automate's monitor."}]),
+    prometheus_gauge:new([{name, automate_service_count}, {labels, [visibility]}, {help, "Automate's services."}]),
 
     prometheus_gauge:new([{name, automate_user_count}, {labels, [state]}, {help, "Automate's user."}]),
 
