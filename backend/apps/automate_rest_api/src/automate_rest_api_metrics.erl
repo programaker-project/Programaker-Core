@@ -66,10 +66,18 @@ collect() ->
     %% Bots
     Bots = supervisor:count_children(automate_bot_engine_runner_sup),
     prometheus_gauge:set(automate_bot_count, [total],
-                           proplists:get_value(workers, Bots)),
+                         proplists:get_value(workers, Bots)),
 
     prometheus_gauge:set(automate_bot_count, [running],
-                           proplists:get_value(active, Bots)),
+                         proplists:get_value(active, Bots)),
+
+    %% Monitors
+    Monitors = supervisor:count_children(automate_monitor_engine_runner_sup),
+    prometheus_gauge:set(automate_monitor_count, [total],
+                           proplists:get_value(workers, Monitors)),
+
+    prometheus_gauge:set(automate_monitor_count, [running],
+                           proplists:get_value(active, Monitors)),
 
     %% Users
     prometheus_gauge:set(automate_user_count, [registered],
@@ -79,7 +87,10 @@ collect() ->
 
 prepare() ->
     prometheus_boolean:new([{name, automate_service}, {labels, [name]}, {help, "State of automate service."}]),
+
     prometheus_gauge:new([{name, automate_bot_count}, {labels, [state]}, {help, "Automate's bot."}]),
+    prometheus_gauge:new([{name, automate_monitor_count}, {labels, [state]}, {help, "Automate's monitor."}]),
+
     prometheus_gauge:new([{name, automate_user_count}, {labels, [state]}, {help, "Automate's user."}]),
 
     ok.
