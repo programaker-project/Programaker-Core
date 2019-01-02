@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_rest_api public API
+%% @doc automate_stats app API
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_rest_api_app).
+-module(automate_stats_app).
 
 -behaviour(application).
 
@@ -15,7 +15,8 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-    automate_rest_api_sup:start_link().
+    automate_stats:prepare(),
+    automate_stats_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->
