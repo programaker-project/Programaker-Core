@@ -113,12 +113,17 @@ loop(State = #state{ check_next_action = CheckContinue
 
 -spec run_tick(#state{}, any()) -> #state{}.
 run_tick(State = #state{ program=Program }, Message) ->
-    #program_state{threads=OriginalThreads} = Program,
+    #program_state{program_id=Id, threads=OriginalThreads} = Program,
     {ok, TriggeredThreads} = automate_bot_engine_triggers:get_triggered_threads(Program, Message),
 
     ThreadsBefore = TriggeredThreads ++ OriginalThreads,
 
     {ok, {NonRunnedPrograms, RunnedPrograms}} = automate_bot_engine_operations:run_threads(ThreadsBefore, Program, Message),
+
+    lists:foreach(fun (_) ->
+                          automate_stats:log_observation(counter, automate_bot_engine_cycles, [Id])
+                  end,
+                  RunnedPrograms),
 
     ThreadsAfter = NonRunnedPrograms ++ RunnedPrograms,
 
