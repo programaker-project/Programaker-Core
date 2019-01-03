@@ -10,7 +10,7 @@
 %% Application callbacks
 -export([ add_metric/4
         , set_metric/4
-        , log_observation/2
+        , log_observation/3
         , format/1
         ]).
 
@@ -36,9 +36,9 @@ set_metric(Type, Name, Value, Labels) ->
     ok.
 
 
--spec log_observation(counter, atom() | binary()) -> ok.
-log_observation(counter, Name) ->
-    prometheus_counter:inc(Name),
+-spec log_observation(counter, atom() | binary(), [atom() | binary()]) -> ok.
+log_observation(counter, Name, Labels) ->
+    prometheus_counter:inc(Name, Labels),
     ok.
 
 %%====================================================================
@@ -109,13 +109,13 @@ update_internal_metrics() ->
 %% Functions for internal usage
 %%====================================================================
 prepare() ->
-    prometheus_boolean:declare([{name, automate_service}, {labels, [name]}, {help, "State of automate service."}]),
+    add_metric(boolean, automate_service, "State of automate service.", [name]),
 
-    prometheus_gauge:declare([{name, automate_bot_count}, {labels, [state]}, {help, "Automate's bot."}]),
-    prometheus_gauge:declare([{name, automate_monitor_count}, {labels, [state]}, {help, "Automate's monitor."}]),
-    prometheus_gauge:declare([{name, automate_service_count}, {labels, [visibility]}, {help, "Automate's services."}]),
+    add_metric(gauge, automate_bot_count, "Automate's bot.", [state]),
+    add_metric(gauge, automate_monitor_count, "Automate's monitor.", [state]),
+    add_metric(gauge, automate_service_count, "Automate's services.", [visibility]),
 
-    prometheus_gauge:declare([{name, automate_user_count}, {labels, [state]}, {help, "Automate's user."}]),
+    add_metric(gauge, automate_user_count, "Automate's user.", [state]),
     ok.
 
 

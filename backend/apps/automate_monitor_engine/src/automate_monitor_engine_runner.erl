@@ -79,6 +79,7 @@ loop(State=#state{ monitor=Monitor
             loop(State#state{ monitor=NextState })
     end.
 
-run(Monitor) ->
+run(Monitor=#monitor_entry{id=MonitorId, name=MonitorName}) ->
     io:format("Triggering monitor: ~p~n", [Monitor]),
+    automate_stats:log_observation(counter, automate_monitor_trigger, [MonitorId, MonitorName]),
     Monitor.
