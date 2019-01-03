@@ -11,6 +11,8 @@
                   , jiffy
                   , automate_storage
                   , automate_channel_engine
+                  , automate_stats
+
                   %% , automate_program_linker %% Not an application, just a module
                   ]}
 

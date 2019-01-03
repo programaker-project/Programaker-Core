@@ -15,6 +15,8 @@
 
         , get_config_for_service/2
         , set_config_for_service/3
+
+        , count_all_services/0
         ]).
 
 -define(SERVER, ?MODULE).
@@ -69,6 +71,10 @@ get_config_for_service(ServiceId, Property) ->
 -spec set_config_for_service(binary(), atom(), any()) -> ok.
 set_config_for_service(ServiceId, Property, Value) ->
     ?BACKEND:set_config_for_service(ServiceId, Property, Value).
+
+-spec count_all_services() -> number().
+count_all_services() ->
+    ?BACKEND:count_all_services().
 
 %%====================================================================
 %% Internal functions

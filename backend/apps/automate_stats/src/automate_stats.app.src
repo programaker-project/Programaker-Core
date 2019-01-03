@@ -1,0 +1,15 @@
+{application, automate_stats,
+ [ {description, "Stats server, a lightweight wrapper over prometheus."},
+   {vsn, "0.0.0"},
+   {registered, []},
+   {mod, { automate_stats_app, [] }},
+   {applications, [ kernel
+                  , stdlib
+                  , prometheus
+                  ]},
+   {env, [
+         ]},
+   {modules, []},
+   {licenses, ["Apache 2.0"]},
+   {links, []}
+ ]}.

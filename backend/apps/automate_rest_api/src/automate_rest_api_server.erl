@@ -14,7 +14,11 @@
 -spec start_link() -> {ok, pid()}.
 start_link() ->
     Dispatch = cowboy_router:compile(
-                 [{'_', [ {"/api/v0/sessions/register", automate_rest_api_sessions_register, []}
+                 [{'_', [ %% Metrics
+                          {"/metrics", automate_rest_api_metrics, []}
+
+                          %% API
+                        , {"/api/v0/sessions/register", automate_rest_api_sessions_register, []}
                         , {"/api/v0/sessions/check", automate_rest_api_sessions_check, []}
                         , {"/api/v0/sessions/login", automate_rest_api_sessions_login, []}
 
