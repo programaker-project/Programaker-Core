@@ -20,3 +20,23 @@
                                , method :: 'external'
                                , extra :: #service_enable_extra_telegram{}
                                }).
+
+
+-record(telegram_service_registration_entry, { telegram_user_id :: binary() | '_' | '$1' | '$2'
+                                             , internal_user_id :: binary() | '_' | '$1' | '$2'
+                                             }).
+
+-record(telegram_service_user_channel_entry, { internal_user_id :: binary() | '_' | '$1' | '$2'
+                                             , channel_id :: binary() | '_' | '$1' | '$2'
+                                             }).
+
+-record(telegram_service_known_chat_entry, { chat_id :: binary()
+                                           , chat_name :: binary()
+                                           }).
+
+
+-record(telegram_service_chat_member_entry, { user_id :: binary()
+                                            , chat_id :: binary()
+                                            }).
+
+

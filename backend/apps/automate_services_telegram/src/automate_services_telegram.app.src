@@ -8,6 +8,7 @@
                    , automate_channel_engine
                    , automate_service_registry
                    , automate_service_user_registration
+                   , automate_chat_registry
                    , pe4kin
     ]},
     {env, [

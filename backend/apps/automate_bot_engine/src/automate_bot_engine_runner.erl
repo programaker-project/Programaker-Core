@@ -98,7 +98,7 @@ loop(State = #state{ check_next_action = CheckContinue
                             continue ->
                                 run_tick(State, {Signal, Message});
                             _ ->
-                                io:format("\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [X]),
+                                %% io:format("\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [X]),
                                 State
                         end,
             loop(NextState);
@@ -107,7 +107,7 @@ loop(State = #state{ check_next_action = CheckContinue
             self() ! {?TRIGGERED_BY_MONITOR, { MonitorId, Message }},
             loop(State);
         Unknown ->
-            io:fwrite("\033[47;30mIgnoring ~p\033[0m~n", [Unknown]),
+            %% io:fwrite("\033[47;30mIgnoring ~p\033[0m~n", [Unknown]),
             loop(State)
     end.
 
@@ -146,7 +146,7 @@ run_tick(State = #state{ program=Program }, Message) ->
 
 build_check_next_action(ExpectedMessages) ->
     fun(_, {Type, _Content}) ->
-            io:format("Received ~p expecting ~p :: ~p~n", [Type, ExpectedMessages, lists:member(Type, ExpectedMessages)]),
+            %% io:format("Received ~p expecting ~p :: ~p~n", [Type, ExpectedMessages, lists:member(Type, ExpectedMessages)]),
             case lists:member(Type, ExpectedMessages) of
                 true ->
                     continue;
