@@ -7,15 +7,21 @@ export default class ScratchProgramSerializer {
         const variables = subelements.shift();
         const blocks = subelements;
 
-        const serialized = {
-           variables: ScratchProgramSerializer.serializeVariables(variables as HTMLElement),
-           blocks: blocks.map(block => ScratchProgramSerializer.serializeBlock(block as HTMLElement)),
-        };
+        try {
+            const serialized = {
+                variables: ScratchProgramSerializer.serializeVariables(variables as HTMLElement),
+                blocks: blocks.map(block => ScratchProgramSerializer.serializeBlock(block as HTMLElement)),
+            };
 
-        return {
-          parsed: serialized,
-          orig: Blockly.Xml.domToPrettyText(xml),
-        };
+            return {
+                parsed: serialized,
+                orig: Blockly.Xml.domToPrettyText(xml),
+            };
+        }
+        catch(e) {
+            console.error("Serialization error:", e);
+            throw e;
+        }
     }
 
     // ====================================================

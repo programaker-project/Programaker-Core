@@ -10,11 +10,13 @@ import * as progbar from './ui/progbar';
 /// <reference path="./blocks/blockly-core.d.ts" />
 import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
 import { MonitorService } from './monitor.service';
+import { ChatService } from './chat.service';
+import { Chat } from './chat';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [MonitorService, ProgramService],
+    providers: [MonitorService, ProgramService, ChatService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
@@ -36,6 +38,7 @@ export class ProgramDetailComponent implements OnInit {
     constructor (
       private monitorService: MonitorService,
       private programService: ProgramService,
+      private chatService: ChatService,
       private route: ActivatedRoute,
       private location: Location
   ) {
@@ -69,7 +72,9 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     prepareWorkspace(): Promise<void> {
-        return new Toolbox(this.monitorService).inject().then(() => { this.injectWorkspace(); });
+        return this.chatService.getAvailableChats().then((chats: Chat[]) => {
+            return new Toolbox(this.monitorService, chats).inject().then(() => { this.injectWorkspace(); });
+        });
     }
 
     injectWorkspace() {
