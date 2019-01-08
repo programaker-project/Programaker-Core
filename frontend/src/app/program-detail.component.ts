@@ -13,6 +13,9 @@ import { MonitorService } from './monitor.service';
 import { ChatService } from './chat.service';
 import { Chat } from './chat';
 
+import { MatDialog } from '@angular/material/dialog';
+import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
+
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
@@ -40,7 +43,8 @@ export class ProgramDetailComponent implements OnInit {
       private programService: ProgramService,
       private chatService: ChatService,
       private route: ActivatedRoute,
-      private location: Location
+      private location: Location,
+      public dialog: MatDialog,
   ) {
       this.monitorService = monitorService;
       this.programService = programService;
@@ -276,5 +280,14 @@ export class ProgramDetailComponent implements OnInit {
                                             serialized.parsed,
                                             serialized.orig);
         this.programService.updateProgram(this.programUserId, program);
+    }
+
+    renameProgram() {
+        const dialogRef = this.dialog.open(RenameProgramDialogComponent, {
+            data: this.program
+        });
+
+        dialogRef.afterClosed().subscribe(result => {});
+
     }
 }

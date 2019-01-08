@@ -10,6 +10,10 @@
     border-bottom: 1px solid #AAA;
 }
 
+button#program-rename-button {
+    vertical-align: super;
+}
+
 button#program-start-button {
     vertical-align: super;
 }

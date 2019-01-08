@@ -1,0 +1,16 @@
+<h2 mat-dialog-title>Renaming <span class="program-name">{{ program.name }}</span> program</h2>
+
+<mat-dialog-content>
+    Introduce the new name:
+    <mat-form-field class="full-size col-sm-12">
+        <input matInput  class="col-sm-12"
+               [(ngModel)]="program_name"
+               placeholder="Program name"
+               type="text"
+               name="program_name" />
+    </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button class="cancellation" mat-button mat-dialog-close>Cancel</button>
+    <button class="confirmation" color="primary" mat-button mat-dialog-close>OK, change</button>
+</mat-dialog-actions>
