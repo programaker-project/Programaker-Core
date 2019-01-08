@@ -1,0 +1,17 @@
+{application,
+ automate_chat_registry,
+ [ {description, "Auto-mate chat registry."},
+   {vsn, "0.0.0"},
+   {registered, []},
+   {mod, { automate_chat_registry_app, [] }},
+   {applications, [ kernel
+                  , stdlib
+                  , mnesia
+                  , automate_storage
+                  ]},
+   {env, [
+         ]},
+   {modules, []},
+   {licenses, ["Apache 2.0"]},
+   {links, []}
+ ]}.

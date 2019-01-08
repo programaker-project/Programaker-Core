@@ -1,5 +1,6 @@
 import { MonitorService } from '../monitor.service';
 import { MonitorMetadata } from '../monitor';
+import { Chat } from '../chat';
 declare const Blockly;
 
 const MonitorPrimaryColor = '#CC55CC';
@@ -7,15 +8,18 @@ const MonitorSecondaryColor = '#773377';
 
 export class Toolbox {
     monitorService: MonitorService;
+    chats: Chat[];
 
     static alreadyRegisteredException(e: Error): boolean {
         return e.message.match(/Error: Extension .* is already registered./) !== null;
     }
 
     constructor(
-        monitorService: MonitorService
+        monitorService: MonitorService,
+        chats: Chat[],
     ) {
         this.monitorService = monitorService;
+        this.chats = chats;
     }
 
     async inject(): Promise<void> {
@@ -23,6 +27,16 @@ export class Toolbox {
 
         this.injectBlocks(monitors);
         this.injectToolbox(monitors);
+    }
+
+    getChatOptions() {
+        const results = [];
+
+        for (const chat of this.chats) {
+            results.push([chat.name, chat.prefix + ':' + chat.id]);
+        }
+
+        return results;
     }
 
     injectBlocks(monitors: MonitorMetadata[]) {
@@ -123,6 +137,30 @@ export class Toolbox {
             }
         };
 
+        const options = this.getChatOptions();
+
+        Blockly.Blocks['chat_say_on_channel'] = {
+            init: function() {
+                this.jsonInit({
+                    'id': 'chat_say',
+                    'message0': 'On channel %1 say %2',
+                    'args0': [
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'CHANNEL_VALUE',
+                            'options': options,
+                        },
+                        {
+                            'type': 'input_value',
+                            'name': 'VALUE'
+                        },
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_chat', 'shape_statement']
+                });
+            }
+        };
+
         try {
             Blockly.Extensions.register('colours_chat',
                                 function() {
@@ -185,6 +223,13 @@ export class Toolbox {
           '</value>' +
         '</block>' +
         '<block type="chat_say" id="chat_say">' +
+          '<value name="VALUE">' +
+            '<shadow type="text">' +
+              '<field name="TEXT">Hello!</field>' +
+            '</shadow>' +
+          '</value>' +
+        '</block>' +
+        '<block type="chat_say_on_channel" id="chat_say_on_channel">' +
           '<value name="VALUE">' +
             '<shadow type="text">' +
               '<field name="TEXT">Hello!</field>' +

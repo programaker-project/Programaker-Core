@@ -157,12 +157,16 @@ format_status(_Opt, Status) ->
 handle_telegram_update({pe4kin_update,
                         BotName,
                         Message = #{<<"message">> :=
-                                        #{<<"chat">> := #{ <<"id">> := ChatId },
+                                        #{<<"chat">> := #{ <<"id">> := ChatId
+                                                         } = Chat,
                                           <<"date">> := _MessageDate,
                                           <<"from">> := #{ <<"id">> := FromId },
                                           <<"message_id">> := _MessageId,
                                           <<"text">> := Content},
                                     <<"update_id">> := _UpdateId}}) ->
+
+    automate_services_telegram_storage:register_chat(ChatId, get_title(Chat)),
+    automate_services_telegram_storage:register_user_in_chat(ChatId, FromId),
     case automate_services_telegram:telegram_user_to_internal(FromId) of
         {ok, InternalUser} ->
             {ok, ChannelId} = automate_services_telegram_storage:get_or_gen_user_channel(InternalUser),
@@ -175,8 +179,74 @@ handle_telegram_update({pe4kin_update,
             handle_from_new_user(Message, Content, FromId, ChatId, BotName)
     end;
 
-handle_telegram_update({pe4kin_update, _BotName, Message}) ->
-    io:format("[Telegram Demux]Unknown message format: ~p~n", [Message]).
+handle_telegram_update({pe4kin_update, BotName,
+                        #{<<"message">> :=
+                              #{ <<"chat">> := #{ <<"id">> := ChatId
+                                                , <<"title">> := Title
+                                                }
+                               , <<"from">> := #{ <<"id">> := FromId }
+                               , <<"new_chat_member">> :=
+                                    #{ <<"is_bot">> :=
+                                          true
+                                     , <<"username">> :=
+                                          BotName
+                                     }
+                               }
+                         }}) ->
+    io:fwrite("Added to TG chat ~p by ~p~n", [ChatId, FromId]),
+    automate_services_telegram_storage:register_chat(ChatId, Title),
+    automate_services_telegram_storage:register_user_in_chat(ChatId, FromId),
+    ok;
+
+handle_telegram_update({pe4kin_update, BotName,
+                        #{<<"message">> :=
+                              #{ <<"chat">> :=
+                                     #{<<"id">> :=
+                                           ChatId} = Chat
+                               , <<"left_chat_member">> :=
+                                     #{ <<"is_bot">> :=
+                                          true
+                                      , <<"username">> :=
+                                            BotName
+                                      }
+                               }
+                         }}) ->
+    io:fwrite("Kicked from TG chat: ~p~n", [Chat]),
+    automate_services_telegram_storage:unregister_chat(ChatId),
+    ok;
+
+handle_telegram_update({pe4kin_update, _BotName,
+                        #{<<"message">> :=
+                              #{<<"chat">> :=
+                                    #{ <<"id">> :=
+                                           ChatId },
+                                <<"left_chat_member">> :=
+                                    #{ <<"id">> :=
+                                           TelegramUserId
+                                     }
+                               }}}) ->
+    io:fwrite("Other user (~p) kicked from TG chat: ~p~n", [TelegramUserId, ChatId]),
+    automate_services_telegram_storage:unregister_user_in_chat(ChatId, TelegramUserId),
+    ok;
+
+handle_telegram_update({pe4kin_update, _BotName,
+                        #{<<"message">> :=
+                              #{<<"chat">> :=
+                                    #{ <<"id">> := ChatId
+                                     , <<"title">> := ChatTitle
+                                     },
+                                <<"new_chat_member">> :=
+                                    #{ <<"id">> :=
+                                           TelegramUserId
+                                     }
+                               }}}) ->
+    io:fwrite("Other user (~p) added to TG chat: ~p~n", [TelegramUserId, ChatId]),
+    automate_services_telegram_storage:register_chat(ChatId, ChatTitle),
+    automate_services_telegram_storage:register_user_in_chat(ChatId, TelegramUserId),
+    ok;
+
+handle_telegram_update({pe4kin_update, BotName, Message}) ->
+    io:format("[Telegram Demux]Unknown message format: ~p: ~p~n", [BotName, Message]).
 
 -spec handle_from_new_user(map(),_,_,_,_) -> 'ok'.
 handle_from_new_user(_Message, <<"/register ", RawRegistrationToken/binary>>, UserId, ChatId, BotName) ->
@@ -202,3 +272,11 @@ handle_from_new_user(_Message, _Content, _UserId, ChatId, BotName) ->
     ResponseText = <<"Sorry, I didnt get that!\nSay /start to see what can I do.">>,
     {ok, _} = automate_services_telegram:send_message(BotName, #{chat_id => ChatId, text => ResponseText}),
     ok.
+
+
+get_title(#{ <<"title">> := Title }) ->
+    Title;
+get_title(#{ <<"username">> := Title }) ->
+    Title.
+
+

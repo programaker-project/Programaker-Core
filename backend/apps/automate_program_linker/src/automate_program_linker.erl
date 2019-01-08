@@ -22,6 +22,18 @@ relink_subprogram(Subprogram, UserId) ->
     lists:map(fun (Block) -> relink_block(Block, UserId) end, Subprogram).
 
 %% Relink chat_say
+relink_block(Block=#{ ?TYPE := <<"chat_say_on_channel">>, ?ARGUMENTS := Arguments }, UserId) ->
+    Block#{ ?TYPE := ?COMMAND_CALL_SERVICE
+          , ?ARGUMENTS := #{ ?SERVICE_ACTION => send_chat_on_channel
+                           , ?SERVICE_ID => automate_services_telegram:get_uuid()
+                           , ?SERVICE_CALL_VALUES => lists:map(
+                                                       fun(Arg) ->
+                                                               relink_block_values(Arg, UserId)
+                                                       end,
+                                                       Arguments)
+                           }
+          };
+
 relink_block(Block=#{ ?TYPE := <<"chat_say">>, ?ARGUMENTS := Arguments }, UserId) ->
     Block#{ ?TYPE := ?COMMAND_CALL_SERVICE
           , ?ARGUMENTS := #{ ?SERVICE_ACTION => send_chat

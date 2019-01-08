@@ -304,7 +304,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_CALL_SERVICE
     {ran_this_tick, increment_position(NewThread)};
 
 run_instruction(Instruction, _Thread, _State, Message) ->
-    io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
+    %% io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
     {did_not_run, waiting}.
 
 increment_position(Thread = #program_thread{position=Position}) ->

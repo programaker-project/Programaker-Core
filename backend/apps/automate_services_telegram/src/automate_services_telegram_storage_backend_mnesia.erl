@@ -2,24 +2,30 @@
 
 -define(TELEGRAM_SERVICE_REGISTRATION_TABLE, automate_telegram_service_registration_table).
 -define(TELEGRAM_SERVICE_USER_CHANNEL_TABLE, automate_telegram_service_user_channel_table).
+-define(TELEGRAM_SERVICE_CHATS_KNOWN_TABLE, automate_telegram_service_chats_known_table).
+-define(TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE, automate_telegram_service_chats_members_table).
 
--record(telegram_service_registration_entry, { telegram_user_id :: binary() | '_' | '$1' | '$2'
-                                             , internal_user_id :: binary() | '_' | '$1' | '$2'
-                                             }).
-
--record(telegram_service_user_channel_entry, { internal_user_id :: binary() | '_' | '$1' | '$2'
-                                             , channel_id :: binary() | '_' | '$1' | '$2'
-                                             }).
-
+-include("records.hrl").
+-include("../../automate_chat_registry/src/records.hrl").
 -include("../../automate_service_user_registration/src/records.hrl").
 
 -export([ start_link/0
         , get_internal_user_for_telegram_id/1
+        , get_telegram_id_from_userid/1
         , finish_telegram_registration/2
         , user_has_registered/1
 
         , get_or_gen_user_channel/1
+        , count_chats/0
+        , get_chats_for_user/1
+
+        , register_chat/2
+        , unregister_chat/1
+        , register_user_in_chat/2
+        , unregister_user_in_chat/2
+
         ]).
+
 
 %%====================================================================
 %% API functions
@@ -52,8 +58,31 @@ start_link() ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
-    ignore.
 
+    ok = case mnesia:create_table(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE,
+                                  [ { attributes, record_info(fields, telegram_service_known_chat_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, telegram_service_known_chat_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    ok = case mnesia:create_table(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE,
+                                  [ { attributes, record_info(fields, telegram_service_chat_member_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, telegram_service_chat_member_entry }
+                                  , { type, bag }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+    ignore.
 
 -spec get_internal_user_for_telegram_id(binary()) -> {ok, binary()} | {error, not_found}.
 get_internal_user_for_telegram_id(TelegramId) ->
@@ -170,3 +199,180 @@ get_or_gen_user_channel(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+%% Chats
+-spec count_chats() -> number.
+count_chats() ->
+    length(mnesia:dirty_all_keys(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE)).
+
+-spec get_chats_for_user(binary()) -> {ok, [#chat_entry{}]}.
+get_chats_for_user(TelegramUserId) ->
+    MatchHead = #telegram_service_chat_member_entry { user_id='$1'
+                                                    , chat_id='$2'
+                                                    },
+
+    %% Check that neither the id, username or email matches another
+    Guard = {'==', '$1', TelegramUserId},
+    ResultColumn = '$2',
+    ServiceMatcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    Transaction = fun() ->
+                          io:fwrite("Matcher: ~p~n", [ServiceMatcher]),
+                          ChatIds = mnesia:select(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE, ServiceMatcher),
+                          io:fwrite("Chats: ~p~n", [ChatIds]),
+                          Chats = lists:flatmap(fun (ChatId) ->
+                                                        mnesia:read(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE, ChatId)
+                                                end, ChatIds),
+                          {ok, lists:map(fun translate_chat_metadata/1, Chats)}
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+
+-spec register_chat(number(), binary()) -> {ok, new_chat | already_registered}.
+register_chat(ChatId, ChatName) ->
+    Id = integer_to_binary(ChatId),
+    Transaction = fun() ->
+                          case  mnesia:read(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE, ChatId) of
+                              [] ->
+                                  ok = mnesia:write(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE,
+                                                    #telegram_service_known_chat_entry{ chat_id=Id
+                                                                                      , chat_name=ChatName
+                                                                                      }, write),
+                                  {ok, new_chat};
+                              _ ->
+                                  {ok, already_registered}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+-spec unregister_chat(number()) -> {ok, unregistered_now | already_unregistered}.
+unregister_chat(ChatId) ->
+    Id = integer_to_binary(ChatId),
+    Transaction = fun() ->
+                          case mnesia:read(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE, Id) of
+                              [] ->
+                                  {ok, already_unregistered};
+                              _ ->
+                                  %% Note that it's better do perform the select
+                                  %% *BEFORE* doing changes to the table
+                                  MatchHead = #telegram_service_chat_member_entry { user_id='_'
+                                                                                  , chat_id='$1'
+                                                                                  },
+
+                                  %% Check that neither the id, username or email matches another
+                                  Guard = {'==', '$1', Id},
+                                  ResultColumn = '$_',
+                                  ServiceMatcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+                                  Members = mnesia:select(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE, ServiceMatcher),
+                                  lists:foreach(fun (Member) ->
+                                                        ok = mnesia:delete_object(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE,
+                                                                                  Member,
+                                                                                  write)
+                                                end, Members),
+
+                                  ok = mnesia:delete(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE, Id, write),
+                                  {ok, unregistered_now}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+-spec register_user_in_chat(number(), number()) -> {ok, registered_now | already_registered} | {error, chat_not_found}.
+register_user_in_chat(NumChatId, UserId) ->
+    ChatId = integer_to_binary(NumChatId),
+
+    Transaction = fun() ->
+                          case mnesia:read(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE, ChatId) of
+                              [] ->
+                                  {error, chat_not_found};
+                              _ ->
+                                  MatchHead = #telegram_service_chat_member_entry { user_id='$1'
+                                                                                  , chat_id='$2'
+                                                                                  },
+
+                                  %% Check that neither the id, username or email matches another
+                                  Guard = {'andthen', {'==', '$1', UserId}, {'==', '$2', ChatId}},
+                                  ResultColumn = '_',
+                                  ServiceMatcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+                                  case mnesia:select(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE, ServiceMatcher) of
+                                      [] ->
+                                          ok = mnesia:write(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE,
+                                                            #telegram_service_chat_member_entry{ user_id=UserId
+                                                                                               , chat_id=ChatId
+                                                                                               }, write),
+                                          {ok, registered_now};
+                                      _ ->
+                                          {ok, already_registered}
+                                  end
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+-spec unregister_user_in_chat(number(), number()) -> {ok, unregistered_now | already_unregistered} | {error, chat_not_found}.
+unregister_user_in_chat(NumChatId, UserId) ->
+    ChatId = integer_to_binary(NumChatId),
+
+    Transaction = fun() ->
+                          case mnesia:read(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE, ChatId) of
+                              [] ->
+                                  {error, chat_not_found};
+                              _ ->
+                                  MatchHead = #telegram_service_chat_member_entry { user_id='$1'
+                                                                                  , chat_id='$2'
+                                                                                  },
+
+                                  %% Check that neither the id, username or email matches another
+                                  Guard = {'andthen', {'==', '$1', UserId}, {'==', '$2', ChatId}},
+                                  ResultColumn = '_',
+                                  ServiceMatcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+                                  case mnesia:select(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE, ServiceMatcher) of
+                                      [] ->
+                                          {ok, already_unregistered};
+                                      Membership ->
+                                          ok = mnesia:delete_object(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE,
+                                                                    Membership,
+                                                                    write)
+                                  end
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+-spec translate_chat_metadata(#telegram_service_known_chat_entry{}) -> #chat_entry{}.
+translate_chat_metadata(#telegram_service_known_chat_entry{ chat_id=Id
+                                                          , chat_name=Name
+                                                          }) ->
+    #chat_entry{ chat_id={ automate_services_telegram_chat_registry:get_prefix()
+                         , Id
+                         }
+               , chat_name=Name
+               }.
