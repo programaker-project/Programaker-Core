@@ -5,6 +5,8 @@
   {registered, []},
   {mod, { automate_services_time_app, [] }},
   {applications, [ automate_service_registry
+                 , automate_channel_engine
+                 , automate_monitor_engine
                  ]},
   {env, [
         ]},

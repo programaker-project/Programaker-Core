@@ -16,7 +16,7 @@
 
 start(_StartType, _StartArgs) ->
     {ok, _} = automate_service_registry:register_public(automate_services_time),
-    {ok, self()}.
+    automate_services_time:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->

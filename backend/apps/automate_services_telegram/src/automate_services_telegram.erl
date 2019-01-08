@@ -108,8 +108,12 @@ get_monitor_id(UserId) ->
 call(send_chat_on_channel, Values, Thread, UserId) ->
 
     {ok, UserMonitor} = get_monitor_id(UserId),
-    {ok, LastData} = automate_bot_engine_variables:get_last_monitor_value(Thread, UserMonitor),
-    #{ ?TELEGRAM_MESSAGE_BOT_NAME := BotName } = LastData,
+    BotName = case automate_bot_engine_variables:get_last_monitor_value(Thread, UserMonitor) of
+                  {ok, #{ ?TELEGRAM_MESSAGE_BOT_NAME := LastBotName }} ->
+                      LastBotName;
+                  _ ->
+                      get_bot_name()
+              end,
 
     ChannelInfo = maps:get(<<"value">>, lists:nth(1, Values), Thread),
     ChatId = binary_to_integer(lists:nth(2, binary:split(ChannelInfo, <<":">>))),
