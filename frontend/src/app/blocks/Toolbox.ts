@@ -163,28 +163,30 @@ export class Toolbox {
         };
 
         const options = this.getChatOptions();
-
-        Blockly.Blocks['chat_say_on_channel'] = {
-            init: function() {
-                this.jsonInit({
-                    'id': 'chat_say',
-                    'message0': 'On channel %1 say %2',
-                    'args0': [
-                        {
-                            'type': 'field_dropdown',
-                            'name': 'CHANNEL_VALUE',
-                            'options': options,
-                        },
-                        {
-                            'type': 'input_value',
-                            'name': 'VALUE'
-                        },
-                    ],
-                    'category': Blockly.Categories.event,
-                    'extensions': ['colours_chat', 'shape_statement']
-                });
-            }
-        };
+        console.log(options.length);
+        if (options.length > 0) {
+            Blockly.Blocks['chat_say_on_channel'] = {
+                init: function() {
+                    this.jsonInit({
+                        'id': 'chat_say',
+                        'message0': 'On channel %1 say %2',
+                        'args0': [
+                            {
+                                'type': 'field_dropdown',
+                                'name': 'CHANNEL_VALUE',
+                                'options': options,
+                            },
+                            {
+                                'type': 'input_value',
+                                'name': 'VALUE'
+                            },
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_chat', 'shape_statement']
+                    });
+                }
+            };
+        }
 
         try {
             Blockly.Extensions.register('colours_chat',
@@ -239,7 +241,7 @@ export class Toolbox {
 
         Blockly.Blocks.factoryDefaultToolbox = Blockly.Blocks.defaultToolbox;
 
-        const chatCategory = '<category name="Chat" colour="#5555CC" secondaryColour="#333377">' +
+        let chatCategory = '<category name="Chat" colour="#5555CC" secondaryColour="#333377">' +
         '<block type="chat_whenreceivecommand" id="chat_whenreceivecommand">' +
           '<value name="VALUE">' +
             '<shadow type="text">' +
@@ -253,15 +255,18 @@ export class Toolbox {
               '<field name="TEXT">Hello!</field>' +
             '</shadow>' +
           '</value>' +
-        '</block>' +
-        '<block type="chat_say_on_channel" id="chat_say_on_channel">' +
-          '<value name="VALUE">' +
-            '<shadow type="text">' +
-              '<field name="TEXT">Hello!</field>' +
-            '</shadow>' +
-          '</value>' +
-        '</block>' +
-        '</category>';
+        '</block>';
+
+        if (this.getChatOptions().length > 0) {
+            chatCategory += '<block type="chat_say_on_channel" id="chat_say_on_channel">' +
+                             '<value name="VALUE">' +
+                               '<shadow type="text">' +
+                                 '<field name="TEXT">Hello!</field>' +
+                               '</shadow>' +
+                             '</value>' +
+                           '</block>';
+        }
+        chatCategory += '</category>';
 
         const eventsCategory = ''; //   '<category name="Events" colour="#FFD500" secondaryColour="#CC9900">' +
         //   '<block type="event_broadcast" id="event_broadcast">' +
