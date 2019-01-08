@@ -46,6 +46,31 @@ export class Toolbox {
     }
 
     injectTimeBlocks() {
+        Blockly.Blocks['time_trigger_at'] = {
+            init: function() {
+                this.jsonInit({
+                    'id': 'time_trigger_at',
+                    'message0': 'Every day at %1:%2:%3 (UTC)',
+                    'args0': [
+                        {
+                            'type': 'input_value',
+                            'name': 'HOUR'
+                        },
+                        {
+                            'type': 'input_value',
+                            'name': 'MINUTE'
+                        },
+                        {
+                            'type': 'input_value',
+                            'name': 'SECOND'
+                        },
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'shape_hat']
+                });
+            }
+        };
+
         Blockly.Blocks['time_get_utc_hour'] = {
             init: function() {
                 this.jsonInit({
@@ -462,6 +487,23 @@ export class Toolbox {
 
         const timeCategory = '<category name="Time" colour="#85CCB3" secondaryColour="#1D1D5F">' +
             // Note the block id on both the type and id.
+            '<block type="time_trigger_at" id="time_trigger_at">' +
+              '<value name="HOUR">' +
+                '<shadow type="math_positive_number">' +
+                  '<field name="NUM">19</field>' +
+                '</shadow>' +
+              '</value>' +
+              '<value name="MINUTE">' +
+                '<shadow type="math_positive_number">' +
+                  '<field name="NUM">10</field>' +
+                '</shadow>' +
+              '</value>' +
+              '<value name="SECOND">' +
+                '<shadow type="math_positive_number">' +
+                  '<field name="NUM">00</field>' +
+                '</shadow>' +
+              '</value>' +
+            '</block>' +
             '<block type="time_get_utc_hour" id="time_get_utc_hour"></block>' +
             '<block type="time_get_utc_minute" id="time_get_utc_minute"></block>' +
             '<block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>' +
