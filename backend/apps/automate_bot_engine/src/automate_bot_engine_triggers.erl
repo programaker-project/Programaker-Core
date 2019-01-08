@@ -108,5 +108,5 @@ notify_trigger_not_matched(Trigger, Message, _ProgramId) ->
     io:format("Trigger (~p) not matching (~p) ~n", [Message, Trigger]).
 -else.
 notify_trigger_not_matched(_Trigger, Message, _ProgramId) ->
-    io:format("No trigger (~p), ~n", [Message]).
+    ok.
 -endif.

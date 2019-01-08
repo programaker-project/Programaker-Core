@@ -75,6 +75,22 @@ export default class ScratchProgramSerializer {
                         "monitor_expected_value": element.args[0]
                     }
                 }
+
+            case "time_trigger_at":
+                // This implies a call to a monitor
+                {
+                    element.type = "wait_for_monitor";
+                    element.args = {
+                        "monitor_id": { "from_service": "0093325b-373f-4f1c-bace-4532cce79df4" }, // Timekeeping monitor ID
+                        "monitor_expected_value": {
+                            "type": "constant",
+                            "value": ( element.args[0].value.replace(/^0*(\d)$/, "$1")  + ':'
+                                       + element.args[1].value.replace(/^0*(\d)$/, "$1")  + ':'
+                                       + element.args[2].value.replace(/^0*(\d)$/, "$1")
+                                     )
+                        }
+                    }
+                }
         }
     }
 
