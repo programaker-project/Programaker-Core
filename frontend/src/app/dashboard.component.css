@@ -18,7 +18,8 @@ mat-card.not-enabled {
 }
 
 mat-card.enabled {
-    border: 1ex solid greenyellow;
+    background-color: #227e00;
+    color: #fff;
 }
 
 
