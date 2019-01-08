@@ -105,6 +105,19 @@ get_description() ->
 get_monitor_id(UserId) ->
     automate_services_telegram_storage:get_or_gen_user_channel(UserId).
 
+call(send_chat_on_channel, Values, Thread, UserId) ->
+
+    {ok, UserMonitor} = get_monitor_id(UserId),
+    {ok, LastData} = automate_bot_engine_variables:get_last_monitor_value(Thread, UserMonitor),
+    #{ ?TELEGRAM_MESSAGE_BOT_NAME := BotName } = LastData,
+
+    ChannelInfo = maps:get(<<"value">>, lists:nth(1, Values), Thread),
+    ChatId = binary_to_integer(lists:nth(2, binary:split(ChannelInfo, <<":">>))),
+
+    {ok, Arg} = automate_bot_engine_variables:resolve_argument(lists:nth(2, Values), Thread),
+    send_message(BotName, #{ chat_id => ChatId, text => Arg }),
+    {ok, Thread, none};
+
 call(send_chat, Values, Thread, UserId) ->
     {ok, UserMonitor} = get_monitor_id(UserId),
     {ok, LastData} = automate_bot_engine_variables:get_last_monitor_value(Thread, UserMonitor),

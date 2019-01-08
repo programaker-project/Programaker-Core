@@ -143,18 +143,17 @@ export class Toolbox {
             init: function() {
                 this.jsonInit({
                     'id': 'chat_say',
-                    'message0': 'Say %1 on channel %2',
+                    'message0': 'On channel %1 say %2',
                     'args0': [
-                        {
-                            'type': 'input_value',
-                            'name': 'VALUE'
-                        },
                         {
                             'type': 'field_dropdown',
                             'name': 'CHANNEL_VALUE',
                             'options': options,
-                        }
-
+                        },
+                        {
+                            'type': 'input_value',
+                            'name': 'VALUE'
+                        },
                     ],
                     'category': Blockly.Categories.event,
                     'extensions': ['colours_chat', 'shape_statement']
@@ -231,11 +230,6 @@ export class Toolbox {
           '</value>' +
         '</block>' +
         '<block type="chat_say_on_channel" id="chat_say_on_channel">' +
-          '<value name="VALUE">' +
-            '<shadow type="text">' +
-              '<field name="TEXT">Hello!</field>' +
-            '</shadow>' +
-          '</value>' +
           '<value name="VALUE">' +
             '<shadow type="text">' +
               '<field name="TEXT">Hello!</field>' +
