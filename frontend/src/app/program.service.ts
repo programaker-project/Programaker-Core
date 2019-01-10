@@ -95,4 +95,10 @@ export class ProgramService {
                     })
                     .toPromise()));
     }
+
+    deleteProgram(username: string, program: ProgramContent): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => resolve(true), 1000);
+        });
+    }
 }

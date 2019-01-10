@@ -15,6 +15,7 @@ import { Chat } from './chat';
 
 import { MatDialog } from '@angular/material/dialog';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
+import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 
 @Component({
     selector: 'app-my-program-detail',
@@ -312,6 +313,32 @@ export class ProgramDetailComponent implements OnInit {
                                 console.log("Changing name to", this.program);
                             }));
             progbar.track(rename);
+        });
+    }
+
+    deleteProgram() {
+        const programData = { name: this.program.name };
+
+        const dialogRef = this.dialog.open(DeleteProgramDialogComponent, {
+            data: programData
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            const deletion = (this.programService.deleteProgram(this.programUserId, this.program)
+                            .catch(() => { return false; })
+                            .then(success => {
+                                if (!success) {
+                                    return;
+                                }
+
+                                this.goBack();
+                            }));
+            progbar.track(deletion);
         });
     }
 }

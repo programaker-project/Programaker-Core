@@ -16,6 +16,11 @@
             <mat-icon class="action-icon">play_arrow</mat-icon>
             Start
         </button>
+        <button id="program-delete-button" color="warn"
+                *ngIf="program !== undefined"
+                (click)="deleteProgram()" mat-button>
+            <mat-icon>delete_forever</mat-icon> Delete
+        </button>
     </div>
 
     <div id="workspace"></div>

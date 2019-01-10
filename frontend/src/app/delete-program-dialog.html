@@ -1,0 +1,14 @@
+<h2 mat-dialog-title>Are you sure you want to delete <span class="program-name">{{ program_name }}</span>?</h2>
+
+<mat-dialog-content>
+    Note that this change cannot be undone!
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
+    <button class="confirmation"
+            type="submit"
+            color="warn"
+            mat-button
+            [mat-dialog-close]="true"
+            mat-raised-button>Delete</button>
+</mat-dialog-actions>
