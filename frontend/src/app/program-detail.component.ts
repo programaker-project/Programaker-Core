@@ -292,9 +292,11 @@ export class ProgramDetailComponent implements OnInit {
         });
 
         dialogRef.afterClosed().subscribe(result => {
-            console.log("New name:", programData.name);
-
-            console.log(this.programService);
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+            
             const rename = (this.programService.renameProgram(this.programUserId, this.program, programData.name)
                             .catch(() => { return false; })
                             .then(success => {

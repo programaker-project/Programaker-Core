@@ -11,6 +11,11 @@
     </mat-form-field>
 </mat-dialog-content>
 <mat-dialog-actions>
-    <button class="cancellation" mat-button mat-dialog-close>Cancel</button>
-    <button class="confirmation" color="primary" mat-button mat-dialog-close>OK, change</button>
+    <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
+    <button class="confirmation"
+            type="submit"
+            color="primary"
+            mat-button
+            [mat-dialog-close]="true"
+            mat-raised-button>OK, change</button>
 </mat-dialog-actions>

@@ -20,6 +20,7 @@ export class RenameProgramDialogComponent {
         this.program = data;
         this.program_name = this.program.name;
     }
+
     onNoClick(): void {
         this.dialogRef.close();
     }
