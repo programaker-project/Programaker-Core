@@ -64,9 +64,9 @@ export default class ScratchProgramSerializer {
     }
 
     static replaceMonitors(element) {
-        switch (element.type) {
+       switch (element.type) {
 
-            case "chat_whenreceivecommand":
+             case "chat_whenreceivecommand":
                 // This implies a call to a monitor
                 {
                     element.type = "wait_for_monitor";
@@ -74,6 +74,7 @@ export default class ScratchProgramSerializer {
                         "monitor_id": { "from_service": "c8062378-9b53-4962-b4f4-e5a71e34d335" }, // Telegram monitor ID
                         "monitor_expected_value": element.args[0]
                     }
+                    break;
                 }
 
             case "time_trigger_at":
@@ -90,6 +91,7 @@ export default class ScratchProgramSerializer {
                                      )
                         }
                     }
+                    break;
                 }
         }
     }
