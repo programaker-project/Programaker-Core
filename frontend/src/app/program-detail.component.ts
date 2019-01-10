@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { ActivatedRoute, Params } from '@angular/router';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { ProgramMetadata, ProgramContent, ScratchProgram } from './program';
 import { ProgramService } from './program.service';
@@ -44,12 +44,14 @@ export class ProgramDetailComponent implements OnInit {
       private chatService: ChatService,
       private route: ActivatedRoute,
       private location: Location,
+      private router: Router,
       public dialog: MatDialog,
   ) {
       this.monitorService = monitorService;
       this.programService = programService;
       this.route = route;
       this.location = location;
+      this.router = router;
   }
 
     ngOnInit(): void {
@@ -283,11 +285,31 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     renameProgram() {
+        const programData = { name: this.program.name };
+
         const dialogRef = this.dialog.open(RenameProgramDialogComponent, {
-            data: this.program
+            data: programData
         });
 
-        dialogRef.afterClosed().subscribe(result => {});
+        dialogRef.afterClosed().subscribe(result => {
+            console.log("New name:", programData.name);
 
+            console.log(this.programService);
+            const rename = (this.programService.renameProgram(this.programUserId, this.program, programData.name)
+                            .catch(() => { return false; })
+                            .then(success => {
+                                if (!success) {
+                                    return;
+                                }
+
+                                this.program.name = programData.name;
+                                const path = document.location.pathname.split("/");
+                                path[path.length - 1] = encodeURIComponent(this.program.name);
+
+                                this.router.navigate([ path.join("/") ]);
+                                console.log("Changing name to", this.program);
+                            }));
+            progbar.track(rename);
+        });
     }
 }

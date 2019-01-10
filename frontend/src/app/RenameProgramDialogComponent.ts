@@ -19,7 +19,6 @@ export class RenameProgramDialogComponent {
 
         this.program = data;
         this.program_name = this.program.name;
-        console.log("Program:", this.program);
     }
     onNoClick(): void {
         this.dialogRef.close();

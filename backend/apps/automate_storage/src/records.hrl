@@ -19,6 +19,9 @@
                             , program_orig
                             }).
 
+-record(editable_user_program_metadata, { program_name :: binary()
+                                        }).
+
 -record(monitor_entry, { id :: binary() | 'none'      | ?MNESIA_SELECTOR
                        , user_id :: binary() | 'none' | ?MNESIA_SELECTOR
                        , type :: binary()             | ?MNESIA_SELECTOR

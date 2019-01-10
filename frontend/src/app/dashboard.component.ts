@@ -83,7 +83,7 @@ export class DashboardComponent {
     openProgram(program: ProgramMetadata): void {
         this.sessionService.getSession().then(session =>
             this.router.navigate([ '/users/' + session.username
-                                 + '/programs/' + program.name]));
+                                   + '/programs/' + encodeURIComponent(program.name)]));
     }
 
     enableService(service: AvailableService): void {

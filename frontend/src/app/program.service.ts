@@ -37,7 +37,7 @@ export class ProgramService {
 
     async getUpdateProgramUrl(programUserName: string, program_id: string) {
       const userApiRoot = await this.sessionService.getApiRootForUser(programUserName);
-      return userApiRoot + '/programs/' + program_id;
+      return userApiRoot + '/programs/' + encodeURIComponent(program_id);
     }
 
     getPrograms(): Promise<ProgramMetadata[]> {
@@ -80,5 +80,19 @@ export class ProgramService {
                 .toPromise()
                 .catch(_ => false)
         );
+    }
+
+    renameProgram(username: string, program: ProgramContent, new_name: string): Promise<boolean> {
+        return this.getUpdateProgramUrl(username, program.name).then(
+            url => (this.http
+                    .patch(url,
+                           JSON.stringify({name: new_name}),
+                           {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                      ContentType.Json)})
+                    .map(response => {
+                        console.log("R:", response);
+                        return true;
+                    })
+                    .toPromise()));
     }
 }
