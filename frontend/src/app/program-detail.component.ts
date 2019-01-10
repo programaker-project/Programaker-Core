@@ -270,7 +270,7 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     goBack(): boolean {
-        history.go(-1);
+        this.router.navigate([ '/dashboard' ])
         return false;
     }
 
@@ -296,7 +296,7 @@ export class ProgramDetailComponent implements OnInit {
                 console.log("Cancelled");
                 return;
             }
-            
+
             const rename = (this.programService.renameProgram(this.programUserId, this.program, programData.name)
                             .catch(() => { return false; })
                             .then(success => {
