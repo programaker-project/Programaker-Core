@@ -15,6 +15,7 @@
         , list_chats_from_username/1
 
         , update_program_metadata/3
+        , delete_program/2
         ]).
 
 %% Definitions
@@ -131,7 +132,6 @@ update_program(Username, ProgramName,
 update_program_metadata(Username, ProgramName,
                         Metadata=#editable_user_program_metadata{program_name=NewProgramName}) ->
 
-    {ok, UserId} = automate_storage:get_userid_from_username(Username),
     case automate_storage:update_program_metadata(Username,
                                                   ProgramName,
                                                   Metadata) of
@@ -140,6 +140,10 @@ update_program_metadata(Username, ProgramName,
         { error, Reason } ->
             {error, Reason}
     end.
+
+
+delete_program(Username, ProgramName) ->
+    automate_storage:delete_program(Username, ProgramName).
 
 -spec list_services_from_username(binary()) -> {'ok', [ #service_metadata{} ]} | {error, term(), binary()}.
 list_services_from_username(Username) ->

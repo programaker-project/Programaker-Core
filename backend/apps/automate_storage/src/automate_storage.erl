@@ -16,6 +16,8 @@
         , list_programs_from_userid/1
         , update_program/3
         , update_program_metadata/3
+        , delete_program/2
+
         , get_program_pid/1
         , register_program_runner/2
         , get_program_from_id/1
@@ -191,6 +193,26 @@ update_program_metadata(Username, ProgramName, #editable_user_program_metadata{p
                                   ok = mnesia:write(?USER_PROGRAMS_TABLE,
                                                     ProgramEntry#user_program_entry{program_name=NewProgramName}, write),
                                   {ok, ProgramName}
+                          end,
+            case mnesia:transaction(Transaction) of
+                { atomic, Result } ->
+                    io:format("Register result: ~p~n", [Result]),
+                    Result;
+                { aborted, Reason } ->
+                    io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+                    {error, mnesia:error_description(Reason)}
+            end;
+        X ->
+            X
+    end.
+
+-spec delete_program(binary(), binary()) -> { 'ok' } | { 'error', any() }.
+delete_program(Username, ProgramName)->
+    case retrieve_program(Username, ProgramName) of
+        {ok, ProgramEntry} ->
+            Transaction = fun() ->
+                                  ok = mnesia:delete_object(?USER_PROGRAMS_TABLE,
+                                                            ProgramEntry, write)
                           end,
             case mnesia:transaction(Transaction) of
                 { atomic, Result } ->
