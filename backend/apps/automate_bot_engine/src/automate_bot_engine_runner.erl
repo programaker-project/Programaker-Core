@@ -104,6 +104,7 @@ loop(State = #state{ check_next_action = CheckContinue
                    }) ->
     receive
         {stop_program, From} ->
+            supervisor:terminate_child(automate_bot_engine_runner_sup, self()),
             From ! {?SERVER, ok};
         {update, From} ->
             From ! {?SERVER, ok},
