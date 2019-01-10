@@ -94,7 +94,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                 Thread, MonitorId, FullMessage),
             {true, NewThread};
         {ok, Found} ->
-            io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
+            %% io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
             false
     end;
 
