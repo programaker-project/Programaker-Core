@@ -188,11 +188,11 @@ update_program(Username, ProgramName, Content)->
 -spec update_program_metadata(binary(), binary(), #editable_user_program_metadata{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program_metadata(Username, ProgramName, #editable_user_program_metadata{program_name=NewProgramName})->
     case retrieve_program(Username, ProgramName) of
-        {ok, ProgramEntry} ->
+        {ok, ProgramEntry=#user_program_entry{id=ProgramId}} ->
             Transaction = fun() ->
                                   ok = mnesia:write(?USER_PROGRAMS_TABLE,
                                                     ProgramEntry#user_program_entry{program_name=NewProgramName}, write),
-                                  {ok, ProgramName}
+                                  {ok, ProgramId}
                           end,
             case mnesia:transaction(Transaction) of
                 { atomic, Result } ->

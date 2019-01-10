@@ -135,7 +135,7 @@ update_program_metadata(Username, ProgramName,
     case automate_storage:update_program_metadata(Username,
                                                   ProgramName,
                                                   Metadata) of
-        { ok, ProgramId } ->
+        { ok, _ProgramId } ->
             {ok, #{ <<"link">> => generate_url_for_program_name(Username, NewProgramName) }};
         { error, Reason } ->
             {error, Reason}
