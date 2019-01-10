@@ -95,4 +95,17 @@ export class ProgramService {
                     })
                     .toPromise()));
     }
+
+    deleteProgram(username: string, program: ProgramContent): Promise<boolean> {
+        return this.getUpdateProgramUrl(username, program.name).then(
+            url => (this.http
+                    .delete(url,
+                            {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                         ContentType.Json)})
+                    .map(response => {
+                        console.log("R:", response);
+                        return true;
+                    })
+                    .toPromise()));
+    }
 }

@@ -37,6 +37,7 @@ import { SelectFromJSON } from './select_from_json.filter';
 import 'hammerjs';
 import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
+import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 
 @NgModule({
     declarations: [
@@ -51,6 +52,7 @@ import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
         // Dialogs
         HowToEnableServiceDialogComponent,
         RenameProgramDialogComponent,
+        DeleteProgramDialogComponent,
 
         // Pipes
         SummarizeJSON,
@@ -84,6 +86,7 @@ import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
     entryComponents: [
         HowToEnableServiceDialogComponent,
         RenameProgramDialogComponent,
+        DeleteProgramDialogComponent,
     ],
     providers: [],
     bootstrap: [AppComponent],

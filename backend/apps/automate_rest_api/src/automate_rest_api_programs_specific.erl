@@ -9,6 +9,7 @@
         , is_authorized/2
         , content_types_provided/2
         , content_types_accepted/2
+        , delete_resource/2
         ]).
 
 -export([ to_json/2
@@ -38,7 +39,7 @@ options(Req, State) ->
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
     io:fwrite("[SPProgram]Asking for methods~n", []),
-    {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"OPTIONS">>], Req, State}.
+    {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
@@ -101,7 +102,6 @@ program_to_json(#user_program{ id=Id
                   }).
 
 
-%% PUT handler
 content_types_accepted(Req, State) ->
     io:fwrite("[PUT] User > program > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, accept_json_program}],
@@ -115,6 +115,7 @@ accept_json_program(Req, State) ->
             update_program_metadata(Req, State)
     end.
 
+%% PUT handler
 update_program(Req, State) ->
     #get_program_seq{program_name=ProgramName, username=Username} = State,
 
@@ -130,6 +131,7 @@ update_program(Req, State) ->
             { false, Req2, State }
     end.
 
+%% PATCH handler
 update_program_metadata(Req, State) ->
     #get_program_seq{program_name=ProgramName, username=Username} = State,
 
@@ -137,7 +139,7 @@ update_program_metadata(Req, State) ->
     Parsed = [jiffy:decode(Body, [return_maps])],
     Metadata = decode_program_metadata(Parsed),
     case automate_rest_api_backend:update_program_metadata(Username, ProgramName, Metadata) of
-        {ok, #{ <<"link">> := Link } }  ->
+        {ok, #{ <<"link">> := Link } } ->
             Req2 = send_json_output(jiffy:encode(#{ <<"success">> => true, <<"link">> => Link}), Req),
             { true, Req2, State };
         { error, Reason } ->
@@ -145,7 +147,20 @@ update_program_metadata(Req, State) ->
             { false, Req2, State }
     end.
 
+%% DELETE handler
+delete_resource(Req, State) ->
+    #get_program_seq{program_name=ProgramName, username=Username} = State,
+    case automate_rest_api_backend:delete_program(Username, ProgramName) of
+        ok ->
+            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
+            { true, Req1, State };
+        { error, Reason } ->
+            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req),
+            { false, Req1, State }
+    end.
 
+
+%% Converters
 decode_program_metadata([#{ <<"name">> := ProgramName
                           }]) ->
     #editable_user_program_metadata { program_name=ProgramName

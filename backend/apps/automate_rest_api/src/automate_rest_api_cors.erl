@@ -3,7 +3,7 @@
 -export([set_headers/1]).
 
 set_headers(Req) ->
-    Req1 = cowboy_req:set_resp_header(<<"Access-Control-Allow-Methods">>, <<"GET, POST, PUT, PATCH, OPTIONS">>, Req),
+    Req1 = cowboy_req:set_resp_header(<<"Access-Control-Allow-Methods">>, <<"GET, POST, PUT, PATCH, DELETE, OPTIONS">>, Req),
     Req2 = cowboy_req:set_resp_header(<<"Access-Control-Allow-Origin">>, <<"*">>, Req1),
     Req3 = cowboy_req:set_resp_header(<<"Access-Control-Max-Age">>, <<"3600">>, Req2),
     Req4 = cowboy_req:set_resp_header(<<"Access-Control-Allow-Headers">>,
