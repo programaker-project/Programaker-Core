@@ -109,7 +109,7 @@ content_types_accepted(Req, State) ->
 
 accept_json_program(Req, State) ->
     case cowboy_req:method(Req) of
-        <<"POST">> ->
+        <<"PUT">> ->
             update_program(Req, State);
         <<"PATCH">> ->
             update_program_metadata(Req, State)
