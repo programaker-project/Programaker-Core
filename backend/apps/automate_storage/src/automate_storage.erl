@@ -15,6 +15,7 @@
         , lists_programs_from_username/1
         , list_programs_from_userid/1
         , update_program/3
+        , update_program_metadata/3
         , get_program_pid/1
         , register_program_runner/2
         , get_program_from_id/1
@@ -181,6 +182,27 @@ list_programs_from_userid(Userid) ->
 -spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program(Username, ProgramName, Content)->
     store_new_program_content(Username, ProgramName, Content).
+
+-spec update_program_metadata(binary(), binary(), #editable_user_program_metadata{}) -> { 'ok', binary() } | { 'error', any() }.
+update_program_metadata(Username, ProgramName, #editable_user_program_metadata{program_name=NewProgramName})->
+    case retrieve_program(Username, ProgramName) of
+        {ok, ProgramEntry} ->
+            Transaction = fun() ->
+                                  ok = mnesia:write(?USER_PROGRAMS_TABLE,
+                                                    ProgramEntry#user_program_entry{program_name=NewProgramName}, write),
+                                  {ok, ProgramName}
+                          end,
+            case mnesia:transaction(Transaction) of
+                { atomic, Result } ->
+                    io:format("Register result: ~p~n", [Result]),
+                    Result;
+                { aborted, Reason } ->
+                    io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+                    {error, mnesia:error_description(Reason)}
+            end;
+        X ->
+            X
+    end.
 
 -spec get_program_pid(binary()) -> {'ok', pid()} | {error, not_running}.
 get_program_pid(ProgramId) ->

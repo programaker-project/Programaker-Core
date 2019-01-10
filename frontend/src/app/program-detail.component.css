@@ -10,8 +10,9 @@
     border-bottom: 1px solid #AAA;
 }
 
-button#program-start-button {
+button#program-rename-button, button#program-start-button {
     vertical-align: super;
+    padding: 1ex;
 }
 
 button#program-start-button .action-icon {

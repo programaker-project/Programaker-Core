@@ -16,6 +16,7 @@
         ]).
 
 -include("./records.hrl").
+-include("../../automate_storage/src/records.hrl").
 
 -record(get_program_seq, { username, program_name }).
 
@@ -37,7 +38,7 @@ options(Req, State) ->
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
     io:fwrite("[SPProgram]Asking for methods~n", []),
-    {[<<"GET">>, <<"PUT">>, <<"OPTIONS">>], Req, State}.
+    {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
@@ -107,6 +108,14 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 accept_json_program(Req, State) ->
+    case cowboy_req:method(Req) of
+        <<"PUT">> ->
+            update_program(Req, State);
+        <<"PATCH">> ->
+            update_program_metadata(Req, State)
+    end.
+
+update_program(Req, State) ->
     #get_program_seq{program_name=ProgramName, username=Username} = State,
 
     {ok, Body, Req1} = read_body(Req),
@@ -120,6 +129,27 @@ accept_json_program(Req, State) ->
             Req2 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
             { false, Req2, State }
     end.
+
+update_program_metadata(Req, State) ->
+    #get_program_seq{program_name=ProgramName, username=Username} = State,
+
+    {ok, Body, Req1} = read_body(Req),
+    Parsed = [jiffy:decode(Body, [return_maps])],
+    Metadata = decode_program_metadata(Parsed),
+    case automate_rest_api_backend:update_program_metadata(Username, ProgramName, Metadata) of
+        {ok, #{ <<"link">> := Link } }  ->
+            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => true, <<"link">> => Link}), Req),
+            { true, Req2, State };
+        { error, Reason } ->
+            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
+            { false, Req2, State }
+    end.
+
+
+decode_program_metadata([#{ <<"name">> := ProgramName
+                          }]) ->
+    #editable_user_program_metadata { program_name=ProgramName
+                                    }.
 
 
 decode_program([#{ <<"type">> := ProgramType

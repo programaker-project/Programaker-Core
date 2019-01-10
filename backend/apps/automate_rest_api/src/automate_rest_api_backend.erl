@@ -13,6 +13,8 @@
         , list_services_from_username/1
         , get_service_enable_how_to/2
         , list_chats_from_username/1
+
+        , update_program_metadata/3
         ]).
 
 %% Definitions
@@ -122,6 +124,19 @@ update_program(Username, ProgramName,
                                                                 , type=Type }) of
         { ok, ProgramId } ->
             automate_bot_engine_launcher:update_program(ProgramId);
+        { error, Reason } ->
+            {error, Reason}
+    end.
+
+update_program_metadata(Username, ProgramName,
+                        Metadata=#editable_user_program_metadata{program_name=NewProgramName}) ->
+
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    case automate_storage:update_program_metadata(Username,
+                                                  ProgramName,
+                                                  Metadata) of
+        { ok, ProgramId } ->
+            {ok, #{ <<"link">> => generate_url_for_program_name(Username, NewProgramName) }};
         { error, Reason } ->
             {error, Reason}
     end.

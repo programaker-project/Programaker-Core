@@ -163,7 +163,6 @@ export class Toolbox {
         };
 
         const options = this.getChatOptions();
-        console.log(options.length);
         if (options.length > 0) {
             Blockly.Blocks['chat_say_on_channel'] = {
                 init: function() {
