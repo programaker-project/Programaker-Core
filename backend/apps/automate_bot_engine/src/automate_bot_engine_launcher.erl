@@ -8,6 +8,7 @@
 
 %% API
 -export([ update_program/1
+        , stop_program/1
         ]).
 
 %%====================================================================
@@ -25,6 +26,23 @@ update_program(ProgramId) ->
         {error, not_running} ->
             automate_bot_engine_runner_sup:start(ProgramId)
     end.
+
+-spec stop_program(binary()) -> {ok, already_stopped | stopped_now}.
+stop_program(ProgramId) ->
+    case get_program_pid(ProgramId) of
+        { ok, PID } ->
+            case process_info(PID) of
+                undefined -> %% Not alive
+                    ok = automate_storage:delete_running_process(ProgramId);
+                _ ->
+                    ok = automate_bot_engine_runner:stop_program(PID),
+                    ok = automate_storage:delete_running_process(ProgramId)
+            end,
+            {ok, stopped_now};
+        {error, not_running} ->
+            {ok, already_stopped}
+    end.
+
 
 %%====================================================================
 %% Internal functions

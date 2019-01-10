@@ -17,6 +17,7 @@
         , update_program/3
         , update_program_metadata/3
         , delete_program/2
+        , delete_running_process/1
 
         , get_program_pid/1
         , register_program_runner/2
@@ -206,17 +207,18 @@ update_program_metadata(Username, ProgramName, #editable_user_program_metadata{p
             X
     end.
 
--spec delete_program(binary(), binary()) -> { 'ok' } | { 'error', any() }.
+-spec delete_program(binary(), binary()) -> { 'ok', binary() } | { 'error', any() }.
 delete_program(Username, ProgramName)->
     case retrieve_program(Username, ProgramName) of
-        {ok, ProgramEntry} ->
+        {ok, ProgramEntry=#user_program_entry{id=ProgramId}} ->
             Transaction = fun() ->
                                   ok = mnesia:delete_object(?USER_PROGRAMS_TABLE,
                                                             ProgramEntry, write)
                           end,
             case mnesia:transaction(Transaction) of
+                { atomic, ok } ->
+                    {ok, ProgramId};
                 { atomic, Result } ->
-                    io:format("Register result: ~p~n", [Result]),
                     Result;
                 { aborted, Reason } ->
                     io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
@@ -224,6 +226,19 @@ delete_program(Username, ProgramName)->
             end;
         X ->
             X
+    end.
+
+-spec delete_running_process(binary()) -> ok | {error, not_found}.
+delete_running_process(ProcessId) ->
+    Transaction = fun() ->
+                         ok = mnesia:delete(?RUNNING_PROGRAMS_TABLE, ProcessId, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
     end.
 
 -spec get_program_pid(binary()) -> {'ok', pid()} | {error, not_running}.
@@ -242,14 +257,14 @@ register_program_runner(ProgramId, Pid) ->
     Transaction = fun() ->
                           case mnesia:read(?RUNNING_PROGRAMS_TABLE, ProgramId) of
                               [] ->
-                                  mnesia:write(?RUNNING_PROGRAMS_TABLE,
+                                  ok = mnesia:write(?RUNNING_PROGRAMS_TABLE,
                                                #running_program_entry{ program_id=ProgramId
                                                                      , runner_pid=Pid
                                                                      , variables=#{}
                                                                      , stats=#{}
                                                                      }, write);
                               [Program] ->
-                                  mnesia:write(?RUNNING_PROGRAMS_TABLE,
+                                  ok = mnesia:write(?RUNNING_PROGRAMS_TABLE,
                                                Program#running_program_entry{runner_pid=Pid}, write)
                           end
                   end,
@@ -264,10 +279,15 @@ register_program_runner(ProgramId, Pid) ->
 
 get_program_from_id(ProgramId) ->
     Transaction = fun() ->
-                          mnesia:read(?USER_PROGRAMS_TABLE, ProgramId)
+                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
+                              [] ->
+                                  {error, not_found};
+                              [Program] ->
+                                  {ok, Program}
+                          end
                   end,
     case mnesia:transaction(Transaction) of
-        { atomic, [Result] } ->
+        { atomic, Result } ->
             Result;
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),

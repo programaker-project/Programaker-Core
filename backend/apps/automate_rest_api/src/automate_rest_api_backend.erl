@@ -142,8 +142,16 @@ update_program_metadata(Username, ProgramName,
     end.
 
 
+-spec delete_program(binary(), binary()) -> ok | {error, any()}.
 delete_program(Username, ProgramName) ->
-    automate_storage:delete_program(Username, ProgramName).
+    case automate_storage:delete_program(Username, ProgramName) of
+        {ok, ProgramId} ->
+            {ok, _} = automate_bot_engine_launcher:stop_program(ProgramId),
+            ok;
+        X ->
+            X
+    end.
+
 
 -spec list_services_from_username(binary()) -> {'ok', [ #service_metadata{} ]} | {error, term(), binary()}.
 list_services_from_username(Username) ->
