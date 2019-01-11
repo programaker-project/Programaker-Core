@@ -171,7 +171,7 @@ get_service_enable_how_to(Username, ServiceId) ->
             {ok, HowTo};
         {error, not_found} ->
             %% TODO: Implement user-defined services
-            io:format("[Error] Non platform service required~n"),
+            io:format("Error: non platform service required~n"),
             {error, not_found}
     end.
 
@@ -202,7 +202,7 @@ get_service_metadata(Id
                              , enabled=Enabled
                              }
     catch X:Y ->
-            io:fwrite("Error: ~p:~p~n", [X, Y]),
+            io:fwrite("Error getting service metadata ~p:~p~n", [X, Y]),
             none
     end.
 
