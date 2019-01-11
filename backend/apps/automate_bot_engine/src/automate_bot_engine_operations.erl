@@ -149,7 +149,6 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
                  , ?ARGUMENTS := [Argument]
                  }, Thread=#program_thread{ position=Position }, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    io:fwrite("Running REPEAT~n"),
     {ok, TimesStr} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
     Times = to_int(TimesStr),
 

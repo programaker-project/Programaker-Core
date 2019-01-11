@@ -49,8 +49,18 @@ relink_block(Block=#{ ?TYPE := <<"chat_say">>, ?ARGUMENTS := Arguments }, UserId
 
 %% Relink service monitor
 relink_block(Block, UserId) ->
-    B1 = relink_block_args(Block, UserId),
-    relink_block_values(B1, UserId).
+    B1 = relink_block_contents(Block, UserId),
+    B2 = relink_block_args(B1, UserId),
+    relink_block_values(B2, UserId).
+
+relink_block_contents(Block=#{ ?CONTENTS := Contents
+                             }, UserId) when is_list(Contents) ->
+    Block#{ ?CONTENTS => lists:map(fun(B) -> relink_block(B, UserId) end,
+                                   Contents)
+          };
+
+relink_block_contents(Block, UserId) ->
+    Block.
 
 relink_block_args(Block=#{ ?ARGUMENTS := Arguments
                          }, UserId) when is_map(Arguments) ->
