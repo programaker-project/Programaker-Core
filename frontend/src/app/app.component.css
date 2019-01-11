@@ -73,3 +73,19 @@ a.action-link {
 .viewer {
     margin: 0px;
 }
+
+#main-toolbar {
+    padding-left: 0px;
+}
+
+#main-title {
+    padding-left: 1ex;
+}
+
+#main-menu-opener:hover {
+    background-color: rgba(0,0,0, 0.3);
+}
+#main-menu-opener {
+    padding: 1em;
+    cursor: pointer;
+}

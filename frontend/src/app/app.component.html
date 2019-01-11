@@ -1,7 +1,7 @@
 <div class="app-content">
-    <mat-toolbar color="primary">
-        <span role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span>
-        <span> {{title}} </span>
+    <mat-toolbar id="main-toolbar" color="primary">
+        <span  id="main-menu-opener" role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span>
+        <span id="main-title"> {{title}} </span>
         <span class="floating-elements">
             <span class="login-indicator">
                 <div class="username-display" *ngIf="loggedIn">
