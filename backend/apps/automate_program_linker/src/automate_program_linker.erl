@@ -59,7 +59,7 @@ relink_block_contents(Block=#{ ?CONTENTS := Contents
                                    Contents)
           };
 
-relink_block_contents(Block, UserId) ->
+relink_block_contents(Block, _UserId) ->
     Block.
 
 relink_block_args(Block=#{ ?ARGUMENTS := Arguments

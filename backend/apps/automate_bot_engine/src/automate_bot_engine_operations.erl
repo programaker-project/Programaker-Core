@@ -300,10 +300,10 @@ run_instruction(#{ ?TYPE := ?COMMAND_CALL_SERVICE
                      OwnerUserId
              end,
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, NewThread, Value} = Module:call(Action, Values, Thread, UserId),
+    {ok, NewThread, _Value} = Module:call(Action, Values, Thread, UserId),
     {ran_this_tick, increment_position(NewThread)};
 
-run_instruction(Instruction, _Thread, _State, Message) ->
+run_instruction(_Instruction, _Thread, _State, _Message) ->
     %% io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
     {did_not_run, waiting}.
 
@@ -443,7 +443,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
 
     {ok, #user_program_entry{ user_id=UserId }} = automate_storage:get_program_from_id(PID),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, NewThread, Value} = Module:call(Action, Values, Thread, UserId),
+    {ok, _NewThread, Value} = Module:call(Action, Values, Thread, UserId),
     {ok, Value};
 
 %% Fail
