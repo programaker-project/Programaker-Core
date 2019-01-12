@@ -11,11 +11,15 @@
                                        <<"type">> => <<"chat_whenreceivecommand">>}).
 
 -define(SINGLE_LINE_PROGRAM_INSTRUCTIONS, [#{<<"args">> =>
-                                                 [#{<<"type">> => <<"constant">>,
-                                                    <<"value">> => <<"Hello!">>}],
+                                                 #{<<"service_action">> => send_chat,
+                                                   <<"service_call_values">> =>
+                                                       [#{<<"type">> => <<"constant">>,
+                                                          <<"value">> => <<"Hello!">>}],
+                                                   <<"service_id">> =>
+                                                       <<"c8062378-9b53-4962-b4f4-e5a71e34d335">>},
                                              <<"contents">> => [],
                                              <<"id">> => <<"l;?R,0E%ti`V/9z{aHe,">>,
-                                             <<"type">> => <<"chat_say">>},
+                                             <<"type">> => <<"command_call_service">>},
                                            #{<<"args">> =>
                                                  [#{<<"type">> => <<"variable">>,
                                                     <<"value">> => <<"count">>},
@@ -44,43 +48,51 @@
                                                     <<"type">> =>
                                                         <<"data_changevariableby">>},
                                                   #{<<"args">> =>
-                                                        [#{<<"type">> => <<"block">>,
-                                                           <<"value">> =>
-                                                               [#{<<"args">> =>
-                                                                      [#{<<"type">> =>
-                                                                             <<"constant">>,
-                                                                         <<"value">> =>
-                                                                             <<"Counted to ">>},
-                                                                       #{<<"type">> =>
-                                                                             <<"block">>,
-                                                                         <<"value">> =>
-                                                                             [#{<<"args">> =>
-                                                                                    [#{<<"type">> =>
-                                                                                           <<"variable">>,
-                                                                                       <<"value">> =>
-                                                                                           <<"count">>}],
-                                                                                <<"contents">> =>
-                                                                                    [],
-                                                                                <<"id">> =>
-                                                                                    <<"^jsCxw}+j98X!,JA=xTV">>,
-                                                                                <<"type">> =>
-                                                                                    <<"data_variable">>}]}],
-                                                                  <<"contents">> => [],
-                                                                  <<"id">> =>
-                                                                      <<"FGPL0wp@pECda4C(?=3t">>,
-                                                                  <<"type">> =>
-                                                                      <<"operator_join">>}]}],
+                                                        #{ <<"service_action">> => send_chat,
+                                                           <<"service_call_values">> =>
+                                                               [#{<<"type">> => <<"block">>,
+                                                                  <<"value">> =>
+                                                                      [#{<<"args">> =>
+                                                                             [#{<<"type">> =>
+                                                                                    <<"constant">>,
+                                                                                <<"value">> =>
+                                                                                    <<"Counted to ">>},
+                                                                              #{<<"type">> =>
+                                                                                    <<"block">>,
+                                                                                <<"value">> =>
+                                                                                    [#{<<"args">> =>
+                                                                                           [#{<<"type">> =>
+                                                                                                  <<"variable">>,
+                                                                                              <<"value">> =>
+                                                                                                  <<"count">>}],
+                                                                                       <<"contents">> =>
+                                                                                           [],
+                                                                                       <<"id">> =>
+                                                                                           <<"^jsCxw}+j98X!,JA=xTV">>,
+                                                                                       <<"type">> =>
+                                                                                           <<"data_variable">>}]}],
+                                                                         <<"contents">> => [],
+                                                                         <<"id">> =>
+                                                                             <<"FGPL0wp@pECda4C(?=3t">>,
+                                                                         <<"type">> =>
+                                                                             <<"operator_join">>}]}],
+                                                           <<"service_id">> =>
+                                                               <<"c8062378-9b53-4962-b4f4-e5a71e34d335">>},
                                                     <<"contents">> => [],
                                                     <<"id">> => <<"^#ie|?!BUAKR6w6{9gmS">>,
-                                                    <<"type">> => <<"chat_say">>}],
+                                                    <<"type">> => <<"command_call_service">>}],
                                              <<"id">> => <<"VfE`?a4`c4b?^D8rc0`y">>,
                                              <<"type">> => <<"control_repeat">>},
                                            #{<<"args">> =>
-                                                 [#{<<"type">> => <<"constant">>,
-                                                    <<"value">> => <<"See?">>}],
+                                                 #{<<"service_action">> => send_chat,
+                                                   <<"service_call_values">> =>
+                                                       [#{<<"type">> => <<"constant">>,
+                                                          <<"value">> => <<"See?">>}],
+                                                   <<"service_id">> =>
+                                                       <<"c8062378-9b53-4962-b4f4-e5a71e34d335">>},
                                              <<"contents">> => [],
                                              <<"id">> => <<"]GTkQkA]]~KdJ?(G$kj2">>,
-                                             <<"type">> => <<"chat_say">>}]).
+                                             <<"type">> => <<"command_call_service">>}]).
 
 -define(SINGLE_LINE_PROGRAM_VARIABLES, [#{<<"id">> => <<"H42ZX:dR5{Bwui#r]te+">>,
                                           <<"name">> => <<"count">>,

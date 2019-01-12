@@ -13,7 +13,6 @@
 -spec link_program(program(), binary()) -> {ok, program()}.
 link_program(Program = #{ <<"blocks">> := Blocks },
              UserId) ->
-    io:fwrite("Linking: ~p~n", [Program]),
     RelinkedBlocks = lists:map(fun (Subprogram) -> relink_subprogram(Subprogram, UserId) end, Blocks),
     {ok, Program#{ <<"blocks">> => RelinkedBlocks }}.
 
@@ -77,16 +76,18 @@ relink_monitor_id(Block=#{ ?ARGUMENTS := Args=
                  ) ->
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = Module:get_monitor_id(UserId),
-    Block#{ ?ARGUMENTS := Args#{ ?MONITOR_ID :=  MonitorId } }.
+    Block#{ ?ARGUMENTS := Args#{ ?MONITOR_ID :=  MonitorId } };
+
+relink_monitor_id(Block, _UserId) ->
+    Block.
+
 
 %%%% Relink values
 relink_block_values(Block=#{ ?VALUE := Value
                            }, _UserId) when is_list(Value) ->
-    io:fwrite("Relinking: ~p~n", [Block]),
     Block#{ ?VALUE => lists:map(fun relink_value/1, Value) };
 
 relink_block_values(Block, _UserId) ->
-    io:fwrite("Cannot relink: ~p~n", [Block]),
     Block.
 
 
@@ -120,11 +121,9 @@ relink_value(Value = #{ ?TYPE := <<"time_get_utc_seconds">>
 
 %%%% ^^^ Service linking
 relink_value(Block=#{ ?ARGUMENTS := Arguments }) ->
-    io:fwrite("---> ~p~n", [Block]),
     Block#{ ?ARGUMENTS => lists:map(fun relink_value/1, Arguments) };
 
 relink_value(Block=#{ ?VALUE := Values }) when is_list(Values) ->
-    io:fwrite("===> ~p~n", [Block]),
     Block#{ ?VALUE => lists:map(fun relink_value/1, Values) };
 
 %% No relinking
