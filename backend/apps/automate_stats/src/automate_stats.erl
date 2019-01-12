@@ -12,6 +12,7 @@
         , set_metric/4
         , log_observation/3
         , format/1
+        , remove_metric/2
         ]).
 
 %% Internal calls
@@ -40,6 +41,15 @@ set_metric(Type, Name, Value, Labels) ->
 log_observation(counter, Name, Labels) ->
     prometheus_counter:inc(Name, Labels),
     ok.
+
+-spec remove_metric(metric_type(), atom() | binary()) -> ok.
+remove_metric(Type, Name) ->
+    Module = get_module_for_type(Type),
+    try Module:remove(Name) of
+        _ -> ok
+    catch _:_ ->
+            ok
+    end.
 
 %%====================================================================
 %% Stat retrieval API
@@ -93,12 +103,16 @@ update_internal_metrics() ->
                proplists:get_value(active, Monitors), [running]),
 
     %% Services
-    {ok, PublicServices} = automate_service_registry:get_all_public_services(),
-    set_metric(gauge, automate_service_count,
-               maps:size(PublicServices), [public]),
+    case automate_service_registry:get_all_public_services() of
+        {ok, PublicServices} ->
+            set_metric(gauge, automate_service_count,
+                       maps:size(PublicServices), [public]),
 
-    set_metric(gauge, automate_service_count,
-               automate_service_registry:count_all_services(), [all]),
+            set_metric(gauge, automate_service_count,
+                       automate_service_registry:count_all_services(), [all]);
+        {error, _, _} ->
+            remove_metric(gauge, automate_service_count)
+    end,
 
     %% Chats
     {ok, #{ chats := NumChats, services := NumServices}} = automate_chat_registry:count_chats(),
