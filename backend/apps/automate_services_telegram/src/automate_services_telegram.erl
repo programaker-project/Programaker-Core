@@ -51,7 +51,7 @@ get_platform_id() ->
 
 -spec send_message(binary(), map()) -> {ok, _}.
 -ifdef(TEST).
-send_message(BotName, Params) ->
+send_message(_BotName, _Params) ->
     {ok, ignored_on_testing}.
 -else.
 send_message(BotName, Params) ->
