@@ -36,7 +36,6 @@
 -define(USER_MONITORS_TABLE, automate_user_monitors).
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
--define(EXISTING_SERVICES_TABLE, automate_existing_services).
 -define(REGISTERED_SERVICES_TABLE, automate_registered_services).
 -define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
 
@@ -826,19 +825,6 @@ build_tables(Nodes) ->
                                   [ {attributes, record_info(fields, running_program_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, running_program_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Existing services table
-    ok = case mnesia:create_table(?EXISTING_SERVICES_TABLE,
-                                  [ {attributes, record_info(fields, existing_service_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, existing_service_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->

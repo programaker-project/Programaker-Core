@@ -43,10 +43,6 @@
                                , stats
                                }).
 
--record(existing_service_entry, { id :: binary()
-                                , name ::  binary()
-                                }).
-
 -record(registered_service_entry, { registration_id :: binary() | ?MNESIA_SELECTOR
                                   , service_id :: binary()      | ?MNESIA_SELECTOR
                                   , user_id :: binary()         | ?MNESIA_SELECTOR
