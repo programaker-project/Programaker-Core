@@ -5,8 +5,6 @@
 
 -module(automate_stats).
 
--behaviour(application).
-
 %% Application callbacks
 -export([ add_metric/4
         , set_metric/4
