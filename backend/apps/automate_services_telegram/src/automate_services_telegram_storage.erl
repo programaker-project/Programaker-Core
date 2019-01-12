@@ -48,7 +48,7 @@ get_or_gen_user_channel(UserId) ->
     ?BACKEND:get_or_gen_user_channel(UserId).
 
 %% Chats
--spec count_chats() -> number.
+-spec count_chats() -> non_neg_integer().
 count_chats() ->
     ?BACKEND:count_chats().
 

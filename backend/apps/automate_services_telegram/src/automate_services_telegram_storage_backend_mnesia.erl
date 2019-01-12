@@ -200,7 +200,7 @@ get_or_gen_user_channel(UserId) ->
     end.
 
 %% Chats
--spec count_chats() -> number.
+-spec count_chats() -> non_neg_integer().
 count_chats() ->
     length(mnesia:dirty_all_keys(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE)).
 

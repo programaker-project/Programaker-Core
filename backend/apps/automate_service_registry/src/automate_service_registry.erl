@@ -26,7 +26,7 @@
 %%====================================================================
 %% API functions
 %%====================================================================
--spec get_all_public_services() -> {ok, [service_info_map()]} | {error, term(), string()}.
+-spec get_all_public_services() -> {ok, service_info_map()} | {error, term(), string()}.
 get_all_public_services() ->
     ?BACKEND:list_all_public().
 

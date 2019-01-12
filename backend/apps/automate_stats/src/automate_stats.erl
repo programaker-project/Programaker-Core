@@ -132,15 +132,15 @@ update_internal_metrics() ->
 %% Functions for internal usage
 %%====================================================================
 prepare() ->
-    add_metric(boolean, automate_service, "State of automate service.", [name]),
+    add_metric(boolean, automate_service, <<"State of automate service.">>, [name]),
 
-    add_metric(gauge, automate_bot_count, "Automate's bot.", [state]),
-    add_metric(gauge, automate_monitor_count, "Automate's monitor.", [state]),
-    add_metric(gauge, automate_service_count, "Automate's services.", [visibility]),
-    add_metric(gauge, automate_chat_count, "Automate's chats.", []),
-    add_metric(gauge, automate_chat_service_count, "Automate's chat services.", []),
+    add_metric(gauge, automate_bot_count, <<"Automate's bot.">>, [state]),
+    add_metric(gauge, automate_monitor_count, <<"Automate's monitor.">>, [state]),
+    add_metric(gauge, automate_service_count, <<"Automate's services.">>, [visibility]),
+    add_metric(gauge, automate_chat_count, <<"Automate's chats.">>, []),
+    add_metric(gauge, automate_chat_service_count, <<"Automate's chat services.">>, []),
 
-    add_metric(gauge, automate_user_count, "Automate's user.", [state]),
+    add_metric(gauge, automate_user_count, <<"Automate's user.">>, [state]),
     ok.
 
 
