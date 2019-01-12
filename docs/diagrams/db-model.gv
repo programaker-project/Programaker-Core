@@ -1,0 +1,41 @@
+digraph g {
+    rankdir=LR
+    node[shape=record];
+
+    subgraph cluster_core {
+        label="Core";
+
+        subgraph cluster_core_storage {
+            label="Storage";
+
+            // REGISTERED_USERS_TABLE | automate_registered_users
+            registered_user_entry[label="*Registered user* | <pk> id | username | password | email"];
+
+            // USER_SESSIONS_TABLE | automate_user_sessions
+            user_session_entry[label="*User session* | <pk> session_id | <f0> user_id | session_start_time"];
+
+            user_session_entry:f0 -> registered_user_entry:pk;
+
+            // USER_MONITORS_TABLE | automate_user_monitors
+            monitor_entry[label="*Monitor entry* | <pk> id | <f0> user_id | type | name | value"];
+
+            monitor_entry:f0 -> registered_user_entry:pk;
+
+            // USER_PROGRAMS_TABLE | automate_user_programs
+            user_program_entry[label="*Program* | <pk> id | <f0> user_id | program_name | program_type | program_parsed | program_orig"];
+            user_program_entry:f0 -> registered_user_entry:pk;
+
+            // RUNNING_PROGRAMS_TABLE | automate_running_programs
+            running_program_entry[label="*Running program*| <f0> program_id | runner_pid | variables | stats"];
+            running_program_entry:f0 -> user_program_entry:pk;
+
+            // REGISTERED_SERVICES_TABLE | automate_registered_services
+            registered_service_entry[label="*Service registrations* | <pk> registration_id | <f0> service |  <f1> user_id | enabled"];
+            registered_service_entry:f1 -> registered_user_entry:pk;
+
+            // PROGRAM_VARIABLE_TABLE | automate_program_variable_table
+            program_variable_table_entry[label="*Program variable* | { <f0> program_id | var_name } | value"];
+            program_variable_table_entry:f0 -> user_program_entry:pk;  // Not sure if user program or running program
+        }
+    }
+}
