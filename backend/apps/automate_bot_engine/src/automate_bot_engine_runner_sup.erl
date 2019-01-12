@@ -26,7 +26,7 @@ start(ProgramId) ->
     ok.
 
 start_link() ->
-    automate_stats:add_metric(counter, automate_bot_engine_cycles, "Automate bot engine cycles.",
+    automate_stats:add_metric(counter, automate_bot_engine_cycles, <<"Automate bot engine cycles.">>,
                               [program_id]),
 
     Result = supervisor:start_link({local, ?SERVER}, ?MODULE, []),

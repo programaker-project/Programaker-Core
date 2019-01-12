@@ -63,7 +63,7 @@ register_prefix(Prefix, Module) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_all_chat_handlers() -> [#chat_handler_module_entry{}].
+-spec get_all_chat_handlers() -> {ok, [#chat_handler_module_entry{}]}.
 get_all_chat_handlers() ->
     Transaction = fun() ->
                           Keys = mnesia:all_keys(?CHAT_HANDLER_MODULE_TABLE),
