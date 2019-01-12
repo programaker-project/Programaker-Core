@@ -27,15 +27,15 @@
 start_link() ->
     ?BACKEND:start_link().
 
--spec get_internal_user_for_telegram_id(binary()) -> {ok, binary()} | {error, not_found}.
+-spec get_internal_user_for_telegram_id(number()) -> {ok, binary()} | {error, not_found}.
 get_internal_user_for_telegram_id(TelegramId) ->
     ?BACKEND:get_internal_user_for_telegram_id(TelegramId).
 
--spec get_telegram_id_from_userid(binary()) -> {ok, binary()} | {error, not_found}.
+-spec get_telegram_id_from_userid(binary()) -> {ok, number()} | {error, not_found}.
 get_telegram_id_from_userid(InternalUser) ->
     ?BACKEND:get_telegram_id_from_userid(InternalUser).
 
--spec finish_telegram_registration(binary(), binary()) -> ok | {error, not_found}.
+-spec finish_telegram_registration(number(), binary()) -> ok | {error, not_found}.
 finish_telegram_registration(TelegramUserId, RegistrationToken) ->
     ?BACKEND:finish_telegram_registration(RegistrationToken, TelegramUserId).
 
@@ -52,7 +52,7 @@ get_or_gen_user_channel(UserId) ->
 count_chats() ->
     ?BACKEND:count_chats().
 
--spec get_chats_for_user(binary()) -> {ok, [#chat_entry{}]}.
+-spec get_chats_for_user(number()) -> {ok, [#chat_entry{}]}.
 get_chats_for_user(TelegramUserId) ->
     ?BACKEND:get_chats_for_user(TelegramUserId).
 

@@ -79,10 +79,11 @@ get_registration_token(Username) ->
     automate_service_user_registration:get_or_gen_registration_token(Username, get_platform_id()).
 
 
--spec telegram_user_to_internal(binary()) -> {ok, binary()} | {error, not_found}.
+-spec telegram_user_to_internal(number()) -> {ok, binary()} | {error, not_found}.
 telegram_user_to_internal(TelegramId) ->
     ?STORAGE:get_internal_user_for_telegram_id(TelegramId).
 
+-spec register_user(number(), binary()) -> ok | {error, not_found}.
 register_user(TelegramUserId, RegistrationToken) ->
     ?STORAGE:finish_telegram_registration(TelegramUserId, RegistrationToken).
 

@@ -84,7 +84,7 @@ start_link() ->
          end,
     ignore.
 
--spec get_internal_user_for_telegram_id(binary()) -> {ok, binary()} | {error, not_found}.
+-spec get_internal_user_for_telegram_id(number()) -> {ok, binary()} | {error, not_found}.
 get_internal_user_for_telegram_id(TelegramId) ->
     Transaction = fun() ->
                           mnesia:read(?TELEGRAM_SERVICE_REGISTRATION_TABLE, TelegramId)
@@ -100,7 +100,7 @@ get_internal_user_for_telegram_id(TelegramId) ->
     end.
 
 
--spec finish_telegram_registration(binary(), binary()) -> ok | {error, not_found}.
+-spec finish_telegram_registration(binary(), number()) -> ok | {error, not_found}.
 finish_telegram_registration(RegistrationToken, TelegramUserId) ->
     Transaction = fun() ->
                           case automate_service_user_registration:get_info_from_registration_token(RegistrationToken) of
@@ -142,7 +142,7 @@ user_has_registered(Username) ->
             {ok, false}
     end.
 
--spec get_telegram_id_from_userid(binary()) -> {ok, binary()} | {error, not_found}.
+-spec get_telegram_id_from_userid(binary()) -> {ok, number()} | {error, not_found}.
 get_telegram_id_from_userid(UserId) ->
     MatchHead = #telegram_service_registration_entry { telegram_user_id='$1'
                                                      , internal_user_id='$2'
@@ -204,7 +204,7 @@ get_or_gen_user_channel(UserId) ->
 count_chats() ->
     length(mnesia:dirty_all_keys(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE)).
 
--spec get_chats_for_user(binary()) -> {ok, [#chat_entry{}]}.
+-spec get_chats_for_user(number()) -> {ok, [#chat_entry{}]}.
 get_chats_for_user(TelegramUserId) ->
     MatchHead = #telegram_service_chat_member_entry { user_id='$1'
                                                     , chat_id='$2'
@@ -216,9 +216,7 @@ get_chats_for_user(TelegramUserId) ->
     ServiceMatcher = [{MatchHead, [Guard], [ResultColumn]}],
 
     Transaction = fun() ->
-                          io:fwrite("Matcher: ~p~n", [ServiceMatcher]),
                           ChatIds = mnesia:select(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE, ServiceMatcher),
-                          io:fwrite("Chats: ~p~n", [ChatIds]),
                           Chats = lists:flatmap(fun (ChatId) ->
                                                         mnesia:read(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE, ChatId)
                                                 end, ChatIds),
@@ -349,10 +347,12 @@ unregister_user_in_chat(NumChatId, UserId) ->
                                   case mnesia:select(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE, ServiceMatcher) of
                                       [] ->
                                           {ok, already_unregistered};
-                                      Membership ->
-                                          ok = mnesia:delete_object(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE,
-                                                                    Membership,
-                                                                    write)
+                                      Memberships ->
+                                          lists:foreach(fun (Membership) ->
+                                                                mnesia:delete_object(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE,
+                                                                                     Membership,
+                                                                                     write)
+                                                        end, Memberships)
                                   end
                           end
                   end,
