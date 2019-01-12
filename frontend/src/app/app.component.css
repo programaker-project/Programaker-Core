@@ -79,7 +79,14 @@ a.action-link {
 }
 
 #main-title {
-    padding-left: 1ex;
+    color: white;
+    cursor: pointer;
+    padding: 1em;
+    text-decoration: none;
+}
+
+#main-title > .logo {
+    width: 1em;
 }
 
 #main-menu-opener:hover {

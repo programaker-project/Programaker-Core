@@ -49,6 +49,10 @@ export class AppComponent {
         this.gotoLogin();
     }
 
+    goHome(): void {
+        this.gotoDashboard();
+    }
+
     gotoDashboard(): void {
         this.router.navigate(['/dashboard']);
     }
