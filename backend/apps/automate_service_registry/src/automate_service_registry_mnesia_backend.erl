@@ -85,7 +85,7 @@ register(ServiceUuid, Public, #{ name := Name, description := Description, modul
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec list_all_public() -> {ok, [service_info_map()]} | {error, term(), string()}.
+-spec list_all_public() -> {ok, service_info_map()} | {error, term(), string()}.
 list_all_public() ->
     MatchHead = #services_table_entry{ id='_'
                                      , public='$1'

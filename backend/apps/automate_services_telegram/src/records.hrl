@@ -4,7 +4,7 @@
 -define(TELEGRAM_MESSAGE_CHAT_ID, <<"telegram_chat_id">>).
 -define(TELEGRAM_MESSAGE_BOT_NAME, <<"telegram_bot_name">>).
 
-
+-define(MNESIA_SELECTOR,  '_' | '$1' | '$2' | '$3').
 
 -record(service_metadata, { id
                           , name
@@ -22,21 +22,21 @@
                                }).
 
 
--record(telegram_service_registration_entry, { telegram_user_id :: binary() | '_' | '$1' | '$2'
-                                             , internal_user_id :: binary() | '_' | '$1' | '$2'
+-record(telegram_service_registration_entry, { telegram_user_id :: number() | ?MNESIA_SELECTOR
+                                             , internal_user_id :: binary() | ?MNESIA_SELECTOR
                                              }).
 
--record(telegram_service_user_channel_entry, { internal_user_id :: binary() | '_' | '$1' | '$2'
-                                             , channel_id :: binary() | '_' | '$1' | '$2'
+-record(telegram_service_user_channel_entry, { internal_user_id :: binary() | ?MNESIA_SELECTOR
+                                             , channel_id       :: binary() | ?MNESIA_SELECTOR
                                              }).
 
--record(telegram_service_known_chat_entry, { chat_id :: binary()
-                                           , chat_name :: binary()
+-record(telegram_service_known_chat_entry, { chat_id   :: binary() | ?MNESIA_SELECTOR
+                                           , chat_name :: binary() | ?MNESIA_SELECTOR
                                            }).
 
 
--record(telegram_service_chat_member_entry, { user_id :: binary()
-                                            , chat_id :: binary()
+-record(telegram_service_chat_member_entry, { user_id :: binary() | ?MNESIA_SELECTOR
+                                            , chat_id :: binary() | ?MNESIA_SELECTOR
                                             }).
 
 

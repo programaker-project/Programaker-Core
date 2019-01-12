@@ -19,7 +19,7 @@ start_link() ->
 get_prefix() ->
     automate_telegram.
 
--spec count_chats() -> number.
+-spec count_chats() -> non_neg_integer().
 count_chats() ->
     automate_services_telegram_storage:count_chats().
 

@@ -185,8 +185,11 @@ list_chats_from_username(Username) ->
 %% Internal functions
 %%====================================================================
 get_services_metadata(Services, Username) ->
-    lists:map(fun ({K, V}) -> get_service_metadata(K, V, Username) end,
-              maps:to_list(Services)).
+    lists:filter(fun (V) ->
+                         V =/= none
+                 end,
+                 lists:map(fun ({K, V}) -> get_service_metadata(K, V, Username) end,
+                           maps:to_list(Services))).
 
 get_service_metadata(Id
                     , #{ name := Name

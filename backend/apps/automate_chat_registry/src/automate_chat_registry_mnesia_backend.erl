@@ -34,14 +34,15 @@ start_link() ->
          end,
     ignore.
 
--spec count_chats() -> map().
+-spec count_chats() -> #{ chats := number(), services := non_neg_integer() }.
 count_chats() ->
+    {ok, ChatHandlers} = get_all_chat_handlers(),
     #{ chats => lists:foldl(fun(#chat_handler_module_entry{handler_module=Module},
                                 Acc) ->
                                     Acc + Module:count_chats()
                             end,
                             0,
-                            get_all_chat_handlers())
+                            ChatHandlers)
 
      , services => length(mnesia:dirty_all_keys(?CHAT_HANDLER_MODULE_TABLE))
      }.
@@ -62,7 +63,7 @@ register_prefix(Prefix, Module) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_all_chat_handlers() -> [#chat_handler_module_entry{}].
+-spec get_all_chat_handlers() -> {ok, [#chat_handler_module_entry{}]}.
 get_all_chat_handlers() ->
     Transaction = fun() ->
                           Keys = mnesia:all_keys(?CHAT_HANDLER_MODULE_TABLE),

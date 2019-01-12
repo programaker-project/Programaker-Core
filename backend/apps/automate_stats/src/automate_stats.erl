@@ -5,13 +5,12 @@
 
 -module(automate_stats).
 
--behaviour(application).
-
 %% Application callbacks
 -export([ add_metric/4
         , set_metric/4
         , log_observation/3
         , format/1
+        , remove_metric/2
         ]).
 
 %% Internal calls
@@ -40,6 +39,15 @@ set_metric(Type, Name, Value, Labels) ->
 log_observation(counter, Name, Labels) ->
     prometheus_counter:inc(Name, Labels),
     ok.
+
+-spec remove_metric(metric_type(), atom() | binary()) -> ok.
+remove_metric(Type, Name) ->
+    Module = get_module_for_type(Type),
+    try Module:remove(Name) of
+        _ -> ok
+    catch _:_ ->
+            ok
+    end.
 
 %%====================================================================
 %% Stat retrieval API
@@ -93,15 +101,19 @@ update_internal_metrics() ->
                proplists:get_value(active, Monitors), [running]),
 
     %% Services
-    {ok, PublicServices} = automate_service_registry:get_all_public_services(),
-    set_metric(gauge, automate_service_count,
-               maps:size(PublicServices), [public]),
+    case automate_service_registry:get_all_public_services() of
+        {ok, PublicServices} ->
+            set_metric(gauge, automate_service_count,
+                       maps:size(PublicServices), [public]),
 
-    set_metric(gauge, automate_service_count,
-               automate_service_registry:count_all_services(), [all]),
+            set_metric(gauge, automate_service_count,
+                       automate_service_registry:count_all_services(), [all]);
+        {error, _, _} ->
+            remove_metric(gauge, automate_service_count)
+    end,
 
     %% Chats
-    {ok, #{ chats := NumChats, services := NumServices}} = automate_chat_registry:count_chats(),
+    #{ chats := NumChats, services := NumServices} = automate_chat_registry:count_chats(),
     set_metric(gauge, automate_chat_count, NumChats, []),
 
     set_metric(gauge, automate_chat_service_count, NumServices, []),
@@ -118,15 +130,15 @@ update_internal_metrics() ->
 %% Functions for internal usage
 %%====================================================================
 prepare() ->
-    add_metric(boolean, automate_service, "State of automate service.", [name]),
+    add_metric(boolean, automate_service, <<"State of automate service.">>, [name]),
 
-    add_metric(gauge, automate_bot_count, "Automate's bot.", [state]),
-    add_metric(gauge, automate_monitor_count, "Automate's monitor.", [state]),
-    add_metric(gauge, automate_service_count, "Automate's services.", [visibility]),
-    add_metric(gauge, automate_chat_count, "Automate's chats.", []),
-    add_metric(gauge, automate_chat_service_count, "Automate's chat services.", []),
+    add_metric(gauge, automate_bot_count, <<"Automate's bot.">>, [state]),
+    add_metric(gauge, automate_monitor_count, <<"Automate's monitor.">>, [state]),
+    add_metric(gauge, automate_service_count, <<"Automate's services.">>, [visibility]),
+    add_metric(gauge, automate_chat_count, <<"Automate's chats.">>, []),
+    add_metric(gauge, automate_chat_service_count, <<"Automate's chat services.">>, []),
 
-    add_metric(gauge, automate_user_count, "Automate's user.", [state]),
+    add_metric(gauge, automate_user_count, <<"Automate's user.">>, [state]),
     ok.
 
 

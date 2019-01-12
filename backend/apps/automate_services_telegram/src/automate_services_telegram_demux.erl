@@ -248,7 +248,7 @@ handle_telegram_update({pe4kin_update, _BotName,
 handle_telegram_update({pe4kin_update, BotName, Message}) ->
     io:format("[Telegram Demux]Unknown message format: ~p: ~p~n", [BotName, Message]).
 
--spec handle_from_new_user(map(),_,_,_,_) -> 'ok'.
+-spec handle_from_new_user(map(), _, number(), number(), binary()) -> 'ok'.
 handle_from_new_user(_Message, <<"/register ", RawRegistrationToken/binary>>, UserId, ChatId, BotName) ->
     RegistrationToken = string:trim(RawRegistrationToken, both, " \n"),
     case automate_services_telegram:register_user(UserId, RegistrationToken) of
