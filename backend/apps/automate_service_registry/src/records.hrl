@@ -31,6 +31,6 @@
                                       , user_id :: binary()    | ?SELECTOR_VALUES
                                       }).
 
--record(service_configuration_entry, { configuration_id :: { binary(), atom() } %% Uuid, entry
+-record(service_configuration_entry, { configuration_id :: { binary(), atom() } %% Service id, propery
                                      , value :: any()
                                      }).
