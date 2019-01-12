@@ -1,6 +1,7 @@
 digraph g {
     rankdir=LR
     node[shape=record];
+        style=dashed;
 
     subgraph cluster_core {
         label="Core";
@@ -80,5 +81,30 @@ digraph g {
             service_registration_token:f0 -> services_table_entry:pk;
             service_registration_token:f1 -> registered_user_entry:pk;
         }
+    }
+
+    subgraph cluster_services {
+        label="Services";
+
+        subgraph cluster_services_telegram {
+            label="Telegram";
+
+            // TELEGRAM_SERVICE_REGISTRATION_TABLE | automate_telegram_service_registration_table
+            telegram_service_registration_entry[label="*Telegram users* | <pk> telegram user id | <f0> internal user id"];
+            telegram_service_registration_entry:f0 -> registered_user_entry:pk;
+           
+            // TELEGRAM_SERVICE_CHATS_KNOWN_TABLE | automate_telegram_service_chats_known_table
+            telegram_service_known_chat_entry[label="*Telegram chats*| <pk> chat_id | chat_name"];
+
+            // TELEGRAM_SERVICE_USER_CHANNEL_TABLE | automate_telegram_service_user_channel_table
+            telegram_service_user_channel_entry[label="*Users in channel*| <f0> internal user id| <f1> channel id"];
+            telegram_service_user_channel_entry:f0 -> registered_user_entry:pk;
+            telegram_service_user_channel_entry:f1 -> live_channels_table_entry:pk;
+
+            // TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE | automate_telegram_service_chats_members_table
+            telegram_service_chat_member_entry[label="*Users in channel*| <f0> internal user id| <f1> chat id"];
+            telegram_service_chat_member_entry:f0 -> registered_user_entry:pk;
+            telegram_service_chat_member_entry:f1 -> telegram_service_known_chat_entry:pk;
+       }
    }
 }
