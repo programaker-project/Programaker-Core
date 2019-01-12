@@ -19,7 +19,7 @@
 %% API functions
 %%====================================================================
 
--spec count_chats() -> number().
+-spec count_chats() -> #{ chats := number(), services := non_neg_integer() }.
 count_chats() ->
     ?BACKEND:count_chats().
 

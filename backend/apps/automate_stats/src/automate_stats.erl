@@ -115,7 +115,7 @@ update_internal_metrics() ->
     end,
 
     %% Chats
-    {ok, #{ chats := NumChats, services := NumServices}} = automate_chat_registry:count_chats(),
+    #{ chats := NumChats, services := NumServices} = automate_chat_registry:count_chats(),
     set_metric(gauge, automate_chat_count, NumChats, []),
 
     set_metric(gauge, automate_chat_service_count, NumServices, []),

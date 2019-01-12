@@ -34,7 +34,7 @@ start_link() ->
          end,
     ignore.
 
--spec count_chats() -> map().
+-spec count_chats() -> #{ chats := number(), services := non_neg_integer() }.
 count_chats() ->
     #{ chats => lists:foldl(fun(#chat_handler_module_entry{handler_module=Module},
                                 Acc) ->
