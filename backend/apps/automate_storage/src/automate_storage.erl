@@ -833,11 +833,24 @@ build_tables(Nodes) ->
                  ok
          end,
 
-    %% Registered services table
-    ok = case mnesia:create_table(?REGISTERED_SERVICES_TABLE,
-                                  [ {attributes, record_info(fields, registered_service_entry)}
+    %% Program variable table
+    ok = case mnesia:create_table(?RUNNING_PROGRAMS_TABLE,
+                                  [ {attributes, record_info(fields, running_program_entry)}
                                   , { disc_copies, Nodes }
-                                  , { record_name, registered_service_entry }
+                                  , { record_name, running_program_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    %% Registered services table
+    ok = case mnesia:create_table(?PROGRAM_VARIABLE_TABLE,
+                                  [ {attributes, record_info(fields, program_variable_table_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, program_variable_table_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->
