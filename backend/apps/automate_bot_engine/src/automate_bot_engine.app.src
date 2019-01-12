@@ -7,6 +7,9 @@
                    , stdlib
                    , automate_storage
                    , automate_services_all
+
+                     %% , automate_program_linker %% Not an application, just a module
+
     ]},
     {env, [
     ]},
