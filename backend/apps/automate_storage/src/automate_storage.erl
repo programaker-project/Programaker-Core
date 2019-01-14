@@ -363,9 +363,9 @@ start_link() ->
 cipher_password(Plaintext) ->
     %% Example 2: password storage
     Password = Plaintext,
-    OpslimitSensitive = libsodium_crypto_pwhash:opslimit_sensitive(), % 8
-    MemlimitSensitive = libsodium_crypto_pwhash:memlimit_sensitive(), % 536870912
-    HashedPassword = libsodium_crypto_pwhash:str(Password, OpslimitSensitive, MemlimitSensitive),
+    Opslimit = libsodium_crypto_pwhash:opslimit_interactive(), % Minimal recommended
+    Memlimit = libsodium_crypto_pwhash:memlimit_interactive(), % 64MiB
+    HashedPassword = libsodium_crypto_pwhash:str(Password, Opslimit, Memlimit),
     HashedPassword.
 
 add_token_to_user(UserId, SessionToken) ->
