@@ -180,6 +180,18 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
             {ran_this_tick, increment_position(Thread)}
     end;
 
+run_instruction(#{ ?TYPE := ?COMMAND_WAIT_UNTIL
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{ position=Position }, _State, _) ->
+
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    case Value of
+        false ->
+            {did_not_run, Thread};
+        _ ->
+            {ran_this_tick, increment_position(Thread)}
+    end;
+
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT
                  , ?ARGUMENTS := [Argument]
                  }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->

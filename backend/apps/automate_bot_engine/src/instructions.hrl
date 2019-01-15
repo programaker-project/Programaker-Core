@@ -14,6 +14,7 @@
 -define(COMMAND_WAIT, <<"control_wait">>).
 -define(COMMAND_REPEAT, <<"control_repeat">>).
 -define(COMMAND_REPEAT_UNTIL, <<"control_repeat_until">>).
+-define(COMMAND_WAIT_UNTIL, <<"control_wait_until">>).
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
