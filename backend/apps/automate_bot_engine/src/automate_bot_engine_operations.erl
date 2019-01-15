@@ -136,11 +136,11 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                  }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Change} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
-    NewValue = case automate_bot_engine_variables:get_program_variable(Thread, VariableName) of
+    {ok, NewValue} = case automate_bot_engine_variables:get_program_variable(Thread, VariableName) of
                    {ok, PrevValue} ->
                        automate_bot_engine_values:add(PrevValue, Change);
                    {error, not_found} ->
-                       Change
+                       {ok, Change}
                end,
     {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, VariableName, NewValue),
     {ran_this_tick, increment_position(NewThreadState)};
@@ -166,6 +166,30 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
         false ->
             NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
             {ran_this_tick, increment_position(NextIteration)}
+    end;
+
+run_instruction(#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{ position=Position }, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    case Value of
+        false ->
+            {ran_this_tick, Thread#program_thread{ position=Position ++ [1] }};
+        _ ->
+            {ran_this_tick, increment_position(Thread)}
+    end;
+
+run_instruction(#{ ?TYPE := ?COMMAND_WAIT_UNTIL
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{}, _State, _) ->
+
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    case Value of
+        false ->
+            {did_not_run, Thread};
+        _ ->
+            {ran_this_tick, increment_position(Thread)}
     end;
 
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT
@@ -341,7 +365,8 @@ increment_innermost(List)->
     [Latest | Tail] = lists:reverse(List),
     lists:reverse([Latest + 1 | Tail]).
 
-%% Operators
+%%%% Operators
+%% String operators
 get_block_result(#{ ?TYPE := ?COMMAND_JOIN
                   , ?ARGUMENTS := [ First
                                   , Second
@@ -351,7 +376,156 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
     SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
-            {ok, automate_bot_engine_values:add(FirstValue, SecondValue)};
+             automate_bot_engine_values:add(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+%% Numeric operators
+get_block_result(#{ ?TYPE := ?COMMAND_ADD
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:add(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_SUBTRACT
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:subtract(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_MULTIPLY
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:multiply(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_DIVIDE
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:divide(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+%% Comparations
+get_block_result(#{ ?TYPE := ?COMMAND_LESS_THAN
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:is_less_than(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_GREATER_THAN
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:is_greater_than(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_EQUALS
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:is_equal_to(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+%% Boolean operations
+get_block_result(#{ ?TYPE := ?COMMAND_AND
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, true}, {ok, true}] ->
+            {ok, true};
+        [_, _] ->
+            {ok, false};
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_OR
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, true}, _] ->
+            {ok, true};
+        [_, {ok, true}] ->
+            {ok, true};
+        [_, _] ->
+            {ok, false};
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_NOT
+                  , ?ARGUMENTS := [ Value
+                                  ]
+                  }, Thread) ->
+    Result = automate_bot_engine_variables:resolve_argument(Value, Thread),
+    case Result of
+        {ok, false} ->
+            {ok, true};
+        {ok, true} ->
+            {ok, false};
         _ ->
             {error, not_found}
     end;
