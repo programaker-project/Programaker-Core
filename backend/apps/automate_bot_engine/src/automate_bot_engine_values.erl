@@ -6,6 +6,8 @@
         , multiply/2
         , divide/2
         , is_less_than/2
+        , is_greater_than/2
+        , is_equal_to/2
         ]).
 
 %%%===================================================================
@@ -24,7 +26,7 @@ add(Left, Right) when is_binary(Left) and is_binary(Right) ->
 
 %% If everything else failed, just do simple concatenation
 add(V1, V2) ->
-    binary:list_to_bin(lists:flatten(io_lib:format("~s~s", [to_string(V1), to_string(V2)]))).
+    {ok, binary:list_to_bin(lists:flatten(io_lib:format("~s~s", [to_string(V1), to_string(V2)])))}.
 
 -spec subtract(binary(), binary()) -> {ok, binary()} | {error, not_found}.
 subtract(Left, Right) when is_binary(Left) and is_binary(Right) ->
@@ -75,14 +77,42 @@ divide(_, _) ->
 is_less_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
     case combined_type(V1, V2) of
         {integer, Int1, Int2} ->
-            Int1 < Int2;
+            {ok, Int1 < Int2};
         {float, Float1, Float2} ->
-            Float1 < Float2;
+            {ok, Float1 < Float2};
         {string, String1, String2} ->
-            String1 < String2
+            {ok, String1 < String2}
     end;
 
 is_less_than(V1, V2) ->
+    {error, not_found}.
+
+-spec is_greater_than(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+is_greater_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
+    case combined_type(V1, V2) of
+        {integer, Int1, Int2} ->
+            {ok, Int1 > Int2};
+        {float, Float1, Float2} ->
+            {ok, Float1 > Float2};
+        {string, String1, String2} ->
+            {ok, String1 > String2}
+    end;
+
+is_greater_than(V1, V2) ->
+    {error, not_found}.
+
+-spec is_equal_to(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+is_equal_to(V1, V2) when is_binary(V1) and is_binary(V2) ->
+    case combined_type(V1, V2) of
+        {integer, Int1, Int2} ->
+            {ok, Int1 == Int2};
+        {float, Float1, Float2} ->
+            {ok, Float1 == Float2};
+        {string, String1, String2} ->
+            {ok, String1 == String2}
+    end;
+
+is_equal_to(V1, V2) ->
     {error, not_found}.
 
 

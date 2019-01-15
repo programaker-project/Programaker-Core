@@ -383,33 +383,33 @@ export class Toolbox {
                  '</shadow>' +
                '</value>' +
              '</block>' +
-        //     '<block type="operator_equals" id="operator_equals">' +
-        //       '<value name="OPERAND1">' +
-        //         '<shadow type="text">' +
-        //           '<field name="TEXT"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="OPERAND2">' +
-        //         '<shadow type="text">' +
-        //           '<field name="TEXT"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_gt" id="operator_gt">' +
-        //       '<value name="OPERAND1">' +
-        //         '<shadow type="text">' +
-        //           '<field name="TEXT"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="OPERAND2">' +
-        //         '<shadow type="text">' +
-        //           '<field name="TEXT"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_and" id="operator_and"></block>' +
-        //     '<block type="operator_or" id="operator_or"></block>' +
-        //     '<block type="operator_not" id="operator_not"></block>' +
+            '<block type="operator_equals" id="operator_equals">' +
+              '<value name="OPERAND1">' +
+                '<shadow type="text">' +
+                  '<field name="TEXT"></field>' +
+                '</shadow>' +
+              '</value>' +
+              '<value name="OPERAND2">' +
+                '<shadow type="text">' +
+                  '<field name="TEXT"></field>' +
+                '</shadow>' +
+              '</value>' +
+            '</block>' +
+            '<block type="operator_gt" id="operator_gt">' +
+              '<value name="OPERAND1">' +
+                '<shadow type="text">' +
+                  '<field name="TEXT"></field>' +
+                '</shadow>' +
+              '</value>' +
+              '<value name="OPERAND2">' +
+                '<shadow type="text">' +
+                  '<field name="TEXT"></field>' +
+                '</shadow>' +
+              '</value>' +
+            '</block>' +
+            '<block type="operator_and" id="operator_and"></block>' +
+            '<block type="operator_or" id="operator_or"></block>' +
+            '<block type="operator_not" id="operator_not"></block>' +
             '<block type="operator_join" id="operator_join">' +
               '<value name="STRING1">' +
                 '<shadow type="text">' +

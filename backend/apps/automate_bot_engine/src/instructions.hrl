@@ -18,7 +18,16 @@
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
+
+%% Any() operations
+-define(COMMAND_EQUALS, <<"operator_equals">>).
 -define(COMMAND_LESS_THAN, <<"operator_lt">>).
+-define(COMMAND_GREATER_THAN, <<"operator_gt">>).
+
+%% Boolean operations
+-define(COMMAND_AND, <<"operator_and">>).
+-define(COMMAND_OR, <<"operator_or">>).
+-define(COMMAND_NOT, <<"operator_not">>).
 
 %% Numeric operations
 -define(COMMAND_ADD, <<"operator_add">>).
