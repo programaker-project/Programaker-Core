@@ -380,6 +380,76 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
             {error, not_found}
     end;
 
+get_block_result(#{ ?TYPE := ?COMMAND_ADD
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:add(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_SUBTRACT
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:subtract(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_MULTIPLY
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:multiply(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_DIVIDE
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:divide(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_LESS_THAN
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:is_less_than(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
 %% Variables
 get_block_result(#{ ?TYPE := ?COMMAND_DATA_VARIABLE
                   , ?ARGUMENTS := [ Value
@@ -446,15 +516,6 @@ get_block_result(#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
         {error, not_found} ->
             {ok, false}
     end;
-
-get_block_result(#{ ?TYPE := ?COMMAND_LESS_THAN
-                  , ?ARGUMENTS := [ Arg1
-                                  , Arg2
-                                  ]
-                  }, Thread) ->
-    {ok, Value1} = automate_bot_engine_variables:resolve_argument(Arg1, Thread),
-    {ok, Value2} = automate_bot_engine_variables:resolve_argument(Arg2, Thread),
-    {ok, automate_bot_engine_values:is_less_than(Value1, Value2)};
 
 get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
                   , ?ARGUMENTS := []

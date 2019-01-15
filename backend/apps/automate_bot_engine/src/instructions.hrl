@@ -20,6 +20,12 @@
 -define(COMMAND_JOIN, <<"operator_join">>).
 -define(COMMAND_LESS_THAN, <<"operator_lt">>).
 
+%% Numeric operations
+-define(COMMAND_ADD, <<"operator_add">>).
+-define(COMMAND_SUBTRACT, <<"operator_subtract">>).
+-define(COMMAND_MULTIPLY, <<"operator_multiply">>).
+-define(COMMAND_DIVIDE, <<"operator_divide">>).
+
 %% Variable control
 -define(COMMAND_SET_VARIABLE, <<"data_setvariableto">>).
 -define(COMMAND_CHANGE_VARIABLE, <<"data_changevariableby">>).

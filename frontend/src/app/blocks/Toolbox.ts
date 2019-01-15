@@ -311,54 +311,54 @@ export class Toolbox {
       '</category>';
 
         const operatorsCategory =           '<category name="Operators" colour="#40BF4A" secondaryColour="#389438">' +
-        //     '<block type="operator_add" id="operator_add">' +
-        //       '<value name="NUM1">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="NUM2">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_subtract" id="operator_subtract">' +
-        //       '<value name="NUM1">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="NUM2">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_multiply" id="operator_multiply">' +
-        //       '<value name="NUM1">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="NUM2">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_divide" id="operator_divide">' +
-        //       '<value name="NUM1">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="NUM2">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
+            '<block type="operator_add" id="operator_add">' +
+              '<value name="NUM1">' +
+                '<shadow type="math_number">' +
+                  '<field name="NUM"></field>' +
+                '</shadow>' +
+              '</value>' +
+              '<value name="NUM2">' +
+                '<shadow type="math_number">' +
+                  '<field name="NUM"></field>' +
+                '</shadow>' +
+              '</value>' +
+            '</block>' +
+            '<block type="operator_subtract" id="operator_subtract">' +
+              '<value name="NUM1">' +
+                '<shadow type="math_number">' +
+                  '<field name="NUM"></field>' +
+                '</shadow>' +
+              '</value>' +
+              '<value name="NUM2">' +
+                '<shadow type="math_number">' +
+                  '<field name="NUM"></field>' +
+                '</shadow>' +
+              '</value>' +
+            '</block>' +
+            '<block type="operator_multiply" id="operator_multiply">' +
+              '<value name="NUM1">' +
+                '<shadow type="math_number">' +
+                  '<field name="NUM"></field>' +
+                '</shadow>' +
+              '</value>' +
+              '<value name="NUM2">' +
+                '<shadow type="math_number">' +
+                  '<field name="NUM"></field>' +
+                '</shadow>' +
+              '</value>' +
+            '</block>' +
+            '<block type="operator_divide" id="operator_divide">' +
+              '<value name="NUM1">' +
+                '<shadow type="math_number">' +
+                  '<field name="NUM"></field>' +
+                '</shadow>' +
+              '</value>' +
+              '<value name="NUM2">' +
+                '<shadow type="math_number">' +
+                  '<field name="NUM"></field>' +
+                '</shadow>' +
+              '</value>' +
+            '</block>' +
         //     '<block type="operator_random" id="operator_random">' +
         //       '<value name="FROM">' +
         //         '<shadow type="math_number">' +
