@@ -2,6 +2,7 @@
 
 %% API
 -export([ add/2
+        , is_less_than/2
         ]).
 
 %%%===================================================================
@@ -18,18 +19,35 @@ add(Previous, Change) when is_binary(Previous) and is_binary(Change) ->
             <<PreviousS/binary, ChangeS/binary>>
     end;
 
+
 %% If everything else failed, just do simple concatenation
 add(V1, V2) ->
     binary:list_to_bin(lists:flatten(io_lib:format("~s~s", [to_string(V1), to_string(V2)]))).
 
+-spec is_less_than(binary(), binary()) -> binary().
+is_less_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
+    case combined_type(V1, V2) of
+        {integer, Int1, Int2} ->
+            Int1 < Int2;
+        {float, Float1, Float2} ->
+            Float1 < Float2;
+        {string, String1, String2} ->
+            String1 < String2
+    end;
+
+%% If everything else failed, return false
+is_less_than(_, _) ->
+    false.
+
+%%%===================================================================
+%%% Type handling methods
+%%%===================================================================
 to_string(V) when is_binary(V) ->
     V;
 to_string(V) when is_list(V) ->
     V;
 to_string(V) ->
     io_lib:format("~p", [V]).
-
-
 
 combined_type(V1, V2) when is_binary(V1) and is_binary(V2) ->
     case [to_int(V1), to_int(V2)] of

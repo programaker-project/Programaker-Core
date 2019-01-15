@@ -168,6 +168,18 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
             {ran_this_tick, increment_position(NextIteration)}
     end;
 
+run_instruction(#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{ position=Position }, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
+    case Value of
+        false ->
+            {ran_this_tick, Thread#program_thread{ position=Position ++ [1] }};
+        _ ->
+            {ran_this_tick, increment_position(Thread)}
+    end;
+
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT
                  , ?ARGUMENTS := [Argument]
                  }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
@@ -422,6 +434,15 @@ get_block_result(#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
         {error, not_found} ->
             {ok, false}
     end;
+
+get_block_result(#{ ?TYPE := ?COMMAND_LESS_THAN
+                  , ?ARGUMENTS := [ Arg1
+                                  , Arg2
+                                  ]
+                  }, Thread) ->
+    {ok, Value1} = automate_bot_engine_variables:resolve_argument(Arg1, Thread),
+    {ok, Value2} = automate_bot_engine_variables:resolve_argument(Arg2, Thread),
+    {ok, automate_bot_engine_values:is_less_than(Value1, Value2)};
 
 get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
                   , ?ARGUMENTS := []

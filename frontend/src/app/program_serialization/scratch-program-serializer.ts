@@ -114,6 +114,15 @@ export default class ScratchProgramSerializer {
             }
         }
 
+        if ((argument.childNodes.length === 1)
+           && ((argument.childNodes[0] as HTMLElement).tagName === 'BLOCK')) {
+
+            return {
+                type: 'block',
+                value: this.serializeBlock(argument.childNodes[0] as HTMLElement),
+            }
+        }
+
 
         // If there's just one entry, it's only a shadow value.
         // return it's content as constant

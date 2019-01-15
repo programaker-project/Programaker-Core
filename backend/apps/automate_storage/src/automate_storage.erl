@@ -361,7 +361,6 @@ start_link() ->
 %% Internal functions
 %%====================================================================
 cipher_password(Plaintext) ->
-    %% Example 2: password storage
     Password = Plaintext,
     Opslimit = libsodium_crypto_pwhash:opslimit_interactive(), % Minimal recommended
     Memlimit = libsodium_crypto_pwhash:memlimit_interactive(), % 64MiB

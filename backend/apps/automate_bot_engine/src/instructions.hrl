@@ -13,9 +13,11 @@
 %% General control
 -define(COMMAND_WAIT, <<"control_wait">>).
 -define(COMMAND_REPEAT, <<"control_repeat">>).
+-define(COMMAND_REPEAT_UNTIL, <<"control_repeat_until">>).
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
+-define(COMMAND_LESS_THAN, <<"operator_lt">>).
 
 %% Variable control
 -define(COMMAND_SET_VARIABLE, <<"data_setvariableto">>).
