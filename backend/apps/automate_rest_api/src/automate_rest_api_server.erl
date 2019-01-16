@@ -30,6 +30,7 @@ start_link() ->
                         , {"/api/v0/users/:user_id/chats", automate_rest_api_chats_root, []}
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
                         , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
+                        , {"/api/v0/users/:user_id/service-port/", automate_rest_api_service_ports_root, []}
 
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}
                         , {"/api/v0/users/:user_id/services/id/:service_id/how-to-enable", automate_rest_api_services_how_to_enable, []}

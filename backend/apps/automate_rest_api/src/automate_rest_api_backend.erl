@@ -16,6 +16,8 @@
 
         , update_program_metadata/3
         , delete_program/2
+
+        , create_service_port/2
         ]).
 
 %% Definitions
@@ -178,6 +180,12 @@ list_chats_from_username(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     automate_chat_registry:get_all_chats_for_user(UserId).
 
+-spec create_service_port(binary(), binary()) -> {ok, binary()}.
+create_service_port(Username, ServicePortName) ->
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, ServicePortId } = automate_service_port_engine:create_service_port(UserId, ServicePortName),
+    {ok, generate_url_for_service_port(UserId, ServicePortId)}.
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -222,6 +230,10 @@ generate_url_for_program_name(Username, ProgramName) ->
 generate_url_for_monitor_name(Username, MonitorName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/monitors/~s", [Username, MonitorName]))).
 
+generate_url_for_service_port(UserId, ServicePortId) ->
+        binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/service-ports/id/~s", [UserId, ServicePortId]))).
+    
+    
 program_entry_to_program(#user_program_entry{ id=Id
                                             , user_id=UserId
                                             , program_name=ProgramName

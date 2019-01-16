@@ -51,7 +51,7 @@ export class AddServicePortsComponent {
     create(): void {
         this.editable = false;
         this.servicePortService.createServicePort(this.portName).then((ServicePortMetadata: ServicePortMetadata) => {
-            this.portControlUrl = ServicePortMetadata.control_url;
+            this.portControlUrl = document.location.origin + ServicePortMetadata.control_url;
         }).catch(() => {
             this.editable = true;
         });
