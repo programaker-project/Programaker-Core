@@ -4,6 +4,8 @@ import { RouterModule, Routes } from '@angular/router';
 import { AddServicesComponent } from './add-services.component';
 import { ServicesComponent } from './services.component';
 
+import { AddServicePortsComponent } from './add-service-ports.component';
+
 import { DashboardComponent } from './dashboard.component';
 
 import { ProgramsComponent } from './programs.component';
@@ -26,6 +28,9 @@ const routes: Routes = [
     // Services
     { path: 'services', component: ServicesComponent },
     { path: 'services/add', component: AddServicesComponent },
+
+    // Service ports
+    { path: 'service-ports/add', component: AddServicePortsComponent },
 ];
 
 @NgModule({

@@ -26,6 +26,7 @@ import { DashboardComponent } from './dashboard.component';
 import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
 import { AddServicesComponent } from './add-services.component';
+import { AddServicePortsComponent } from './add-service-ports.component';
 
 import { ServicesComponent } from './services.component';
 
@@ -46,6 +47,7 @@ import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
         ProgramsComponent,
         ProgramDetailComponent,
         AddServicesComponent,
+        AddServicePortsComponent,
         ServicesComponent,
         LoginFormComponent,
 
@@ -82,6 +84,7 @@ import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
     ],
     exports: [
         AddServicesComponent,
+        AddServicePortsComponent,
     ],
     entryComponents: [
         HowToEnableServiceDialogComponent,
