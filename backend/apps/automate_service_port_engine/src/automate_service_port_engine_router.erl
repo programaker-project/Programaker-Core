@@ -9,7 +9,6 @@
         , route_inbound/2
         , open_outbound_channel/2
         , get_routes/0
-        , close_outbound_channel/1
         ]).
 
 %% gen_server callbacks
@@ -49,24 +48,13 @@ open_outbound_channel(ChannelId, Callback) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Deregister an outbound channel.
-%%
-%% @spec close_outbound_channel(Connection) -> ok | {error, Error}
-%% @end
-%%--------------------------------------------------------------------
-close_outbound_channel(Connection) ->
-    gen_server:cast({global, ?SERVER}, { close_outbound_channel, Connection }).
-
-%%--------------------------------------------------------------------
-%% @doc
 %% Send a message through a inbound channel.
 %%
 %% @spec route_inbound(ChannelId, Msg) -> ok | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 route_inbound(ChannelId, Msg) ->
-    Routes = gen_server:call({global, ?SERVER}, { route_inbound, ChannelId }),
-    send_to_all(Msg, Routes).
+    gen_server:call({global, ?SERVER}, { route_inbound, ChannelId, Msg }).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -120,7 +108,7 @@ handle_call({ get_routes }, _From, State) ->
     Reply = {ok, Routes},
     {reply, Reply, State};
 
-handle_call({ route_inbound, ChannelId }, _From, State) ->
+handle_call({ route_inbound, ChannelId, Msg }, _From, State) ->
     #state{ channels=Channels } = State,
     #state{ stats=Stats} = State,
     #stats{ processed_messages=ProcessedMessages } = Stats,
@@ -130,11 +118,13 @@ handle_call({ route_inbound, ChannelId }, _From, State) ->
         { ok, OutboundChannels } -> OutboundChannels
     end,
 
-    {reply, Response, State#state {
-                        stats=Stats#stats{
-                                processed_messages=(ProcessedMessages + 1)
-                               }
-                       }};
+    io:fwrite("Channels: ~p~n", [Channels]),
+    { reply
+    , length(Response)
+    , State#state { channels=Channels#{ ChannelId => send_to_all(Msg, Response) }
+                  , stats=Stats#stats{ processed_messages=(ProcessedMessages + 1)
+                                     }
+                  }};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -174,15 +164,24 @@ handle_cast(_Msg, State) ->
 %% @doc
 %% Send a message to all channels in a list.
 %%
-%% @spec send_to_all(msg, channels) -> ok | { error, Error }
+%% @spec send_to_all(msg, channels) -> {ok, ContinuingChannels} | { error, Error }
 %% @end
 %%--------------------------------------------------------------------
-send_to_all(_, []) ->
-    ok;
+-spec send_to_all(any(), [ #trigger{} ]) -> [#trigger{}] | {error, any()}.
+send_to_all(Msg, Channels) ->
+    io:fwrite("Sending to ~p~n", [Channels]),
+    send_to_all(Msg, Channels, []).
 
-send_to_all(Msg, [ #trigger{ pid=_Pid, callback=Callback } | T]) ->
-    Callback(Msg),
-    send_to_all(Msg, T).
+send_to_all(_, [], Continuing) ->
+    Continuing;
+
+send_to_all(Msg, [ Channel=#trigger{ pid=_Pid, callback=Callback } | T], Continuing) ->
+    case Callback(Msg) of
+        continue ->
+            send_to_all(Msg, T, [ Channel | Continuing ]);
+        _ ->
+            send_to_all(Msg, T, Continuing)
+    end.
 
 %%--------------------------------------------------------------------
 %% @private

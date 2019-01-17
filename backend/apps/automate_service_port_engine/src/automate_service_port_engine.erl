@@ -28,9 +28,11 @@ create_service_port(UserId, ServicePortName) ->
 register_service_port(ServicePortId) ->
     ChannelId = ServicePortId,
     Process = self(),
+    io:fwrite("Connected service port ~p~n", [ServicePortId]),
     ?ROUTER:open_outbound_channel({to_service, ChannelId},
                                   fun(Msg) ->
-                                          Process ! Msg
+                                          Process ! Msg,
+                                          continue
                                   end),
     ok.
 
@@ -41,14 +43,16 @@ call_service_port(ServicePortId, FunctionName, Arguments) ->
 
     MessageId = generate_id(),
 
-    Connection = ?ROUTER:open_outbound_channel({from_service, ChannelId},
+    ?ROUTER:open_outbound_channel({from_service, ChannelId},
                                   fun(Answer=#{ <<"message_id">> := ReceivedMessageId
                                               }) ->
+                                          io:fwrite("~p vs ~p = ~p~n", [ReceivedMessageId, MessageId, ReceivedMessageId == MessageId]),
                                           case ReceivedMessageId of
                                               MessageId ->
-                                                  Process ! {?MODULE, Answer};
+                                                  Process ! {?MODULE, Answer},
+                                                  finish;
                                               _ ->
-                                                  ok
+                                                  continue
                                           end
                                   end),
     ?ROUTER:route_inbound({to_service, ChannelId},
@@ -60,7 +64,6 @@ call_service_port(ServicePortId, FunctionName, Arguments) ->
                                         })),
 
     receive {?MODULE, Msg} ->
-            ?ROUTER:close_outbound_channel(Connection),
             {ok, Msg}
     end.
 
