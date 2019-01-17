@@ -19,7 +19,7 @@ export class ServicePortService {
 
     async getCreateServicePortUrl() {
         const userApiRoot = await this.sessionService.getUserApiRoot();
-        return userApiRoot + '/service-port/';
+        return userApiRoot + '/service-ports/';
     }
 
     createServicePort(name: string): Promise<ServicePortMetadata> {

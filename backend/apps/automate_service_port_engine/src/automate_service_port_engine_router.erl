@@ -6,7 +6,7 @@
 
 %% API
 -export([start_link/0
-        , open_inbound_channel/1, route_inbound/2
+        , route_inbound/2
         , open_outbound_channel/2
         , get_routes/0 ]).
 
@@ -29,21 +29,11 @@
 %% @doc
 %% Obtain available routes.
 %%
-%% @spec open_inbound_channel(ChannelId) -> ok | {error, Error}
+%% @spec get_routes() -> {ok, Routes} | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 get_routes() ->
     gen_server:call({global, ?SERVER}, { get_routes }).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Register an inbound channel.
-%%
-%% @spec open_inbound_channel(ChannelId) -> ok | {error, Error}
-%% @end
-%%--------------------------------------------------------------------
-open_inbound_channel(ChannelId) ->
-    gen_server:cast({global, ?SERVER}, { open_inbound_channel, ChannelId, self() }).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -148,9 +138,6 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({ open_inbound_channel, _ChannelId, _Pid }, State) ->
-    {noreply, State};
-
 handle_cast({ open_outbound_channel, ChannelId, Pid, Callback }, State) ->
     #state{ channels=Channels } = State,
     PreexistingChannels = case maps:find(ChannelId, Channels) of

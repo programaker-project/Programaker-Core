@@ -18,7 +18,6 @@
 start_link() ->
     Nodes = [node()],
 
-    io:fwrite("\033[7m CREATING SERVICE PORT TABLE \033[0m~n"),
     %% Live channels table
     ok = case mnesia:create_table(?SERVICE_PORT_TABLE,
                                   [ { attributes, record_info(fields, service_port_entry)}
