@@ -10,7 +10,7 @@
 -export([ create_service_port/2
         , register_service_port/1
         , from_service_port/2
-        , ask_service_port/2
+        , call_service_port/3
         ]).
 
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
@@ -34,18 +34,46 @@ register_service_port(ServicePortId) ->
                                   end),
     ok.
 
--spec ask_service_port(binary(), binary()) -> ok.
-ask_service_port(ServicePortId, Msg) ->
+-spec call_service_port(binary(), binary(), binary()) -> {ok, any()}.
+call_service_port(ServicePortId, FunctionName, Arguments) ->
     ChannelId = ServicePortId,
-    ?ROUTER:route_inbound({to_service, ChannelId}, Msg),
-    ok.
+    Process = self(),
+
+    MessageId = generate_id(),
+
+    Connection = ?ROUTER:open_outbound_channel({from_service, ChannelId},
+                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
+                                              }) ->
+                                          case ReceivedMessageId of
+                                              MessageId ->
+                                                  Process ! {?MODULE, Answer};
+                                              _ ->
+                                                  ok
+                                          end
+                                  end),
+    ?ROUTER:route_inbound({to_service, ChannelId},
+                          jiffy:encode(#{ <<"message_id">> => MessageId
+                                        , <<"type">> => <<"FUNCTION_CALL">>
+                                        , <<"value">> => #{ <<"function_name">> => FunctionName
+                                                          , <<"arguments">> => Arguments
+                                                          }
+                                        })),
+
+    receive {?MODULE, Msg} ->
+            ?ROUTER:close_outbound_channel(Connection),
+            {ok, Msg}
+    end.
 
 -spec from_service_port(binary(), binary()) -> ok.
 from_service_port(ServicePortId, Msg) ->
     ChannelId = ServicePortId,
-    ?ROUTER:route_inbound({from_service, ChannelId}, Msg),
+    Unpacked = jiffy:decode(Msg, [return_maps]),
+    io:fwrite("Service answered ~p~n", [Unpacked]),
+    ?ROUTER:route_inbound({from_service, ChannelId}, Unpacked),
     ok.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+generate_id() ->
+    binary:list_to_bin(uuid:to_string(uuid:uuid4())).

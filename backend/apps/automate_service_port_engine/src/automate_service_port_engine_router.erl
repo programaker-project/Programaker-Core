@@ -8,7 +8,9 @@
 -export([start_link/0
         , route_inbound/2
         , open_outbound_channel/2
-        , get_routes/0 ]).
+        , get_routes/0
+        , close_outbound_channel/1
+        ]).
 
 %% gen_server callbacks
 -export([ init/1, handle_call/3, handle_cast/2, handle_info/2
@@ -44,6 +46,16 @@ get_routes() ->
 %%--------------------------------------------------------------------
 open_outbound_channel(ChannelId, Callback) ->
     gen_server:cast({global, ?SERVER}, { open_outbound_channel, ChannelId, self(), Callback }).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Deregister an outbound channel.
+%%
+%% @spec close_outbound_channel(Connection) -> ok | {error, Error}
+%% @end
+%%--------------------------------------------------------------------
+close_outbound_channel(Connection) ->
+    gen_server:cast({global, ?SERVER}, { close_outbound_channel, Connection }).
 
 %%--------------------------------------------------------------------
 %% @doc

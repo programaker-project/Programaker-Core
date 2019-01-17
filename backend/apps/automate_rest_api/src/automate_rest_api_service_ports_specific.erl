@@ -37,5 +37,7 @@ websocket_handle({binary, Msg}, State=#state{ service_port_id=ServicePortId
 websocket_handle(Message, State) ->
     {ok, State}.
 
+%% automate_service_port_engine:call_service_port(<<"d9c566da-ca2b-4fb8-95a3-702ba5c9abbb">>, <<"__ping">>, []).
 websocket_info(Message, State) ->
+    io:fwrite("Got ~p~n", [Message]),
     {reply, {binary, Message}, State}.
