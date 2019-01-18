@@ -11,6 +11,8 @@
         , register_service_port/1
         , from_service_port/3
         , call_service_port/3
+
+        , list_custom_blocks/1
         ]).
 
 -include("records.hrl").
@@ -83,6 +85,9 @@ from_service_port(ServicePortId, UserId, Msg) ->
             set_service_port_configuration(ServicePortId, Configuration, UserId)
     end.
 
+-spec list_custom_blocks(binary()) -> {ok, [_]}.
+list_custom_blocks(UserId) ->
+    ?BACKEND:list_custom_blocks(UserId).
 
 %%====================================================================
 %% Internal functions

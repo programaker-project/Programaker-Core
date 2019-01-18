@@ -8,6 +8,8 @@
 -export([ start_link/0
         , create_service_port/2
         , set_service_port_configuration/3
+
+        , list_custom_blocks/1
         ]).
 
 -include("records.hrl").
@@ -125,8 +127,46 @@ set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+-spec list_custom_blocks(binary()) -> {ok, [_]}.
+list_custom_blocks(UserId) ->
+    Transaction = fun() ->
+                          Services = list_userid_ports(UserId),
+                          {ok
+                          , lists:flatmap(fun (PortId) ->
+                                                  list_blocks_for_port(PortId)
+                                          end,
+                                          Services)}
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
+list_userid_ports(UserId) ->
+    MatchHead = #service_port_entry{ id='$1'
+                                   , name='_'
+                                   , owner='$2'
+                                   , service_id='_'
+                                   },
+    Guard = {'==', '$2', UserId},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    mnesia:select(?SERVICE_PORT_TABLE, Matcher).
+
+list_blocks_for_port(PortId) ->
+    case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, PortId) of
+        [] -> [];
+        [#service_port_configuration{ blocks=Blocks
+                                    }] ->
+            Blocks
+    end.
+
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).

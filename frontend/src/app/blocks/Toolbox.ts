@@ -1,6 +1,9 @@
 import { MonitorService } from '../monitor.service';
 import { MonitorMetadata } from '../monitor';
 import { Chat } from '../chat';
+import { CustomBlockService } from '../custom_block.service';
+import { CustomBlock } from '../custom_block';
+
 declare const Blockly;
 
 const MonitorPrimaryColor = '#CC55CC';
@@ -8,6 +11,7 @@ const MonitorSecondaryColor = '#773377';
 
 export class Toolbox {
     monitorService: MonitorService;
+    customBlockService: CustomBlockService;
     chats: Chat[];
 
     static alreadyRegisteredException(e: Error): boolean {
@@ -16,14 +20,17 @@ export class Toolbox {
 
     constructor(
         monitorService: MonitorService,
+        customBlockService: CustomBlockService,
         chats: Chat[],
     ) {
         this.monitorService = monitorService;
+        this.customBlockService = customBlockService;
         this.chats = chats;
     }
 
     async inject(): Promise<void> {
         const monitors = await this.monitorService.getMonitors();
+        const custom_blocks = this.customBlockService.getCustomBlocks();
 
         this.injectBlocks(monitors);
         this.injectToolbox(monitors);

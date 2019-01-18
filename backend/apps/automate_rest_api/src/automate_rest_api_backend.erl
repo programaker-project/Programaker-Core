@@ -18,6 +18,7 @@
         , delete_program/2
 
         , create_service_port/2
+        , list_custom_blocks_from_username/1
         ]).
 
 %% Definitions
@@ -186,6 +187,11 @@ create_service_port(Username, ServicePortName) ->
     {ok, ServicePortId } = automate_service_port_engine:create_service_port(UserId, ServicePortName),
     {ok, generate_url_for_service_port(UserId, ServicePortId)}.
 
+-spec list_custom_blocks_from_username(binary()) -> {ok, [_]}.
+list_custom_blocks_from_username(Username) ->
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    automate_service_port_engine:list_custom_blocks(UserId).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -232,8 +238,8 @@ generate_url_for_monitor_name(Username, MonitorName) ->
 
 generate_url_for_service_port(UserId, ServicePortId) ->
         binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/service-ports/id/~s", [UserId, ServicePortId]))).
-    
-    
+
+
 program_entry_to_program(#user_program_entry{ id=Id
                                             , user_id=UserId
                                             , program_name=ProgramName
