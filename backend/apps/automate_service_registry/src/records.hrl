@@ -18,7 +18,7 @@
                               , public :: boolean()     | ?SELECTOR_VALUES
                               , name :: binary()        | ?SELECTOR_VALUES
                               , description :: binary() | ?SELECTOR_VALUES
-                              , module :: module()      | ?SELECTOR_VALUES
+                              , module :: module() | {module(), [_]} | ?SELECTOR_VALUES
                               }).
 
 -type service_entry() :: #{ name := binary()

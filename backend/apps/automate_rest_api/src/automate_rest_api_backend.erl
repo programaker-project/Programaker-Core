@@ -202,7 +202,7 @@ get_service_metadata(Id
                        , module := Module
                        }
                     , Username) ->
-    try Module:is_enabled_for_user(Username) of
+    try automate_service_registry_query:is_enabled_for_user(Module, Username) of
         {ok, Enabled} ->
             #service_metadata{ id=Id
                              , name=Name
@@ -256,5 +256,5 @@ get_platform_service_how_to(Username, ServiceId)  ->
         E = {error, not_found} ->
             E;
         {ok, #{ module := Module }} ->
-            Module:get_how_to_enable(#{ user_id => UserId, user_name => Username})
+            autoamte_service_registry_query:get_how_to_enable(Module, #{ user_id => UserId, user_name => Username})
     end.

@@ -323,7 +323,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_CALL_SERVICE
                      OwnerUserId
              end,
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, NewThread, _Value} = Module:call(Action, Values, Thread, UserId),
+    {ok, NewThread, _Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
     {ran_this_tick, increment_position(NewThread)};
 
 run_instruction(_Instruction, _Thread, _State, _Message) ->
@@ -616,7 +616,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
 
     {ok, #user_program_entry{ user_id=UserId }} = automate_storage:get_program_from_id(PID),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, _NewThread, Value} = Module:call(Action, Values, Thread, UserId),
+    {ok, _NewThread, Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
     {ok, Value};
 
 %% Fail

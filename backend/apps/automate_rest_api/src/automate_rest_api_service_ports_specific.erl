@@ -17,6 +17,7 @@ init(Req, Opts) ->
     ServicePortId = cowboy_req:binding(service_port_id, Req),
 
     {cowboy_websocket, Req, #state{ service_port_id=ServicePortId
+                                  , user_id=UserId
                                   }}.
 
 websocket_init(State=#state{ service_port_id=ServicePortId
@@ -25,13 +26,15 @@ websocket_init(State=#state{ service_port_id=ServicePortId
     {ok, State}.
 
 websocket_handle({text, Msg}, State=#state{ service_port_id=ServicePortId
+                                          , user_id=UserId
                                           }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, Msg),
+    automate_service_port_engine:from_service_port(ServicePortId, UserId, Msg),
     {ok, State};
 
 websocket_handle({binary, Msg}, State=#state{ service_port_id=ServicePortId
+                                            , user_id=UserId
                                             }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, Msg),
+    automate_service_port_engine:from_service_port(ServicePortId, UserId, Msg),
     {ok, State};
 
 websocket_handle(Message, State) ->

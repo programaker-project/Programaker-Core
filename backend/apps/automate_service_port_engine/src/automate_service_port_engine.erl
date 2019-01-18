@@ -9,9 +9,11 @@
 %% Application callbacks
 -export([ create_service_port/2
         , register_service_port/1
-        , from_service_port/2
+        , from_service_port/3
         , call_service_port/3
         ]).
+
+-include("records.hrl").
 
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
 -define(ROUTER, automate_service_port_engine_router).
@@ -46,7 +48,6 @@ call_service_port(ServicePortId, FunctionName, Arguments) ->
     ?ROUTER:open_outbound_channel({from_service, ChannelId},
                                   fun(Answer=#{ <<"message_id">> := ReceivedMessageId
                                               }) ->
-                                          io:fwrite("~p vs ~p = ~p~n", [ReceivedMessageId, MessageId, ReceivedMessageId == MessageId]),
                                           case ReceivedMessageId of
                                               MessageId ->
                                                   Process ! {?MODULE, Answer},
@@ -67,16 +68,60 @@ call_service_port(ServicePortId, FunctionName, Arguments) ->
             {ok, Msg}
     end.
 
--spec from_service_port(binary(), binary()) -> ok.
-from_service_port(ServicePortId, Msg) ->
+-spec from_service_port(binary(), binary(), binary()) -> ok.
+from_service_port(ServicePortId, UserId, Msg) ->
     ChannelId = ServicePortId,
     Unpacked = jiffy:decode(Msg, [return_maps]),
-    io:fwrite("Service answered ~p~n", [Unpacked]),
-    ?ROUTER:route_inbound({from_service, ChannelId}, Unpacked),
-    ok.
+    case Unpacked of
+        #{ <<"message_id">> := _ } ->
+            io:fwrite("Service answered ~p~n", [Unpacked]),
+            ?ROUTER:route_inbound({from_service, ChannelId}, Unpacked),
+            ok;
+        #{ <<"type">> := <<"configuration">>
+         , <<"value">> := Configuration
+         } ->
+            set_service_port_configuration(ServicePortId, Configuration, UserId)
+    end.
+
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+set_service_port_configuration(ServicePortId, Configuration, UserId) ->
+    SPConfiguration = parse_configuration_map(ServicePortId, Configuration),
+    ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, UserId),
+    ok.
+
+parse_configuration_map(ServicePortId,
+                        #{ <<"blocks">> := Blocks
+                         , <<"is_public">> := IsPublic
+                         , <<"service_name">> := ServiceName
+                         }) ->
+    #service_port_configuration{ id=ServicePortId
+                               , is_public=IsPublic
+                               , service_id=undefined
+                               , service_name=ServiceName
+                               , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
+                               }.
+
+parse_block(#{ <<"arguments">> := Arguments
+             , <<"function_name">> := FunctionName
+             , <<"message">> := Message
+             , <<"id">> := BlockId
+             }) ->
+    #service_port_block{ block_id=BlockId
+                       , function_name=FunctionName
+                       , message=Message
+                       , arguments=lists:map(fun parse_argument/1, Arguments)
+                       }.
+
+parse_argument(#{ <<"default">> := DefaultValue
+                , <<"type">> := Type
+                }) ->
+    #service_port_block_argument{ default=DefaultValue
+                                , type=Type
+                                }.
+
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).

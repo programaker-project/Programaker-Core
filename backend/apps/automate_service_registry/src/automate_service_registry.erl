@@ -38,7 +38,20 @@ get_all_services_for_user(UserId) ->
 get_service_by_id(ServiceId, UserId) ->
     ?BACKEND:get_service_by_id(ServiceId, UserId).
 
--spec register_public(module()) -> {ok, binary()}.
+-spec register_public(module() | #{ name := binary(), description := binary(), module := {module(), [any]} }) -> {ok, binary()}.
+register_public(#{ name := Name
+                 , uuid := Uuid
+                 , description := Description
+                 , module := {Module, Params}
+                 }) ->
+    ok = ?BACKEND:register(Uuid,
+                           true, %% Public
+                           #{ name => Name
+                            , description => Description
+                            , module => {Module, Params}
+                            }),
+    {ok, Uuid};
+
 register_public(ServiceModule) ->
     Uuid = ServiceModule:get_uuid(),
     ok = ?BACKEND:register(Uuid,
@@ -49,7 +62,20 @@ register_public(ServiceModule) ->
                             }),
     {ok, Uuid}.
 
--spec register_private(module()) -> {ok, binary()}.
+-spec register_private(module() | #{ name := binary(), description := binary(), module := {module(), [any]} }) -> {ok, binary()}.
+register_private(#{ name := Name
+                 , uuid := Uuid
+                 , description := Description
+                 , module := {Module, Params}
+                 }) ->
+    ok = ?BACKEND:register(Uuid,
+                           false, %% Private
+                           #{ name => Name
+                            , description => Description
+                            , module => {Module, Params}
+                            }),
+    {ok, Uuid};
+
 register_private(ServiceModule) ->
     Uuid = ServiceModule:get_uuid(),
     ok = ?BACKEND:register(Uuid,
