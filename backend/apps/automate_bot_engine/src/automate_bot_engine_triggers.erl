@@ -20,9 +20,9 @@ get_expected_signals(#program_state{triggers=Triggers}) ->
 
 
 -spec get_triggered_threads(#program_state{}, {atom(), any()}) -> {ok, [#program_thread{}]}.
-get_triggered_threads(#program_state{triggers=Triggers, program_id=ProgramId}, Signal) ->
+get_triggered_threads(Program=#program_state{triggers=Triggers}, Signal) ->
     { ok
-    , lists:filtermap(fun(Thread) -> trigger_thread(Thread, Signal, ProgramId) end,
+    , lists:filtermap(fun(Thread) -> trigger_thread(Thread, Signal, Program) end,
                       Triggers)}.
 
 %%%===================================================================
@@ -58,7 +58,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                , subprogram=Program
                                },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, _Value} },
-               ProgramId) ->
+               ProgramState=#program_state{program_id=ProgramId}) ->
 
     Thread = #program_thread{ position=[1]
                             , program=Program
@@ -78,7 +78,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                , subprogram=Program
                                },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }} },
-               ProgramId) ->
+               ProgramState=#program_state{program_id=ProgramId}) ->
 
     Thread = #program_thread{ position=[1]
                             , program=Program
@@ -87,7 +87,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                             , program_id=ProgramId
                             },
 
-    case automate_bot_engine_variables:resolve_argument(Argument, Thread) of
+    case automate_bot_engine_variables:resolve_argument(Argument, Thread, ProgramState) of
         {ok, MessageContent} ->
 
             {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
@@ -99,14 +99,28 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
     end;
 
 %% If no match is found, don't create a thread
-trigger_thread(Trigger, Message, ProgramId) ->
-    notify_trigger_not_matched(Trigger, Message, ProgramId),
+trigger_thread(Trigger, Message, ProgramState) ->
+    notify_trigger_not_matched(Trigger, Message, ProgramState),
     false.
 
 -ifdef(TEST).
-notify_trigger_not_matched(Trigger, Message, _ProgramId) ->
+notify_trigger_not_matched(_Trigger, { triggered_by_monitor
+                                     , {<<"9b438e6e-1922-4253-a0bb-6af4435ba65f">>, _}},
+                           _Program) ->
+    ok;
+notify_trigger_not_matched(_Trigger, {tick, _}, _Program) ->
+    io:format(" *tick* ");
+notify_trigger_not_matched(Trigger, Message, _Program) ->
     io:format("Trigger (~p) not matching (~p) ~n", [Message, Trigger]).
 -else.
-notify_trigger_not_matched(_Trigger, Message, _ProgramId) ->
+notify_trigger_not_matched(_Trigger, { triggered_by_monitor
+                                     , {<<"9b438e6e-1922-4253-a0bb-6af4435ba65f">>, _}},
+                           _Program) ->
+    ok;
+notify_trigger_not_matched(_Trigger, {tick, _}, _Program) ->
+    ok;
+%% notify_trigger_not_matched(Trigger, Message, _Program) ->
+%%     io:format("Trigger (~p) not matching (~p) ~n", [Message, Trigger]).
+notify_trigger_not_matched(_Trigger, _Message, _Program) ->
     ok.
 -endif.

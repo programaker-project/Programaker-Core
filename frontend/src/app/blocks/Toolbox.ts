@@ -2,12 +2,14 @@ import { MonitorService } from '../monitor.service';
 import { MonitorMetadata } from '../monitor';
 import { Chat } from '../chat';
 import { CustomBlockService } from '../custom_block.service';
-import { CustomBlock } from '../custom_block';
+import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments } from '../custom_block';
 
 declare const Blockly;
 
 const MonitorPrimaryColor = '#CC55CC';
 const MonitorSecondaryColor = '#773377';
+const CustomPrimaryColor = '#777777';
+const CustomSecondaryColor = '#E7E7E7';
 
 export class Toolbox {
     monitorService: MonitorService;
@@ -30,10 +32,10 @@ export class Toolbox {
 
     async inject(): Promise<void> {
         const monitors = await this.monitorService.getMonitors();
-        const custom_blocks = this.customBlockService.getCustomBlocks();
+        const custom_blocks = await this.customBlockService.getCustomBlocks();
 
-        this.injectBlocks(monitors);
-        this.injectToolbox(monitors);
+        this.injectBlocks(monitors, custom_blocks);
+        this.injectToolbox(monitors, custom_blocks);
     }
 
     getChatOptions() {
@@ -46,10 +48,11 @@ export class Toolbox {
         return results;
     }
 
-    injectBlocks(monitors: MonitorMetadata[]) {
+    injectBlocks(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]) {
         this.injectChatBlocks();
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
+        this.injectCustomBlocks(custom_blocks);
     }
 
     injectTimeBlocks() {
@@ -225,11 +228,11 @@ export class Toolbox {
         if (monitors.length > 0) {
             try {
                 Blockly.Extensions.register('colours_monitor',
-                                            function() {
-                                                this.setColourFromRawValues_(MonitorPrimaryColor,
-                                                                            MonitorSecondaryColor,
-                                                                            '#FF00FF');
-                                            });
+                    function () {
+                        this.setColourFromRawValues_(MonitorPrimaryColor,
+                            MonitorSecondaryColor,
+                            '#FF00FF');
+                    });
             } catch (e) {
                 // If the extension was registered before
                 // this would have thrown an inocous exception
@@ -240,7 +243,64 @@ export class Toolbox {
         }
     }
 
-    injectToolbox(monitors: MonitorMetadata[]) {
+    injectCustomBlocks(blocks: CustomBlock[]) {
+        function makeid() {
+            var text = "";
+            var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+            for (var i = 0; i < 5; i++)
+                text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+            return text;
+        }
+
+        for (const block of blocks) {
+            Blockly.Blocks[block.id] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': block.id,
+                        'message0': block.message,
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_custom', get_block_category(block)],
+                        'args0': get_block_toolbox_arguments(block)
+                    });
+                }
+            };
+        }
+
+        if (blocks.length > 0) {
+            try {
+                Blockly.Extensions.register('colours_custom',
+                    function () {
+                        this.setColourFromRawValues_(CustomPrimaryColor,
+                            CustomSecondaryColor,
+                            '#222222');
+                    });
+            } catch (e) {
+                // If the extension was registered before
+                // this would have thrown an inocous exception
+                if (!Toolbox.alreadyRegisteredException(e)) {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    gen_toolbox_xml_from_blocks(custom_blocks: CustomBlock[]) {
+        if (custom_blocks.length == 0) {
+            return '';
+        }
+
+        const custom_blocks_xml = custom_blocks.map((block, _index, _array) => {
+            return block_to_xml(block);
+        });
+
+        return `<category name="Custom" colour="${CustomPrimaryColor}" secondaryColour="${CustomSecondaryColor}">
+        ${custom_blocks_xml.join('\n')}
+        </category>`;
+    }
+
+    injectToolbox(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]) {
         (goog as any).provide('Blockly.Blocks.defaultToolbox');
 
         (goog as any).require('Blockly.Blocks');
@@ -520,6 +580,7 @@ export class Toolbox {
             '<block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>' +
             '</category>';
 
+        const customCategory = this.gen_toolbox_xml_from_blocks(custom_blocks);
 
         Blockly.Blocks.defaultToolbox = [
             '<xml id="toolbox-categories" style="display: none">',
@@ -528,6 +589,7 @@ export class Toolbox {
             controlCategory,
             monitorsCategory,
             timeCategory,
+            customCategory,
             operatorsCategory,
             variablesCategory,
             proceduresCategory,

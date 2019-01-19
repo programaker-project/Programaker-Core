@@ -114,11 +114,15 @@ parse_block(#{ <<"arguments">> := Arguments
              , <<"function_name">> := FunctionName
              , <<"message">> := Message
              , <<"id">> := BlockId
+             , <<"block_type">> := BlockType
+             , <<"block_result_type">> := BlockResultType
              }) ->
     #service_port_block{ block_id=BlockId
                        , function_name=FunctionName
                        , message=Message
                        , arguments=lists:map(fun parse_argument/1, Arguments)
+                       , block_type=BlockType
+                       , block_result_type=BlockResultType
                        }.
 
 parse_argument(#{ <<"default">> := DefaultValue

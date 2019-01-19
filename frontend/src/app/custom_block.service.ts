@@ -23,7 +23,7 @@ export class CustomBlockService {
         return userApiRoot + '/custom-blocks/';
     }
 
-    getCustomBlocks(): Promise<[CustomBlock]> {
+    getCustomBlocks(): Promise<CustomBlock[]> {
         return this.getCustomBlocksUrl().then(url =>
             this.http.get(url,
                 {
@@ -31,8 +31,18 @@ export class CustomBlockService {
                         this.sessionService.getAuthHeader())
                 })
                 .map(response => {
-                    console.log("Blocks:", response);
-                    return response as [CustomBlock];
+                    const blocks: CustomBlock[] = [];
+                    for (const service_port_id of Object.keys(response)) {
+                        for (const block of response[service_port_id]) {
+                            block.service_port_id = service_port_id;
+                            block.id = 'services.' + service_port_id + '.' + block.block_id;
+
+                            blocks.push(block);
+                        }
+                    }
+
+                    console.log("Blocks:", blocks);
+                    return blocks;
                 })
                 .toPromise());
     }

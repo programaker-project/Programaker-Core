@@ -132,10 +132,12 @@ list_custom_blocks(UserId) ->
     Transaction = fun() ->
                           Services = list_userid_ports(UserId),
                           {ok
-                          , lists:flatmap(fun (PortId) ->
-                                                  list_blocks_for_port(PortId)
-                                          end,
-                                          Services)}
+                          , maps:from_list(
+                              lists:filter(fun (X) -> X =/= none end,
+                                           lists:map(fun (PortId) ->
+                                                             list_blocks_for_port(PortId)
+                                                     end,
+                                                     Services)))}
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
@@ -162,10 +164,11 @@ list_userid_ports(UserId) ->
 
 list_blocks_for_port(PortId) ->
     case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, PortId) of
-        [] -> [];
+        [] -> none;
         [#service_port_configuration{ blocks=Blocks
+                                    , service_id=ServiceId
                                     }] ->
-            Blocks
+            {ServiceId, Blocks}
     end.
 
 generate_id() ->

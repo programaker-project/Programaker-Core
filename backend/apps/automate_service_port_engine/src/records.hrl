@@ -18,6 +18,8 @@
                             , function_name :: binary()
                             , message :: binary()
                             , arguments :: [#service_port_block_argument{}]
+                            , block_type :: binary()
+                            , block_result_type :: binary()
                             }).
 
 -record(service_port_configuration, { id :: binary() %% Service port Id

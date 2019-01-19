@@ -71,23 +71,29 @@ to_json(Req, State) ->
     case automate_rest_api_backend:list_custom_blocks_from_username(Username) of
         { ok, CustomBlocks } ->
 
-            Output = jiffy:encode(lists:map(fun encode_block/1, CustomBlocks)),
+            Output = jiffy:encode(maps:map(fun encode_blocks/2, CustomBlocks)),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
             { Output, Res2, State }
     end.
 
+encode_blocks(_K, Blocks) ->
+    lists:map(fun encode_block/1, Blocks).
 
 encode_block(#service_port_block{ block_id=BlockId
-                                , function_name=FunctionName
-                                , message=Message
-                                , arguments=Arguments
-                                }) ->
+                                   , function_name=FunctionName
+                                   , message=Message
+                                   , arguments=Arguments
+                                   , block_type=BlockType
+                                   , block_result_type=BlockResultType
+                                   }) ->
     #{ <<"block_id">> => BlockId
      , <<"function_name">> => FunctionName
      , <<"message">> => Message
      , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
+     , <<"block_type">> => BlockType
+     , <<"block_result_type">> => BlockResultType
      }.
 
 encode_argument(#service_port_block_argument{ type=Type
