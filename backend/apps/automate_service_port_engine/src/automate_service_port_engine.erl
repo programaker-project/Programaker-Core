@@ -10,7 +10,7 @@
 -export([ create_service_port/2
         , register_service_port/1
         , from_service_port/3
-        , call_service_port/3
+        , call_service_port/4
 
         , list_custom_blocks/1
         ]).
@@ -40,8 +40,8 @@ register_service_port(ServicePortId) ->
                                   end),
     ok.
 
--spec call_service_port(binary(), binary(), binary()) -> {ok, any()}.
-call_service_port(ServicePortId, FunctionName, Arguments) ->
+-spec call_service_port(binary(), binary(), binary(), binary()) -> {ok, any()}.
+call_service_port(ServicePortId, FunctionName, Arguments, UserId) ->
     ChannelId = ServicePortId,
     Process = self(),
 
@@ -61,6 +61,7 @@ call_service_port(ServicePortId, FunctionName, Arguments) ->
     ?ROUTER:route_inbound({to_service, ChannelId},
                           jiffy:encode(#{ <<"message_id">> => MessageId
                                         , <<"type">> => <<"FUNCTION_CALL">>
+                                        , <<"user_id">> => UserId
                                         , <<"value">> => #{ <<"function_name">> => FunctionName
                                                           , <<"arguments">> => Arguments
                                                           }

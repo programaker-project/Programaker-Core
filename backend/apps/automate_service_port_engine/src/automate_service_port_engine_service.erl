@@ -25,8 +25,8 @@ start_link() ->
 get_monitor_id(_UserId, _Params) ->
     {error, not_found}.
 
-call(FunctionName, Values, Thread, _UserId, [ServicePortId]) ->
-    {ok, #{ <<"result">> := Result }} = automate_service_port_engine:call_service_port(ServicePortId, FunctionName, Values),
+call(FunctionName, Values, Thread, UserId, [ServicePortId]) ->
+    {ok, #{ <<"result">> := Result }} = automate_service_port_engine:call_service_port(ServicePortId, FunctionName, Values, UserId),
     {ok, Thread, Result}.
 
 %% Is enabled for all users
