@@ -10,12 +10,13 @@
         , set_service_port_configuration/3
 
         , list_custom_blocks/1
+        , internal_user_id_to_service_port_user_id/2
         ]).
 
 -include("records.hrl").
 -define(SERVICE_PORT_TABLE, automate_service_port_table).
 -define(SERVICE_PORT_CONFIGURATION_TABLE, automate_service_port_configuration_table).
-
+-define(SERVICE_PORT_USERID_OBFUSCATION_TABLE, automate_service_port_userid_obfuscation_table).
 %%====================================================================
 %% API
 %%====================================================================
@@ -40,6 +41,19 @@ start_link() ->
                                   [ { attributes, record_info(fields, service_port_configuration)}
                                   , { disc_copies, Nodes }
                                   , { record_name, service_port_configuration }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    %% Service port userId obfuscation
+    ok = case mnesia:create_table(?SERVICE_PORT_USERID_OBFUSCATION_TABLE,
+                                  [ { attributes, record_info(fields, service_port_user_obfuscation_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, service_port_user_obfuscation_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->
@@ -138,6 +152,29 @@ list_custom_blocks(UserId) ->
                                                              list_blocks_for_port(PortId)
                                                      end,
                                                      Services)))}
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+-spec internal_user_id_to_service_port_user_id(binary(), binary()) -> {ok, binary()}.
+internal_user_id_to_service_port_user_id(UserId, ServicePortId) ->
+    FullId = {UserId, ServicePortId},
+    Transaction = fun() ->
+                          case mnesia:read(?SERVICE_PORT_USERID_OBFUSCATION_TABLE, FullId) of
+                              [] ->
+                                  NewId = generate_id(),
+                                  ok = mnesia:write(?SERVICE_PORT_USERID_OBFUSCATION_TABLE,
+                                                    #service_port_user_obfuscation_entry{ id=FullId
+                                                                                        , obfuscated_id=NewId
+                                                                                        }, write),
+                                  {ok, NewId};
+                              [#service_port_user_obfuscation_entry{ obfuscated_id=ObfuscatedId }] ->
+                                  {ok, ObfuscatedId}
+                          end
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->

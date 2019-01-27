@@ -28,3 +28,8 @@
                                     , is_public :: boolean()
                                     , blocks :: [#service_port_block{}]
                                     }).
+
+
+-record(service_port_user_obfuscation_entry, { id :: {binary(), binary()} %% { internal Id, service port Id }
+                                             , obfuscated_id :: binary()
+                                             }).
