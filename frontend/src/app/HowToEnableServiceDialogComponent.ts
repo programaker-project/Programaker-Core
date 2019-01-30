@@ -45,17 +45,31 @@ export class HowToEnableServiceDialogComponent {
         return topMost;
     }
 
-    render_form_entry(entry: ServiceEnableFormEntry): HTMLDivElement {
-        const element = document.createElement('div');
+    render_form_entry(entry: ServiceEnableFormEntry): HTMLElement | Text {
         if (entry.type === 'text') {
-            // Nothing to do
+            const element = document.createTextNode(entry.value);
+            return element;
         }
         else if (entry.type === 'console') {
+            const element = document.createElement('div');
             element.classList.add('console');
+            element.innerText = entry.value;
+            return element;
         }
+        else if (entry.type === 'tag') {
+            let element;
+            if (entry.tag === 'u') {
+                element = document.createElement('u');
+            }
+            else {
+                throw new Error("Unknown tag: "+ entry.tag);
+            }
+            for (const child of entry.content) {
+                element.appendChild(this.render_form_entry(child));
+            }
 
-        element.innerText = entry.value;
-        return element;
+            return element;
+        }
     }
 
     onNoClick(): void {

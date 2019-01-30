@@ -20,10 +20,18 @@ class Request {
     headers: RequestInput[];
 }
 
-interface ServiceEnableFormEntry {
+interface ServiceEnableFormTagEntry {
+    type: 'tag';
+    tag: string;
+    content: ServiceEnableFormEntry[];
+};
+
+interface ServiceEnableFormTextEntry {
     type: 'text' | 'console';
     value: string;
 };
+
+type ServiceEnableFormEntry = ServiceEnableFormTextEntry | ServiceEnableFormTagEntry;
 
 interface ServiceEnableScriptedForm {
     type: 'scripted-form';
