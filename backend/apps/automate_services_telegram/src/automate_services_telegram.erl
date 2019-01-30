@@ -172,28 +172,31 @@ get_telegram_services_from_username(Username) ->
     end.
 
 
-how_to_to_json(#service_enable_how_to{ service=Service
-                                     , method=Method
-                                     , extra=#service_enable_extra_telegram{ token=Token
+how_to_to_json(#service_enable_how_to{ extra=#service_enable_extra_telegram{ token=Token
                                                                            , bot_name=BotName
                                                                            }
                                      }) ->
-    #service_metadata{ id=Id
-                     , name=Name
-                     , link=Link
-                     , enabled=Enabled
-                     } = Service,
-    ServiceAsDictionary = #{ <<"id">> => Id
-                           , <<"name">> => Name
-                           , <<"link">> =>  Link
-                           , <<"enabled">> => Enabled
-                           },
-
-    jiffy:encode(#{ <<"service">> => ServiceAsDictionary
-                  , <<"method">> => Method
-                  , <<"extra">> => #{ <<"token">> => Token
-                                    , <<"bot_name">> => BotName
-                                    , <<"service_type">> => <<"registration_bot">>
-                                    }
-                  }).
+    #{ <<"type">> => <<"scripted-form">>
+     , <<"value">> =>
+           #{ <<"form">> =>
+                  [ #{ <<"type">> => <<"text">>
+                     , <<"value">> => <<"Send the following to ">>
+                     },
+                    #{ <<"type">> => <<"tag">>
+                     , <<"tag">> => <<"a">>
+                     , <<"properties">> =>
+                           #{ <<"href">> => <<"https://telegram.me/", BotName/binary>>
+                            }
+                     , <<"content">> =>
+                           [ #{ <<"type">> => <<"text">>
+                              , <<"value">> => BotName
+                              }
+                           ]
+                     },
+                    #{ <<"type">> => <<"console">>
+                     , <<"value">> => <<"/register ", Token/binary>>
+                     }
+                  ]
+            }
+     }.
 

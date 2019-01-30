@@ -23,6 +23,7 @@ class Request {
 interface ServiceEnableFormTagEntry {
     type: 'tag';
     tag: string;
+    properties: {[key: string]: any; };
     content: ServiceEnableFormEntry[];
 };
 

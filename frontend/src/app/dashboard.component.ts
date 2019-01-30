@@ -92,6 +92,9 @@ export class DashboardComponent {
     }
 
     showHowToEnable(howTo: ServiceEnableHowTo): void {
+        if ((howTo as any).success === false) {
+            return;
+        }
         const dialogRef = this.dialog.open(HowToEnableServiceDialogComponent, {
             data: howTo
         });

@@ -61,6 +61,12 @@ export class HowToEnableServiceDialogComponent {
             if (entry.tag === 'u') {
                 element = document.createElement('u');
             }
+            else if (entry.tag === 'a') {
+                element = document.createElement('a');
+                if ((entry.properties !== undefined) && (entry.properties.href !== undefined)) {
+                    element.setAttribute('href', entry.properties.href);
+                }
+            }
             else {
                 throw new Error("Unknown tag: "+ entry.tag);
             }
