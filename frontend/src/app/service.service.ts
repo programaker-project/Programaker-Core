@@ -29,15 +29,17 @@ export class ServiceService {
 
     getAvailableServices(): Promise<AvailableService[]> {
         return this.getListAvailableServicesUrl().then(
-            url => this.http.get(url, { headers: this.sessionService.getAuthHeader()})
-                            .map(response => response as AvailableService[])
-                            .toPromise());
+            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+                .map(response => response as AvailableService[])
+                .toPromise());
     }
 
     getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {
         return this.getServiceEnableHowToUrl(service).then(
-            url => this.http.get(url, {headers: this.sessionService.getAuthHeader()})
-                            .map(response => response as ServiceEnableHowTo)
-                            .toPromise());
+            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+                .map(response => {
+                    return response as ServiceEnableHowTo;
+                })
+                .toPromise());
     }
 }

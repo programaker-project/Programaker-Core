@@ -20,24 +20,28 @@ class Request {
     headers: RequestInput[];
 }
 
-type ServiceEnableMethod = 'external';
+interface ServiceEnableFormEntry {
+    type: 'text' | 'console';
+    value: string;
+};
 
-class ServiceExtraTelegramInfo {
-    token: string;
-    bot_name: string;
+interface ServiceEnableScriptedForm {
+    type: 'scripted-form';
+    value: {
+        form: ServiceEnableFormEntry[]
+    }
 }
 
-class ServiceEnableHowTo extends Service {
-    method: ServiceEnableMethod;
-    extra: ServiceExtraTelegramInfo;
-}
+
+type ServiceEnableHowTo = ServiceEnableScriptedForm;
 
 export {
     Service,
     AvailableService,
     RequestInput,
     Request,
+
     ServiceEnableHowTo,
-    ServiceEnableMethod,
-    ServiceExtraTelegramInfo,
+    ServiceEnableScriptedForm,
+    ServiceEnableFormEntry,
 };

@@ -92,12 +92,6 @@ export class DashboardComponent {
     }
 
     showHowToEnable(howTo: ServiceEnableHowTo): void {
-        if (howTo.method === 'external') {
-            this.showHowToDialog(howTo);
-        }
-    }
-
-    showHowToDialog(howTo: ServiceEnableHowTo): void {
         const dialogRef = this.dialog.open(HowToEnableServiceDialogComponent, {
             data: howTo
         });
