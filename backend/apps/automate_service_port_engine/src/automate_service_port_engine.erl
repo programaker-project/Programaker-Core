@@ -11,6 +11,7 @@
         , register_service_port/1
         , from_service_port/3
         , call_service_port/4
+        , get_how_to_enable/2
 
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
@@ -71,6 +72,36 @@ call_service_port(ServicePortId, FunctionName, Arguments, UserId) ->
     receive {?MODULE, Msg} ->
             {ok, Msg}
     end.
+
+-spec get_how_to_enable(binary(), binary()) -> {ok, any()}.
+get_how_to_enable(ServicePortId, UserId) ->
+    ChannelId = ServicePortId,
+    Process = self(),
+
+    MessageId = generate_id(),
+
+    ?ROUTER:open_outbound_channel({from_service, ChannelId},
+                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
+                                              }) ->
+                                          case ReceivedMessageId of
+                                              MessageId ->
+                                                  Process ! {?MODULE, Answer},
+                                                  finish;
+                                              _ ->
+                                                  continue
+                                          end
+                                  end),
+    ?ROUTER:route_inbound({to_service, ChannelId},
+                          jiffy:encode(#{ <<"message_id">> => MessageId
+                                        , <<"type">> => <<"GET_HOW_TO_SERVICE_REGISTRATION">>
+                                        , <<"user_id">> => UserId
+                                        , <<"value">> => #{}
+                                        })),
+
+    receive {?MODULE, Msg} ->
+            {ok, Msg}
+    end.
+
 
 -spec from_service_port(binary(), binary(), binary()) -> ok.
 from_service_port(ServicePortId, UserId, Msg) ->

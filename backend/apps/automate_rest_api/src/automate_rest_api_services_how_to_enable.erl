@@ -70,13 +70,12 @@ content_types_provided(Req, State) ->
                                    -> {binary(),cowboy_req:req(), #state{}}.
 to_json(Req, State) ->
     #state{username=Username, service_id=ServiceId} = State,
-    io:fwrite("?? ~p~n", [ServiceId]),
     case automate_rest_api_backend:get_service_enable_how_to(Username, ServiceId) of
         { ok, HowTo } ->
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            { HowTo, Res2, State };
+            { jiffy:encode(HowTo), Res2, State };
         {error, not_found} ->
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),

@@ -35,5 +35,7 @@ is_enabled_for_user(_Username, _Params) ->
     {ok, true}.
 
 %% No need to enable service
-get_how_to_enable(_Username, _Params) ->
-    {error, not_found}.
+get_how_to_enable(#{ user_id := UserId }, [ServicePortId]) ->
+    {ok, ObfuscatedUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
+    {ok, #{ <<"result">> := Result }} = automate_service_port_engine:get_how_to_enable(ServicePortId, ObfuscatedUserId),
+    {ok, Result}.

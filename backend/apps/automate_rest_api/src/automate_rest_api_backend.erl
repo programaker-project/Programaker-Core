@@ -262,5 +262,5 @@ get_platform_service_how_to(Username, ServiceId)  ->
         E = {error, not_found} ->
             E;
         {ok, #{ module := Module }} ->
-            autoamte_service_registry_query:get_how_to_enable(Module, #{ user_id => UserId, user_name => Username})
+            automate_service_registry_query:get_how_to_enable(Module, #{ user_id => UserId, user_name => Username})
     end.
