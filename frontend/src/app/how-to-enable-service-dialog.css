@@ -11,11 +11,3 @@ button.confirmation {
     right: 0;
     margin-left: auto;
 }
-
-div.console {
-    padding: 1ex;
-    background-color: #222;
-    color: #eee;
-    border-radius: 2px;
-    font-family: monospace;
-}

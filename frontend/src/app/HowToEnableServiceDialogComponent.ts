@@ -18,13 +18,13 @@ export class HowToEnableServiceDialogComponent {
         public data: ServiceEnableHowTo) {
         this.service = data;
 
-        setTimeout(() => {
+        dialogRef.afterOpen().subscribe(() => {
             this.renderingZone = (document
                 .getElementById(dialogRef.id)
                 .getElementsByClassName("rendering-zone")[0]) as HTMLDivElement;
 
             this.renderingZone.appendChild(this.render(data));
-        }, 1000);
+        });
     }
 
     render(data: ServiceEnableHowTo): HTMLElement {
