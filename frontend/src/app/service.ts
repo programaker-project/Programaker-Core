@@ -35,7 +35,7 @@ interface ServiceEnableFormTextEntry {
 type ServiceEnableFormEntry = ServiceEnableFormTextEntry | ServiceEnableFormTagEntry;
 
 interface ServiceEnableScriptedForm {
-    type: 'scripted-form';
+    type: 'message';
     value: {
         form: ServiceEnableFormEntry[]
     }

@@ -176,7 +176,7 @@ how_to_to_json(#service_enable_how_to{ extra=#service_enable_extra_telegram{ tok
                                                                            , bot_name=BotName
                                                                            }
                                      }) ->
-    #{ <<"type">> => <<"scripted-form">>
+    #{ <<"type">> => <<"message">>
      , <<"value">> =>
            #{ <<"form">> =>
                   [ #{ <<"type">> => <<"text">>

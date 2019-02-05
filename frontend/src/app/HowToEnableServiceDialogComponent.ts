@@ -28,7 +28,7 @@ export class HowToEnableServiceDialogComponent {
     }
 
     render(data: ServiceEnableHowTo): HTMLElement {
-        if (data.type === 'scripted-form') {
+        if (data.type === 'message') {
             return this.render_scripted_form(data as ServiceEnableScriptedForm);
         }
 
