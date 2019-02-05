@@ -20,29 +20,30 @@ class Request {
     headers: RequestInput[];
 }
 
-interface ServiceEnableFormTagEntry {
+interface ServiceEnableTagEntry {
     type: 'tag';
     tag: string;
-    properties: {[key: string]: any; };
-    content: ServiceEnableFormEntry[];
+    properties: { [key: string]: any; };
+    content: ServiceEnableEntry[];
 };
 
-interface ServiceEnableFormTextEntry {
+interface ServiceEnableTextEntry {
     type: 'text' | 'console';
     value: string;
 };
 
-type ServiceEnableFormEntry = ServiceEnableFormTextEntry | ServiceEnableFormTagEntry;
+type ServiceEnableEntry = ServiceEnableTextEntry | ServiceEnableTagEntry;
+type ServiceEnableType = 'message' | 'form';
 
-interface ServiceEnableScriptedForm {
-    type: 'message';
+interface ServiceEnableMessage {
+    type: ServiceEnableType;
     value: {
-        form: ServiceEnableFormEntry[]
+        form: ServiceEnableEntry[]
     }
 }
 
 
-type ServiceEnableHowTo = ServiceEnableScriptedForm;
+type ServiceEnableHowTo = ServiceEnableMessage;
 
 export {
     Service,
@@ -51,6 +52,7 @@ export {
     Request,
 
     ServiceEnableHowTo,
-    ServiceEnableScriptedForm,
-    ServiceEnableFormEntry,
+    ServiceEnableMessage,
+    ServiceEnableEntry,
+    ServiceEnableType,
 };

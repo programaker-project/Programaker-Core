@@ -192,3 +192,11 @@ div.console {
     border-radius: 2px;
     font-family: monospace;
 }
+
+.rendering-zone span.text {
+    white-space: pre-wrap;
+}
+
+.form-buttons {
+    float: right;
+}
