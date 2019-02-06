@@ -7,5 +7,5 @@
 </mat-dialog-actions>
 <mat-dialog-actions *ngIf="this.type == 'form'" class="form-buttons">
     <button class="rejection" mat-button mat-dialog-close>Cancel</button>
-    <button class="confirmation" mat-button mat-raised-button color="primary">Submit</button>
+    <button class="confirmation" mat-button mat-raised-button  (click)="this.send_form()" color="primary">Submit</button>
 </mat-dialog-actions>

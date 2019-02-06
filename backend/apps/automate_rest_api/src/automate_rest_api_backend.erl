@@ -19,10 +19,12 @@
 
         , create_service_port/2
         , list_custom_blocks_from_username/1
+        , register_service/3
         ]).
 
 %% Definitions
 -include("./records.hrl").
+-include("../../automate_service_registry/src/records.hrl").
 -include("../../automate_storage/src/records.hrl").
 -include("../../automate_chat_registry/src/records.hrl").
 
@@ -191,6 +193,13 @@ create_service_port(Username, ServicePortName) ->
 list_custom_blocks_from_username(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     automate_service_port_engine:list_custom_blocks(UserId).
+
+
+-spec register_service(binary(), binary(), map()) -> {ok, any} | {error, binary()}.
+register_service(Username, ServiceId, RegistrationData) ->
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, _} = automate_service_registry_query:send_registration_data(Module, UserId, RegistrationData).
 
 %%====================================================================
 %% Internal functions

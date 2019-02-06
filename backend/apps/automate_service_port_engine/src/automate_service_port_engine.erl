@@ -12,6 +12,7 @@
         , from_service_port/3
         , call_service_port/4
         , get_how_to_enable/2
+        , send_registration_data/3
 
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
@@ -101,6 +102,36 @@ get_how_to_enable(ServicePortId, UserId) ->
     receive {?MODULE, Msg} ->
             {ok, Msg}
     end.
+
+-spec send_registration_data(binary(), map(), binary()) -> {ok, map()}.
+send_registration_data(ServicePortId, Data, UserId) ->
+    ChannelId = ServicePortId,
+    Process = self(),
+
+    MessageId = generate_id(),
+
+    ?ROUTER:open_outbound_channel({from_service, ChannelId},
+                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
+                                              }) ->
+                                          case ReceivedMessageId of
+                                              MessageId ->
+                                                  Process ! {?MODULE, Answer},
+                                                  finish;
+                                              _ ->
+                                                  continue
+                                          end
+                                  end),
+    ?ROUTER:route_inbound({to_service, ChannelId},
+                          jiffy:encode(#{ <<"message_id">> => MessageId
+                                        , <<"type">> => <<"REGISTRATION">>
+                                        , <<"user_id">> => UserId
+                                        , <<"value">> => #{ <<"form">> => Data }
+                                        })),
+
+    receive {?MODULE, Msg} ->
+            {ok, Msg}
+    end.
+
 
 
 -spec from_service_port(binary(), binary(), binary()) -> ok.

@@ -11,6 +11,7 @@
         , get_how_to_enable/2
         , get_monitor_id/2
         , call/5
+        , send_registration_data/3
         ]).
 
 %%====================================================================
@@ -38,4 +39,9 @@ is_enabled_for_user(_Username, _Params) ->
 get_how_to_enable(#{ user_id := UserId }, [ServicePortId]) ->
     {ok, ObfuscatedUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
     {ok, #{ <<"result">> := Result }} = automate_service_port_engine:get_how_to_enable(ServicePortId, ObfuscatedUserId),
+    {ok, Result}.
+
+send_registration_data(UserId, RegistrationData, [ServicePortId]) ->
+    {ok, ObfuscatedUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
+    {ok, Result} = automate_service_port_engine:send_registration_data(ServicePortId, RegistrationData, ObfuscatedUserId),
     {ok, Result}.

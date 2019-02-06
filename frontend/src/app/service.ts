@@ -39,7 +39,8 @@ interface ServiceEnableMessage {
     type: ServiceEnableType;
     value: {
         form: ServiceEnableEntry[]
-    }
+    },
+    metadata?: any,
 }
 
 

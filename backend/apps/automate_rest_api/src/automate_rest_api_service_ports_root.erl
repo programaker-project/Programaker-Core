@@ -94,7 +94,7 @@ accept_json_create_service_port(Req, State) ->
                                                  Res2),
             Res4 = cowboy_req:set_resp_header(<<"content-type">>,
                                               <<"application/json">>, Res3),
-            {{true, ServicePortUrl}, Res3, State}
+            {{true, ServicePortUrl}, Res4, State}
     end.
 
 read_body(Req0) -> read_body(Req0, <<>>).

@@ -2,15 +2,15 @@
 %%% REST endpoint to manage knowledge collections.
 %%% @end
 
--module(automate_rest_api_services_how_to_enable).
+-module(automate_rest_api_services_register).
 -export([init/2]).
 -export([ allowed_methods/2
         , options/2
         , is_authorized/2
-        , content_types_provided/2
+        , content_types_accepted/2
         ]).
 
--export([ to_json/2
+-export([ accept_json_register_service/2
         ]).
 
 -include("./records.hrl").
@@ -34,8 +34,8 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[SPService]Asking for methods~n", []),
-    {[<<"GET">>, <<"PUT">>, <<"OPTIONS">>], Req, State}.
+    io:fwrite("[Service] Asking for methods~n", []),
+    {[<<"POST">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
@@ -53,41 +53,45 @@ is_authorized(Req, State) ->
                         {true, Username} ->
                             { true, Req1, State };
                         {true, _} -> %% Non matching username
-                            { { false, <<"Unauthorized to create a service here">>}, Req1, State };
+                            { { false, <<"Unauthorized to register a service here">>}, Req1, State };
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
             end
     end.
 
-%% Get handler
-content_types_provided(Req, State) ->
-    io:fwrite("User > service > ID~n", []),
-    {[{{<<"application">>, <<"json">>, []}, to_json}],
+
+%% POST handler
+content_types_accepted(Req, State) ->
+    io:fwrite("Control types accepted~n", []),
+    {[{{<<"application">>, <<"json">>, []},
+       accept_json_register_service}],
      Req, State}.
 
--spec to_json(cowboy_req:req(), #state{})
-                                   -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State) ->
-    #state{username=Username, service_id=ServiceId} = State,
-    case automate_rest_api_backend:get_service_enable_how_to(Username, ServiceId) of
-        { ok, HowTo } ->
-            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
-            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
+-spec accept_json_register_service(cowboy_req:req(),
+                                   #state{}) -> {{true, binary()}, cowboy_req:req(), #state{}}.
+accept_json_register_service(Req, State) ->
+    #state{username = Username, service_id = ServiceId} = State,
+    {ok, Body, Req1} = read_body(Req),
+    RegistrationData = jiffy:decode(Body, [return_maps]),
 
-            { jiffy:encode(extend_how_to(HowTo, ServiceId)), Res2, State };
-        {error, not_found} ->
-            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
-            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
-
-            %% TODO: Return 404
-            { jiffy:encode(#{ <<"success">> => false, <<"message">> => <<"Service not found">> }),
-              Res2, State }
+    case automate_rest_api_backend:register_service(Username, ServiceId, RegistrationData) of
+        {ok, Data} ->
+            Output = jiffy:encode(Data),
+            Res2 = cowboy_req:set_resp_body(Output, Req1),
+            Res3 = cowboy_req:delete_resp_header(<<"content-type">>,
+                                                 Res2),
+            Res4 = cowboy_req:set_resp_header(<<"content-type">>,
+                                              <<"application/json">>, Res3),
+            {true, Res4, State}
     end.
 
-extend_how_to(HowTo=#{ <<"type">> := <<"form">> }, ServiceId) ->
-    HowTo#{ <<"metadata">> => #{ <<"service_id">> => ServiceId } };
+read_body(Req0) -> read_body(Req0, <<>>).
 
-extend_how_to(HowTo, _ServiceId) ->
-    HowTo.
-
+read_body(Req0, Acc) ->
+    case cowboy_req:read_body(Req0) of
+        {ok, Data, Req} ->
+            {ok, <<Acc/binary, Data/binary>>, Req};
+        {more, Data, Req} ->
+            read_body(Req, <<Acc/binary, Data/binary>>)
+    end.

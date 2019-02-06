@@ -36,6 +36,7 @@ start_link() ->
 
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}
                         , {"/api/v0/users/:user_id/services/id/:service_id/how-to-enable", automate_rest_api_services_how_to_enable, []}
+                        , {"/api/v0/users/:user_id/services/id/:service_id/register", automate_rest_api_services_register, []}
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}
                         ]}
                  ]),

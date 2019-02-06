@@ -1,23 +1,30 @@
 import { Component, Inject } from '@angular/core';
 import { ServiceEnableHowTo, ServiceEnableMessage, ServiceEnableEntry, ServiceEnableType } from './service';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { SessionService } from './session.service';
+import { ServiceService } from './service.service';
+
 @Component({
     selector: 'app-how-to-enable-service-dialog',
     templateUrl: 'how-to-enable-service-dialog.html',
     styleUrls: [
         'how-to-enable-service-dialog.css',
-    ]
+    ],
+    providers: [SessionService, ServiceService],
 })
 
 export class HowToEnableServiceDialogComponent {
-
+    form = {};
     service: ServiceEnableHowTo;
     renderingZone: HTMLDivElement;
     type: ServiceEnableType;
 
-    constructor(public dialogRef: MatDialogRef<HowToEnableServiceDialogComponent>,
+    constructor(
+        public dialogRef: MatDialogRef<HowToEnableServiceDialogComponent>,
+        public serviceService: ServiceService,
         @Inject(MAT_DIALOG_DATA)
-        public data: ServiceEnableHowTo) {
+        public data: ServiceEnableHowTo
+    ) {
         this.service = data;
 
         dialogRef.afterOpen().subscribe(() => {
@@ -94,7 +101,13 @@ export class HowToEnableServiceDialogComponent {
                     const allowedProperties = ['type', 'placeholder', 'value', 'name'];
 
                     for (const property of allowedProperties) {
-                        element.setAttribute(property, entry.properties[property] || '');
+                        if (entry.properties[property] !== undefined) {
+                            element.setAttribute(property, entry.properties[property]);
+                        }
+                    }
+
+                    if (entry.properties.name) {
+                        this.input_controls_field(element, entry.properties.name);
                     }
                 }
             }
@@ -107,6 +120,24 @@ export class HowToEnableServiceDialogComponent {
 
             return element;
         }
+    }
+
+    input_controls_field(entry: HTMLInputElement, fieldName: string) {
+        const update_value = () => {
+            this.form[fieldName] = entry.value;
+        }
+
+        entry.onchange = update_value;
+        update_value();
+    }
+
+    send_form(): void {
+        this.serviceService.registerService(this.data.metadata.service_id, this.form)
+            .then((success) => {
+                if (success) {
+                    this.dialogRef.close();
+                }
+            });
     }
 
     onNoClick(): void {
