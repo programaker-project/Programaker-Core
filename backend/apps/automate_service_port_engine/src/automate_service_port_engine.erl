@@ -13,6 +13,7 @@
         , call_service_port/4
         , get_how_to_enable/2
         , send_registration_data/3
+        , send_oauth_return/2
 
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
@@ -132,6 +133,33 @@ send_registration_data(ServicePortId, Data, UserId) ->
             {ok, Msg}
     end.
 
+-spec send_oauth_return(binary(), binary()) -> {ok, map()}.
+send_oauth_return(Qs, ServicePortId) ->
+    ChannelId = ServicePortId,
+    Process = self(),
+
+    MessageId = generate_id(),
+
+    ?ROUTER:open_outbound_channel({from_service, ChannelId},
+                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
+                                              }) ->
+                                          case ReceivedMessageId of
+                                              MessageId ->
+                                                  Process ! {?MODULE, Answer},
+                                                  finish;
+                                              _ ->
+                                                  continue
+                                          end
+                                  end),
+    ?ROUTER:route_inbound({to_service, ChannelId},
+                          jiffy:encode(#{ <<"message_id">> => MessageId
+                                        , <<"type">> => <<"OAUTH_RETURN">>
+                                        , <<"value">> => #{ <<"query_string">> => Qs }
+                                        })),
+
+    receive {?MODULE, Msg} ->
+            {ok, Msg}
+    end.
 
 
 -spec from_service_port(binary(), binary(), binary()) -> ok.

@@ -20,6 +20,7 @@
         , create_service_port/2
         , list_custom_blocks_from_username/1
         , register_service/3
+        , send_oauth_return/2
         ]).
 
 %% Definitions
@@ -200,6 +201,11 @@ register_service(Username, ServiceId, RegistrationData) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, _} = automate_service_registry_query:send_registration_data(Module, UserId, RegistrationData).
+
+-spec send_oauth_return(binary(), binary()) -> ok.
+send_oauth_return(ServicePortId, Qs) ->
+    {ok, _} = automate_service_port_engine:send_oauth_return(Qs, ServicePortId),
+    ok.
 
 %%====================================================================
 %% Internal functions
