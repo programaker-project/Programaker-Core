@@ -83,6 +83,10 @@ export class HowToEnableServiceDialogComponent {
                 if ((entry.properties !== undefined) && (entry.properties.href !== undefined)) {
                     element.setAttribute('href', entry.properties.href);
                 }
+
+                element.setAttribute('target', '_blank');
+                element.setAttribute('rel', 'noopener noreferer');
+
             }
             else if (entry.tag === 'autolink') {
                 element = document.createElement('a');
