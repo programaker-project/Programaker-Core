@@ -15,12 +15,14 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { MonitorMetadata } from './monitor';
 import { MonitorService } from './monitor.service';
+import { BridgeService } from './bridges/bridge.service';
+import { BridgeIndexData } from './bridges/bridge';
 
 @Component({
     // moduleId: module.id,
     selector: 'app-my-dashboard',
     templateUrl: './dashboard.component.html',
-    providers: [MonitorService, ProgramService, SessionService, ServiceService],
+    providers: [BridgeService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'dashboard.component.css',
         'libs/css/material-icons.css',
@@ -32,6 +34,7 @@ export class DashboardComponent {
     programs: ProgramMetadata[] = [];
     services: AvailableService[] = [];
     monitors: MonitorMetadata[] = [];
+    bridges: BridgeIndexData[] = [];
     session: Session = null;
 
     constructor(
@@ -39,6 +42,7 @@ export class DashboardComponent {
         private serviceService: ServiceService,
         private monitorService: MonitorService,
         private sessionService: SessionService,
+        private bridgeService: BridgeService,
         private router: Router,
         public dialog: MatDialog,
     ) {
@@ -46,6 +50,7 @@ export class DashboardComponent {
         this.serviceService = serviceService;
         this.monitorService = monitorService;
         this.sessionService = sessionService;
+        this.bridgeService = bridgeService;
         this.router = router;
     }
 
@@ -65,6 +70,9 @@ export class DashboardComponent {
 
                     this.monitorService.getMonitors()
                         .then(monitors => this.monitors = monitors);
+
+                    this.bridgeService.listUserBridges()
+                        .then(bridges => this.bridges = bridges);
                 }
             })
             .catch(e => {
@@ -82,8 +90,8 @@ export class DashboardComponent {
 
     openProgram(program: ProgramMetadata): void {
         this.sessionService.getSession().then(session =>
-            this.router.navigate([ '/users/' + session.username
-                                   + '/programs/' + encodeURIComponent(program.name)]));
+            this.router.navigate(['/users/' + session.username
+                + '/programs/' + encodeURIComponent(program.name)]));
     }
 
     enableService(service: AvailableService): void {
@@ -99,6 +107,6 @@ export class DashboardComponent {
             data: howTo
         });
 
-        dialogRef.afterClosed().subscribe(result => {});
+        dialogRef.afterClosed().subscribe(result => { });
     }
 }
