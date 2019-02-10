@@ -31,9 +31,9 @@ start_link() ->
                         , {"/api/v0/users/:user_id/chats", automate_rest_api_chats_root, []}
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
                         , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
-                        , {"/api/v0/users/:user_id/service-ports/", automate_rest_api_service_ports_root, []}
-                        , {"/api/v0/users/id/:user_id/service-ports/id/:service_port_id", automate_rest_api_service_ports_specific, []}
-                        , {"/api/v0/users/id/:user_id/service-ports/id/:service_port_id/oauth_return"
+                        , {"/api/v0/users/:user_id/bridges/", automate_rest_api_service_ports_root, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id", automate_rest_api_service_ports_specific, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/oauth_return"
                           , automate_rest_api_service_port_oauth_return, []}
 
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}

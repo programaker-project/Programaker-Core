@@ -21,6 +21,7 @@
         , list_custom_blocks_from_username/1
         , register_service/3
         , send_oauth_return/2
+        , list_bridges/1
         ]).
 
 %% Definitions
@@ -207,6 +208,11 @@ send_oauth_return(ServicePortId, Qs) ->
     {ok, _} = automate_service_port_engine:send_oauth_return(Qs, ServicePortId),
     ok.
 
+-spec list_bridges(binary()) -> {ok, [map()]}.
+list_bridges(Username) ->
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -252,7 +258,7 @@ generate_url_for_monitor_name(Username, MonitorName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/monitors/~s", [Username, MonitorName]))).
 
 generate_url_for_service_port(UserId, ServicePortId) ->
-        binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/service-ports/id/~s", [UserId, ServicePortId]))).
+        binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/bridges/id/~s", [UserId, ServicePortId]))).
 
 
 program_entry_to_program(#user_program_entry{ id=Id

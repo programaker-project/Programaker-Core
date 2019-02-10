@@ -17,6 +17,7 @@
 
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
+        , get_user_service_ports/1
         ]).
 
 -include("records.hrl").
@@ -184,6 +185,11 @@ list_custom_blocks(UserId) ->
 -spec internal_user_id_to_service_port_user_id(binary(), binary()) -> {ok, binary()}.
 internal_user_id_to_service_port_user_id(UserId, ServicePortId) ->
     ?BACKEND:internal_user_id_to_service_port_user_id(UserId, ServicePortId).
+
+
+-spec get_user_service_ports(binary()) -> {ok, [map()]}.
+get_user_service_ports(UserId) ->
+    ?BACKEND:get_user_service_ports(UserId).
 
 %%====================================================================
 %% Internal functions

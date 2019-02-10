@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { ServicePortMetadata } from './service_port';
 import * as API from './api-config';
 import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/map';

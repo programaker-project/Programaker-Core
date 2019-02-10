@@ -11,6 +11,7 @@
 
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
+        , get_user_service_ports/1
         ]).
 
 -include("records.hrl").
@@ -175,6 +176,28 @@ internal_user_id_to_service_port_user_id(UserId, ServicePortId) ->
                               [#service_port_user_obfuscation_entry{ obfuscated_id=ObfuscatedId }] ->
                                   {ok, ObfuscatedId}
                           end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+
+-spec get_user_service_ports(binary()) -> {ok, [map()]}.
+get_user_service_ports(UserId) ->
+    Transaction = fun() ->
+                          MatchHead = #service_port_entry{ id='_'
+                                                         , name='_'
+                                                         , owner='$1'
+                                                         , service_id='_'
+                                                         },
+                          Guard = {'==', '$1', UserId},
+                          ResultColumn = '$_',
+                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+                          {ok, mnesia:select(?SERVICE_PORT_TABLE, Matcher)}
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->

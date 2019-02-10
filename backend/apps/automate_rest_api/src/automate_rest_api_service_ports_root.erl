@@ -11,20 +11,24 @@
         , is_authorized/2
         , options/2
         , resource_exists/2
+        , content_types_provided/2
         ]).
 
--export([accept_json_create_service_port/2]).
+-export([ accept_json_create_service_port/2
+        , to_json/2
+        ]).
 
 -include("./records.hrl").
+-include("../../automate_service_port_engine/src/records.hrl").
 
--record(create_service_port_seq, {username}).
+-record(state, {username}).
 
 -spec init(_, _) -> {cowboy_rest, _, _}.
 
 init(Req, _Opts) ->
     UserId = cowboy_req:binding(user_id, Req),
     {cowboy_rest, Req,
-     #create_service_port_seq{username = UserId}}.
+     #state{username = UserId}}.
 
 resource_exists(Req, State) ->
     case cowboy_req:method(Req) of
@@ -41,7 +45,7 @@ options(Req, State) ->
 -spec allowed_methods(cowboy_req:req(), _) -> {[binary()], cowboy_req:req(), _}.
 allowed_methods(Req, State) ->
     io:fwrite("Asking for methods~n", []),
-    {[<<"POST">>, <<"OPTIONS">>], Req, State}.
+    {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
@@ -56,7 +60,7 @@ is_authorized(Req, State) ->
                     {{false, <<"Authorization header not found">>}, Req1,
                      State};
                 X ->
-                    #create_service_port_seq{username = Username} = State,
+                    #state{username = Username} = State,
                     case automate_rest_api_backend:is_valid_token(X) of
                         {true, Username} -> {true, Req1, State};
                         {true, _} -> %% Non matching username
@@ -68,6 +72,37 @@ is_authorized(Req, State) ->
             end
     end.
 
+%% GET handler
+content_types_provided(Req, State) ->
+    io:fwrite("User > Bridge > ID~n", []),
+    {[{{<<"application">>, <<"json">>, []}, to_json}],
+     Req, State}.
+
+-spec to_json(cowboy_req:req(), #state{})
+             -> {binary(),cowboy_req:req(), #state{}}.
+to_json(Req, State) ->
+    #state{username=Username} = State,
+    case automate_rest_api_backend:list_bridges(Username) of
+        { ok, Bridges } ->
+            Output = jiffy:encode(lists:map(fun to_map/1, Bridges)),
+
+            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
+            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
+
+            { Output, Res2, State }
+    end.
+
+to_map(#service_port_entry{ id=Id
+                          , name=Name
+                          , owner=Owner
+                          , service_id=ServiceId
+                          }) ->
+    #{ <<"id">> => Id
+     , <<"name">> => Name
+     , <<"owner">> => Owner
+     , <<"service_id">> => ServiceId
+     }.
+
 %% POST handler
 content_types_accepted(Req, State) ->
     io:fwrite("Control types accepted~n", []),
@@ -76,13 +111,13 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 -spec accept_json_create_service_port(cowboy_req:req(),
-                                      #create_service_port_seq{}) -> {{true,
-                                                                       binary()},
-                                                                      cowboy_req:req(),
-                                                                      #create_service_port_seq{}}.
+                                      #state{}) -> {{true,
+                                                     binary()},
+                                                    cowboy_req:req(),
+                                                    #state{}}.
 
 accept_json_create_service_port(Req, State) ->
-    #create_service_port_seq{username = Username} = State,
+    #state{username = Username} = State,
     {ok, Body, Req1} = read_body(Req),
     #{ <<"name">> := ServicePortName } = jiffy:decode(Body, [return_maps]),
 

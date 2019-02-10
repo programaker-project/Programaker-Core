@@ -1,27 +1,27 @@
 import { Component, OnInit } from '@angular/core';
-import { Service, RequestInput, Request } from './service';
-import { ServiceService } from './service.service';
+import { Service, RequestInput, Request } from '../service';
+import { ServiceService } from '../service.service';
 import { Location } from '@angular/common';
 import { Http } from '@angular/http';
-import { GetTypeOfJson, JSONType } from './json';
+import { GetTypeOfJson, JSONType } from '../json';
 import { MatSnackBar } from '@angular/material';
 import { Router } from '@angular/router';
 
-import { Session } from './session';
-import { SessionService } from './session.service';
+import { Session } from '../session';
+import { SessionService } from '../session.service';
 
-import { ServicePortService } from './service_port.service';
-import { ServicePortMetadata } from './service_port';
+import { BridgeService } from './bridge.service';
+import { BridgeMetadata } from './bridge';
 
 
 @Component({
     // moduleId: module.id,
-    selector: 'app-my-add-service-port',
-    templateUrl: './add-service-ports.component.html',
-    providers: [ServiceService, ServicePortService],
+    selector: 'bridge-add-component',
+    templateUrl: './add.component.html',
+    providers: [ServiceService, BridgeService],
 })
 
-export class AddServicePortsComponent {
+export class BridgeAddComponent {
     session: Session;
     portName = "";
     portControlUrl = "";
@@ -29,11 +29,11 @@ export class AddServicePortsComponent {
 
     constructor(
         private sessionService: SessionService,
-        private servicePortService: ServicePortService,
+        private bridgeService: BridgeService,
         private router: Router,
     ) {
         this.sessionService = sessionService;
-        this.servicePortService = servicePortService;
+        this.bridgeService = bridgeService;
         this.router = router;
     }
 
@@ -50,10 +50,14 @@ export class AddServicePortsComponent {
 
     create(): void {
         this.editable = false;
-        this.servicePortService.createServicePort(this.portName).then((ServicePortMetadata: ServicePortMetadata) => {
-            this.portControlUrl = document.location.origin + ServicePortMetadata.control_url;
+        this.bridgeService.createServicePort(this.portName).then((BridgeMetadata: BridgeMetadata) => {
+            this.portControlUrl = document.location.origin + BridgeMetadata.control_url;
         }).catch(() => {
             this.editable = true;
         });
+    }
+
+    back(): void {
+        history.back();
     }
 }

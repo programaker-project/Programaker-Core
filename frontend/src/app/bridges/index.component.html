@@ -1,0 +1,22 @@
+<div id="dashboard">
+  <div class="collection-grid">
+      <h1 class="collection-name">
+          Bridges
+      </h1>
+      <div class="grid grid-pad">
+          <div class="row">
+            <div *ngFor="let bridge of bridges" class="col-sm-4">
+                <mat-card role="button" class="module bridge">
+                    <h4 *ngIf="bridge.name">{{bridge.name}}</h4>
+                    <h4 *ngIf="!bridge.name">No name</h4>
+                </mat-card>
+            </div>
+            <div class="col-sm-4">
+                <mat-card role="button" (click)="addBridge()" class="module bridge call-to-action">
+                    <h4>Add one!</h4>
+                </mat-card>
+            </div>
+          </div>
+      </div>
+  </div>
+</div>
