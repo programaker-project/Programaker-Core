@@ -53,6 +53,10 @@ export class SessionService {
         return API.ApiRoot + '/users/' + username;
     }
 
+    getApiRootForUserId(user_id: string): string {
+        return API.ApiRoot + '/users/id/' + user_id;
+    }
+
     getAuthHeader(): HttpHeaders {
         const headers = new HttpHeaders();
 
@@ -82,7 +86,8 @@ export class SessionService {
               .map((response) => {
                   const check = response as any;
                   const session = new Session(check.success,
-                                              check.username);
+                                              check.username,
+                                              check.user_id);
                   SessionService.EstablishedSession = session;
 
                   return session;

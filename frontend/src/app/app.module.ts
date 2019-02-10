@@ -27,8 +27,10 @@ import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
 import { AddServicesComponent } from './add-services.component';
 
+// Bridges
 import { BridgeIndexComponent } from './bridges/index.component';
 import { BridgeAddComponent } from './bridges/add.component';
+import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
 
 import { ServicesComponent } from './services.component';
 
@@ -55,6 +57,7 @@ import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
         LoginFormComponent,
 
         // Dialogs
+        BridgeDeleteDialogComponent,
         HowToEnableServiceDialogComponent,
         RenameProgramDialogComponent,
         DeleteProgramDialogComponent,
@@ -90,6 +93,7 @@ import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
         BridgeAddComponent,
     ],
     entryComponents: [
+        BridgeDeleteDialogComponent,
         HowToEnableServiceDialogComponent,
         RenameProgramDialogComponent,
         DeleteProgramDialogComponent,

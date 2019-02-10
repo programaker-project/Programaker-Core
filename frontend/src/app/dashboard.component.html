@@ -66,9 +66,15 @@
     <div class="grid grid-pad">
         <div class="row">
           <div *ngFor="let bridge of bridges" class="col-sm-4">
-              <mat-card role="button" class="module bridge">
+              <mat-card role="button" (click)="showBridgeDetail(bridge)" class="module bridge">
                   <h4 *ngIf="bridge.name">{{bridge.name}}</h4>
                   <h4 *ngIf="!bridge.name">No name</h4>
+                  <div *ngIf="bridge.id === expandedBridgeId">
+                      <button id="bridge-delete-button" color="warn"
+                              (click)="deleteBridge(bridge)" mat-button>
+                          <mat-icon>delete_forever</mat-icon> Delete bridge
+                      </button>
+                  </div>
               </mat-card>
           </div>
           <div class="col-sm-4">

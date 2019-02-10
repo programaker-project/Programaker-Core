@@ -3,6 +3,8 @@ export interface BridgeMetadata {
 };
 
 export interface BridgeIndexData {
+    owner: string;
     name: string;
-    control_url: string;
+    id: string;
+    service_id: string;
 }

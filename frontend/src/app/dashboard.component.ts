@@ -1,3 +1,5 @@
+import * as progbar from './ui/progbar';
+
 import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
 
 import { Component, OnInit } from '@angular/core';
@@ -17,6 +19,7 @@ import { MonitorMetadata } from './monitor';
 import { MonitorService } from './monitor.service';
 import { BridgeService } from './bridges/bridge.service';
 import { BridgeIndexData } from './bridges/bridge';
+import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
 
 @Component({
     // moduleId: module.id,
@@ -36,6 +39,7 @@ export class DashboardComponent {
     monitors: MonitorMetadata[] = [];
     bridges: BridgeIndexData[] = [];
     session: Session = null;
+    expandedBridgeId: string;
 
     constructor(
         private programService: ProgramService,
@@ -71,8 +75,7 @@ export class DashboardComponent {
                     this.monitorService.getMonitors()
                         .then(monitors => this.monitors = monitors);
 
-                    this.bridgeService.listUserBridges()
-                        .then(bridges => this.bridges = bridges);
+                    this.refresh_bridge_list();
                 }
             })
             .catch(e => {
@@ -108,5 +111,44 @@ export class DashboardComponent {
         });
 
         dialogRef.afterClosed().subscribe(result => { });
+    }
+
+    // Bridge list
+    refresh_bridge_list(): void {
+        this.bridgeService.listUserBridges().then((_bridges) => {
+            this.bridges = _bridges;
+        });
+    }
+
+    addBridge(): void {
+        this.router.navigate(['/bridges/add']);
+    }
+
+    showBridgeDetail(bridge: BridgeIndexData): void {
+        this.expandedBridgeId = bridge.id;
+    }
+
+    deleteBridge(bridge: BridgeIndexData): void {
+        const dialogRef = this.dialog.open(BridgeDeleteDialogComponent, {
+            data: { bridge }
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            const deletion = (this.bridgeService.deleteBridge(this.session.user_id, bridge.id)
+                .catch(() => { return false; })
+                .then(success => {
+                    if (!success) {
+                        return;
+                    }
+
+                    this.refresh_bridge_list();
+                }));
+            progbar.track(deletion);
+        });
     }
 }

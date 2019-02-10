@@ -17,9 +17,15 @@ export class BridgeService {
         this.sessionService = sessionService;
     }
 
-    async getBridgeIndexUrl() {
+    async getBridgeIndexUrl(): Promise<string> {
         const userApiRoot = await this.sessionService.getUserApiRoot();
         return userApiRoot + '/bridges/';
+    }
+
+    async getSpecificBridgeUrl(user_id: string, bridge_id: string): Promise<string> {
+        const root = await this.sessionService.getApiRootForUserId(user_id);
+
+        return root + '/bridges/id/' + bridge_id;
     }
 
     createServicePort(name: string): Promise<BridgeMetadata> {
@@ -46,4 +52,18 @@ export class BridgeService {
                 })
                 .toPromise());
     }
+
+    deleteBridge(user_id: string, bridge_id: string): any {
+        return this.getSpecificBridgeUrl(user_id, bridge_id).then(url =>
+            this.http.post(url, JSON.stringify({ name: name }),
+                {
+                    headers: this.sessionService.addJsonContentType(
+                        this.sessionService.getAuthHeader())
+                })
+                .map(response => {
+                    return response as BridgeMetadata;
+                })
+                .toPromise());
+    }
+
 }
