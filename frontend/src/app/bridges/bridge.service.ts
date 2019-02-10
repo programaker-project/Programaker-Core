@@ -53,15 +53,14 @@ export class BridgeService {
                 .toPromise());
     }
 
-    deleteBridge(user_id: string, bridge_id: string): any {
+    deleteBridge(user_id: string, bridge_id: string): Promise<boolean> {
         return this.getSpecificBridgeUrl(user_id, bridge_id).then(url =>
-            this.http.post(url, JSON.stringify({ name: name }),
+            this.http.delete(url,
                 {
-                    headers: this.sessionService.addJsonContentType(
-                        this.sessionService.getAuthHeader())
+                    headers: this.sessionService.getAuthHeader()
                 })
                 .map(response => {
-                    return response as BridgeMetadata;
+                    return (response as { success: boolean }).success;
                 })
                 .toPromise());
     }

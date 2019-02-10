@@ -18,6 +18,7 @@
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
         , get_user_service_ports/1
+        , delete_bridge/2
         ]).
 
 -include("records.hrl").
@@ -190,6 +191,16 @@ internal_user_id_to_service_port_user_id(UserId, ServicePortId) ->
 -spec get_user_service_ports(binary()) -> {ok, [map()]}.
 get_user_service_ports(UserId) ->
     ?BACKEND:get_user_service_ports(UserId).
+
+-spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
+delete_bridge(UserId, BridgeId) ->
+    ok = case ?BACKEND:get_bridge_service(UserId, BridgeId) of
+        {ok, undefined} ->
+            ok;
+        {ok, ServiceId} ->
+            automate_service_registry:delete_service(UserId, ServiceId)
+    end,
+    ?BACKEND:delete_bridge(UserId, BridgeId).
 
 %%====================================================================
 %% Internal functions

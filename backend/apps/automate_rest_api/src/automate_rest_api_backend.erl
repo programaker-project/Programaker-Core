@@ -4,6 +4,7 @@
 -export([ register_user/1
         , login_user/1
         , is_valid_token/1
+        , is_valid_token_uid/1
         , create_monitor/2
         , lists_monitors_from_username/1
         , create_program/1
@@ -22,6 +23,7 @@
         , register_service/3
         , send_oauth_return/2
         , list_bridges/1
+        , delete_bridge/2
         ]).
 
 %% Definitions
@@ -60,6 +62,17 @@ is_valid_token(Token) when is_binary(Token) ->
     case automate_storage:get_session_username(Token) of
         { ok, Username } ->
             {true, Username};
+        { error, session_not_found } ->
+            false;
+        { error, Reason } ->
+            io:format("Error getting session: ~p~n", [Reason]),
+            false
+    end.
+
+is_valid_token_uid(Token) when is_binary(Token) ->
+    case automate_storage:get_session_userid(Token) of
+        { ok, UserId } ->
+            {true, UserId};
         { error, session_not_found } ->
             false;
         { error, Reason } ->
@@ -213,6 +226,10 @@ list_bridges(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
 
+-spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
+delete_bridge(UserId, BridgeId) ->
+    automate_service_port_engine:delete_bridge(UserId, BridgeId).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -258,7 +275,7 @@ generate_url_for_monitor_name(Username, MonitorName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/monitors/~s", [Username, MonitorName]))).
 
 generate_url_for_service_port(UserId, ServicePortId) ->
-        binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/bridges/id/~s", [UserId, ServicePortId]))).
+        binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/bridges/id/~s/communication", [UserId, ServicePortId]))).
 
 
 program_entry_to_program(#user_program_entry{ id=Id

@@ -1,46 +1,79 @@
 %%% @doc
-%%% REST endpoint to manage knowledge collections.
+%%% REST endpoint to manage bridge.
 %%% @end
 
 -module(automate_rest_api_service_ports_specific).
 -export([init/2]).
--export([websocket_init/1]).
--export([websocket_handle/2]).
--export([websocket_info/2]).
+-export([ allowed_methods/2
+        , options/2
+        , is_authorized/2
+        , delete_resource/2
+        ]).
 
--record(state, { user_id         :: binary()
-               , service_port_id :: binary()
-               }).
+-include("./records.hrl").
+-include("../../automate_service_port_engine/src/records.hrl").
 
-init(Req, Opts) ->
+-record(state, { user_id, bridge_id }).
+
+-spec init(_,_) -> {'cowboy_rest',_,_}.
+init(Req, _Opts) ->
     UserId = cowboy_req:binding(user_id, Req),
-    ServicePortId = cowboy_req:binding(service_port_id, Req),
+    BridgeId = cowboy_req:binding(bridge_id, Req),
+    Req1 = automate_rest_api_cors:set_headers(Req),
+    {cowboy_rest, Req1
+    , #state{ user_id=UserId
+            , bridge_id=BridgeId
+            }}.
 
-    {cowboy_websocket, Req, #state{ service_port_id=ServicePortId
-                                  , user_id=UserId
-                                  }}.
+%% CORS
+options(Req, State) ->
+    {ok, Req, State}.
 
-websocket_init(State=#state{ service_port_id=ServicePortId
-                           }) ->
-    automate_service_port_engine:register_service_port(ServicePortId),
-    {ok, State}.
+%% Authentication
+-spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
+allowed_methods(Req, State) ->
+    io:fwrite("[SPProgram]Asking for methods~n", []),
+    {[<<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
-websocket_handle({text, Msg}, State=#state{ service_port_id=ServicePortId
-                                          , user_id=UserId
-                                          }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, UserId, Msg),
-    {ok, State};
+is_authorized(Req, State) ->
+    Req1 = automate_rest_api_cors:set_headers(Req),
+    case cowboy_req:method(Req1) of
+        %% Don't do authentication if it's just asking for options
+        <<"OPTIONS">> ->
+            { true, Req1, State };
+        _ ->
+            case cowboy_req:header(<<"authorization">>, Req, undefined) of
+                undefined ->
+                    { {false, <<"Authorization header not found">>} , Req1, State };
+                X ->
+                    #state{user_id=UserId} = State,
+                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                        {true, UserId} ->
+                            { true, Req1, State };
+                        {true, TokenUserId} -> %% Non matching user_id
+                            io:fwrite("Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId]),
+                            { { false, <<"Unauthorized to create a program here">>}, Req1, State };
+                        false ->
+                            { { false, <<"Authorization not correct">>}, Req1, State }
+                    end
+            end
+    end.
 
-websocket_handle({binary, Msg}, State=#state{ service_port_id=ServicePortId
-                                            , user_id=UserId
-                                            }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, UserId, Msg),
-    {ok, State};
 
-websocket_handle(Message, State) ->
-    {ok, State}.
+%% DELETE handler
+delete_resource(Req, State) ->
+    #state{bridge_id=BridgeId, user_id=UserId} = State,
+    case automate_rest_api_backend:delete_bridge(UserId, BridgeId) of
+        ok ->
+            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
+            { true, Req1, State };
+        { error, Reason } ->
+            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req),
+            { false, Req1, State }
+    end.
 
-%% automate_service_port_engine:call_service_port(<<"d9c566da-ca2b-4fb8-95a3-702ba5c9abbb">>, <<"__ping">>, []).
-websocket_info(Message, State) ->
-    io:fwrite("Got ~p~n", [Message]),
-    {reply, {binary, Message}, State}.
+
+send_json_output(Output, Req) ->
+    Res1 = cowboy_req:set_resp_body(Output, Req),
+    Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
+    cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2).

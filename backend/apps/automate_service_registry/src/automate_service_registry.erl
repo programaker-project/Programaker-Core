@@ -17,6 +17,7 @@
         , set_config_for_service/3
 
         , count_all_services/0
+        , delete_service/2
         ]).
 
 -define(SERVER, ?MODULE).
@@ -101,6 +102,10 @@ set_config_for_service(ServiceId, Property, Value) ->
 -spec count_all_services() -> number().
 count_all_services() ->
     ?BACKEND:count_all_services().
+
+-spec delete_service(binary(), binary()) -> ok.
+delete_service(UserId, ServiceId) ->
+    ?BACKEND:delete_service(UserId, ServiceId).
 
 %%====================================================================
 %% Internal functions

@@ -4,6 +4,7 @@
 -export([ create_user/3
         , login_user/2
         , get_session_username/1
+        , get_session_userid/1
         , create_monitor/2
         , get_monitor_from_id/1
         , dirty_list_monitors/0
@@ -94,6 +95,19 @@ get_session_username(SessionId) when is_binary(SessionId) ->
                                       [#registered_user_entry{username=Username} | _] ->
                                           {ok, Username}
                                   end
+                          end
+                  end,
+
+    {atomic, Result} = mnesia:transaction(Transaction),
+    Result.
+
+get_session_userid(SessionId) when is_binary(SessionId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
+                              [] ->
+                                  { error, session_not_found };
+                              [#user_session_entry{ user_id=UserId } | _] ->
+                                  {ok, UserId}
                           end
                   end,
 

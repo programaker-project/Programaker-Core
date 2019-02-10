@@ -16,6 +16,7 @@
         , set_config_for_service/3
 
         , count_all_services/0
+        , delete_service/2
         ]).
 
 -include("records.hrl").
@@ -217,6 +218,19 @@ set_config_for_service(ServiceId, Property, Value) ->
 -spec count_all_services() -> number().
 count_all_services() ->
     length(mnesia:dirty_all_keys(?SERVICE_REGISTRY_TABLE)).
+
+
+-spec delete_service(binary(), binary()) -> ok.
+delete_service(_UserId, ServiceId) ->
+    Transaction = fun() ->
+                          ok = mnesia:delete(?SERVICE_REGISTRY_TABLE, ServiceId, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
 
 %%====================================================================
 %% Internal functions
