@@ -1,14 +1,12 @@
 -module(automate_service_port_engine_router).
 
 -behaviour(gen_server).
--define(TIME_BETWEEN_REPORTS_IN_SECONDS, 5).
--define(TIME_BETWEEN_REPORTS, ?TIME_BETWEEN_REPORTS_IN_SECONDS * 1000).
 
 %% API
--export([start_link/0
-        , route_inbound/2
-        , open_outbound_channel/2
-        , get_routes/0
+-export([ start_link/0
+        , connect_bridge/1
+        , call_bridge/2
+        , is_bridge_connected/1
         ]).
 
 %% gen_server callbacks
@@ -18,9 +16,13 @@
 
 -define(SERVER, ?MODULE).
 
--record(stats, {processed_messages}).
--record(state, {channels, stats}).
--record(trigger, {pid, callback}).
+-record(state, { bridge_by_id
+               , bridge_id_by_pid
+               }).
+-record(bridge_info, { pid
+                     , bridge_id
+                     , threads
+                     }).
 
 %%%===================================================================
 %%% API
@@ -28,33 +30,43 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Obtain available routes.
+%% Connect a bridge to the router.
 %%
-%% @spec get_routes() -> {ok, Routes} | {error, Error}
+%% @spec connect_bridge(BridgeId) -> ok | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-get_routes() ->
-    gen_server:call({global, ?SERVER}, { get_routes }).
+connect_bridge(BridgeId) ->
+    gen_server:cast({global, ?SERVER}, { connect_bridge, BridgeId, self() }).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Register an outbound channel.
+%% Send a call to a bridge and return the result.
 %%
-%% @spec open_outbound_channel(ChannelId, Callback) -> ok | {error, Error}
+%% @spec call_bridge(BridgeId, Msg) -> {ok, Value} | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-open_outbound_channel(ChannelId, Callback) ->
-    gen_server:cast({global, ?SERVER}, { open_outbound_channel, ChannelId, self(), Callback }).
+call_bridge(BridgeId, Msg) ->
+    gen_server:cast({global, ?SERVER}, { call_bridge, BridgeId, Msg, self() }),
+    receive
+        {?SERVER, Response} ->
+            Response
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Send a message through a inbound channel.
+%% Check if a bridge has server connections.
 %%
-%% @spec route_inbound(ChannelId, Msg) -> ok | {error, Error}
+%% @spec is_bridge_connected(BridgeId) -> {ok, boolean} | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-route_inbound(ChannelId, Msg) ->
-    gen_server:call({global, ?SERVER}, { route_inbound, ChannelId, Msg }).
+is_bridge_connected(BridgeId) ->
+    gen_server:call({global, ?SERVER}, { is_bridge_connected, BridgeId }),
+    receive
+        {?SERVER, Response} ->
+            Response
+    end.
+
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -83,10 +95,8 @@ start_link() ->
 %%--------------------------------------------------------------------
 init([]) ->
     process_flag(trap_exit, true),
-    erlang:send_after(?TIME_BETWEEN_REPORTS, ?SERVER, {send_reports}),
-    {ok, #state{ channels=#{}
-               , stats=#stats{ processed_messages=0
-                             }
+    {ok, #state{ bridge_by_id=#{}
+               , bridge_id_by_pid=#{}
                }}.
 
 %%--------------------------------------------------------------------
@@ -103,28 +113,20 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_call({ is_bridge_connected, BridgeId }, _From, State) ->
+    IsConnected = case State of
+                      #{ BridgeId := Connections } ->
+                          length(Connections) > 0;
+                      _ ->
+                          false
+                  end,
+
+    {reply, {ok, IsConnected}, State};
+
 handle_call({ get_routes }, _From, State) ->
-    #state{ channels=Routes } = State,
+    #state{ bridge_by_id=Routes } = State,
     Reply = {ok, Routes},
     {reply, Reply, State};
-
-handle_call({ route_inbound, ChannelId, Msg }, _From, State) ->
-    #state{ channels=Channels } = State,
-    #state{ stats=Stats} = State,
-    #stats{ processed_messages=ProcessedMessages } = Stats,
-
-    Response = case maps:find(ChannelId, Channels) of
-        error -> [];
-        { ok, OutboundChannels } -> OutboundChannels
-    end,
-
-    io:fwrite("Channels: ~p~n", [Channels]),
-    { reply
-    , length(Response)
-    , State#state { channels=Channels#{ ChannelId => send_to_all(Msg, Response) }
-                  , stats=Stats#stats{ processed_messages=(ProcessedMessages + 1)
-                                     }
-                  }};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -140,17 +142,36 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({ open_outbound_channel, ChannelId, Pid, Callback }, State) ->
-    #state{ channels=Channels } = State,
-    PreexistingChannels = case maps:find(ChannelId, Channels) of
-                              { ok, OtherChannels } -> OtherChannels;
+handle_cast({ call_bridge, BridgeId, Msg, From  }, State) ->
+    case State of
+        #state{ bridge_by_id=Bridges=#{ BridgeId := Connections } } ->
+            [First | Rest] = Connections,
+            WithMessaging = call_bridge_to_connection(First, Msg, From),
+
+            { noreply
+            , State#state { bridge_by_id=Bridges#{ BridgeId => Rest ++ [WithMessaging] }
+                          }
+            };
+        _ ->
+            From ! { ?SERVER, { error, no_connection }},
+            {noreply, State}
+    end;
+
+handle_cast({ connect_bridge, BridgeId, Pid }, State) ->
+    #state{ bridge_by_id=Bridges
+          , bridge_id_by_pid=BridgesByPid
+          } = State,
+    PreexistingBridges = case maps:find(BridgeId, Bridges) of
+                              { ok, OtherBridges } -> OtherBridges;
                               error -> []
                           end,
+    link(BridgeId),
     {noreply, State#state{
-                channels=maps:put(ChannelId,
-                                  [ #trigger{pid=Pid, callback=Callback}
-                                    | PreexistingChannels
-                                  ], Channels)
+                bridge_by_id=maps:put(BridgeId,
+                                  [ #bridge_info{pid=Pid, bridge_id=BridgeId, threads=[]}
+                                    | PreexistingBridges
+                                  ], Bridges),
+               bridge_id_by_pid=maps:put(Pid, BridgeId, BridgesByPid)
                }
     };
 
@@ -162,25 +183,26 @@ handle_cast(_Msg, State) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Send a message to all channels in a list.
+%% Send a message to all bridges in a list.
 %%
-%% @spec send_to_all(msg, channels) -> {ok, ContinuingChannels} | { error, Error }
+%% @spec send_to_all(msg, bridges) -> {ok, ContinuingBridges} | { error, Error }
 %% @end
 %%--------------------------------------------------------------------
--spec send_to_all(any(), [ #trigger{} ]) -> [#trigger{}] | {error, any()}.
-send_to_all(Msg, Channels) ->
-    io:fwrite("Sending to ~p~n", [Channels]),
-    send_to_all(Msg, Channels, []).
+-spec call_bridge_to_connection(#bridge_info{}, any(), pid()) -> #bridge_info{}.
+call_bridge_to_connection(Bridge=#bridge_info{ pid=Pid, threads=Threads}, Msg, From) ->
+    T = spawn_link(fun () ->
+                           %% TODO add keepalive logic
+                           MessageId = generate_id(),
+                           Pid ! { ?SERVER, Pid, { data, MessageId, Msg }},
+                           Result = wait_result_from_pid(Pid, MessageId),
+                           From ! { ?SERVER, {ok, Result} }
+                   end),
+    Bridge#bridge_info{threads=[T | Threads]}.
 
-send_to_all(_, [], Continuing) ->
-    Continuing;
-
-send_to_all(Msg, [ Channel=#trigger{ pid=_Pid, callback=Callback } | T], Continuing) ->
-    case Callback(Msg) of
-        continue ->
-            send_to_all(Msg, T, [ Channel | Continuing ]);
-        _ ->
-            send_to_all(Msg, T, Continuing)
+wait_result_from_pid(Pid, MessageId) ->
+    receive
+        { ?SERVER, Pid, { result, Result } } ->
+            Result
     end.
 
 %%--------------------------------------------------------------------
@@ -193,13 +215,35 @@ send_to_all(Msg, [ Channel=#trigger{ pid=_Pid, callback=Callback } | T], Continu
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info({send_reports}, #state{ channels=Channels, stats=Stats}) ->
-    #stats{processed_messages=ProcessedMessages} = Stats,
-    monitor:add_processed_messages(ProcessedMessages),
-    erlang:send_after(?TIME_BETWEEN_REPORTS, ?SERVER, {send_reports}),
-    {noreply, #state{ channels=Channels
-                    , stats=#stats{ processed_messages=0
-                            }
+handle_info({'EXIT', Pid, _Reason}, #state{ bridge_by_id=Bridges, bridge_id_by_pid=BridgesByPid}) ->
+    %% TODO: consider calling threads failing
+    {NewBridges, NewBridgesById} =
+        case BridgesByPid of
+            #{ Pid := BridgeId } ->
+                WithoutBridgePid = maps:remove(Pid, BridgesByPid),
+
+                case Bridges of
+                    #{ BridgeId := BridgeData } ->
+                        FilteredBridgeData = lists:filter(fun (#bridge_info{pid=InstancePid}) ->
+                                                                  Pid == InstancePid
+                                                          end, BridgeData),
+                        case length(FilteredBridgeData) of
+                            0 ->
+                                {maps:remove(BridgeId, Bridges), WithoutBridgePid};
+                            _ ->
+                                {maps:update(BridgeId, FilteredBridgeData, Bridges), WithoutBridgePid}
+                        end;
+                    _ ->
+                        io:fwrite("[01] Not found ~p on ~p~n", [BridgeId, Bridges]),
+                        { Bridges, WithoutBridgePid}
+                end;
+            _ ->
+                io:fwrite("[02] Not found ~p on ~p~n", [Pid, BridgesByPid]),
+                {Bridges, BridgesByPid}
+        end,
+
+    {noreply, #state{ bridge_by_id=NewBridges
+                    , bridge_id_by_pid=NewBridgesById
                     }};
 
 handle_info(_Info, State) ->
@@ -233,3 +277,5 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+generate_id() ->
+    binary:list_to_bin(uuid:to_string(uuid:uuid4())).
