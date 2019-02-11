@@ -1,0 +1,94 @@
+' Just the simple path
+@startuml happy-path.png
+participant program
+participant plaza
+participant bridge
+
+program -> plaza: Run order
+plaza -> bridge: Run order
+... bridge computes response ...
+plaza <-- bridge: Result
+program <-- plaza: Result
+@enduml
+
+@startuml long-running-operation.png
+participant program
+participant plaza
+participant bridge
+
+program -> plaza: Run order
+plaza -> bridge: Run order
+... bridge computes response ...
+plaza -> bridge: Still running?
+plaza <-- bridge: Yes
+... bridge still computes response ...
+plaza <-- bridge: Result
+program <-- plaza: Result
+@enduml
+
+@startuml failed-operation.png
+participant program
+participant plaza
+participant bridge
+
+program -> plaza: Run order
+plaza -> bridge: Run order
+... bridge fails ...
+plaza -> bridge: Still running?
+plaza <-- bridge: No
+program <-- plaza: Error
+@enduml
+
+
+@startuml error-on-connection-to-bridge.png
+participant program
+participant plaza
+participant bridge
+
+program -> plaza: Run order
+plaza -> bridge: Run order
+... bridge connection fails silently ...
+plaza -X bridge: Still running?
+... Timeout time passes ...
+program <-- plaza: Error
+@enduml
+
+@startuml disconnection-to-bridge.png
+participant program
+participant plaza
+participant bridge
+
+program -> plaza: Run order
+plaza -> bridge: Run order
+... bridge connection fails ...
+plaza -> plaza: Connection failed
+program <-- plaza: Error
+@enduml
+
+@startuml too-long-running-operation.png
+participant program
+participant plaza
+participant bridge
+
+program -> plaza: Run order
+plaza -> bridge: Run order
+... bridge computes response ...
+plaza -> bridge: Still running?
+plaza <-- bridge: Yes
+... this repeats MaxTimeouts ...
+program <-- plaza: Result
+plaza -> bridge: Cancel
+
+@enduml
+
+
+@startuml no-bridge-running.png
+participant program
+participant plaza
+participant bridge
+
+program -> plaza: Run order
+destroy bridge
+
+program <-- plaza: Error
+@enduml
