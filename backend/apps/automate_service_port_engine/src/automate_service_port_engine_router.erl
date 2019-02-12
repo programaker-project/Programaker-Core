@@ -7,6 +7,7 @@
         , connect_bridge/1
         , call_bridge/2
         , is_bridge_connected/1
+        , answer_message/2
         ]).
 
 %% gen_server callbacks
@@ -15,13 +16,15 @@
         ]).
 
 -define(SERVER, ?MODULE).
+-define(MAX_WAIT_TIME_SECONDS, 10).
+-define(MAX_WAIT_TIME, ?MAX_WAIT_TIME_SECONDS * 1000).
 
 -record(state, { bridge_by_id
                , bridge_id_by_pid
+               , thread_by_message
                }).
 -record(bridge_info, { pid
                      , bridge_id
-                     , threads
                      }).
 
 %%%===================================================================
@@ -47,10 +50,28 @@ connect_bridge(BridgeId) ->
 %%--------------------------------------------------------------------
 call_bridge(BridgeId, Msg) ->
     gen_server:cast({global, ?SERVER}, { call_bridge, BridgeId, Msg, self() }),
+    wait_server_response().
+
+wait_server_response() ->
     receive
         {?SERVER, Response} ->
-            Response
+            Response;
+        X ->
+            io:fwrite("WTF: ~p~n", [X]),
+            wait_server_response()
+    after ?MAX_WAIT_TIME ->
+            {error, no_response}
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Route a message answer.
+%%
+%% @spec answer_message(MessageId, Response) -> {ok, boolean} | {error, Error}
+%% @end
+%%--------------------------------------------------------------------
+answer_message(MessageId, Response) ->
+    gen_server:call({global, ?SERVER}, { answer_message, MessageId, Response }).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -60,11 +81,7 @@ call_bridge(BridgeId, Msg) ->
 %% @end
 %%--------------------------------------------------------------------
 is_bridge_connected(BridgeId) ->
-    gen_server:call({global, ?SERVER}, { is_bridge_connected, BridgeId }),
-    receive
-        {?SERVER, Response} ->
-            Response
-    end.
+    gen_server:call({global, ?SERVER}, { is_bridge_connected, BridgeId }).
 
 
 
@@ -97,6 +114,7 @@ init([]) ->
     process_flag(trap_exit, true),
     {ok, #state{ bridge_by_id=#{}
                , bridge_id_by_pid=#{}
+               , thread_by_message=#{}
                }}.
 
 %%--------------------------------------------------------------------
@@ -123,6 +141,18 @@ handle_call({ is_bridge_connected, BridgeId }, _From, State) ->
 
     {reply, {ok, IsConnected}, State};
 
+handle_call({ answer_message, MessageId, Result }, _From, State) ->
+    case State of
+        #state{ thread_by_message=Messages=#{ MessageId := ThreadId } } ->
+            io:fwrite("Sending message to ~p~n", [ThreadId]),
+            ThreadId ! { ?SERVER, {ok, Result }},
+            {reply, ok, State#state{ thread_by_message=maps:remove(MessageId, Messages)
+                                   }};
+        _ ->
+            io:fwrite("MessageId(~p) not found on state(~p)~n", [MessageId, State]),
+            {reply, { error, no_message_id  }, State}
+    end;
+
 handle_call({ get_routes }, _From, State) ->
     #state{ bridge_by_id=Routes } = State,
     Reply = {ok, Routes},
@@ -144,15 +174,20 @@ handle_call(_Request, _From, State) ->
 %%--------------------------------------------------------------------
 handle_cast({ call_bridge, BridgeId, Msg, From  }, State) ->
     case State of
-        #state{ bridge_by_id=Bridges=#{ BridgeId := Connections } } ->
+        #state{ bridge_by_id=Bridges=#{ BridgeId := Connections }
+              , thread_by_message=Messages
+              } ->
             [First | Rest] = Connections,
-            WithMessaging = call_bridge_to_connection(First, Msg, From),
+            {MessageId, ThreadId, WithMessaging} = call_bridge_to_connection(First, Msg, From),
 
             { noreply
             , State#state { bridge_by_id=Bridges#{ BridgeId => Rest ++ [WithMessaging] }
+                          , thread_by_message=Messages#{ MessageId => ThreadId
+                                                       }
                           }
             };
         _ ->
+            io:fwrite("BridgeId (~p) in state(~p)~n", [BridgeId, State]),
             From ! { ?SERVER, { error, no_connection }},
             {noreply, State}
     end;
@@ -165,10 +200,10 @@ handle_cast({ connect_bridge, BridgeId, Pid }, State) ->
                               { ok, OtherBridges } -> OtherBridges;
                               error -> []
                           end,
-    link(BridgeId),
+    link(Pid),
     {noreply, State#state{
                 bridge_by_id=maps:put(BridgeId,
-                                  [ #bridge_info{pid=Pid, bridge_id=BridgeId, threads=[]}
+                                  [ #bridge_info{pid=Pid, bridge_id=BridgeId}
                                     | PreexistingBridges
                                   ], Bridges),
                bridge_id_by_pid=maps:put(Pid, BridgeId, BridgesByPid)
@@ -189,21 +224,10 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec call_bridge_to_connection(#bridge_info{}, any(), pid()) -> #bridge_info{}.
-call_bridge_to_connection(Bridge=#bridge_info{ pid=Pid, threads=Threads}, Msg, From) ->
-    T = spawn_link(fun () ->
-                           %% TODO add keepalive logic
-                           MessageId = generate_id(),
-                           Pid ! { ?SERVER, Pid, { data, MessageId, Msg }},
-                           Result = wait_result_from_pid(Pid, MessageId),
-                           From ! { ?SERVER, {ok, Result} }
-                   end),
-    Bridge#bridge_info{threads=[T | Threads]}.
-
-wait_result_from_pid(Pid, MessageId) ->
-    receive
-        { ?SERVER, Pid, { result, Result } } ->
-            Result
-    end.
+call_bridge_to_connection(Bridge=#bridge_info{ pid=Pid}, Msg, From) ->
+    MessageId = generate_id(),
+    Pid ! { ?SERVER, Pid, { data, MessageId, Msg }},
+    {MessageId, From, Bridge}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -215,7 +239,7 @@ wait_result_from_pid(Pid, MessageId) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info({'EXIT', Pid, _Reason}, #state{ bridge_by_id=Bridges, bridge_id_by_pid=BridgesByPid}) ->
+handle_info({'EXIT', Pid, _Reason}, State=#state{ bridge_by_id=Bridges, bridge_id_by_pid=BridgesByPid}) ->
     %% TODO: consider calling threads failing
     {NewBridges, NewBridgesById} =
         case BridgesByPid of
@@ -242,9 +266,9 @@ handle_info({'EXIT', Pid, _Reason}, #state{ bridge_by_id=Bridges, bridge_id_by_p
                 {Bridges, BridgesByPid}
         end,
 
-    {noreply, #state{ bridge_by_id=NewBridges
-                    , bridge_id_by_pid=NewBridgesById
-                    }};
+    {noreply, State#state{ bridge_by_id=NewBridges
+                         , bridge_id_by_pid=NewBridgesById
+                         }};
 
 handle_info(_Info, State) ->
     {noreply, State}.
