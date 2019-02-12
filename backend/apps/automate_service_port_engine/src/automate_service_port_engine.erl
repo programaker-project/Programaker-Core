@@ -49,89 +49,23 @@ call_service_port(ServicePortId, FunctionName, Arguments, UserId) ->
 
 -spec get_how_to_enable(binary(), binary()) -> {ok, any()}.
 get_how_to_enable(ServicePortId, UserId) ->
-    ChannelId = ServicePortId,
-    Process = self(),
-
-    MessageId = generate_id(),
-
-    ?ROUTER:open_outbound_channel({from_service, ChannelId},
-                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
-                                              }) ->
-                                          case ReceivedMessageId of
-                                              MessageId ->
-                                                  Process ! {?MODULE, Answer},
-                                                  finish;
-                                              _ ->
-                                                  continue
-                                          end
-                                  end),
-    ?ROUTER:route_inbound({to_service, ChannelId},
-                          jiffy:encode(#{ <<"message_id">> => MessageId
-                                        , <<"type">> => <<"GET_HOW_TO_SERVICE_REGISTRATION">>
+    ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"GET_HOW_TO_SERVICE_REGISTRATION">>
                                         , <<"user_id">> => UserId
                                         , <<"value">> => #{}
-                                        })),
-
-    receive {?MODULE, Msg} ->
-            {ok, Msg}
-    end.
+                                        }).
 
 -spec send_registration_data(binary(), map(), binary()) -> {ok, map()}.
 send_registration_data(ServicePortId, Data, UserId) ->
-    ChannelId = ServicePortId,
-    Process = self(),
-
-    MessageId = generate_id(),
-
-    ?ROUTER:open_outbound_channel({from_service, ChannelId},
-                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
-                                              }) ->
-                                          case ReceivedMessageId of
-                                              MessageId ->
-                                                  Process ! {?MODULE, Answer},
-                                                  finish;
-                                              _ ->
-                                                  continue
-                                          end
-                                  end),
-    ?ROUTER:route_inbound({to_service, ChannelId},
-                          jiffy:encode(#{ <<"message_id">> => MessageId
-                                        , <<"type">> => <<"REGISTRATION">>
+    ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"REGISTRATION">>
                                         , <<"user_id">> => UserId
                                         , <<"value">> => #{ <<"form">> => Data }
-                                        })),
-
-    receive {?MODULE, Msg} ->
-            {ok, Msg}
-    end.
+                                        }).
 
 -spec send_oauth_return(binary(), binary()) -> {ok, map()}.
 send_oauth_return(Qs, ServicePortId) ->
-    ChannelId = ServicePortId,
-    Process = self(),
-
-    MessageId = generate_id(),
-
-    ?ROUTER:open_outbound_channel({from_service, ChannelId},
-                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
-                                              }) ->
-                                          case ReceivedMessageId of
-                                              MessageId ->
-                                                  Process ! {?MODULE, Answer},
-                                                  finish;
-                                              _ ->
-                                                  continue
-                                          end
-                                  end),
-    ?ROUTER:route_inbound({to_service, ChannelId},
-                          jiffy:encode(#{ <<"message_id">> => MessageId
-                                        , <<"type">> => <<"OAUTH_RETURN">>
+    ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"OAUTH_RETURN">>
                                         , <<"value">> => #{ <<"query_string">> => Qs }
-                                        })),
-
-    receive {?MODULE, Msg} ->
-            {ok, Msg}
-    end.
+                                        }).
 
 
 -spec from_service_port(binary(), binary(), binary()) -> ok.
