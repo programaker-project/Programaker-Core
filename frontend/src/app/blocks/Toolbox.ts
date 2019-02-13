@@ -52,6 +52,7 @@ export class Toolbox {
         this.injectChatBlocks();
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
+        this.injectTemplateBlocks();
         this.injectCustomBlocks(custom_blocks);
     }
 
@@ -142,7 +143,7 @@ export class Toolbox {
             init: function() {
                 this.jsonInit({
                     'id': 'chat_whenreceivecommand',
-                    'message0': 'When received command %1',
+                    'message0': 'When received %1',
                     'args0': [
                         {
                             'type': 'input_value',
@@ -209,6 +210,41 @@ export class Toolbox {
                 throw e;
             }
         }
+    }
+
+    injectTemplateBlocks() {
+      Blockly.Blocks['automate_run_template'] = {
+        init: function() {
+            this.jsonInit({
+                'id': 'automate_run_template',
+                'message0': 'Template %1',
+                'args0': [
+                  {
+                    'type': 'field_dropdown',
+                    'name': 'TEMPLATE_NAME',
+                    'options': [
+                      ['template1', 'test1'],
+                    ],
+                  }
+                ],
+                'category': Blockly.Categories.event,
+                'extensions': ['colours_templates', 'output_string']
+            });
+        }
+      };
+
+      try {
+        Blockly.Extensions.register('colours_templates',
+                            function() {
+                                this.setColourFromRawValues_('#40BF4A', '#389438', '#308438');
+                            });
+      } catch (e) {
+          // If the extension was registered before
+          // this would have thrown an inocous exception
+          if (!Toolbox.alreadyRegisteredException(e)) {
+              throw e;
+          }
+      }
     }
 
     injectMonitorBlocks(monitors: MonitorMetadata[]) {
@@ -580,6 +616,14 @@ export class Toolbox {
             '<block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>' +
             '</category>';
 
+
+        const templatesCategory = `
+        <category name="Templates" colour="#40BF4A" secondaryColour="#389438">
+          <block type="automate_run_template" id="automate_run_template">
+          </block>
+        </category>`;
+    
+
         const customCategory = this.gen_toolbox_xml_from_blocks(custom_blocks);
 
         Blockly.Blocks.defaultToolbox = [
@@ -591,6 +635,7 @@ export class Toolbox {
             timeCategory,
             customCategory,
             operatorsCategory,
+            templatesCategory,
             variablesCategory,
             proceduresCategory,
             '</xml>'].join('\n');
