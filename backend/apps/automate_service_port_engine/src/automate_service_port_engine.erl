@@ -36,132 +36,36 @@ create_service_port(UserId, ServicePortName) ->
 
 -spec register_service_port(binary()) -> ok.
 register_service_port(ServicePortId) ->
-    ChannelId = ServicePortId,
-    Process = self(),
-    io:fwrite("Connected service port ~p~n", [ServicePortId]),
-    ?ROUTER:open_outbound_channel({to_service, ChannelId},
-                                  fun(Msg) ->
-                                          Process ! Msg,
-                                          continue
-                                  end),
-    ok.
+    ?ROUTER:connect_bridge(ServicePortId).
 
 -spec call_service_port(binary(), binary(), binary(), binary()) -> {ok, any()}.
 call_service_port(ServicePortId, FunctionName, Arguments, UserId) ->
-    ChannelId = ServicePortId,
-    Process = self(),
-
-    MessageId = generate_id(),
-
-    ?ROUTER:open_outbound_channel({from_service, ChannelId},
-                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
-                                              }) ->
-                                          case ReceivedMessageId of
-                                              MessageId ->
-                                                  Process ! {?MODULE, Answer},
-                                                  finish;
-                                              _ ->
-                                                  continue
-                                          end
-                                  end),
-    ?ROUTER:route_inbound({to_service, ChannelId},
-                          jiffy:encode(#{ <<"message_id">> => MessageId
-                                        , <<"type">> => <<"FUNCTION_CALL">>
+    ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
                                         , <<"user_id">> => UserId
                                         , <<"value">> => #{ <<"function_name">> => FunctionName
                                                           , <<"arguments">> => Arguments
                                                           }
-                                        })),
-
-    receive {?MODULE, Msg} ->
-            {ok, Msg}
-    end.
+                                        }).
 
 -spec get_how_to_enable(binary(), binary()) -> {ok, any()}.
 get_how_to_enable(ServicePortId, UserId) ->
-    ChannelId = ServicePortId,
-    Process = self(),
-
-    MessageId = generate_id(),
-
-    ?ROUTER:open_outbound_channel({from_service, ChannelId},
-                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
-                                              }) ->
-                                          case ReceivedMessageId of
-                                              MessageId ->
-                                                  Process ! {?MODULE, Answer},
-                                                  finish;
-                                              _ ->
-                                                  continue
-                                          end
-                                  end),
-    ?ROUTER:route_inbound({to_service, ChannelId},
-                          jiffy:encode(#{ <<"message_id">> => MessageId
-                                        , <<"type">> => <<"GET_HOW_TO_SERVICE_REGISTRATION">>
+    ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"GET_HOW_TO_SERVICE_REGISTRATION">>
                                         , <<"user_id">> => UserId
                                         , <<"value">> => #{}
-                                        })),
-
-    receive {?MODULE, Msg} ->
-            {ok, Msg}
-    end.
+                                        }).
 
 -spec send_registration_data(binary(), map(), binary()) -> {ok, map()}.
 send_registration_data(ServicePortId, Data, UserId) ->
-    ChannelId = ServicePortId,
-    Process = self(),
-
-    MessageId = generate_id(),
-
-    ?ROUTER:open_outbound_channel({from_service, ChannelId},
-                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
-                                              }) ->
-                                          case ReceivedMessageId of
-                                              MessageId ->
-                                                  Process ! {?MODULE, Answer},
-                                                  finish;
-                                              _ ->
-                                                  continue
-                                          end
-                                  end),
-    ?ROUTER:route_inbound({to_service, ChannelId},
-                          jiffy:encode(#{ <<"message_id">> => MessageId
-                                        , <<"type">> => <<"REGISTRATION">>
+    ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"REGISTRATION">>
                                         , <<"user_id">> => UserId
                                         , <<"value">> => #{ <<"form">> => Data }
-                                        })),
-
-    receive {?MODULE, Msg} ->
-            {ok, Msg}
-    end.
+                                        }).
 
 -spec send_oauth_return(binary(), binary()) -> {ok, map()}.
 send_oauth_return(Qs, ServicePortId) ->
-    ChannelId = ServicePortId,
-    Process = self(),
-
-    MessageId = generate_id(),
-
-    ?ROUTER:open_outbound_channel({from_service, ChannelId},
-                                  fun(Answer=#{ <<"message_id">> := ReceivedMessageId
-                                              }) ->
-                                          case ReceivedMessageId of
-                                              MessageId ->
-                                                  Process ! {?MODULE, Answer},
-                                                  finish;
-                                              _ ->
-                                                  continue
-                                          end
-                                  end),
-    ?ROUTER:route_inbound({to_service, ChannelId},
-                          jiffy:encode(#{ <<"message_id">> => MessageId
-                                        , <<"type">> => <<"OAUTH_RETURN">>
+    ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"OAUTH_RETURN">>
                                         , <<"value">> => #{ <<"query_string">> => Qs }
-                                        })),
-
-    receive {?MODULE, Msg} ->
-            {ok, Msg}
-    end.
+                                        }).
 
 
 -spec from_service_port(binary(), binary(), binary()) -> ok.
@@ -169,10 +73,10 @@ from_service_port(ServicePortId, UserId, Msg) ->
     ChannelId = ServicePortId,
     Unpacked = jiffy:decode(Msg, [return_maps]),
     case Unpacked of
-        #{ <<"message_id">> := _ } ->
-            io:fwrite("Service answered ~p~n", [Unpacked]),
-            ?ROUTER:route_inbound({from_service, ChannelId}, Unpacked),
-            ok;
+        #{ <<"message_id">> := MessageId } ->
+            io:fwrite("[~p] Answer: ~p~n", [MessageId, Unpacked]),
+            ?ROUTER:answer_message(MessageId, Unpacked);
+
         #{ <<"type">> := <<"configuration">>
          , <<"value">> := Configuration
          } ->

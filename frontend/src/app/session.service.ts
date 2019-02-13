@@ -105,7 +105,7 @@ export class SessionService {
                   if (data.success) {
                       this.storeToken(data.token);
 
-                      const newSession = new Session(true, username);
+                      const newSession = new Session(true, username, data.user_id);
 
                       return true;
                   }

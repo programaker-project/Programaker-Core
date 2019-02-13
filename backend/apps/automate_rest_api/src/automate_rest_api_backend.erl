@@ -52,8 +52,8 @@ login_user(#login_rec{ password=Password
                      , username=Username
                      }) ->
     case automate_storage:login_user(Username, Password) of
-        { ok, Token } ->
-            { ok, Token };
+        { ok, {Token, UserId} } ->
+            { ok, {Token, UserId} };
         { error, Reason } ->
             { error, Reason }
     end.

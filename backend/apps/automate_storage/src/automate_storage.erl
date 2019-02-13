@@ -71,7 +71,7 @@ login_user(Username, Password) ->
                 true ->
                     SessionToken = generate_id(),
                     ok = add_token_to_user(UserId, SessionToken),
-                    { ok, SessionToken };
+                    { ok, {SessionToken, UserId} };
                 _ ->
                     {error, invalid_user_password}
             end;
