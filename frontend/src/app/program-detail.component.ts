@@ -83,9 +83,16 @@ export class ProgramDetailComponent implements OnInit {
 
     prepareWorkspace(): Promise<void> {
         return this.chatService.getAvailableChats().then((chats: Chat[]) => {
-            return new Toolbox(this.monitorService, this.customBlockService, chats).inject().then(([toolbox, registrations]) => {
-                this.injectWorkspace(toolbox, registrations);
-            });
+            return new Toolbox(
+                this.monitorService,
+                this.customBlockService,
+                chats,
+                this.dialog
+            )
+                .inject()
+                .then(([toolbox, registrations]) => {
+                    this.injectWorkspace(toolbox, registrations);
+                });
         });
     }
 
@@ -131,7 +138,7 @@ export class ProgramDetailComponent implements OnInit {
             }
         });
 
-        for(const reg of registrations) {
+        for (const reg of registrations) {
             reg(this.workspace);
         }
 

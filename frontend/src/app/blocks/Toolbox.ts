@@ -3,6 +3,8 @@ import { MonitorMetadata } from '../monitor';
 import { Chat } from '../chat';
 import { CustomBlockService } from '../custom_block.service';
 import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments } from '../custom_block';
+import { TemplateCreateDialogComponent } from '../templates/create-dialog.component';
+import { MatDialog } from '@angular/material';
 
 declare const Blockly;
 
@@ -15,6 +17,7 @@ export class Toolbox {
     monitorService: MonitorService;
     customBlockService: CustomBlockService;
     chats: Chat[];
+    dialog: MatDialog;
 
     static alreadyRegisteredException(e: Error): boolean {
         return e.message.match(/Error: Extension .* is already registered./) !== null;
@@ -24,10 +27,12 @@ export class Toolbox {
         monitorService: MonitorService,
         customBlockService: CustomBlockService,
         chats: Chat[],
+        dialog: MatDialog,
     ) {
         this.monitorService = monitorService;
         this.customBlockService = customBlockService;
         this.chats = chats;
+        this.dialog = dialog;
     }
 
     async inject(): Promise<[string, Function[]]> {
@@ -255,11 +260,16 @@ export class Toolbox {
         return [
             (workspace) => {
                 workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
-                    console.log(x, y, z);
-                    alert("Nice!");
+                    this.create_template();
                 });
             }
         ];
+    }
+
+    create_template() {
+        const _dialogRef = this.dialog.open(TemplateCreateDialogComponent, {
+            data: { template: null }
+        });
     }
 
     injectMonitorBlocks(monitors: MonitorMetadata[]) {
