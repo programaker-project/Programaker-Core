@@ -30,12 +30,14 @@ export class Toolbox {
         this.chats = chats;
     }
 
-    async inject(): Promise<void> {
+    async inject(): Promise<Function[]> {
         const monitors = await this.monitorService.getMonitors();
         const custom_blocks = await this.customBlockService.getCustomBlocks();
 
-        this.injectBlocks(monitors, custom_blocks);
+        const registrations = this.injectBlocks(monitors, custom_blocks);
         this.injectToolbox(monitors, custom_blocks);
+
+        return registrations;
     }
 
     getChatOptions() {
@@ -48,17 +50,21 @@ export class Toolbox {
         return results;
     }
 
-    injectBlocks(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]) {
+    injectBlocks(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]): Function[] {
+        let registrations = [];
+
         this.injectChatBlocks();
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
-        this.injectTemplateBlocks();
+        registrations = registrations.concat(this.injectTemplateBlocks());
         this.injectCustomBlocks(custom_blocks);
+
+        return registrations
     }
 
     injectTimeBlocks() {
         Blockly.Blocks['time_trigger_at'] = {
-            init: function() {
+            init: function () {
                 this.jsonInit({
                     'id': 'time_trigger_at',
                     'message0': 'Every day at %1:%2:%3 (UTC)',
@@ -83,7 +89,7 @@ export class Toolbox {
         };
 
         Blockly.Blocks['time_get_utc_hour'] = {
-            init: function() {
+            init: function () {
                 this.jsonInit({
                     'id': 'time_get_utc_hour',
                     'message0': 'UTC hour',
@@ -96,7 +102,7 @@ export class Toolbox {
         };
 
         Blockly.Blocks['time_get_utc_minute'] = {
-            init: function() {
+            init: function () {
                 this.jsonInit({
                     'id': 'time_get_utc_minute',
                     'message0': 'UTC minute',
@@ -109,7 +115,7 @@ export class Toolbox {
         };
 
         Blockly.Blocks['time_get_utc_seconds'] = {
-            init: function() {
+            init: function () {
                 this.jsonInit({
                     'id': 'time_get_utc_seconds',
                     'message0': 'UTC seconds',
@@ -123,12 +129,12 @@ export class Toolbox {
 
         try {
             Blockly.Extensions.register('colours_time',  // Name of the new category
-                                        function() {
-                                            this.setColourFromRawValues_('#85CCB3',  // Block inner color
-                                                                         '#1D1D5F',  // Category circle border color
-                                                                         '#1D1D5F'   // Block border color
-                                                                        );
-                                        });
+                function () {
+                    this.setColourFromRawValues_('#85CCB3',  // Block inner color
+                        '#1D1D5F',  // Category circle border color
+                        '#1D1D5F'   // Block border color
+                    );
+                });
         } catch (e) {
             // If the extension was registered before
             // this would have thrown an inocous exception
@@ -140,7 +146,7 @@ export class Toolbox {
 
     injectChatBlocks() {
         Blockly.Blocks['chat_whenreceivecommand'] = {
-            init: function() {
+            init: function () {
                 this.jsonInit({
                     'id': 'chat_whenreceivecommand',
                     'message0': 'When received %1',
@@ -157,7 +163,7 @@ export class Toolbox {
         };
 
         Blockly.Blocks['chat_say'] = {
-            init: function() {
+            init: function () {
                 this.jsonInit({
                     'id': 'chat_say',
                     'message0': 'Say %1',
@@ -176,7 +182,7 @@ export class Toolbox {
         const options = this.getChatOptions();
         if (options.length > 0) {
             Blockly.Blocks['chat_say_on_channel'] = {
-                init: function() {
+                init: function () {
                     this.jsonInit({
                         'id': 'chat_say',
                         'message0': 'On channel %1 say %2',
@@ -200,9 +206,9 @@ export class Toolbox {
 
         try {
             Blockly.Extensions.register('colours_chat',
-                                function() {
-                                    this.setColourFromRawValues_('#5555CC', '#333377', '#0000FF');
-                                });
+                function () {
+                    this.setColourFromRawValues_('#5555CC', '#333377', '#0000FF');
+                });
         } catch (e) {
             // If the extension was registered before
             // this would have thrown an inocous exception
@@ -212,45 +218,54 @@ export class Toolbox {
         }
     }
 
-    injectTemplateBlocks() {
-      Blockly.Blocks['automate_run_template'] = {
-        init: function() {
-            this.jsonInit({
-                'id': 'automate_run_template',
-                'message0': 'Template %1',
-                'args0': [
-                  {
-                    'type': 'field_dropdown',
-                    'name': 'TEMPLATE_NAME',
-                    'options': [
-                      ['template1', 'test1'],
+    injectTemplateBlocks(): Function[] {
+        Blockly.Blocks['automate_run_template'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'automate_run_template',
+                    'message0': 'Template %1',
+                    'args0': [
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'TEMPLATE_NAME',
+                            'options': [
+                                ['template1', 'test1'],
+                            ],
+                        }
                     ],
-                  }
-                ],
-                'category': Blockly.Categories.event,
-                'extensions': ['colours_templates', 'output_string']
-            });
-        }
-      };
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_templates', 'output_string']
+                });
+            }
+        };
 
-      try {
-        Blockly.Extensions.register('colours_templates',
-                            function() {
-                                this.setColourFromRawValues_('#40BF4A', '#389438', '#308438');
-                            });
-      } catch (e) {
-          // If the extension was registered before
-          // this would have thrown an inocous exception
-          if (!Toolbox.alreadyRegisteredException(e)) {
-              throw e;
-          }
-      }
+        try {
+            Blockly.Extensions.register('colours_templates',
+                function () {
+                    this.setColourFromRawValues_('#40BF4A', '#389438', '#308438');
+                });
+        } catch (e) {
+            // If the extension was registered before
+            // this would have thrown an inocous exception
+            if (!Toolbox.alreadyRegisteredException(e)) {
+                throw e;
+            }
+        }
+
+        return [
+            (workspace) => {
+                workspace.registerButtonCallback('automateCreateTemplate', (x, y, z) => {
+                    console.log(x, y, z);
+                    alert("Nice!");
+                });
+            }
+        ];
     }
 
     injectMonitorBlocks(monitors: MonitorMetadata[]) {
         for (const monitor of monitors) {
             Blockly.Blocks['monitor.retrieve.' + monitor.id] = {
-                init: function() {
+                init: function () {
                     this.jsonInit({
                         'id': 'monitor.retrieve.' + monitor.id,
                         'message0': 'Get ' + monitor.name,
@@ -280,16 +295,6 @@ export class Toolbox {
     }
 
     injectCustomBlocks(blocks: CustomBlock[]) {
-        function makeid() {
-            var text = "";
-            var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-            for (var i = 0; i < 5; i++)
-                text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-            return text;
-        }
-
         for (const block of blocks) {
             Blockly.Blocks[block.id] = {
                 init: function () {
@@ -343,30 +348,34 @@ export class Toolbox {
 
         Blockly.Blocks.factoryDefaultToolbox = Blockly.Blocks.defaultToolbox;
 
-        let chatCategory = '<category name="Chat" colour="#5555CC" secondaryColour="#333377">' +
-        '<block type="chat_whenreceivecommand" id="chat_whenreceivecommand">' +
-          '<value name="VALUE">' +
-            '<shadow type="text">' +
-              '<field name="TEXT">/start</field>' +
-            '</shadow>' +
-          '</value>' +
-        '</block>' +
-        '<block type="chat_say" id="chat_say">' +
-          '<value name="VALUE">' +
-            '<shadow type="text">' +
-              '<field name="TEXT">Hello!</field>' +
-            '</shadow>' +
-          '</value>' +
-        '</block>';
+        let chatCategory = `
+        <category name="Chat" colour="#5555CC" secondaryColour="#333377">
+          <block type="chat_whenreceivecommand" id="chat_whenreceivecommand">
+            <value name="VALUE">
+              <shadow type="text">
+                <field name="TEXT">/start</field>
+              </shadow>
+            </value>
+          </block>
+          <block type="chat_say" id="chat_say">
+            <value name="VALUE">
+              <shadow type="text">
+                <field name="TEXT">Hello!</field>
+              </shadow>
+            </value>
+          </block>
+        `;
 
         if (this.getChatOptions().length > 0) {
-            chatCategory += '<block type="chat_say_on_channel" id="chat_say_on_channel">' +
-                             '<value name="VALUE">' +
-                               '<shadow type="text">' +
-                                 '<field name="TEXT">Hello!</field>' +
-                               '</shadow>' +
-                             '</value>' +
-                           '</block>';
+            chatCategory += `
+          <block type="chat_say_on_channel" id="chat_say_on_channel">
+            <value name="VALUE">
+              <shadow type="text">
+                <field name="TEXT">Hello!</field>
+              </shadow>
+            </value>
+          </block>
+          `;
         }
         chatCategory += '</category>';
 
@@ -383,246 +392,259 @@ export class Toolbox {
         //   '</block>' +
         // '</category>'
 
-        const controlCategory = '<category name="Control" colour="#FFAB19" secondaryColour="#CF8B17">' +
-        '<block type="control_wait" id="control_wait">' +
-          '<value name="DURATION">' +
-            '<shadow type="math_positive_number">' +
-              '<field name="NUM">1</field>' +
-            '</shadow>' +
-          '</value>' +
-        '</block>' +
-        '<block type="control_repeat" id="control_repeat">' +
-          '<value name="TIMES">' +
-            '<shadow type="math_whole_number">' +
-              '<field name="NUM">10</field>' +
-            '</shadow>' +
-          '</value>' +
-        '</block>' +
-        // '<block type="control_forever" id="control_forever"></block>' +
-        // '<block type="control_if" id="control_if"></block>' +
-        // '<block type="control_if_else" id="control_if_else"></block>' +
-        '<block type="control_wait_until" id="control_wait_until"></block>' +
-        '<block type="control_repeat_until" id="control_repeat_until"></block>' +
-        // '<block type="control_stop" id="control_stop"></block>' +
-      //   '<block type="control_start_as_clone" id="control_start_as_clone"></block>' +
-      //   '<block type="control_create_clone_of" id="control_create_clone_of">' +
-      //     '<value name="CLONE_OPTION">' +
-      //       '<shadow type="control_create_clone_of_menu"></shadow>' +
-      //     '</value>' +
-      //   '</block>' +
-      //   '<block type="control_delete_this_clone" id="control_delete_this_clone"></block>' +
-      '</category>';
+        const controlCategory = `
+        <category name="Control" colour="#FFAB19" secondaryColour="#CF8B17">
+          <block type="control_wait" id="control_wait">
+            <value name="DURATION">
+              <shadow type="math_positive_number">
+                <field name="NUM">1</field>
+              </shadow>
+            </value>
+          </block>
+          <block type="control_repeat" id="control_repeat">
+            <value name="TIMES">
+              <shadow type="math_whole_number">
+                <field name="NUM">10</field>
+              </shadow>
+            </value>
+          </block>
+          <!--
+          <block type="control_forever" id="control_forever"></block>
+          <block type="control_if" id="control_if"></block>
+          <block type="control_if_else" id="control_if_else"></block>
+          -->
+          <block type="control_wait_until" id="control_wait_until"></block>
+          <block type="control_repeat_until" id="control_repeat_until"></block>
+          <!--
+          <block type="control_stop" id="control_stop"></block>
+          <block type="control_start_as_clone" id="control_start_as_clone"></block>
+          <block type="control_create_clone_of" id="control_create_clone_of">
+            <value name="CLONE_OPTION">
+              <shadow type="control_create_clone_of_menu"></shadow>
+            </value>
+          </block>
+          <block type="control_delete_this_clone" id="control_delete_this_clone"></block>
+          -->
+        </category>`;
 
-        const operatorsCategory =           '<category name="Operators" colour="#40BF4A" secondaryColour="#389438">' +
-            '<block type="operator_add" id="operator_add">' +
-              '<value name="NUM1">' +
-                '<shadow type="math_number">' +
-                  '<field name="NUM"></field>' +
-                '</shadow>' +
-              '</value>' +
-              '<value name="NUM2">' +
-                '<shadow type="math_number">' +
-                  '<field name="NUM"></field>' +
-                '</shadow>' +
-              '</value>' +
-            '</block>' +
-            '<block type="operator_subtract" id="operator_subtract">' +
-              '<value name="NUM1">' +
-                '<shadow type="math_number">' +
-                  '<field name="NUM"></field>' +
-                '</shadow>' +
-              '</value>' +
-              '<value name="NUM2">' +
-                '<shadow type="math_number">' +
-                  '<field name="NUM"></field>' +
-                '</shadow>' +
-              '</value>' +
-            '</block>' +
-            '<block type="operator_multiply" id="operator_multiply">' +
-              '<value name="NUM1">' +
-                '<shadow type="math_number">' +
-                  '<field name="NUM"></field>' +
-                '</shadow>' +
-              '</value>' +
-              '<value name="NUM2">' +
-                '<shadow type="math_number">' +
-                  '<field name="NUM"></field>' +
-                '</shadow>' +
-              '</value>' +
-            '</block>' +
-            '<block type="operator_divide" id="operator_divide">' +
-              '<value name="NUM1">' +
-                '<shadow type="math_number">' +
-                  '<field name="NUM"></field>' +
-                '</shadow>' +
-              '</value>' +
-              '<value name="NUM2">' +
-                '<shadow type="math_number">' +
-                  '<field name="NUM"></field>' +
-                '</shadow>' +
-              '</value>' +
-            '</block>' +
-        //     '<block type="operator_random" id="operator_random">' +
-        //       '<value name="FROM">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM">1</field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="TO">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM">10</field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-             '<block type="operator_lt" id="operator_lt">' +
-               '<value name="OPERAND1">' +
-                 '<shadow type="text">' +
-                   '<field name="TEXT"></field>' +
-                 '</shadow>' +
-               '</value>' +
-               '<value name="OPERAND2">' +
-                 '<shadow type="text">' +
-                   '<field name="TEXT"></field>' +
-                 '</shadow>' +
-               '</value>' +
-             '</block>' +
-            '<block type="operator_equals" id="operator_equals">' +
-              '<value name="OPERAND1">' +
-                '<shadow type="text">' +
-                  '<field name="TEXT"></field>' +
-                '</shadow>' +
-              '</value>' +
-              '<value name="OPERAND2">' +
-                '<shadow type="text">' +
-                  '<field name="TEXT"></field>' +
-                '</shadow>' +
-              '</value>' +
-            '</block>' +
-            '<block type="operator_gt" id="operator_gt">' +
-              '<value name="OPERAND1">' +
-                '<shadow type="text">' +
-                  '<field name="TEXT"></field>' +
-                '</shadow>' +
-              '</value>' +
-              '<value name="OPERAND2">' +
-                '<shadow type="text">' +
-                  '<field name="TEXT"></field>' +
-                '</shadow>' +
-              '</value>' +
-            '</block>' +
-            '<block type="operator_and" id="operator_and"></block>' +
-            '<block type="operator_or" id="operator_or"></block>' +
-            '<block type="operator_not" id="operator_not"></block>' +
-            '<block type="operator_join" id="operator_join">' +
-              '<value name="STRING1">' +
-                '<shadow type="text">' +
-                  '<field name="TEXT">hello</field>' +
-                '</shadow>' +
-              '</value>' +
-              '<value name="STRING2">' +
-                '<shadow type="text">' +
-                  '<field name="TEXT">world</field>' +
-                '</shadow>' +
-              '</value>' +
-            '</block>' +
-        //     '<block type="operator_letter_of" id="operator_letter_of">' +
-        //       '<value name="LETTER">' +
-        //         '<shadow type="math_whole_number">' +
-        //           '<field name="NUM">1</field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="STRING">' +
-        //         '<shadow type="text">' +
-        //           '<field name="TEXT">world</field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_length" id="operator_length">' +
-        //       '<value name="STRING">' +
-        //         '<shadow type="text">' +
-        //           '<field name="TEXT">world</field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_contains" id="operator_contains">' +
-        //       '<value name="STRING1">' +
-        //         '<shadow type="text">' +
-        //           '<field name="TEXT">hello</field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="STRING2">' +
-        //         '<shadow type="text">' +
-        //           '<field name="TEXT">world</field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_mod" id="operator_mod">' +
-        //       '<value name="NUM1">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //       '<value name="NUM2">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_round" id="operator_round">' +
-        //       '<value name="NUM">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-        //     '<block type="operator_mathop" id="operator_mathop">' +
-        //       '<value name="NUM">' +
-        //         '<shadow type="math_number">' +
-        //           '<field name="NUM"></field>' +
-        //         '</shadow>' +
-        //       '</value>' +
-        //     '</block>' +
-          '</category>';
+        const operatorsCategory = `
+        <category name="Operators" colour="#40BF4A" secondaryColour="#389438">
+            <block type="operator_add" id="operator_add">
+              <value name="NUM1">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+              <value name="NUM2">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_subtract" id="operator_subtract">
+              <value name="NUM1">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+              <value name="NUM2">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_multiply" id="operator_multiply">
+              <value name="NUM1">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+              <value name="NUM2">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_divide" id="operator_divide">
+              <value name="NUM1">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+              <value name="NUM2">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+            </block>
+            <!--
+            <block type="operator_random" id="operator_random">
+              <value name="FROM">
+                <shadow type="math_number">
+                  <field name="NUM">1</field>
+                </shadow>
+              </value>
+              <value name="TO">
+                <shadow type="math_number">
+                  <field name="NUM">10</field>
+                </shadow>
+              </value>
+            </block>
+            -->
+             <block type="operator_lt" id="operator_lt">
+               <value name="OPERAND1">
+                 <shadow type="text">
+                   <field name="TEXT"></field>
+                 </shadow>
+               </value>
+               <value name="OPERAND2">
+                 <shadow type="text">
+                   <field name="TEXT"></field>
+                 </shadow>
+               </value>
+             </block>
+            <block type="operator_equals" id="operator_equals">
+              <value name="OPERAND1">
+                <shadow type="text">
+                  <field name="TEXT"></field>
+                </shadow>
+              </value>
+              <value name="OPERAND2">
+                <shadow type="text">
+                  <field name="TEXT"></field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_gt" id="operator_gt">
+              <value name="OPERAND1">
+                <shadow type="text">
+                  <field name="TEXT"></field>
+                </shadow>
+              </value>
+              <value name="OPERAND2">
+                <shadow type="text">
+                  <field name="TEXT"></field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_and" id="operator_and"></block>
+            <block type="operator_or" id="operator_or"></block>
+            <block type="operator_not" id="operator_not"></block>
+            <block type="operator_join" id="operator_join">
+              <value name="STRING1">
+                <shadow type="text">
+                  <field name="TEXT">hello</field>
+                </shadow>
+              </value>
+              <value name="STRING2">
+                <shadow type="text">
+                  <field name="TEXT">world</field>
+                </shadow>
+              </value>
+            </block>
+            <!--
+            <block type="operator_letter_of" id="operator_letter_of">
+              <value name="LETTER">
+                <shadow type="math_whole_number">
+                  <field name="NUM">1</field>
+                </shadow>
+              </value>
+              <value name="STRING">
+                <shadow type="text">
+                  <field name="TEXT">world</field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_length" id="operator_length">
+              <value name="STRING">
+                <shadow type="text">
+                  <field name="TEXT">world</field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_contains" id="operator_contains">
+              <value name="STRING1">
+                <shadow type="text">
+                  <field name="TEXT">hello</field>
+                </shadow>
+              </value>
+              <value name="STRING2">
+                <shadow type="text">
+                  <field name="TEXT">world</field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_mod" id="operator_mod">
+              <value name="NUM1">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+              <value name="NUM2">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_round" id="operator_round">
+              <value name="NUM">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+            </block>
+            <block type="operator_mathop" id="operator_mathop">
+              <value name="NUM">
+                <shadow type="math_number">
+                  <field name="NUM"></field>
+                </shadow>
+              </value>
+            </block>
+          -->
+          </category>`;
 
-        const variablesCategory = '<category name="Variables" colour="#FF8C1A" secondaryColour="#DB6E00" custom="VARIABLE">' +
-        '</category>';
+        const variablesCategory = `
+        <category name="Variables" colour="#FF8C1A" secondaryColour="#DB6E00" custom="VARIABLE">
+        </category>`;
 
         const proceduresCategory = '' // '<category name="More" colour="#FF6680" secondaryColour="#FF4D6A" custom="PROCEDURE">' +
         // '</category>';
 
         const monitorsCategory = this.buildMonitorsCategory(monitors);
 
-        const timeCategory = '<category name="Time" colour="#85CCB3" secondaryColour="#1D1D5F">' +
-            // Note the block id on both the type and id.
-            '<block type="time_trigger_at" id="time_trigger_at">' +
-              '<value name="HOUR">' +
-                '<shadow type="math_positive_number">' +
-                  '<field name="NUM">19</field>' +
-                '</shadow>' +
-              '</value>' +
-              '<value name="MINUTE">' +
-                '<shadow type="math_positive_number">' +
-                  '<field name="NUM">10</field>' +
-                '</shadow>' +
-              '</value>' +
-              '<value name="SECOND">' +
-                '<shadow type="math_positive_number">' +
-                  '<field name="NUM">00</field>' +
-                '</shadow>' +
-              '</value>' +
-            '</block>' +
-            '<block type="time_get_utc_hour" id="time_get_utc_hour"></block>' +
-            '<block type="time_get_utc_minute" id="time_get_utc_minute"></block>' +
-            '<block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>' +
-            '</category>';
+        const timeCategory = `
+        <category name="Time" colour="#85CCB3" secondaryColour="#1D1D5F">
+          <block type="time_trigger_at" id="time_trigger_at">
+            <value name="HOUR">
+              <shadow type="math_positive_number">
+                <field name="NUM">19</field>
+              </shadow>
+            </value>
+            <value name="MINUTE">
+              <shadow type="math_positive_number">
+                <field name="NUM">10</field>
+              </shadow>
+            </value>
+            <value name="SECOND">
+              <shadow type="math_positive_number">
+                <field name="NUM">00</field>
+              </shadow>
+            </value>
+          </block>
+          <block type="time_get_utc_hour" id="time_get_utc_hour"></block>
+          <block type="time_get_utc_minute" id="time_get_utc_minute"></block>
+          <block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>
+        </category>
+        `;
 
 
         const templatesCategory = `
         <category name="Templates" colour="#40BF4A" secondaryColour="#389438">
           <block type="automate_run_template" id="automate_run_template">
           </block>
+          <button text="New template" callbackKey="automateCreateTemplate" />
         </category>`;
-    
+
 
         const customCategory = this.gen_toolbox_xml_from_blocks(custom_blocks);
 
