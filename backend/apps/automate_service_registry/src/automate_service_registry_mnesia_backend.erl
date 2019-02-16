@@ -11,6 +11,7 @@
         , get_all_services_for_user/1
         , allow_user/2
         , get_service_by_id/2
+        , update_service_module/2
 
         , get_config_for_service/2
         , set_config_for_service/3
@@ -77,6 +78,29 @@ register(ServiceUuid, Public, #{ name := Name, description := Description, modul
 
     Transaction = fun() ->
                           ok = mnesia:write(?SERVICE_REGISTRY_TABLE, Entry, write)
+                  end,
+
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+-spec update_service_module(binary(),
+                            #{ name := binary(), description := binary(), module := {module(), [any]} })
+                           -> ok.
+update_service_module(Uuid, #{ name := Name
+                             , description := Description
+                             , module := Module
+                             }) ->
+    Transaction = fun() ->
+                          [Entry] = mnesia:read(?SERVICE_REGISTRY_TABLE, Uuid),
+                          ok = mnesia:write(?SERVICE_REGISTRY_TABLE,
+                                            Entry#services_table_entry{ name=Name
+                                                                      , description=Description
+                                                                      , module=Module
+                                                                      }, write)
                   end,
 
     case mnesia:transaction(Transaction) of

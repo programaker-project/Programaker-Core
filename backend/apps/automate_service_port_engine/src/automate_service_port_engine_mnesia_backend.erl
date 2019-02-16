@@ -126,6 +126,9 @@ set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
 
     ServiceId = case get_service_id_for_port(ServicePortId) of
                     {ok, FoundServiceId} ->
+                        ok = automate_service_registry:update_service_module(as_module(Configuration),
+                                                                             FoundServiceId,
+                                                                             OwnerId),
                         FoundServiceId;
                     {error, not_found} ->
                         {ok, NewServiceId} = create_service_for_port(Configuration, OwnerId),
