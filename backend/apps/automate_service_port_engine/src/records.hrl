@@ -4,6 +4,14 @@
                             , service_id :: binary()
                             }).
 
+-record(service_port_entry_extra, { id    :: binary()
+                                  , name  :: binary()
+                                  , owner :: binary() %% User id
+                                  , service_id :: binary()
+%%%% Extra data --------------------------
+                                  , is_connected :: boolean()
+                                  }).
+
 -type service_port_block_argument_type() :: string(). %% <<"string">>
                                           %% | <<"integer">>
                                           %% | <<"float">>

@@ -132,8 +132,9 @@ init([]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({ is_bridge_connected, BridgeId }, _From, State) ->
+    io:fwrite("Is ~p connected on ~p?~n", [BridgeId, State]),
     IsConnected = case State of
-                      #{ BridgeId := Connections } ->
+                      #state{ bridge_by_id=#{ BridgeId := Connections }} ->
                           length(Connections) > 0;
                       _ ->
                           false

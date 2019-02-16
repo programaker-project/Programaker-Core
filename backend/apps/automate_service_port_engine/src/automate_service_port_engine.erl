@@ -92,9 +92,10 @@ internal_user_id_to_service_port_user_id(UserId, ServicePortId) ->
     ?BACKEND:internal_user_id_to_service_port_user_id(UserId, ServicePortId).
 
 
--spec get_user_service_ports(binary()) -> {ok, [map()]}.
+-spec get_user_service_ports(binary()) -> {ok, [#service_port_entry_extra{}]}.
 get_user_service_ports(UserId) ->
-    ?BACKEND:get_user_service_ports(UserId).
+    {ok, Bridges} = ?BACKEND:get_user_service_ports(UserId),
+    {ok, lists:map(fun add_service_port_extra/1, Bridges)}.
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->
@@ -109,6 +110,20 @@ delete_bridge(UserId, BridgeId) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+-spec add_service_port_extra(#service_port_entry{}) -> #service_port_entry_extra{}.
+add_service_port_extra(#service_port_entry{ id=Id
+                                          , name=Name
+                                          , owner=Owner
+                                          , service_id=ServiceId
+                                          }) ->
+    {ok, IsConnected} = ?ROUTER:is_bridge_connected(Id),
+    #service_port_entry_extra{ id=Id
+                             , name=Name
+                             , owner=Owner
+                             , service_id=ServiceId
+                             , is_connected=IsConnected
+                             }.
 
 set_service_port_configuration(ServicePortId, Configuration, UserId) ->
     SPConfiguration = parse_configuration_map(ServicePortId, Configuration),

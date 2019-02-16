@@ -31,6 +31,7 @@
 -include("../../automate_service_registry/src/records.hrl").
 -include("../../automate_storage/src/records.hrl").
 -include("../../automate_chat_registry/src/records.hrl").
+-include("../../automate_service_port_engine/src/records.hrl").
 
 %%====================================================================
 %% API functions
@@ -221,10 +222,10 @@ send_oauth_return(ServicePortId, Qs) ->
     {ok, _} = automate_service_port_engine:send_oauth_return(Qs, ServicePortId),
     ok.
 
--spec list_bridges(binary()) -> {ok, [map()]}.
+-spec list_bridges(binary()) -> {ok, [#service_port_entry_extra{}]}.
 list_bridges(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
-    {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
+    {ok, ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->

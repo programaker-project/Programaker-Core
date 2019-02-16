@@ -200,3 +200,21 @@ div.console {
 .form-buttons {
     float: right;
 }
+
+/* Bridge cards */
+mat-card.bridge.connected-true {
+    color: #eee;
+    background-color: #227e00;
+}
+
+mat-card.bridge.connected-false {
+    color: #eee;
+    background: repeating-linear-gradient(
+        45deg,
+        #444,
+        #444 10px,
+        #222 10px,
+        #222 20px
+    );
+}
+
