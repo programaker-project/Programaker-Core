@@ -69,7 +69,12 @@ export class BridgeIndexComponent {
     }
 
     showBridgeDetail(bridge: BridgeIndexData): void {
-        this.expandedBridgeId = bridge.id;
+        if (this.expandedBridgeId === bridge.id) {
+            this.expandedBridgeId = null;
+        }
+        else {
+            this.expandedBridgeId = bridge.id;
+        }
     }
 
     deleteBridge(bridge: BridgeIndexData): void {
