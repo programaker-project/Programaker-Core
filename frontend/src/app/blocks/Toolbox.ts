@@ -30,14 +30,14 @@ export class Toolbox {
         this.chats = chats;
     }
 
-    async inject(): Promise<Function[]> {
+    async inject(): Promise<[string, Function[]]> {
         const monitors = await this.monitorService.getMonitors();
         const custom_blocks = await this.customBlockService.getCustomBlocks();
 
         const registrations = this.injectBlocks(monitors, custom_blocks);
-        this.injectToolbox(monitors, custom_blocks);
+        const toolboxXML = this.injectToolbox(monitors, custom_blocks);
 
-        return registrations;
+        return [toolboxXML, registrations];
     }
 
     getChatOptions() {
@@ -254,7 +254,7 @@ export class Toolbox {
 
         return [
             (workspace) => {
-                workspace.registerButtonCallback('automateCreateTemplate', (x, y, z) => {
+                workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
                     console.log(x, y, z);
                     alert("Nice!");
                 });
@@ -341,7 +341,7 @@ export class Toolbox {
         </category>`;
     }
 
-    injectToolbox(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]) {
+    injectToolbox(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]): string {
         (goog as any).provide('Blockly.Blocks.defaultToolbox');
 
         (goog as any).require('Blockly.Blocks');
@@ -640,15 +640,14 @@ export class Toolbox {
 
         const templatesCategory = `
         <category name="Templates" colour="#40BF4A" secondaryColour="#389438">
-          <block type="automate_run_template" id="automate_run_template">
-          </block>
-          <button text="New template" callbackKey="automateCreateTemplate" />
+          <block type="automate_run_template" id="automate_run_template"></block>
+          <button text="New template" callbackKey="AUTOMATE_CREATE_TEMPLATE"></button>
         </category>`;
 
 
         const customCategory = this.gen_toolbox_xml_from_blocks(custom_blocks);
 
-        Blockly.Blocks.defaultToolbox = [
+        const toolboxXML = [
             '<xml id="toolbox-categories" style="display: none">',
             chatCategory,
             eventsCategory,
@@ -660,7 +659,13 @@ export class Toolbox {
             templatesCategory,
             variablesCategory,
             proceduresCategory,
-            '</xml>'].join('\n');
+            '</xml>'
+        ].join('\n');
+
+
+        Blockly.Blocks.defaultToolbox = toolboxXML;
+
+        return toolboxXML;
     }
 
     buildMonitorsCategory(monitors: MonitorMetadata[]): string {

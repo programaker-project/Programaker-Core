@@ -83,17 +83,18 @@ export class ProgramDetailComponent implements OnInit {
 
     prepareWorkspace(): Promise<void> {
         return this.chatService.getAvailableChats().then((chats: Chat[]) => {
-            return new Toolbox(this.monitorService, this.customBlockService, chats).inject().then(() => {
-                this.injectWorkspace();
+            return new Toolbox(this.monitorService, this.customBlockService, chats).inject().then(([toolbox, registrations]) => {
+                this.injectWorkspace(toolbox, registrations);
             });
         });
     }
 
-    injectWorkspace() {
+    injectWorkspace(toolbox: string, registrations: Function[]) {
         // Avoid initializing it twice
         if (this.workspace !== undefined) {
             return;
         }
+
 
         const workspaceElement = document.getElementById('workspace');
         this.hide_workspace(workspaceElement);
@@ -101,7 +102,6 @@ export class ProgramDetailComponent implements OnInit {
         this.calculate_size(workspaceElement);
 
         const rtl = false;
-        const toolbox = null;
         const side = 'bottom';
         const soundsEnabled = false;
 
@@ -130,6 +130,12 @@ export class ProgramDetailComponent implements OnInit {
                 dragShadowOpacity: 0.6
             }
         });
+
+        for(const reg of registrations) {
+            reg(this.workspace);
+        }
+
+        (this.workspace as any).updateToolbox(toolbox);
 
         this.add_show_hide_block_menu();
 
