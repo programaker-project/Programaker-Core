@@ -99,9 +99,20 @@ export class TemplateCreateDialogComponent {
         const editor = dialogElement.querySelector("[name='template-content']");
         const marker = this.getComponentMarker();
 
+        this.splitChildren(editor as HTMLElement, marker);
+    }
+
+    splitChildren(element: HTMLElement, marker: string) {
         const newChilds = [];
-        for (let i = 0; i < editor.childNodes.length; i++) {
-            const node = editor.childNodes[i];
+        for (let i = 0; i < element.childNodes.length; i++) {
+            const node = element.childNodes[i];
+
+            if (node.nodeName === 'DIV') {
+                this.splitChildren(node as HTMLDivElement, marker);
+                newChilds.push(node);
+                continue;
+            }
+
             if ((node.nodeName !== '#text') && (node.nodeName !== 'SPAN')) {
                 // Non text node
                 newChilds.push(node);
@@ -158,12 +169,12 @@ export class TemplateCreateDialogComponent {
             }
         }
 
-        while (editor.firstChild){
-            editor.firstChild.remove();
+        while (element.firstChild){
+            element.firstChild.remove();
         }
 
         for (const node of newChilds) {
-            editor.appendChild(node);
+            element.appendChild(node);
         }
     }
 
