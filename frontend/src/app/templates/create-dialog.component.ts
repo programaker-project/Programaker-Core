@@ -61,6 +61,7 @@ export class TemplateCreateDialogComponent {
         }
 
         this.selectedVar = document.createElement('li');
+        this.selectedVar.setAttribute('var-type', type);
         this.selectedVar.innerText = name;
         this.selectedVar.classList.add('variable');
         this.selectedVar.classList.add(type + '-variable');
@@ -77,8 +78,8 @@ export class TemplateCreateDialogComponent {
                 return;
             }
 
-            this.selectedVar.style.left = ev.x + 'px';
-            this.selectedVar.style.top = ev.y + 'px';
+            this.selectedVar.style.left = (ev.x + 2) + 'px';
+            this.selectedVar.style.top = (ev.y + 2) + 'px';
             this.selectedVar.style.display = 'block';
         });
 
@@ -88,10 +89,92 @@ export class TemplateCreateDialogComponent {
                 return;
             }
 
+            const element = document.elementFromPoint(ev.x, ev.y) as HTMLElement;
+            if (this.elementInEditor(element)) {
+                const rect = element.getBoundingClientRect();
+                const middle = rect.left + rect.width / 2;
+                let after = ev.x > middle;
+
+                const newElement = this.buildBadgeFrom(this.selectedVar as HTMLElement);
+                const parent = element.parentNode;
+                if (this.isEditor(element)) {
+                    element.appendChild(newElement);
+                }
+                else if (after) {
+                    if (!element.nextSibling) {
+                        parent.appendChild(newElement);
+                    }
+                    parent.insertBefore(newElement, element.nextSibling);
+                }
+                else {
+                    parent.insertBefore(newElement, element);
+                }
+            }
+
             // Remains dropping the variable references
             dialogElement.removeChild(this.selectedVar);
             this.selectedVar = null;
         });
+    }
+
+    buildBadgeFrom(selectedVar: HTMLElement) {
+        const marker = this.getComponentMarker();
+
+        const element = document.createElement('span');
+        selectedVar.classList.forEach((value, _k, _p) => {
+            element.classList.add(value);
+        });
+        element.setAttribute('contenteditable', 'false');
+        element.setAttribute(marker, '');
+        element.classList.add('badge');
+        element.setAttribute('var-type', selectedVar.getAttribute('var-type'));
+
+        const text = document.createElement('span');
+        text.setAttribute(marker, '');
+        text.classList.add('text');
+        text.innerText = selectedVar.innerText;
+        element.appendChild(text);
+
+        const remover = document.createElement('span');
+        remover.innerText = 'X';
+        remover.setAttribute(marker, '');
+        remover.classList.add('remover');
+        remover.onclick = (ev) => {
+            element.remove();
+            ev.stopPropagation();
+        }
+        element.appendChild(remover);
+
+        text.onmousedown = () => {
+            this.userSelectedVar(text.innerText, element.getAttribute('var-type') as VariableType);
+            element.remove();
+        }
+
+        return element;
+    }
+
+    isEditor(element: Element): boolean {
+        return element.getAttribute('name') === 'template-content';
+    }
+
+    elementInEditor(element: Element): boolean {
+        const dialogElement = document.getElementById(this.dialogRef.id);
+        const editor = dialogElement.querySelector("[name='template-content']");
+
+        let node = element as HTMLElement;
+        while (node) {
+            if (node === editor) {
+                return true;
+            }
+
+            if (node === dialogElement) {
+                return false;
+            }
+
+            node = node.parentNode as HTMLElement;
+        }
+
+        return false;
     }
 
     onTemplateChange() {
@@ -169,7 +252,7 @@ export class TemplateCreateDialogComponent {
             }
         }
 
-        while (element.firstChild){
+        while (element.firstChild) {
             element.firstChild.remove();
         }
 

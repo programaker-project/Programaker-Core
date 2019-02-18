@@ -21,7 +21,6 @@
 
 .variable {
     margin: 1ex;
-    cursor: move;
 
     /* Unselectable */
     -webkit-touch-callout: none;
@@ -30,6 +29,10 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+li.variable {
+    cursor: move;
 }
 
 li.follower {
@@ -50,4 +53,21 @@ li.follower {
 
 .template-editor span {
     white-space: pre-wrap;
+}
+
+.badge {
+    display: inline;
+    padding: 1ex 0 1ex 0;
+}
+
+.badge > .text {
+    padding: 1ex;
+    cursor: move;
+}
+
+.remover {
+    padding: 1ex;
+
+    border-left: 1px solid rgba(0,0,0,0.3);
+    cursor: pointer;
 }
