@@ -127,9 +127,7 @@ export class TemplateCreateDialogComponent {
             }
 
             let remainingContent = content;
-            console.log("C:", content);
             while (remainingContent) {
-                console.log("Rem:", remainingContent);
                 const point = remainingContent.indexOf(' ');
                 let text: string;
                 let space: string;
@@ -160,9 +158,8 @@ export class TemplateCreateDialogComponent {
             }
         }
 
-        for (let i = 0; i < editor.childNodes.length; i++) {
-            const node = editor.childNodes[i];
-            editor.removeChild(node);
+        while (editor.firstChild){
+            editor.firstChild.remove();
         }
 
         for (const node of newChilds) {
