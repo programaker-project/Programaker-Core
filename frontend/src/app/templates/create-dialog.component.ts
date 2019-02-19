@@ -89,25 +89,31 @@ export class TemplateCreateDialogComponent {
                 return;
             }
 
-            const element = document.elementFromPoint(ev.x, ev.y) as HTMLElement;
+            let element = document.elementFromPoint(ev.x, ev.y) as HTMLElement;
             if (this.elementInEditor(element)) {
                 const rect = element.getBoundingClientRect();
                 const middle = rect.left + rect.width / 2;
                 let after = ev.x > middle;
 
                 const newElement = this.buildBadgeFrom(this.selectedVar as HTMLElement);
-                const parent = element.parentNode;
+                let parent = element.parentNode;
                 if (this.isEditor(element)) {
                     element.appendChild(newElement);
                 }
-                else if (after) {
-                    if (!element.nextSibling) {
-                        parent.appendChild(newElement);
-                    }
-                    parent.insertBefore(newElement, element.nextSibling);
-                }
                 else {
-                    parent.insertBefore(newElement, element);
+                    if (this.isVariable(element)) {
+                        element = this.variableParent(element);
+                        parent = element.parentNode;
+                    }
+                    if (after) {
+                        if (!element.nextSibling) {
+                            parent.appendChild(newElement);
+                        }
+                        parent.insertBefore(newElement, element.nextSibling);
+                    }
+                    else {
+                        parent.insertBefore(newElement, element);
+                    }
                 }
             }
 
@@ -117,11 +123,43 @@ export class TemplateCreateDialogComponent {
         });
     }
 
+    variableParent(element: HTMLElement): HTMLElement {
+        let node = element as HTMLElement;
+        while (node) {
+            if (node.classList.contains("variable")) {
+                return node as HTMLElement;
+            }
+
+            node = node.parentNode as HTMLElement;
+        }
+        return element;
+    }
+
+    isVariable(element: HTMLElement): boolean {
+        const dialogElement = document.getElementById(this.dialogRef.id);
+        const editor = dialogElement.querySelector("[name='template-content']");
+
+        let node = element as HTMLElement;
+        while (node) {
+            if (node.classList.contains("variable")) {
+                return true;
+            }
+
+            if ((node === dialogElement) || (node === editor)) {
+                return false;
+            }
+
+            node = node.parentNode as HTMLElement;
+        }
+
+        return false;
+    }
+
     buildBadgeFrom(selectedVar: HTMLElement) {
         const marker = this.getComponentMarker();
 
         const element = document.createElement('span');
-        selectedVar.classList.forEach((value, _k, _p) => {
+        (selectedVar.classList as any as Array<string>).forEach((value, _k, _p) => {
             element.classList.add(value);
         });
         element.setAttribute('contenteditable', 'false');
@@ -253,7 +291,7 @@ export class TemplateCreateDialogComponent {
         }
 
         while (element.firstChild) {
-            element.firstChild.remove();
+            (element.firstChild as HTMLElement).remove();
         }
 
         for (const node of newChilds) {
