@@ -3,8 +3,10 @@ import { MonitorMetadata } from '../monitor';
 import { Chat } from '../chat';
 import { CustomBlockService } from '../custom_block.service';
 import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments } from '../custom_block';
-import { TemplateCreateDialogComponent } from '../templates/create-dialog.component';
 import { MatDialog } from '@angular/material';
+import { alreadyRegisteredException, createDom } from './utils';
+import { TemplateController } from './TemplateController';
+import { ToolboxController } from './ToolboxController';
 
 declare const Blockly;
 
@@ -18,24 +20,8 @@ export class Toolbox {
     customBlockService: CustomBlockService;
     chats: Chat[];
     dialog: MatDialog;
-    templatesCategory: HTMLElement;
-    toolboxDom: HTMLElement;
-
-    static alreadyRegisteredException(e: Error): boolean {
-        return e.message.match(/Error: Extension .* is already registered./) !== null;
-    }
-
-    static createDom(type: string, attributes?: { [key: string]: string }): HTMLElement {
-        const element = (goog.dom as any).createDom(type) as HTMLElement;
-
-        if (attributes) {
-            for (const key of Object.keys(attributes)) {
-                element.setAttribute(key, attributes[key]);
-            }
-        }
-
-        return element;
-    }
+    templateController: TemplateController;
+    controller: ToolboxController;
 
     constructor(
         monitorService: MonitorService,
@@ -47,17 +33,20 @@ export class Toolbox {
         this.customBlockService = customBlockService;
         this.chats = chats;
         this.dialog = dialog;
+
+        this.controller = new ToolboxController();
+        this.templateController = new TemplateController(this.dialog, this.controller);
     }
 
-    async inject(): Promise<[string, Function[]]> {
+    async inject(): Promise<[string, Function[], ToolboxController]> {
         const monitors = await this.monitorService.getMonitors();
         const custom_blocks = await this.customBlockService.getCustomBlocks();
 
         const registrations = this.injectBlocks(monitors, custom_blocks);
         const toolboxXML = this.injectToolbox(monitors, custom_blocks);
-        this.toolboxDom = toolboxXML as any as HTMLElement;
+        this.controller.setToolbox(toolboxXML as any as HTMLElement);
 
-        return [toolboxXML, registrations];
+        return [toolboxXML, registrations, this.controller];
     }
 
     getChatOptions() {
@@ -76,7 +65,7 @@ export class Toolbox {
         this.injectChatBlocks();
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
-        registrations = registrations.concat(this.injectTemplateBlocks());
+        registrations = registrations.concat(this.templateController.injectTemplateBlocks());
         this.injectCustomBlocks(custom_blocks);
 
         return registrations
@@ -158,7 +147,7 @@ export class Toolbox {
         } catch (e) {
             // If the extension was registered before
             // this would have thrown an inocous exception
-            if (!Toolbox.alreadyRegisteredException(e)) {
+            if (!alreadyRegisteredException(e)) {
                 throw e;
             }
         }
@@ -232,121 +221,13 @@ export class Toolbox {
         } catch (e) {
             // If the extension was registered before
             // this would have thrown an inocous exception
-            if (!Toolbox.alreadyRegisteredException(e)) {
+            if (!alreadyRegisteredException(e)) {
                 throw e;
             }
         }
     }
 
-    injectTemplateBlocks(): Function[] {
 
-        try {
-            Blockly.Extensions.register('colours_templates',
-                function () {
-                    this.setColourFromRawValues_('#40BF4A', '#389438', '#308438');
-                });
-        } catch (e) {
-            // If the extension was registered before
-            // this would have thrown an inocous exception
-            if (!Toolbox.alreadyRegisteredException(e)) {
-                throw e;
-            }
-        }
-
-        const availableTemplates = [];
-        let registered = false;
-        const register_template_blocks = ((workspace) => {
-            if (!availableTemplates) {
-                return;
-            }
-            if (registered) {
-                return;
-            }
-
-            registered = true;
-
-            Blockly.Blocks['automate_match_template_check'] = {
-                init: function () {
-                    this.jsonInit({
-                        'id': 'automate_match_template_check',
-                        'message0': 'Does %1 match %2',
-                        'args0': [
-                            {
-                                'type': 'input_value',
-                                'name': 'VALUE'
-                            },
-                            {
-                                'type': 'field_dropdown',
-                                'name': 'TEMPLATE_NAME',
-                                'options': availableTemplates,
-                            }
-                        ],
-                        'category': Blockly.Categories.event,
-                        'extensions': ['colours_templates', 'output_string']
-                    });
-                }
-            };
-
-            this.templatesCategory.appendChild(Toolbox.createDom('block',
-                {
-                    type: "automate_match_template_check",
-                    id: "automate_match_template_check",
-                }));
-
-
-
-            Blockly.Blocks['automate_match_template_stmt'] = {
-                init: function () {
-                    this.jsonInit({
-                        'id': 'automate_match_template_stmt',
-                        'message0': 'Match %1 with %2',
-                        'args0': [
-                            {
-                                'type': 'input_value',
-                                'name': 'VALUE'
-                            },
-                            {
-                                'type': 'field_dropdown',
-                                'name': 'TEMPLATE_NAME',
-                                'options': availableTemplates,
-                            }
-                        ],
-                        'category': Blockly.Categories.event,
-                        'extensions': ['colours_templates', 'shape_statement']
-                    });
-                }
-            };
-
-            this.templatesCategory.appendChild(Toolbox.createDom('block',
-            {
-                type: "automate_match_template_stmt",
-                id: "automate_match_template_stmt",
-            }));
-        });
-
-        return [
-            (workspace) => {
-                workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
-                    // this.create_template();
-                    if (!this.templatesCategory) {
-                        console.error("No templates toolbox found");
-                        return;
-                    }
-
-                    availableTemplates.push(["Test1", "Name1"]);
-                    register_template_blocks(workspace);
-
-                    (workspace as any).updateToolbox(this.toolboxDom);
-                });
-            }
-        ];
-    }
-
-    create_template() {
-        const _dialogRef = this.dialog.open(TemplateCreateDialogComponent, {
-            data: { template: null }
-        });
-    }
 
     injectMonitorBlocks(monitors: MonitorMetadata[]) {
         for (const monitor of monitors) {
@@ -373,7 +254,7 @@ export class Toolbox {
             } catch (e) {
                 // If the extension was registered before
                 // this would have thrown an inocous exception
-                if (!Toolbox.alreadyRegisteredException(e)) {
+                if (!alreadyRegisteredException(e)) {
                     throw e;
                 }
             }
@@ -406,7 +287,7 @@ export class Toolbox {
             } catch (e) {
                 // If the extension was registered before
                 // this would have thrown an inocous exception
-                if (!Toolbox.alreadyRegisteredException(e)) {
+                if (!alreadyRegisteredException(e)) {
                     throw e;
                 }
             }
@@ -689,14 +570,14 @@ export class Toolbox {
           -->
           </category>`;
 
-        const variablesCategory = Toolbox.createDom('category', {
+        const variablesCategory = createDom('category', {
             name: "Variables",
             colour: "#FF8C1A",
             secondaryColour: "#DB6E00",
             custom: "VARIABLE",
         });
 
-        const proceduresCategory = Toolbox.createDom('category', {
+        const proceduresCategory = createDom('category', {
             name: 'More',
             colour: "#FF6680",
             secondaryColour: "#FF4D6A",
@@ -732,7 +613,7 @@ export class Toolbox {
 
         const customCategory = this.gen_toolbox_xml_from_blocks(custom_blocks);
 
-        const toolboxXML = Toolbox.createDom('xml', {
+        const toolboxXML = createDom('xml', {
             id: "toolbox-categories",
             style: "display: none",
         });
@@ -747,7 +628,7 @@ export class Toolbox {
             operatorsCategory,
         ].join('\n');
 
-        toolboxXML.appendChild(this.genTemplatesCategory());
+        toolboxXML.appendChild(this.templateController.genTemplatesCategory());
         toolboxXML.appendChild(variablesCategory);
         // toolboxXML.appendChild(proceduresCategory);
 
@@ -755,27 +636,6 @@ export class Toolbox {
 
         return toolboxXML as any as string;
     }
-
-    genTemplatesCategory() {
-        if (this.templatesCategory) {
-            return this.templatesCategory;
-        }
-
-        const cat = Toolbox.createDom('category', {
-            name: "Templates",
-            colour: "#40BF4A",
-            secondaryColour: "#389438",
-        })
-
-        cat.appendChild(Toolbox.createDom('button', {
-            text: "New template",
-            callbackKey: "AUTOMATE_CREATE_TEMPLATE",
-        }));
-
-        this.templatesCategory = cat;
-        return cat;
-    }
-
 
     buildMonitorsCategory(monitors: MonitorMetadata[]): string {
         if (monitors.length === 0) {

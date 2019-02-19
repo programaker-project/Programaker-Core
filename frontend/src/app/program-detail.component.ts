@@ -17,6 +17,7 @@ import { CustomBlockService } from './custom_block.service';
 import { MatDialog } from '@angular/material/dialog';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
+import { ToolboxController } from './blocks/ToolboxController';
 
 @Component({
     selector: 'app-my-program-detail',
@@ -90,13 +91,13 @@ export class ProgramDetailComponent implements OnInit {
                 this.dialog
             )
                 .inject()
-                .then(([toolbox, registrations]) => {
-                    this.injectWorkspace(toolbox, registrations);
+                .then(([toolbox, registrations, controller]) => {
+                    this.injectWorkspace(toolbox, registrations, controller);
                 });
         });
     }
 
-    injectWorkspace(toolbox: string, registrations: Function[]) {
+    injectWorkspace(toolbox: string, registrations: Function[], controller: ToolboxController) {
         // Avoid initializing it twice
         if (this.workspace !== undefined) {
             return;
@@ -142,7 +143,8 @@ export class ProgramDetailComponent implements OnInit {
             reg(this.workspace);
         }
 
-        (this.workspace as any).updateToolbox(toolbox);
+        controller.setWorkspace(this.workspace);
+        controller.update();
 
         this.add_show_hide_block_menu();
 
