@@ -97,7 +97,7 @@ export class ProgramDetailComponent implements OnInit {
         });
     }
 
-    injectWorkspace(toolbox: string, registrations: Function[], controller: ToolboxController) {
+    injectWorkspace(toolbox: HTMLElement, registrations: Function[], controller: ToolboxController) {
         // Avoid initializing it twice
         if (this.workspace !== undefined) {
             return;

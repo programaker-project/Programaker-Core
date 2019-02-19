@@ -38,13 +38,13 @@ export class Toolbox {
         this.templateController = new TemplateController(this.dialog, this.controller);
     }
 
-    async inject(): Promise<[string, Function[], ToolboxController]> {
+    async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
         const monitors = await this.monitorService.getMonitors();
         const custom_blocks = await this.customBlockService.getCustomBlocks();
 
         const registrations = this.injectBlocks(monitors, custom_blocks);
         const toolboxXML = this.injectToolbox(monitors, custom_blocks);
-        this.controller.setToolbox(toolboxXML as any as HTMLElement);
+        this.controller.setToolbox(toolboxXML);
 
         return [toolboxXML, registrations, this.controller];
     }
@@ -308,7 +308,7 @@ export class Toolbox {
         </category>`;
     }
 
-    injectToolbox(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]): string {
+    injectToolbox(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]): HTMLElement {
         (goog as any).provide('Blockly.Blocks.defaultToolbox');
 
         (goog as any).require('Blockly.Blocks');
@@ -634,7 +634,7 @@ export class Toolbox {
 
         Blockly.Blocks.defaultToolbox = toolboxXML;
 
-        return toolboxXML as any as string;
+        return toolboxXML;
     }
 
     buildMonitorsCategory(monitors: MonitorMetadata[]): string {
