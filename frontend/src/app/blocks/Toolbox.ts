@@ -239,6 +239,7 @@ export class Toolbox {
     }
 
     injectTemplateBlocks(): Function[] {
+
         try {
             Blockly.Extensions.register('colours_templates',
                 function () {
@@ -252,9 +253,79 @@ export class Toolbox {
             }
         }
 
+        const availableTemplates = [];
+        let registered = false;
+        const register_template_blocks = ((workspace) => {
+            if (!availableTemplates) {
+                return;
+            }
+            if (registered) {
+                return;
+            }
+
+            registered = true;
+
+            Blockly.Blocks['automate_match_template_check'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'automate_match_template_check',
+                        'message0': 'Does %1 match %2',
+                        'args0': [
+                            {
+                                'type': 'input_value',
+                                'name': 'VALUE'
+                            },
+                            {
+                                'type': 'field_dropdown',
+                                'name': 'TEMPLATE_NAME',
+                                'options': availableTemplates,
+                            }
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_templates', 'output_string']
+                    });
+                }
+            };
+
+            this.templatesCategory.appendChild(Toolbox.createDom('block',
+                {
+                    type: "automate_match_template_check",
+                    id: "automate_match_template_check",
+                }));
+
+
+
+            Blockly.Blocks['automate_match_template_stmt'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'automate_match_template_stmt',
+                        'message0': 'Match %1 with %2',
+                        'args0': [
+                            {
+                                'type': 'input_value',
+                                'name': 'VALUE'
+                            },
+                            {
+                                'type': 'field_dropdown',
+                                'name': 'TEMPLATE_NAME',
+                                'options': availableTemplates,
+                            }
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_templates', 'shape_statement']
+                    });
+                }
+            };
+
+            this.templatesCategory.appendChild(Toolbox.createDom('block',
+            {
+                type: "automate_match_template_stmt",
+                id: "automate_match_template_stmt",
+            }));
+        });
+
         return [
             (workspace) => {
-                let counter = 0;
                 workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
                     // this.create_template();
                     if (!this.templatesCategory) {
@@ -262,30 +333,8 @@ export class Toolbox {
                         return;
                     }
 
-
-                    counter++;
-                    Blockly.Blocks['automate_run_template_' + counter] = {
-                        init: function () {
-                            this.jsonInit({
-                                'id': 'automate_run_template_' + counter,
-                                'message0': 'Match with template ' + counter + ' %1',
-                                'args0': [
-                                    {
-                                        'type': 'input_value',
-                                        'name': 'VALUE'
-                                    },
-                                ],
-                                'category': Blockly.Categories.event,
-                                'extensions': ['colours_templates', 'shape_statement']
-                            });
-                        }
-                    };
-
-                    this.templatesCategory.appendChild(Toolbox.createDom('block',
-                        {
-                            type: "automate_run_template_" + counter,
-                            id: "automate_run_template_" + counter,
-                        }));
+                    availableTemplates.push(["Test1", "Name1"]);
+                    register_template_blocks(workspace);
 
                     (workspace as any).updateToolbox(this.toolboxDom);
                 });
