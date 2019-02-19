@@ -18,9 +18,23 @@ export class Toolbox {
     customBlockService: CustomBlockService;
     chats: Chat[];
     dialog: MatDialog;
+    templatesCategory: HTMLElement;
+    toolboxDom: HTMLElement;
 
     static alreadyRegisteredException(e: Error): boolean {
         return e.message.match(/Error: Extension .* is already registered./) !== null;
+    }
+
+    static createDom(type: string, attributes?: { [key: string]: string }): HTMLElement {
+        const element = (goog.dom as any).createDom(type) as HTMLElement;
+
+        if (attributes) {
+            for (const key of Object.keys(attributes)) {
+                element.setAttribute(key, attributes[key]);
+            }
+        }
+
+        return element;
     }
 
     constructor(
@@ -41,6 +55,7 @@ export class Toolbox {
 
         const registrations = this.injectBlocks(monitors, custom_blocks);
         const toolboxXML = this.injectToolbox(monitors, custom_blocks);
+        this.toolboxDom = toolboxXML as any as HTMLElement;
 
         return [toolboxXML, registrations];
     }
@@ -224,26 +239,6 @@ export class Toolbox {
     }
 
     injectTemplateBlocks(): Function[] {
-        Blockly.Blocks['automate_run_template'] = {
-            init: function () {
-                this.jsonInit({
-                    'id': 'automate_run_template',
-                    'message0': 'Template %1',
-                    'args0': [
-                        {
-                            'type': 'field_dropdown',
-                            'name': 'TEMPLATE_NAME',
-                            'options': [
-                                ['template1', 'test1'],
-                            ],
-                        }
-                    ],
-                    'category': Blockly.Categories.event,
-                    'extensions': ['colours_templates', 'output_string']
-                });
-            }
-        };
-
         try {
             Blockly.Extensions.register('colours_templates',
                 function () {
@@ -259,8 +254,40 @@ export class Toolbox {
 
         return [
             (workspace) => {
+                let counter = 0;
                 workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
-                    this.create_template();
+                    // this.create_template();
+                    if (!this.templatesCategory) {
+                        console.error("No templates toolbox found");
+                        return;
+                    }
+
+
+                    counter++;
+                    Blockly.Blocks['automate_run_template_' + counter] = {
+                        init: function () {
+                            this.jsonInit({
+                                'id': 'automate_run_template_' + counter,
+                                'message0': 'Match with template ' + counter + ' %1',
+                                'args0': [
+                                    {
+                                        'type': 'input_value',
+                                        'name': 'VALUE'
+                                    },
+                                ],
+                                'category': Blockly.Categories.event,
+                                'extensions': ['colours_templates', 'shape_statement']
+                            });
+                        }
+                    };
+
+                    this.templatesCategory.appendChild(Toolbox.createDom('block',
+                        {
+                            type: "automate_run_template_" + counter,
+                            id: "automate_run_template_" + counter,
+                        }));
+
+                    (workspace as any).updateToolbox(this.toolboxDom);
                 });
             }
         ];
@@ -613,12 +640,19 @@ export class Toolbox {
           -->
           </category>`;
 
-        const variablesCategory = `
-        <category name="Variables" colour="#FF8C1A" secondaryColour="#DB6E00" custom="VARIABLE">
-        </category>`;
+        const variablesCategory = Toolbox.createDom('category', {
+            name: "Variables",
+            colour: "#FF8C1A",
+            secondaryColour: "#DB6E00",
+            custom: "VARIABLE",
+        });
 
-        const proceduresCategory = '' // '<category name="More" colour="#FF6680" secondaryColour="#FF4D6A" custom="PROCEDURE">' +
-        // '</category>';
+        const proceduresCategory = Toolbox.createDom('category', {
+            name: 'More',
+            colour: "#FF6680",
+            secondaryColour: "#FF4D6A",
+            custom: "PROCEDURE",
+        });
 
         const monitorsCategory = this.buildMonitorsCategory(monitors);
 
@@ -647,18 +681,14 @@ export class Toolbox {
         </category>
         `;
 
-
-        const templatesCategory = `
-        <category name="Templates" colour="#40BF4A" secondaryColour="#389438">
-          <block type="automate_run_template" id="automate_run_template"></block>
-          <button text="New template" callbackKey="AUTOMATE_CREATE_TEMPLATE"></button>
-        </category>`;
-
-
         const customCategory = this.gen_toolbox_xml_from_blocks(custom_blocks);
 
-        const toolboxXML = [
-            '<xml id="toolbox-categories" style="display: none">',
+        const toolboxXML = Toolbox.createDom('xml', {
+            id: "toolbox-categories",
+            style: "display: none",
+        });
+
+        toolboxXML.innerHTML = [
             chatCategory,
             eventsCategory,
             controlCategory,
@@ -666,17 +696,37 @@ export class Toolbox {
             timeCategory,
             customCategory,
             operatorsCategory,
-            templatesCategory,
-            variablesCategory,
-            proceduresCategory,
-            '</xml>'
         ].join('\n');
 
+        toolboxXML.appendChild(this.genTemplatesCategory());
+        toolboxXML.appendChild(variablesCategory);
+        // toolboxXML.appendChild(proceduresCategory);
 
         Blockly.Blocks.defaultToolbox = toolboxXML;
 
-        return toolboxXML;
+        return toolboxXML as any as string;
     }
+
+    genTemplatesCategory() {
+        if (this.templatesCategory) {
+            return this.templatesCategory;
+        }
+
+        const cat = Toolbox.createDom('category', {
+            name: "Templates",
+            colour: "#40BF4A",
+            secondaryColour: "#389438",
+        })
+
+        cat.appendChild(Toolbox.createDom('button', {
+            text: "New template",
+            callbackKey: "AUTOMATE_CREATE_TEMPLATE",
+        }));
+
+        this.templatesCategory = cat;
+        return cat;
+    }
+
 
     buildMonitorsCategory(monitors: MonitorMetadata[]): string {
         if (monitors.length === 0) {
