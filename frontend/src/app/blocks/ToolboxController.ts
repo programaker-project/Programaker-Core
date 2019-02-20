@@ -13,4 +13,15 @@ export class ToolboxController {
     update() {
         this.workspace.updateToolbox(this.toolboxXML);
     }
+
+    getStringVariables(): string[] {
+        return this.workspace
+            .getAllVariables()
+            .filter((v, _i, _a) => {
+                return v.type !== "list";
+            })
+            .map((v, _i, _a) => {
+                return v.name;
+            });
+    }
 }

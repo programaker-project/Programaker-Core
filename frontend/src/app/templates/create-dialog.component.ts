@@ -4,8 +4,10 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SessionService } from '../session.service';
 import { ServiceService } from '../service.service';
 import { Template } from './template';
+import { variable } from '@angular/compiler/src/output/output_ast';
 
 type VariableType = 'input' | 'ouput';
+type PromiseHandler = { resolve: (name: string, id: string) => void, reject: Function };
 
 @Component({
     selector: 'template-create-dialog-component',
@@ -17,15 +19,24 @@ type VariableType = 'input' | 'ouput';
 })
 export class TemplateCreateDialogComponent {
     template: Template;
+    promise: PromiseHandler;
     selectedVar: HTMLElement;
+    variables: string[];
+    usedOutputs: {};
+    allOutputsUsed: boolean;
 
     constructor(
         public dialogRef: MatDialogRef<TemplateCreateDialogComponent>,
         public serviceService: ServiceService,
         @Inject(MAT_DIALOG_DATA)
-        public data: { template: Template }
+        public data: { template: Template, promise: PromiseHandler, variables: [string] }
     ) {
         this.template = data.template || { name: "", content: "" };
+        this.promise = data.promise;
+        this.variables = data.variables;
+        this.usedOutputs = {};
+        this.checkAllOutputsUsed();
+        console.log(this.usedOutputs);
 
         dialogRef.afterOpen().subscribe(() => {
             const dialogElement = document.getElementById(this.dialogRef.id);
@@ -34,6 +45,17 @@ export class TemplateCreateDialogComponent {
             this.onTemplateChange();
         });
 
+    }
+
+    checkAllOutputsUsed() {
+        let available = this.variables.length;
+        for(let name of this.variables) {
+            if (this.usedOutputs[name]) {
+                available--;
+            }
+        }
+
+        this.allOutputsUsed = available === 0;
     }
 
 
@@ -157,6 +179,7 @@ export class TemplateCreateDialogComponent {
 
     buildBadgeFrom(selectedVar: HTMLElement) {
         const marker = this.getComponentMarker();
+        const variableName = selectedVar.innerText;
 
         const element = document.createElement('span');
         (selectedVar.classList as any as Array<string>).forEach((value, _k, _p) => {
@@ -170,7 +193,7 @@ export class TemplateCreateDialogComponent {
         const text = document.createElement('span');
         text.setAttribute(marker, '');
         text.classList.add('text');
-        text.innerText = selectedVar.innerText;
+        text.innerText = variableName;
         element.appendChild(text);
 
         const remover = document.createElement('span');
@@ -179,6 +202,7 @@ export class TemplateCreateDialogComponent {
         remover.classList.add('remover');
         remover.onclick = (ev) => {
             element.remove();
+            this.setOutputUsage(variableName, false);
             ev.stopPropagation();
         }
         element.appendChild(remover);
@@ -186,9 +210,18 @@ export class TemplateCreateDialogComponent {
         text.onmousedown = () => {
             this.userSelectedVar(text.innerText, element.getAttribute('var-type') as VariableType);
             element.remove();
+            this.setOutputUsage(variableName, false);
         }
 
+        this.setOutputUsage(variableName, true);
+
         return element;
+    }
+
+    setOutputUsage(name, value) {
+        this.usedOutputs[name] = value;
+
+        this.checkAllOutputsUsed();
     }
 
     isEditor(element: Element): boolean {

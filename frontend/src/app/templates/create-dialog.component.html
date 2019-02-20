@@ -14,13 +14,18 @@
 
     <div class="col-sm-12">
         <ul class="col-sm-4 variable-list">
-            <li (mousedown)="userSelectedVar('var1', 'input')"
+            <h2>Expected values</h2>
+            <li *ngFor="let variable of variables" (mousedown)="userSelectedVar(variable, 'input')"
                 class="variable input-variable">
-                var1
+                {{variable}}
             </li>
-            <li class="variable output-variable">
-                Another
-            </li>
+            <h2 *ngIf="!allOutputsUsed">Filled values</h2>
+            <div class="container"  *ngFor="let variable of variables">
+                <li *ngIf="!usedOutputs[variable]" (mousedown)="userSelectedVar(variable, 'output')"
+                class="variable output-variable">
+                {{variable}}
+                </li>
+            </div>
         </ul>
         <div matInput class="col-sm-8"
             placeholder="Template content"

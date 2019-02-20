@@ -47,7 +47,7 @@ export class TemplateController {
                 init: function () {
                     this.jsonInit({
                         'id': 'automate_match_template_check',
-                        'message0': 'Does %1 match %2',
+                        'message0': 'Does %1 match %2 ?',
                         'args0': [
                             {
                                 'type': 'input_value',
@@ -105,24 +105,30 @@ export class TemplateController {
         return [
             (workspace) => {
                 workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
-                    // this.create_template();
-                    if (!this.templatesCategory) {
-                        console.error("No templates toolbox found");
-                        return;
-                    }
+                    this.create_template().then(([template_name, template_id]) => {
 
-                    availableTemplates.push(["Test1", "Name1"]);
-                    register_template_blocks(workspace);
+                        if (!this.templatesCategory) {
+                            console.error("No templates toolbox found");
+                            return;
+                        }
 
-                    this.toolboxController.update();
+                        availableTemplates.push([template_name, template_id]);
+                        register_template_blocks(workspace);
+
+                        this.toolboxController.update();
+                    });
                 });
             }
         ];
     }
 
-    create_template() {
-        const _dialogRef = this.dialog.open(TemplateCreateDialogComponent, {
-            data: { template: null }
+    create_template(): Promise<[string, string]> {
+        const variables = this.toolboxController.getStringVariables();
+        return new Promise((resolve, reject) => {
+            const _dialogRef = this.dialog.open(TemplateCreateDialogComponent, {
+                data: { template: null, promise: { resolve, reject }, variables: variables }
+            });
+
         });
     }
 
