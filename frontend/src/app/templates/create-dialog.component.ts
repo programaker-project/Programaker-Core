@@ -49,7 +49,7 @@ export class TemplateCreateDialogComponent {
 
     checkAllOutputsUsed() {
         let available = this.variables.length;
-        for(let name of this.variables) {
+        for (let name of this.variables) {
             if (this.usedOutputs[name]) {
                 available--;
             }
@@ -180,6 +180,7 @@ export class TemplateCreateDialogComponent {
     buildBadgeFrom(selectedVar: HTMLElement) {
         const marker = this.getComponentMarker();
         const variableName = selectedVar.innerText;
+        const varType = selectedVar.getAttribute('var-type');
 
         const element = document.createElement('span');
         (selectedVar.classList as any as Array<string>).forEach((value, _k, _p) => {
@@ -188,7 +189,7 @@ export class TemplateCreateDialogComponent {
         element.setAttribute('contenteditable', 'false');
         element.setAttribute(marker, '');
         element.classList.add('badge');
-        element.setAttribute('var-type', selectedVar.getAttribute('var-type'));
+        element.setAttribute('var-type', varType);
 
         const text = document.createElement('span');
         text.setAttribute(marker, '');
@@ -202,18 +203,25 @@ export class TemplateCreateDialogComponent {
         remover.classList.add('remover');
         remover.onclick = (ev) => {
             element.remove();
-            this.setOutputUsage(variableName, false);
             ev.stopPropagation();
+
+            if (varType === 'output') {
+                this.setOutputUsage(variableName, false);
+            }
         }
         element.appendChild(remover);
 
         text.onmousedown = () => {
             this.userSelectedVar(text.innerText, element.getAttribute('var-type') as VariableType);
             element.remove();
-            this.setOutputUsage(variableName, false);
+            if (varType === 'output') {
+                this.setOutputUsage(variableName, false);
+            }
         }
 
-        this.setOutputUsage(variableName, true);
+        if (varType === 'output') {
+            this.setOutputUsage(variableName, true);
+        }
 
         return element;
     }
@@ -254,6 +262,61 @@ export class TemplateCreateDialogComponent {
         const marker = this.getComponentMarker();
 
         this.splitChildren(editor as HTMLElement, marker);
+        console.log("C:", this.extractTemplate(editor as HTMLElement));
+    }
+
+    extractTemplate(element: HTMLElement) {
+        const children = [];
+        for (let i = 0; i < element.childNodes.length; i++) {
+            const node = element.childNodes[i];
+
+            // Raw text
+            if (node.nodeName === '#text') {
+                children.push({
+                    "type": "text",
+                    "content": (node as any).data as string,
+                });
+                continue;
+            }
+            // Line
+            else if (node.nodeName === 'DIV') {
+                const content = this.extractTemplate(node as HTMLDivElement);
+                children.push({ "type": "line", "content": content });
+                continue;
+            }
+
+            else if (node.nodeName !== 'SPAN') {
+                console.error("Unknown node type:", node.nodeName);
+                continue;
+            }
+
+            // Line tag
+            else if (!(node as HTMLElement).classList.contains('variable')) {
+                children.push({
+                    "type": "text",
+                    "content": (node as HTMLElement).innerText as string,
+                });
+                continue;
+            }
+
+            // Variable badge
+            const text = (node as HTMLElement).getElementsByClassName('text')[0] as HTMLElement;
+            let nodeClass = null;
+            (node as HTMLElement).classList.forEach((v, _k, _p) => {
+                const suffix = '-variable';
+                if (v.endsWith(suffix)) {
+                    nodeClass = v.substr(0, v.length - suffix.length);
+                }
+            });
+
+            children.push({
+                "type": "variable",
+                "class": nodeClass,
+                "content": text.innerText,
+            })
+        }
+
+        return children;
     }
 
     splitChildren(element: HTMLElement, marker: string) {
