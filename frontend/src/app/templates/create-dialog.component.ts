@@ -302,7 +302,7 @@ export class TemplateCreateDialogComponent {
             // Variable badge
             const text = (node as HTMLElement).getElementsByClassName('text')[0] as HTMLElement;
             let nodeClass = null;
-            (node as HTMLElement).classList.forEach((v, _k, _p) => {
+            ((node as HTMLElement).classList as any as Array<string>).forEach((v, _k, _p) => {
                 const suffix = '-variable';
                 if (v.endsWith(suffix)) {
                     nodeClass = v.substr(0, v.length - suffix.length);
