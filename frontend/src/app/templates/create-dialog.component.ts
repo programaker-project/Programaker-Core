@@ -4,8 +4,10 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SessionService } from '../session.service';
 import { ServiceService } from '../service.service';
 import { Template } from './template';
+import { variable } from '@angular/compiler/src/output/output_ast';
 
 type VariableType = 'input' | 'ouput';
+type PromiseHandler = { resolve: (value: [string,any[]]) => void, reject: Function };
 
 @Component({
     selector: 'template-create-dialog-component',
@@ -17,15 +19,23 @@ type VariableType = 'input' | 'ouput';
 })
 export class TemplateCreateDialogComponent {
     template: Template;
+    promise: PromiseHandler;
     selectedVar: HTMLElement;
+    variables: string[];
+    usedOutputs: {};
+    allOutputsUsed: boolean;
 
     constructor(
         public dialogRef: MatDialogRef<TemplateCreateDialogComponent>,
         public serviceService: ServiceService,
         @Inject(MAT_DIALOG_DATA)
-        public data: { template: Template }
+        public data: { template: Template, promise: PromiseHandler, variables: [string] }
     ) {
-        this.template = data.template || { name: "", content: "" };
+        this.template = data.template || { name: "", content: [] };
+        this.promise = data.promise;
+        this.variables = data.variables;
+        this.usedOutputs = {};
+        this.checkAllOutputsUsed();
 
         dialogRef.afterOpen().subscribe(() => {
             const dialogElement = document.getElementById(this.dialogRef.id);
@@ -36,9 +46,21 @@ export class TemplateCreateDialogComponent {
 
     }
 
+    checkAllOutputsUsed() {
+        let available = this.variables.length;
+        for (let name of this.variables) {
+            if (this.usedOutputs[name]) {
+                available--;
+            }
+        }
+
+        this.allOutputsUsed = available === 0;
+    }
+
 
     onNoClick(): void {
         this.dialogRef.close();
+        this.promise.reject();
     }
 
     getComponentMarker(): string {
@@ -157,6 +179,8 @@ export class TemplateCreateDialogComponent {
 
     buildBadgeFrom(selectedVar: HTMLElement) {
         const marker = this.getComponentMarker();
+        const variableName = selectedVar.innerText;
+        const varType = selectedVar.getAttribute('var-type');
 
         const element = document.createElement('span');
         (selectedVar.classList as any as Array<string>).forEach((value, _k, _p) => {
@@ -165,12 +189,12 @@ export class TemplateCreateDialogComponent {
         element.setAttribute('contenteditable', 'false');
         element.setAttribute(marker, '');
         element.classList.add('badge');
-        element.setAttribute('var-type', selectedVar.getAttribute('var-type'));
+        element.setAttribute('var-type', varType);
 
         const text = document.createElement('span');
         text.setAttribute(marker, '');
         text.classList.add('text');
-        text.innerText = selectedVar.innerText;
+        text.innerText = variableName;
         element.appendChild(text);
 
         const remover = document.createElement('span');
@@ -180,15 +204,32 @@ export class TemplateCreateDialogComponent {
         remover.onclick = (ev) => {
             element.remove();
             ev.stopPropagation();
+
+            if (varType === 'output') {
+                this.setOutputUsage(variableName, false);
+            }
         }
         element.appendChild(remover);
 
         text.onmousedown = () => {
             this.userSelectedVar(text.innerText, element.getAttribute('var-type') as VariableType);
             element.remove();
+            if (varType === 'output') {
+                this.setOutputUsage(variableName, false);
+            }
+        }
+
+        if (varType === 'output') {
+            this.setOutputUsage(variableName, true);
         }
 
         return element;
+    }
+
+    setOutputUsage(name, value) {
+        this.usedOutputs[name] = value;
+
+        this.checkAllOutputsUsed();
     }
 
     isEditor(element: Element): boolean {
@@ -221,6 +262,60 @@ export class TemplateCreateDialogComponent {
         const marker = this.getComponentMarker();
 
         this.splitChildren(editor as HTMLElement, marker);
+    }
+
+    extractTemplate(element: HTMLElement) {
+        const children = [];
+        for (let i = 0; i < element.childNodes.length; i++) {
+            const node = element.childNodes[i];
+
+            // Raw text
+            if (node.nodeName === '#text') {
+                children.push({
+                    "type": "text",
+                    "content": (node as any).data as string,
+                });
+                continue;
+            }
+            // Line
+            else if (node.nodeName === 'DIV') {
+                const content = this.extractTemplate(node as HTMLDivElement);
+                children.push({ "type": "line", "content": content });
+                continue;
+            }
+
+            else if (node.nodeName !== 'SPAN') {
+                console.error("Unknown node type:", node.nodeName);
+                continue;
+            }
+
+            // Line tag
+            else if (!(node as HTMLElement).classList.contains('variable')) {
+                children.push({
+                    "type": "text",
+                    "content": (node as HTMLElement).innerText as string,
+                });
+                continue;
+            }
+
+            // Variable badge
+            const text = (node as HTMLElement).getElementsByClassName('text')[0] as HTMLElement;
+            let nodeClass = null;
+            ((node as HTMLElement).classList as any as Array<string>).forEach((v, _k, _p) => {
+                const suffix = '-variable';
+                if (v.endsWith(suffix)) {
+                    nodeClass = v.substr(0, v.length - suffix.length);
+                }
+            });
+
+            children.push({
+                "type": "variable",
+                "class": nodeClass,
+                "content": text.innerText,
+            })
+        }
+
+        return children;
     }
 
     splitChildren(element: HTMLElement, marker: string) {
@@ -297,6 +392,18 @@ export class TemplateCreateDialogComponent {
         for (const node of newChilds) {
             element.appendChild(node);
         }
+    }
+
+    send_form() {
+        this.onTemplateChange();
+
+        const dialogElement = document.getElementById(this.dialogRef.id);
+        const editor = dialogElement.querySelector("[name='template-content']");
+        const value = this.extractTemplate(editor as HTMLElement);
+        this.template.content = value;
+
+        this.dialogRef.close();
+        this.promise.resolve([this.template.name, this.template.content]);
     }
 
 }

@@ -42,8 +42,6 @@ import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
 // Templates
 import { TemplateCreateDialogComponent } from './templates/create-dialog.component';
 
-import { TemplateCreateComponent } from './templates/create.component';
-
 import { AppRoutingModule } from './app-routing.module';
 import { LoginFormComponent } from './login-form.component';
 
@@ -62,7 +60,6 @@ import 'hammerjs';
         BridgeAddComponent,
         ServicesComponent,
         LoginFormComponent,
-        TemplateCreateComponent,
 
         // Dialogs
         BridgeDeleteDialogComponent,

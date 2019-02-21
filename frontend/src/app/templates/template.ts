@@ -1,4 +1,8 @@
 export interface Template {
     name: string;
-    content: string;
+    content: any[];
+}
+
+export interface TemplateCreationResponse {
+    id: string;
 }
