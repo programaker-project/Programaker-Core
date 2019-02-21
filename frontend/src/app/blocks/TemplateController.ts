@@ -2,19 +2,23 @@ import { TemplateCreateDialogComponent } from '../templates/create-dialog.compon
 import { alreadyRegisteredException, createDom } from './utils';
 import { MatDialog } from '@angular/material';
 import { ToolboxController } from './ToolboxController';
+import { TemplateService } from '../templates/template.service';
 declare const Blockly;
 
 export class TemplateController {
     toolboxController: ToolboxController;
     templatesCategory: HTMLElement;
     dialog: MatDialog;
+    templateService: TemplateService;
 
     constructor(
         dialog: MatDialog,
         toolboxController: ToolboxController,
+        templateService: TemplateService,
     ) {
         this.dialog = dialog;
         this.toolboxController = toolboxController;
+        this.templateService = templateService;
     }
 
     injectTemplateBlocks(): Function[] {
@@ -42,6 +46,11 @@ export class TemplateController {
             }
 
             registered = true;
+
+            this.templatesCategory.appendChild(createDom('button', {
+                text: "Edit templates",
+                callbackKey: "AUTOMATE_EDIT_TEMPLATE",
+            }));
 
             Blockly.Blocks['automate_match_template_check'] = {
                 init: function () {
@@ -107,22 +116,34 @@ export class TemplateController {
                 workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
                     this.create_template().then(([template_name, template_content]) => {
 
-                        if (!this.templatesCategory) {
-                            console.error("No templates toolbox found");
-                            return;
-                        }
+                        this.templateService.saveTemplate(template_name, template_content)
+                            .then((template_creation) => {
+                                if (!this.templatesCategory) {
+                                    console.error("No templates toolbox found");
+                                    return;
+                                }
 
-                        availableTemplates.push([template_name, template_name]);
-                        register_template_blocks(workspace);
+                                availableTemplates.push([template_name, template_creation.id]);
+                                register_template_blocks(workspace);
 
-                        this.toolboxController.update();
+                                this.toolboxController.update();
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                alert("Error creating template.\n" + err);
+                            })
                     });
                 });
+
+                workspace.registerButtonCallback('AUTOMATE_EDIT_TEMPLATE', (x, y, z) => {
+                    alert("Not implemented yet");
+                });
+
             }
         ];
     }
 
-    create_template(): Promise<[string, string]> {
+    create_template(): Promise<[string, any[]]> {
         const variables = this.toolboxController.getStringVariables();
         return new Promise((resolve, reject) => {
             const _dialogRef = this.dialog.open(TemplateCreateDialogComponent, {

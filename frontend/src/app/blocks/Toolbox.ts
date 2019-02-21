@@ -7,6 +7,7 @@ import { MatDialog } from '@angular/material';
 import { alreadyRegisteredException, createDom } from './utils';
 import { TemplateController } from './TemplateController';
 import { ToolboxController } from './ToolboxController';
+import { TemplateService } from '../templates/template.service';
 
 declare const Blockly;
 
@@ -28,6 +29,7 @@ export class Toolbox {
         customBlockService: CustomBlockService,
         chats: Chat[],
         dialog: MatDialog,
+        templateService: TemplateService,
     ) {
         this.monitorService = monitorService;
         this.customBlockService = customBlockService;
@@ -35,7 +37,7 @@ export class Toolbox {
         this.dialog = dialog;
 
         this.controller = new ToolboxController();
-        this.templateController = new TemplateController(this.dialog, this.controller);
+        this.templateController = new TemplateController(this.dialog, this.controller, templateService);
     }
 
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {

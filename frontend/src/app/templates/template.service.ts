@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Template } from './template';
+import { Template, TemplateCreationResponse } from './template';
 import * as API from '../api-config';
 import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/map';
@@ -27,4 +27,21 @@ export class TemplateService {
 
         return root + '/templates/id/' + template_id;
     }
+
+    async saveTemplate(template_name: string, template_content: any[]): Promise<TemplateCreationResponse> {
+        const indexUrl = await this.getTemplateIndexUrl();
+
+        return this.http
+            .post(indexUrl, JSON.stringify({}),
+                {
+                    headers: this.sessionService.addJsonContentType(
+                        this.sessionService.getAuthHeader())
+                })
+            .map(response => {
+                return response as TemplateCreationResponse;
+            })
+            .toPromise();
+
+    }
+
 }

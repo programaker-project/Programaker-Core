@@ -18,18 +18,18 @@ import { MatDialog } from '@angular/material/dialog';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { ToolboxController } from './blocks/ToolboxController';
+import { TemplateService } from './templates/template.service';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [CustomBlockService, MonitorService, ProgramService, ChatService],
+    providers: [CustomBlockService, MonitorService, ProgramService, ChatService, TemplateService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
         'libs/css/bootstrap.min.css',
     ],
 })
-
 export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
     currentFillingInput: string;
@@ -50,6 +50,7 @@ export class ProgramDetailComponent implements OnInit {
         private location: Location,
         private router: Router,
         public dialog: MatDialog,
+        private templateService: TemplateService,
     ) {
         this.monitorService = monitorService;
         this.programService = programService;
@@ -88,7 +89,8 @@ export class ProgramDetailComponent implements OnInit {
                 this.monitorService,
                 this.customBlockService,
                 chats,
-                this.dialog
+                this.dialog,
+                this.templateService,
             )
                 .inject()
                 .then(([toolbox, registrations, controller]) => {
