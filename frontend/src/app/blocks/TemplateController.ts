@@ -105,14 +105,14 @@ export class TemplateController {
         return [
             (workspace) => {
                 workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
-                    this.create_template().then(([template_name, template_id]) => {
+                    this.create_template().then(([template_name, template_content]) => {
 
                         if (!this.templatesCategory) {
                             console.error("No templates toolbox found");
                             return;
                         }
 
-                        availableTemplates.push([template_name, template_id]);
+                        availableTemplates.push([template_name, template_name]);
                         register_template_blocks(workspace);
 
                         this.toolboxController.update();

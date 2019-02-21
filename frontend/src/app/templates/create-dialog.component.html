@@ -43,5 +43,6 @@
         mat-button
         [mat-dialog-close]="true"
         [disabled]="!template.name"
+        (click)="send_form()"
         mat-raised-button>Create</button>
 </mat-dialog-actions>

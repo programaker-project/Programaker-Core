@@ -7,7 +7,7 @@ import { Template } from './template';
 import { variable } from '@angular/compiler/src/output/output_ast';
 
 type VariableType = 'input' | 'ouput';
-type PromiseHandler = { resolve: (name: string, id: string) => void, reject: Function };
+type PromiseHandler = { resolve: (value: [string,any[]]) => void, reject: Function };
 
 @Component({
     selector: 'template-create-dialog-component',
@@ -31,12 +31,11 @@ export class TemplateCreateDialogComponent {
         @Inject(MAT_DIALOG_DATA)
         public data: { template: Template, promise: PromiseHandler, variables: [string] }
     ) {
-        this.template = data.template || { name: "", content: "" };
+        this.template = data.template || { name: "", content: [] };
         this.promise = data.promise;
         this.variables = data.variables;
         this.usedOutputs = {};
         this.checkAllOutputsUsed();
-        console.log(this.usedOutputs);
 
         dialogRef.afterOpen().subscribe(() => {
             const dialogElement = document.getElementById(this.dialogRef.id);
@@ -61,6 +60,7 @@ export class TemplateCreateDialogComponent {
 
     onNoClick(): void {
         this.dialogRef.close();
+        this.promise.reject();
     }
 
     getComponentMarker(): string {
@@ -262,7 +262,6 @@ export class TemplateCreateDialogComponent {
         const marker = this.getComponentMarker();
 
         this.splitChildren(editor as HTMLElement, marker);
-        console.log("C:", this.extractTemplate(editor as HTMLElement));
     }
 
     extractTemplate(element: HTMLElement) {
@@ -393,6 +392,18 @@ export class TemplateCreateDialogComponent {
         for (const node of newChilds) {
             element.appendChild(node);
         }
+    }
+
+    send_form() {
+        this.onTemplateChange();
+
+        const dialogElement = document.getElementById(this.dialogRef.id);
+        const editor = dialogElement.querySelector("[name='template-content']");
+        const value = this.extractTemplate(editor as HTMLElement);
+        this.template.content = value;
+
+        this.dialogRef.close();
+        this.promise.resolve([this.template.name, this.template.content]);
     }
 
 }
