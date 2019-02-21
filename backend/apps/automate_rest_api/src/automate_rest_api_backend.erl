@@ -24,6 +24,9 @@
         , send_oauth_return/2
         , list_bridges/1
         , delete_bridge/2
+
+        , create_template/3
+        , list_templates_from_user_id/1
         ]).
 
 %% Definitions
@@ -230,6 +233,15 @@ list_bridges(Username) ->
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->
     automate_service_port_engine:delete_bridge(UserId, BridgeId).
+
+
+-spec create_template(binary(), binary(), [any()]) -> {ok, binary()}.
+create_template(UserId, TemplateName, TemplateContent) ->
+    automate_template_engine:create_template(UserId, TemplateName, TemplateContent).
+
+-spec list_templates_from_user_id(binary()) -> {ok, [map()]}.
+list_templates_from_user_id(UserId) ->
+    automate_template_engine:list_templates_from_user_id(UserId).
 
 %%====================================================================
 %% Internal functions

@@ -1,0 +1,17 @@
+{application,
+ automate_template_engine,
+ [ {description, "Auto-mate template engine."},
+   {vsn, "0.0.0"},
+   {registered, []},
+   {mod, { automate_template_engine_app, [] }},
+   {applications, [ kernel
+                  , stdlib
+                  , mnesia
+                  , automate_storage
+                  ]},
+   {env, [
+         ]},
+   {modules, []},
+   {licenses, ["Apache 2.0"]},
+   {links, []}
+ ]}.
