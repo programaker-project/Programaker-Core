@@ -27,6 +27,9 @@
 
         , create_template/3
         , list_templates_from_user_id/1
+        , delete_template/2
+        , update_template/4
+        , get_template/2
         ]).
 
 %% Definitions
@@ -35,6 +38,7 @@
 -include("../../automate_storage/src/records.hrl").
 -include("../../automate_chat_registry/src/records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
+-include("../../automate_template_engine/src/records.hrl").
 
 %%====================================================================
 %% API functions
@@ -239,9 +243,21 @@ delete_bridge(UserId, BridgeId) ->
 create_template(UserId, TemplateName, TemplateContent) ->
     automate_template_engine:create_template(UserId, TemplateName, TemplateContent).
 
--spec list_templates_from_user_id(binary()) -> {ok, [map()]}.
+-spec list_templates_from_user_id(binary()) -> {ok, [#template_entry{}]}.
 list_templates_from_user_id(UserId) ->
     automate_template_engine:list_templates_from_user_id(UserId).
+
+-spec delete_template(binary(), binary()) -> ok | {error, binary()}.
+delete_template(UserId, TemplateId) ->
+    automate_template_engine:delete_template(UserId, TemplateId).
+
+-spec update_template(binary(), binary(), binary(), [any()]) -> ok | {error, binary()}.
+update_template(UserId, TemplateId, TemplateName, TemplateContent) ->
+    automate_template_engine:update_template(UserId, TemplateId, TemplateName, TemplateContent).
+
+-spec get_template(binary(), binary()) -> {ok, #template_entry{}} | {error, binary()}.
+get_template(UserId, TemplateId) ->
+    automate_template_engine:get_template(UserId, TemplateId).
 
 %%====================================================================
 %% Internal functions

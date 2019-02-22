@@ -132,10 +132,9 @@ read_body(Req0, Acc) ->
 template_to_map(#template_entry{ id=Id
                                , name=Name
                                , owner=Owner
-                               , content=Content
+                               , content=_Content
                                }) ->
     #{ id => Id
      , name => Name
      , owner => Owner
-     , content => Content
      }.
