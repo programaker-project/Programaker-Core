@@ -38,11 +38,6 @@ export class TemplateController {
 
         this.registeredTemplateBlocks = true;
 
-        this.templatesCategory.appendChild(createDom('button', {
-            text: "Edit templates",
-            callbackKey: "AUTOMATE_EDIT_TEMPLATE",
-        }));
-
         const availableTemplates = this.availableTemplates;
 
         Blockly.Blocks['automate_match_template_check'] = {
@@ -141,11 +136,6 @@ export class TemplateController {
                             })
                     });
                 });
-
-                workspace.registerButtonCallback('AUTOMATE_EDIT_TEMPLATE', (x, y, z) => {
-                    alert("Not implemented yet");
-                });
-
             }
         ];
     }
