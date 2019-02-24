@@ -13,8 +13,11 @@
         , delete_template/2
         , update_template/4
         , get_template/2
+
+        , match/4
         ]).
 
+-define(MATCHING, automate_template_engine_matching).
 -define(BACKEND, automate_template_engine_mnesia_backend).
 -include("records.hrl").
 
@@ -43,3 +46,6 @@ update_template(UserId, TemplateId, TemplateName, TemplateContent) ->
 -spec get_template(binary(), binary()) -> {ok, #template_entry{}} | {error, binary()}.
 get_template(UserId, TemplateId) ->
     ?BACKEND:get_template(UserId, TemplateId).
+
+match(UserId, Thread, TemplateId, InputValue) ->
+    ?MATCHING:match(UserId, Thread, TemplateId, InputValue).

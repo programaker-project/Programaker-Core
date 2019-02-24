@@ -4,6 +4,7 @@
 -define(CONTENTS, <<"contents">>).
 -define(ID, <<"id">>).
 -define(VALUE, <<"value">>).
+-define(TEMPLATE_NAME_TYPE, <<"template_name">>).
 
 %%%% Command types
 %%%%  Operations
@@ -18,6 +19,10 @@
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
+
+%% Templates
+-define(MATCH_TEMPLTE_STATEMENT, <<"automate_match_template_stmt">>).
+
 
 %% Any() operations
 -define(COMMAND_EQUALS, <<"operator_equals">>).
