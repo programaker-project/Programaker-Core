@@ -67,11 +67,12 @@
 -define(WAIT_FOR_MONITOR, <<"wait_for_monitor">>).
 -define(WAIT_FOR_MONITOR_COMMAND, ?WAIT_FOR_MONITOR).
 -define(TRIGGERED_BY_MONITOR, triggered_by_monitor).
--define(MONITOR_ANY_VALUE, any_value).
+-define(MONITOR_ANY_VALUE, <<"any_value">>).
 
 %% Fields
 -define(MONITOR_ID, <<"monitor_id">>).
 -define(MONITOR_EXPECTED_VALUE, <<"monitor_expected_value">>).
+-define(MONITOR_SAVE_VALUE_TO, <<"monitor_save_value_to">>).
 
 %%%% Services
 -define(SERVICE_ID, <<"service_id">>).

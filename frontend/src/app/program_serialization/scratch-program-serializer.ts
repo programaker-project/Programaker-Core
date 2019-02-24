@@ -18,7 +18,7 @@ export default class ScratchProgramSerializer {
                 orig: Blockly.Xml.domToPrettyText(xml),
             };
         }
-        catch(e) {
+        catch (e) {
             console.error("Serialization error:", e);
             throw e;
         }
@@ -27,7 +27,7 @@ export default class ScratchProgramSerializer {
     // ====================================================
     // Internal functions
     // ====================================================
-    static serializeBlock(block: HTMLElement, chain: any[]= null): any {
+    static serializeBlock(block: HTMLElement, chain: any[] = null): any {
         if (chain === null) {
             chain = [];
         }
@@ -64,15 +64,27 @@ export default class ScratchProgramSerializer {
     }
 
     static replaceMonitors(element) {
-       switch (element.type) {
+        switch (element.type) {
 
-             case "chat_whenreceivecommand":
+            case "chat_whenreceivecommand":
                 // This implies a call to a monitor
                 {
                     element.type = "wait_for_monitor";
                     element.args = {
                         "monitor_id": { "from_service": "c8062378-9b53-4962-b4f4-e5a71e34d335" }, // Telegram monitor ID
                         "monitor_expected_value": element.args[0]
+                    }
+                    break;
+                }
+
+            case "chat_whenreceiveanycommandtovar":
+                // This implies a call to a monitor and a subsequent save of its value.
+                {
+                    element.type = "wait_for_monitor";
+                    element.args = {
+                        "monitor_id": { "from_service": "c8062378-9b53-4962-b4f4-e5a71e34d335" }, // Telegram monitor ID
+                        "monitor_expected_value": "any_value",
+                        "monitor_save_value_to": element.args[0],
                     }
                     break;
                 }
@@ -85,10 +97,10 @@ export default class ScratchProgramSerializer {
                         "monitor_id": { "from_service": "0093325b-373f-4f1c-bace-4532cce79df4" }, // Timekeeping monitor ID
                         "monitor_expected_value": {
                             "type": "constant",
-                            "value": ( element.args[0].value.replace(/^0*(\d)$/, "$1")  + ':'
-                                       + element.args[1].value.replace(/^0*(\d)$/, "$1")  + ':'
-                                       + element.args[2].value.replace(/^0*(\d)$/, "$1")
-                                     )
+                            "value": (element.args[0].value.replace(/^0*(\d)$/, "$1") + ':'
+                                + element.args[1].value.replace(/^0*(\d)$/, "$1") + ':'
+                                + element.args[2].value.replace(/^0*(\d)$/, "$1")
+                            )
                         }
                     }
                     break;
@@ -106,7 +118,7 @@ export default class ScratchProgramSerializer {
 
         // If there's a second block, that block result is the arg value
         if ((argument.childNodes.length > 1)
-           && ((argument.childNodes[1] as HTMLElement).tagName === 'BLOCK')) {
+            && ((argument.childNodes[1] as HTMLElement).tagName === 'BLOCK')) {
 
             return {
                 type: 'block',
@@ -115,7 +127,7 @@ export default class ScratchProgramSerializer {
         }
 
         if ((argument.childNodes.length === 1)
-           && ((argument.childNodes[0] as HTMLElement).tagName === 'BLOCK')) {
+            && ((argument.childNodes[0] as HTMLElement).tagName === 'BLOCK')) {
 
             return {
                 type: 'block',
@@ -138,8 +150,8 @@ export default class ScratchProgramSerializer {
 
     static serializeVariables(variables: HTMLElement): any {
         return Array.from(variables.childNodes)
-                .map(variable =>
-                    ScratchProgramSerializer.serializeVariable(variable as HTMLElement));
+            .map(variable =>
+                ScratchProgramSerializer.serializeVariable(variable as HTMLElement));
     }
 
     static serializeVariable(variable: HTMLElement): any {

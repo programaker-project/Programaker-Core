@@ -173,6 +173,23 @@ export class Toolbox {
             }
         };
 
+        Blockly.Blocks['chat_whenreceiveanycommandtovar'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'chat_whenreceiveanycommandtovar',
+                    'message0': 'When received any command. Set %1',
+                    'args0': [
+                        {
+                            'type': 'field_variable',
+                            'name': 'VARIABLE'
+                        }
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_chat', 'shape_hat']
+                });
+            }
+        };
+
         Blockly.Blocks['chat_say'] = {
             init: function () {
                 this.jsonInit({
@@ -323,6 +340,12 @@ export class Toolbox {
             <value name="VALUE">
               <shadow type="text">
                 <field name="TEXT">/start</field>
+              </shadow>
+            </value>
+          </block>
+          <block type="chat_whenreceiveanycommandtovar" id="chat_whenreceiveanycommandtovar">
+            <value name="VARIABLE">
+              <shadow type="data_variablemenu">
               </shadow>
             </value>
           </block>
