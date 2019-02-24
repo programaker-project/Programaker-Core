@@ -21,8 +21,8 @@
 -define(COMMAND_JOIN, <<"operator_join">>).
 
 %% Templates
--define(MATCH_TEMPLTE_STATEMENT, <<"automate_match_template_stmt">>).
-
+-define(MATCH_TEMPLATE_STATEMENT, <<"automate_match_template_stmt">>).
+-define(MATCH_TEMPLATE_CHECK, <<"automate_match_template_check">>).
 
 %% Any() operations
 -define(COMMAND_EQUALS, <<"operator_equals">>).
