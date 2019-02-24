@@ -18,8 +18,8 @@ export class TemplateService {
     }
 
     async getTemplateIndexUrl(): Promise<string> {
-        const userApiRoot = await this.sessionService.getUserApiRoot();
-        return userApiRoot + '/templates/';
+        const root = await this.sessionService.getApiRootForUserId();
+        return root + '/templates/';
     }
 
     async getSpecificTemplateUrl(user_id: string, template_id: string): Promise<string> {
@@ -32,7 +32,10 @@ export class TemplateService {
         const indexUrl = await this.getTemplateIndexUrl();
 
         return this.http
-            .post(indexUrl, JSON.stringify({}),
+            .post(indexUrl, JSON.stringify({
+                name: template_name,
+                content: template_content,
+            }),
                 {
                     headers: this.sessionService.addJsonContentType(
                         this.sessionService.getAuthHeader())
@@ -41,7 +44,19 @@ export class TemplateService {
                 return response as TemplateCreationResponse;
             })
             .toPromise();
+    }
 
+    async getTemplates(): Promise<Template[]> {
+        const indexUrl = await this.getTemplateIndexUrl();
+
+        return this.http
+            .get(indexUrl, {
+                headers: this.sessionService.getAuthHeader()
+            })
+            .map(response => {
+                return response as Template[];
+            })
+            .toPromise();
     }
 
 }

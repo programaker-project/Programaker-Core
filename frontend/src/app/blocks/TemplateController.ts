@@ -3,6 +3,7 @@ import { alreadyRegisteredException, createDom } from './utils';
 import { MatDialog } from '@angular/material';
 import { ToolboxController } from './ToolboxController';
 import { TemplateService } from '../templates/template.service';
+import { Template } from '../templates/template';
 declare const Blockly;
 
 export class TemplateController {
@@ -10,6 +11,10 @@ export class TemplateController {
     templatesCategory: HTMLElement;
     dialog: MatDialog;
     templateService: TemplateService;
+
+    registeredTemplateBlocks = false;
+    availableTemplates: [string, string][];  // Name, Id
+    templates: { [key: string]: Template };
 
     constructor(
         dialog: MatDialog,
@@ -19,6 +24,84 @@ export class TemplateController {
         this.dialog = dialog;
         this.toolboxController = toolboxController;
         this.templateService = templateService;
+        this.availableTemplates = [];
+        this.templates = {};
+    }
+
+    register_template_blocks() {
+        if (!this.availableTemplates) {
+            return;
+        }
+        if (this.registeredTemplateBlocks) {
+            return;
+        }
+
+        this.registeredTemplateBlocks = true;
+
+        this.templatesCategory.appendChild(createDom('button', {
+            text: "Edit templates",
+            callbackKey: "AUTOMATE_EDIT_TEMPLATE",
+        }));
+
+        const availableTemplates = this.availableTemplates;
+
+        Blockly.Blocks['automate_match_template_check'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'automate_match_template_check',
+                    'message0': 'Does %1 match %2 ?',
+                    'args0': [
+                        {
+                            'type': 'input_value',
+                            'name': 'VALUE'
+                        },
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'TEMPLATE_NAME',
+                            'options': availableTemplates,
+                        }
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_templates', 'output_string']
+                });
+            }
+        };
+
+        this.templatesCategory.appendChild(createDom('block',
+            {
+                type: "automate_match_template_check",
+                id: "automate_match_template_check",
+            }));
+
+        Blockly.Blocks['automate_match_template_stmt'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'automate_match_template_stmt',
+                    'message0': 'Match %1 with %2',
+                    'args0': [
+                        {
+                            'type': 'input_value',
+                            'name': 'VALUE'
+                        },
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'TEMPLATE_NAME',
+                            'options': availableTemplates,
+                        }
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_templates', 'shape_statement']
+                });
+            }
+        };
+
+        this.templatesCategory.appendChild(createDom('block',
+            {
+                type: "automate_match_template_stmt",
+                id: "automate_match_template_stmt",
+            }));
+
+        this.toolboxController.update();
     }
 
     injectTemplateBlocks(): Function[] {
@@ -35,82 +118,6 @@ export class TemplateController {
             }
         }
 
-        const availableTemplates = [];
-        let registered = false;
-        const register_template_blocks = ((workspace) => {
-            if (!availableTemplates) {
-                return;
-            }
-            if (registered) {
-                return;
-            }
-
-            registered = true;
-
-            this.templatesCategory.appendChild(createDom('button', {
-                text: "Edit templates",
-                callbackKey: "AUTOMATE_EDIT_TEMPLATE",
-            }));
-
-            Blockly.Blocks['automate_match_template_check'] = {
-                init: function () {
-                    this.jsonInit({
-                        'id': 'automate_match_template_check',
-                        'message0': 'Does %1 match %2 ?',
-                        'args0': [
-                            {
-                                'type': 'input_value',
-                                'name': 'VALUE'
-                            },
-                            {
-                                'type': 'field_dropdown',
-                                'name': 'TEMPLATE_NAME',
-                                'options': availableTemplates,
-                            }
-                        ],
-                        'category': Blockly.Categories.event,
-                        'extensions': ['colours_templates', 'output_string']
-                    });
-                }
-            };
-
-            this.templatesCategory.appendChild(createDom('block',
-                {
-                    type: "automate_match_template_check",
-                    id: "automate_match_template_check",
-                }));
-
-
-
-            Blockly.Blocks['automate_match_template_stmt'] = {
-                init: function () {
-                    this.jsonInit({
-                        'id': 'automate_match_template_stmt',
-                        'message0': 'Match %1 with %2',
-                        'args0': [
-                            {
-                                'type': 'input_value',
-                                'name': 'VALUE'
-                            },
-                            {
-                                'type': 'field_dropdown',
-                                'name': 'TEMPLATE_NAME',
-                                'options': availableTemplates,
-                            }
-                        ],
-                        'category': Blockly.Categories.event,
-                        'extensions': ['colours_templates', 'shape_statement']
-                    });
-                }
-            };
-
-            this.templatesCategory.appendChild(createDom('block',
-                {
-                    type: "automate_match_template_stmt",
-                    id: "automate_match_template_stmt",
-                }));
-        });
-
         return [
             (workspace) => {
                 workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
@@ -123,8 +130,8 @@ export class TemplateController {
                                     return;
                                 }
 
-                                availableTemplates.push([template_name, template_creation.id]);
-                                register_template_blocks(workspace);
+                                this.availableTemplates.push([template_name, template_creation.id]);
+                                this.register_template_blocks();
 
                                 this.toolboxController.update();
                             })
@@ -155,7 +162,7 @@ export class TemplateController {
 
 
 
-    genTemplatesCategory() {
+    genTemplatesCategory(): HTMLElement {
         if (this.templatesCategory) {
             return this.templatesCategory;
         }
@@ -172,6 +179,16 @@ export class TemplateController {
         }));
 
         this.templatesCategory = cat;
+
+        this.templateService.getTemplates().then((templates) => {
+            for (const template of templates) {
+                this.templates[template.id] = template;
+                this.availableTemplates.push([template.name, template.id]);
+            }
+
+            this.register_template_blocks();
+        });
+
         return cat;
     }
 }

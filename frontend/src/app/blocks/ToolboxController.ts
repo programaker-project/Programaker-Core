@@ -11,6 +11,10 @@ export class ToolboxController {
     }
 
     update() {
+        if ((!this.workspace) || (!this.toolboxXML)) {
+            return;
+        }
+
         this.workspace.updateToolbox(this.toolboxXML);
     }
 

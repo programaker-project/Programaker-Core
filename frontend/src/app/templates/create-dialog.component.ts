@@ -7,7 +7,7 @@ import { Template } from './template';
 import { variable } from '@angular/compiler/src/output/output_ast';
 
 type VariableType = 'input' | 'ouput';
-type PromiseHandler = { resolve: (value: [string,any[]]) => void, reject: Function };
+type PromiseHandler = { resolve: (value: [string, any[]]) => void, reject: Function };
 
 @Component({
     selector: 'template-create-dialog-component',
@@ -31,7 +31,7 @@ export class TemplateCreateDialogComponent {
         @Inject(MAT_DIALOG_DATA)
         public data: { template: Template, promise: PromiseHandler, variables: [string] }
     ) {
-        this.template = data.template || { name: "", content: [] };
+        this.template = data.template || { id: null, name: "", content: [] };
         this.promise = data.promise;
         this.variables = data.variables;
         this.usedOutputs = {};
