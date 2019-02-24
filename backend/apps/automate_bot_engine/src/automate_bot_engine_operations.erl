@@ -354,7 +354,29 @@ run_instruction(#{ ?TYPE := <<"services.", ServiceCall/binary>>
     {ok, NewThread, _Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
     {ran_this_tick, increment_position(NewThread)};
 
-run_instruction(_Instruction, _Thread, _ProgramState, _Message) ->
+run_instruction(#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
+                 , ?ARGUMENTS := [#{ ?TYPE := ?TEMPLATE_NAME_TYPE
+                                   , ?VALUE := TemplateId
+                                   }
+                                 , Input
+                                 ]
+                 }, Thread,
+                ProgramState=#program_state{permissions=Permissions},
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    UserId = case Permissions of
+                 undefined ->  % For simplification on test cases
+                     undefined;
+                 #program_permissions{ owner_user_id=OwnerUserId } ->
+                     OwnerUserId
+             end,
+
+    {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread, ProgramState),
+
+    {ok, NewThread, _Value} = automate_template_engine:match(UserId, Thread, TemplateId, InputValue),
+    {ran_this_tick, increment_position(NewThread)};
+
+run_instruction(Instruction, _Thread, _ProgramState, Message) ->
     %% io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
     {did_not_run, waiting}.
 
@@ -402,11 +424,38 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
                   }, Thread, ProgramState) ->
     FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
     SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
              automate_bot_engine_values:add(FirstValue, SecondValue);
         _ ->
             {error, not_found}
+    end;
+
+%% Templates
+get_block_result(#{ ?TYPE := ?MATCH_TEMPLATE_CHECK
+                  , ?ARGUMENTS := [#{ ?TYPE := ?TEMPLATE_NAME_TYPE
+                                    , ?VALUE := TemplateId
+                                    }
+                                  , Input
+                                  ]
+                  }, Thread,
+                ProgramState=#program_state{permissions=Permissions}) ->
+
+    UserId = case Permissions of
+                 undefined ->  % For simplification on test cases
+                     undefined;
+                 #program_permissions{ owner_user_id=OwnerUserId } ->
+                     OwnerUserId
+             end,
+
+    {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread, ProgramState),
+
+    case automate_template_engine:match(UserId, Thread, TemplateId, InputValue) of
+        {ok, NewThread, _Value} ->
+            {ok, true};
+        {error, not_found} ->
+            {ok, false}
     end;
 
 %% Numeric operators

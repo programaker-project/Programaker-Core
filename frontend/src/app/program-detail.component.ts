@@ -17,18 +17,19 @@ import { CustomBlockService } from './custom_block.service';
 import { MatDialog } from '@angular/material/dialog';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
+import { ToolboxController } from './blocks/ToolboxController';
+import { TemplateService } from './templates/template.service';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [CustomBlockService, MonitorService, ProgramService, ChatService],
+    providers: [CustomBlockService, MonitorService, ProgramService, ChatService, TemplateService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
         'libs/css/bootstrap.min.css',
     ],
 })
-
 export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
     currentFillingInput: string;
@@ -49,6 +50,7 @@ export class ProgramDetailComponent implements OnInit {
         private location: Location,
         private router: Router,
         public dialog: MatDialog,
+        private templateService: TemplateService,
     ) {
         this.monitorService = monitorService;
         this.programService = programService;
@@ -83,17 +85,26 @@ export class ProgramDetailComponent implements OnInit {
 
     prepareWorkspace(): Promise<void> {
         return this.chatService.getAvailableChats().then((chats: Chat[]) => {
-            return new Toolbox(this.monitorService, this.customBlockService, chats).inject().then(() => {
-                this.injectWorkspace();
-            });
+            return new Toolbox(
+                this.monitorService,
+                this.customBlockService,
+                chats,
+                this.dialog,
+                this.templateService,
+            )
+                .inject()
+                .then(([toolbox, registrations, controller]) => {
+                    this.injectWorkspace(toolbox, registrations, controller);
+                });
         });
     }
 
-    injectWorkspace() {
+    injectWorkspace(toolbox: HTMLElement, registrations: Function[], controller: ToolboxController) {
         // Avoid initializing it twice
         if (this.workspace !== undefined) {
             return;
         }
+
 
         const workspaceElement = document.getElementById('workspace');
         this.hide_workspace(workspaceElement);
@@ -101,7 +112,6 @@ export class ProgramDetailComponent implements OnInit {
         this.calculate_size(workspaceElement);
 
         const rtl = false;
-        const toolbox = null;
         const side = 'bottom';
         const soundsEnabled = false;
 
@@ -130,6 +140,13 @@ export class ProgramDetailComponent implements OnInit {
                 dragShadowOpacity: 0.6
             }
         });
+
+        for (const reg of registrations) {
+            reg(this.workspace);
+        }
+
+        controller.setWorkspace(this.workspace);
+        controller.update();
 
         this.add_show_hide_block_menu();
 

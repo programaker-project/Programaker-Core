@@ -4,6 +4,7 @@
 -define(CONTENTS, <<"contents">>).
 -define(ID, <<"id">>).
 -define(VALUE, <<"value">>).
+-define(TEMPLATE_NAME_TYPE, <<"template_name">>).
 
 %%%% Command types
 %%%%  Operations
@@ -18,6 +19,10 @@
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
+
+%% Templates
+-define(MATCH_TEMPLATE_STATEMENT, <<"automate_match_template_stmt">>).
+-define(MATCH_TEMPLATE_CHECK, <<"automate_match_template_check">>).
 
 %% Any() operations
 -define(COMMAND_EQUALS, <<"operator_equals">>).
@@ -67,11 +72,12 @@
 -define(WAIT_FOR_MONITOR, <<"wait_for_monitor">>).
 -define(WAIT_FOR_MONITOR_COMMAND, ?WAIT_FOR_MONITOR).
 -define(TRIGGERED_BY_MONITOR, triggered_by_monitor).
--define(MONITOR_ANY_VALUE, any_value).
+-define(MONITOR_ANY_VALUE, <<"any_value">>).
 
 %% Fields
 -define(MONITOR_ID, <<"monitor_id">>).
 -define(MONITOR_EXPECTED_VALUE, <<"monitor_expected_value">>).
+-define(MONITOR_SAVE_VALUE_TO, <<"monitor_save_value_to">>).
 
 %%%% Services
 -define(SERVICE_ID, <<"service_id">>).

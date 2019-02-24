@@ -16,7 +16,7 @@
         ]).
 
 -define(SERVER, ?MODULE).
--define(MAX_WAIT_TIME_SECONDS, 10).
+-define(MAX_WAIT_TIME_SECONDS, 100).
 -define(MAX_WAIT_TIME, ?MAX_WAIT_TIME_SECONDS * 1000).
 
 -record(state, { bridge_by_id
