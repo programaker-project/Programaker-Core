@@ -96,9 +96,16 @@ encode_block(#service_port_block{ block_id=BlockId
      , <<"block_result_type">> => BlockResultType
      }.
 
-encode_argument(#service_port_block_argument{ type=Type
-                                            , default=Default
-                                            }) ->
+encode_argument(#service_port_block_static_argument{ type=Type
+                                                   , default=Default
+                                                   }) ->
     #{ <<"type">> => Type
      , <<"default_value">> => Default
+     };
+
+encode_argument(#service_port_block_dynamic_argument{ type=Type
+                                                    , callback=Callback
+                                                    }) ->
+    #{ <<"type">> => Type
+     , <<"callback">> => Callback
      }.

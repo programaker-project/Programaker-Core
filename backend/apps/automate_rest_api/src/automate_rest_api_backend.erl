@@ -24,6 +24,7 @@
         , send_oauth_return/2
         , list_bridges/1
         , delete_bridge/2
+        , callback_bridge/3
 
         , create_template/3
         , list_templates_from_user_id/1
@@ -232,11 +233,15 @@ send_oauth_return(ServicePortId, Qs) ->
 -spec list_bridges(binary()) -> {ok, [#service_port_entry_extra{}]}.
 list_bridges(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
-    {ok, ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
+    {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->
     automate_service_port_engine:delete_bridge(UserId, BridgeId).
+
+-spec callback_bridge(binary(), binary(), binary()) -> {ok, [map()]} | {error, binary()}.
+callback_bridge(UserId, BridgeId, Callback) ->
+    automate_service_port_engine:callback_bridge(UserId, BridgeId, Callback).
 
 
 -spec create_template(binary(), binary(), [any()]) -> {ok, binary()}.

@@ -12,20 +12,27 @@
                                   , is_connected :: boolean()
                                   }).
 
--type service_port_block_argument_type() :: string(). %% <<"string">>
+-type service_port_block_argument_type() :: binary(). %% <<"string">>
                                           %% | <<"integer">>
                                           %% | <<"float">>
                                           %% | <<"boolean">>
                                           %%   .
 
--record(service_port_block_argument, { type :: service_port_block_argument_type()
-                                     , default :: binary()
-                                     }).
+-record(service_port_block_static_argument, { type :: service_port_block_argument_type()
+                                            , default :: binary()
+                                            }).
+
+-record(service_port_block_dynamic_argument, { type :: service_port_block_argument_type()
+                                             , callback :: binary()
+                                             }).
+
+-type service_port_block_argument() :: #service_port_block_static_argument{}
+                                     | #service_port_block_dynamic_argument{}.
 
 -record(service_port_block, { block_id :: binary()
                             , function_name :: binary()
                             , message :: binary()
-                            , arguments :: [#service_port_block_argument{}]
+                            , arguments :: [service_port_block_argument()]
                             , block_type :: binary()
                             , block_result_type :: binary()
                             }).

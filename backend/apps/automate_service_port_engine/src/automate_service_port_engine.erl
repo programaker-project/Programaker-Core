@@ -19,6 +19,7 @@
         , internal_user_id_to_service_port_user_id/2
         , get_user_service_ports/1
         , delete_bridge/2
+        , callback_bridge/3
         ]).
 
 -include("records.hrl").
@@ -107,6 +108,15 @@ delete_bridge(UserId, BridgeId) ->
     end,
     ?BACKEND:delete_bridge(UserId, BridgeId).
 
+
+-spec callback_bridge(binary(), binary(), binary()) -> {ok, [map()]} | {error, binary()}.
+callback_bridge(UserId, BridgeId, Callback) ->
+    ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
+                                   , <<"user_id">> => UserId
+                                   , <<"value">> => #{ <<"callback">> => Callback
+                                                     }
+                                   }).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -160,9 +170,17 @@ parse_block(#{ <<"arguments">> := Arguments
 parse_argument(#{ <<"default">> := DefaultValue
                 , <<"type">> := Type
                 }) ->
-    #service_port_block_argument{ default=DefaultValue
+    #service_port_block_static_argument{ default=DefaultValue
                                 , type=Type
-                                }.
+                                };
+
+parse_argument(#{ <<"type">> := Type
+                , <<"values">> := #{ <<"callback">> := Callback
+                                   }
+                }) ->
+    #service_port_block_dynamic_argument{ callback=Callback
+                                        , type=Type
+                                        }.
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).

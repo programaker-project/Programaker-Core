@@ -2,7 +2,7 @@ import { MonitorService } from '../monitor.service';
 import { MonitorMetadata } from '../monitor';
 import { Chat } from '../chat';
 import { CustomBlockService } from '../custom_block.service';
-import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments } from '../custom_block';
+import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments, ResolvedCustomBlock } from '../custom_block';
 import { MatDialog } from '@angular/material';
 import { alreadyRegisteredException, createDom } from './utils';
 import { TemplateController } from './TemplateController';
@@ -280,7 +280,7 @@ export class Toolbox {
         }
     }
 
-    injectCustomBlocks(blocks: CustomBlock[]) {
+    injectCustomBlocks(blocks: ResolvedCustomBlock[]) {
         for (const block of blocks) {
             Blockly.Blocks[block.id] = {
                 init: function () {

@@ -1,7 +1,23 @@
-export interface BlockArgument {
+export interface StaticBlockArgument {
     type: string;
     default_value: string;
 };
+
+export interface DynamicBlockArgument {
+    type: string;
+    callback: string;
+};
+
+export type BlockArgument = StaticBlockArgument | DynamicBlockArgument;
+
+
+export interface ResolvedDynamicBlockArgument {
+    type: string;
+    callback: string;
+    options: [string, string][];
+};
+
+export type ResolvedBlockArgument = StaticBlockArgument | ResolvedDynamicBlockArgument;
 
 export interface CustomBlock {
     id: string;
@@ -11,8 +27,19 @@ export interface CustomBlock {
     block_result_type: string;
     function_name: string;
     message: string;
-    arguments: [BlockArgument];
+    arguments: BlockArgument[];
 };
+
+export interface ResolvedCustomBlock {
+    id: string;
+    service_port_id: string;
+    block_id: string;
+    block_type: string;
+    block_result_type: string;
+    function_name: string;
+    message: string;
+    arguments: ResolvedBlockArgument[];
+}
 
 function to_scratch_type(type) {
     switch (type) {
@@ -83,11 +110,21 @@ export function get_block_category(block: CustomBlock): string {
     }
 }
 
-export function get_block_toolbox_arguments(block: CustomBlock) {
+export function get_block_toolbox_arguments(block: ResolvedCustomBlock) {
     return block.arguments.map((arg, index, _array) => {
-        return {
-            type: 'input_value',
-            name: 'VAL' + index,
-        };
+        if ((arg as any).options) {  // Dynamic value
+            const resolved_arg = arg as ResolvedDynamicBlockArgument;
+            return {
+                type: 'field_dropdown',
+                name: 'VAL' + index,
+                options: resolved_arg.options,
+            };
+        }
+        else {
+            return {
+                type: 'input_value',
+                name: 'VAL' + index,
+            };
+        }
     });
 }
