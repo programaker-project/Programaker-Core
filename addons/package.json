@@ -1,6 +1,7 @@
 {
   "name": "plaza-addon",
   "version": "0.0.1",
+  "license": "Apache-2.0",
   "description": "Companion addon for plaza.",
   "main": "background.js",
   "scripts": {
@@ -9,7 +10,6 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "UNLICENSED",
   "devDependencies": {
     "tsc": "^1.20150623.0",
     "tslint": "^5.10.0",
