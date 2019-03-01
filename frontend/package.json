@@ -39,7 +39,7 @@
     "@angular/compiler-cli": "^6.0.7",
     "@types/jasmine": "2.8.8",
     "@types/node": "^10.5.1",
-    "codelyzer": "~4.4.2",
+    "codelyzer": "~4.5.0",
     "google-closure-library": "^20180506.0.0",
     "jasmine-core": "~3.1.0",
     "jasmine-spec-reporter": "~4.2.1",
