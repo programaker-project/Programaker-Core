@@ -61,7 +61,7 @@ export class Toolbox {
         return results;
     }
 
-    injectBlocks(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]): Function[] {
+    injectBlocks(monitors: MonitorMetadata[], custom_blocks: ResolvedCustomBlock[]): Function[] {
         let registrations = [];
 
         this.injectChatBlocks();
