@@ -1,4 +1,4 @@
-FROM erlang:alpine as develop
+FROM erlang:alpine as plaza-backend-ci-base
 
 # Build dependencies
 RUN apk add git gcc libc-dev g++ make libtool autoconf automake
@@ -11,7 +11,9 @@ ADD rebar.config /app
 RUN rebar3 get-deps && rebar3 compile
 
 # Add application code
+FROM plaza-backend-ci-base as develop
 ADD . /app
+RUN cp -v config/sys.config.orig config/sys.config
 
 # Prepare release
 RUN rebar3 release
