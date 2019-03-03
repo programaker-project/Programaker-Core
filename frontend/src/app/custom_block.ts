@@ -72,9 +72,10 @@ function to_field_name(type) {
 
 function argument_to_xml(arg: BlockArgument, index: number): string {
     const type = to_scratch_type(arg.type);
+    const default_value = (arg as StaticBlockArgument).default_value || 'Test';
     return `<value name="VAL${index}">
         <shadow type="${type}">
-            <field name="${to_field_name(arg.type)}">${arg.default_value}</field>
+            <field name="${to_field_name(arg.type)}">${default_value}</field>
         </shadow>
     </value>`;
 }
