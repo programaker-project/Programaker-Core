@@ -12,7 +12,6 @@ build-frontend:
   stage: build
   script:
     - docker build --pull -t "$DOCKER_IMAGE_FRONTEND" frontend
-  when: manual
 
 build-backend:
   stage: build
