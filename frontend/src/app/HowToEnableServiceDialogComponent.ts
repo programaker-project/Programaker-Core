@@ -78,6 +78,10 @@ export class HowToEnableServiceDialogComponent {
             if (entry.tag === 'u') {
                 element = document.createElement('u');
             }
+            else if (entry.tag === 'console') {
+                element = document.createElement('div');
+                element.classList.add('console');
+            }
             else if (entry.tag === 'a') {
                 element = document.createElement('a');
                 if ((entry.properties !== undefined) && (entry.properties.href !== undefined)) {
