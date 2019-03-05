@@ -111,8 +111,9 @@ delete_bridge(UserId, BridgeId) ->
 
 -spec callback_bridge(binary(), binary(), binary()) -> {ok, [map()]} | {error, binary()}.
 callback_bridge(UserId, BridgeId, Callback) ->
+    {ok, BridgeUserId} = internal_user_id_to_service_port_user_id(UserId, BridgeId),
     ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
-                                   , <<"user_id">> => UserId
+                                   , <<"user_id">> => BridgeUserId
                                    , <<"value">> => #{ <<"callback">> => Callback
                                                      }
                                    }).
