@@ -110,8 +110,12 @@ export default class ScratchProgramSerializer {
 
     static serializeArg(argument: HTMLElement): any {
         if (argument.tagName === 'FIELD') {
+            let type = argument.getAttribute('name').toLowerCase();
+            if (type.startsWith('val')) {
+                type = 'constant';
+            }
             return {
-                type: argument.getAttribute('name').toLowerCase(),
+                type: type,
                 value: argument.innerText,
             }
         }
