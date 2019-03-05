@@ -40,7 +40,7 @@
     "@types/jasmine": "3.3.9",
     "@types/node": "^10.5.1",
     "codelyzer": "~4.5.0",
-    "google-closure-library": "^20180506.0.0",
+    "google-closure-library": "^20190215.0.0",
     "jasmine-core": "~3.3.0",
     "jasmine-spec-reporter": "~4.2.1",
     "karma": "^4.0.1",
