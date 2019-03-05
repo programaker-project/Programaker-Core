@@ -373,8 +373,12 @@ run_instruction(#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
 
     {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread, ProgramState),
 
-    {ok, NewThread, _Value} = automate_template_engine:match(UserId, Thread, TemplateId, InputValue),
-    {ran_this_tick, increment_position(NewThread)};
+    case automate_template_engine:match(UserId, Thread, TemplateId, InputValue) of
+        {ok, NewThread, _Value} ->
+            {ran_this_tick, increment_position(NewThread)};
+        {error, not_found} ->
+            {ran_this_tick, finish_thread(Thread)}
+    end;
 
 run_instruction(Instruction, _Thread, _ProgramState, Message) ->
     %% io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
@@ -398,6 +402,9 @@ to_int(Value) when is_integer(Value) ->
 to_int(Value) when is_binary(Value) ->
     {IntValue, <<"">>} = string:to_integer(Value),
     IntValue.
+
+finish_thread(Thread = #program_thread{}) ->
+    Thread#program_thread{position=[]}.
 
 back_to_parent([]) ->
     [1];
