@@ -4,6 +4,7 @@ variables:
   DOCKER_IMAGE_ADDONS: plaza-core-addons
   DOCKER_IMAGE_FRONTEND: plaza-core-frontend
   DOCKER_IMAGE_BACKEND: plaza-core-backend
+  DOCKER_IMAGE_BACKEND_TEST: plaza-core-backend-test
   DOCKER_BACKEND_CI_BASE: plazaproject/ci-base-backend:52db1adcf019a16a12fd9fe4d6c1c2534d68b561
 
 services:
@@ -11,17 +12,29 @@ services:
 
 build-addons:
   stage: build
+  # tags:
+  #   - javascript
+  #   - browser-addon
   script:
     - docker build -t "$DOCKER_IMAGE_ADDONS" addons
     - docker run -i --rm -v `pwd`/addons:/app "$DOCKER_IMAGE_ADDONS"
 
 build-frontend:
   stage: build
+  # tags:
+  #   - javascript
+  #   - frontend
+  before_script:
+    - cd frontend
   script:
-    - docker build --pull -t "$DOCKER_IMAGE_FRONTEND" frontend
+    - docker build -t "$DOCKER_IMAGE_FRONTEND" -f scripts/ci-partial.dockerfile .
 
 build-backend:
   stage: build
+  # tags:
+  #   - erlang
+  #   - backend
+  before_script:
+    - cd backend
   script:
-    - docker pull "$DOCKER_BACKEND_CI_BASE"
-    - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND" backend
+    - docker build -t "$DOCKER_IMAGE_BACKEND" -f scripts/ci-partial.dockerfile .
