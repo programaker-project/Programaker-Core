@@ -45,7 +45,7 @@ setup() ->
 
 %% @doc App infrastructure teardown.
 %% @end
-stop({NodeName}) ->
+stop({_NodeName}) ->
     %% application:stop(?APPLICATION),
 
     %% %% Restore the original node name
@@ -94,7 +94,7 @@ constant_argument_resolution() ->
     Value = example,
     ?assertMatch({ok, Value}, automate_bot_engine_variables:resolve_argument(#{ ?TYPE => ?VARIABLE_CONSTANT
                                                                               , ?VALUE => Value
-                                                                              }, #program_thread{})).
+                                                                              }, #program_thread{}, #program_state{})).
 
 %% Threads
 trigger_thread_with_channel_signal() ->
@@ -131,9 +131,9 @@ run_thread_single_tick() ->
     CallServiceInstruction = #{ ?TYPE => ?COMMAND_CALL_SERVICE
                               , ?ARGUMENTS => #{ ?SERVICE_ID => ServiceId
                                                , ?SERVICE_ACTION => ?TEST_SERVICE_ACTION
-                                               , ?SERVICE_CALL_VALUES => #{ ?TYPE => ?VARIABLE_CONSTANT
-                                                                          , ?VALUE => answer
-                                                                          }
+                                               , ?SERVICE_CALL_VALUES => [#{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                           , ?VALUE => answer
+                                                                           }]
                                                }
                               },
     TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
