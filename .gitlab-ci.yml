@@ -38,3 +38,17 @@ build-backend:
     - cd backend
   script:
     - docker build -t "$DOCKER_IMAGE_BACKEND" -f scripts/ci-partial.dockerfile .
+
+test-backend-code:
+  stage: test
+  # tags:
+  #   - erlang
+  #   - backend
+  #   - unit-tests
+  dependencies:
+    - build-backend
+  before_script:
+    - cd backend
+  script:
+    - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
+    - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 eunit
