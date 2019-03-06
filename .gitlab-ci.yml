@@ -31,7 +31,7 @@ build-frontend:
   before_script:
     - cd frontend
   script:
-    - docker build -t "$DOCKER_IMAGE_FRONTEND" -f scripts/ci-partial.dockerfile .
+    - docker build --target builder -t "$DOCKER_IMAGE_FRONTEND" -f scripts/ci-partial.dockerfile .
 
 build-backend:
   stage: build
