@@ -178,15 +178,22 @@ handle_cast({ call_bridge, BridgeId, Msg, From  }, State) ->
         #state{ bridge_by_id=Bridges=#{ BridgeId := Connections }
               , thread_by_message=Messages
               } ->
-            [First | Rest] = Connections,
-            {MessageId, ThreadId, WithMessaging} = call_bridge_to_connection(First, Msg, From),
+            AliveConnections = check_alive_connections(Connections),
+            case AliveConnections of
+                [First | Rest] ->
+                    {MessageId, ThreadId, WithMessaging} = call_bridge_to_connection(First, Msg, From),
 
-            { noreply
-            , State#state { bridge_by_id=Bridges#{ BridgeId => Rest ++ [WithMessaging] }
-                          , thread_by_message=Messages#{ MessageId => ThreadId
-                                                       }
-                          }
-            };
+                    { noreply
+                    , State#state { bridge_by_id=Bridges#{ BridgeId => Rest ++ [WithMessaging] }
+                                  , thread_by_message=Messages#{ MessageId => ThreadId
+                                                               }
+                                  }
+                    };
+                _ ->
+                    io:fwrite("No alive connections left on bridgeId (~p)~n", [BridgeId]),
+                    From ! { ?SERVER, { error, no_connection }},
+                    {noreply, State}
+            end;
         _ ->
             io:fwrite("BridgeId (~p) in state(~p)~n", [BridgeId, State]),
             From ! { ?SERVER, { error, no_connection }},
@@ -304,3 +311,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
+
+check_alive_connections(Connections) ->
+    lists:filter(fun(#bridge_info{ pid=Pid }) ->
+                         erlang:is_process_alive(Pid) end,
+                 Connections).
