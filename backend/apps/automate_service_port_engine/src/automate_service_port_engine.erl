@@ -78,7 +78,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
             io:fwrite("[~p] Answer: ~p~n", [MessageId, Unpacked]),
             ?ROUTER:answer_message(MessageId, Unpacked);
 
-        #{ <<"type">> := <<"configuration">>
+        #{ <<"type">> := <<"CONFIGURATION">>
          , <<"value">> := Configuration
          } ->
             set_service_port_configuration(ServicePortId, Configuration, UserId)
