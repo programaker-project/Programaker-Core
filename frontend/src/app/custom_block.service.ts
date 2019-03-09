@@ -69,7 +69,15 @@ export class CustomBlockService {
         }
 
         const dynamicArg = arg as DynamicBlockArgument;
-        const options = await this.getArgOptions(dynamicArg, block);
+        let options;
+        try {
+            options = await this.getArgOptions(dynamicArg, block);
+        }
+        catch(exception) {
+            console.warn(exception);
+            (dynamicArg as any).default_value = "Not found";
+            return dynamicArg as any as StaticBlockArgument;
+        }
         const resolved = dynamicArg as ResolvedDynamicBlockArgument;
         resolved.options = options;
 
