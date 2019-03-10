@@ -121,6 +121,12 @@ export function get_block_toolbox_arguments(block: ResolvedCustomBlock) {
                 options: resolved_arg.options,
             };
         }
+        else if (arg.type === 'variable') {
+            return {
+                'type': 'field_variable',
+                'name': 'VAL' + index
+            };
+        }
         else {
             return {
                 type: 'input_value',

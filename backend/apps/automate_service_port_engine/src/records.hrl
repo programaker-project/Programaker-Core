@@ -48,3 +48,8 @@
 -record(service_port_user_obfuscation_entry, { id :: {binary(), binary()} %% { internal Id, service port Id }
                                              , obfuscated_id :: binary()
                                              }).
+
+
+-record(service_port_monitor_channel_entry, { id :: {binary(), binary()} %% { user id, service port Id }
+                                            , channel_id :: binary()
+                                            }).

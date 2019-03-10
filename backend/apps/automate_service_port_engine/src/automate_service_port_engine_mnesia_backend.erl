@@ -15,12 +15,15 @@
 
         , get_bridge_service/2
         , delete_bridge/2
+
+        , get_or_create_monitor_id/2
         ]).
 
 -include("records.hrl").
 -define(SERVICE_PORT_TABLE, automate_service_port_table).
 -define(SERVICE_PORT_CONFIGURATION_TABLE, automate_service_port_configuration_table).
 -define(SERVICE_PORT_USERID_OBFUSCATION_TABLE, automate_service_port_userid_obfuscation_table).
+-define(SERVICE_PORT_CHANNEL_TABLE, automate_service_port_channel_table).
 %%====================================================================
 %% API
 %%====================================================================
@@ -65,6 +68,19 @@ start_link() ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
+
+    %% UserId×ServiceId -> ChannelId
+    ok = case mnesia:create_table(?SERVICE_PORT_CHANNEL_TABLE,
+                                      [ { attributes, record_info(fields, service_port_monitor_channel_entry)}
+                                      , { disc_copies, Nodes }
+                                      , { record_name, service_port_monitor_channel_entry }
+                                      , { type, set }
+                                      ]) of
+                 { atomic, ok } ->
+                     ok;
+                 { aborted, { already_exists, _ }} ->
+                     ok
+             end,
     ignore.
 
 -spec create_service_port(binary(), boolean()) -> {ok, binary()} | {error, term(), string()}.
@@ -235,6 +251,28 @@ delete_bridge(UserId, BridgeId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+-spec get_or_create_monitor_id(binary(), binary()) -> {ok, binary()}.
+get_or_create_monitor_id(UserId, ServicePortId) ->
+    Id = {UserId, ServicePortId},
+    case mnesia:dirty_read(?SERVICE_PORT_CHANNEL_TABLE, Id) of
+        [#service_port_monitor_channel_entry{channel_id=ChannelId}] ->
+            {ok, ChannelId};
+        [] ->
+            {ok, ChannelId} = automate_channel_engine:create_channel(),
+            Transaction = fun() ->
+                                  ok = mnesia:write(?SERVICE_PORT_CHANNEL_TABLE,
+                                                    #service_port_monitor_channel_entry{ id=Id
+                                                                                       , channel_id=ChannelId},
+                                                    write),
+                                  {ok, ChannelId}
+                          end,
+            case mnesia:transaction(Transaction) of
+                {atomic, Result} ->
+                    Result;
+                {aborted, Reason} ->
+                    {error, Reason, mnesia:error_description(Reason)}
+            end
+    end.
 
 %%====================================================================
 %% Internal functions
