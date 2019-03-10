@@ -86,12 +86,14 @@ from_service_port(ServicePortId, UserId, Msg) ->
          , <<"key">> := Key
          , <<"to_user">> := ToUser
          , <<"value">> := Value
+         , <<"content">> := Content
          } ->
             {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId, UserId),
             {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
             ok = automate_channel_engine:send_to_channel(MonitorId, #{ <<"key">> => Key
                                                                      , <<"to_user">> => ToUser
                                                                      , <<"value">> => Value
+                                                                     , <<"content">> => Content
                                                                      })
     end.
 
@@ -177,7 +179,22 @@ parse_block(#{ <<"arguments">> := Arguments
                        , arguments=lists:map(fun parse_argument/1, Arguments)
                        , block_type=BlockType
                        , block_result_type=BlockResultType
-                       }.
+                       };
+
+parse_block(#{ <<"arguments">> := Arguments
+             , <<"function_name">> := FunctionName
+             , <<"message">> := Message
+             , <<"id">> := BlockId
+             , <<"block_type">> := BlockType
+             , <<"save_to">> := SaveToConfiguration
+             }) ->
+    #service_port_trigger_block{ block_id=BlockId
+                               , function_name=FunctionName
+                               , message=Message
+                               , arguments=lists:map(fun parse_argument/1, Arguments)
+                               , block_type=BlockType
+                               , save_to=SaveToConfiguration
+                               }.
 
 parse_argument(#{ <<"default">> := DefaultValue
                 , <<"type">> := Type

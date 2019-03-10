@@ -46,6 +46,7 @@ export default class ScratchProgramSerializer {
             contents: [],
         };
 
+        cleanedElement = this.rewriteCustomBlock(cleanedElement);
         this.replaceServices(cleanedElement);
         this.replaceMonitors(cleanedElement);
 
@@ -62,6 +63,33 @@ export default class ScratchProgramSerializer {
         }
 
         return chain;
+    }
+
+    private rewriteCustomBlock(element) {
+        const blockInfo = this.toolboxController.getBlockInfo(element.type);
+        if (!blockInfo) {
+            return element;
+        }
+
+        if (blockInfo.block_type === 'trigger') {
+            return this.rewriteCustomTrigger(element, blockInfo);
+        }
+        return element;
+    }
+
+    private rewriteCustomTrigger(element, blockInfo) {
+        const args: any = {};
+        if (blockInfo.save_to) {
+            let save_to = null;
+            if (blockInfo.save_to.type === 'argument') {
+                save_to = { 'type': 'variable', 'value': element.args[blockInfo.save_to.index].value };
+            }
+
+            args.monitor_save_value_to = save_to;
+        }
+
+        element.args = args;
+        return element;
     }
 
     private replaceServices(element) {

@@ -8,7 +8,7 @@
                                   , name  :: binary()
                                   , owner :: binary() %% User id
                                   , service_id :: binary()
-%%%% Extra data --------------------------
+                                                % ↓ Extra data
                                   , is_connected :: boolean()
                                   }).
 
@@ -36,6 +36,16 @@
                             , block_type :: binary()
                             , block_result_type :: binary()
                             }).
+
+-type service_port_trigger_save_to() :: null | #{ binary() => any()}.
+
+-record(service_port_trigger_block, { block_id :: binary()
+                                    , function_name :: binary()
+                                    , message :: binary()
+                                    , arguments :: [service_port_block_argument()]
+                                    , block_type :: binary()
+                                    , save_to :: service_port_trigger_save_to()
+                                    }).
 
 -record(service_port_configuration, { id :: binary() %% Service port Id
                                     , service_name :: binary()

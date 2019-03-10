@@ -94,6 +94,21 @@ encode_block(#service_port_block{ block_id=BlockId
      , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
      , <<"block_type">> => BlockType
      , <<"block_result_type">> => BlockResultType
+     };
+
+encode_block(#service_port_trigger_block{ block_id=BlockId
+                                        , function_name=FunctionName
+                                        , message=Message
+                                        , arguments=Arguments
+                                        , block_type=BlockType
+                                        , save_to=SaveTo
+                                        }) ->
+    #{ <<"block_id">> => BlockId
+     , <<"function_name">> => FunctionName
+     , <<"message">> => Message
+     , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
+     , <<"block_type">> => BlockType
+     , <<"save_to">> => SaveTo
      }.
 
 encode_argument(#service_port_block_static_argument{ type=Type
