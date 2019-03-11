@@ -141,7 +141,13 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.", MonitorPat
                ProgramState=#program_state{ program_id=ProgramId
                                           , permissions=#program_permissions{owner_user_id=UserId}}) ->
 
-    [ServiceId, MonitorKey] = binary:split(MonitorPath, <<".">>),
+    [ServiceId, FunctionName] = binary:split(MonitorPath, <<".">>),
+    MonitorKey = case MonitorArgs of
+                     #{ <<"key">> := Key } ->
+                         Key;
+                     _ ->
+                         FunctionName
+                 end,
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
     case {MonitorId, MonitorKey} of

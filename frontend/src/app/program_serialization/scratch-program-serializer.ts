@@ -88,6 +88,19 @@ export default class ScratchProgramSerializer {
             args.monitor_save_value_to = save_to;
         }
 
+        if (blockInfo.expected_value) {
+            let expected_value = null;
+            if (blockInfo.expected_value.type === 'argument') {
+                expected_value = element.args[blockInfo.expected_value.index];
+            }
+
+            args.monitor_expected_value = expected_value;
+        }
+
+        if (blockInfo.key) {
+            args.key = blockInfo.key;
+        }
+
         element.args = args;
         return element;
     }

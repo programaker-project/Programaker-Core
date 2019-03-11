@@ -187,6 +187,8 @@ parse_block(#{ <<"arguments">> := Arguments
              , <<"id">> := BlockId
              , <<"block_type">> := BlockType
              , <<"save_to">> := SaveToConfiguration
+             , <<"expected_value">> := ExpectedValue
+             , <<"key">> := Key
              }) ->
     #service_port_trigger_block{ block_id=BlockId
                                , function_name=FunctionName
@@ -194,6 +196,8 @@ parse_block(#{ <<"arguments">> := Arguments
                                , arguments=lists:map(fun parse_argument/1, Arguments)
                                , block_type=BlockType
                                , save_to=SaveToConfiguration
+                               , expected_value=ExpectedValue
+                               , key=Key
                                }.
 
 parse_argument(#{ <<"default">> := DefaultValue

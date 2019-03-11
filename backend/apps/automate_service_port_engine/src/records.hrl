@@ -38,6 +38,7 @@
                             }).
 
 -type service_port_trigger_save_to() :: null | #{ binary() => any()}.
+-type service_port_trigger_expected_value() :: null | #{ binary() => any()}.
 
 -record(service_port_trigger_block, { block_id :: binary()
                                     , function_name :: binary()
@@ -45,6 +46,8 @@
                                     , arguments :: [service_port_block_argument()]
                                     , block_type :: binary()
                                     , save_to :: service_port_trigger_save_to()
+                                    , expected_value :: service_port_trigger_expected_value()
+                                    , key :: binary()
                                     }).
 
 -record(service_port_configuration, { id :: binary() %% Service port Id

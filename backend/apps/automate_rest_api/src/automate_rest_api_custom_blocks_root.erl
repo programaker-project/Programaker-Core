@@ -102,6 +102,8 @@ encode_block(#service_port_trigger_block{ block_id=BlockId
                                         , arguments=Arguments
                                         , block_type=BlockType
                                         , save_to=SaveTo
+                                        , expected_value=ExpectedValue
+                                        , key=Key
                                         }) ->
     #{ <<"block_id">> => BlockId
      , <<"function_name">> => FunctionName
@@ -109,6 +111,8 @@ encode_block(#service_port_trigger_block{ block_id=BlockId
      , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
      , <<"block_type">> => BlockType
      , <<"save_to">> => SaveTo
+     , <<"expected_value">> => ExpectedValue
+     , <<"key">> => Key
      }.
 
 encode_argument(#service_port_block_static_argument{ type=Type
