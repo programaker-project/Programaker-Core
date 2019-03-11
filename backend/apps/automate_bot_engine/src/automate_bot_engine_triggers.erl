@@ -141,6 +141,13 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.", MonitorPat
                ProgramState=#program_state{ program_id=ProgramId
                                           , permissions=#program_permissions{owner_user_id=UserId}}) ->
 
+    Thread = #program_thread{ position=[1]
+                            , program=Program
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            },
+
     [ServiceId, FunctionName] = binary:split(MonitorPath, <<".">>),
     MonitorKey = case MonitorArgs of
                      #{ <<"key">> := Key } ->
@@ -150,15 +157,17 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.", MonitorPat
                  end,
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-    case {MonitorId, MonitorKey} of
-        {TriggeredMonitorId, TriggeredKey} ->
-            Thread = #program_thread{ position=[1]
-                                    , program=Program
-                                    , global_memory=#{}
-                                    , instruction_memory=#{}
-                                    , program_id=ProgramId
-                                    },
-
+    MatchingContent = case MonitorArgs of
+                          #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->
+                              {ok, ResolvedExpectedValue} = automate_bot_engine_variables:resolve_argument(
+                                                              ExpectedValue, Thread, ProgramState),
+                              ActualValue = maps:get(?CHANNEL_MESSAGE_CONTENT, FullMessage, none),
+                              ResolvedExpectedValue == ActualValue;
+                          _ ->
+                              true
+                      end,
+    case {MonitorId, MonitorKey, MatchingContent} of
+        {TriggeredMonitorId, TriggeredKey, true} ->
             {ok, ThreadWithSavedValue} = case {MonitorArgs, FullMessage} of
                                              { #{ ?MONITOR_SAVE_VALUE_TO := SaveTo }
                                              , #{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }
