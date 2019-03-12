@@ -133,14 +133,23 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({ is_bridge_connected, BridgeId }, _From, State) ->
     io:fwrite("Is ~p connected on ~p?~n", [BridgeId, State]),
-    IsConnected = case State of
-                      #state{ bridge_by_id=#{ BridgeId := Connections }} ->
-                          length(Connections) > 0;
-                      _ ->
-                          false
-                  end,
+    {NextState, IsConnected} =
+        case State of
+            #state{ bridge_by_id=Bridges=#{ BridgeId := Connections }} ->
+                AliveConnections = check_alive_connections(Connections),
+                case AliveConnections of
+                    [] ->
+                        { State#state{ bridge_by_id=maps:remove(BridgeId, Bridges) }
+                        , false
+                        };
+                    _ ->
+                        { State, true }
+                end;
+            _ ->
+                {State, false}
+        end,
 
-    {reply, {ok, IsConnected}, State};
+    {reply, {ok, IsConnected}, NextState};
 
 handle_call({ answer_message, MessageId, Result }, _From, State) ->
     case State of
