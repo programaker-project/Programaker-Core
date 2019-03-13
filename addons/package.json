@@ -12,7 +12,7 @@
   "author": "",
   "devDependencies": {
     "tsc": "^1.20150623.0",
-    "tslint": "^5.13.1",
+    "tslint": "^5.14.0",
     "typescript": "^3.3.3333",
     "typescript-bundle": "^1.0.12"
   },
