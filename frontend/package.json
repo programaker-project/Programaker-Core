@@ -52,7 +52,7 @@
     "protractor": "^5.4.2",
     "scratch-blocks": ">=0.1.0-prerelease.1551865183",
     "ts-node": "~8.0.3",
-    "tslint": "~5.13.1",
+    "tslint": "~5.14.0",
     "typescript": "^2.7.2"
   }
 }
