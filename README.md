@@ -13,3 +13,7 @@ Plaza is programmed using MIT's Scratch language. Through it, and Plaza's distri
 * Press run
 
 [(We are looking for other environments to learn from, tell us about your favourite visual automation tools!)](mailto:plaza@spiral.systems)
+
+## Architecture overview
+
+![Image of the architecture overview](docs/architecture-overview.png)
