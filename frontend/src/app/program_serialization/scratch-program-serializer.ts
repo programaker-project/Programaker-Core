@@ -1,16 +1,21 @@
+import { ToolboxController } from "../blocks/ToolboxController";
+
 export default class ScratchProgramSerializer {
     // ====================================================
     // External API
     // ====================================================
-    static ToJson(xml: Element): { parsed: any, orig: any } {
+    constructor(private toolboxController: ToolboxController) {
+    }
+
+    public ToJson(xml: Element): { parsed: any, orig: any } {
         const subelements = Array.from(xml.childNodes);
         const variables = subelements.shift();
         const blocks = subelements;
 
         try {
             const serialized = {
-                variables: ScratchProgramSerializer.serializeVariables(variables as HTMLElement),
-                blocks: blocks.map(block => ScratchProgramSerializer.serializeBlock(block as HTMLElement)),
+                variables: this.serializeVariables(variables as HTMLElement),
+                blocks: blocks.map(block => this.serializeBlock(block as HTMLElement)),
             };
 
             return {
@@ -27,7 +32,7 @@ export default class ScratchProgramSerializer {
     // ====================================================
     // Internal functions
     // ====================================================
-    static serializeBlock(block: HTMLElement, chain: any[] = null): any {
+    private serializeBlock(block: HTMLElement, chain: any[] = null): any {
         if (chain === null) {
             chain = [];
         }
@@ -37,12 +42,13 @@ export default class ScratchProgramSerializer {
             type: block.getAttribute('type'),
             args: Array.from(block.childNodes)
                 .filter((x: HTMLElement) => x.tagName !== 'NEXT' && x.tagName !== 'STATEMENT')
-                .map(node => ScratchProgramSerializer.serializeArg(node as HTMLElement)),
+                .map(node => this.serializeArg(node as HTMLElement)),
             contents: [],
         };
 
-        ScratchProgramSerializer.replaceServices(cleanedElement);
-        ScratchProgramSerializer.replaceMonitors(cleanedElement);
+        cleanedElement = this.rewriteCustomBlock(cleanedElement);
+        this.replaceServices(cleanedElement);
+        this.replaceMonitors(cleanedElement);
 
         const contents = Array.from(block.childNodes).filter((x: HTMLElement) => x.tagName === 'STATEMENT');
         if (contents.length > 0) {
@@ -59,11 +65,51 @@ export default class ScratchProgramSerializer {
         return chain;
     }
 
-    static replaceServices(element) {
+    private rewriteCustomBlock(element) {
+        const blockInfo = this.toolboxController.getBlockInfo(element.type);
+        if (!blockInfo) {
+            return element;
+        }
+
+        if (blockInfo.block_type === 'trigger') {
+            return this.rewriteCustomTrigger(element, blockInfo);
+        }
+        return element;
+    }
+
+    private rewriteCustomTrigger(element, blockInfo) {
+        const args: any = {};
+        if (blockInfo.save_to) {
+            let save_to = null;
+            if (blockInfo.save_to.type === 'argument') {
+                save_to = { 'type': 'variable', 'value': element.args[blockInfo.save_to.index].value };
+            }
+
+            args.monitor_save_value_to = save_to;
+        }
+
+        if (blockInfo.expected_value) {
+            let expected_value = null;
+            if (blockInfo.expected_value.type === 'argument') {
+                expected_value = element.args[blockInfo.expected_value.index];
+            }
+
+            args.monitor_expected_value = expected_value;
+        }
+
+        if (blockInfo.key) {
+            args.key = blockInfo.key;
+        }
+
+        element.args = args;
+        return element;
+    }
+
+    private replaceServices(element) {
 
     }
 
-    static replaceMonitors(element) {
+    private replaceMonitors(element) {
         switch (element.type) {
 
             case "chat_whenreceivecommand":
@@ -108,7 +154,7 @@ export default class ScratchProgramSerializer {
         }
     }
 
-    static serializeArg(argument: HTMLElement): any {
+    private serializeArg(argument: HTMLElement): any {
         if (argument.tagName === 'FIELD') {
             let type = argument.getAttribute('name').toLowerCase();
             if (type.startsWith('val')) {
@@ -152,13 +198,13 @@ export default class ScratchProgramSerializer {
         }
     }
 
-    static serializeVariables(variables: HTMLElement): any {
+    private serializeVariables(variables: HTMLElement): any {
         return Array.from(variables.childNodes)
             .map(variable =>
-                ScratchProgramSerializer.serializeVariable(variable as HTMLElement));
+                this.serializeVariable(variable as HTMLElement));
     }
 
-    static serializeVariable(variable: HTMLElement): any {
+    private serializeVariable(variable: HTMLElement): any {
         return {
             id: variable.id,
             name: variable.innerText,

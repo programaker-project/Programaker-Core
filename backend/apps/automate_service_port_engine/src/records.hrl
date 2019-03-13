@@ -8,7 +8,7 @@
                                   , name  :: binary()
                                   , owner :: binary() %% User id
                                   , service_id :: binary()
-%%%% Extra data --------------------------
+                                                % ↓ Extra data
                                   , is_connected :: boolean()
                                   }).
 
@@ -37,6 +37,19 @@
                             , block_result_type :: binary()
                             }).
 
+-type service_port_trigger_save_to() :: null | #{ binary() => any()}.
+-type service_port_trigger_expected_value() :: null | #{ binary() => any()}.
+
+-record(service_port_trigger_block, { block_id :: binary()
+                                    , function_name :: binary()
+                                    , message :: binary()
+                                    , arguments :: [service_port_block_argument()]
+                                    , block_type :: binary()
+                                    , save_to :: service_port_trigger_save_to()
+                                    , expected_value :: service_port_trigger_expected_value()
+                                    , key :: binary()
+                                    }).
+
 -record(service_port_configuration, { id :: binary() %% Service port Id
                                     , service_name :: binary()
                                     , service_id :: binary()
@@ -48,3 +61,8 @@
 -record(service_port_user_obfuscation_entry, { id :: {binary(), binary()} %% { internal Id, service port Id }
                                              , obfuscated_id :: binary()
                                              }).
+
+
+-record(service_port_monitor_channel_entry, { id :: {binary(), binary()} %% { user id, service port Id }
+                                            , channel_id :: binary()
+                                            }).

@@ -14,6 +14,8 @@
         , send_registration_data/3
         ]).
 
+-define(BACKEND, automate_service_port_engine_mnesia_backend).
+
 %%====================================================================
 %% Service API
 %%====================================================================
@@ -23,8 +25,8 @@ start_link() ->
     ignore.
 
 %% No monitor associated with this service
-get_monitor_id(_UserId, _Params) ->
-    {error, not_found}.
+get_monitor_id(UserId, [ServicePortId]) ->
+    ?BACKEND:get_or_create_monitor_id(UserId, ServicePortId).
 
 call(FunctionName, Values, Thread, UserId, [ServicePortId]) ->
     {ok, ObfuscatedUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),

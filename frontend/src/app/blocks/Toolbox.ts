@@ -43,6 +43,7 @@ export class Toolbox {
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
         const monitors = await this.monitorService.getMonitors();
         const custom_blocks = await this.customBlockService.getCustomBlocks();
+        this.controller.addCustomBlocks(custom_blocks);
 
         const registrations = this.injectBlocks(monitors, custom_blocks);
         const toolboxXML = this.injectToolbox(monitors, custom_blocks);

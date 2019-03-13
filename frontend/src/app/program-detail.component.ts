@@ -40,6 +40,7 @@ export class ProgramDetailComponent implements OnInit {
     HIDDEN_BACKGROUND_COLOR = '#888';
     HIDDEN_BORDER_COLOR = '#222';
     HIDDEN_TEXT_LABEL = 'Show/Hide';
+    toolboxController: ToolboxController;
 
     constructor(
         private monitorService: MonitorService,
@@ -145,6 +146,7 @@ export class ProgramDetailComponent implements OnInit {
             reg(this.workspace);
         }
 
+        this.toolboxController = controller;
         controller.setWorkspace(this.workspace);
         controller.update();
 
@@ -300,7 +302,8 @@ export class ProgramDetailComponent implements OnInit {
     sendProgram() {
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
 
-        const serialized = ScratchProgramSerializer.ToJson(xml);
+        const serializer = new ScratchProgramSerializer(this.toolboxController);
+        const serialized = serializer.ToJson(xml);
         const program = new ScratchProgram(this.program,
             serialized.parsed,
             serialized.orig);
