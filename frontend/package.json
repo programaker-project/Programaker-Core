@@ -50,7 +50,7 @@
     "karma-jasmine": "^2.0.1",
     "karma-jasmine-html-reporter": "^1.1.0",
     "protractor": "^5.4.2",
-    "scratch-blocks": ">=0.1.0-prerelease.1551865183",
+    "scratch-blocks": ">=0.1.0-prerelease.1552662801",
     "ts-node": "~8.0.3",
     "tslint": "~5.14.0",
     "typescript": "^2.7.2"
