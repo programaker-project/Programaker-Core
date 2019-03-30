@@ -18,5 +18,11 @@ RUN sh -x -c 'if [ ! -f config/sys.config ]; then cp -v config/sys.config.orig c
 # Prepare release
 RUN rebar3 release
 
-# If the dev is launched by itself, start with a shell
-CMD ["rebar3", "shell"]
+# API server port
+EXPOSE 8888
+
+## If the dev is launched by itself, start with a shell
+# CMD ["rebar3", "shell"]
+
+# Launch directly the release
+CMD ["_build/default/rel/automate/bin/automate", "foreground"]
