@@ -14,6 +14,12 @@ Plaza is programmed using MIT's Scratch language. Through it, and Plaza's distri
 
 [(We are looking for other environments to learn from, tell us about your favourite visual automation tools!)](mailto:plaza@spiral.systems)
 
+## Setup
+
+### For development
+
+It's posible to rapidly create a private deployment of plaza to test developments using docker-compose. To do this, just run `docker-compose up` on the root directory (the one with this README.md file).
+
 ## Architecture overview
 
 ![Image of the architecture overview](docs/architecture-overview.png)
