@@ -18,7 +18,13 @@ Plaza is programmed using MIT's Scratch language. Through it, and Plaza's distri
 
 ### For development
 
-It's posible to rapidly create a private deployment of plaza to test developments using docker-compose. To do this, just run `docker-compose up` on the root directory (the one with this README.md file).
+A [docker-compose](https://docs.docker.com/compose/overview/) script exists to setup a base deployment of Plaza.
+This can be used to do some tests or as a help to develop parts of the core or bridges.
+But keep in mind that a deployment launched with this script **has no redundancy** and **the data is not saved** between executions.
+
+* To launch the services, run `docker-compose up`.
+* To launch the services on the background, run `docker-compose up -d`.
+* To stop the services, run `docker-compose down`.
 
 ## Architecture overview
 
