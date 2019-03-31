@@ -204,12 +204,23 @@ parse_argument(#{ <<"default">> := DefaultValue
                 , <<"type">> := Type
                 }) ->
     #service_port_block_static_argument{ default=DefaultValue
-                                , type=Type
-                                };
+                                       , type=Type
+                                       , class=undefined
+                                       };
+
+parse_argument(#{ <<"type">> := <<"variable">>
+                , <<"class">> := Class
+                }) ->
+    #service_port_block_static_argument{ type= <<"variable">>
+                                       , class=Class
+                                       , default=undefined
+                                       };
 
 parse_argument(#{ <<"type">> := <<"variable">>
                 }) ->
     #service_port_block_static_argument{ type= <<"variable">>
+                                       , default=undefined
+                                       , class=undefined
                                        };
 
 parse_argument(#{ <<"type">> := Type

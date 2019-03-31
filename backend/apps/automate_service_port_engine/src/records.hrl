@@ -20,6 +20,7 @@
 
 -record(service_port_block_static_argument, { type :: service_port_block_argument_type()
                                             , default :: binary()
+                                            , class :: binary()
                                             }).
 
 -record(service_port_block_dynamic_argument, { type :: service_port_block_argument_type()

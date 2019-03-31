@@ -117,9 +117,11 @@ encode_block(#service_port_trigger_block{ block_id=BlockId
 
 encode_argument(#service_port_block_static_argument{ type=Type
                                                    , default=Default
+                                                   , class=Class
                                                    }) ->
     #{ <<"type">> => Type
      , <<"default_value">> => Default
+     , <<"class">> => Class
      };
 
 encode_argument(#service_port_block_dynamic_argument{ type=Type
