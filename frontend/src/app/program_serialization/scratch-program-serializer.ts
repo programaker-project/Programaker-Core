@@ -68,12 +68,18 @@ export default class ScratchProgramSerializer {
     private rewriteCustomBlock(element) {
         const blockInfo = this.toolboxController.getBlockInfo(element.type);
         if (!blockInfo) {
+
             return element;
+        }
+
+        if (blockInfo.save_to) {
+            element.save_to = blockInfo.save_to;
         }
 
         if (blockInfo.block_type === 'trigger') {
             return this.rewriteCustomTrigger(element, blockInfo);
         }
+
         return element;
     }
 
@@ -158,10 +164,10 @@ export default class ScratchProgramSerializer {
         if (argument.tagName === 'FIELD') {
             let type = argument.getAttribute('name').toLowerCase();
             if (type.startsWith('val')) {
-                type = 'constant';
+                type = "constant";
             }
             return {
-                type: type,
+                type: type,  // Type here might be 'constant', 'variable' or 'list'
                 value: argument.innerText,
             }
         }

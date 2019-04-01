@@ -82,18 +82,20 @@ encode_blocks(_K, Blocks) ->
     lists:map(fun encode_block/1, Blocks).
 
 encode_block(#service_port_block{ block_id=BlockId
-                                   , function_name=FunctionName
-                                   , message=Message
-                                   , arguments=Arguments
-                                   , block_type=BlockType
-                                   , block_result_type=BlockResultType
-                                   }) ->
+                                , function_name=FunctionName
+                                , message=Message
+                                , arguments=Arguments
+                                , block_type=BlockType
+                                , block_result_type=BlockResultType
+                                , save_to=SaveTo
+                                }) ->
     #{ <<"block_id">> => BlockId
      , <<"function_name">> => FunctionName
      , <<"message">> => Message
      , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
      , <<"block_type">> => BlockType
      , <<"block_result_type">> => BlockResultType
+     , <<"save_to">> => SaveTo
      };
 
 encode_block(#service_port_trigger_block{ block_id=BlockId

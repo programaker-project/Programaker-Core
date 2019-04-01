@@ -30,15 +30,17 @@
 -type service_port_block_argument() :: #service_port_block_static_argument{}
                                      | #service_port_block_dynamic_argument{}.
 
+-type block_save_to() :: null | #{ binary() => any()}.
+
 -record(service_port_block, { block_id :: binary()
                             , function_name :: binary()
                             , message :: binary()
                             , arguments :: [service_port_block_argument()]
                             , block_type :: binary()
                             , block_result_type :: binary()
+                            , save_to :: block_save_to()
                             }).
 
--type service_port_trigger_save_to() :: null | #{ binary() => any()}.
 -type service_port_trigger_expected_value() :: null | #{ binary() => any()}.
 
 -record(service_port_trigger_block, { block_id :: binary()
@@ -46,7 +48,7 @@
                                     , message :: binary()
                                     , arguments :: [service_port_block_argument()]
                                     , block_type :: binary()
-                                    , save_to :: service_port_trigger_save_to()
+                                    , save_to :: block_save_to()
                                     , expected_value :: service_port_trigger_expected_value()
                                     , key :: binary()
                                     }).

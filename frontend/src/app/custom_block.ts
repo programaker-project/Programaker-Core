@@ -31,6 +31,7 @@ export interface CustomBlock {
     function_name: string;
     message: string;
     arguments: BlockArgument[];
+    save_to: undefined | string;
 };
 
 export interface ResolvedCustomBlock {
@@ -42,6 +43,7 @@ export interface ResolvedCustomBlock {
     function_name: string;
     message: string;
     arguments: ResolvedBlockArgument[];
+    save_to: undefined | string;
 }
 
 function to_scratch_type(type) {

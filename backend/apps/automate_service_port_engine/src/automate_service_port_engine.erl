@@ -166,19 +166,20 @@ parse_configuration_map(ServicePortId,
                                , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
                                }.
 
-parse_block(#{ <<"arguments">> := Arguments
-             , <<"function_name">> := FunctionName
-             , <<"message">> := Message
-             , <<"id">> := BlockId
-             , <<"block_type">> := BlockType
-             , <<"block_result_type">> := BlockResultType
-             }) ->
+parse_block(Block=#{ <<"arguments">> := Arguments
+                   , <<"function_name">> := FunctionName
+                   , <<"message">> := Message
+                   , <<"id">> := BlockId
+                   , <<"block_type">> := BlockType
+                   , <<"block_result_type">> := BlockResultType
+                   }) ->
     #service_port_block{ block_id=BlockId
                        , function_name=FunctionName
                        , message=Message
                        , arguments=lists:map(fun parse_argument/1, Arguments)
                        , block_type=BlockType
                        , block_result_type=BlockResultType
+                       , save_to=get_block_save_to(Block)
                        };
 
 parse_block(#{ <<"arguments">> := Arguments
@@ -199,6 +200,12 @@ parse_block(#{ <<"arguments">> := Arguments
                                , expected_value=ExpectedValue
                                , key=Key
                                }.
+
+get_block_save_to(#{ <<"save_to">> := SaveTo }) ->
+    SaveTo;
+get_block_save_to(_) ->
+    undefined.
+
 
 parse_argument(#{ <<"default">> := DefaultValue
                 , <<"type">> := Type
