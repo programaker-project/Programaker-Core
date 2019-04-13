@@ -77,6 +77,8 @@ update_internal_metrics() ->
 
                , automate_services_telegram_demux
                , automate_services_telegram_sup
+
+               , automate_service_port_engine_sup
                ],
 
     lists:foreach(fun (S) ->

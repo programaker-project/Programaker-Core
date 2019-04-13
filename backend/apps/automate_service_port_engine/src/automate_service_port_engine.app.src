@@ -8,6 +8,7 @@
                   , stdlib
                   , mnesia
                   , automate_service_registry
+                  , automate_stats
                   ]},
    {env, [
          ]},

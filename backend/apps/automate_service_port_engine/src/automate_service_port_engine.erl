@@ -72,6 +72,9 @@ send_oauth_return(Qs, ServicePortId) ->
 -spec from_service_port(binary(), binary(), binary()) -> ok.
 from_service_port(ServicePortId, UserId, Msg) ->
     Unpacked = jiffy:decode(Msg, [return_maps]),
+    automate_stats:log_observation(counter,
+                                   automate_bridge_engine_messages_from_bridge,
+                                   [ServicePortId]),
     case Unpacked of
         #{ <<"message_id">> := MessageId } ->
             io:fwrite("[~p] Answer: ~p~n", [MessageId, Unpacked]),

@@ -49,6 +49,9 @@ connect_bridge(BridgeId) ->
 %% @end
 %%--------------------------------------------------------------------
 call_bridge(BridgeId, Msg) ->
+    automate_stats:log_observation(counter,
+                                   automate_bridge_engine_messages_to_bridge,
+                                   [BridgeId]),
     gen_server:cast({global, ?SERVER}, { call_bridge, BridgeId, Msg, self() }),
     wait_server_response().
 
