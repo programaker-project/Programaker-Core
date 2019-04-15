@@ -1,0 +1,20 @@
+# See https://docs.docker.com/compose/compose-file/
+version: '3'
+
+services:
+  blackbox-exporter:
+    build: blackbox-exporter
+
+  prometheus:
+    build: prometheus
+    links:
+      - blackbox-exporter
+    ports:
+      - 9090:9090
+
+  grafana:
+    build: grafana
+    ports:
+      - 3000:3000
+    links:
+      - prometheus
