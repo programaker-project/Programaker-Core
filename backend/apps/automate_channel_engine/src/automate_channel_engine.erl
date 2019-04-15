@@ -41,10 +41,19 @@ listen_channel(ChannelId, Pid) ->
 
 -spec send_to_channel(binary(), any()) -> ok.
 send_to_channel(ChannelId, Message) ->
+    automate_stats:log_observation(counter,
+                                   automate_channel_engine_messages_in,
+                                   [ChannelId]),
+
     case automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId) of
         {ok, Listeners} ->
             %% io:format("Forwarding ~p to ~p~n", [Message, Listeners]),
-            [Pid ! {channel_engine, ChannelId, Message}  || Pid <- Listeners],
+            lists:foreach(fun(Pid) ->
+                                  Pid ! {channel_engine, ChannelId, Message},
+                                  automate_stats:log_observation(counter,
+                                                                 automate_channel_engine_messages_out,
+                                                                 [ChannelId])
+                          end, Listeners),
             ok;
         X ->
             X

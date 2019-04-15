@@ -5,8 +5,6 @@
 
 -module(automate_template_engine_matching).
 
--behaviour(supervisor).
-
 %% API
 -export([ match/4
         ]).

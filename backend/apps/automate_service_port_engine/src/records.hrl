@@ -1,13 +1,15 @@
--record(service_port_entry, { id    :: binary()
-                            , name  :: binary()
-                            , owner :: binary() %% User id
-                            , service_id :: binary()
+-include("../../automate_common_types/src/types.hrl").
+
+-record(service_port_entry, { id    :: binary() | ?MNESIA_SELECTOR
+                            , name  :: binary() | ?MNESIA_SELECTOR
+                            , owner :: binary() | ?MNESIA_SELECTOR %% User id
+                            , service_id :: binary() | 'undefined' | ?MNESIA_SELECTOR
                             }).
 
 -record(service_port_entry_extra, { id    :: binary()
                                   , name  :: binary()
                                   , owner :: binary() %% User id
-                                  , service_id :: binary()
+                                  , service_id :: binary() | 'undefined'
                                                 % ↓ Extra data
                                   , is_connected :: boolean()
                                   }).
@@ -19,7 +21,8 @@
                                           %%   .
 
 -record(service_port_block_static_argument, { type :: service_port_block_argument_type()
-                                            , default :: binary()
+                                            , default :: binary() | 'undefined'
+                                            , class :: binary() | 'undefined'
                                             }).
 
 -record(service_port_block_dynamic_argument, { type :: service_port_block_argument_type()
@@ -29,15 +32,17 @@
 -type service_port_block_argument() :: #service_port_block_static_argument{}
                                      | #service_port_block_dynamic_argument{}.
 
+-type block_save_to() :: null | #{ binary() => any()}.
+
 -record(service_port_block, { block_id :: binary()
                             , function_name :: binary()
                             , message :: binary()
                             , arguments :: [service_port_block_argument()]
                             , block_type :: binary()
                             , block_result_type :: binary()
+                            , save_to :: block_save_to()
                             }).
 
--type service_port_trigger_save_to() :: null | #{ binary() => any()}.
 -type service_port_trigger_expected_value() :: null | #{ binary() => any()}.
 
 -record(service_port_trigger_block, { block_id :: binary()
@@ -45,14 +50,14 @@
                                     , message :: binary()
                                     , arguments :: [service_port_block_argument()]
                                     , block_type :: binary()
-                                    , save_to :: service_port_trigger_save_to()
+                                    , save_to :: block_save_to()
                                     , expected_value :: service_port_trigger_expected_value()
                                     , key :: binary()
                                     }).
 
 -record(service_port_configuration, { id :: binary() %% Service port Id
                                     , service_name :: binary()
-                                    , service_id :: binary()
+                                    , service_id :: binary() | 'undefined'
                                     , is_public :: boolean()
                                     , blocks :: [#service_port_block{}]
                                     }).

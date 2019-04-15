@@ -1,10 +1,9 @@
+-include("../../automate_common_types/src/types.hrl").
 -include("../../automate_channel_engine/src/records.hrl").
 
 -define(TELEGRAM_MESSAGE_CONTENT, ?CHANNEL_MESSAGE_CONTENT).
 -define(TELEGRAM_MESSAGE_CHAT_ID, <<"telegram_chat_id">>).
 -define(TELEGRAM_MESSAGE_BOT_NAME, <<"telegram_bot_name">>).
-
--define(MNESIA_SELECTOR,  '_' | '$1' | '$2' | '$3').
 
 -record(service_metadata, { id
                           , name

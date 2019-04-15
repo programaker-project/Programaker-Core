@@ -52,12 +52,18 @@ to_json(Req, State) ->
 
             { jiffy:encode(#{ <<"success">> => true }), Res2, State };
         {error, Reason} ->
-            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
-            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            %% TODO: Return 404
-            { jiffy:encode(#{ <<"success">> => false
-                            , <<"message">> => Reason }),
-              Res2, State }
+            Code = case Reason of
+                       not_found -> 404;
+                       unauthorized -> 403;
+                       _ -> 500
+                   end,
+
+            cowboy_req:reply(Code,
+                             #{ <<"content-type">> => <<"application/json">> },
+                             jiffy:encode(#{ <<"success">> => false
+                                           , <<"message">> => Reason
+                                           }),
+                             Req)
     end.
 
