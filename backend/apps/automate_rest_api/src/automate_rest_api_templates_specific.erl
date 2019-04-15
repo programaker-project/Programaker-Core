@@ -96,11 +96,7 @@ to_json(Req, State) ->
 
             { Output, Res2, State };
         {error, Reason} ->
-            Code = case Reason of
-                       not_found -> 404;
-                       unauthorized -> 403;
-                       _ -> 500
-                   end,
+            Code = 500,
             Output = jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }),
             cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req)
     end.

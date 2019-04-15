@@ -69,7 +69,7 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 -spec accept_json_register_service(cowboy_req:req(),
-                                   #state{}) -> {{true, binary()}, cowboy_req:req(), #state{}}.
+                                   #state{}) -> {true, cowboy_req:req(), #state{}}.
 accept_json_register_service(Req, State) ->
     #state{username = Username, service_id = ServiceId} = State,
     {ok, Body, Req1} = read_body(Req),

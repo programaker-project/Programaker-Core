@@ -1,4 +1,4 @@
--define(MNESIA_SELECTOR, '_' | '$1'| '$2'| '$3'| '$4').
+-include("../../automate_common_types/src/types.hrl").
 
 -record(registered_user_entry, { id
                                , username

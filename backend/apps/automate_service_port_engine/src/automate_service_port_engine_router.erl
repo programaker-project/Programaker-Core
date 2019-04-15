@@ -15,6 +15,8 @@
         , terminate/2, code_change/3
         ]).
 
+
+-define(ERROR_CLASSES, no_response | no_connection | not_found | unauthorized).
 -define(SERVER, ?MODULE).
 -define(MAX_WAIT_TIME_SECONDS, 100).
 -define(MAX_WAIT_TIME, ?MAX_WAIT_TIME_SECONDS * 1000).
@@ -48,6 +50,7 @@ connect_bridge(BridgeId) ->
 %% @spec call_bridge(BridgeId, Msg) -> {ok, Value} | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
+-spec call_bridge(binary(), map()) -> {ok, map()} | {error, ?ERROR_CLASSES}.
 call_bridge(BridgeId, Msg) ->
     automate_stats:log_observation(counter,
                                    automate_bridge_engine_messages_to_bridge,
@@ -55,6 +58,7 @@ call_bridge(BridgeId, Msg) ->
     gen_server:cast({global, ?SERVER}, { call_bridge, BridgeId, Msg, self() }),
     wait_server_response().
 
+-spec wait_server_response() -> {ok, map()} | {error, ?ERROR_CLASSES}.
 wait_server_response() ->
     receive
         {?SERVER, Response} ->
@@ -243,7 +247,7 @@ handle_cast(_Msg, State) ->
 %% @spec send_to_all(msg, bridges) -> {ok, ContinuingBridges} | { error, Error }
 %% @end
 %%--------------------------------------------------------------------
--spec call_bridge_to_connection(#bridge_info{}, any(), pid()) -> #bridge_info{}.
+-spec call_bridge_to_connection(#bridge_info{}, any(), pid()) -> {binary(), pid(), #bridge_info{}}.
 call_bridge_to_connection(Bridge=#bridge_info{ pid=Pid}, Msg, From) ->
     MessageId = generate_id(),
     Pid ! { ?SERVER, Pid, { data, MessageId, Msg }},

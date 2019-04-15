@@ -83,7 +83,7 @@ start_link() ->
              end,
     ignore.
 
--spec create_service_port(binary(), boolean()) -> {ok, binary()} | {error, term(), string()}.
+-spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, _, string()}.
 create_service_port(UserId, ServicePortName) ->
     ServicePortId = generate_id(),
     Entry = #service_port_entry{ id=ServicePortId
@@ -164,7 +164,7 @@ set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec list_custom_blocks(binary()) -> {ok, [_]}.
+-spec list_custom_blocks(binary()) -> {ok, map()}.
 list_custom_blocks(UserId) ->
     Transaction = fun() ->
                           Services = list_userid_ports(UserId),
@@ -236,7 +236,7 @@ get_bridge_service(UserId, BridgeId) ->
                         }] = mnesia:dirty_read(?SERVICE_PORT_TABLE, BridgeId),
     {ok, ServiceId}.
 
--spec delete_bridge(binary(), binary()) -> ok.
+-spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->
     Transaction = fun() ->
                           [#service_port_entry{owner=UserId}] = mnesia:read(?SERVICE_PORT_TABLE, BridgeId),
@@ -248,7 +248,7 @@ delete_bridge(UserId, BridgeId) ->
         {atomic, Result} ->
             Result;
         {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+            {error, mnesia:error_description(Reason)}
     end.
 
 -spec get_or_create_monitor_id(binary(), binary()) -> {ok, binary()}.

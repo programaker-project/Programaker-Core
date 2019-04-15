@@ -88,7 +88,7 @@ register(ServiceUuid, Public, #{ name := Name, description := Description, modul
     end.
 
 -spec update_service_module(binary(),
-                            #{ name := binary(), description := binary(), module := {module(), [any]} })
+                            #{ name := binary(), description := binary(), module := {module(), [_]} })
                            -> ok.
 update_service_module(Uuid, #{ name := Name
                              , description := Description

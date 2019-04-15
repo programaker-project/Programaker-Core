@@ -31,7 +31,7 @@
 %% API
 %%====================================================================
 
--spec create_service_port(binary(), boolean()) -> {ok, binary()} | {error, term(), string()}.
+-spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, term(), string()}.
 create_service_port(UserId, ServicePortName) ->
     ?BACKEND:create_service_port(UserId, ServicePortName).
 
@@ -62,7 +62,7 @@ send_registration_data(ServicePortId, Data, UserId) ->
                                         , <<"value">> => #{ <<"form">> => Data }
                                         }).
 
--spec send_oauth_return(binary(), binary()) -> {ok, map()}.
+-spec send_oauth_return(binary(), binary()) -> {ok, map()} | {error, term()}.
 send_oauth_return(Qs, ServicePortId) ->
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"OAUTH_RETURN">>
                                         , <<"value">> => #{ <<"query_string">> => Qs }
@@ -100,7 +100,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                                                      })
     end.
 
--spec list_custom_blocks(binary()) -> {ok, [_]}.
+-spec list_custom_blocks(binary()) -> {ok, map()}.
 list_custom_blocks(UserId) ->
     ?BACKEND:list_custom_blocks(UserId).
 
@@ -125,7 +125,7 @@ delete_bridge(UserId, BridgeId) ->
     ?BACKEND:delete_bridge(UserId, BridgeId).
 
 
--spec callback_bridge(binary(), binary(), binary()) -> {ok, [map()]} | {error, binary()}.
+-spec callback_bridge(binary(), binary(), binary()) -> {ok, map()} | {error, term()}.
 callback_bridge(UserId, BridgeId, Callback) ->
     {ok, BridgeUserId} = internal_user_id_to_service_port_user_id(UserId, BridgeId),
     ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>

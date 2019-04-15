@@ -61,7 +61,7 @@ get_expected_action_from_trigger(_Trigger, _Permissions) ->
 %%%% Thread creation
 %%% Monitors
 %% If any value is OK
--spec trigger_thread(#program_trigger{}, {atom(), any()}, binary()) -> 'false' | {'true', #program_thread{}}.
+-spec trigger_thread(#program_trigger{}, {atom(), any()}, #program_state{}) -> 'false' | {'true', #program_thread{}}.
 trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                             , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
                                                                          , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE

@@ -1,13 +1,15 @@
--record(service_port_entry, { id    :: binary()
-                            , name  :: binary()
-                            , owner :: binary() %% User id
-                            , service_id :: binary()
+-include("../../automate_common_types/src/types.hrl").
+
+-record(service_port_entry, { id    :: binary() | ?MNESIA_SELECTOR
+                            , name  :: binary() | ?MNESIA_SELECTOR
+                            , owner :: binary() | ?MNESIA_SELECTOR %% User id
+                            , service_id :: binary() | 'undefined' | ?MNESIA_SELECTOR
                             }).
 
 -record(service_port_entry_extra, { id    :: binary()
                                   , name  :: binary()
                                   , owner :: binary() %% User id
-                                  , service_id :: binary()
+                                  , service_id :: binary() | 'undefined'
                                                 % ↓ Extra data
                                   , is_connected :: boolean()
                                   }).
@@ -19,8 +21,8 @@
                                           %%   .
 
 -record(service_port_block_static_argument, { type :: service_port_block_argument_type()
-                                            , default :: binary()
-                                            , class :: binary()
+                                            , default :: binary() | 'undefined'
+                                            , class :: binary() | 'undefined'
                                             }).
 
 -record(service_port_block_dynamic_argument, { type :: service_port_block_argument_type()
@@ -55,7 +57,7 @@
 
 -record(service_port_configuration, { id :: binary() %% Service port Id
                                     , service_name :: binary()
-                                    , service_id :: binary()
+                                    , service_id :: binary() | 'undefined'
                                     , is_public :: boolean()
                                     , blocks :: [#service_port_block{}]
                                     }).
