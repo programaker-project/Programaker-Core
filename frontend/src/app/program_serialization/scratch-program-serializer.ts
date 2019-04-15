@@ -166,6 +166,9 @@ export default class ScratchProgramSerializer {
             if (type.startsWith('val')) {
                 type = "constant";
             }
+            if (argument.getAttribute('id') === null) {
+                type = 'constant';  // No block or value, but dropdown/constant
+            }
             return {
                 type: type,  // Type here might be 'constant', 'variable' or 'list'
                 value: argument.innerText,
