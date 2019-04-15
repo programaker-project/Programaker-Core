@@ -116,8 +116,7 @@ call(send_chat_on_channel, [ChannelName, Text], Thread, UserId) ->
                       get_bot_name()
               end,
 
-    ChannelInfo = maps:get(<<"value">>, ChannelName, Thread),
-    ChatId = binary_to_integer(lists:nth(2, binary:split(ChannelInfo, <<":">>))),
+    ChatId = binary_to_integer(lists:nth(2, binary:split(ChannelName, <<":">>))),
 
     send_message(BotName, #{ chat_id => ChatId, text => Text }),
     {ok, Thread, none};
