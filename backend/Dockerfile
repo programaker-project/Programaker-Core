@@ -9,6 +9,7 @@ WORKDIR /app
 # Pre-build dependencies
 ADD rebar.config /app
 RUN rebar3 get-deps && rebar3 compile
+RUN rebar3 dialyzer
 
 # Add application code
 FROM plaza-backend-ci-base as develop
