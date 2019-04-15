@@ -41,7 +41,6 @@ is_authorized(Req, State) ->
 
 %% GET handler
 content_types_provided(Req, State) ->
-    io:fwrite("Control types provided~n", []),
     {[{{<<"*">>, <<"*">>, []}, to_text}],
      Req, State}.
 

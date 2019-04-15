@@ -43,10 +43,10 @@ list_templates_from_user_id(UserId) ->
     Transaction = fun() ->
                           %% Find userid with that name
                           MatchHead = #template_entry{ id='_'
-                                                         , name='_'
-                                                         , owner='$1'
-                                                         , content='_'
-                                                         },
+                                                     , name='_'
+                                                     , owner='$1'
+                                                     , content='_'
+                                                     },
                           Guard = {'==', '$1', UserId},
                           ResultColumn = '$_',
                           Matcher = [{MatchHead, [Guard], [ResultColumn]}],

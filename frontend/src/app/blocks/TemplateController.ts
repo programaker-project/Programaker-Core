@@ -29,7 +29,7 @@ export class TemplateController {
     }
 
     register_template_blocks() {
-        if (!this.availableTemplates) {
+        if ((!this.availableTemplates) || (this.availableTemplates.length === 0)) {
             return;
         }
         if (this.registeredTemplateBlocks) {

@@ -190,7 +190,7 @@ list_services_from_username(Username) ->
     end.
 
 
--spec get_service_enable_how_to(binary(), binary()) -> {ok, binary() | none} | {error, not_found}.
+-spec get_service_enable_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found}.
 get_service_enable_how_to(Username, ServiceId) ->
     case get_platform_service_how_to(Username, ServiceId) of
         {ok, HowTo} ->
@@ -213,7 +213,7 @@ create_service_port(Username, ServicePortName) ->
     {ok, ServicePortId } = automate_service_port_engine:create_service_port(UserId, ServicePortName),
     {ok, generate_url_for_service_port(UserId, ServicePortId)}.
 
--spec list_custom_blocks_from_username(binary()) -> {ok, [_]}.
+-spec list_custom_blocks_from_username(binary()) -> {ok, map()}.
 list_custom_blocks_from_username(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     automate_service_port_engine:list_custom_blocks(UserId).
@@ -225,10 +225,14 @@ register_service(Username, ServiceId, RegistrationData) ->
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, _} = automate_service_registry_query:send_registration_data(Module, UserId, RegistrationData).
 
--spec send_oauth_return(binary(), binary()) -> ok.
+-spec send_oauth_return(binary(), binary()) -> ok | {error, term()}.
 send_oauth_return(ServicePortId, Qs) ->
-    {ok, _} = automate_service_port_engine:send_oauth_return(Qs, ServicePortId),
-    ok.
+    case automate_service_port_engine:send_oauth_return(Qs, ServicePortId) of
+        {ok, _} ->
+            ok;
+        {error, Reason} ->
+            {error, Reason}
+    end.
 
 -spec list_bridges(binary()) -> {ok, [#service_port_entry_extra{}]}.
 list_bridges(Username) ->
@@ -239,7 +243,6 @@ list_bridges(Username) ->
 delete_bridge(UserId, BridgeId) ->
     automate_service_port_engine:delete_bridge(UserId, BridgeId).
 
--spec callback_bridge(binary(), binary(), binary()) -> {ok, [map()]} | {error, binary()}.
 callback_bridge(UserId, BridgeId, Callback) ->
     automate_service_port_engine:callback_bridge(UserId, BridgeId, Callback).
 
@@ -327,7 +330,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , program_orig=ProgramOrig
                  }.
 
--spec get_platform_service_how_to(binary(), binary()) -> {ok, binary() | none} | {error, not_found}.
+-spec get_platform_service_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found}.
 get_platform_service_how_to(Username, ServiceId)  ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     case automate_service_registry:get_service_by_id(ServiceId, UserId) of

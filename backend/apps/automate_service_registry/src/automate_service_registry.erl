@@ -24,6 +24,11 @@
 -define(SERVER, ?MODULE).
 -include("records.hrl").
 -define(BACKEND, automate_service_registry_mnesia_backend).
+-define(MODULE_MAP, #{ name := binary()
+                      , description := binary()
+                      , module := {module(), [_]}
+                      , uuid := binary()
+                      }).
 
 %%====================================================================
 %% API functions
@@ -40,7 +45,7 @@ get_all_services_for_user(UserId) ->
 get_service_by_id(ServiceId, UserId) ->
     ?BACKEND:get_service_by_id(ServiceId, UserId).
 
--spec register_public(module() | #{ name := binary(), description := binary(), module := {module(), [any]} }) -> {ok, binary()}.
+-spec register_public(module() | ?MODULE_MAP) -> {ok, binary()}.
 register_public(ServiceModule) ->
     {Uuid, Data} = module_to_map(ServiceModule),
     ok = ?BACKEND:register(Uuid,
@@ -48,13 +53,13 @@ register_public(ServiceModule) ->
                            Data),
     {ok, Uuid}.
 
--spec update_service_module(module() | #{ name := binary(), description := binary(), module := {module(), [any]} },
+-spec update_service_module(module() | ?MODULE_MAP,
                             binary(), binary()) -> ok.
 update_service_module(Module, _ServiceId, _OwnerId) ->
     {Uuid, Data} = module_to_map(Module),
-    ?BACKEND:update_service_module(Uuid, Module).
+    ?BACKEND:update_service_module(Uuid, Data).
 
--spec register_private(module() | #{ name := binary(), description := binary(), module := {module(), [any]} }) -> {ok, binary()}.
+-spec register_private(module() | ?MODULE_MAP) -> {ok, binary()}.
 register_private(ServiceModule) ->
     {Uuid, Data} = module_to_map(ServiceModule),
     ok = ?BACKEND:register(Uuid,

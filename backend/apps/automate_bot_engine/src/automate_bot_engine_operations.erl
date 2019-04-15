@@ -331,12 +331,13 @@ run_instruction(#{ ?TYPE := ?COMMAND_CALL_SERVICE
     {ok, NewThread, _Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
     {ran_this_tick, increment_position(NewThread)};
 
-run_instruction(#{ ?TYPE := <<"services.", ServiceCall/binary>>
-                 , ?ARGUMENTS := Arguments
-                 }, Thread,
+run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
+                           , ?ARGUMENTS := Arguments
+                           }, Thread,
                 ProgramState=#program_state{permissions=Permissions},
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
+    SaveTo = get_save_to(Operation),
     UserId = case Permissions of
                  undefined ->  % For simplification on test cases
                      undefined;
@@ -344,15 +345,29 @@ run_instruction(#{ ?TYPE := <<"services.", ServiceCall/binary>>
                      OwnerUserId
              end,
 
+    ReadArguments = remove_save_to(Arguments, SaveTo),
     Values = lists:map(fun (Arg) ->
                                {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread, ProgramState),
                                Value
-                       end, Arguments),
+                       end, ReadArguments),
 
     [ServiceId, Action] = binary:split(ServiceCall, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, NewThread, _Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
-    {ran_this_tick, increment_position(NewThread)};
+    {ok, NewThread, Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
+
+    {ok, SavedThread} = case SaveTo of
+                            { index, Index } ->
+                                #{ <<"value">> := VariableName
+                                 } = lists:nth(Index, Arguments),
+                                automate_bot_engine_variables:set_program_variable(
+                                  Thread,
+                                  %% Note that erlang is 1-indexed, protocol is 0-indexed
+                                  VariableName,
+                                  Value);
+                            _ ->
+                                {ok, NewThread}
+                        end,
+    {ran_this_tick, increment_position(SavedThread)};
 
 run_instruction(#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
                  , ?ARGUMENTS := [#{ ?TYPE := ?TEMPLATE_NAME_TYPE
@@ -729,3 +744,16 @@ get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
 get_block_result(Block, _Thread, _ProgramState) ->
     io:format("Result from: ~p~n", [Block]),
     erlang:error(bad_operation).
+
+
+get_save_to(#{ <<"save_to">> := #{ <<"type">> := <<"argument">>
+                                 , <<"index">> := Index
+                                 } }) ->
+    { index, Index + 1 }; %% erlang is 1-indexed, protocol is 0-indexed
+get_save_to(_) ->
+    none.
+
+remove_save_to(Arguments, none) ->
+    Arguments;
+remove_save_to(Arguments, {index, Index}) ->
+    automate_bot_engine_naive_lists:remove_nth(Arguments, Index).

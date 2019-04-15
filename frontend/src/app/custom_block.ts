@@ -1,6 +1,9 @@
+type VariableClass = 'single' | 'list' | undefined;
+
 export interface StaticBlockArgument {
     type: string;
     default_value: string;
+    class: VariableClass;
 };
 
 export interface DynamicBlockArgument {
@@ -28,6 +31,7 @@ export interface CustomBlock {
     function_name: string;
     message: string;
     arguments: BlockArgument[];
+    save_to: undefined | string;
 };
 
 export interface ResolvedCustomBlock {
@@ -39,6 +43,7 @@ export interface ResolvedCustomBlock {
     function_name: string;
     message: string;
     arguments: ResolvedBlockArgument[];
+    save_to: undefined | string;
 }
 
 function to_scratch_type(type) {
@@ -72,12 +77,20 @@ function to_field_name(type) {
 
 function argument_to_xml(arg: BlockArgument, index: number): string {
     const type = to_scratch_type(arg.type);
+
     const default_value = (arg as StaticBlockArgument).default_value || 'Test';
-    return `<value name="VAL${index}">
-        <shadow type="${type}">
-            <field name="${to_field_name(arg.type)}">${default_value}</field>
-        </shadow>
-    </value>`;
+    if ((arg as StaticBlockArgument).class === 'list') {
+        return `
+        <field name="VAL${index}" variabletype="list" id=""></field>
+        `;
+    }
+    else {
+        return `<value name="VAL${index}">
+            <shadow type="${type}">
+                <field name="${to_field_name(arg.type)}">${default_value}</field>
+            </shadow>
+        </value>`;
+    }
 }
 
 export function block_to_xml(block: CustomBlock): string {
@@ -122,9 +135,16 @@ export function get_block_toolbox_arguments(block: ResolvedCustomBlock) {
             };
         }
         else if (arg.type === 'variable') {
+            if ((arg as StaticBlockArgument).class === 'list') {
+                return {
+                    "type": "field_variable",
+                    "name": "LIST",
+                    "variableTypes": ["list"],  // actually, Blockly.LIST_VARIABLE_TYPE
+                };
+            }
             return {
                 'type': 'field_variable',
-                'name': 'VAL' + index
+                'name': 'VAL' + index,
             };
         }
         else {

@@ -31,7 +31,7 @@
 %% API
 %%====================================================================
 
--spec create_service_port(binary(), boolean()) -> {ok, binary()} | {error, term(), string()}.
+-spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, term(), string()}.
 create_service_port(UserId, ServicePortName) ->
     ?BACKEND:create_service_port(UserId, ServicePortName).
 
@@ -62,7 +62,7 @@ send_registration_data(ServicePortId, Data, UserId) ->
                                         , <<"value">> => #{ <<"form">> => Data }
                                         }).
 
--spec send_oauth_return(binary(), binary()) -> {ok, map()}.
+-spec send_oauth_return(binary(), binary()) -> {ok, map()} | {error, term()}.
 send_oauth_return(Qs, ServicePortId) ->
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"OAUTH_RETURN">>
                                         , <<"value">> => #{ <<"query_string">> => Qs }
@@ -72,6 +72,9 @@ send_oauth_return(Qs, ServicePortId) ->
 -spec from_service_port(binary(), binary(), binary()) -> ok.
 from_service_port(ServicePortId, UserId, Msg) ->
     Unpacked = jiffy:decode(Msg, [return_maps]),
+    automate_stats:log_observation(counter,
+                                   automate_bridge_engine_messages_from_bridge,
+                                   [ServicePortId]),
     case Unpacked of
         #{ <<"message_id">> := MessageId } ->
             io:fwrite("[~p] Answer: ~p~n", [MessageId, Unpacked]),
@@ -97,7 +100,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                                                      })
     end.
 
--spec list_custom_blocks(binary()) -> {ok, [_]}.
+-spec list_custom_blocks(binary()) -> {ok, map()}.
 list_custom_blocks(UserId) ->
     ?BACKEND:list_custom_blocks(UserId).
 
@@ -122,7 +125,7 @@ delete_bridge(UserId, BridgeId) ->
     ?BACKEND:delete_bridge(UserId, BridgeId).
 
 
--spec callback_bridge(binary(), binary(), binary()) -> {ok, [map()]} | {error, binary()}.
+-spec callback_bridge(binary(), binary(), binary()) -> {ok, map()} | {error, term()}.
 callback_bridge(UserId, BridgeId, Callback) ->
     {ok, BridgeUserId} = internal_user_id_to_service_port_user_id(UserId, BridgeId),
     ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
@@ -166,19 +169,20 @@ parse_configuration_map(ServicePortId,
                                , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
                                }.
 
-parse_block(#{ <<"arguments">> := Arguments
-             , <<"function_name">> := FunctionName
-             , <<"message">> := Message
-             , <<"id">> := BlockId
-             , <<"block_type">> := BlockType
-             , <<"block_result_type">> := BlockResultType
-             }) ->
+parse_block(Block=#{ <<"arguments">> := Arguments
+                   , <<"function_name">> := FunctionName
+                   , <<"message">> := Message
+                   , <<"id">> := BlockId
+                   , <<"block_type">> := BlockType
+                   , <<"block_result_type">> := BlockResultType
+                   }) ->
     #service_port_block{ block_id=BlockId
                        , function_name=FunctionName
                        , message=Message
                        , arguments=lists:map(fun parse_argument/1, Arguments)
                        , block_type=BlockType
                        , block_result_type=BlockResultType
+                       , save_to=get_block_save_to(Block)
                        };
 
 parse_block(#{ <<"arguments">> := Arguments
@@ -200,16 +204,33 @@ parse_block(#{ <<"arguments">> := Arguments
                                , key=Key
                                }.
 
+get_block_save_to(#{ <<"save_to">> := SaveTo }) ->
+    SaveTo;
+get_block_save_to(_) ->
+    undefined.
+
+
 parse_argument(#{ <<"default">> := DefaultValue
                 , <<"type">> := Type
                 }) ->
     #service_port_block_static_argument{ default=DefaultValue
-                                , type=Type
-                                };
+                                       , type=Type
+                                       , class=undefined
+                                       };
+
+parse_argument(#{ <<"type">> := <<"variable">>
+                , <<"class">> := Class
+                }) ->
+    #service_port_block_static_argument{ type= <<"variable">>
+                                       , class=Class
+                                       , default=undefined
+                                       };
 
 parse_argument(#{ <<"type">> := <<"variable">>
                 }) ->
     #service_port_block_static_argument{ type= <<"variable">>
+                                       , default=undefined
+                                       , class=undefined
                                        };
 
 parse_argument(#{ <<"type">> := Type

@@ -70,6 +70,4 @@ dialyze-backend-code:
   script:
     - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
     - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 dialyzer
-  # Remove this when type are working again
-  allow_failure: true
 

@@ -1,5 +1,9 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
+# See https://docs.docker.com/engine/reference/builder/#dockerignore-file
 
+# Ignore non-applicable changes when ADDing files
+Dockerfile
+.git
+ 
 # compiled output
 /dist
 /tmp

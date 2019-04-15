@@ -5,8 +5,6 @@
 
 -module(automate_template_engine).
 
--behaviour(supervisor).
-
 %% API
 -export([ list_templates_from_user_id/1
         , create_template/3
