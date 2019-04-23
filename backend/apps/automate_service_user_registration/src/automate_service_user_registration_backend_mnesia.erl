@@ -9,6 +9,7 @@
 -include("records.hrl").
 -include("../../automate_storage/src/records.hrl").
 -define(SERVICE_REGISTRATION_TOKEN_TABLE, automate_service_registration_token_table).
+-define(WAIT_FOR_TABLES_TIMEOUT, 10000).
 
 %%====================================================================
 %% API functions
@@ -26,7 +27,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?SERVICE_REGISTRATION_TOKEN_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
     ignore.
 

@@ -14,6 +14,7 @@
 
 -define(LIVE_CHANNELS_TABLE, automate_channel_engine_live_channels_table).
 -define(LISTENERS_TABLE, automate_channel_engine_listeners_table).
+-define(WAIT_FOR_TABLES_TIMEOUT, 10000).
 
 -record(live_channels_table_entry, { live_channel_id :: binary()
                                    , stats :: [_]
@@ -39,7 +40,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?LIVE_CHANNELS_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
     ok = case mnesia:create_table(?LISTENERS_TABLE,
                                   [ { attributes, record_info(fields, listeners_table_entry)}
@@ -50,7 +51,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?LISTENERS_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
     ignore.
 

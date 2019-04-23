@@ -24,6 +24,7 @@
 -define(SERVICE_REGISTRY_TABLE, automate_service_registry_services_table).
 -define(USER_SERVICE_ALLOWANCE_TABLE, automate_service_registry_user_service_allowance_table).
 -define(SERVICE_CONFIGURATION_TABLE, automate_service_registry_service_configuration_table).
+-define(WAIT_FOR_TABLES_TIMEOUT, 10000).
 
 %%====================================================================
 %% API
@@ -41,7 +42,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?SERVICE_REGISTRY_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
     ok = case mnesia:create_table(?USER_SERVICE_ALLOWANCE_TABLE,
                                   [ { attributes, record_info(fields, user_service_allowance_entry)}
@@ -52,7 +53,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?USER_SERVICE_ALLOWANCE_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
     ok = case mnesia:create_table(?SERVICE_CONFIGURATION_TABLE,
                                   [ { attributes, record_info(fields, service_configuration_entry)}
@@ -63,7 +64,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?SERVICE_CONFIGURATION_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
     ignore.
 
