@@ -24,6 +24,8 @@
 -define(SERVICE_PORT_CONFIGURATION_TABLE, automate_service_port_configuration_table).
 -define(SERVICE_PORT_USERID_OBFUSCATION_TABLE, automate_service_port_userid_obfuscation_table).
 -define(SERVICE_PORT_CHANNEL_TABLE, automate_service_port_channel_table).
+-define(WAIT_FOR_TABLES_TIMEOUT, 10000).
+
 %%====================================================================
 %% API
 %%====================================================================
@@ -40,7 +42,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?SERVICE_PORT_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
 
     %% Service port configuration table
@@ -53,7 +55,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?SERVICE_PORT_CONFIGURATION_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
 
     %% Service port userId obfuscation
@@ -66,21 +68,21 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?SERVICE_PORT_USERID_OBFUSCATION_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
 
     %% UserId×ServiceId -> ChannelId
     ok = case mnesia:create_table(?SERVICE_PORT_CHANNEL_TABLE,
-                                      [ { attributes, record_info(fields, service_port_monitor_channel_entry)}
-                                      , { disc_copies, Nodes }
-                                      , { record_name, service_port_monitor_channel_entry }
-                                      , { type, set }
-                                      ]) of
-                 { atomic, ok } ->
-                     ok;
-                 { aborted, { already_exists, _ }} ->
-                     ok
-             end,
+                                  [ { attributes, record_info(fields, service_port_monitor_channel_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, service_port_monitor_channel_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 mnesia:wait_for_tables([?SERVICE_PORT_CHANNEL_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
+         end,
     ignore.
 
 -spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, _, string()}.

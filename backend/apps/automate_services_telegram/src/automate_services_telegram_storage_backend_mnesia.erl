@@ -4,6 +4,7 @@
 -define(TELEGRAM_SERVICE_USER_CHANNEL_TABLE, automate_telegram_service_user_channel_table).
 -define(TELEGRAM_SERVICE_CHATS_KNOWN_TABLE, automate_telegram_service_chats_known_table).
 -define(TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE, automate_telegram_service_chats_members_table).
+-define(WAIT_FOR_TABLES_TIMEOUT, 10000).
 
 -include("records.hrl").
 -include("../../automate_chat_registry/src/records.hrl").
@@ -44,7 +45,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?TELEGRAM_SERVICE_REGISTRATION_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
 
     ok = case mnesia:create_table(?TELEGRAM_SERVICE_USER_CHANNEL_TABLE,
@@ -56,7 +57,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?TELEGRAM_SERVICE_USER_CHANNEL_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
 
     ok = case mnesia:create_table(?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE,
@@ -68,7 +69,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
 
     ok = case mnesia:create_table(?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE,
@@ -80,7 +81,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
     ignore.
 

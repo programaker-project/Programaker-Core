@@ -20,3 +20,16 @@ services:
 
   plaza-backend:
     build: backend
+    command:
+      - _build/default/rel/automate/bin/automate
+      - foreground
+
+      - '-mnesia'
+      - dir
+      - '"/app/Mnesia.dev"'
+    volumes:
+      - plaza-dev-backend-mnesia:/app/Mnesia.dev
+
+volumes:
+  plaza-dev-backend-mnesia:
+

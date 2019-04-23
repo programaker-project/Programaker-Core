@@ -13,6 +13,7 @@
 
 -include("records.hrl").
 -define(CHAT_HANDLER_MODULE_TABLE, automate_chat_handler_module_table).
+-define(WAIT_FOR_TABLES_TIMEOUT, 10000).
 
 %%====================================================================
 %% API
@@ -30,7 +31,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 mnesia:wait_for_tables([?CHAT_HANDLER_MODULE_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
          end,
     ignore.
 
