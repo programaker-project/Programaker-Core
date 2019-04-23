@@ -55,6 +55,10 @@ But keep in mind that a deployment launched with this script **has no redundancy
 
 After this, the service can be accessed on http://localhost:8080 .
 
+##### Known errors
+
+Check the [docs/known-errors.md](known-errors document) for possible problems found when using the docker-compose.
+
 ## Architecture overview
 
 ![Image of the architecture overview](docs/architecture-overview.png)
