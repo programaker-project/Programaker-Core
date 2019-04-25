@@ -51,8 +51,17 @@ export default class ScratchProgramSerializer {
         this.replaceMonitors(cleanedElement);
 
         const contents = Array.from(block.childNodes).filter((x: HTMLElement) => x.tagName === 'STATEMENT');
-        if (contents.length > 0) {
+        if (contents.length == 1) {
+            console.log("Contents:", contents);
             cleanedElement.contents = this.serializeBlock(contents[0].firstChild as HTMLElement);
+        }
+        else if (contents.length > 0) {
+            const subContents = [];
+            for(const subContent of contents) {
+                subContents.push({"contents": this.serializeBlock(subContent.firstChild as HTMLElement)});
+            }
+
+            cleanedElement.contents = subContents;
         }
 
         chain.push(cleanedElement);

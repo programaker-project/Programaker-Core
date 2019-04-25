@@ -180,6 +180,49 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
             {ran_this_tick, increment_position(Thread)}
     end;
 
+run_instruction(#{ ?TYPE := ?COMMAND_IF
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{ position=Position }, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+        {ok, _} ->
+            NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            {ran_this_tick, increment_position(NextIteration)};
+        {error, not_found} ->
+            {ok, Value} = automate_bot_engine_variables:resolve_argument(
+                            Argument, Thread, ProgramState),
+
+            case Value of
+                false -> %% Not matching, skipping
+                    {ran_this_tick, increment_position(Thread)};
+                _ -> %% Matching, going in
+                    NextIteration = automate_bot_engine_variables:set_instruction_memory(
+                                      Thread, {already_run, true}),
+                    {ran_this_tick, NextIteration#program_thread{ position=Position ++ [1] }}
+
+            end
+    end;
+
+run_instruction(#{ ?TYPE := ?COMMAND_IF_ELSE
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{ position=Position }, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+        {ok, _} ->
+            NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            {ran_this_tick, increment_position(NextIteration)};
+        {error, not_found} ->
+            NextIteration = automate_bot_engine_variables:set_instruction_memory(
+                              Thread, {already_run, true}),
+            {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, NextIteration, ProgramState),
+            case Value of
+                false -> %% Not matching, going for else
+                    {ran_this_tick, NextIteration#program_thread{ position=Position ++ [2, 1] }};
+                _ -> %% Matching, going for if
+                    {ran_this_tick, NextIteration#program_thread{ position=Position ++ [1, 1] }}
+            end
+    end;
+
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT_UNTIL
                  , ?ARGUMENTS := [Argument]
                  }, Thread=#program_thread{}, ProgramState, _) ->
@@ -395,9 +438,13 @@ run_instruction(#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
             {ran_this_tick, finish_thread(Thread)}
     end;
 
-run_instruction(Instruction, _Thread, _ProgramState, Message) ->
-    %% io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
-    {did_not_run, waiting}.
+run_instruction(#{ ?TYPE := Instruction }, _Thread, _ProgramState, Message) ->
+    io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
+    {did_not_run, waiting};
+
+run_instruction(#{ <<"contents">> := _Content }, Thread, _ProgramState, _Message) ->
+    %% Finished code block
+    {ran_this_tick, increment_position(Thread)}.
 
 increment_position(Thread = #program_thread{position=Position}) ->
     IncrementedInnermost = increment_innermost(Position),
