@@ -58,7 +58,7 @@ export default class ScratchProgramSerializer {
         else if (contents.length > 0) {
             const subContents = [];
             for(const subContent of contents) {
-                subContents.push(this.serializeBlock(subContent.firstChild as HTMLElement));
+                subContents.push({"contents": this.serializeBlock(subContent.firstChild as HTMLElement)});
             }
 
             cleanedElement.contents = subContents;
