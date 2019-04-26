@@ -18,7 +18,6 @@
 
 -include("records.hrl").
 -define(TEMPLATE_TABLE, automate_template_engine_templates_table).
--define(WAIT_FOR_TABLES_TIMEOUT, 10000).
 
 %%====================================================================
 %% API
@@ -36,8 +35,10 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 mnesia:wait_for_tables([?TEMPLATE_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
+                 ok
          end,
+    ok = mnesia:wait_for_tables([ ?TEMPLATE_TABLE
+                                ], automate_configuration:get_table_wait_time()),
     ignore.
 
 -spec list_templates_from_user_id(binary()) -> {ok, [map()]}.
