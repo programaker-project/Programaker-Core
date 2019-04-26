@@ -15,6 +15,7 @@
 
 -define(SERVER, ?MODULE).
 -define(APPLICATION, automate_services_telegram).
+-include("../../automate_common_types/src/definitions.hrl").
 
 %%====================================================================
 %% API functions
@@ -32,7 +33,7 @@ init([]) ->
     {ok, BotName} = application:get_env(?APPLICATION, telegram_bot_name),
     {ok, BotToken} = application:get_env(?APPLICATION, telegram_token),
 
-    {ok, { {one_for_all, 0, 1},
+    {ok, { {one_for_all, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD},
            [ #{ id => pe4kin_telegram_handler
               , start => {pe4kin, launch_bot, [BotName, BotToken, #{receiver => true}]}
               , restart => permanent
