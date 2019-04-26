@@ -14,6 +14,7 @@
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
+-include("../../automate_common_types/src/definitions.hrl").
 
 %%====================================================================
 %% API functions
@@ -28,7 +29,7 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_one, 0, 1},
+    {ok, { {one_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD},
            [ #{ id => automate_storage
               , start => {automate_storage, start_link, []}
               , restart => permanent

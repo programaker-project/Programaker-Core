@@ -14,6 +14,7 @@
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
+-include("../../automate_common_types/src/definitions.hrl").
 
 %%====================================================================
 %% API functions
@@ -35,7 +36,7 @@ init([]) ->
                     , type => supervisor
                     , modules => [automate_bot_engine_runner_sup]
                     }],
-    {ok, { {one_for_one, 0, 1}, ChildSpecs} }.
+    {ok, { {one_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD}, ChildSpecs} }.
 
 %%====================================================================
 %% Internal functions

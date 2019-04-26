@@ -24,7 +24,6 @@
 -define(SERVICE_PORT_CONFIGURATION_TABLE, automate_service_port_configuration_table).
 -define(SERVICE_PORT_USERID_OBFUSCATION_TABLE, automate_service_port_userid_obfuscation_table).
 -define(SERVICE_PORT_CHANNEL_TABLE, automate_service_port_channel_table).
--define(WAIT_FOR_TABLES_TIMEOUT, 10000).
 
 %%====================================================================
 %% API
@@ -42,7 +41,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 mnesia:wait_for_tables([?SERVICE_PORT_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
+                 ok
          end,
 
     %% Service port configuration table
@@ -55,7 +54,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 mnesia:wait_for_tables([?SERVICE_PORT_CONFIGURATION_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
+                 ok
          end,
 
     %% Service port userId obfuscation
@@ -68,7 +67,7 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 mnesia:wait_for_tables([?SERVICE_PORT_USERID_OBFUSCATION_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
+                 ok
          end,
 
     %% UserId×ServiceId -> ChannelId
@@ -81,8 +80,13 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 mnesia:wait_for_tables([?SERVICE_PORT_CHANNEL_TABLE], ?WAIT_FOR_TABLES_TIMEOUT)
+                 ok
          end,
+    ok = mnesia:wait_for_tables([ ?SERVICE_PORT_TABLE
+                                , ?SERVICE_PORT_CONFIGURATION_TABLE
+                                , ?SERVICE_PORT_USERID_OBFUSCATION_TABLE
+                                , ?SERVICE_PORT_CHANNEL_TABLE
+                                ], automate_configuration:get_table_wait_time()),
     ignore.
 
 -spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, _, string()}.
