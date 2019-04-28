@@ -340,7 +340,16 @@ export class TemplateCreateDialogComponent {
                 content = (node as any).data as string;
             }
             else if (node.nodeName === 'SPAN') {
-                content = (node as HTMLSpanElement).innerText;
+                const spanNode = node as HTMLSpanElement;
+
+                if (spanNode.classList.contains('badge')) {
+                    // Non-splittable element
+                    newChilds.push(node);
+                    continue;
+                }
+                else {
+                    content = spanNode.innerText;
+                }
             }
 
             if (content.length === 0) {
