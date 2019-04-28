@@ -4,7 +4,7 @@
 -define(CONTENTS, <<"contents">>).
 -define(ID, <<"id">>).
 -define(VALUE, <<"value">>).
--define(TEMPLATE_NAME_TYPE, <<"template_name">>).
+-define(TEMPLATE_NAME_TYPE, <<"constant">>).
 
 %%%% Command types
 %%%%  Operations
