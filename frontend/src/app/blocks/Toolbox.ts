@@ -46,7 +46,7 @@ export class Toolbox {
         this.controller.addCustomBlocks(custom_blocks);
 
         const registrations = this.injectBlocks(monitors, custom_blocks);
-        const toolboxXML = this.injectToolbox(monitors, custom_blocks);
+        const toolboxXML = await this.injectToolbox(monitors, custom_blocks);
         this.controller.setToolbox(toolboxXML);
 
         return [toolboxXML, registrations, this.controller];
@@ -328,7 +328,7 @@ export class Toolbox {
         </category>`;
     }
 
-    injectToolbox(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]): HTMLElement {
+    async injectToolbox(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]): Promise<HTMLElement> {
         (goog as any).provide('Blockly.Blocks.defaultToolbox');
 
         (goog as any).require('Blockly.Blocks');
@@ -654,7 +654,7 @@ export class Toolbox {
             operatorsCategory,
         ].join('\n');
 
-        toolboxXML.appendChild(this.templateController.genTemplatesCategory());
+        toolboxXML.appendChild(await this.templateController.genTemplatesCategory());
         toolboxXML.appendChild(variablesCategory);
         // toolboxXML.appendChild(proceduresCategory);
 

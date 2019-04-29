@@ -46,6 +46,8 @@ export default class ScratchProgramSerializer {
             contents: [],
         };
 
+        this.fixArgOrder(cleanedElement);
+
         cleanedElement = this.rewriteCustomBlock(cleanedElement);
         this.replaceServices(cleanedElement);
         this.replaceMonitors(cleanedElement);
@@ -57,8 +59,8 @@ export default class ScratchProgramSerializer {
         }
         else if (contents.length > 0) {
             const subContents = [];
-            for(const subContent of contents) {
-                subContents.push({"contents": this.serializeBlock(subContent.firstChild as HTMLElement)});
+            for (const subContent of contents) {
+                subContents.push({ "contents": this.serializeBlock(subContent.firstChild as HTMLElement) });
             }
 
             cleanedElement.contents = subContents;
@@ -72,6 +74,43 @@ export default class ScratchProgramSerializer {
         }
 
         return chain;
+    }
+
+    private fixArgOrder(cleanedElement: { args: any[] }) {
+        const order = cleanedElement.args.map((value) => {
+            if (!value.name) {
+                return null;
+            }
+
+            const digits = ScratchProgramSerializer.getDigits(value.name);
+            if (digits === null) {
+                return null;
+            }
+
+            return [value, digits];
+        });
+
+        if (order.filter((value) => {
+            return value === null;
+        }).length > 0) {
+            // Bail if the order of any value cannot be retrieved
+            return;
+        }
+
+        cleanedElement.args = order.sort((x, y) => {
+            return x[1] - y[1];
+        }).map((composedValue) => {
+            return composedValue[0];
+        });
+    }
+
+    private static getDigits(s: string): number | null {
+        const match = s.match(/\d+/);
+        if (match === null) {
+            return null;
+        }
+
+        return parseInt(match[0]);
     }
 
     private rewriteCustomBlock(element) {
@@ -172,6 +211,7 @@ export default class ScratchProgramSerializer {
     private serializeArg(argument: HTMLElement): any {
         if (argument.tagName === 'FIELD') {
             let type = argument.getAttribute('name').toLowerCase();
+
             if (type.startsWith('val')) {
                 type = "constant";
             }
@@ -179,6 +219,7 @@ export default class ScratchProgramSerializer {
                 type = 'constant';  // No block or value, but dropdown/constant
             }
             return {
+                name: argument.getAttribute('name'),
                 type: type,  // Type here might be 'constant', 'variable' or 'list'
                 value: argument.innerText,
             }
@@ -189,6 +230,7 @@ export default class ScratchProgramSerializer {
             && ((argument.childNodes[1] as HTMLElement).tagName === 'BLOCK')) {
 
             return {
+                name: argument.getAttribute('name'),
                 type: 'block',
                 value: this.serializeBlock(argument.childNodes[1] as HTMLElement),
             }
@@ -198,11 +240,11 @@ export default class ScratchProgramSerializer {
             && ((argument.childNodes[0] as HTMLElement).tagName === 'BLOCK')) {
 
             return {
+                name: argument.getAttribute('name'),
                 type: 'block',
                 value: this.serializeBlock(argument.childNodes[0] as HTMLElement),
             }
         }
-
 
         // If there's just one entry, it's only a shadow value.
         // return it's content as constant
@@ -211,6 +253,7 @@ export default class ScratchProgramSerializer {
         }
 
         return {
+            name: argument.getAttribute('name'),
             type: 'constant',
             value: (argument.childNodes[0].firstChild as HTMLElement).innerText,
         }

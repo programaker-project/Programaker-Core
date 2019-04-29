@@ -150,11 +150,9 @@ export class TemplateController {
         });
     }
 
-
-
-    genTemplatesCategory(): HTMLElement {
+    genTemplatesCategory(): Promise<HTMLElement> {
         if (this.templatesCategory) {
-            return this.templatesCategory;
+            return Promise.resolve(this.templatesCategory);
         }
 
         const cat = createDom('category', {
@@ -170,15 +168,15 @@ export class TemplateController {
 
         this.templatesCategory = cat;
 
-        this.templateService.getTemplates().then((templates) => {
+        return this.templateService.getTemplates().then((templates) => {
             for (const template of templates) {
                 this.templates[template.id] = template;
                 this.availableTemplates.push([template.name, template.id]);
             }
 
             this.register_template_blocks();
-        });
 
-        return cat;
+            return cat;
+        });
     }
 }
