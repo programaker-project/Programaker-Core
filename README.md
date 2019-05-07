@@ -49,8 +49,8 @@ A [docker-compose](https://docs.docker.com/compose/overview/) script exists to s
 This can be used to do some tests or as a help to develop bridges.
 But keep in mind that a deployment launched with this script **has no redundancy** and **the data is not saved** between executions.
 
-* To launch the services, run `docker-compose up`.
-* To launch the services on the background, run `docker-compose up -d`.
+* To launch the services, run `docker-compose up --build`.
+* To launch the services on the background, run `docker-compose up -d --build`. Same command to update.
 * To stop the services, run `docker-compose down`.
 
 After this, the service can be accessed on http://localhost:8080 .
