@@ -371,7 +371,7 @@ register_thread_runner(ThreadId, Pid) ->
             {error, mnesia:error_description(Reason)}
     end.
 
-
+-spec get_thread_from_id(binary()) -> {ok, #running_program_thread_entry{}} | {error, binary()}.
 get_thread_from_id(ThreadId) ->
     Transaction = fun() ->
                           case mnesia:read(?RUNNING_THREADS_TABLE, ThreadId) of

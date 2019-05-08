@@ -45,7 +45,7 @@
                                }).
 
 -record(running_program_thread_entry, { thread_id :: thread_id()
-                                      , runner_pid :: running_program_pid()
+                                      , runner_pid :: undefined | pid()
                                       , parent_program_id :: program_id()
                                       , instructions :: [_]  %% The parent program instructions might have changed
                                       , memory :: map()

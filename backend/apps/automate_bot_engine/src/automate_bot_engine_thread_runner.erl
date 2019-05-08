@@ -20,7 +20,6 @@
 -include("instructions.hrl").
 
 -record(state, { thread :: #running_program_thread_entry{}
-               , id     :: thread_id()
                , check_next_action
                }).
 
@@ -75,7 +74,6 @@ init(ThreadId, Thread) ->
 
     self() ! {?SIGNAL_PROGRAM_TICK, {}},
     loop(#state{ thread=Thread
-               , id=ThreadId
                , check_next_action=fun(_, _) -> continue end
                }).
 
@@ -135,7 +133,7 @@ run_tick(State = #state{ thread=Thread }, Message) ->
             ok
     end,
     #state{ thread=merge_thread_structures(Thread, NewRunnerState)
-          , check_next_action=ExpectedSignals
+          , check_next_action=build_check_next_action(ExpectedSignals)
           }.
 
 %%%===================================================================
@@ -154,6 +152,7 @@ parse_program_thread(#running_program_thread_entry{ position=Position
                    , program_id=ParentProgramId
                    }.
 
+-spec merge_thread_structures(#running_program_thread_entry{}, #program_thread{}) -> #running_program_thread_entry{}.
 merge_thread_structures(Thread, #program_thread{ position=Position
                                                , program=Instructions
                                                , global_memory=Memory

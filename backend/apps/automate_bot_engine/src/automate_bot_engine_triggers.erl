@@ -160,7 +160,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.", MonitorPat
     MatchingContent = case MonitorArgs of
                           #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->
                               {ok, ResolvedExpectedValue} = automate_bot_engine_variables:resolve_argument(
-                                                              ExpectedValue, Thread, ProgramState),
+                                                              ExpectedValue, Thread),
                               ActualValue = maps:get(?CHANNEL_MESSAGE_CONTENT, FullMessage, none),
                               ResolvedExpectedValue == ActualValue;
                           _ ->
