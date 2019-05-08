@@ -24,7 +24,6 @@ initialize_program(ProgramId,
     { ok
     , #program_state{ program_id=ProgramId
                     , variables=Variables
-                    , threads=[]
                     , permissions=#program_permissions{ owner_user_id=OwnerUserId }
                     , triggers=get_triggers(Blocks)
                     }}.

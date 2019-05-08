@@ -35,7 +35,15 @@ init([]) ->
                     , shutdown => 2000
                     , type => supervisor
                     , modules => [automate_bot_engine_runner_sup]
-                    }],
+                    }
+                 , #{ id => automate_bot_engine_thread_runner_sup
+                    , start => {automate_bot_engine_thread_runner_sup, start_link, []}
+                    , restart => permanent
+                    , shutdown => 2000
+                    , type => supervisor
+                    , modules => [automate_bot_engine_thread_runner_sup]
+                    }
+                 ],
     {ok, { {one_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD}, ChildSpecs} }.
 
 %%====================================================================

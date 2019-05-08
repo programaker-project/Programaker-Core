@@ -1,7 +1,7 @@
 -module(automate_bot_engine_variables).
 
 %% API
--export([ resolve_argument/3
+-export([ resolve_argument/2
 
         , set_thread_value/3
         , get_program_variable/2
@@ -33,20 +33,20 @@
 %%                   }) ->
 %%     automate_monitor_engine:get_last_monitor_result(MonitorId).
 
--spec resolve_argument(map(), #program_thread{}, #program_state{}) -> {ok, any()} | {error, not_found}.
+-spec resolve_argument(map(), #program_thread{}) -> {ok, any()} | {error, not_found}.
 resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
                   , ?VALUE := Value
-                  }, _Thread, _Program) ->
+                  }, _Thread) ->
     {ok, Value};
 
 resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
                   , ?VALUE := [Operator]
-                  }, Thread, Program) ->
-    automate_bot_engine_operations:get_result(Operator, Thread, Program);
+                  }, Thread) ->
+    automate_bot_engine_operations:get_result(Operator, Thread);
 
 resolve_argument(#{ ?TYPE := ?VARIABLE_VARIABLE
                   , ?VALUE := VariableName
-                  }, Thread, _Program) ->
+                  }, Thread) ->
     get_program_variable(Thread, VariableName).
 
 

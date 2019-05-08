@@ -14,7 +14,6 @@
 link_program(Program = #{ <<"blocks">> := Blocks },
              UserId) ->
     RelinkedBlocks = lists:map(fun (Subprogram) -> relink_subprogram(Subprogram, UserId) end, Blocks),
-    io:fwrite("Result: ~p~n", [RelinkedBlocks]),
     {ok, Program#{ <<"blocks">> => RelinkedBlocks }}.
 
 
