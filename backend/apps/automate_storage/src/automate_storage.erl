@@ -23,7 +23,6 @@
         , get_program_pid/1
         , register_program_runner/2
         , get_program_from_id/1
-        , user_has_registered_service/2
         , dirty_list_running_programs/0
 
         , set_program_variable/3
@@ -37,7 +36,6 @@
 -define(USER_MONITORS_TABLE, automate_user_monitors).
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
--define(REGISTERED_SERVICES_TABLE, automate_registered_services).
 -define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
 
 -include("./records.hrl").
@@ -311,17 +309,6 @@ get_program_from_id(ProgramId) ->
 dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
 
-user_has_registered_service(Username, ServiceId) ->
-    case try_get_user_registered_service(Username, ServiceId) of
-        {ok, true} ->
-            {ok, true};
-        {ok, false} ->
-            {ok, false};
-        {ok, not_found} ->
-            {ok, false};
-        {error, Reason} ->
-            {error, Reason}
-    end.
 
 -spec get_program_variable(binary(), atom()) -> {ok, any()} | {error, not_found}.
 get_program_variable(ProgramId, Key) ->
@@ -706,52 +693,6 @@ get_running_program_id(ProgramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
-try_get_user_registered_service(Username, ServiceId) ->
-    MatchHead = #registered_user_entry{ id='$1'
-                                      , username='$2'
-                                      , password='_'
-                                      , email='_'
-                                      },
-
-    %% Check that neither the id, username or email matches another
-    GuardUsername = {'==', '$2', Username},
-    Guard = GuardUsername,
-    ResultColumn = '$1',
-    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
-
-    Transaction = fun() ->
-                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
-                              [UserId] ->
-                                  ServiceMatchHead = #registered_service_entry{ registration_id='_'
-                                                                              , service_id='$1'
-                                                                              , user_id='$2'
-                                                                              , enabled='$3'
-                                                                              },
-
-                                  %% Check that neither the id, username or email matches another
-                                  GuardService = {'==', '$1', ServiceId},
-                                  GuardUserId = {'==', '$2', UserId},
-                                  ServiceGuard = {'andthen', GuardService, GuardUserId},
-                                  ServiceResultColumn = '$3',
-                                  ServiceMatcher = [{ServiceMatchHead, [ServiceGuard], [ServiceResultColumn]}],
-
-                                  case mnesia:select(?REGISTERED_SERVICES_TABLE, ServiceMatcher) of
-                                      [IsEnabled] ->
-                                          { ok, IsEnabled };
-                                      [] ->
-                                          {ok, not_found}
-                                  end;
-                              [] ->
-                                  {ok, not_found}
-                          end
-                  end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
-    end.
-
 -spec set_program_variable(binary(), atom(), any()) -> ok | {error, any()}.
 set_program_variable(ProgramId, Key, Value) ->
     Transaction = fun() ->
@@ -847,19 +788,6 @@ build_tables(Nodes) ->
          end,
 
     %% Program variable table
-    ok = case mnesia:create_table(?RUNNING_PROGRAMS_TABLE,
-                                  [ {attributes, record_info(fields, running_program_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, running_program_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Registered services table
     ok = case mnesia:create_table(?PROGRAM_VARIABLE_TABLE,
                                   [ {attributes, record_info(fields, program_variable_table_entry)}
                                   , { disc_copies, Nodes }
