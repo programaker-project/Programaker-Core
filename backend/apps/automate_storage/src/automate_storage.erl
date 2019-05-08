@@ -30,6 +30,7 @@
         , dirty_list_running_threads/0
         , register_thread_runner/2
         , get_thread_from_id/1
+        , delete_thread/1
 
         , set_program_variable/3
         , get_program_variable/2
@@ -299,7 +300,6 @@ register_program_runner(ProgramId, Pid) ->
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
-            io:format("Register result: ~p~n", [Result]),
             Result;
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
@@ -352,6 +352,20 @@ create_thread(ParentProgramId, Thread=#program_thread{ program=Instructions
     end.
 
 
+-spec delete_thread(binary()) -> ok | {error, not_found}.
+delete_thread(ThreadId) ->
+    Transaction = fun() ->
+                          ok = mnesia:delete(?RUNNING_THREADS_TABLE, ThreadId, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
 dirty_list_running_threads() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_THREADS_TABLE)}.
 
@@ -368,8 +382,7 @@ register_thread_runner(ThreadId, Pid) ->
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
-            io:format("Thread register result: ~p~n", [Result]),
-            Result;
+           Result;
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}

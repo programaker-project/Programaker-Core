@@ -24,7 +24,6 @@
 %%====================================================================
 start(ThreadId) ->
     R = supervisor:start_child(?SERVER, [ThreadId]),
-    io:fwrite("Starting ~p result: ~p~n", [ThreadId, R]),
     ok.
 
 start_link() ->

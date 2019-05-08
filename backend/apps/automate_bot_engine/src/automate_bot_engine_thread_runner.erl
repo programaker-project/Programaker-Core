@@ -86,6 +86,8 @@ loop(State = #state{ check_next_action = CheckContinue
     receive
         {stop, From} ->
             From ! {?SERVER, ok},
+            #running_program_thread_entry{ thread_id=ThreadId } = Thread,
+            automate_storage:delete_thread(ThreadId),
             supervisor:terminate_child(automate_bot_engine_thread_runner_sup, self());
         {quit, _From} ->
             ok;
@@ -99,11 +101,11 @@ loop(State = #state{ check_next_action = CheckContinue
                         end,
             loop(NextState);
         {channel_engine, MonitorId, Message} ->
-            %% Reemit so this will understand it
+            %% Re-emit so this will understand it
             self() ! {?TRIGGERED_BY_MONITOR, { MonitorId, Message }},
             loop(State);
-        _Unknown ->
-            %% io:fwrite("\033[47;30mIgnoring ~p\033[0m~n", [Unknown]),
+        Unknown ->
+            io:fwrite("\033[47;30mIgnoring ~p\033[0m~n", [Unknown]),
             loop(State)
     end.
 
@@ -124,7 +126,12 @@ run_tick(State = #state{ thread=Thread }, Message) ->
                               NewThreadState
                       end,
 
-    {ok, ExpectedSignals} = automate_bot_engine_operations:get_expected_signals([NewRunnerState]),
+    ExpectedSignals = case automate_bot_engine_operations:get_expected_signals([NewRunnerState]) of
+                                {ok, []} ->
+                                    [?SIGNAL_PROGRAM_TICK];
+                                {ok, Signals} ->
+                                    Signals
+                            end,
 
     %% Trigger now the timer signal if needed
     case lists:member(?SIGNAL_PROGRAM_TICK, ExpectedSignals) of
