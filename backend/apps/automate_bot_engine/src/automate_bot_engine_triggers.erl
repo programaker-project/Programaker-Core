@@ -120,7 +120,6 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
 
     case automate_bot_engine_variables:resolve_argument(Argument, ThreadWithSavedValue) of
         {ok, MessageContent} ->
-
             {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
                                 ThreadWithSavedValue, MonitorId, FullMessage),
             {true, NewThread};

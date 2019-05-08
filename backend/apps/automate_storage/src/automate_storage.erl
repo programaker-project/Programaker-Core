@@ -328,15 +328,19 @@ dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
 
 -spec create_thread(binary(), #program_thread{}) -> {ok, thread_id()}.
-create_thread(ParentProgramId, Thread=#program_thread{ program=Instructions }) ->
+create_thread(ParentProgramId, Thread=#program_thread{ program=Instructions
+                                                     , global_memory=Memory
+                                                     , instruction_memory=InstructionMemory
+                                                     , position=Position
+                                                     }) ->
     ThreadId = generate_id(),
     UserThread = #running_program_thread_entry{ thread_id=ThreadId
                                               , runner_pid=undefined
                                               , parent_program_id=ParentProgramId
                                               , instructions=Instructions
-                                              , memory=#{}
-                                              , instruction_memory=#{}
-                                              , position=[1]
+                                              , memory=Memory
+                                              , instruction_memory=InstructionMemory
+                                              , position=Position
                                               , stats=#{}
                                               },
 

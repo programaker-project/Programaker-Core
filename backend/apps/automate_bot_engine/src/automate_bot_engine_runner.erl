@@ -140,17 +140,5 @@ run_tick(State = #state{ program=Program }, Message) ->
 
     {ok, ExpectedSignals} = automate_bot_engine_triggers:get_expected_signals(Program),
     State#state{ program=Program
-               , check_next_action=build_check_next_action(ExpectedSignals)
+               , check_next_action=automate_bot_engine_thread_utils:build_check_next_action(ExpectedSignals)
                }.
-
-
-build_check_next_action(ExpectedMessages) ->
-    fun(_, {Type, _Content}) ->
-            %% io:format("Received ~p expecting ~p :: ~p~n", [Type, ExpectedMessages, lists:member(Type, ExpectedMessages)]),
-            case lists:member(Type, ExpectedMessages) of
-                true ->
-                    continue;
-                _ ->
-                    skip
-            end
-    end.

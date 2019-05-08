@@ -15,6 +15,7 @@
         ]).
 
 -define(SERVER, ?MODULE).
+-define(UTILS, automate_bot_engine_thread_utils).
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
 -include("instructions.hrl").
@@ -108,7 +109,7 @@ loop(State = #state{ check_next_action = CheckContinue
 
 -spec run_tick(#state{}, any()) -> #state{}.
 run_tick(State = #state{ thread=Thread }, Message) ->
-    RunnerState = parse_program_thread(Thread),
+    RunnerState = ?UTILS:parse_program_thread(Thread),
     NewRunnerState = case automate_bot_engine_operations:run_thread(RunnerState, Message) of
                           { stopped, _Reason } ->
                               self() ! {stop, self()},
@@ -132,47 +133,6 @@ run_tick(State = #state{ thread=Thread }, Message) ->
         _ ->
             ok
     end,
-    #state{ thread=merge_thread_structures(Thread, NewRunnerState)
-          , check_next_action=build_check_next_action(ExpectedSignals)
+    #state{ thread=?UTILS:merge_thread_structures(Thread, NewRunnerState)
+          , check_next_action=?UTILS:build_check_next_action(ExpectedSignals)
           }.
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
-parse_program_thread(#running_program_thread_entry{ position=Position
-                                                  , instructions=Instructions
-                                                  , memory=Memory
-                                                  , instruction_memory=InstructionMemory
-                                                  , parent_program_id=ParentProgramId
-                                                  }) ->
-    #program_thread{ position=Position
-                   , program=Instructions
-                   , global_memory=Memory
-                   , instruction_memory=InstructionMemory
-                   , program_id=ParentProgramId
-                   }.
-
--spec merge_thread_structures(#running_program_thread_entry{}, #program_thread{}) -> #running_program_thread_entry{}.
-merge_thread_structures(Thread, #program_thread{ position=Position
-                                               , program=Instructions
-                                               , global_memory=Memory
-                                               , instruction_memory=InstructionMemory
-                                               , program_id=ParentProgramId
-                                               }) ->
-    Thread#running_program_thread_entry{ position=Position
-                                       , instructions=Instructions
-                                       , memory=Memory
-                                       , instruction_memory=InstructionMemory
-                                       , parent_program_id=ParentProgramId
-                                       }.
-
-build_check_next_action(ExpectedMessages) ->
-    fun(_, {Type, _Content}) ->
-            %% io:format("Received ~p expecting ~p :: ~p~n", [Type, ExpectedMessages, lists:member(Type, ExpectedMessages)]),
-            case lists:member(Type, ExpectedMessages) of
-                true ->
-                    continue;
-                _ ->
-                    skip
-            end
-    end.
