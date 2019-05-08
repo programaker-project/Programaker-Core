@@ -52,7 +52,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1555180869025,
+  "iteration": 1557347946946,
   "links": [],
   "panels": [
     {
@@ -264,99 +264,6 @@
         "#299c46"
       ],
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Monitor engine supervisor",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": false
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 4,
-        "x": 8,
-        "y": 1
-      },
-      "id": 30,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "automate_service{name=\"automate_monitor_engine_sup\"}",
-          "format": "time_series",
-          "instant": true,
-          "intervalFactor": 1,
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "thresholds": "0,0.5",
-      "title": "Monitor engine",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        },
-        {
-          "op": "=",
-          "text": "DOWN",
-          "value": "0"
-        },
-        {
-          "op": "=",
-          "text": "UP",
-          "value": "1"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": [
-        "#6d1f62",
-        "#d44a3a",
-        "#299c46"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
       "description": "Bot engine supervisor",
       "format": "none",
       "gauge": {
@@ -369,7 +276,7 @@
       "gridPos": {
         "h": 1,
         "w": 4,
-        "x": 12,
+        "x": 8,
         "y": 1
       },
       "id": 34,
@@ -443,6 +350,99 @@
       "valueName": "avg"
     },
     {
+      "cacheTimeout": null,
+      "colorBackground": true,
+      "colorValue": false,
+      "colors": [
+        "#6d1f62",
+        "#d44a3a",
+        "#299c46"
+      ],
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Monitor engine supervisor",
+      "format": "none",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": false
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "id": 30,
+      "interval": null,
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "postfix": "",
+      "postfixFontSize": "50%",
+      "prefix": "",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": false,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "expr": "automate_service{name=\"automate_monitor_engine_sup\"}",
+          "format": "time_series",
+          "instant": true,
+          "intervalFactor": 1,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": "0,0.5",
+      "title": "Monitor engine",
+      "type": "singlestat",
+      "valueFontSize": "80%",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "N/A",
+          "value": "null"
+        },
+        {
+          "op": "=",
+          "text": "DOWN",
+          "value": "0"
+        },
+        {
+          "op": "=",
+          "text": "UP",
+          "value": "1"
+        }
+      ],
+      "valueName": "avg"
+    },
+    {
       "alert": {
         "conditions": [
           {
@@ -470,11 +470,12 @@
           }
         ],
         "executionErrorState": "alerting",
+        "for": "0m",
         "frequency": "60s",
         "handler": 1,
         "message": "Failing plaza service",
         "name": "Plaza services alert",
-        "noDataState": "no_data",
+        "noDataState": "alerting",
         "notifications": [
           {
             "id": 1
@@ -769,99 +770,6 @@
         "#299c46"
       ],
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Monitor engine supervisor",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": false
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 4,
-        "x": 8,
-        "y": 2
-      },
-      "id": 27,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "automate_service{name=\"automate_monitor_engine_runner_sup\"}",
-          "format": "time_series",
-          "instant": true,
-          "intervalFactor": 1,
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "thresholds": "0,0.5",
-      "title": "Monitor engine runner",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        },
-        {
-          "op": "=",
-          "text": "DOWN",
-          "value": "0"
-        },
-        {
-          "op": "=",
-          "text": "UP",
-          "value": "1"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": [
-        "#6d1f62",
-        "#d44a3a",
-        "#299c46"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
       "description": "Bot engine runner supervisor",
       "format": "none",
       "gauge": {
@@ -874,7 +782,7 @@
       "gridPos": {
         "h": 1,
         "w": 4,
-        "x": 12,
+        "x": 8,
         "y": 2
       },
       "id": 35,
@@ -924,6 +832,99 @@
       ],
       "thresholds": "0,0.5",
       "title": "Bot engine runner",
+      "type": "singlestat",
+      "valueFontSize": "80%",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "N/A",
+          "value": "null"
+        },
+        {
+          "op": "=",
+          "text": "DOWN",
+          "value": "0"
+        },
+        {
+          "op": "=",
+          "text": "UP",
+          "value": "1"
+        }
+      ],
+      "valueName": "avg"
+    },
+    {
+      "cacheTimeout": null,
+      "colorBackground": true,
+      "colorValue": false,
+      "colors": [
+        "#6d1f62",
+        "#d44a3a",
+        "#299c46"
+      ],
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Monitor engine supervisor",
+      "format": "none",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": false
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 4,
+        "x": 12,
+        "y": 2
+      },
+      "id": 27,
+      "interval": null,
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "postfix": "",
+      "postfixFontSize": "50%",
+      "prefix": "",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": false,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "expr": "automate_service{name=\"automate_monitor_engine_runner_sup\"}",
+          "format": "time_series",
+          "instant": true,
+          "intervalFactor": 1,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": "0,0.5",
+      "title": "Monitor engine runner",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -1141,6 +1142,99 @@
         "#299c46"
       ],
       "datasource": "${DS_PROMETHEUS}",
+      "description": "Bot engine runner supervisor",
+      "format": "none",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": false
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 4,
+        "x": 8,
+        "y": 3
+      },
+      "id": 58,
+      "interval": null,
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "postfix": "",
+      "postfixFontSize": "50%",
+      "prefix": "",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": false,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "expr": "automate_service{name=\"automate_bot_engine_thread_runner_sup\"}",
+          "format": "time_series",
+          "instant": true,
+          "intervalFactor": 1,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": "0,0.5",
+      "title": "Bot engine thread runner",
+      "type": "singlestat",
+      "valueFontSize": "80%",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "DOWN",
+          "value": "null"
+        },
+        {
+          "op": "=",
+          "text": "DOWN",
+          "value": "0"
+        },
+        {
+          "op": "=",
+          "text": "UP",
+          "value": "1"
+        }
+      ],
+      "valueName": "avg"
+    },
+    {
+      "cacheTimeout": null,
+      "colorBackground": true,
+      "colorValue": false,
+      "colors": [
+        "#6d1f62",
+        "#d44a3a",
+        "#299c46"
+      ],
+      "datasource": "${DS_PROMETHEUS}",
       "description": "Telegram supervisor",
       "format": "none",
       "gauge": {
@@ -1336,13 +1430,291 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "decimals": null,
       "fill": 1,
       "gridPos": {
         "h": 6,
         "w": 6,
         "x": 0,
         "y": 6
+      },
+      "id": 50,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pointradius": 0.5,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(automate_bot_engine_cycles[$interval]))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Operations",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(automate_bot_thread_launch[$interval]))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Threads launched",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Bot usage",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ops",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "decimals": null,
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 6,
+        "y": 6
+      },
+      "id": 59,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pointradius": 0.5,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": true,
+      "targets": [
+        {
+          "expr": "automate_program_thread_count{state=\"running\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Threads ruinning",
+          "refId": "C"
+        },
+        {
+          "expr": "automate_program_thread_count{state=\"total\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Threads total",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Running threads",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "locale",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 10,
+        "x": 14,
+        "y": 6
+      },
+      "id": 57,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pointradius": 1,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(automate_bridge_engine_messages_from_bridge[$interval]))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "From bridge",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(automate_bridge_engine_messages_to_bridge[$interval]))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "To bridge",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Messages to/from bridge",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "iops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "decimals": null,
+      "fill": 1,
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 12
       },
       "id": 41,
       "legend": {
@@ -1358,7 +1730,7 @@
       "lines": true,
       "linewidth": 1,
       "links": [],
-      "nullPointMode": "null",
+      "nullPointMode": "null as zero",
       "percentage": false,
       "pointradius": 0.5,
       "points": true,
@@ -1368,122 +1740,26 @@
       "stack": false,
       "steppedLine": true,
       "targets": [
-        {
-          "expr": "automate_bot_count{state=\"total\"}",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Total",
-          "refId": "B"
-        },
         {
           "expr": "automate_bot_count{state=\"running\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "Running",
+          "legendFormat": "Programs running",
           "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Running bots",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": 0,
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
         },
         {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "decimals": null,
-      "fill": 1,
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 6
-      },
-      "id": 45,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "percentage": false,
-      "pointradius": 0.5,
-      "points": true,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": true,
-      "targets": [
-        {
-          "expr": "automate_monitor_count{state=\"total\"}",
+          "expr": "automate_bot_count{state=\"total\"}",
           "format": "time_series",
-          "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "Total",
+          "legendFormat": "Programs total",
           "refId": "B"
-        },
-        {
-          "expr": "automate_monitor_count{state=\"running\"}",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Running",
-          "refId": "A"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Running monitors",
+      "title": "Running programs",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1500,93 +1776,7 @@
       "yaxes": [
         {
           "decimals": 0,
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "fill": 1,
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 12,
-        "y": 6
-      },
-      "id": 43,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "percentage": false,
-      "pointradius": 0.5,
-      "points": true,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": true,
-      "targets": [
-        {
-          "expr": "automate_user_count",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Registered",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Registered users",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": 0,
-          "format": "short",
+          "format": "locale",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1616,10 +1806,10 @@
       "decimals": null,
       "fill": 1,
       "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 6
+        "h": 5,
+        "w": 8,
+        "x": 6,
+        "y": 12
       },
       "id": 44,
       "legend": {
@@ -1711,103 +1901,21 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "description": "Messages getting in and out of the channel and bridge engines",
       "fill": 1,
       "gridPos": {
         "h": 5,
-        "w": 12,
-        "x": 0,
-        "y": 12
-      },
-      "id": 50,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "percentage": false,
-      "pointradius": 0.5,
-      "points": true,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(automate_bot_engine_cycles[$interval]))",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Operations",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Bot usage",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "ops",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "description": "Messages getting in and out of the channel_engine",
-      "fill": 1,
-      "gridPos": {
-        "h": 5,
-        "w": 12,
-        "x": 12,
+        "w": 10,
+        "x": 14,
         "y": 12
       },
       "id": 53,
       "legend": {
+        "alignAsTable": false,
         "avg": false,
         "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
         "max": false,
         "min": false,
         "show": true,
@@ -1817,10 +1925,10 @@
       "lines": true,
       "linewidth": 1,
       "links": [],
-      "nullPointMode": "null",
+      "nullPointMode": "null as zero",
       "percentage": false,
-      "pointradius": 2,
-      "points": false,
+      "pointradius": 1,
+      "points": true,
       "renderer": "flot",
       "seriesOverrides": [],
       "spaceLength": 10,
@@ -1830,6 +1938,7 @@
         {
           "expr": "sum(rate(automate_channel_engine_messages_in[$interval]))",
           "format": "time_series",
+          "instant": false,
           "intervalFactor": 1,
           "legendFormat": "Channel engine Fan IN",
           "refId": "A"
@@ -1840,20 +1949,6 @@
           "intervalFactor": 1,
           "legendFormat": "Channel engine Fan OUT",
           "refId": "B"
-        },
-        {
-          "expr": "sum(rate(automate_bridge_engine_messages_to_bridge[$interval]))",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Plaza -> Bridge",
-          "refId": "C"
-        },
-        {
-          "expr": "sum(rate(automate_bridge_engine_messages_from_bridge[$interval]))",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Bridge -> Plaza",
-          "refId": "D"
         }
       ],
       "thresholds": [],
@@ -2015,11 +2110,11 @@
       "fill": 1,
       "gridPos": {
         "h": 5,
-        "w": 7,
+        "w": 6,
         "x": 8,
         "y": 17
       },
-      "id": 48,
+      "id": 43,
       "legend": {
         "avg": false,
         "current": false,
@@ -2040,14 +2135,13 @@
       "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
-      "steppedLine": false,
+      "steppedLine": true,
       "targets": [
         {
-          "expr": "sum(rate(automate_monitor_trigger[10m]))",
+          "expr": "automate_user_count",
           "format": "time_series",
-          "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "Triggers",
+          "legendFormat": "Registered",
           "refId": "A"
         }
       ],
@@ -2055,7 +2149,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Monitor usage",
+      "title": "Registered users",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2071,9 +2165,9 @@
       },
       "yaxes": [
         {
-          "decimals": null,
-          "format": "ops",
-          "label": "",
+          "decimals": 0,
+          "format": "short",
+          "label": null,
           "logBase": 1,
           "max": null,
           "min": null,
@@ -2104,8 +2198,8 @@
       "fill": 1,
       "gridPos": {
         "h": 5,
-        "w": 9,
-        "x": 15,
+        "w": 10,
+        "x": 14,
         "y": 17
       },
       "id": 51,
@@ -2197,12 +2291,195 @@
       }
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 22
+      },
+      "id": 48,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pointradius": 0.5,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(automate_monitor_trigger[$interval]))",
+          "format": "time_series",
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "Triggers",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Monitor usage",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": null,
+          "format": "ops",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "decimals": null,
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 8,
+        "y": 22
+      },
+      "id": 45,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 0.5,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": true,
+      "targets": [
+        {
+          "expr": "automate_monitor_count{state=\"total\"}",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "Total",
+          "refId": "B"
+        },
+        {
+          "expr": "automate_monitor_count{state=\"running\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Running",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Running monitors",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 28
       },
       "id": 20,
       "panels": [],
@@ -2232,7 +2509,7 @@
         "h": 7,
         "w": 6,
         "x": 0,
-        "y": 23
+        "y": 29
       },
       "id": 16,
       "interval": null,
@@ -2306,7 +2583,7 @@
         "h": 7,
         "w": 8,
         "x": 6,
-        "y": 23
+        "y": 29
       },
       "id": 11,
       "legend": {
@@ -2405,7 +2682,7 @@
         "h": 7,
         "w": 8,
         "x": 14,
-        "y": 23
+        "y": 29
       },
       "id": 10,
       "legend": {
@@ -2501,7 +2778,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 36
       },
       "id": 18,
       "panels": [],
@@ -2522,7 +2799,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 31
+        "y": 37
       },
       "id": 6,
       "legend": {
@@ -2617,7 +2894,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 31
+        "y": 37
       },
       "id": 14,
       "legend": {
@@ -2723,7 +3000,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 31
+        "y": 37
       },
       "id": 3,
       "legend": {
@@ -2840,7 +3117,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 38
+        "y": 44
       },
       "id": 15,
       "legend": {
@@ -2950,7 +3227,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 38
+        "y": 44
       },
       "id": 7,
       "legend": {
@@ -3059,7 +3336,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 38
+        "y": 44
       },
       "id": 8,
       "legend": {
@@ -3182,7 +3459,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 45
+        "y": 51
       },
       "id": 12,
       "legend": {
@@ -3315,20 +3592,20 @@
         "auto_count": 30,
         "auto_min": "10s",
         "current": {
-          "text": "5m",
-          "value": "5m"
+          "text": "1m",
+          "value": "1m"
         },
         "hide": 0,
         "label": null,
         "name": "interval",
         "options": [
           {
-            "selected": false,
+            "selected": true,
             "text": "1m",
             "value": "1m"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "5m",
             "value": "5m"
           },
@@ -3418,5 +3695,5 @@
   "timezone": "browser",
   "title": "Plaza",
   "uid": "iKcIpW8mk",
-  "version": 4
+  "version": 9
 }
