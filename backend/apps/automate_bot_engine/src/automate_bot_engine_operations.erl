@@ -85,8 +85,8 @@ run_thread(Thread, Message) ->
             of
                 Result ->
                     Result
-            catch ErrorNS:Error ->
-                    io:fwrite("[Thread] Critical error: ~p~n~p~n", [{ErrorNS, Error}, erlang:get_stacktrace()]),
+            catch ErrorNS:Error:StackTrace ->
+                    io:fwrite("[Thread] Critical error: ~p~n~p~n", [{ErrorNS, Error}, StackTrace]),
                     {stopped, {ErrorNS, Error}}  %% Critical errors trigger a stop
             end;
         {error, element_not_found} ->
