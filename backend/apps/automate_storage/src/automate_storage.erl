@@ -423,23 +423,10 @@ get_program_variable(ProgramId, Key) ->
             {error, mnesia:error_description(Reason)}
     end.
 
-%% Only supported on tests
--ifdef(TEST).
-supports_anonymous_programs() ->
-    true.
--else.
-supports_anonymous_programs() ->
-    false.
--endif.
-
 -spec get_userid_from_username(binary()) -> {ok, binary()} | {error, no_user_found}.
 get_userid_from_username(undefined) ->
-    case supports_anonymous_programs() of
-        true ->
-            {ok, undefined};
-        _ ->
-            {error, not_user_found}
-    end;
+    {ok, undefined};
+
 get_userid_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'
                                       , username='$2'
