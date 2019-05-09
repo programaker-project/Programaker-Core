@@ -31,6 +31,7 @@
         , register_thread_runner/2
         , get_thread_from_id/1
         , delete_thread/1
+        , update_thread/1
 
         , set_program_variable/3
         , get_program_variable/2
@@ -328,11 +329,11 @@ dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
 
 -spec create_thread(binary(), #program_thread{}) -> {ok, thread_id()}.
-create_thread(ParentProgramId, Thread=#program_thread{ program=Instructions
-                                                     , global_memory=Memory
-                                                     , instruction_memory=InstructionMemory
-                                                     , position=Position
-                                                     }) ->
+create_thread(ParentProgramId, #program_thread{ program=Instructions
+                                              , global_memory=Memory
+                                              , instruction_memory=InstructionMemory
+                                              , position=Position
+                                              }) ->
     ThreadId = generate_id(),
     UserThread = #running_program_thread_entry{ thread_id=ThreadId
                                               , runner_pid=undefined
@@ -361,7 +362,25 @@ delete_thread(ThreadId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[Thread delete] Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec update_thread(#running_program_thread_entry{}) -> ok | {error, not_found}.
+update_thread(Thread=#running_program_thread_entry{ thread_id=Id }) ->
+    Transaction = fun() ->
+                          case mnesia:read(?RUNNING_THREADS_TABLE, Id) of
+                              [] ->
+                                  {error, not_found};
+                              [_] ->
+                                  ok = mnesia:write(?RUNNING_THREADS_TABLE, Thread, write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("[Thread update] Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 

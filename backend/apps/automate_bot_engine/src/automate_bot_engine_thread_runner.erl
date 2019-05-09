@@ -112,26 +112,26 @@ loop(State = #state{ check_next_action = CheckContinue
 -spec run_tick(#state{}, any()) -> #state{}.
 run_tick(State = #state{ thread=Thread }, Message) ->
     RunnerState = ?UTILS:parse_program_thread(Thread),
-    NewRunnerState = case automate_bot_engine_operations:run_thread(RunnerState, Message) of
-                          { stopped, _Reason } ->
-                              self() ! {stop, self()},
-                             RunnerState; %% Self-destroy
-                          { did_not_run, {new_state, NewState} } ->
-                              NewState;
-                          { did_not_run, _Reason } ->
-                              RunnerState;
-                          { ran_this_tick, NewThreadState } ->
-                              #running_program_thread_entry{ parent_program_id=Ppid } = Thread,
-                              automate_stats:log_observation(counter, automate_bot_engine_cycles, [Ppid]),
-                              NewThreadState
-                      end,
+    {UpdateThread, NewRunnerState} = case automate_bot_engine_operations:run_thread(RunnerState, Message) of
+                                         { stopped, _Reason } ->
+                                             self() ! {stop, self()},
+                                             {false, RunnerState}; %% Self-destroy
+                                         { did_not_run, {new_state, NewState} } ->
+                                             {true, NewState};
+                                         { did_not_run, _Reason } ->
+                                             {false, RunnerState};
+                                         { ran_this_tick, RanThreadState } ->
+                                             #running_program_thread_entry{ parent_program_id=Ppid } = Thread,
+                                             automate_stats:log_observation(counter, automate_bot_engine_cycles, [Ppid]),
+                                             {true, RanThreadState}
+                                     end,
 
     ExpectedSignals = case automate_bot_engine_operations:get_expected_signals([NewRunnerState]) of
-                                {ok, []} ->
-                                    [?SIGNAL_PROGRAM_TICK];
-                                {ok, Signals} ->
-                                    Signals
-                            end,
+                          {ok, []} ->
+                              [?SIGNAL_PROGRAM_TICK];
+                          {ok, Signals} ->
+                              Signals
+                      end,
 
     %% Trigger now the timer signal if needed
     case lists:member(?SIGNAL_PROGRAM_TICK, ExpectedSignals) of
@@ -140,6 +140,16 @@ run_tick(State = #state{ thread=Thread }, Message) ->
         _ ->
             ok
     end,
-    #state{ thread=?UTILS:merge_thread_structures(Thread, NewRunnerState)
+
+    NewThreadState = ?UTILS:merge_thread_structures(Thread, NewRunnerState),
+
+    case UpdateThread of
+        true ->
+            automate_storage:update_thread(NewThreadState);
+        false ->
+            ok
+    end,
+
+    #state{ thread=NewThreadState
           , check_next_action=?UTILS:build_check_next_action(ExpectedSignals)
           }.
