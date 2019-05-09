@@ -2,8 +2,8 @@
 
 %% API
 -export([ get_expected_signals/1
-        , run_threads/3
-        , get_result/3
+        , run_thread/2
+        , get_result/2
         ]).
 
 -define(SERVER, ?MODULE).
@@ -18,14 +18,9 @@
 get_expected_signals(Threads) ->
     {ok, get_expected_signals_from_threads(Threads)}.
 
--spec run_threads([#program_thread{}], #program_state{}, {atom(), any()}) -> {ok, {[#program_thread{}], [#program_thread{}]}}.
-run_threads(Threads, State, Message) ->
-    { _Stopped, RanThisTick, DidNotRanThisTick } = run_and_split_threads(Threads, State, Message),
-    {ok, {RanThisTick, DidNotRanThisTick}}.
-
--spec get_block_result(map(), #program_thread{}, #program_state{}) -> {ok, any()} | {error, not_found}.
-get_result(Operation, Thread, Program) ->
-    get_block_result(Operation, Thread, Program).
+-spec get_block_result(map(), #program_thread{}) -> {ok, any()} | {error, not_found}.
+get_result(Operation, Thread) ->
+    get_block_result(Operation, Thread).
 
 %%%===================================================================
 %%% Internal functions
@@ -78,38 +73,22 @@ resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | _]) wh
 resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
     resolve_subblock_with_position(lists:nth(Position, Contents), T).
 
-
--spec run_and_split_threads([#program_thread{}], #program_state{}, { atom(), any() })
-                           -> {[#program_thread{}], [#program_thread{}], [#program_thread{}]}.
-run_and_split_threads(Threads, State, Message) ->
-    partition_threads(Threads, State, Message, {[], [], []}).
-
--spec partition_threads([#program_thread{}], #program_state{}, { atom(), any() },
-                        {[#program_thread{}], [#program_thread{}], [#program_thread{}]})
-                       -> {[#program_thread{}], [#program_thread{}], [#program_thread{}]}.
-partition_threads([], _State, _Message, { Stopped, RanThisTick, DidNotRanThisTick }) ->
-    { Stopped, RanThisTick, DidNotRanThisTick };
-
-partition_threads([Thread | T], State, Message, { Stopped, RanThisTick, DidNotRanThisTick }) ->
-    case run_thread(Thread, State, Message) of
-        { stopped, _Reason } ->
-            partition_threads(T, State, Message, { [Thread | Stopped], RanThisTick, DidNotRanThisTick });
-        { did_not_run, {new_state, NewThreadState} } ->
-            partition_threads(T, State, Message, { Stopped, RanThisTick, [NewThreadState | DidNotRanThisTick] });
-        { did_not_run, _Reason } ->
-            partition_threads(T, State, Message, { Stopped, RanThisTick, [Thread | DidNotRanThisTick] });
-        { ran_this_tick, NewThreadState } ->
-            partition_threads(T, State, Message, { Stopped, [NewThreadState | RanThisTick], DidNotRanThisTick })
-    end.
-
--spec run_thread(#program_thread{}, #program_state{}, {atom(), any()})
+-spec run_thread(#program_thread{}, {atom(), any()})
                 -> {stopped, thread_finished} | {did_not_run, waiting}
                        | {did_not_run, {new_state, #program_thread{}}}
                        | {ran_this_tick, #program_thread{}}.
-run_thread(Thread, State, Message ) ->
+run_thread(Thread, Message) ->
     case get_instruction(Thread) of
         {ok, Instruction} ->
-            run_instruction(Instruction, Thread, State, Message);
+            try
+                run_instruction(Instruction, Thread, Message)
+            of
+                Result ->
+                    Result
+            catch ErrorNS:Error:StackTrace ->
+                    io:fwrite("[Thread] Critical error: ~p~n~p~n", [{ErrorNS, Error}, StackTrace]),
+                    {stopped, {ErrorNS, Error}}  %% Critical errors trigger a stop
+            end;
         {error, element_not_found} ->
             {stopped, thread_finished}
     end.
@@ -120,9 +99,9 @@ run_instruction(#{ ?TYPE := ?COMMAND_SET_VARIABLE
                                     }
                                  , ValueArgument
                                  ]
-                 }, Thread, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, ProgramState),
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
     {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, VariableName, Value),
     {ran_this_tick, increment_position(NewThreadState)};
 
@@ -133,30 +112,30 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                                     }
                                  , ValueArgument
                                  ]
-                 }, Thread, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, Change} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, ProgramState),
+    {ok, Change} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
     {ok, NewValue} = case automate_bot_engine_variables:get_program_variable(Thread, VariableName) of
-                   {ok, PrevValue} ->
-                       automate_bot_engine_values:add(PrevValue, Change);
-                   {error, not_found} ->
-                       {ok, Change}
-               end,
+                         {ok, PrevValue} ->
+                             automate_bot_engine_values:add(PrevValue, Change);
+                         {error, not_found} ->
+                             {ok, Change}
+                     end,
     {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, VariableName, NewValue),
     {ran_this_tick, increment_position(NewThreadState)};
 
 run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
                  , ?ARGUMENTS := [Argument]
-                 }, Thread=#program_thread{ position=Position }, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {Times, Value} = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
                          {ok, MemoryValue} ->
                              MemoryValue;
                          {error, not_found} ->
-                             {ok, TimesStr} = automate_bot_engine_variables:resolve_argument(Argument, Thread, ProgramState),
+                             {ok, TimesStr} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
                              LoopTimes = to_int(TimesStr),
                              {LoopTimes, 0}
-            end,
+                     end,
     case Value < Times of
         true ->
             NextIteration = automate_bot_engine_variables:set_instruction_memory( Thread
@@ -170,9 +149,9 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
 
 run_instruction(#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
                  , ?ARGUMENTS := [Argument]
-                 }, Thread=#program_thread{ position=Position }, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread, ProgramState),
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
     case Value of
         false ->
             {ran_this_tick, Thread#program_thread{ position=Position ++ [1] }};
@@ -182,7 +161,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
 
 run_instruction(#{ ?TYPE := ?COMMAND_IF
                  , ?ARGUMENTS := [Argument]
-                 }, Thread=#program_thread{ position=Position }, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
         {ok, _} ->
@@ -190,7 +169,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_IF
             {ran_this_tick, increment_position(NextIteration)};
         {error, not_found} ->
             {ok, Value} = automate_bot_engine_variables:resolve_argument(
-                            Argument, Thread, ProgramState),
+                            Argument, Thread),
 
             case Value of
                 false -> %% Not matching, skipping
@@ -205,7 +184,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_IF
 
 run_instruction(#{ ?TYPE := ?COMMAND_IF_ELSE
                  , ?ARGUMENTS := [Argument]
-                 }, Thread=#program_thread{ position=Position }, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
         {ok, _} ->
@@ -214,7 +193,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_IF_ELSE
         {error, not_found} ->
             NextIteration = automate_bot_engine_variables:set_instruction_memory(
                               Thread, {already_run, true}),
-            {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, NextIteration, ProgramState),
+            {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, NextIteration),
             case Value of
                 false -> %% Not matching, going for else
                     {ran_this_tick, NextIteration#program_thread{ position=Position ++ [2, 1] }};
@@ -225,9 +204,9 @@ run_instruction(#{ ?TYPE := ?COMMAND_IF_ELSE
 
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT_UNTIL
                  , ?ARGUMENTS := [Argument]
-                 }, Thread=#program_thread{}, ProgramState, _) ->
+                 }, Thread=#program_thread{}, _) ->
 
-    {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread, ProgramState),
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
     case Value of
         false ->
             {did_not_run, Thread};
@@ -237,15 +216,15 @@ run_instruction(#{ ?TYPE := ?COMMAND_WAIT_UNTIL
 
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT
                  , ?ARGUMENTS := [Argument]
-                 }, Thread, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, Seconds} = automate_bot_engine_variables:resolve_argument(Argument, Thread, ProgramState),
+    {ok, Seconds} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
     StartTime = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
                     {ok, MemoryValue} ->
                         MemoryValue;
                     {error, not_found} ->
                         erlang:monotonic_time(millisecond)
-            end,
+                end,
 
     WaitFinished = StartTime + binary_to_integer(Seconds) * 1000 < erlang:monotonic_time(millisecond),
     case WaitFinished of
@@ -263,9 +242,9 @@ run_instruction(#{ ?TYPE := ?COMMAND_ADD_TO_LIST
                                     }
                                  , NewValueArg
                                  ]
-                 }, Thread, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, NewValue} = automate_bot_engine_variables:resolve_argument(NewValueArg, Thread, ProgramState),
+    {ok, NewValue} = automate_bot_engine_variables:resolve_argument(NewValueArg, Thread),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
                       {ok, Value} ->
                           Value;
@@ -285,9 +264,9 @@ run_instruction(#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
                                     }
                                  , IndexValueArg
                                  ]
-                 }, Thread, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexValueArg, Thread, ProgramState),
+    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexValueArg, Thread),
     Index = to_int(IndexValue),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
                       {ok, Value} ->
@@ -308,11 +287,11 @@ run_instruction(#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
                                  , ValueArg
                                  , IndexArg
                                  ]
-                 }, Thread, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread, ProgramState),
+    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread),
     Index = to_int(IndexValue),
-    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread, ProgramState),
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
                       {ok, ListOnDB} ->
                           ListOnDB;
@@ -332,11 +311,11 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
                                  , IndexArg
                                  , ValueArg
                                  ]
-                 }, Thread, ProgramState, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread, ProgramState),
+    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread),
     Index = to_int(IndexValue),
-    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread, ProgramState),
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
                       {ok, ListOnDB} ->
                           ListOnDB;
@@ -350,23 +329,17 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
     {ran_this_tick, increment_position(NewThreadState)};
 
 run_instruction(#{ ?TYPE := ?COMMAND_CALL_SERVICE
-                               , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
-                                                , ?SERVICE_ACTION := Action
-                                                , ?SERVICE_CALL_VALUES := Arguments
-                                                }
-                               }, Thread,
-                ProgramState=#program_state{permissions=Permissions},
+                 , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
+                                  , ?SERVICE_ACTION := Action
+                                  , ?SERVICE_CALL_VALUES := Arguments
+                                  }
+                 }, Thread=#program_thread{ program_id=ProgramId },
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    UserId = case Permissions of
-                 undefined ->  % For simplification on test cases
-                     undefined;
-                 #program_permissions{ owner_user_id=OwnerUserId } ->
-                     OwnerUserId
-             end,
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
 
     Values = lists:map(fun (Arg) ->
-                               {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread, ProgramState),
+                               {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread),
                                Value
                        end, Arguments),
 
@@ -376,21 +349,15 @@ run_instruction(#{ ?TYPE := ?COMMAND_CALL_SERVICE
 
 run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
                            , ?ARGUMENTS := Arguments
-                           }, Thread,
-                ProgramState=#program_state{permissions=Permissions},
+                           }, Thread=#program_thread{ program_id=ProgramId },
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
     SaveTo = get_save_to(Operation),
-    UserId = case Permissions of
-                 undefined ->  % For simplification on test cases
-                     undefined;
-                 #program_permissions{ owner_user_id=OwnerUserId } ->
-                     OwnerUserId
-             end,
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
 
     ReadArguments = remove_save_to(Arguments, SaveTo),
     Values = lists:map(fun (Arg) ->
-                               {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread, ProgramState),
+                               {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread),
                                Value
                        end, ReadArguments),
 
@@ -418,18 +385,12 @@ run_instruction(#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
                                    }
                                  , Input
                                  ]
-                 }, Thread,
-                ProgramState=#program_state{permissions=Permissions},
+                 }, Thread=#program_thread{ program_id=ProgramId },
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    UserId = case Permissions of
-                 undefined ->  % For simplification on test cases
-                     undefined;
-                 #program_permissions{ owner_user_id=OwnerUserId } ->
-                     OwnerUserId
-             end,
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
 
-    {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread, ProgramState),
+    {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread),
 
     case automate_template_engine:match(UserId, Thread, TemplateId, InputValue) of
         {ok, NewThread, _Value} ->
@@ -438,11 +399,11 @@ run_instruction(#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
             {ran_this_tick, finish_thread(Thread)}
     end;
 
-run_instruction(#{ ?TYPE := Instruction }, _Thread, _ProgramState, Message) ->
+run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
     io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
     {did_not_run, waiting};
 
-run_instruction(#{ <<"contents">> := _Content }, Thread, _ProgramState, _Message) ->
+run_instruction(#{ <<"contents">> := _Content }, Thread, _Message) ->
     %% Finished code block
     {ran_this_tick, increment_position(Thread)}.
 
@@ -490,13 +451,13 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
 
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
-             automate_bot_engine_values:add(FirstValue, SecondValue);
+            automate_bot_engine_values:add(FirstValue, SecondValue);
         _ ->
             {error, not_found}
     end;
@@ -508,17 +469,11 @@ get_block_result(#{ ?TYPE := ?MATCH_TEMPLATE_CHECK
                                     }
                                   , Input
                                   ]
-                  }, Thread,
-                ProgramState=#program_state{permissions=Permissions}) ->
+                  }, Thread=#program_thread{ program_id=ProgramId }) ->
 
-    UserId = case Permissions of
-                 undefined ->  % For simplification on test cases
-                     undefined;
-                 #program_permissions{ owner_user_id=OwnerUserId } ->
-                     OwnerUserId
-             end,
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
 
-    {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread, ProgramState),
+    {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread),
 
     case automate_template_engine:match(UserId, Thread, TemplateId, InputValue) of
         {ok, NewThread, _Value} ->
@@ -532,9 +487,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_ADD
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
             automate_bot_engine_values:add(FirstValue, SecondValue);
@@ -546,9 +501,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_SUBTRACT
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
             automate_bot_engine_values:subtract(FirstValue, SecondValue);
@@ -560,9 +515,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_MULTIPLY
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
             automate_bot_engine_values:multiply(FirstValue, SecondValue);
@@ -574,9 +529,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_DIVIDE
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
             automate_bot_engine_values:divide(FirstValue, SecondValue);
@@ -589,9 +544,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_LESS_THAN
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
             automate_bot_engine_values:is_less_than(FirstValue, SecondValue);
@@ -603,9 +558,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_GREATER_THAN
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
             automate_bot_engine_values:is_greater_than(FirstValue, SecondValue);
@@ -617,9 +572,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_EQUALS
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
             automate_bot_engine_values:is_equal_to(FirstValue, SecondValue);
@@ -632,9 +587,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_AND
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, true}, {ok, true}] ->
             {ok, true};
@@ -648,9 +603,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_OR
                   , ?ARGUMENTS := [ First
                                   , Second
                                   ]
-                  }, Thread, ProgramState) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, ProgramState),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, ProgramState),
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
     case [FirstResult, SecondResult] of
         [{ok, true}, _] ->
             {ok, true};
@@ -665,8 +620,8 @@ get_block_result(#{ ?TYPE := ?COMMAND_OR
 get_block_result(#{ ?TYPE := ?COMMAND_NOT
                   , ?ARGUMENTS := [ Value
                                   ]
-                  }, Thread, ProgramState) ->
-    Result = automate_bot_engine_variables:resolve_argument(Value, Thread, ProgramState),
+                  }, Thread) ->
+    Result = automate_bot_engine_variables:resolve_argument(Value, Thread),
     case Result of
         {ok, false} ->
             {ok, true};
@@ -680,8 +635,8 @@ get_block_result(#{ ?TYPE := ?COMMAND_NOT
 get_block_result(#{ ?TYPE := ?COMMAND_DATA_VARIABLE
                   , ?ARGUMENTS := [ Value
                                   ]
-                  }, Thread, ProgramState) ->
-    automate_bot_engine_variables:resolve_argument(Value, Thread, ProgramState);
+                  }, Thread) ->
+    automate_bot_engine_variables:resolve_argument(Value, Thread);
 
 %% List
 get_block_result(#{ ?TYPE := ?COMMAND_ITEM_OF_LIST
@@ -690,8 +645,8 @@ get_block_result(#{ ?TYPE := ?COMMAND_ITEM_OF_LIST
                                      }
                                   , IndexArg
                                   ]
-                  }, Thread, ProgramState) ->
-    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread, ProgramState),
+                  }, Thread) ->
+    {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread),
     Index = to_int(IndexValue),
     case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
         {ok, List} ->
@@ -706,8 +661,8 @@ get_block_result(#{ ?TYPE := ?COMMAND_ITEMNUM_OF_LIST
                                      }
                                   , ValueArg
                                   ]
-                  }, Thread, ProgramState) ->
-    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread, ProgramState),
+                  }, Thread) ->
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
     case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
         {ok, List} ->
             automate_bot_engine_naive_lists:get_item_num(List, Value);
@@ -720,7 +675,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_LENGTH_OF_LIST
                                      , ?VALUE := ListName
                                      }
                                   ]
-                  }, Thread, _Program) ->
+                  }, Thread) ->
     case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
         {ok, List} ->
             automate_bot_engine_naive_lists:get_length(List);
@@ -734,8 +689,8 @@ get_block_result(#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
                                      }
                                   , ValueArg
                                   ]
-                  }, Thread, ProgramState) ->
-    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread, ProgramState),
+                  }, Thread) ->
+    {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
     case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
         {ok, List} ->
             {ok, automate_bot_engine_naive_lists:contains(List, Value)};
@@ -745,7 +700,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
 
 get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
                   , ?ARGUMENTS := []
-                  }, _Thread, _Program) ->
+                  }, _Thread) ->
     case automate_monitor_engine:get_last_monitor_result(MonitorId) of
         {ok, Result} ->
             {ok, Result};
@@ -754,19 +709,13 @@ get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
     end;
 
 get_block_result(#{ ?TYPE := <<"services.", ServiceCall/binary>>
-                 , ?ARGUMENTS := Arguments
-                 }, Thread,
-                 ProgramState=#program_state{permissions=Permissions}) ->
+                  , ?ARGUMENTS := Arguments
+                  }, Thread=#program_thread{ program_id=ProgramId }) ->
 
-    UserId = case Permissions of
-                 undefined ->  % For simplification on test cases
-                     undefined;
-                 #program_permissions{ owner_user_id=OwnerUserId } ->
-                     OwnerUserId
-             end,
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
 
     Values = lists:map(fun (Arg) ->
-                               {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread, ProgramState),
+                               {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread),
                                Value
                        end, Arguments),
 
@@ -776,11 +725,11 @@ get_block_result(#{ ?TYPE := <<"services.", ServiceCall/binary>>
     {ok, Value};
 
 get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
-                 , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
-                                  , ?SERVICE_ACTION := Action
-                                  , ?SERVICE_CALL_VALUES := Values
-                                  }
-                 }, Thread=#program_thread{ program_id=PID }, _Program) ->
+                  , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
+                                   , ?SERVICE_ACTION := Action
+                                   , ?SERVICE_CALL_VALUES := Values
+                                   }
+                  }, Thread=#program_thread{ program_id=PID }) ->
 
     {ok, #user_program_entry{ user_id=UserId }} = automate_storage:get_program_from_id(PID),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
@@ -788,7 +737,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
     {ok, Value};
 
 %% Fail
-get_block_result(Block, _Thread, _ProgramState) ->
+get_block_result(Block, _Thread) ->
     io:format("Result from: ~p~n", [Block]),
     erlang:error(bad_operation).
 

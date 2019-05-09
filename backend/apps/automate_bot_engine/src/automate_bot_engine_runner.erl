@@ -131,44 +131,14 @@ loop(State = #state{ check_next_action = CheckContinue
 
 -spec run_tick(#state{}, any()) -> #state{}.
 run_tick(State = #state{ program=Program }, Message) ->
-    #program_state{program_id=Id, threads=OriginalThreads} = Program,
+    #program_state{program_id=Id} = Program,
     {ok, TriggeredThreads} = automate_bot_engine_triggers:get_triggered_threads(Program, Message),
 
-    ThreadsBefore = TriggeredThreads ++ OriginalThreads,
+    lists:foreach(fun(Thread) ->
+                          automate_bot_engine_thread_launcher:launch_thread(Id, Thread)
+                  end, TriggeredThreads),
 
-    {ok, {NonRunnedPrograms, RunnedPrograms}} = automate_bot_engine_operations:run_threads(ThreadsBefore, Program, Message),
-
-    lists:foreach(fun (_) ->
-                          automate_stats:log_observation(counter, automate_bot_engine_cycles, [Id])
-                  end,
-                  RunnedPrograms),
-
-    ThreadsAfter = NonRunnedPrograms ++ RunnedPrograms,
-
-    {ok, TriggersExpectedSignals} = automate_bot_engine_triggers:get_expected_signals(Program),
-    {ok, ThreadsExpectedSignals} = automate_bot_engine_operations:get_expected_signals(ThreadsAfter),
-    ExpectedSignals = TriggersExpectedSignals ++ ThreadsExpectedSignals,
-
-    %% Trigger now the timer signal if needed
-    case lists:member(?SIGNAL_PROGRAM_TICK, ExpectedSignals) of
-        true ->
-            timer:send_after(?MILLIS_PER_TICK, self(), {?SIGNAL_PROGRAM_TICK, {}});
-        _ ->
-            ok
-    end,
-
-    State#state{ program=Program#program_state{ threads=ThreadsAfter }
-               , check_next_action=build_check_next_action(ExpectedSignals)
+    {ok, ExpectedSignals} = automate_bot_engine_triggers:get_expected_signals(Program),
+    State#state{ program=Program
+               , check_next_action=automate_bot_engine_thread_utils:build_check_next_action(ExpectedSignals)
                }.
-
-
-build_check_next_action(ExpectedMessages) ->
-    fun(_, {Type, _Content}) ->
-            %% io:format("Received ~p expecting ~p :: ~p~n", [Type, ExpectedMessages, lists:member(Type, ExpectedMessages)]),
-            case lists:member(Type, ExpectedMessages) of
-                true ->
-                    continue;
-                _ ->
-                    skip
-            end
-    end.

@@ -4,7 +4,7 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_bot_engine_runner_sup).
+-module(automate_bot_engine_thread_runner_sup).
 
 -behaviour(supervisor).
 
@@ -22,19 +22,13 @@
 %%====================================================================
 %% API functions
 %%====================================================================
-start(ProgramId) ->
-    supervisor:start_child(?SERVER, [ProgramId]),
+start(ThreadId) ->
+    R = supervisor:start_child(?SERVER, [ThreadId]),
     ok.
 
 start_link() ->
-    automate_stats:add_metric(counter, automate_bot_engine_cycles, <<"Automate bot engine cycles.">>,
-                              [program_id]),
-
-    automate_stats:add_metric(counter, automate_bot_thread_launch, <<"Threads launched on Automate's bot engine.">>,
-                              [program_id]),
-
     Result = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
-    ok = start_running_programs(),
+    ok = start_running_threads(),
     Result.
 
 
@@ -47,21 +41,21 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
     {ok, { {simple_one_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD},
-           [ #{ id => automate_bot_engine_runner
-              , start => {automate_bot_engine_runner, start_link, []}
+           [ #{ id => automate_bot_engine_thread_runner
+              , start => {automate_bot_engine_thread_runner, start_link, []}
               , restart => permanent
               , shutdown => 2000
               , type => worker
-              , modules => [automate_bot_engine_runner]
+              , modules => [automate_bot_engine_thread_runner]
               }
            ]} }.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
-start_running_programs() ->
-    {ok, Ids} = automate_storage:dirty_list_running_programs(),
-    lists:foreach(fun(ProgramId) ->
-                          ok = start(ProgramId)
+start_running_threads() ->
+    {ok, Ids} = automate_storage:dirty_list_running_threads(),
+    lists:foreach(fun(ThreadId) ->
+                          ok = start(ThreadId)
                   end, Ids),
     ok.

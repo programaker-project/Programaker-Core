@@ -266,7 +266,6 @@ delete_service(_UserId, ServiceId) ->
 
 -spec convert_to_map([#services_table_entry{}]) -> service_info_map().
 convert_to_map(TableEntries) ->
-    io:fwrite("Entries: ~p~n", [TableEntries]),
     convert_to_map(TableEntries, #{}).
 
 -spec convert_to_map([#services_table_entry{}], service_info_map()) ->

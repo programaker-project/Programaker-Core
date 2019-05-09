@@ -63,7 +63,6 @@ is_authorized(Req, State) ->
 
 %% POST handler
 content_types_accepted(Req, State) ->
-    io:fwrite("Control types accepted~n", []),
     {[{{<<"application">>, <<"json">>, []},
        accept_json_register_service}],
      Req, State}.

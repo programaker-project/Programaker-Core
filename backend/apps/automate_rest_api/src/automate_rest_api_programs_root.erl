@@ -70,7 +70,6 @@ is_authorized(Req, State) ->
 
 %% POST handler
 content_types_accepted(Req, State) ->
-    io:fwrite("Control types accepted~n", []),
     {[{{<<"application">>, <<"json">>, []}, accept_json_create_program}],
      Req, State}.
 
@@ -95,7 +94,6 @@ accept_json_create_program(Req, State) ->
 
 %% GET handler
 content_types_provided(Req, State) ->
-    io:fwrite("Control types provided~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 

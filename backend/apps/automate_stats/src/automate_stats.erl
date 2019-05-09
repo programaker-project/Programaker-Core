@@ -70,6 +70,7 @@ update_internal_metrics() ->
                , automate_chat_registry_sup
 
                , automate_bot_engine_runner_sup
+               , automate_bot_engine_thread_runner_sup
                , automate_bot_engine_sup
 
                , automate_monitor_engine_runner_sup
@@ -93,6 +94,13 @@ update_internal_metrics() ->
 
     set_metric(gauge, automate_bot_count,
                proplists:get_value(active, Bots), [running]),
+
+    Threads = supervisor:count_children(automate_bot_engine_thread_runner_sup),
+    set_metric(gauge, automate_program_thread_count,
+               proplists:get_value(workers, Threads), [total]),
+
+    set_metric(gauge, automate_program_thread_count,
+               proplists:get_value(active, Threads), [running]),
 
     %% Monitors
     Monitors = supervisor:count_children(automate_monitor_engine_runner_sup),
@@ -135,6 +143,7 @@ prepare() ->
     add_metric(boolean, automate_service, <<"State of automate service.">>, [name]),
 
     add_metric(gauge, automate_bot_count, <<"Automate's bot.">>, [state]),
+    add_metric(gauge, automate_program_thread_count, <<"Automate's program thread count.">>, [state]),
     add_metric(gauge, automate_monitor_count, <<"Automate's monitor.">>, [state]),
     add_metric(gauge, automate_service_count, <<"Automate's services.">>, [visibility]),
     add_metric(gauge, automate_chat_count, <<"Automate's chats.">>, []),
