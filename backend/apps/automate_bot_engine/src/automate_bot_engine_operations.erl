@@ -461,6 +461,22 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
         _ ->
             {error, not_found}
     end;
+get_block_result(#{ ?TYPE := ?COMMAND_JSON
+                  , ?ARGUMENTS := [ First
+                                  , Second
+                                  ]
+                  }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:get_value_by_key(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
+
 
 %% Templates
 get_block_result(#{ ?TYPE := ?MATCH_TEMPLATE_CHECK

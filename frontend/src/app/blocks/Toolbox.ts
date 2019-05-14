@@ -68,6 +68,7 @@ export class Toolbox {
         this.injectChatBlocks();
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
+        this.injectJSONBlocks();
         registrations = registrations.concat(this.templateController.injectTemplateBlocks());
         this.injectCustomBlocks(custom_blocks);
 
@@ -75,86 +76,109 @@ export class Toolbox {
     }
 
     injectTimeBlocks() {
-        Blockly.Blocks['time_trigger_at'] = {
-            init: function () {
-                this.jsonInit({
-                    'id': 'time_trigger_at',
-                    'message0': 'Every day at %1:%2:%3 (UTC)',
-                    'args0': [
-                        {
-                            'type': 'input_value',
-                            'name': 'HOUR'
-                        },
-                        {
-                            'type': 'input_value',
-                            'name': 'MINUTE'
-                        },
-                        {
-                            'type': 'input_value',
-                            'name': 'SECOND'
-                        },
-                    ],
-                    'category': Blockly.Categories.event,
-                    'extensions': ['colours_time', 'shape_hat']
-                });
-            }
-        };
+      Blockly.Blocks['time_trigger_at'] = {
+          init: function () {
+              this.jsonInit({
+                  'id': 'time_trigger_at',
+                  'message0': 'Every day at %1:%2:%3 (UTC)',
+                  'args0': [
+                      {
+                          'type': 'input_value',
+                          'name': 'HOUR'
+                      },
+                      {
+                          'type': 'input_value',
+                          'name': 'MINUTE'
+                      },
+                      {
+                          'type': 'input_value',
+                          'name': 'SECOND'
+                      },
+                  ],
+                  'category': Blockly.Categories.event,
+                  'extensions': ['colours_time', 'shape_hat']
+              });
+          }
+      };
 
-        Blockly.Blocks['time_get_utc_hour'] = {
-            init: function () {
-                this.jsonInit({
-                    'id': 'time_get_utc_hour',
-                    'message0': 'UTC hour',
-                    'args0': [
-                    ],
-                    'category': Blockly.Categories.event,
-                    'extensions': ['colours_time', 'output_string']
-                });
-            }
-        };
+      Blockly.Blocks['time_get_utc_hour'] = {
+          init: function () {
+              this.jsonInit({
+                  'id': 'time_get_utc_hour',
+                  'message0': 'UTC hour',
+                  'args0': [
+                  ],
+                  'category': Blockly.Categories.event,
+                  'extensions': ['colours_time', 'output_string']
+              });
+          }
+      };
 
-        Blockly.Blocks['time_get_utc_minute'] = {
-            init: function () {
-                this.jsonInit({
-                    'id': 'time_get_utc_minute',
-                    'message0': 'UTC minute',
-                    'args0': [
-                    ],
-                    'category': Blockly.Categories.event,
-                    'extensions': ['colours_time', 'output_string']
-                });
-            }
-        };
+      Blockly.Blocks['time_get_utc_minute'] = {
+          init: function () {
+              this.jsonInit({
+                  'id': 'time_get_utc_minute',
+                  'message0': 'UTC minute',
+                  'args0': [
+                  ],
+                  'category': Blockly.Categories.event,
+                  'extensions': ['colours_time', 'output_string']
+              });
+          }
+      };
 
-        Blockly.Blocks['time_get_utc_seconds'] = {
-            init: function () {
-                this.jsonInit({
-                    'id': 'time_get_utc_seconds',
-                    'message0': 'UTC seconds',
-                    'args0': [
-                    ],
-                    'category': Blockly.Categories.event,
-                    'extensions': ['colours_time', 'output_string']
-                });
-            }
-        };
+      Blockly.Blocks['time_get_utc_seconds'] = {
+          init: function () {
+              this.jsonInit({
+                  'id': 'time_get_utc_seconds',
+                  'message0': 'UTC seconds',
+                  'args0': [
+                  ],
+                  'category': Blockly.Categories.event,
+                  'extensions': ['colours_time', 'output_string']
+              });
+          }
+      };
 
-        try {
-            Blockly.Extensions.register('colours_time',  // Name of the new category
-                function () {
-                    this.setColourFromRawValues_('#85CCB3',  // Block inner color
-                        '#1D1D5F',  // Category circle border color
-                        '#1D1D5F'   // Block border color
-                    );
-                });
-        } catch (e) {
-            // If the extension was registered before
-            // this would have thrown an inocous exception
-            if (!alreadyRegisteredException(e)) {
-                throw e;
-            }
-        }
-    }
+      try {
+          Blockly.Extensions.register('colours_time',  // Name of the new category
+              function () {
+                  this.setColourFromRawValues_('#85CCB3',  // Block inner color
+                      '#1D1D5F',  // Category circle border color
+                      '#1D1D5F'   // Block border color
+                  );
+              });
+      } catch (e) {
+          // If the extension was registered before
+          // this would have thrown an inocous exception
+          if (!alreadyRegisteredException(e)) {
+              throw e;
+          }
+      }
+  }
+
+  injectJSONBlocks() {
+      Blockly.Blocks['operator_json_parser'] = {
+          init: function () {
+              this.jsonInit({
+                  'id': 'operator_json_parser',
+                  'message0': 'Get key %1 of variable %2',
+                  'args0': [
+                      {
+                          'type': 'input_value',
+                          'name': 'KEY'
+                      },
+                      {
+                            'type': 'field_variable',
+                            'name': 'VARIABLE'
+                      },
+                  ],
+                  'category': Blockly.Categories.event,
+                  'extensions': ['colours_operators', 'output_string']
+              });
+          }
+      };
+  }
 
     injectChatBlocks() {
         Blockly.Blocks['chat_whenreceivecommand'] = {
@@ -534,6 +558,18 @@ export class Toolbox {
                   <field name="TEXT">world</field>
                 </shadow>
               </value>
+            </block>
+            <block type="operator_json_parser" id="operator_json_parser">
+            <value name="KEY">
+              <shadow type="text">
+                <field name="TEXT">key</field>
+              </shadow>
+            </value>
+            <value name="VARIABLE">
+              <shadow type="text">
+                <field name="TEXT">json</field>
+              </shadow>
+            </value>
             </block>
             <!--
             <block type="operator_letter_of" id="operator_letter_of">
