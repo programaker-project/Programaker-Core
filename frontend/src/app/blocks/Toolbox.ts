@@ -166,11 +166,11 @@ export class Toolbox {
                   'args0': [
                       {
                           'type': 'input_value',
-                          'name': 'KEY'
+                          'name': 'KEY1'
                       },
                       {
                             'type': 'field_variable',
-                            'name': 'VARIABLE'
+                            'name': 'VARIABLE2'
                       },
                   ],
                   'category': Blockly.Categories.event,
@@ -560,12 +560,12 @@ export class Toolbox {
               </value>
             </block>
             <block type="operator_json_parser" id="operator_json_parser">
-            <value name="KEY">
+            <value name="KEY1">
               <shadow type="text">
                 <field name="TEXT">key</field>
               </shadow>
             </value>
-            <value name="VARIABLE">
+            <value name="VARIABLE2">
               <shadow type="text">
                 <field name="TEXT">json</field>
               </shadow>

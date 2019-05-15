@@ -39,7 +39,7 @@ export default class ScratchProgramSerializer {
 
         let cleanedElement = {
             id: block.id,
-            type: block.getAttribute('type'),
+            type: ScratchProgramSerializer.cleanTypeName(block.getAttribute('type')),
             args: Array.from(block.childNodes)
                 .filter((x: HTMLElement) => x.tagName !== 'NEXT' && x.tagName !== 'STATEMENT')
                 .map(node => this.serializeArg(node as HTMLElement)),
@@ -208,6 +208,11 @@ export default class ScratchProgramSerializer {
         }
     }
 
+    private static cleanTypeName(typeName: string): string {
+        // Remove digits (used for parameter ordering) from end of type
+        return typeName.toString().replace(/\d+$/, "");
+    }
+
     private serializeArg(argument: HTMLElement): any {
         if (argument.tagName === 'FIELD') {
             let type = argument.getAttribute('name').toLowerCase();
@@ -220,7 +225,8 @@ export default class ScratchProgramSerializer {
             }
             return {
                 name: argument.getAttribute('name'),
-                type: type,  // Type here might be 'constant', 'variable' or 'list'
+                // Type here might be 'constant', 'variable' or 'list'
+                type: ScratchProgramSerializer.cleanTypeName(type),
                 value: argument.innerText,
             }
         }
@@ -269,7 +275,7 @@ export default class ScratchProgramSerializer {
         return {
             id: variable.id,
             name: variable.innerText,
-            type: variable.attributes.getNamedItem('type'),
+            type: ScratchProgramSerializer.cleanTypeName(variable.attributes.getNamedItem('type')),
         }
     }
 }
