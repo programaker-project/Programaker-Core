@@ -29,14 +29,14 @@ add(Left, Right) when is_binary(Left) and is_binary(Right) ->
 add(V1, V2) ->
     {ok, binary:list_to_bin(lists:flatten(io_lib:format("~s~s", [to_string(V1), to_string(V2)])))}.
 
--spec get_value_by_key(map(), binary()) -> {ok, binary()}.
-get_value_by_key(Map, Key) when is_map(Map) and is_binary(Key) ->
-    case maps:is_key(Key,Map) of
-        true -> {ok,maps:get(Key,Map)};
-        false -> {error,not_found}
+-spec get_value_by_key(binary(), map()) -> {ok, binary()}.
+get_value_by_key(Key, Map) when is_map(Map) and is_binary(Key) ->
+    case maps:is_key(Key, Map) of
+        true -> {ok, maps:get(Key, Map)};
+        false -> {error, not_found}
     end;
 
-%% If everything else failed, just do simple concatenation
+%% If this is not a map, fail
 get_value_by_key(V1, V2) ->
     {error, not_found}.
 

@@ -462,16 +462,16 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
             {error, not_found}
     end;
 get_block_result(#{ ?TYPE := ?COMMAND_JSON
-                  , ?ARGUMENTS := [ First
-                                  , Second
+                  , ?ARGUMENTS := [ KeyReference
+                                  , MapReference
                                   ]
                   }, Thread) ->
-    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
-    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+    KeyResult = automate_bot_engine_variables:resolve_argument(KeyReference, Thread),
+    MapResult = automate_bot_engine_variables:resolve_argument(MapReference, Thread),
 
-    case [FirstResult, SecondResult] of
-        [{ok, FirstValue}, {ok, SecondValue}] ->
-            automate_bot_engine_values:get_value_by_key(FirstValue, SecondValue);
+    case [KeyResult, MapResult] of
+        [{ok, KeyValue}, {ok, MapValue}] ->
+            automate_bot_engine_values:get_value_by_key(KeyValue, MapValue);
         _ ->
             {error, not_found}
     end;
