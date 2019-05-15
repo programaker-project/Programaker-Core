@@ -68,6 +68,7 @@ export class Toolbox {
         this.injectChatBlocks();
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
+        this.injectJSONBlocks();
         registrations = registrations.concat(this.templateController.injectTemplateBlocks());
         this.injectCustomBlocks(custom_blocks);
 
@@ -154,6 +155,29 @@ export class Toolbox {
                 throw e;
             }
         }
+    }
+
+    injectJSONBlocks() {
+        Blockly.Blocks['operator_json_parser'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'operator_json_parser',
+                    'message0': 'Get key %1 of variable %2',
+                    'args0': [
+                        {
+                            'type': 'input_value',
+                            'name': 'KEY1'
+                        },
+                        {
+                            'type': 'field_variable',
+                            'name': 'VARIABLE2'
+                        },
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_operators', 'output_string']
+                });
+            }
+        };
     }
 
     injectChatBlocks() {
@@ -534,6 +558,18 @@ export class Toolbox {
                   <field name="TEXT">world</field>
                 </shadow>
               </value>
+            </block>
+            <block type="operator_json_parser" id="operator_json_parser">
+            <value name="KEY1">
+              <shadow type="text">
+                <field name="TEXT">key</field>
+              </shadow>
+            </value>
+            <value name="VARIABLE2">
+              <shadow type="text">
+                <field name="TEXT">json</field>
+              </shadow>
+            </value>
             </block>
             <!--
             <block type="operator_letter_of" id="operator_letter_of">

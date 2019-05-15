@@ -21,6 +21,7 @@
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
+-define(COMMAND_JSON, <<"operator_json_parser">>).
 
 %% Templates
 -define(MATCH_TEMPLATE_STATEMENT, <<"automate_match_template_stmt">>).

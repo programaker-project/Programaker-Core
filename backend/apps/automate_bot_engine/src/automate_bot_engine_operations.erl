@@ -461,6 +461,22 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
         _ ->
             {error, not_found}
     end;
+get_block_result(#{ ?TYPE := ?COMMAND_JSON
+                  , ?ARGUMENTS := [ KeyReference
+                                  , MapReference
+                                  ]
+                  }, Thread) ->
+    KeyResult = automate_bot_engine_variables:resolve_argument(KeyReference, Thread),
+    MapResult = automate_bot_engine_variables:resolve_argument(MapReference, Thread),
+
+    case [KeyResult, MapResult] of
+        [{ok, KeyValue}, {ok, MapValue}] ->
+            automate_bot_engine_values:get_value_by_key(KeyValue, MapValue);
+        _ ->
+            {error, not_found}
+    end;
+
+
 
 %% Templates
 get_block_result(#{ ?TYPE := ?MATCH_TEMPLATE_CHECK
