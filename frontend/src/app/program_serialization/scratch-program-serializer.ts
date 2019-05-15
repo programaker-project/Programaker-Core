@@ -208,7 +208,7 @@ export default class ScratchProgramSerializer {
         }
     }
 
-    private static cleanTypeName(typeName: string): string {
+    private static cleanTypeName(typeName: any): string {
         // Remove digits (used for parameter ordering) from end of type
         return typeName.toString().replace(/\d+$/, "");
     }
