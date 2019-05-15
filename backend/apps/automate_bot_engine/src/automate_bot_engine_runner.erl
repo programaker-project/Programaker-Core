@@ -119,7 +119,7 @@ loop(State = #state{ check_next_action = CheckContinue
                                 of
                                     NewState -> NewState
                                 catch ErrNS:Err:StackTrace ->
-                                        % In this case we probably can stop the program
+                                        %% TODO: In this case we probably can stop the program
                                         %% as the triggers fail to work
                                         io:fwrite("Error running program tick ~p~n", [{ErrNS, Err, StackTrace}]),
                                         State
