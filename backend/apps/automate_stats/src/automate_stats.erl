@@ -88,19 +88,32 @@ update_internal_metrics() ->
                   end, Services),
 
     %% Bots
-    Bots = supervisor:count_children(automate_bot_engine_runner_sup),
-    set_metric(gauge, automate_bot_count,
-               proplists:get_value(workers, Bots), [total]),
+    try
+        supervisor:count_children(automate_bot_engine_runner_sup)
+    of Bots ->
+            set_metric(gauge, automate_bot_count,
+                       proplists:get_value(workers, Bots), [total]),
 
-    set_metric(gauge, automate_bot_count,
-               proplists:get_value(active, Bots), [running]),
+            set_metric(gauge, automate_bot_count,
+                       proplists:get_value(active, Bots), [running])
+    catch BotErrNS:BotErr:BotStackTrace ->
+            io:fwrite("Error counting bots: ~p~n", [{BotErrNS, BotErr, BotStackTrace}]),
+            set_metric(gauge, automate_bot_count, 0, [running])
+    end,
 
-    Threads = supervisor:count_children(automate_bot_engine_thread_runner_sup),
-    set_metric(gauge, automate_program_thread_count,
-               proplists:get_value(workers, Threads), [total]),
+    %% Threads
+    try
+        supervisor:count_children(automate_bot_engine_thread_runner_sup)
+    of Threads ->
+            set_metric(gauge, automate_program_thread_count,
+                       proplists:get_value(workers, Threads), [total]),
 
-    set_metric(gauge, automate_program_thread_count,
-               proplists:get_value(active, Threads), [running]),
+            set_metric(gauge, automate_program_thread_count,
+                       proplists:get_value(active, Threads), [running])
+    catch ThreadErrNS:ThreadErr:ThreadStackTrace ->
+            io:fwrite("Error counting threads: ~p~n", [{ThreadErrNS, ThreadErr, ThreadStackTrace}]),
+            set_metric(gauge, automate_program_thread_count, 0, [running])
+    end,
 
     %% Monitors
     Monitors = supervisor:count_children(automate_monitor_engine_runner_sup),

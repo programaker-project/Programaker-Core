@@ -114,9 +114,18 @@ loop(State = #state{ check_next_action = CheckContinue
         {Signal, Message} ->
             NextState = case apply(CheckContinue, [State, {Signal, Message}]) of
                             continue ->
-                                run_tick(State, {Signal, Message});
-                            _ ->
-                                %% io:format("\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [X]),
+                                try
+                                    run_tick(State, {Signal, Message})
+                                of
+                                    NewState -> NewState
+                                catch ErrNS:Err:StackTrace ->
+                                        %% TODO: In this case we probably can stop the program
+                                        %% as the triggers fail to work
+                                        io:fwrite("Error running program tick ~p~n", [{ErrNS, Err, StackTrace}]),
+                                        State
+                                end;
+                            X ->
+                                io:format("\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [X]),
                                 State
                         end,
             loop(NextState);
