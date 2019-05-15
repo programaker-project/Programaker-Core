@@ -76,109 +76,109 @@ export class Toolbox {
     }
 
     injectTimeBlocks() {
-      Blockly.Blocks['time_trigger_at'] = {
-          init: function () {
-              this.jsonInit({
-                  'id': 'time_trigger_at',
-                  'message0': 'Every day at %1:%2:%3 (UTC)',
-                  'args0': [
-                      {
-                          'type': 'input_value',
-                          'name': 'HOUR'
-                      },
-                      {
-                          'type': 'input_value',
-                          'name': 'MINUTE'
-                      },
-                      {
-                          'type': 'input_value',
-                          'name': 'SECOND'
-                      },
-                  ],
-                  'category': Blockly.Categories.event,
-                  'extensions': ['colours_time', 'shape_hat']
-              });
-          }
-      };
+        Blockly.Blocks['time_trigger_at'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'time_trigger_at',
+                    'message0': 'Every day at %1:%2:%3 (UTC)',
+                    'args0': [
+                        {
+                            'type': 'input_value',
+                            'name': 'HOUR'
+                        },
+                        {
+                            'type': 'input_value',
+                            'name': 'MINUTE'
+                        },
+                        {
+                            'type': 'input_value',
+                            'name': 'SECOND'
+                        },
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'shape_hat']
+                });
+            }
+        };
 
-      Blockly.Blocks['time_get_utc_hour'] = {
-          init: function () {
-              this.jsonInit({
-                  'id': 'time_get_utc_hour',
-                  'message0': 'UTC hour',
-                  'args0': [
-                  ],
-                  'category': Blockly.Categories.event,
-                  'extensions': ['colours_time', 'output_string']
-              });
-          }
-      };
+        Blockly.Blocks['time_get_utc_hour'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'time_get_utc_hour',
+                    'message0': 'UTC hour',
+                    'args0': [
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'output_string']
+                });
+            }
+        };
 
-      Blockly.Blocks['time_get_utc_minute'] = {
-          init: function () {
-              this.jsonInit({
-                  'id': 'time_get_utc_minute',
-                  'message0': 'UTC minute',
-                  'args0': [
-                  ],
-                  'category': Blockly.Categories.event,
-                  'extensions': ['colours_time', 'output_string']
-              });
-          }
-      };
+        Blockly.Blocks['time_get_utc_minute'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'time_get_utc_minute',
+                    'message0': 'UTC minute',
+                    'args0': [
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'output_string']
+                });
+            }
+        };
 
-      Blockly.Blocks['time_get_utc_seconds'] = {
-          init: function () {
-              this.jsonInit({
-                  'id': 'time_get_utc_seconds',
-                  'message0': 'UTC seconds',
-                  'args0': [
-                  ],
-                  'category': Blockly.Categories.event,
-                  'extensions': ['colours_time', 'output_string']
-              });
-          }
-      };
+        Blockly.Blocks['time_get_utc_seconds'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'time_get_utc_seconds',
+                    'message0': 'UTC seconds',
+                    'args0': [
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'output_string']
+                });
+            }
+        };
 
-      try {
-          Blockly.Extensions.register('colours_time',  // Name of the new category
-              function () {
-                  this.setColourFromRawValues_('#85CCB3',  // Block inner color
-                      '#1D1D5F',  // Category circle border color
-                      '#1D1D5F'   // Block border color
-                  );
-              });
-      } catch (e) {
-          // If the extension was registered before
-          // this would have thrown an inocous exception
-          if (!alreadyRegisteredException(e)) {
-              throw e;
-          }
-      }
-  }
+        try {
+            Blockly.Extensions.register('colours_time',  // Name of the new category
+                function () {
+                    this.setColourFromRawValues_('#85CCB3',  // Block inner color
+                        '#1D1D5F',  // Category circle border color
+                        '#1D1D5F'   // Block border color
+                    );
+                });
+        } catch (e) {
+            // If the extension was registered before
+            // this would have thrown an inocous exception
+            if (!alreadyRegisteredException(e)) {
+                throw e;
+            }
+        }
+    }
 
-  injectJSONBlocks() {
-      Blockly.Blocks['operator_json_parser'] = {
-          init: function () {
-              this.jsonInit({
-                  'id': 'operator_json_parser',
-                  'message0': 'Get key %1 of variable %2',
-                  'args0': [
-                      {
-                          'type': 'input_value',
-                          'name': 'KEY1'
-                      },
-                      {
+    injectJSONBlocks() {
+        Blockly.Blocks['operator_json_parser'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'operator_json_parser',
+                    'message0': 'Get key %1 of variable %2',
+                    'args0': [
+                        {
+                            'type': 'input_value',
+                            'name': 'KEY1'
+                        },
+                        {
                             'type': 'field_variable',
                             'name': 'VARIABLE2'
-                      },
-                  ],
-                  'category': Blockly.Categories.event,
-                  'extensions': ['colours_operators', 'output_string']
-              });
-          }
-      };
-  }
+                        },
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_operators', 'output_string']
+                });
+            }
+        };
+    }
 
     injectChatBlocks() {
         Blockly.Blocks['chat_whenreceivecommand'] = {
