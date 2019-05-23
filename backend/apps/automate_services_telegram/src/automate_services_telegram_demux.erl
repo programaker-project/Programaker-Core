@@ -32,7 +32,7 @@
                               {error, Error :: term()} |
                               ignore.
 start_link(BotName) ->
-    gen_server:start_link( {local, ?SERVER}, ?MODULE
+    gen_server:start_link( {global, ?SERVER}, ?MODULE
                          , [BotName]
                          , []).
 

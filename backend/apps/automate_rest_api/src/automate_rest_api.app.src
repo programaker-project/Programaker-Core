@@ -14,6 +14,7 @@
                   , automate_stats
                   , automate_service_port_engine
                   , automate_template_engine
+                  , automate_configuration
                   ]}
 
  , {env, [ {port, 8080} ]}

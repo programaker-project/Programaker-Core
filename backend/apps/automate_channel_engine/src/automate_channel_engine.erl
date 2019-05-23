@@ -67,7 +67,7 @@ init(_Args) ->
     {ok, []}.
 
 start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+    gen_server:start_link({global, ?MODULE}, ?MODULE, [], []).
 
 handle_call({add_client, Pid}, _From, State) ->
     log("[Channel engine] Linked to ~p~n", [Pid]),

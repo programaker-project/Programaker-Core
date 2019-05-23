@@ -9,6 +9,7 @@
                    , automate_service_registry
                    , automate_service_user_registration
                    , automate_chat_registry
+                   , automate_configuration
                    , pe4kin
     ]},
     {env, [

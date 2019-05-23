@@ -29,7 +29,7 @@ start(MonitorId) ->
 start_link() ->
     automate_stats:add_metric(counter, automate_monitor_trigger, <<"Automate monitor check.">>,
                               [monitor_id, monitor_name]),
-    Result = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
+    Result = supervisor:start_link({global, ?SERVER}, ?MODULE, []),
     ok = start_running_monitors(),
     Result.
 

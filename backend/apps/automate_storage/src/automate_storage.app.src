@@ -5,6 +5,7 @@
     {mod, { automate_storage_app, [] }},
     {applications, [ kernel
                    , stdlib
+                   , automate_configuration
                    , mnesia
                    , uuid
                    , libsodium

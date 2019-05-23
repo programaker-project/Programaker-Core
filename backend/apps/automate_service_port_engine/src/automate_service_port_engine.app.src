@@ -9,6 +9,7 @@
                   , mnesia
                   , automate_service_registry
                   , automate_stats
+                  , automate_configuration
                   ]},
    {env, [
          ]},

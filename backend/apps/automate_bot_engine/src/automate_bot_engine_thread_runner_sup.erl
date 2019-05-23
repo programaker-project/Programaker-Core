@@ -27,7 +27,7 @@ start(ThreadId) ->
     ok.
 
 start_link() ->
-    Result = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
+    Result = supervisor:start_link({global, ?SERVER}, ?MODULE, []),
     ok = start_running_threads(),
     Result.
 

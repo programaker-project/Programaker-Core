@@ -4,6 +4,7 @@
     {registered, []},
     {applications, [ automate_services_telegram
                    , automate_services_time
+                   , automate_configuration
     ]},
     {env, [
     ]},
