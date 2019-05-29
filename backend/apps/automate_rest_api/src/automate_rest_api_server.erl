@@ -7,6 +7,8 @@
 %% API
 -export([start_link/0]).
 
+-define(PORT_ENV_VARIABLE, "AUTOMATE_HTTP_PORT").
+
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -92,5 +94,10 @@ handler(Pid) ->
 
 
 get_port() ->
-    {ok, Port} = application:get_env(automate_rest_api, port),
-    Port.
+    case os:getenv(?PORT_ENV_VARIABLE) of
+        false ->
+            {ok, Port} = application:get_env(automate_rest_api, port),
+            Port;
+        Value ->
+            list_to_integer(Value)
+    end.
