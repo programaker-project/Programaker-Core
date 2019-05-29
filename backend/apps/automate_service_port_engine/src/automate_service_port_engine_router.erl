@@ -18,6 +18,7 @@
 
 -define(ERROR_CLASSES, no_response | no_connection | not_found | unauthorized).
 -define(SERVER, ?MODULE).
+-define(SERVER_TYPE, local).
 -define(MAX_WAIT_TIME_SECONDS, 100).
 -define(MAX_WAIT_TIME, ?MAX_WAIT_TIME_SECONDS * 1000).
 
@@ -41,7 +42,7 @@
 %% @end
 %%--------------------------------------------------------------------
 connect_bridge(BridgeId) ->
-    gen_server:cast({global, ?SERVER}, { connect_bridge, BridgeId, self() }).
+    gen_server:cast({?SERVER_TYPE, ?SERVER}, { connect_bridge, BridgeId, self() }).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -55,7 +56,7 @@ call_bridge(BridgeId, Msg) ->
     automate_stats:log_observation(counter,
                                    automate_bridge_engine_messages_to_bridge,
                                    [BridgeId]),
-    gen_server:cast({global, ?SERVER}, { call_bridge, BridgeId, Msg, self() }),
+    gen_server:cast({?SERVER_TYPE, ?SERVER}, { call_bridge, BridgeId, Msg, self() }),
     wait_server_response().
 
 -spec wait_server_response() -> {ok, map()} | {error, ?ERROR_CLASSES}.
@@ -78,7 +79,7 @@ wait_server_response() ->
 %% @end
 %%--------------------------------------------------------------------
 answer_message(MessageId, Response) ->
-    gen_server:call({global, ?SERVER}, { answer_message, MessageId, Response }).
+    gen_server:call({?SERVER_TYPE, ?SERVER}, { answer_message, MessageId, Response }).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -88,7 +89,7 @@ answer_message(MessageId, Response) ->
 %% @end
 %%--------------------------------------------------------------------
 is_bridge_connected(BridgeId) ->
-    gen_server:call({global, ?SERVER}, { is_bridge_connected, BridgeId }).
+    gen_server:call({?SERVER_TYPE, ?SERVER}, { is_bridge_connected, BridgeId }).
 
 
 
@@ -100,7 +101,7 @@ is_bridge_connected(BridgeId) ->
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({global, ?SERVER}, ?MODULE, [], []).
+    gen_server:start_link({?SERVER_TYPE, ?SERVER}, ?MODULE, [], []).
 
 %%%===================================================================
 %%% gen_server callbacks
