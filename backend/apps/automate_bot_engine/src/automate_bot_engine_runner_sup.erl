@@ -33,7 +33,7 @@ start_link() ->
     automate_stats:add_metric(counter, automate_bot_thread_launch, <<"Threads launched on Automate's bot engine.">>,
                               [program_id]),
 
-    Result = supervisor:start_link({global, ?SERVER}, ?MODULE, []),
+    Result = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
     ok = start_running_programs(),
     Result.
 
