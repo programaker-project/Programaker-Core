@@ -15,10 +15,7 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-    net_kernel:connect_node('backend@plaza-backend-0.plaza-backend.plaza-production.svc.cluster.local'),
-    net_kernel:connect_node('backend@plaza-backend-1.plaza-backend.plaza-production.svc.cluster.local'),
-    net_kernel:connect_node('backend@plaza-backend-2.plaza-backend.plaza-production.svc.cluster.local'),
-    {ok, self()}.
+    automate_configuration_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->
