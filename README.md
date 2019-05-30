@@ -29,7 +29,7 @@ An updated [node.js](https://nodejs.org/) version is required for this. After ge
 
 * Go to the frontend directory: `cd frontend`
 * Install dependencies: `npm install .`
-* Download extra css and font type resources through the Makefile: `make`
+* Download necessary css and font type resources using the Makefile: `make`
 * Start the development server: `npm run start`
 
 After this, the frontend can be accessed on http://localhost:4200
