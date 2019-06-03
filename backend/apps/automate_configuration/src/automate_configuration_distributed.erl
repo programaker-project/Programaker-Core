@@ -17,8 +17,5 @@ start_link() ->
 %%====================================================================
 connect_nodes(Nodes) ->
     lists:foreach(fun (Node) ->
-                          case string:trim(Node) of
-                              "" -> ok;
-                              NodeName -> net_kernel:connect_node(list_to_atom(NodeName))
-                          end
+                          net_kernel:connect_node(Node)
                   end, Nodes).

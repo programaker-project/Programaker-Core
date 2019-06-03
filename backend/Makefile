@@ -3,7 +3,7 @@ ERL=erl
 FIND_DEPS=`find _build/default/lib/ -mindepth 1 -maxdepth  1 -exec printf "-pa {}/ebin " \;`
 TERM=xterm -e
 
-ENV_OPTS?=AUTOMATE_SYNC_PRIMARY=bg1@localhost
+ENV_OPTS?=AUTOMATE_SYNC_PRIMARY=bg1@localhost AUTOMATE_SYNC_PEERS=bg1@localhost,bg2@localhost,bg3@localhost
 OPTIONS?=+pc unicode -config config/sys.config
 BACKGROUND_OPTIONS?=$(OPTIONS) -noshell -detached
 APPLICATION_NAME=automate

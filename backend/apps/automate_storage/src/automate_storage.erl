@@ -56,7 +56,7 @@
 -include("../automate_bot_engine/src/program_records.hrl").
 
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
-
+-define(WAIT_READY_LOOP_TIME, 1000).
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -852,23 +852,87 @@ set_program_variable(ProgramId, Key, Value) ->
 %%====================================================================
 start_coordinator() ->
     Primary = automate_configuration:get_sync_primary(),
+    IsPrimary = automate_configuration:is_node_primary(node()),
 
-    mnesia:stop(),
-    prepare_nodes([node()]),
+    Spawner = self(),
+    Coordinator = spawn_link(fun() ->
+                                     mnesia:stop(),
 
-    case automate_configuration:is_node_primary(node()) of
+                                     register(?SERVER, self()),
+                                     SyncPeers = automate_configuration:get_sync_peers(),
+                                     NonPrimaries = sets:del_element(Primary, sets:from_list(SyncPeers)),
+                                     io:fwrite("Primary: ~p, IP: ~p~n", [Primary, IsPrimary]),
+                                     ok = wait_for_all_nodes_ready(IsPrimary, Primary, NonPrimaries),
+                                     io:fwrite("Ready~n"),
+                                     case IsPrimary of
+                                         true ->
+                                             ok = prepare_nodes(SyncPeers),
+                                             ok = mnesia:start(),
+                                             NonPrimaryList = sets:to_list(NonPrimaries),
+                                             lists:foreach(fun (Node) ->
+                                                                   ok = add_mnesia_node(Node)
+                                                           end, NonPrimaryList),
+                                             mnesia:info(),
+                                             io:fwrite("SP: ~p~n", [SyncPeers]),
+                                             ok = build_tables(SyncPeers),
+
+                                             lists:foreach(fun (Node) ->
+                                                                   {?SERVER, Node} ! {self(), storage_started},
+                                                                   io:fwrite("~p ! ~p~n", [ {?SERVER, Node}
+                                                                                          , { self(), storage_started}])
+                                                           end, NonPrimaryList);
+                                         _ ->
+                                             ok
+                                     end,
+
+                                     Spawner ! {self(), ready},
+                                     coordinate_loop(Primary)
+                             end),
+    receive
+        {Coordinator, ready} ->
+            {ok, Coordinator}
+    end.
+
+%% Not a primary node
+wait_for_all_nodes_ready(false, Primary, NonPrimaries) ->
+    {?SERVER, Primary} ! { self(), {node_ready, node() }},
+    io:fwrite("~p ! ~p~n", [{?SERVER, Primary}, { self(), {node_ready, node() }}]),
+    receive 
+        { _From, storage_started } ->
+            ok;
+        X ->
+            io:fwrite("[automate_storage coordinator | ~p | Prim: ~p] Unknown message: ~p~n",
+                      [node(), Primary, X]),
+            wait_for_all_nodes_ready(false, Primary, NonPrimaries)
+    after ?WAIT_READY_LOOP_TIME ->
+            wait_for_all_nodes_ready(false, Primary, NonPrimaries)
+    end;
+
+wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
+    io:fwrite("Primary waiting messages [To go: ~p]~n", [sets:to_list(NonPrimariesToGo)]),
+
+    case sets:is_empty(NonPrimariesToGo) of
         true ->
-            %% If primary, start mnesia
-            mnesia:start();
+            ok;
         false ->
-            ok = rpc:call(Primary, ?MODULE, add_mnesia_node, [node()])
-    end,
-    
-    build_tables([node()]),
-    {ok, spawn(fun() ->
-                       register(?SERVER, self()),
-                       coordinate_loop(Primary)
-               end)}.
+            receive
+                Msg = { From, { node_ready, Node } } ->
+                    io:fwrite("[automate_storage coordinator | Prim, ~p] NodeReady: ~p~n",
+                              [node(), Msg]),
+
+                    case sets:is_element(Node, NonPrimariesToGo) of
+                        true ->
+                            ToGo = sets:del_element(Node, NonPrimariesToGo),
+                            wait_for_all_nodes_ready(true, Primary, ToGo);
+                        _ -> %% Reminded that node is ready... nothing to do
+                            wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo)
+                    end;
+                X ->
+                    io:fwrite("[automate_storage coordinator | Prim, ~p] Unknown message: ~p~n",
+                              [node(), X]),
+                    wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo)
+            end
+    end.
 
 coordinate_loop(Primary) ->
     receive 
@@ -897,6 +961,7 @@ greet_nodes(Nodes) ->
 
 prepare_nodes(Nodes) ->
     %% Global structure
+    io:fwrite("Preparing nodes: ~p~n", [Nodes]),
     case mnesia:create_schema(Nodes) of
         ok ->
             ok;

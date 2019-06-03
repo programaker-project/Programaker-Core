@@ -31,7 +31,13 @@ get_sync_peers() ->
         false ->
             [];
         Value -> %% peer1@node1,peer2@node2
-            string:split(Value, ?SYNC_PEERS_SPLIT_TOKEN, all)
+            lists:filtermap(fun (Candidate) ->
+                              case string:trim(Candidate) of
+                                  "" -> false;
+                                  Node -> {true, list_to_atom(Node)}
+                              end
+                      end,
+                      string:split(Value, ?SYNC_PEERS_SPLIT_TOKEN, all))
     end.
 
 -spec get_sync_primary() -> node() | none.
