@@ -38,8 +38,8 @@ allowed_methods(Req, State) ->
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Res, State}.
 
 content_types_accepted(Req, State) ->
-	{[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
-   Req, State}.
+    {[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
+     Req, State}.
 
 %%%% POST
 %

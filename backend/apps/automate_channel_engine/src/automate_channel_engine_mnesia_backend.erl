@@ -39,7 +39,9 @@ start_link() ->
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
-                 ok
+                 ok;
+             X ->
+                 io:fwrite("WOOOT!: ~p~n", [X])
          end,
     ok = case mnesia:create_table(?LISTENERS_TABLE,
                                   [ { attributes, record_info(fields, listeners_table_entry)}

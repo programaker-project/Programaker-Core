@@ -4,22 +4,13 @@
 -export([ start_link/0
         ]).
 
--define(SYNC_PEERS_ENV_VARIABLE, "AUTOMATE_SYNC_PEERS").
--define(SYNC_PEERS_SPLIT_TOKEN, ",").
-
 %%====================================================================
 %% API functions
 %%====================================================================
 %% Exposed startup entrypoint
 start_link() ->
-    case os:getenv(?SYNC_PEERS_ENV_VARIABLE) of
-        false ->
-            ok;
-        Value -> %% peer1@node1,peer2@node2
-            ok = connect_nodes(string:split(Value, ?SYNC_PEERS_SPLIT_TOKEN, all))
-    end,
+    connect_nodes(automate_configuration:get_sync_peers()),
     ignore.
-
 
 %%====================================================================
 %% Internal functions

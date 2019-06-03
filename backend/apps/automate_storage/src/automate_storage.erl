@@ -35,8 +35,12 @@
 
         , set_program_variable/3
         , get_program_variable/2
+
+        , add_mnesia_node/1
+        , register_table/2
         ]).
 -export([start_link/0]).
+-define(SERVER, ?MODULE).
 
 %% Structures
 -define(REGISTERED_USERS_TABLE, automate_registered_users).
@@ -471,12 +475,17 @@ get_userid_from_username(Username) ->
 
 %% Exposed startup entrypoint
 start_link() ->
-    Nodes = [node()],
-    mnesia:stop(),
-    prepare_nodes(Nodes),
-    mnesia:start(),
-    build_tables(Nodes),
-    ignore.
+    start_coordinator().
+
+-spec add_mnesia_node(node()) -> ok.
+add_mnesia_node(Node) ->
+    ok = rpc:call(Node, mnesia, start, []),
+    {ok, _} = mnesia:change_config(extra_db_nodes, [Node]),
+    ok.
+
+-spec register_table(term(), term()) -> ok.
+register_table(TableName, RecordDef) ->
+    erlang:error(not_implemented).
 
 %%====================================================================
 %% Internal functions
@@ -841,6 +850,51 @@ set_program_variable(ProgramId, Key, Value) ->
 %%====================================================================
 %% Startup functions
 %%====================================================================
+start_coordinator() ->
+    Primary = automate_configuration:get_sync_primary(),
+
+    mnesia:stop(),
+    prepare_nodes([node()]),
+
+    case automate_configuration:is_node_primary(node()) of
+        true ->
+            %% If primary, start mnesia
+            mnesia:start();
+        false ->
+            ok = rpc:call(Primary, ?MODULE, add_mnesia_node, [node()])
+    end,
+    
+    build_tables([node()]),
+    {ok, spawn(fun() ->
+                       register(?SERVER, self()),
+                       coordinate_loop(Primary)
+               end)}.
+
+coordinate_loop(Primary) ->
+    receive 
+        %% To be defined
+        X ->
+            io:fwrite("[automate_storage coordinator | ~p | Prim: ~p] Unknown message: ~p~n",
+                      [node(), Primary, X]),
+            coordinate_loop(Primary)
+    end.
+
+%% TODO: remove
+greet_nodes(Nodes) ->
+    Results = lists:map(fun(Node) ->
+                                case node() of
+                                    Node ->  % No need to greet oneself
+                                        io:fwrite("Skipped ~p~n", [Node]),
+                                        ignore;
+                                    _OwnNode ->
+                                        {?SERVER, Node} ! {starting_storage, {?SERVER, self(), node()}},
+                                        io:fwrite("Greeted ~p~n", [Node]),
+                                        ok
+                                end
+                        end, Nodes),
+    io:fwrite("Greeted everyone! ~p~n", [Results]).
+    
+
 prepare_nodes(Nodes) ->
     %% Global structure
     case mnesia:create_schema(Nodes) of
