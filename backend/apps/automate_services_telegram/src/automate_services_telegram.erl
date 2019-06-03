@@ -39,8 +39,12 @@
 
 is_enabled() ->
     io:format("Telegram configuration: ~p~n", [application:get_all_env()]),
-    {ok, Enabled} = application:get_env(?APPLICATION, telegram_enabled),
-    Enabled.
+    case application:get_env(?APPLICATION, telegram_enabled) of
+        {ok, Enabled} ->
+            Enabled;
+        undefined ->
+            false
+    end.
 
 get_platform_name() ->
     <<"Telegram">>.
