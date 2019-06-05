@@ -31,6 +31,7 @@
 
 -define(STORAGE, automate_services_telegram_storage).
 -define(APPLICATION, automate_services_telegram).
+-define(TELEGRAM_ENABLED_ENV_VARIABLE, "AUTOMATE_TELEGRAM_SERVICE_ENABLED").
 -include("records.hrl").
 
 %%====================================================================
@@ -39,11 +40,18 @@
 
 is_enabled() ->
     io:format("Telegram configuration: ~p~n", [application:get_all_env()]),
-    case application:get_env(?APPLICATION, telegram_enabled) of
-        {ok, Enabled} ->
-            Enabled;
-        undefined ->
-            false
+    case os:getenv(?TELEGRAM_ENABLED_ENV_VARIABLE) of
+        false ->
+            case application:get_env(?APPLICATION, telegram_enabled) of
+                {ok, Enabled} ->
+                    Enabled;
+                undefined ->
+                    false
+            end;
+        "0" ->
+            false;
+        "1" ->
+            true
     end.
 
 get_platform_name() ->
