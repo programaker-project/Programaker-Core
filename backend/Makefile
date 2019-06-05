@@ -23,8 +23,8 @@ all: dialyze
 run-locally-distributed: compile
 	AUTOMATE_HTTP_PORT=8888 AUTOMATE_TELEGRAM_SERVICE_ENABLED=1 $(ENV_OPTS) $(RUN_CMP_NODE) \
 		$(KICKOFF) -sname bg1@localhost </dev/null &
-	AUTOMATE_HTTP_PORT=8889 $(ENV_OPTS) $(RUN_CMP_NODE) $(CONNECTION) $(KICKOFF) -sname bg2@localhost </dev/null &
-	AUTOMATE_HTTP_PORT=8890 $(ENV_OPTS) $(RUN_CMP_NODE) $(CONNECTION)  $(KICKOFF) -sname bg3@localhost </dev/null &
+	AUTOMATE_HTTP_PORT=8889 $(ENV_OPTS) $(RUN_CMP_NODE) $(KICKOFF) -sname bg2@localhost </dev/null &
+	AUTOMATE_HTTP_PORT=8890 $(ENV_OPTS) $(RUN_CMP_NODE) $(KICKOFF) -sname bg3@localhost </dev/null &
 	echo -e "Run \033[7m "'$(RUN_ADM_NODE) $(CONNECTION)'" -sname fg@localhost \033[0m"
 
 ## This probably won't work
