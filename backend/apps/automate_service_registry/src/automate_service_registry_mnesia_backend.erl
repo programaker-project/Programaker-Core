@@ -29,7 +29,7 @@
 %% API
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% Live channels table
     ok = case mnesia:create_table(?SERVICE_REGISTRY_TABLE,

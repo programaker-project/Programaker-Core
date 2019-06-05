@@ -28,7 +28,7 @@
 %% API
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
     %% Live channels table
     ok = case mnesia:create_table(?LIVE_CHANNELS_TABLE,
                                   [ { attributes, record_info(fields, live_channels_table_entry)}

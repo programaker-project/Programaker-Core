@@ -32,7 +32,7 @@
 %%====================================================================
 
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% TelegramId -> InternalId matches
     ok = case mnesia:create_table(?TELEGRAM_SERVICE_REGISTRATION_TABLE,
