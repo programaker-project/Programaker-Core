@@ -943,22 +943,6 @@ coordinate_loop(Primary) ->
             coordinate_loop(Primary)
     end.
 
-%% TODO: remove
-greet_nodes(Nodes) ->
-    Results = lists:map(fun(Node) ->
-                                case node() of
-                                    Node ->  % No need to greet oneself
-                                        io:fwrite("Skipped ~p~n", [Node]),
-                                        ignore;
-                                    _OwnNode ->
-                                        {?SERVER, Node} ! {starting_storage, {?SERVER, self(), node()}},
-                                        io:fwrite("Greeted ~p~n", [Node]),
-                                        ok
-                                end
-                        end, Nodes),
-    io:fwrite("Greeted everyone! ~p~n", [Results]).
-    
-
 prepare_nodes(Nodes) ->
     %% Global structure
     io:fwrite("Preparing nodes: ~p~n", [Nodes]),
