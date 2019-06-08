@@ -29,7 +29,7 @@ get_table_wait_time() ->
 get_sync_peers() ->
     case os:getenv(?SYNC_PEERS_ENV_VARIABLE) of
         false ->
-            [];
+            [node()];
         Value -> %% peer1@node1,peer2@node2
             lists:filtermap(fun (Candidate) ->
                               case string:trim(Candidate) of
@@ -44,7 +44,7 @@ get_sync_peers() ->
 get_sync_primary() ->
     case os:getenv(?SYNC_PRIMARY_ENV_VARIABLE) of
         false ->
-            none;
+            node();
         Value ->
             list_to_atom(Value)
     end.

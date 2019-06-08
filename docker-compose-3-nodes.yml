@@ -8,7 +8,7 @@ services:
       - 8080:80
     links:
       - plaza-frontend
-      - plaza-backend-1
+      - plaza-backend-1:plaza-backend
     environment:
       - FRONTEND_NODE=plaza-frontend
       - FRONTEND_PORT=80

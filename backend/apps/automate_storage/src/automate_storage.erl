@@ -863,7 +863,7 @@ start_coordinator() ->
                                      NonPrimaries = sets:del_element(Primary, sets:from_list(SyncPeers)),
                                      io:fwrite("Primary: ~p, IP: ~p~n", [Primary, IsPrimary]),
                                      ok = wait_for_all_nodes_ready(IsPrimary, Primary, NonPrimaries),
-                                     io:fwrite("Ready~n"),
+                                     io:fwrite("[Automate storage] Successfully connected to nodes~n"),
                                      case IsPrimary of
                                          true ->
                                              ok = prepare_nodes(SyncPeers),
@@ -890,6 +890,7 @@ start_coordinator() ->
                              end),
     receive
         {Coordinator, ready} ->
+            io:fwrite("[Automate storage] Ready~n"),
             {ok, Coordinator}
     end.
 
@@ -955,6 +956,7 @@ prepare_nodes(Nodes) ->
 
 build_tables(Nodes) ->
     %% Registered users table
+    io:fwrite("Building tables: ~p~n", [Nodes]),
     ok = case mnesia:create_table(?REGISTERED_USERS_TABLE,
                                   [ {attributes, record_info(fields, registered_user_entry)}
                                   , { disc_copies, Nodes }
@@ -1045,6 +1047,14 @@ build_tables(Nodes) ->
                  ok
          end,
 
+    ok = mnesia:wait_for_tables([ ?REGISTERED_USERS_TABLE
+                                , ?USER_SESSIONS_TABLE
+                                , ?USER_MONITORS_TABLE
+                                , ?USER_PROGRAMS_TABLE
+                                , ?RUNNING_PROGRAMS_TABLE
+                                , ?RUNNING_THREADS_TABLE
+                                , ?PROGRAM_VARIABLE_TABLE
+                                ], automate_configuration:get_table_wait_time()),
     ok.
 
 generate_id() ->

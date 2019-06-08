@@ -13,7 +13,7 @@ if [ ! -z "${NODE_NAME_SUFFIX}" ];then
     echo "NodeName: backend@$nodename"
     sed 's/^-sname.*$/-name '"backend\@$nodename"'/' -i "${VM_ARGS_PATH}"
 else
-    sed 's/^-sname.*$/-sname '"backend\@$nodename"'/' -i "${VM_ARGS_PATH}"
+    sed 's/^-sname.*$/-sname '"backend"'/' -i "${VM_ARGS_PATH}"
 fi
 
 
@@ -26,11 +26,14 @@ fi
 
 # Set mnesia directory
 grep ^-mnesia "${VM_ARGS_PATH}" >/dev/null
-if [ $? -ne 0 ];then
-    echo $'\n''-mnesia dir '"'\"${MNESIA_DIR}\"'" >> "${VM_ARGS_PATH}"
-else
-    MNESIA_DIR_ESCAPED=`echo "${MNESIA_DIR}"| sed 's/\\//\\\\\\//g'`
-    sed 's/^-mnesia.*$/-mnesia dir '"\"${MNESIA_DIR_ESCAPED}\""'/' -i "${VM_ARGS_PATH}"
+if [ $? -eq 0 ];then
+    sed '/^-mnesia/d' -i "${VM_ARGS_PATH}"
 fi
+
+echo $'\n''-mnesia dir '"'\"${MNESIA_DIR}\"'" >> "${VM_ARGS_PATH}"
+
+echo '--- Config'
+cat "${VM_ARGS_PATH}" | sed 's/^-setcookie\(...\).*\(...\)$/-setcookie\1[*REDACTED*]\2/'
+echo '--- End of config'
 
 /app/release/bin/automate foreground
