@@ -152,6 +152,8 @@ In a single line:
 { "type": "CONFIGURATION", "value": { "blocks": [ { "id": "max-num", "function_name": "max-num", "block_type": "getter", "block_result_type": null, "message": "Max of %1 and %2", "arguments": [ { "type": "integer", "default": "0" }, { "type": "integer", "default": "1" } ] } ], "is_public": false, "service_name": "comm-test" } }
 ```
 
+See **Function calls** for how to implement a bridge that answers these types of blocks.
+
 ### Trigger blocks
 
 Trigger blocks represent an operation that is started when a certain event happens, they correspond to Scratch [Hat Blocks](https://en.scratch-wiki.info/wiki/Hat_Block) and are defined through the following JSON schema:
@@ -265,7 +267,80 @@ In a single line:
 
 ## Function calls
 
-TODO
+On the **Operations and getters** section we defined a block, which can be run by plaza
+```json
+{
+    "id": "max-num",
+    "function_name": "max-num",
+    "block_type": "getter",
+    "block_result_type": null,
+    "message": "Max of %1 and %2",
+    "arguments": [
+        {
+            "type": "integer",
+            "default": "0"
+        },
+        {
+            "type": "integer",
+            "default": "1"
+        }
+    ]
+}
+```
+
+when this happens, a message is sent **to the bridge** by the platform with the following schema:
+
+```json
+{
+    "type": "FUNCTION_CALL",
+    "message_id": "<message identifier>",
+    "value": {
+        "function_name": "<name of the function to perform>",
+        "argument": [ <values of the arguments of the function> ]
+    },
+    "user_id": "<id of the user that owns the running program>"
+}
+```
+
+For example:
+
+```json
+{
+    "type":"FUNCTION_CALL",
+    "message_id":"30d504f1-bdc6-4602-8f02-f72b29572dde",
+    "value": {
+        "function_name":"max-num",
+        "arguments":[ "5", "7" ]
+    },
+    "user_id":"08240ff1-8414-4daa-a089-21100cbf8ca1"
+}
+```
+
+After the bridges computes the maximum of `5` and `7`, it must answer with the following format:
+
+```json
+{
+    "message_id": "<same message id as the function call>",
+    "success": true,
+    "result": <result value>
+}
+```
+
+In our example (and already in a single line)
+
+```json
+{ "message_id":"30d504f1-bdc6-4602-8f02-f72b29572dde", "success": true, "result": 7}
+```
+
+Note that the `result` field doesn't have to be stringified.
+
+Alternatively, if the operation fails, it can be answered signaling no success, but no error tracing is yet implemented:
+```json
+{
+    "message_id": "<same message id as the function call>",
+    "success": false
+}
+```
 
 ## Service registration
 
