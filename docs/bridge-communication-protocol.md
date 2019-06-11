@@ -7,9 +7,10 @@ This document defines the protocol that a bridge has to implement to expose its 
 1. Bridge initialization
 2. Event notification
 3. Function calls
-4. Data callback execution
+4. Service registration
+5. Data callback execution
 
-All communication is performed through the bridge websocket connection to the bridge `communication` endpoint, encoded as JSON.
+All communication is performed through the bridge websocket connection to the bridge `communication` endpoint, encoded as JSON. **Note that messages must be sent in a single websocket frame, as fragmentation is not supported.**
 
 ## Bridge initialization
 
@@ -68,10 +69,10 @@ Operation and getter blocks are defined through the following objects
 
 * `id` and `function_name`: Define the unique `id` given by the bridge to the operation. **Note** that the internal id operation is duplicated on the `id` and function name. This is a known problem and is something to be fixed. It's recommended to use the the same value on `id` and `function_name` for clarity.
 * `block_type`: Define the nature of the block, can be of two types:
-   * `operation`, defined on scratch as [Stack Block](https://en.scratch-wiki.info/wiki/Stack_Block), can be concatenated.
-   * `getter`, defined on scratch as [Reporter Block](https://en.scratch-wiki.info/wiki/Reporter_Block), can be used in place of a value.
+   * `operation`, defined on Scratch as [Stack Block](https://en.scratch-wiki.info/wiki/Stack_Block), can be concatenated.
+   * `getter`, defined on Scratch as [Reporter Block](https://en.scratch-wiki.info/wiki/Reporter_Block), can be used in place of a value.
 * `block_result_type` is reserved and not used yet, set it to `null`.
-* `message`: The message shown on the block. All block arguments **must** be present on the message represented as `%<index-of-argument>` (index starts on 1). 
+* `message`: The message shown on the block. All block arguments **must** be present on the message represented as `%<index-of-argument>` (index starts on 0). 
 * `arguments`: the arguments that the operation considers to perform an operation.
 
 #### Arguments
@@ -153,7 +154,7 @@ In a single line:
 
 ### Trigger blocks
 
-Trigger blocks are defined through the following JSON schema
+Trigger blocks represent an operation that is started when a certain event happens, they correspond to Scratch [Hat Blocks](https://en.scratch-wiki.info/wiki/Hat_Block) and are defined through the following JSON schema:
 
 ```json
 {
@@ -173,7 +174,7 @@ Trigger blocks are defined through the following JSON schema
    * `operation`, defined on scratch as [Stack Block](https://en.scratch-wiki.info/wiki/Stack_Block), can be concatenated.
    * `getter`, defined on scratch as [Reporter Block](https://en.scratch-wiki.info/wiki/Reporter_Block), can be used in place of a value.
 * `key`: The event channel (of the ones from the bridge) where the event will be expected.
-* `message`: The message shown on the block. All block arguments **must** be present on the message represented as `%<index-of-argument>` (index starts on 1). 
+* `message`: The message shown on the block. All block arguments **must** be present on the message represented as `%<index-of-argument>` (index starts on 0). 
 * `arguments`: the arguments that the operation considers to perform an operation.
 * `save_to` references an argument, this argument (must be a variable name), will store the content of the event.
 * `expected_value` references an argument, the value of this argument will be checked against the event `content`.
@@ -210,7 +211,7 @@ For example, a trigger block might be defined with the following structure:
                 ],
                 "save_to": {
                     "type": "argument",
-                    "index": 1
+                    "index": 0
                 },
                 "expected_value": null
             }
@@ -223,5 +224,53 @@ For example, a trigger block might be defined with the following structure:
 
 In a single line: 
 ```json
-{"type": "CONFIGURATION", "value": {"blocks": [{"id": "temperature-reading", "function_name": "temperature-reading", "key": "temperature-reading", "block_type": "trigger", "message": "On temperature reading. Set %1", "arguments": [{"type": "variable", "class": "single"}], "save_to": {"type": "argument", "index": 1}, "expected_value": null}], "is_public": false, "service_name": "comm-test"}}
+{"type": "CONFIGURATION", "value": {"blocks": [{"id": "temperature-reading", "function_name": "temperature-reading", "key": "temperature-reading", "block_type": "trigger", "message": "On temperature reading. Set %1", "arguments": [{"type": "variable", "class": "single"}], "save_to": {"type": "argument", "index": 0}, "expected_value": null}], "is_public": false, "service_name": "comm-test"}}
 ```
+
+## Event notification
+
+After the configuration above is loaded, events can be used to trigger the `temperature-reading` block. These events can be sent through the websocket by the bridge at any time and take the following shape:
+
+```json
+{
+    "type": "NOTIFICATION",
+    "key": "<key>",
+    "to_user": <null|user-id>,
+    "content": "<event content>",
+    "value": "<full event information>",
+}
+```
+* `key` field has to match with the one on the *Trigger block*, for it to be triggered.
+* `to_user` might be a bridge-specific user-Id to send the event to a specific user or `null` for it to be sent to all (registered and authorized) users.
+* The value of the `content` field is the one used for the *Trigger block* `save_to` and `expected_value` operative.
+* The `value` entry might contain all the relevant information of the event. Not that this is saved on the platform, but at this point cannot be accessed from outside.
+
+Thus, a notification can be sent for the configuration sent with a JSON object like this:
+
+```json
+{
+    "type": "NOTIFICATION",
+    "key": "temperature-reading",
+    "to_user": null,
+    "content": 9999,
+    "value": { "sensor": "hot stuff", "reading": 9999 }
+}
+```
+
+In a single line:
+
+```json
+{ "type": "NOTIFICATION", "key": "temperature-reading", "to_user": null, "content": "9999", "value": { "sensor": "hot stuff", "reading": 9999 } }
+```
+
+## Function calls
+
+TODO
+
+## Service registration
+
+TODO
+
+## Data callback execution
+
+**Note**: this section is yet to be written, as future development will probably include major changes on it's operation and it's not required for most usages. 
