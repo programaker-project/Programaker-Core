@@ -13,7 +13,7 @@ All communication is performed through the bridge websocket connection to the br
 
 ## Bridge initialization
 
-When a bridge websocket connects to the platform it must send the following information (JSON encoded):
+As a bridge websocket connects to the platform it must send the following information (JSON encoded):
 
 ```json
 {
@@ -25,6 +25,26 @@ When a bridge websocket connects to the platform it must send the following info
     }
 }
 ```
+
+For example, a minimal configuration, with no blocks, might be the following (send it in a single line):
+
+```json
+{ "type": "CONFIGURATION", "value": { "blocks": [], "is_public": false, "service_name": "comm-test" } }
+```
+
+Expanded:
+```json
+{
+    "type": "CONFIGURATION",
+    "value": { 
+        "blocks": [],
+        "is_public": false,
+        "service_name": "comm-test"
+    }
+}
+```
+
+Opening a websocket and sending this information will show the bridge as connected, but no blocks will be defined.
 
 Blocks definitions can be of 2 main groups:
 * Operations and Getters. Are called when a program runs then, expecting a return value.
@@ -54,3 +74,78 @@ Operation and getter blocks are defined through the following objects
 * `message`: The message shown on the block. All block arguments **must** be present on the message represented as `%<index-of-argument>` (index starts on 1). 
 * `arguments`: the arguments that the operation considers to perform an operation.
 
+#### Arguments
+
+A bridge might require knowing the values of the context to perform a certain operation, these can be passed through arguments, there are 3 types of arguments:
+* Values: Normal values which have been resolved.
+* Variable names: The name of an **unresolved** variable.
+* Selections: A single option of a dynamic list provided by the bridge during "design" time.
+
+##### Values
+
+Simple value arguments can be defined with the following JSON object 
+
+```json
+{
+    "type": "<string | integer | float | boolean>",
+    "default": "<string-encoded default value>"
+}
+```
+
+The type of the argument defines the UI appearance of the software keyboard shown when selecting the block.
+
+##### Variable names
+
+Variable name arguments can be defined with the following JSON object
+
+```json
+{
+    "type": "variable",
+    "class": "<single|list>
+}
+```
+
+The class of the argument defines which variables can the user choses among, normal variables or list variables.
+
+##### Selections
+
+See `Data callback execution` for further understanding of these operations.
+
+#### Example
+
+A bridge simple block operation can be configured using this JSON object:
+
+```json
+{
+    "type": "CONFIGURATION",
+    "value": { 
+        "blocks": [
+            {
+                "id": "max-num",
+                "function_name": "max-num",
+                "block_type": "getter",
+                "block_result_type": null,
+                "message": "Max of %1 and %2",
+                "arguments": [
+                    {
+                        "type": "integer",
+                        "default": "0"
+                    },
+                    {
+                        "type": "integer",
+                        "default": "1"
+                    }
+                ]
+            }
+        ],
+        "is_public": false,
+        "service_name": "comm-test"
+    }
+}
+```
+
+In a single line:
+
+```json
+{ "type": "CONFIGURATION", "value": { "blocks": [ { "id": "max-num", "function_name": "max-num", "block_type": "getter", "block_result_type": null, "message": "Max of %1 and %2", "arguments": [ { "type": "integer", "default": "0" }, { "type": "integer", "default": "1" } ] } ], "is_public": false, "service_name": "comm-test" } }
+```
