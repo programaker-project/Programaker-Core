@@ -76,9 +76,6 @@ update_internal_metrics() ->
                , automate_monitor_engine_runner_sup
                , automate_monitor_engine_sup
 
-               , automate_services_telegram_demux
-               , automate_services_telegram_sup
-
                , automate_service_port_engine_sup
                ],
 

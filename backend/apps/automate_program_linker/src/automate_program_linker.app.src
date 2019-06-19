@@ -4,7 +4,6 @@
   {vsn, "0.0.0"},
   {registered, []},
   {applications, [ automate_channel_engine
-                 , automate_services_telegram %% as in, it uses knowledge from inside it
                  , automate_configuration
                  ]},
   {env, [

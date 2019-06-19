@@ -2,9 +2,8 @@
     {description, "Auto-mate services wrapper."},
     {vsn, "0.0.0"},
     {registered, []},
-    {applications, [ automate_services_telegram
+    {applications, [ automate_configuration
                    , automate_services_time
-                   , automate_configuration
     ]},
     {env, [
     ]},
