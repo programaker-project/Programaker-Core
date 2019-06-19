@@ -24,6 +24,9 @@ else
     echo 'No cookie set on environment variable, this is probably not safe!'
 fi
 
+# Move cookie to HomeDir for easier remote_shell
+cookie=`grep '^-setcookie' "${VM_ARGS_PATH}"  |cut -d\" -f2`
+
 # Set mnesia directory
 grep ^-mnesia "${VM_ARGS_PATH}" >/dev/null
 if [ $? -eq 0 ];then

@@ -8,7 +8,7 @@ services:
       - 8080:80
     links:
       - plaza-frontend
-      - plaza-backend-1:plaza-backend
+      - plaza-backend-0:plaza-backend
     environment:
       - FRONTEND_NODE=plaza-frontend
       - FRONTEND_PORT=80
@@ -28,6 +28,7 @@ services:
     environment:
       - "AUTOMATE_TELEGRAM_SERVICE_ENABLED=0"
       - "NODE_NAME_SUFFIX="
+      - "NODE_WITH_HOSTNAME=1"
       - "AUTOMATE_SYNC_PRIMARY=backend@plaza-backend-0"
       - "AUTOMATE_SYNC_PEERS=backend@plaza-backend-0,backend@plaza-backend-1,backend@plaza-backend-2"
       - "MNESIA_DIR=/app/mnesia"
@@ -42,6 +43,7 @@ services:
     environment:
       - "AUTOMATE_TELEGRAM_SERVICE_ENABLED=0"
       - "NODE_NAME_SUFFIX="
+      - "NODE_WITH_HOSTNAME=1"
       - "AUTOMATE_SYNC_PRIMARY=backend@plaza-backend-0"
       - "AUTOMATE_SYNC_PEERS=backend@plaza-backend-0,backend@plaza-backend-1,backend@plaza-backend-2"
       - "MNESIA_DIR=/app/mnesia"
@@ -56,6 +58,7 @@ services:
     environment:
       - "AUTOMATE_TELEGRAM_SERVICE_ENABLED=0"
       - "NODE_NAME_SUFFIX="
+      - "NODE_WITH_HOSTNAME=1"
       - "AUTOMATE_SYNC_PRIMARY=backend@plaza-backend-0"
       - "AUTOMATE_SYNC_PEERS=backend@plaza-backend-0,backend@plaza-backend-1,backend@plaza-backend-2"
       - "MNESIA_DIR=/app/mnesia"
