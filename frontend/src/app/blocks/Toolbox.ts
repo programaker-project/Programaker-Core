@@ -1,6 +1,5 @@
 import { MonitorService } from '../monitor.service';
 import { MonitorMetadata } from '../monitor';
-import { Chat } from '../chat';
 import { CustomBlockService } from '../custom_block.service';
 import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments, ResolvedCustomBlock } from '../custom_block';
 import { MatDialog } from '@angular/material';
@@ -19,7 +18,6 @@ const CustomSecondaryColor = '#E7E7E7';
 export class Toolbox {
     monitorService: MonitorService;
     customBlockService: CustomBlockService;
-    chats: Chat[];
     dialog: MatDialog;
     templateController: TemplateController;
     controller: ToolboxController;
@@ -27,13 +25,11 @@ export class Toolbox {
     constructor(
         monitorService: MonitorService,
         customBlockService: CustomBlockService,
-        chats: Chat[],
         dialog: MatDialog,
         templateService: TemplateService,
     ) {
         this.monitorService = monitorService;
         this.customBlockService = customBlockService;
-        this.chats = chats;
         this.dialog = dialog;
 
         this.controller = new ToolboxController();
@@ -52,20 +48,9 @@ export class Toolbox {
         return [toolboxXML, registrations, this.controller];
     }
 
-    getChatOptions() {
-        const results = [];
-
-        for (const chat of this.chats) {
-            results.push([chat.name, chat.prefix + ':' + chat.id]);
-        }
-
-        return results;
-    }
-
     injectBlocks(monitors: MonitorMetadata[], custom_blocks: ResolvedCustomBlock[]): Function[] {
         let registrations = [];
 
-        this.injectChatBlocks();
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
         this.injectJSONBlocks();
@@ -180,99 +165,6 @@ export class Toolbox {
         };
     }
 
-    injectChatBlocks() {
-        Blockly.Blocks['chat_whenreceivecommand'] = {
-            init: function () {
-                this.jsonInit({
-                    'id': 'chat_whenreceivecommand',
-                    'message0': 'When received %1',
-                    'args0': [
-                        {
-                            'type': 'input_value',
-                            'name': 'VALUE'
-                        }
-                    ],
-                    'category': Blockly.Categories.event,
-                    'extensions': ['colours_chat', 'shape_hat']
-                });
-            }
-        };
-
-        Blockly.Blocks['chat_whenreceiveanycommandtovar'] = {
-            init: function () {
-                this.jsonInit({
-                    'id': 'chat_whenreceiveanycommandtovar',
-                    'message0': 'When received any command. Set %1',
-                    'args0': [
-                        {
-                            'type': 'field_variable',
-                            'name': 'VARIABLE'
-                        }
-                    ],
-                    'category': Blockly.Categories.event,
-                    'extensions': ['colours_chat', 'shape_hat']
-                });
-            }
-        };
-
-        Blockly.Blocks['chat_say'] = {
-            init: function () {
-                this.jsonInit({
-                    'id': 'chat_say',
-                    'message0': 'Say %1',
-                    'args0': [
-                        {
-                            'type': 'input_value',
-                            'name': 'VALUE'
-                        }
-                    ],
-                    'category': Blockly.Categories.event,
-                    'extensions': ['colours_chat', 'shape_statement']
-                });
-            }
-        };
-
-        const options = this.getChatOptions();
-        if (options.length > 0) {
-            Blockly.Blocks['chat_say_on_channel'] = {
-                init: function () {
-                    this.jsonInit({
-                        'id': 'chat_say',
-                        'message0': 'On channel %1 say %2',
-                        'args0': [
-                            {
-                                'type': 'field_dropdown',
-                                'name': 'CHANNEL_VALUE',
-                                'options': options,
-                            },
-                            {
-                                'type': 'input_value',
-                                'name': 'VALUE'
-                            },
-                        ],
-                        'category': Blockly.Categories.event,
-                        'extensions': ['colours_chat', 'shape_statement']
-                    });
-                }
-            };
-        }
-
-        try {
-            Blockly.Extensions.register('colours_chat',
-                function () {
-                    this.setColourFromRawValues_('#5555CC', '#333377', '#0000FF');
-                });
-        } catch (e) {
-            // If the extension was registered before
-            // this would have thrown an inocous exception
-            if (!alreadyRegisteredException(e)) {
-                throw e;
-            }
-        }
-    }
-
-
-
     injectMonitorBlocks(monitors: MonitorMetadata[]) {
         for (const monitor of monitors) {
             Blockly.Blocks['monitor.retrieve.' + monitor.id] = {
@@ -358,43 +250,6 @@ export class Toolbox {
         (goog as any).require('Blockly.Blocks');
 
         Blockly.Blocks.factoryDefaultToolbox = Blockly.Blocks.defaultToolbox;
-
-        let chatCategory = `
-        <category name="Chat" colour="#5555CC" secondaryColour="#333377">
-          <block type="chat_whenreceivecommand" id="chat_whenreceivecommand">
-            <value name="VALUE">
-              <shadow type="text">
-                <field name="TEXT">/start</field>
-              </shadow>
-            </value>
-          </block>
-          <block type="chat_whenreceiveanycommandtovar" id="chat_whenreceiveanycommandtovar">
-            <value name="VARIABLE">
-              <shadow type="data_variablemenu">
-              </shadow>
-            </value>
-          </block>
-          <block type="chat_say" id="chat_say">
-            <value name="VALUE">
-              <shadow type="text">
-                <field name="TEXT">Hello!</field>
-              </shadow>
-            </value>
-          </block>
-        `;
-
-        if (this.getChatOptions().length > 0) {
-            chatCategory += `
-          <block type="chat_say_on_channel" id="chat_say_on_channel">
-            <value name="VALUE">
-              <shadow type="text">
-                <field name="TEXT">Hello!</field>
-              </shadow>
-            </value>
-          </block>
-          `;
-        }
-        chatCategory += '</category>';
 
         const eventsCategory = ''; //   '<category name="Events" colour="#FFD500" secondaryColour="#CC9900">' +
         //   '<block type="event_broadcast" id="event_broadcast">' +
@@ -681,7 +536,6 @@ export class Toolbox {
         });
 
         toolboxXML.innerHTML = [
-            chatCategory,
             eventsCategory,
             controlCategory,
             monitorsCategory,
