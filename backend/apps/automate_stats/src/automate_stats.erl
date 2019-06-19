@@ -67,17 +67,12 @@ update_internal_metrics() ->
 
                , automate_service_registry_sup
 
-               , automate_chat_registry_sup
-
                , automate_bot_engine_runner_sup
                , automate_bot_engine_thread_runner_sup
                , automate_bot_engine_sup
 
                , automate_monitor_engine_runner_sup
                , automate_monitor_engine_sup
-
-               , automate_services_telegram_demux
-               , automate_services_telegram_sup
 
                , automate_service_port_engine_sup
                ],
@@ -135,13 +130,6 @@ update_internal_metrics() ->
             remove_metric(gauge, automate_service_count)
     end,
 
-    %% Chats
-    #{ chats := NumChats, services := NumServices} = automate_chat_registry:count_chats(),
-    set_metric(gauge, automate_chat_count, NumChats, []),
-
-    set_metric(gauge, automate_chat_service_count, NumServices, []),
-
-
     %% Users
     set_metric(gauge, automate_user_count,
                automate_storage_stats:count_users(), [registered]),
@@ -159,8 +147,6 @@ prepare() ->
     add_metric(gauge, automate_program_thread_count, <<"Automate's program thread count.">>, [state]),
     add_metric(gauge, automate_monitor_count, <<"Automate's monitor.">>, [state]),
     add_metric(gauge, automate_service_count, <<"Automate's services.">>, [visibility]),
-    add_metric(gauge, automate_chat_count, <<"Automate's chats.">>, []),
-    add_metric(gauge, automate_chat_service_count, <<"Automate's chat services.">>, []),
 
     add_metric(gauge, automate_user_count, <<"Automate's user.">>, [state]),
     ok.
