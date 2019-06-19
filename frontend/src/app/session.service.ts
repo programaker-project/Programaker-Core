@@ -53,6 +53,18 @@ export class SessionService {
         return API.ApiRoot + '/users/' + username;
     }
 
+    async getApiRootForUserId(user_id?: string): Promise<string> {
+        if (!user_id) {
+            let session = SessionService.EstablishedSession;
+            if (session === undefined) {
+                session = await this.getSession();
+            }
+            user_id = session.user_id;
+
+        }
+        return API.ApiRoot + '/users/id/' + user_id;
+    }
+
     getAuthHeader(): HttpHeaders {
         const headers = new HttpHeaders();
 
@@ -73,40 +85,41 @@ export class SessionService {
     }
 
     getSession(): Promise<Session> {
-      if (this.getToken() === null) {
-        return Promise.resolve(null);
-      }
+        if (this.getToken() === null) {
+            return Promise.resolve(null);
+        }
 
-      return (this.http
-              .get(this.checkSessionUrl, {headers: this.getAuthHeader()})
-              .map((response) => {
-                  const check = response as any;
-                  const session = new Session(check.success,
-                                              check.username);
-                  SessionService.EstablishedSession = session;
+        return (this.http
+            .get(this.checkSessionUrl, { headers: this.getAuthHeader() })
+            .map((response) => {
+                const check = response as any;
+                const session = new Session(check.success,
+                    check.username,
+                    check.user_id);
+                SessionService.EstablishedSession = session;
 
-                  return session;
-              })
-              .toPromise());
+                return session;
+            })
+            .toPromise());
     }
 
     login(username: string, password: string): Promise<boolean> {
         return progbar.track(this.http
-                .post(this.loginUrl,
-                      JSON.stringify({username: username, password: password}),
-                      {headers: this.addJsonContentType(this.getAuthHeader())})
-                .map(response => {
-                  const data = response as any;
-                  if (data.success) {
-                      this.storeToken(data.token);
+            .post(this.loginUrl,
+                JSON.stringify({ username: username, password: password }),
+                { headers: this.addJsonContentType(this.getAuthHeader()) })
+            .map(response => {
+                const data = response as any;
+                if (data.success) {
+                    this.storeToken(data.token);
 
-                      const newSession = new Session(true, username);
+                    const newSession = new Session(true, username, data.user_id);
 
-                      return true;
-                  }
-                  return false;
-                })
-                .toPromise());
+                    return true;
+                }
+                return false;
+            })
+            .toPromise());
     }
 
     logout() {
@@ -119,17 +132,18 @@ export class SessionService {
         const headers = this.addJsonContentType(new HttpHeaders());
 
         return progbar.track(this.http
-                .post(
-                  this.registerUrl,
-                  JSON.stringify({ username: username
-                                 , password: password
-                                 , email: email
-                                 }),
-                  { headers  })
-                .map(response => {
-                    return true;
-                })
-                .toPromise());
+            .post(
+                this.registerUrl,
+                JSON.stringify({
+                    username: username
+                    , password: password
+                    , email: email
+                }),
+                { headers })
+            .map(response => {
+                return true;
+            })
+            .toPromise());
     }
 
 

@@ -4,6 +4,7 @@
 -export([ register_user/1
         , login_user/1
         , is_valid_token/1
+        , is_valid_token_uid/1
         , create_monitor/2
         , lists_monitors_from_username/1
         , create_program/1
@@ -16,12 +17,29 @@
 
         , update_program_metadata/3
         , delete_program/2
+
+        , create_service_port/2
+        , list_custom_blocks_from_username/1
+        , register_service/3
+        , send_oauth_return/2
+        , list_bridges/1
+        , delete_bridge/2
+        , callback_bridge/3
+
+        , create_template/3
+        , list_templates_from_user_id/1
+        , delete_template/2
+        , update_template/4
+        , get_template/2
         ]).
 
 %% Definitions
 -include("./records.hrl").
+-include("../../automate_service_registry/src/records.hrl").
 -include("../../automate_storage/src/records.hrl").
 -include("../../automate_chat_registry/src/records.hrl").
+-include("../../automate_service_port_engine/src/records.hrl").
+-include("../../automate_template_engine/src/records.hrl").
 
 %%====================================================================
 %% API functions
@@ -43,8 +61,8 @@ login_user(#login_rec{ password=Password
                      , username=Username
                      }) ->
     case automate_storage:login_user(Username, Password) of
-        { ok, Token } ->
-            { ok, Token };
+        { ok, {Token, UserId} } ->
+            { ok, {Token, UserId} };
         { error, Reason } ->
             { error, Reason }
     end.
@@ -53,6 +71,17 @@ is_valid_token(Token) when is_binary(Token) ->
     case automate_storage:get_session_username(Token) of
         { ok, Username } ->
             {true, Username};
+        { error, session_not_found } ->
+            false;
+        { error, Reason } ->
+            io:format("Error getting session: ~p~n", [Reason]),
+            false
+    end.
+
+is_valid_token_uid(Token) when is_binary(Token) ->
+    case automate_storage:get_session_userid(Token) of
+        { ok, UserId } ->
+            {true, UserId};
         { error, session_not_found } ->
             false;
         { error, Reason } ->
@@ -161,7 +190,7 @@ list_services_from_username(Username) ->
     end.
 
 
--spec get_service_enable_how_to(binary(), binary()) -> {ok, binary() | none} | {error, not_found}.
+-spec get_service_enable_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found}.
 get_service_enable_how_to(Username, ServiceId) ->
     case get_platform_service_how_to(Username, ServiceId) of
         {ok, HowTo} ->
@@ -177,6 +206,66 @@ get_service_enable_how_to(Username, ServiceId) ->
 list_chats_from_username(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     automate_chat_registry:get_all_chats_for_user(UserId).
+
+-spec create_service_port(binary(), binary()) -> {ok, binary()}.
+create_service_port(Username, ServicePortName) ->
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, ServicePortId } = automate_service_port_engine:create_service_port(UserId, ServicePortName),
+    {ok, generate_url_for_service_port(UserId, ServicePortId)}.
+
+-spec list_custom_blocks_from_username(binary()) -> {ok, map()}.
+list_custom_blocks_from_username(Username) ->
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    automate_service_port_engine:list_custom_blocks(UserId).
+
+
+-spec register_service(binary(), binary(), map()) -> {ok, any} | {error, binary()}.
+register_service(Username, ServiceId, RegistrationData) ->
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, _} = automate_service_registry_query:send_registration_data(Module, UserId, RegistrationData).
+
+-spec send_oauth_return(binary(), binary()) -> ok | {error, term()}.
+send_oauth_return(ServicePortId, Qs) ->
+    case automate_service_port_engine:send_oauth_return(Qs, ServicePortId) of
+        {ok, _} ->
+            ok;
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+-spec list_bridges(binary()) -> {ok, [#service_port_entry_extra{}]}.
+list_bridges(Username) ->
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
+
+-spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
+delete_bridge(UserId, BridgeId) ->
+    automate_service_port_engine:delete_bridge(UserId, BridgeId).
+
+callback_bridge(UserId, BridgeId, Callback) ->
+    automate_service_port_engine:callback_bridge(UserId, BridgeId, Callback).
+
+
+-spec create_template(binary(), binary(), [any()]) -> {ok, binary()}.
+create_template(UserId, TemplateName, TemplateContent) ->
+    automate_template_engine:create_template(UserId, TemplateName, TemplateContent).
+
+-spec list_templates_from_user_id(binary()) -> {ok, [#template_entry{}]}.
+list_templates_from_user_id(UserId) ->
+    automate_template_engine:list_templates_from_user_id(UserId).
+
+-spec delete_template(binary(), binary()) -> ok | {error, binary()}.
+delete_template(UserId, TemplateId) ->
+    automate_template_engine:delete_template(UserId, TemplateId).
+
+-spec update_template(binary(), binary(), binary(), [any()]) -> ok | {error, binary()}.
+update_template(UserId, TemplateId, TemplateName, TemplateContent) ->
+    automate_template_engine:update_template(UserId, TemplateId, TemplateName, TemplateContent).
+
+-spec get_template(binary(), binary()) -> {ok, #template_entry{}} | {error, binary()}.
+get_template(UserId, TemplateId) ->
+    automate_template_engine:get_template(UserId, TemplateId).
 
 %%====================================================================
 %% Internal functions
@@ -194,7 +283,7 @@ get_service_metadata(Id
                        , module := Module
                        }
                     , Username) ->
-    try Module:is_enabled_for_user(Username) of
+    try automate_service_registry_query:is_enabled_for_user(Module, Username) of
         {ok, Enabled} ->
             #service_metadata{ id=Id
                              , name=Name
@@ -222,6 +311,10 @@ generate_url_for_program_name(Username, ProgramName) ->
 generate_url_for_monitor_name(Username, MonitorName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/monitors/~s", [Username, MonitorName]))).
 
+generate_url_for_service_port(UserId, ServicePortId) ->
+        binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/bridges/id/~s/communication", [UserId, ServicePortId]))).
+
+
 program_entry_to_program(#user_program_entry{ id=Id
                                             , user_id=UserId
                                             , program_name=ProgramName
@@ -237,12 +330,12 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , program_orig=ProgramOrig
                  }.
 
--spec get_platform_service_how_to(binary(), binary()) -> {ok, binary() | none} | {error, not_found}.
+-spec get_platform_service_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found}.
 get_platform_service_how_to(Username, ServiceId)  ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     case automate_service_registry:get_service_by_id(ServiceId, UserId) of
         E = {error, not_found} ->
             E;
         {ok, #{ module := Module }} ->
-            Module:get_how_to_enable(#{ user_id => UserId, user_name => Username})
+            automate_service_registry_query:get_how_to_enable(Module, #{ user_id => UserId, user_name => Username})
     end.

@@ -5,11 +5,6 @@
 -module(automate_bot_engine_naive_lists_tests).
 -include_lib("eunit/include/eunit.hrl").
 
-%% Test data
--include("single_line_program.hrl").
-
--define(TEST_NODES, [node()]).
-
 %%====================================================================
 %% Test API
 %%====================================================================

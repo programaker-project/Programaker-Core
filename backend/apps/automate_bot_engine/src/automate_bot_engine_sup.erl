@@ -14,6 +14,7 @@
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
+-include("../../automate_common_types/src/definitions.hrl").
 
 %%====================================================================
 %% API functions
@@ -34,8 +35,16 @@ init([]) ->
                     , shutdown => 2000
                     , type => supervisor
                     , modules => [automate_bot_engine_runner_sup]
-                    }],
-    {ok, { {one_for_one, 0, 1}, ChildSpecs} }.
+                    }
+                 , #{ id => automate_bot_engine_thread_runner_sup
+                    , start => {automate_bot_engine_thread_runner_sup, start_link, []}
+                    , restart => permanent
+                    , shutdown => 2000
+                    , type => supervisor
+                    , modules => [automate_bot_engine_thread_runner_sup]
+                    }
+                 ],
+    {ok, { {one_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD}, ChildSpecs} }.
 
 %%====================================================================
 %% Internal functions

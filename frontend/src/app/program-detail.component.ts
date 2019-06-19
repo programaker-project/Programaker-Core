@@ -12,22 +12,24 @@ import ScratchProgramSerializer from './program_serialization/scratch-program-se
 import { MonitorService } from './monitor.service';
 import { ChatService } from './chat.service';
 import { Chat } from './chat';
+import { CustomBlockService } from './custom_block.service';
 
 import { MatDialog } from '@angular/material/dialog';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
+import { ToolboxController } from './blocks/ToolboxController';
+import { TemplateService } from './templates/template.service';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [MonitorService, ProgramService, ChatService],
+    providers: [CustomBlockService, MonitorService, ProgramService, ChatService, TemplateService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
         'libs/css/bootstrap.min.css',
     ],
 })
-
 export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
     currentFillingInput: string;
@@ -38,22 +40,26 @@ export class ProgramDetailComponent implements OnInit {
     HIDDEN_BACKGROUND_COLOR = '#888';
     HIDDEN_BORDER_COLOR = '#222';
     HIDDEN_TEXT_LABEL = 'Show/Hide';
+    toolboxController: ToolboxController;
 
-    constructor (
-      private monitorService: MonitorService,
-      private programService: ProgramService,
-      private chatService: ChatService,
-      private route: ActivatedRoute,
-      private location: Location,
-      private router: Router,
-      public dialog: MatDialog,
-  ) {
-      this.monitorService = monitorService;
-      this.programService = programService;
-      this.route = route;
-      this.location = location;
-      this.router = router;
-  }
+    constructor(
+        private monitorService: MonitorService,
+        private programService: ProgramService,
+        private customBlockService: CustomBlockService,
+        private chatService: ChatService,
+        private route: ActivatedRoute,
+        private location: Location,
+        private router: Router,
+        public dialog: MatDialog,
+        private templateService: TemplateService,
+    ) {
+        this.monitorService = monitorService;
+        this.programService = programService;
+        this.customBlockService = customBlockService;
+        this.route = route;
+        this.location = location;
+        this.router = router;
+    }
 
     ngOnInit(): void {
         progbar.track(new Promise((resolve) => {
@@ -80,15 +86,26 @@ export class ProgramDetailComponent implements OnInit {
 
     prepareWorkspace(): Promise<void> {
         return this.chatService.getAvailableChats().then((chats: Chat[]) => {
-            return new Toolbox(this.monitorService, chats).inject().then(() => { this.injectWorkspace(); });
+            return new Toolbox(
+                this.monitorService,
+                this.customBlockService,
+                chats,
+                this.dialog,
+                this.templateService,
+            )
+                .inject()
+                .then(([toolbox, registrations, controller]) => {
+                    this.injectWorkspace(toolbox, registrations, controller);
+                });
         });
     }
 
-    injectWorkspace() {
+    injectWorkspace(toolbox: HTMLElement, registrations: Function[], controller: ToolboxController) {
         // Avoid initializing it twice
         if (this.workspace !== undefined) {
             return;
         }
+
 
         const workspaceElement = document.getElementById('workspace');
         this.hide_workspace(workspaceElement);
@@ -96,7 +113,6 @@ export class ProgramDetailComponent implements OnInit {
         this.calculate_size(workspaceElement);
 
         const rtl = false;
-        const toolbox = null;
         const side = 'bottom';
         const soundsEnabled = false;
 
@@ -126,6 +142,14 @@ export class ProgramDetailComponent implements OnInit {
             }
         });
 
+        for (const reg of registrations) {
+            reg(this.workspace);
+        }
+
+        this.toolboxController = controller;
+        controller.setWorkspace(this.workspace);
+        controller.update();
+
         this.add_show_hide_block_menu();
 
         // HACK#1
@@ -154,10 +178,10 @@ export class ProgramDetailComponent implements OnInit {
         // This blocks are not used (as of now) as the frontend does
         // not run the program and there's no point in showing
         // that in the background.
-        (Blockly as any).DataCategory.addShowVariable = (_1, _2) => {};
-        (Blockly as any).DataCategory.addHideVariable = (_1, _2) => {};
-        (Blockly as any).DataCategory.addShowList = (_1, _2) => {};
-        (Blockly as any).DataCategory.addHideList = (_1, _2) => {};
+        (Blockly as any).DataCategory.addShowVariable = (_1, _2) => { };
+        (Blockly as any).DataCategory.addHideVariable = (_1, _2) => { };
+        (Blockly as any).DataCategory.addShowList = (_1, _2) => { };
+        (Blockly as any).DataCategory.addHideList = (_1, _2) => { };
 
         // Patch blockly.hideChaff to ignore events where
         // resize is produced by a soft-keyboard element
@@ -184,7 +208,7 @@ export class ProgramDetailComponent implements OnInit {
         workspace.style.height = (window_height - header_end) + 'px';
     }
 
-    get_position(element: any): {x: number, y: number} {
+    get_position(element: any): { x: number, y: number } {
         let xPosition = 0;
         let yPosition = 0;
 
@@ -271,17 +295,18 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     goBack(): boolean {
-        this.router.navigate([ '/dashboard' ])
+        this.router.navigate(['/dashboard'])
         return false;
     }
 
     sendProgram() {
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
 
-        const serialized = ScratchProgramSerializer.ToJson(xml);
+        const serializer = new ScratchProgramSerializer(this.toolboxController);
+        const serialized = serializer.ToJson(xml);
         const program = new ScratchProgram(this.program,
-                                            serialized.parsed,
-                                            serialized.orig);
+            serialized.parsed,
+            serialized.orig);
         this.programService.updateProgram(this.programUserId, program);
     }
 
@@ -299,19 +324,19 @@ export class ProgramDetailComponent implements OnInit {
             }
 
             const rename = (this.programService.renameProgram(this.programUserId, this.program, programData.name)
-                            .catch(() => { return false; })
-                            .then(success => {
-                                if (!success) {
-                                    return;
-                                }
+                .catch(() => { return false; })
+                .then(success => {
+                    if (!success) {
+                        return;
+                    }
 
-                                this.program.name = programData.name;
-                                const path = document.location.pathname.split("/");
-                                path[path.length - 1] = encodeURIComponent(this.program.name);
+                    this.program.name = programData.name;
+                    const path = document.location.pathname.split("/");
+                    path[path.length - 1] = encodeURIComponent(this.program.name);
 
-                                this.router.navigate([ path.join("/") ]);
-                                console.log("Changing name to", this.program);
-                            }));
+                    this.router.navigate([path.join("/")]);
+                    console.log("Changing name to", this.program);
+                }));
             progbar.track(rename);
         });
     }
@@ -330,14 +355,14 @@ export class ProgramDetailComponent implements OnInit {
             }
 
             const deletion = (this.programService.deleteProgram(this.programUserId, this.program)
-                            .catch(() => { return false; })
-                            .then(success => {
-                                if (!success) {
-                                    return;
-                                }
+                .catch(() => { return false; })
+                .then(success => {
+                    if (!success) {
+                        return;
+                    }
 
-                                this.goBack();
-                            }));
+                    this.goBack();
+                }));
             progbar.track(deletion);
         });
     }

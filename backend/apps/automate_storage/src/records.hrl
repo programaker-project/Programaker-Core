@@ -1,4 +1,4 @@
--define(MNESIA_SELECTOR, '_' | '$1'| '$2'| '$3'| '$4').
+-include("../../automate_common_types/src/types.hrl").
 
 -record(registered_user_entry, { id
                                , username
@@ -35,6 +35,7 @@
                                 }).
 
 -type program_id() :: binary().
+-type thread_id() :: binary().
 -type running_program_pid() :: pid().
 
 -record(running_program_entry, { program_id :: program_id()
@@ -42,6 +43,16 @@
                                , variables
                                , stats
                                }).
+
+-record(running_program_thread_entry, { thread_id :: thread_id()
+                                      , runner_pid :: undefined | pid()
+                                      , parent_program_id :: program_id()
+                                      , instructions :: [_]  %% The parent program instructions might have changed
+                                      , memory :: map()
+                                      , instruction_memory :: map()
+                                      , position :: [pos_integer()]
+                                      , stats
+                                      }).
 
 -record(registered_service_entry, { registration_id :: binary() | ?MNESIA_SELECTOR
                                   , service_id :: binary()      | ?MNESIA_SELECTOR

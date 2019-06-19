@@ -11,11 +11,13 @@
         , get_all_services_for_user/1
         , allow_user/2
         , get_service_by_id/2
+        , update_service_module/2
 
         , get_config_for_service/2
         , set_config_for_service/3
 
         , count_all_services/0
+        , delete_service/2
         ]).
 
 -include("records.hrl").
@@ -63,6 +65,10 @@ start_link() ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
+    ok = mnesia:wait_for_tables([ ?SERVICE_REGISTRY_TABLE
+                                , ?USER_SERVICE_ALLOWANCE_TABLE
+                                , ?SERVICE_CONFIGURATION_TABLE
+                                ], automate_configuration:get_table_wait_time()),
     ignore.
 
 -spec register(binary(), boolean(), #{ name := binary(), description := binary(), module := module()}) -> ok | {error, term(), string()}.
@@ -76,6 +82,29 @@ register(ServiceUuid, Public, #{ name := Name, description := Description, modul
 
     Transaction = fun() ->
                           ok = mnesia:write(?SERVICE_REGISTRY_TABLE, Entry, write)
+                  end,
+
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+-spec update_service_module(binary(),
+                            #{ name := binary(), description := binary(), module := {module(), [_]} })
+                           -> ok.
+update_service_module(Uuid, #{ name := Name
+                             , description := Description
+                             , module := Module
+                             }) ->
+    Transaction = fun() ->
+                          [Entry] = mnesia:read(?SERVICE_REGISTRY_TABLE, Uuid),
+                          ok = mnesia:write(?SERVICE_REGISTRY_TABLE,
+                                            Entry#services_table_entry{ name=Name
+                                                                      , description=Description
+                                                                      , module=Module
+                                                                      }, write)
                   end,
 
     case mnesia:transaction(Transaction) of
@@ -218,13 +247,25 @@ set_config_for_service(ServiceId, Property, Value) ->
 count_all_services() ->
     length(mnesia:dirty_all_keys(?SERVICE_REGISTRY_TABLE)).
 
+
+-spec delete_service(binary(), binary()) -> ok.
+delete_service(_UserId, ServiceId) ->
+    Transaction = fun() ->
+                          ok = mnesia:delete(?SERVICE_REGISTRY_TABLE, ServiceId, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
 -spec convert_to_map([#services_table_entry{}]) -> service_info_map().
 convert_to_map(TableEntries) ->
-    io:fwrite("Entries: ~p~n", [TableEntries]),
     convert_to_map(TableEntries, #{}).
 
 -spec convert_to_map([#services_table_entry{}], service_info_map()) ->

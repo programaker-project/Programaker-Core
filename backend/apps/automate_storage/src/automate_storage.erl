@@ -4,6 +4,7 @@
 -export([ create_user/3
         , login_user/2
         , get_session_username/1
+        , get_session_userid/1
         , create_monitor/2
         , get_monitor_from_id/1
         , dirty_list_monitors/0
@@ -19,11 +20,18 @@
         , delete_program/2
         , delete_running_process/1
 
+        , get_program_owner/1
         , get_program_pid/1
         , register_program_runner/2
         , get_program_from_id/1
-        , user_has_registered_service/2
         , dirty_list_running_programs/0
+
+        , create_thread/2
+        , dirty_list_running_threads/0
+        , register_thread_runner/2
+        , get_thread_from_id/1
+        , delete_thread/1
+        , update_thread/1
 
         , set_program_variable/3
         , get_program_variable/2
@@ -36,10 +44,12 @@
 -define(USER_MONITORS_TABLE, automate_user_monitors).
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
--define(REGISTERED_SERVICES_TABLE, automate_registered_services).
+-define(RUNNING_THREADS_TABLE, automate_running_program_threads).
+
 -define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
 
 -include("./records.hrl").
+-include("../automate_bot_engine/src/program_records.hrl").
 
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
 
@@ -70,7 +80,7 @@ login_user(Username, Password) ->
                 true ->
                     SessionToken = generate_id(),
                     ok = add_token_to_user(UserId, SessionToken),
-                    { ok, SessionToken };
+                    { ok, {SessionToken, UserId} };
                 _ ->
                     {error, invalid_user_password}
             end;
@@ -94,6 +104,19 @@ get_session_username(SessionId) when is_binary(SessionId) ->
                                       [#registered_user_entry{username=Username} | _] ->
                                           {ok, Username}
                                   end
+                          end
+                  end,
+
+    {atomic, Result} = mnesia:transaction(Transaction),
+    Result.
+
+get_session_userid(SessionId) when is_binary(SessionId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
+                              [] ->
+                                  { error, session_not_found };
+                              [#user_session_entry{ user_id=UserId } | _] ->
+                                  {ok, UserId}
                           end
                   end,
 
@@ -251,6 +274,15 @@ get_program_pid(ProgramId) ->
             {error, Reason}
     end.
 
+-spec get_program_owner(binary()) -> {'ok', binary() | undefined} | {error, not_found}.
+get_program_owner(ProgramId) ->
+    case get_program_from_id(ProgramId) of
+        {ok, #user_program_entry{user_id=UserId}} ->
+            {ok, UserId};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
 -spec register_program_runner(binary(), pid()) -> 'ok' | {error, not_running}.
 register_program_runner(ProgramId, Pid) ->
     Transaction = fun() ->
@@ -269,7 +301,6 @@ register_program_runner(ProgramId, Pid) ->
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
-            io:format("Register result: ~p~n", [Result]),
             Result;
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
@@ -297,17 +328,104 @@ get_program_from_id(ProgramId) ->
 dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
 
-user_has_registered_service(Username, ServiceId) ->
-    case try_get_user_registered_service(Username, ServiceId) of
-        {ok, true} ->
-            {ok, true};
-        {ok, false} ->
-            {ok, false};
-        {ok, not_found} ->
-            {ok, false};
+-spec create_thread(binary(), #program_thread{}) -> {ok, thread_id()}.
+create_thread(ParentProgramId, #program_thread{ program=Instructions
+                                              , global_memory=Memory
+                                              , instruction_memory=InstructionMemory
+                                              , position=Position
+                                              }) ->
+    ThreadId = generate_id(),
+    UserThread = #running_program_thread_entry{ thread_id=ThreadId
+                                              , runner_pid=undefined
+                                              , parent_program_id=ParentProgramId
+                                              , instructions=Instructions
+                                              , memory=Memory
+                                              , instruction_memory=InstructionMemory
+                                              , position=Position
+                                              , stats=#{}
+                                              },
+
+    case store_new_thread(UserThread) of
+        ok ->
+            { ok, ThreadId };
         {error, Reason} ->
-            {error, Reason}
+            { error, Reason }
     end.
+
+
+-spec delete_thread(binary()) -> ok | {error, not_found}.
+delete_thread(ThreadId) ->
+    Transaction = fun() ->
+                          ok = mnesia:delete(?RUNNING_THREADS_TABLE, ThreadId, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("[Thread delete] Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec update_thread(#running_program_thread_entry{}) -> ok | {error, not_found}.
+update_thread(Thread=#running_program_thread_entry{ thread_id=Id }) ->
+    Transaction = fun() ->
+                          case mnesia:read(?RUNNING_THREADS_TABLE, Id) of
+                              [] ->
+                                  {error, not_found};
+                              [_] ->
+                                  ok = mnesia:write(?RUNNING_THREADS_TABLE, Thread, write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("[Thread update] Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
+dirty_list_running_threads() ->
+    {ok, mnesia:dirty_all_keys(?RUNNING_THREADS_TABLE)}.
+
+
+-spec register_thread_runner(binary(), pid()) -> 'ok' | {error, not_running}.
+register_thread_runner(ThreadId, Pid) ->
+    Transaction = fun() ->
+                          case mnesia:read(?RUNNING_THREADS_TABLE, ThreadId) of
+                              [Thread] ->
+                                  ok = mnesia:write(?RUNNING_THREADS_TABLE,
+                                                    Thread#running_program_thread_entry{runner_pid=Pid},
+                                                    write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+           Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec get_thread_from_id(binary()) -> {ok, #running_program_thread_entry{}} | {error, binary()}.
+get_thread_from_id(ThreadId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?RUNNING_THREADS_TABLE, ThreadId) of
+                              [] ->
+                                  {error, not_found};
+                              [Thread] ->
+                                  {ok, Thread}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
 
 -spec get_program_variable(binary(), atom()) -> {ok, any()} | {error, not_found}.
 get_program_variable(ProgramId, Key) ->
@@ -325,6 +443,9 @@ get_program_variable(ProgramId, Key) ->
     end.
 
 -spec get_userid_from_username(binary()) -> {ok, binary()} | {error, no_user_found}.
+get_userid_from_username(undefined) ->
+    {ok, undefined};
+
 get_userid_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'
                                       , username='$2'
@@ -461,6 +582,15 @@ store_new_program(UserProgram) ->
     Transaction = fun() ->
                           mnesia:write(?USER_PROGRAMS_TABLE
                                       , UserProgram
+                                      , write)
+                  end,
+    {atomic, Result} = mnesia:transaction(Transaction),
+    Result.
+
+store_new_thread(UserThread) ->
+    Transaction = fun() ->
+                          mnesia:write(?RUNNING_THREADS_TABLE
+                                      , UserThread
                                       , write)
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
@@ -692,52 +822,6 @@ get_running_program_id(ProgramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
-try_get_user_registered_service(Username, ServiceId) ->
-    MatchHead = #registered_user_entry{ id='$1'
-                                      , username='$2'
-                                      , password='_'
-                                      , email='_'
-                                      },
-
-    %% Check that neither the id, username or email matches another
-    GuardUsername = {'==', '$2', Username},
-    Guard = GuardUsername,
-    ResultColumn = '$1',
-    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
-
-    Transaction = fun() ->
-                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
-                              [UserId] ->
-                                  ServiceMatchHead = #registered_service_entry{ registration_id='_'
-                                                                              , service_id='$1'
-                                                                              , user_id='$2'
-                                                                              , enabled='$3'
-                                                                              },
-
-                                  %% Check that neither the id, username or email matches another
-                                  GuardService = {'==', '$1', ServiceId},
-                                  GuardUserId = {'==', '$2', UserId},
-                                  ServiceGuard = {'andthen', GuardService, GuardUserId},
-                                  ServiceResultColumn = '$3',
-                                  ServiceMatcher = [{ServiceMatchHead, [ServiceGuard], [ServiceResultColumn]}],
-
-                                  case mnesia:select(?REGISTERED_SERVICES_TABLE, ServiceMatcher) of
-                                      [IsEnabled] ->
-                                          { ok, IsEnabled };
-                                      [] ->
-                                          {ok, not_found}
-                                  end;
-                              [] ->
-                                  {ok, not_found}
-                          end
-                  end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
-    end.
-
 -spec set_program_variable(binary(), atom(), any()) -> ok | {error, any()}.
 set_program_variable(ProgramId, Key, Value) ->
     Transaction = fun() ->
@@ -832,11 +916,11 @@ build_tables(Nodes) ->
                  ok
          end,
 
-    %% Program variable table
-    ok = case mnesia:create_table(?RUNNING_PROGRAMS_TABLE,
-                                  [ {attributes, record_info(fields, running_program_entry)}
+    %% Running program threads table
+    ok = case mnesia:create_table(?RUNNING_THREADS_TABLE,
+                                  [ {attributes, record_info(fields, running_program_thread_entry)}
                                   , { disc_copies, Nodes }
-                                  , { record_name, running_program_entry }
+                                  , { record_name, running_program_thread_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->
@@ -845,7 +929,7 @@ build_tables(Nodes) ->
                  ok
          end,
 
-    %% Registered services table
+    %% Program variable table
     ok = case mnesia:create_table(?PROGRAM_VARIABLE_TABLE,
                                   [ {attributes, record_info(fields, program_variable_table_entry)}
                                   , { disc_copies, Nodes }

@@ -2,7 +2,7 @@
 
 %% API
 -export([ get_expected_signals/1
-        , run_threads/3
+        , run_thread/2
         , get_result/2
         ]).
 
@@ -17,11 +17,6 @@
 -spec get_expected_signals([#program_thread{}]) -> {ok, [atom()]}.
 get_expected_signals(Threads) ->
     {ok, get_expected_signals_from_threads(Threads)}.
-
--spec run_threads([#program_thread{}], #program_state{}, {atom(), any()}) -> {ok, {[#program_thread{}], [#program_thread{}]}}.
-run_threads(Threads, State, Message) ->
-    { _Stopped, RanThisTick, DidNotRanThisTick } = run_and_split_threads(Threads, State, Message),
-    {ok, {RanThisTick, DidNotRanThisTick}}.
 
 -spec get_block_result(map(), #program_thread{}) -> {ok, any()} | {error, not_found}.
 get_result(Operation, Thread) ->
@@ -78,38 +73,22 @@ resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | _]) wh
 resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
     resolve_subblock_with_position(lists:nth(Position, Contents), T).
 
-
--spec run_and_split_threads([#program_thread{}], #program_state{}, { atom(), any() })
-                           -> {[#program_thread{}], [#program_thread{}], [#program_thread{}]}.
-run_and_split_threads(Threads, State, Message) ->
-    partition_threads(Threads, State, Message, {[], [], []}).
-
--spec partition_threads([#program_thread{}], #program_state{}, { atom(), any() },
-                        {[#program_thread{}], [#program_thread{}], [#program_thread{}]})
-                       -> {[#program_thread{}], [#program_thread{}], [#program_thread{}]}.
-partition_threads([], _State, _Message, { Stopped, RanThisTick, DidNotRanThisTick }) ->
-    { Stopped, RanThisTick, DidNotRanThisTick };
-
-partition_threads([Thread | T], State, Message, { Stopped, RanThisTick, DidNotRanThisTick }) ->
-    case run_thread(Thread, State, Message) of
-        { stopped, _Reason } ->
-            partition_threads(T, State, Message, { [Thread | Stopped], RanThisTick, DidNotRanThisTick });
-        { did_not_run, {new_state, NewThreadState} } ->
-            partition_threads(T, State, Message, { Stopped, RanThisTick, [NewThreadState | DidNotRanThisTick] });
-        { did_not_run, _Reason } ->
-            partition_threads(T, State, Message, { Stopped, RanThisTick, [Thread | DidNotRanThisTick] });
-        { ran_this_tick, NewThreadState } ->
-            partition_threads(T, State, Message, { Stopped, [NewThreadState | RanThisTick], DidNotRanThisTick })
-    end.
-
--spec run_thread(#program_thread{}, #program_state{}, {atom(), any()})
+-spec run_thread(#program_thread{}, {atom(), any()})
                 -> {stopped, thread_finished} | {did_not_run, waiting}
                        | {did_not_run, {new_state, #program_thread{}}}
                        | {ran_this_tick, #program_thread{}}.
-run_thread(Thread, State, Message ) ->
+run_thread(Thread, Message) ->
     case get_instruction(Thread) of
         {ok, Instruction} ->
-            run_instruction(Instruction, Thread, State, Message);
+            try
+                run_instruction(Instruction, Thread, Message)
+            of
+                Result ->
+                    Result
+            catch ErrorNS:Error:StackTrace ->
+                    io:fwrite("[Thread] Critical error: ~p~n~p~n", [{ErrorNS, Error}, StackTrace]),
+                    {stopped, {ErrorNS, Error}}  %% Critical errors trigger a stop
+            end;
         {error, element_not_found} ->
             {stopped, thread_finished}
     end.
@@ -120,7 +99,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_SET_VARIABLE
                                     }
                                  , ValueArgument
                                  ]
-                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
     {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, VariableName, Value),
@@ -133,21 +112,21 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                                     }
                                  , ValueArgument
                                  ]
-                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Change} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
     {ok, NewValue} = case automate_bot_engine_variables:get_program_variable(Thread, VariableName) of
-                   {ok, PrevValue} ->
-                       automate_bot_engine_values:add(PrevValue, Change);
-                   {error, not_found} ->
-                       {ok, Change}
-               end,
+                         {ok, PrevValue} ->
+                             automate_bot_engine_values:add(PrevValue, Change);
+                         {error, not_found} ->
+                             {ok, Change}
+                     end,
     {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, VariableName, NewValue),
     {ran_this_tick, increment_position(NewThreadState)};
 
 run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
                  , ?ARGUMENTS := [Argument]
-                 }, Thread=#program_thread{ position=Position }, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {Times, Value} = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
                          {ok, MemoryValue} ->
@@ -156,7 +135,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
                              {ok, TimesStr} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
                              LoopTimes = to_int(TimesStr),
                              {LoopTimes, 0}
-            end,
+                     end,
     case Value < Times of
         true ->
             NextIteration = automate_bot_engine_variables:set_instruction_memory( Thread
@@ -170,7 +149,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT
 
 run_instruction(#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
                  , ?ARGUMENTS := [Argument]
-                 }, Thread=#program_thread{ position=Position }, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
     case Value of
@@ -180,9 +159,52 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
             {ran_this_tick, increment_position(Thread)}
     end;
 
+run_instruction(#{ ?TYPE := ?COMMAND_IF
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+        {ok, _} ->
+            NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            {ran_this_tick, increment_position(NextIteration)};
+        {error, not_found} ->
+            {ok, Value} = automate_bot_engine_variables:resolve_argument(
+                            Argument, Thread),
+
+            case Value of
+                false -> %% Not matching, skipping
+                    {ran_this_tick, increment_position(Thread)};
+                _ -> %% Matching, going in
+                    NextIteration = automate_bot_engine_variables:set_instruction_memory(
+                                      Thread, {already_run, true}),
+                    {ran_this_tick, NextIteration#program_thread{ position=Position ++ [1] }}
+
+            end
+    end;
+
+run_instruction(#{ ?TYPE := ?COMMAND_IF_ELSE
+                 , ?ARGUMENTS := [Argument]
+                 }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+        {ok, _} ->
+            NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            {ran_this_tick, increment_position(NextIteration)};
+        {error, not_found} ->
+            NextIteration = automate_bot_engine_variables:set_instruction_memory(
+                              Thread, {already_run, true}),
+            {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, NextIteration),
+            case Value of
+                false -> %% Not matching, going for else
+                    {ran_this_tick, NextIteration#program_thread{ position=Position ++ [2, 1] }};
+                _ -> %% Matching, going for if
+                    {ran_this_tick, NextIteration#program_thread{ position=Position ++ [1, 1] }}
+            end
+    end;
+
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT_UNTIL
                  , ?ARGUMENTS := [Argument]
-                 }, Thread=#program_thread{}, _State, _) ->
+                 }, Thread=#program_thread{}, _) ->
 
     {ok, Value} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
     case Value of
@@ -194,7 +216,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_WAIT_UNTIL
 
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT
                  , ?ARGUMENTS := [Argument]
-                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Seconds} = automate_bot_engine_variables:resolve_argument(Argument, Thread),
     StartTime = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
@@ -202,7 +224,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_WAIT
                         MemoryValue;
                     {error, not_found} ->
                         erlang:monotonic_time(millisecond)
-            end,
+                end,
 
     WaitFinished = StartTime + binary_to_integer(Seconds) * 1000 < erlang:monotonic_time(millisecond),
     case WaitFinished of
@@ -220,7 +242,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_ADD_TO_LIST
                                     }
                                  , NewValueArg
                                  ]
-                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, NewValue} = automate_bot_engine_variables:resolve_argument(NewValueArg, Thread),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
@@ -242,7 +264,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
                                     }
                                  , IndexValueArg
                                  ]
-                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexValueArg, Thread),
     Index = to_int(IndexValue),
@@ -265,7 +287,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
                                  , ValueArg
                                  , IndexArg
                                  ]
-                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread),
     Index = to_int(IndexValue),
@@ -289,7 +311,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
                                  , IndexArg
                                  , ValueArg
                                  ]
-                 }, Thread, _State, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, IndexValue} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread),
     Index = to_int(IndexValue),
@@ -306,29 +328,84 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
     {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, ListName, ValueAfter),
     {ran_this_tick, increment_position(NewThreadState)};
 
-%% TODO: Really call the services
 run_instruction(#{ ?TYPE := ?COMMAND_CALL_SERVICE
-                               , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
-                                                , ?SERVICE_ACTION := Action
-                                                , ?SERVICE_CALL_VALUES := Values
-                                                }
-                               }, Thread,
-                #program_state{permissions=Permissions},
+                 , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
+                                  , ?SERVICE_ACTION := Action
+                                  , ?SERVICE_CALL_VALUES := Arguments
+                                  }
+                 }, Thread=#program_thread{ program_id=ProgramId },
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    UserId = case Permissions of
-                 undefined ->  % For simplification on test cases
-                     undefined;
-                 #program_permissions{ owner_user_id=OwnerUserId } ->
-                     OwnerUserId
-             end,
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
+
+    Values = lists:map(fun (Arg) ->
+                               {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread),
+                               Value
+                       end, Arguments),
+
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, NewThread, _Value} = Module:call(Action, Values, Thread, UserId),
+    {ok, NewThread, _Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
     {ran_this_tick, increment_position(NewThread)};
 
-run_instruction(_Instruction, _Thread, _State, _Message) ->
-    %% io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
-    {did_not_run, waiting}.
+run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
+                           , ?ARGUMENTS := Arguments
+                           }, Thread=#program_thread{ program_id=ProgramId },
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    SaveTo = get_save_to(Operation),
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
+
+    ReadArguments = remove_save_to(Arguments, SaveTo),
+    Values = lists:map(fun (Arg) ->
+                               {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread),
+                               Value
+                       end, ReadArguments),
+
+    [ServiceId, Action] = binary:split(ServiceCall, <<".">>),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, NewThread, Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
+
+    {ok, SavedThread} = case SaveTo of
+                            { index, Index } ->
+                                #{ <<"value">> := VariableName
+                                 } = lists:nth(Index, Arguments),
+                                automate_bot_engine_variables:set_program_variable(
+                                  Thread,
+                                  %% Note that erlang is 1-indexed, protocol is 0-indexed
+                                  VariableName,
+                                  Value);
+                            _ ->
+                                {ok, NewThread}
+                        end,
+    {ran_this_tick, increment_position(SavedThread)};
+
+run_instruction(#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
+                 , ?ARGUMENTS := [#{ ?TYPE := ?TEMPLATE_NAME_TYPE
+                                   , ?VALUE := TemplateId
+                                   }
+                                 , Input
+                                 ]
+                 }, Thread=#program_thread{ program_id=ProgramId },
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
+
+    {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread),
+
+    case automate_template_engine:match(UserId, Thread, TemplateId, InputValue) of
+        {ok, NewThread, _Value} ->
+            {ran_this_tick, increment_position(NewThread)};
+        {error, not_found} ->
+            {ran_this_tick, finish_thread(Thread)}
+    end;
+
+run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
+    io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
+    {did_not_run, waiting};
+
+run_instruction(#{ <<"contents">> := _Content }, Thread, _Message) ->
+    %% Finished code block
+    {ran_this_tick, increment_position(Thread)}.
 
 increment_position(Thread = #program_thread{position=Position}) ->
     IncrementedInnermost = increment_innermost(Position),
@@ -348,6 +425,9 @@ to_int(Value) when is_integer(Value) ->
 to_int(Value) when is_binary(Value) ->
     {IntValue, <<"">>} = string:to_integer(Value),
     IntValue.
+
+finish_thread(Thread = #program_thread{}) ->
+    Thread#program_thread{position=[]}.
 
 back_to_parent([]) ->
     [1];
@@ -374,11 +454,48 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
                   }, Thread) ->
     FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread),
     SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread),
+
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
-             automate_bot_engine_values:add(FirstValue, SecondValue);
+            automate_bot_engine_values:add(FirstValue, SecondValue);
         _ ->
             {error, not_found}
+    end;
+get_block_result(#{ ?TYPE := ?COMMAND_JSON
+                  , ?ARGUMENTS := [ KeyReference
+                                  , MapReference
+                                  ]
+                  }, Thread) ->
+    KeyResult = automate_bot_engine_variables:resolve_argument(KeyReference, Thread),
+    MapResult = automate_bot_engine_variables:resolve_argument(MapReference, Thread),
+
+    case [KeyResult, MapResult] of
+        [{ok, KeyValue}, {ok, MapValue}] ->
+            automate_bot_engine_values:get_value_by_key(KeyValue, MapValue);
+        _ ->
+            {error, not_found}
+    end;
+
+
+
+%% Templates
+get_block_result(#{ ?TYPE := ?MATCH_TEMPLATE_CHECK
+                  , ?ARGUMENTS := [#{ ?TYPE := ?TEMPLATE_NAME_TYPE
+                                    , ?VALUE := TemplateId
+                                    }
+                                  , Input
+                                  ]
+                  }, Thread=#program_thread{ program_id=ProgramId }) ->
+
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
+
+    {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread),
+
+    case automate_template_engine:match(UserId, Thread, TemplateId, InputValue) of
+        {ok, NewThread, _Value} ->
+            {ok, true};
+        {error, not_found} ->
+            {ok, false}
     end;
 
 %% Numeric operators
@@ -607,19 +724,48 @@ get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
             {ok, false}
     end;
 
+get_block_result(#{ ?TYPE := <<"services.", ServiceCall/binary>>
+                  , ?ARGUMENTS := Arguments
+                  }, Thread=#program_thread{ program_id=ProgramId }) ->
+
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
+
+    Values = lists:map(fun (Arg) ->
+                               {ok, Value} = automate_bot_engine_variables:resolve_argument(Arg, Thread),
+                               Value
+                       end, Arguments),
+
+    [ServiceId, Action] = binary:split(ServiceCall, <<".">>),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, _NewThread, Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
+    {ok, Value};
+
 get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
-                 , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
-                                  , ?SERVICE_ACTION := Action
-                                  , ?SERVICE_CALL_VALUES := Values
-                                  }
-                 }, Thread=#program_thread{ program_id=PID }) ->
+                  , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
+                                   , ?SERVICE_ACTION := Action
+                                   , ?SERVICE_CALL_VALUES := Values
+                                   }
+                  }, Thread=#program_thread{ program_id=PID }) ->
 
     {ok, #user_program_entry{ user_id=UserId }} = automate_storage:get_program_from_id(PID),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, _NewThread, Value} = Module:call(Action, Values, Thread, UserId),
+    {ok, _NewThread, Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
     {ok, Value};
 
 %% Fail
 get_block_result(Block, _Thread) ->
     io:format("Result from: ~p~n", [Block]),
     erlang:error(bad_operation).
+
+
+get_save_to(#{ <<"save_to">> := #{ <<"type">> := <<"argument">>
+                                 , <<"index">> := Index
+                                 } }) ->
+    { index, Index + 1 }; %% erlang is 1-indexed, protocol is 0-indexed
+get_save_to(_) ->
+    none.
+
+remove_save_to(Arguments, none) ->
+    Arguments;
+remove_save_to(Arguments, {index, Index}) ->
+    automate_bot_engine_naive_lists:remove_nth(Arguments, Index).

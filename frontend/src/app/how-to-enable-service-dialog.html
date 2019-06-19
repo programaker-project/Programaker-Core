@@ -1,7 +1,11 @@
-<h2 mat-dialog-title>How to enable <span class="service-name">{{ service.name }}</span> service</h2>
-<mat-dialog-content>Send the following message to <a rel="noopener noreferrer" target="_blank" href="{{ bot_link }}" class="service-name">{{ service.extra.bot_name }}</a>. <br/>
-    <div class="message-example">/register {{ service.extra.token}} </div>
+<h2 mat-dialog-title>How to enable service</h2>
+<mat-dialog-content>
+    <div class="rendering-zone"></div>
 </mat-dialog-content>
-<mat-dialog-actions>
+<mat-dialog-actions *ngIf="this.type == 'message'">
     <button class="confirmation" mat-button mat-dialog-close>OK</button>
+</mat-dialog-actions>
+<mat-dialog-actions *ngIf="this.type == 'form'" class="form-buttons">
+    <button class="rejection" mat-button mat-dialog-close>Cancel</button>
+    <button class="confirmation" mat-button mat-raised-button  (click)="this.send_form()" color="primary">Submit</button>
 </mat-dialog-actions>

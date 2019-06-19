@@ -42,7 +42,6 @@ allowed_methods(Req, State) ->
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
 
 content_types_accepted(Req, State) ->
-    io:fwrite("Control types accepted~n", []),
 	{[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
    Req, State}.
 

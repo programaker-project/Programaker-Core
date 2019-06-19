@@ -106,7 +106,7 @@ get_description() ->
 get_monitor_id(UserId) ->
     automate_services_telegram_storage:get_or_gen_user_channel(UserId).
 
-call(send_chat_on_channel, Values, Thread, UserId) ->
+call(send_chat_on_channel, [ChannelName, Text], Thread, UserId) ->
 
     {ok, UserMonitor} = get_monitor_id(UserId),
     BotName = case automate_bot_engine_variables:get_last_monitor_value(Thread, UserMonitor) of
@@ -116,21 +116,18 @@ call(send_chat_on_channel, Values, Thread, UserId) ->
                       get_bot_name()
               end,
 
-    ChannelInfo = maps:get(<<"value">>, lists:nth(1, Values), Thread),
-    ChatId = binary_to_integer(lists:nth(2, binary:split(ChannelInfo, <<":">>))),
+    ChatId = binary_to_integer(lists:nth(2, binary:split(ChannelName, <<":">>))),
 
-    {ok, Arg} = automate_bot_engine_variables:resolve_argument(lists:nth(2, Values), Thread),
-    send_message(BotName, #{ chat_id => ChatId, text => Arg }),
+    send_message(BotName, #{ chat_id => ChatId, text => Text }),
     {ok, Thread, none};
 
-call(send_chat, Values, Thread, UserId) ->
+call(send_chat, [Text], Thread, UserId) ->
     {ok, UserMonitor} = get_monitor_id(UserId),
     {ok, LastData} = automate_bot_engine_variables:get_last_monitor_value(Thread, UserMonitor),
     #{ ?TELEGRAM_MESSAGE_CHAT_ID := ChatId
      , ?TELEGRAM_MESSAGE_BOT_NAME := BotName
      } = LastData,
-    {ok, Arg} = automate_bot_engine_variables:resolve_argument(lists:nth(1, Values), Thread),
-    send_message(BotName, #{ chat_id => ChatId, text => Arg }),
+    send_message(BotName, #{ chat_id => ChatId, text => Text }),
     {ok, Thread, none}.
 
 is_enabled_for_user(Username) ->
@@ -174,28 +171,31 @@ get_telegram_services_from_username(Username) ->
     end.
 
 
-how_to_to_json(#service_enable_how_to{ service=Service
-                                     , method=Method
-                                     , extra=#service_enable_extra_telegram{ token=Token
+how_to_to_json(#service_enable_how_to{ extra=#service_enable_extra_telegram{ token=Token
                                                                            , bot_name=BotName
                                                                            }
                                      }) ->
-    #service_metadata{ id=Id
-                     , name=Name
-                     , link=Link
-                     , enabled=Enabled
-                     } = Service,
-    ServiceAsDictionary = #{ <<"id">> => Id
-                           , <<"name">> => Name
-                           , <<"link">> =>  Link
-                           , <<"enabled">> => Enabled
-                           },
-
-    jiffy:encode(#{ <<"service">> => ServiceAsDictionary
-                  , <<"method">> => Method
-                  , <<"extra">> => #{ <<"token">> => Token
-                                    , <<"bot_name">> => BotName
-                                    , <<"service_type">> => <<"registration_bot">>
-                                    }
-                  }).
+    #{ <<"type">> => <<"message">>
+     , <<"value">> =>
+           #{ <<"form">> =>
+                  [ #{ <<"type">> => <<"text">>
+                     , <<"value">> => <<"Send the following to ">>
+                     },
+                    #{ <<"type">> => <<"tag">>
+                     , <<"tag">> => <<"a">>
+                     , <<"properties">> =>
+                           #{ <<"href">> => <<"https://telegram.me/", BotName/binary>>
+                            }
+                     , <<"content">> =>
+                           [ #{ <<"type">> => <<"text">>
+                              , <<"value">> => BotName
+                              }
+                           ]
+                     },
+                    #{ <<"type">> => <<"console">>
+                     , <<"value">> => <<"/register ", Token/binary>>
+                     }
+                  ]
+            }
+     }.
 

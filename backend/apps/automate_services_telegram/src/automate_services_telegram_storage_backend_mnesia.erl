@@ -82,6 +82,11 @@ start_link() ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
+    ok = mnesia:wait_for_tables([ ?TELEGRAM_SERVICE_REGISTRATION_TABLE
+                                , ?TELEGRAM_SERVICE_USER_CHANNEL_TABLE
+                                , ?TELEGRAM_SERVICE_CHATS_KNOWN_TABLE
+                                , ?TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE
+                                ], automate_configuration:get_table_wait_time()),
     ignore.
 
 -spec get_internal_user_for_telegram_id(number()) -> {ok, binary()} | {error, not_found}.

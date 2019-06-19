@@ -27,22 +27,33 @@ start_link() ->
                         , {"/api/v0/users", automate_rest_api_users_root, []}
                         , {"/api/v0/users/:user_id", automate_rest_api_users_specific, []}
 
+                        , {"/api/v0/users/id/:user_id/templates/", automate_rest_api_templates_root, []}
+                        , {"/api/v0/users/id/:user_id/templates/id/:template_id", automate_rest_api_templates_specific, []}
+                        , {"/api/v0/users/:user_id/custom-blocks/", automate_rest_api_custom_blocks_root, []}
                         , {"/api/v0/users/:user_id/chats", automate_rest_api_chats_root, []}
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
                         , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
+                        , {"/api/v0/users/:user_id/bridges/", automate_rest_api_service_ports_root, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/callback/:callback", automate_rest_api_bridge_callback, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/communication"
+                          , automate_rest_api_service_ports_specific_communication, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/oauth_return"
+                          , automate_rest_api_service_port_oauth_return, []}
 
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}
                         , {"/api/v0/users/:user_id/services/id/:service_id/how-to-enable", automate_rest_api_services_how_to_enable, []}
+                        , {"/api/v0/users/:user_id/services/id/:service_id/register", automate_rest_api_services_register, []}
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}
                         ]}
                  ]),
 
     Port = get_port(),
     Start = cowboy:start_clear(http, [{port, Port}],
-                                   #{
-                                      env => #{dispatch => Dispatch}
-                                    }
-                                  ),
+                               #{
+                                 env => #{dispatch => Dispatch}
+                                }
+                              ),
 
     case Start of
         {ok, Pid} ->

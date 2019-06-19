@@ -23,11 +23,24 @@ import { AlertModule } from 'ngx-bootstrap';
 import { AppComponent } from './app.component';
 import { DashboardComponent } from './dashboard.component';
 
+// Programs
 import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
-import { AddServicesComponent } from './add-services.component';
+import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
+import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 
+// Services
+import { AddServicesComponent } from './add-services.component';
 import { ServicesComponent } from './services.component';
+import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
+
+// Bridges
+import { BridgeIndexComponent } from './bridges/index.component';
+import { BridgeAddComponent } from './bridges/add.component';
+import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
+
+// Templates
+import { TemplateCreateDialogComponent } from './templates/create-dialog.component';
 
 import { AppRoutingModule } from './app-routing.module';
 import { LoginFormComponent } from './login-form.component';
@@ -35,9 +48,6 @@ import { LoginFormComponent } from './login-form.component';
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
 import 'hammerjs';
-import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
-import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
-import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 
 @NgModule({
     declarations: [
@@ -46,13 +56,17 @@ import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
         ProgramsComponent,
         ProgramDetailComponent,
         AddServicesComponent,
+        BridgeIndexComponent,
+        BridgeAddComponent,
         ServicesComponent,
         LoginFormComponent,
 
         // Dialogs
+        BridgeDeleteDialogComponent,
         HowToEnableServiceDialogComponent,
         RenameProgramDialogComponent,
         DeleteProgramDialogComponent,
+        TemplateCreateDialogComponent,
 
         // Pipes
         SummarizeJSON,
@@ -82,11 +96,14 @@ import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
     ],
     exports: [
         AddServicesComponent,
+        BridgeAddComponent,
     ],
     entryComponents: [
+        BridgeDeleteDialogComponent,
         HowToEnableServiceDialogComponent,
         RenameProgramDialogComponent,
         DeleteProgramDialogComponent,
+        TemplateCreateDialogComponent,
     ],
     providers: [],
     bootstrap: [AppComponent],

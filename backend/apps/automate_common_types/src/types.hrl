@@ -1,0 +1,3 @@
+-ifndef(MNESIA_SELECTOR).
+-define(MNESIA_SELECTOR, '_' | '$1' | '$2' | '$3' | '$4').
+-endif.

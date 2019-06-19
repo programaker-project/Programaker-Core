@@ -1,3 +1,9 @@
+# See https://docs.docker.com/engine/reference/builder/#dockerignore-file
+
+# Ignore non-applicable changes when ADDing files
+Dockerfile
+.git
+
 # App artifacts
 /_build
 /db

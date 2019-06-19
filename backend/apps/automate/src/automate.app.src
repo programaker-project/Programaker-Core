@@ -4,6 +4,7 @@
     {registered, []},
     {applications, [ kernel
                    , stdlib
+                   , automate_configuration
                    , automate_rest_api
                    , automate_bot_engine
                    , automate_monitor_engine

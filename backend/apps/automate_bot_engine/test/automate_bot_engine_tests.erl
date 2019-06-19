@@ -45,7 +45,7 @@ setup() ->
 
 %% @doc App infrastructure teardown.
 %% @end
-stop({NodeName}) ->
+stop({_NodeName}) ->
     %% application:stop(?APPLICATION),
 
     %% %% Restore the original node name
@@ -131,29 +131,36 @@ run_thread_single_tick() ->
     CallServiceInstruction = #{ ?TYPE => ?COMMAND_CALL_SERVICE
                               , ?ARGUMENTS => #{ ?SERVICE_ID => ServiceId
                                                , ?SERVICE_ACTION => ?TEST_SERVICE_ACTION
-                                               , ?SERVICE_CALL_VALUES => #{ ?TYPE => ?VARIABLE_CONSTANT
-                                                                          , ?VALUE => answer
-                                                                          }
+                                               , ?SERVICE_CALL_VALUES => [#{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                           , ?VALUE => answer
+                                                                           }]
                                                }
                               },
     TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
                            , { ?TEST_MONITOR, #{ ?CHANNEL_MESSAGE_CONTENT => example }}},
 
+    ProgramId = create_anonymous_program(),
+
     Program = #program_state{ triggers=[#program_trigger{ condition=WaitForMonitorInstruction
                                                         , subprogram=[CallServiceInstruction]
-                                                        }]},
-
+                                                        }]
+                            , program_id=ProgramId
+                            },
     {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program, TriggerMonitorSignal),
 
     %% Unexpected signal (for the thread already started), does not run
     #program_thread{ position=[1], program=[CallServiceInstruction] } = Thread,
-    {ok, {Ran1, NotRun1}} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
-                                                                       TriggerMonitorSignal),
-    ?assertMatch([], Ran1),
-    ?assertMatch([#program_thread{position=[1]}], NotRun1),
+    {did_not_run, waiting} = automate_bot_engine_operations:run_thread(Thread, TriggerMonitorSignal),
 
     %% Expected signal, does run
-    {ok, {Ran2, NotRun2}} = automate_bot_engine_operations:run_threads([Thread], Program#program_state{ threads=[Thread] },
-                                                                       {?SIGNAL_PROGRAM_TICK, none}),
-    ?assertMatch([#program_thread{position=[]}], Ran2),
-    ?assertMatch([], NotRun2).
+    {ran_this_tick, NewThreadState} = automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}),
+    ?assertMatch(#program_thread{position=[]}, NewThreadState).
+
+
+
+%%====================================================================
+%% Util functions
+%%====================================================================
+create_anonymous_program() ->
+    {ok, ProgramId} = automate_storage:create_program(undefined, <<"Test program">>),
+    ProgramId.

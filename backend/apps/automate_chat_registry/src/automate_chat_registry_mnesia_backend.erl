@@ -32,6 +32,8 @@ start_link() ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
+    ok = mnesia:wait_for_tables([?CHAT_HANDLER_MODULE_TABLE], 
+                                automate_configuration:get_table_wait_time()),
     ignore.
 
 -spec count_chats() -> #{ chats := number(), services := non_neg_integer() }.

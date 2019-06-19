@@ -12,6 +12,8 @@
                   , automate_storage
                   , automate_channel_engine
                   , automate_stats
+                  , automate_service_port_engine
+                  , automate_template_engine
                   ]}
 
  , {env, [ {port, 8080} ]}

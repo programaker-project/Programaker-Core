@@ -78,7 +78,7 @@ mat-card.module {
     text-align: center;
 }
 
-app-my-login-form {
+app-my-login-form, bridge-add-component {
     padding: 1ex;
 }
 
@@ -181,4 +181,44 @@ mat-card.call-to-action > h4 {
 
 #nprogress .bar {
     background-color: #deff00 !important;
+}
+
+
+/* How to enable services */
+div.console {
+    padding: 1ex;
+    background-color: #222;
+    color: #eee;
+    border-radius: 2px;
+    font-family: monospace;
+}
+
+.rendering-zone span.text {
+    white-space: pre-wrap;
+}
+
+.form-buttons {
+    float: right;
+}
+
+/* Bridge cards */
+mat-card.bridge.connected-true {
+    color: #eee;
+    background-color: #227e00;
+}
+
+mat-card.bridge.connected-false {
+    color: #eee;
+    background: repeating-linear-gradient(
+        45deg,
+        #444,
+        #444 10px,
+        #222 10px,
+        #222 20px
+    );
+}
+
+/* Template dialog */
+.full-dialog-size {
+    width: 80vw;
 }

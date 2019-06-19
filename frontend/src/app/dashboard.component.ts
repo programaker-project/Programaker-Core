@@ -1,3 +1,5 @@
+import * as progbar from './ui/progbar';
+
 import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
 
 import { Component, OnInit } from '@angular/core';
@@ -15,12 +17,15 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { MonitorMetadata } from './monitor';
 import { MonitorService } from './monitor.service';
+import { BridgeService } from './bridges/bridge.service';
+import { BridgeIndexData } from './bridges/bridge';
+import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
 
 @Component({
     // moduleId: module.id,
     selector: 'app-my-dashboard',
     templateUrl: './dashboard.component.html',
-    providers: [MonitorService, ProgramService, SessionService, ServiceService],
+    providers: [BridgeService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'dashboard.component.css',
         'libs/css/material-icons.css',
@@ -82,8 +87,8 @@ export class DashboardComponent {
 
     openProgram(program: ProgramMetadata): void {
         this.sessionService.getSession().then(session =>
-            this.router.navigate([ '/users/' + session.username
-                                   + '/programs/' + encodeURIComponent(program.name)]));
+            this.router.navigate(['/users/' + session.username
+                + '/programs/' + encodeURIComponent(program.name)]));
     }
 
     enableService(service: AvailableService): void {
@@ -92,16 +97,13 @@ export class DashboardComponent {
     }
 
     showHowToEnable(howTo: ServiceEnableHowTo): void {
-        if (howTo.method === 'external') {
-            this.showHowToDialog(howTo);
+        if ((howTo as any).success === false) {
+            return;
         }
-    }
-
-    showHowToDialog(howTo: ServiceEnableHowTo): void {
         const dialogRef = this.dialog.open(HowToEnableServiceDialogComponent, {
             data: howTo
         });
 
-        dialogRef.afterClosed().subscribe(result => {});
+        dialogRef.afterClosed().subscribe(result => { });
     }
 }

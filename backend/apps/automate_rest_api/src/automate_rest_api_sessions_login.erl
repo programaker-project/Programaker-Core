@@ -38,7 +38,6 @@ allowed_methods(Req, State) ->
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Res, State}.
 
 content_types_accepted(Req, State) ->
-    io:fwrite("[Login] Control types accepted~n", []),
 	{[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
    Req, State}.
 
@@ -54,9 +53,10 @@ accept_json_modify_collection(Req, Session) ->
             case to_register_data(Parsed) of
                 { ok, LoginData } ->
                     case automate_rest_api_backend:login_user(LoginData) of
-                        { ok, Token } ->
+                        { ok, {Token, UserId} } ->
                             Output = jiffy:encode(#{ <<"token">> => Token
                                                    , <<"success">> => true
+                                                   , <<"user_id">> => UserId
                                                    }),
                             Res1 = cowboy_req:set_resp_body(Output, Req2),
                             Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),

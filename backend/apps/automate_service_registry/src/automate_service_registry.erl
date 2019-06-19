@@ -11,17 +11,24 @@
         , get_service_by_id/2
         , register_public/1
         , register_private/1
+        , update_service_module/3
         , allow_user/2
 
         , get_config_for_service/2
         , set_config_for_service/3
 
         , count_all_services/0
+        , delete_service/2
         ]).
 
 -define(SERVER, ?MODULE).
 -include("records.hrl").
 -define(BACKEND, automate_service_registry_mnesia_backend).
+-define(MODULE_MAP, #{ name := binary()
+                      , description := binary()
+                      , module := {module(), [_]}
+                      , uuid := binary()
+                      }).
 
 %%====================================================================
 %% API functions
@@ -38,26 +45,26 @@ get_all_services_for_user(UserId) ->
 get_service_by_id(ServiceId, UserId) ->
     ?BACKEND:get_service_by_id(ServiceId, UserId).
 
--spec register_public(module()) -> {ok, binary()}.
+-spec register_public(module() | ?MODULE_MAP) -> {ok, binary()}.
 register_public(ServiceModule) ->
-    Uuid = ServiceModule:get_uuid(),
+    {Uuid, Data} = module_to_map(ServiceModule),
     ok = ?BACKEND:register(Uuid,
                            true, %% Public
-                           #{ name => ServiceModule:get_name()
-                            , description => ServiceModule:get_description()
-                            , module => ServiceModule
-                            }),
+                           Data),
     {ok, Uuid}.
 
--spec register_private(module()) -> {ok, binary()}.
+-spec update_service_module(module() | ?MODULE_MAP,
+                            binary(), binary()) -> ok.
+update_service_module(Module, _ServiceId, _OwnerId) ->
+    {Uuid, Data} = module_to_map(Module),
+    ?BACKEND:update_service_module(Uuid, Data).
+
+-spec register_private(module() | ?MODULE_MAP) -> {ok, binary()}.
 register_private(ServiceModule) ->
-    Uuid = ServiceModule:get_uuid(),
+    {Uuid, Data} = module_to_map(ServiceModule),
     ok = ?BACKEND:register(Uuid,
                            false, %% Private
-                           #{ name => ServiceModule:get_name()
-                            , description => ServiceModule:get_description()
-                            , module => ServiceModule
-                            }),
+                           Data),
     {ok, Uuid}.
 
 -spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
@@ -76,6 +83,29 @@ set_config_for_service(ServiceId, Property, Value) ->
 count_all_services() ->
     ?BACKEND:count_all_services().
 
+-spec delete_service(binary(), binary()) -> ok.
+delete_service(UserId, ServiceId) ->
+    ?BACKEND:delete_service(UserId, ServiceId).
+
+
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
+module_to_map(#{ name := Name
+               , uuid := Uuid
+               , description := Description
+               , module := {Module, Params}
+               }) ->
+    { Uuid
+    , #{ name => Name
+       , description => Description
+       , module => {Module, Params}
+       }};
+
+module_to_map(ServiceModule) ->
+    { ServiceModule:get_uuid()
+    , #{ name => ServiceModule:get_name()
+       , description => ServiceModule:get_description()
+       , module => ServiceModule
+       }}.

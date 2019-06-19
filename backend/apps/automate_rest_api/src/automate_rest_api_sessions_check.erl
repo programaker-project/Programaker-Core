@@ -58,8 +58,12 @@ is_authorized(Req, State) ->
 -spec to_json(cowboy_req:req(), #check_seq{}) -> {binary(),cowboy_req:req(),_}.
 to_json(Req, State) ->
     #check_seq{username=Username} = State,
+    {ok, UserId} = automate_storage:get_userid_from_username(Username),
 
-    Output = jiffy:encode(#{ <<"success">> => true, <<"username">> => Username }),
+    Output = jiffy:encode(#{ <<"success">> => true
+                           , <<"username">> => Username
+                           , <<"user_id">> => UserId
+                           }),
     Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
     Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 

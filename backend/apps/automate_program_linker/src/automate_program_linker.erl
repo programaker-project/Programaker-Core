@@ -75,7 +75,7 @@ relink_monitor_id(Block=#{ ?ARGUMENTS := Args=
                  , UserId
                  ) ->
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, MonitorId } = Module:get_monitor_id(UserId),
+    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
     Block#{ ?ARGUMENTS := Args#{ ?MONITOR_ID :=  MonitorId } };
 
 relink_monitor_id(Block, _UserId) ->

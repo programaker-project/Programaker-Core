@@ -5,6 +5,7 @@ import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/map';
 import { SessionService } from './session.service';
 import { HttpClient } from '@angular/common/http';
+import { ContentType } from './content-type';
 
 @Injectable()
 export class ServiceService {
@@ -27,17 +28,40 @@ export class ServiceService {
         return API.ApiHost + service.link + '/how-to-enable';
     }
 
+    async getServiceRegistryUrl(service_id: string) {
+        const serviceRoot = await this.getListAvailableServicesUrl();
+        return serviceRoot + 'id/' + service_id + '/register';
+
+    }
+
     getAvailableServices(): Promise<AvailableService[]> {
         return this.getListAvailableServicesUrl().then(
-            url => this.http.get(url, { headers: this.sessionService.getAuthHeader()})
-                            .map(response => response as AvailableService[])
-                            .toPromise());
+            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+                .map(response => response as AvailableService[])
+                .toPromise());
     }
 
     getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {
         return this.getServiceEnableHowToUrl(service).then(
-            url => this.http.get(url, {headers: this.sessionService.getAuthHeader()})
-                            .map(response => response as ServiceEnableHowTo)
-                            .toPromise());
+            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+                .map(response => {
+                    return response as ServiceEnableHowTo;
+                })
+                .toPromise());
+    }
+
+    registerService(service_id: string, data: { [key: string]: string }): Promise<boolean> {
+        return this.getServiceRegistryUrl(service_id).then(
+            url => this.http.post(
+                url, JSON.stringify(data),
+                {
+                    headers: this.sessionService.addContentType(
+                        this.sessionService.getAuthHeader(),
+                        ContentType.Json),
+                })
+                .map(response => {
+                    return (response as any).success;
+                })
+                .toPromise());
     }
 }

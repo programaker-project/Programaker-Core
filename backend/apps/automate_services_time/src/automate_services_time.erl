@@ -78,7 +78,6 @@ spawn_timekeeper() ->
 
 
 timekeeping_loop(ChannelId, {LHour, LMin, LSec}) ->
-    io:fwrite("."),
     {_, {Hour, Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
     case (Sec =/= LSec) orelse (Min =/= LMin) orelse (Hour =/= LHour) of
         true ->

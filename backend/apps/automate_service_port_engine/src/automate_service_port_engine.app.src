@@ -1,0 +1,18 @@
+{application,
+ automate_service_port_engine,
+ [ {description, "Auto-mate service port engine."},
+   {vsn, "0.0.0"},
+   {registered, []},
+   {mod, { automate_service_port_engine_app, [] }},
+   {applications, [ kernel
+                  , stdlib
+                  , mnesia
+                  , automate_service_registry
+                  , automate_stats
+                  ]},
+   {env, [
+         ]},
+   {modules, []},
+   {licenses, ["Apache 2.0"]},
+   {links, []}
+ ]}.
