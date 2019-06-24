@@ -58,7 +58,7 @@ start_link() ->
                                   [ { attributes, record_info(fields, service_configuration_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, service_configuration_entry }
-                                  , { type, bag }
+                                  , { type, set }
                                   ]) of
              { atomic, ok } ->
                  ok;
