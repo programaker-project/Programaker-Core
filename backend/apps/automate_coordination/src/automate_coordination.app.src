@@ -1,17 +1,12 @@
-{application, automate_bot_engine, [
-    {description, "Auto-mate bot engine module."},
+{application, automate_coordination, [
+    {description, "Auto-mate cluster coordination module."},
     {vsn, "0.0.0"},
     {registered, []},
     {mod, { automate_bot_engine_app, [] }},
     {applications, [ kernel
                    , stdlib
                    , automate_storage
-                   , automate_coordination
-                   , automate_services_all
                    , automate_configuration
-
-                     %% , automate_program_linker %% Not an application, just a module
-
     ]},
     {env, [
     ]},
