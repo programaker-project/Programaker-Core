@@ -17,11 +17,15 @@
 update_program(ProgramId) ->
     case get_program_pid(ProgramId) of
         { ok, PID } ->
-            case process_info(PID) of
+            io:fwrite("Process found on: ~p~n", [PID]),
+            try process_info(PID) of
                 undefined -> %% Not alive
                     automate_bot_engine_runner_sup:start(ProgramId);
                 _ ->
                     automate_bot_engine_runner:update(PID)
+            catch ErrorNs:Error ->
+                    io:fwrite("[~p] When getting process info, raised: ~p~n", [?MODULE, {ErrorNs, Error}]),
+                    automate_bot_engine_runner_sup:start(ProgramId)
             end;
         {error, not_running} ->
             automate_bot_engine_runner_sup:start(ProgramId)

@@ -30,27 +30,33 @@ run_task_not_parallel(Function, Id) ->
                  {ok, not_run_used_pid} ->
                      RunnerPid ! continue,
                      {ok, RunnerPid};
-                 {ok, is_running, Pid} ->
-                     case process_info(Pid) of
-                         undefined -> %% Stopped
+                 {ok, is_running, Pid, Node} ->
+                     %% TODO: Change this way of checking alive process into
+                     %% something reactive, so that if a node is restarted new
+                     %% processes cannot be mistaken for old ones.
+                     case rpc:call(Node, erlang, is_process_alive, [Pid]) of
+                         false -> %% Stopped
+                             io:fwrite("Process not found: ~p~n", [Pid]),
                              case ?BACKEND:run_on_process_if_not_started_or_pid(Id, RunnerPid, Pid) of
                                  {ok, not_run_used_pid} ->
                                      RunnerPid ! continue,
                                      {ok, RunnerPid};
-                                 {ok, is_running, Pid2} ->
-                                     case process_info(Pid2) of
-                                         undefined ->
+                                 {ok, is_running, Pid2, Node2} ->
+                                     case rpc:call(Node2, erlang, is_process_alive, [Pid2]) of
+                                         false ->
                                              {error, could_not_start};
-                                         _ ->
+                                         true ->
                                              RunnerPid ! cancel,
                                              {ok, Pid2}
                                      end
                              end;
-                         _ ->
+                         true ->
+                             io:fwrite("Process ~p found (cancelling)~n", [Pid]),
                              RunnerPid ! cancel,
                              {ok, Pid}
                      end
              end,
+    io:fwrite("Result: ~p~n", [Result]),
     case Result of
         {ok, RunnerPid} ->
             {started, RunnerPid};
@@ -66,8 +72,10 @@ run_task_not_parallel(Function, Id) ->
 waiter(Parent, Function) ->
     receive
         continue ->
+            io:fwrite("Continuing~n"),
             Function();
         cancel ->
+            io:fwrite("Cancelling~n"),
             ok;
         Msg ->
             io:fwrite("Unexpected message: ~p~n", [Msg]),

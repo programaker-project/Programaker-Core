@@ -2,7 +2,7 @@
     {description, "Auto-mate cluster coordination module."},
     {vsn, "0.0.0"},
     {registered, []},
-    {mod, { automate_bot_engine_app, [] }},
+    {mod, { automate_coordination_app, [] }},
     {applications, [ kernel
                    , stdlib
                    , automate_storage

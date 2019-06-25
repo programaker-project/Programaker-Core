@@ -41,13 +41,13 @@ start_link() ->
 
 
 -spec run_on_process_if_not_started(any(), pid()) -> {ok, not_run_used_pid}
-                                                         | {ok, is_running, pid()}
+                                                         | {ok, is_running, pid(), node()}
                                                          | {error, any()}.
 run_on_process_if_not_started(Id, CandidatePid) ->
     run_on_process_if_not_started_or_pid(Id, CandidatePid, undefined).
 
 -spec run_on_process_if_not_started_or_pid(any(), pid(), pid() | undefined) -> {ok, not_run_used_pid}
-                                                                                   | {ok, is_running, pid()}
+                                                                                   | {ok, is_running, pid(), node()}
                                                                                    | {error, any()}.
 run_on_process_if_not_started_or_pid(Id, CandidatePid, DisqualifiedPid) ->
     Node = node(),
@@ -70,15 +70,17 @@ run_on_process_if_not_started_or_pid(Id, CandidatePid, DisqualifiedPid) ->
                                                     write),
                                   {ok, not_run_used_pid};
                               [#run_once_tasks_table_entry{ task_id=_
-                                                          , node=_OtherNode
+                                                          , node=OtherNode
                                                           , pid=CurrentPid
                                                           }] ->
-                                  {ok, is_running, CurrentPid}
+                                  {ok, is_running, CurrentPid, OtherNode}
                           end
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
+            io:fwrite("[~p] Result: ~p~n", [?MODULE, Result]),
             Result;
         {aborted, Reason} ->
+            io:fwrite("[~p] Error: ~p~n", [?MODULE, Reason]),
             {error, Reason}
     end.
