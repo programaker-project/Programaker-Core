@@ -80,13 +80,10 @@ spawn_timekeeper() ->
                    timekeeping_loop(ChannelId, {0, 0, 0})
            end, ?MODULE) of
         {started, Pid} ->
-            io:fwrite("[~p] Started time on ~p~n", [node(), Pid]),
             {ok, Pid};
         {already_running, Pid} ->
-            io:fwrite("[~p] Reused time from ~p~n", [node(), Pid]),
             {ok, Pid};
         {error, Error} ->
-            io:fwrite("[~p] Error starting time ~p~n", [node(), Error]),
             {error, Error}
     end.
 
