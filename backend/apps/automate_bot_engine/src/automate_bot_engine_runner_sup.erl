@@ -23,7 +23,6 @@
 %% API functions
 %%====================================================================
 start(ProgramId) ->
-    io:fwrite("\033[7mStarting ~p on ~p\033[0m~n", [ProgramId, node()]),
     supervisor:start_child(?SERVER, [ProgramId]),
     ok.
 

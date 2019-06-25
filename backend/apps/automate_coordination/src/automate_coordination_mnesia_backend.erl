@@ -78,7 +78,6 @@ run_on_process_if_not_started_or_pid(Id, CandidatePid, DisqualifiedPid) ->
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
-            io:fwrite("[~p] Result: ~p~n", [?MODULE, Result]),
             Result;
         {aborted, Reason} ->
             io:fwrite("[~p] Error: ~p~n", [?MODULE, Reason]),

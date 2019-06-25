@@ -17,7 +17,6 @@
 update_program(ProgramId) ->
     case get_program_pid(ProgramId) of
         { ok, PID } ->
-            io:fwrite("Process found on: ~p~n", [PID]),
             try process_info(PID) of
                 undefined -> %% Not alive
                     automate_bot_engine_runner_sup:start(ProgramId);

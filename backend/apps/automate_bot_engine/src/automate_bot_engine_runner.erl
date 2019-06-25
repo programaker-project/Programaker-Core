@@ -53,21 +53,17 @@ stop_program(Pid) ->
                               {error, Error :: term()} |
                               ignore.
 start_link(ProgramId) ->
-    io:fwrite("[~p] Starting... ~p~n", [node(), ProgramId]),
     case automate_storage:get_program_from_id(ProgramId) of
         {ok, Program} ->
             case automate_coordination:run_task_not_parallel(fun() -> init(ProgramId, Program) end,
                                                              {?MODULE, ProgramId}) of
                 {started, Pid} ->
-                    io:fwrite("Started on ~p~n", [Pid]),
                     true = link(Pid),
                     {ok, Pid};
                 {already_running, Pid} ->
-                    io:fwrite("Already running on ~p~n", [Pid]),
                     true = link(Pid),
                     {ok, Pid};
                 {error, Error} ->
-                    io:fwrite("Error starting: ~p~n", [Error]),
                     {error, Error}
             end;
         {error, not_found} ->
@@ -93,7 +89,6 @@ start_link(ProgramId) ->
                                   ignore.
 init(ProgramId, Program) ->
     ok = automate_storage:register_program_runner(ProgramId, self()),
-    io:fwrite("[~p] Running ~p on ~p~n", [node(), ProgramId, self()]),
     {ok, ProgramState} = automate_bot_engine_program_decoder:initialize_program(ProgramId, Program),
 
     self() ! {?SIGNAL_PROGRAM_TICK, {}},
@@ -148,7 +143,6 @@ loop(State = #state{ check_next_action = CheckContinue
             self() ! {?TRIGGERED_BY_MONITOR, { MonitorId, Message }},
             loop(State);
         _Unknown ->
-            %% io:fwrite("\033[47;30mIgnoring ~p\033[0m~n", [Unknown]),
             loop(State)
     end.
 

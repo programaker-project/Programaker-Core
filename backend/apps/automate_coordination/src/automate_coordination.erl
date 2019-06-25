@@ -36,7 +36,6 @@ run_task_not_parallel(Function, Id) ->
                      %% processes cannot be mistaken for old ones.
                      case rpc:call(Node, erlang, is_process_alive, [Pid]) of
                          false -> %% Stopped
-                             io:fwrite("Process not found: ~p~n", [Pid]),
                              case ?BACKEND:run_on_process_if_not_started_or_pid(Id, RunnerPid, Pid) of
                                  {ok, not_run_used_pid} ->
                                      RunnerPid ! continue,
@@ -51,12 +50,10 @@ run_task_not_parallel(Function, Id) ->
                                      end
                              end;
                          true ->
-                             io:fwrite("Process ~p found (cancelling)~n", [Pid]),
                              RunnerPid ! cancel,
                              {ok, Pid}
                      end
              end,
-    io:fwrite("Result: ~p~n", [Result]),
     case Result of
         {ok, RunnerPid} ->
             {started, RunnerPid};
@@ -72,12 +69,9 @@ run_task_not_parallel(Function, Id) ->
 waiter(Parent, Function) ->
     receive
         continue ->
-            io:fwrite("Continuing~n"),
             Function();
         cancel ->
-            io:fwrite("Cancelling~n"),
             ok;
         Msg ->
-            io:fwrite("Unexpected message: ~p~n", [Msg]),
             waiter(Parent, Function)
     end.
