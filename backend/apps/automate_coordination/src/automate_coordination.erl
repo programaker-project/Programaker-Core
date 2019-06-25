@@ -5,8 +5,6 @@
 
 -module(automate_coordination).
 
--behaviour(application).
-
 %% Module API
 -export([run_task_not_parallel/2]).
 
@@ -35,7 +33,7 @@ run_task_not_parallel(Function, Id) ->
                  {ok, is_running, Pid} ->
                      case process_info(Pid) of
                          undefined -> %% Stopped
-                             case ?BACKEND:run_process_if_not_started_or_pid(Id, RunnerPid, Pid) of
+                             case ?BACKEND:run_on_process_if_not_started_or_pid(Id, RunnerPid, Pid) of
                                  {ok, not_run_used_pid} ->
                                      RunnerPid ! continue,
                                      {ok, RunnerPid};

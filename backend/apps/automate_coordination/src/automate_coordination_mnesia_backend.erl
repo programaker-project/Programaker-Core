@@ -40,9 +40,15 @@ start_link() ->
     ignore.
 
 
+-spec run_on_process_if_not_started(any(), pid()) -> {ok, not_run_used_pid}
+                                                         | {ok, is_running, pid()}
+                                                         | {error, any()}.
 run_on_process_if_not_started(Id, CandidatePid) ->
     run_on_process_if_not_started_or_pid(Id, CandidatePid, undefined).
 
+-spec run_on_process_if_not_started_or_pid(any(), pid(), pid() | undefined) -> {ok, not_run_used_pid}
+                                                                                   | {ok, is_running, pid()}
+                                                                                   | {error, any()}.
 run_on_process_if_not_started_or_pid(Id, CandidatePid, DisqualifiedPid) ->
     Node = node(),
     Transaction = fun() ->
@@ -73,6 +79,6 @@ run_on_process_if_not_started_or_pid(Id, CandidatePid, DisqualifiedPid) ->
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
             Result;
-        {error, Reason} ->
+        {aborted, Reason} ->
             {error, Reason}
     end.
