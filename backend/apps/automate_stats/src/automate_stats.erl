@@ -111,12 +111,18 @@ update_internal_metrics() ->
     end,
 
     %% Monitors
-    Monitors = supervisor:count_children(automate_monitor_engine_runner_sup),
-    set_metric(gauge, automate_monitor_count,
-               proplists:get_value(workers, Monitors), [total]),
+    try
+        supervisor:count_children(automate_monitor_engine_runner_sup)
+    of Monitors ->
+            set_metric(gauge, automate_monitor_count,
+                       proplists:get_value(workers, Monitors), [total]),
 
-    set_metric(gauge, automate_monitor_count,
-               proplists:get_value(active, Monitors), [running]),
+            set_metric(gauge, automate_monitor_count,
+                       proplists:get_value(active, Monitors), [running])
+    catch MonitorErrNS:MonitorErr:MonitorStackTrace ->
+            io:fwrite("Error counting monitors: ~p~n", [{MonitorErrNS, MonitorErr, MonitorStackTrace}]),
+            set_metric(gauge, automate_monitor_count, 0, [running])
+    end,
 
     %% Services
     case automate_service_registry:get_all_public_services() of

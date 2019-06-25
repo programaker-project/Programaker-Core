@@ -1,0 +1,16 @@
+{application, automate_coordination, [
+    {description, "Auto-mate cluster coordination module."},
+    {vsn, "0.0.0"},
+    {registered, []},
+    {mod, { automate_coordination_app, [] }},
+    {applications, [ kernel
+                   , stdlib
+                   , automate_storage
+                   , automate_configuration
+    ]},
+    {env, [
+    ]},
+    {modules, []},
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+]}.
