@@ -1,7 +1,6 @@
 -module(automate_service_port_engine_router).
 
 -behaviour(gen_server).
--include_lib("eunit/include/eunit.hrl").
 
 %% API
 -export([ start_link/0
@@ -46,10 +45,7 @@
 %% @end
 %%--------------------------------------------------------------------
 connect_bridge(BridgeId) ->
-    ?debugMsg("Connecting bridge..."),
-    Result = gen_server:call(?SERVER, { connect_bridge, BridgeId, self() }),
-    ?debugFmt("Connection result: ~p~n", [Result]),
-    Result.
+    gen_server:call(?SERVER, { connect_bridge, BridgeId, self() }).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -60,26 +56,21 @@ connect_bridge(BridgeId) ->
 %%--------------------------------------------------------------------
 -spec call_bridge(binary(), map()) -> {ok, map()} | {error, ?ERROR_CLASSES}.
 call_bridge(BridgeId, Msg) ->
-    ?debugMsg("Before log~n"),
     automate_stats:log_observation(counter,
                                    automate_bridge_engine_messages_to_bridge,
                                    [BridgeId]),
-    ?debugMsg("Before cast~n"),
     gen_server:cast(?SERVER, { call_bridge, BridgeId, Msg, self() }),
-    ?debugMsg("Waiting for server response~n"),
     wait_server_response().
 
 -spec wait_server_response() -> {ok, map()} | {error, ?ERROR_CLASSES}.
 wait_server_response() ->
     receive
         {?SERVER, Response} ->
-            ?debugFmt("Response: ~p~n", [Response]),
             Response;
         X ->
-            ?debugFmt("WTF: ~p~n", [X]),
             wait_server_response()
     after ?MAX_WAIT_TIME ->
-            ?debugFmt("Failed after ~pms~n", [?MAX_WAIT_TIME]),
+            io:fwrite("[~p] Wait failed after ~pms~n", [?MODULE, ?MAX_WAIT_TIME]),
             {error, no_response}
     end.
 
@@ -115,7 +106,6 @@ is_bridge_connected(BridgeId) ->
 %%--------------------------------------------------------------------
 start_link() ->
     %% io:fwrite("Preparing router...~n"),
-    ?debugMsg("Starting router..."),
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%===================================================================
@@ -135,7 +125,6 @@ start_link() ->
 %%--------------------------------------------------------------------
 init([]) ->
     process_flag(trap_exit, true),
-    ?debugMsg("Init OK"),
     {ok, #state{ bridge_by_id=#{}
                , bridge_id_by_pid=#{}
                , thread_by_message=#{}
@@ -194,7 +183,6 @@ handle_call({ get_routes }, _From, State) ->
 
 
 handle_call({ connect_bridge, BridgeId, Pid }, _From, State) ->
-    ?debugMsg("Bridge connected"),
     #state{ bridge_by_id=Bridges
           , bridge_id_by_pid=BridgesByPid
           } = State,
@@ -203,7 +191,6 @@ handle_call({ connect_bridge, BridgeId, Pid }, _From, State) ->
                              error -> []
                          end,
     link(Pid),
-    ?debugMsg("Linked"),
     {reply, ok, State#state{
                   bridge_by_id=maps:put(BridgeId,
                                         [ #bridge_info{pid=Pid, bridge_id=BridgeId}
@@ -214,7 +201,6 @@ handle_call({ connect_bridge, BridgeId, Pid }, _From, State) ->
     };
 
 handle_call(_Request, _From, State) ->
-    ?debugMsg("Unknown call"),
     Reply = ok,
     {reply, Reply, State}.
 
@@ -229,12 +215,11 @@ handle_call(_Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({ call_bridge, BridgeId, Msg, From  }, State) ->
-    ?debugMsg("Bridge called~n"),
     case State of
         State=#state{ bridge_by_id=Bridges=#{ BridgeId := Connections }
               , thread_by_message=Messages
               } ->
-            ?debugFmt("State: ~p~n", [State]),
+            io:fwrite("State: ~p~n", [State]),
             AliveConnections = check_alive_connections(Connections),
             case AliveConnections of
                 [First | Rest] ->
@@ -247,18 +232,17 @@ handle_cast({ call_bridge, BridgeId, Msg, From  }, State) ->
                                   }
                     };
                 _ ->
-                    ?debugFmt("No alive connections left on bridgeId (~p)~n", [BridgeId]),
+                    io:fwrite("No alive connections left on bridgeId (~p)~n", [BridgeId]),
                     From ! { ?SERVER, { error, no_connection }},
                     {noreply, State}
             end;
         _ ->
-            ?debugFmt("BridgeId (~p) in state(~p)~n", [BridgeId, State]),
+            io:fwrite("BridgeId (~p) in state(~p)~n", [BridgeId, State]),
             From ! { ?SERVER, { error, no_connection }},
             {noreply, State}
     end;
 
 handle_cast(_Msg, State) ->
-    ?debugMsg("Unknown cast"),
     {noreply, State}.
 
 
@@ -288,7 +272,6 @@ call_bridge_to_connection(Bridge=#bridge_info{ pid=Pid}, Msg, From) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info({'EXIT', Pid, _Reason}, State=#state{ bridge_by_id=Bridges, bridge_id_by_pid=BridgesByPid}) ->
-    ?debugMsg("Got exit MSG"),
     %% TODO: consider calling threads failing
     {NewBridges, NewBridgesById} =
         case BridgesByPid of
@@ -320,7 +303,6 @@ handle_info({'EXIT', Pid, _Reason}, State=#state{ bridge_by_id=Bridges, bridge_i
                          }};
 
 handle_info(_Info, State) ->
-    ?debugMsg("Got unexpected info"),
     {noreply, State}.
 
 %%--------------------------------------------------------------------

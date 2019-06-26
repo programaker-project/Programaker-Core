@@ -27,11 +27,9 @@ setup() ->
     NodeName = node(),
 
     %% Use a custom node name to avoid overwriting the actual databases
-    ?debugFmt("\033[7mPreparing ~p\033[0m~n", [?APPLICATION]),
     net_kernel:start([?MODULE, shortnames]),
 
     {ok, _Pid} = application:ensure_all_started(?APPLICATION),
-    ?debugMsg("Started, continuing~n"),
 
     {NodeName}.
 
@@ -59,29 +57,21 @@ route_one_to_one() ->
     Message = #{ value => sample },
     ReturnMessage = #{ value => ok },
     Orig = self(),
-    ?debugMsg("Spawning~n"),
     spawn_link(fun() ->
-                       ?debugMsg("Connecting~n"),
                        ok = ?ROUTER:connect_bridge(BridgeId),
-                       ?debugMsg("Connected~n"),
                        Orig ! ready,
-                       ?debugMsg("Waiting~n"),
                        receive
                            Data = { automate_service_port_engine_router
                            , _From
                            , { data, MessageId, RecvMessage }} ->
-                               ?debugFmt("Gotcha! ~p", [Data]),
                                ?assertMatch(Message, RecvMessage),
                                ?ROUTER:answer_message(MessageId, ReturnMessage);
                            Fail ->
-                               ?debugFmt("Fail: ~p", [Fail]),
                                ct:fail(timeout2)
                        end
                end),
     receive ready -> ok end,
-    ?debugMsg("Calling~n"),
     {ok, Result} = ?ROUTER:call_bridge(BridgeId, Message),
-    ?debugMsg("Finished~n"),
     ?assertMatch(ReturnMessage, Result).
 
 route_two_to_one() ->
