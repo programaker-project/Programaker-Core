@@ -47,10 +47,10 @@ stop({NodeName}) ->
 tests(_SetupResult) ->
     %% Routing
     [ {"[Service Port Router] Route one-to-one", fun route_one_to_one/0}
-      %% , {"[Service Port Router] Route two-to-one", fun route_two_to_one/0}
-      %% , {"[Service Port Router] Route one-to-two", fun route_one_to_two/0}
-      %% , {"[Service Port Router] Route one-to-zero", fun route_one_to_zero/0}
-      %% , {"[Service Port Router] Route two-to-zero", fun route_two_to_zero/0}
+    , {"[Service Port Router] Route two-to-one", fun route_two_to_one/0}
+    , {"[Service Port Router] Route one-to-two", fun route_one_to_two/0}
+    , {"[Service Port Router] Route one-to-zero", fun route_one_to_zero/0}
+    , {"[Service Port Router] Route two-to-zero", fun route_two_to_zero/0}
     ].
 
 %%%% Routing
@@ -71,7 +71,7 @@ route_one_to_one() ->
                            , _From
                            , { data, MessageId, RecvMessage }} ->
                                ?debugFmt("Gotcha! ~p", [Data]),
-                               ?assertMatch(RecvMessage, Message),
+                               ?assertMatch(Message, RecvMessage),
                                ?ROUTER:answer_message(MessageId, ReturnMessage);
                            Fail ->
                                ?debugFmt("Fail: ~p", [Fail]),
@@ -82,4 +82,83 @@ route_one_to_one() ->
     ?debugMsg("Calling~n"),
     {ok, Result} = ?ROUTER:call_bridge(BridgeId, Message),
     ?debugMsg("Finished~n"),
-    ?assertMatch(Result, ReturnMessage).
+    ?assertMatch(ReturnMessage, Result).
+
+route_two_to_one() ->
+    BridgeId = <<"af8618e9-2078-443b-9834-e23180c1673a">>,
+    Message1 = #{ value => sample1 },
+    Message2 = #{ value => sample2 },
+    ReturnMessage1 = #{ value => ok1 },
+    ReturnMessage2 = #{ value => ok2 },
+    Orig = self(),
+    spawn_link(fun() ->
+                       ok = ?ROUTER:connect_bridge(BridgeId),
+                       Orig ! ready,
+                       receive
+                           { automate_service_port_engine_router
+                           , _ %% From
+                           , { data, MessageId1, RecvMessage1 }} ->
+                               ?assertMatch(Message1, RecvMessage1),
+                               ?ROUTER:answer_message(MessageId1, ReturnMessage1);
+                           _ ->
+                               ct:fail(timeout)
+                       end,
+                       receive
+                           { automate_service_port_engine_router
+                           , _ %% From
+                           , { data, MessageId2, RecvMessage2 }} ->
+                               ?assertMatch(Message2, RecvMessage2),
+                               ?ROUTER:answer_message(MessageId2, ReturnMessage2);
+                           _ ->
+                               ct:fail(timeout)
+                       end
+               end),
+    receive ready -> ok end,
+    {ok, Result1} = ?ROUTER:call_bridge(BridgeId, Message1),
+    ?assertMatch(ReturnMessage1, Result1),
+    {ok, Result2} = ?ROUTER:call_bridge(BridgeId, Message2),
+    ?assertMatch(ReturnMessage2, Result2).
+
+route_one_to_two() ->
+    BridgeId = <<"5d606167-9968-4581-8d6c-f2340f35d065">>,
+    Message = #{ value => sample },
+    Orig = self(),
+
+    Listener = (fun() ->
+                        ok = ?ROUTER:connect_bridge(BridgeId),
+                        Orig ! ready,
+                        receive
+                            { automate_service_port_engine_router
+                            , _ %% From
+                            , { data, MessageId, RecvMessage }} ->
+                                ?assertMatch(Message, RecvMessage),
+                                ?ROUTER:answer_message(MessageId, self());
+                            close ->
+                                Orig ! closed
+                        end
+                end),
+
+    First = spawn_link(Listener),
+    Second = spawn_link(Listener),
+    receive ready -> ok end,
+    receive ready -> ok end,
+    {ok, Catcher} = ?ROUTER:call_bridge(BridgeId, Message),
+    ToClose = case Catcher of
+                  First -> Second;
+                  Second -> First
+              end,
+    ToClose ! close,
+    receive closed -> ok end.
+
+
+route_one_to_zero() ->
+    BridgeId = <<"6958a5cd-1559-42c1-a628-4ed2cb8d3d5e">>,
+    Message = #{ value => sample },
+    {error, no_connection} = ?ROUTER:call_bridge(BridgeId, Message).
+
+route_two_to_zero() ->
+    BridgeId = <<"9875dcd5-2bcc-414d-aa4a-4f2f7709332d">>,
+    Message = #{ value => sample },
+    {error, no_connection} = ?ROUTER:call_bridge(BridgeId, Message),
+    {error, no_connection} = ?ROUTER:call_bridge(BridgeId, Message).
+

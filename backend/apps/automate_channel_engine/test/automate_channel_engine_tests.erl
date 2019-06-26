@@ -75,7 +75,7 @@ simple_listen_send() ->
         {channel_engine, ChannelId, ReceivedMessage} ->
             ?assertMatch(Message, ReceivedMessage)
     after 1000 ->
-            ct:fail(timeout2)
+            ct:fail(timeout)
     end.
 
 simple_double_listen_send() ->
