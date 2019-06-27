@@ -65,7 +65,8 @@ route_one_to_one() ->
                            , _From
                            , { data, MessageId, RecvMessage }} ->
                                ?assertMatch(Message, RecvMessage),
-                               ?ROUTER:answer_message(MessageId, ReturnMessage);
+
+                               ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
                            Fail ->
                                ct:fail(timeout2)
                        end
@@ -89,7 +90,7 @@ route_two_to_one() ->
                            , _ %% From
                            , { data, MessageId1, RecvMessage1 }} ->
                                ?assertMatch(Message1, RecvMessage1),
-                               ?ROUTER:answer_message(MessageId1, ReturnMessage1);
+                               ok = ?ROUTER:answer_message(MessageId1, ReturnMessage1);
                            _ ->
                                ct:fail(timeout)
                        end,
@@ -98,7 +99,7 @@ route_two_to_one() ->
                            , _ %% From
                            , { data, MessageId2, RecvMessage2 }} ->
                                ?assertMatch(Message2, RecvMessage2),
-                               ?ROUTER:answer_message(MessageId2, ReturnMessage2);
+                               ok = ?ROUTER:answer_message(MessageId2, ReturnMessage2);
                            _ ->
                                ct:fail(timeout)
                        end
@@ -122,7 +123,7 @@ route_one_to_two() ->
                             , _ %% From
                             , { data, MessageId, RecvMessage }} ->
                                 ?assertMatch(Message, RecvMessage),
-                                ?ROUTER:answer_message(MessageId, self());
+                                ok = ?ROUTER:answer_message(MessageId, self());
                             close ->
                                 Orig ! closed
                         end
