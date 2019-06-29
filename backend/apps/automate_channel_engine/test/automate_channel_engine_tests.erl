@@ -67,7 +67,7 @@ simple_listen_send() ->
     {ok, ChannelId} = automate_channel_engine:create_channel(),
     Message = simple_message,
 
-    ok = automate_channel_engine:listen_channel(ChannelId, self()),
+    ok = automate_channel_engine:listen_channel(ChannelId),
     spawn_link(fun () ->
                              automate_channel_engine:send_to_channel(ChannelId, Message)
                      end),
@@ -75,15 +75,15 @@ simple_listen_send() ->
         {channel_engine, ChannelId, ReceivedMessage} ->
             ?assertMatch(Message, ReceivedMessage)
     after 1000 ->
-            ct:fail(timeout2)
+            ct:fail(timeout)
     end.
 
 simple_double_listen_send() ->
     {ok, ChannelId} = automate_channel_engine:create_channel(),
     Message = simple_message,
 
-    ok = automate_channel_engine:listen_channel(ChannelId, self()),
-    ok = automate_channel_engine:listen_channel(ChannelId, self()),
+    ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = automate_channel_engine:listen_channel(ChannelId),
     spawn(fun () ->
                   automate_channel_engine:send_to_channel(ChannelId, Message)
           end),
@@ -106,7 +106,7 @@ register_and_close() ->
     process_flag(trap_exit, true),
 
     Pid = spawn_link(fun() ->
-                             ok = automate_channel_engine:listen_channel(ChannelId, self())
+                             ok = automate_channel_engine:listen_channel(ChannelId)
                end),
 
     receive {'EXIT', Pid, normal} ->
@@ -115,16 +115,14 @@ register_and_close() ->
             ct:fail(timeout)
     end,
 
-    %% We use a ping to check that the channel_engine also processed the
-    %% spawned process 'EXIT'
-    automate_channel_engine:ping(),
-
     Result = automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId),
     ?assertMatch({ok, []}, Result).
 
 %%%% Errors
 channel_not_found_on_listening() ->
-    ?assertMatch({error, channel_not_found}, automate_channel_engine:listen_channel(?INEXISTENT_CHANNEL, self())).
+    ?assertMatch({error, channel_not_found},
+                 automate_channel_engine:listen_channel(?INEXISTENT_CHANNEL)).
 
 channel_not_found_on_sending() ->
-    ?assertMatch({error, channel_not_found}, automate_channel_engine:send_to_channel(?INEXISTENT_CHANNEL, test)).
+    ?assertMatch({error, channel_not_found},
+                 automate_channel_engine:send_to_channel(?INEXISTENT_CHANNEL, test)).

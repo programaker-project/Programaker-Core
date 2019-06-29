@@ -71,3 +71,13 @@
 -record(service_port_monitor_channel_entry, { id :: {binary(), binary()} %% { user id, service port Id }
                                             , channel_id :: binary()
                                             }).
+
+-record(bridge_connection_entry, { id :: binary() %% Bridge id
+                                 , pid :: pid() %% Connection pid
+                                 , node :: atom() %% node() %% Node where the connection pid lives
+                                 }).
+
+-record(on_flight_message_entry, { message_id :: binary()
+                                 , pid :: pid() %% Asker pid. Process that asked the bridge.
+                                 , node :: atom() %% node() %% Node where the "asker" pid lives
+                                 }).
