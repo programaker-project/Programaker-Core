@@ -7,22 +7,13 @@
 
 -export([ start_link/0
         , register_channel/1
-        , add_listener_to_channel/2
+        , add_listener_to_channel/3
         , get_listeners_on_channel/1
-        , unlink_listener/1
         ]).
 
 -define(LIVE_CHANNELS_TABLE, automate_channel_engine_live_channels_table).
 -define(LISTENERS_TABLE, automate_channel_engine_listeners_table).
-
--record(live_channels_table_entry, { live_channel_id :: binary()
-                                   , stats :: [_]
-                                   }).
-
--record(listeners_table_entry, { live_channel_id :: binary() | '$1' | '$2'
-                               , pid :: pid() | '$1' | '$2'
-                               }).
-
+-include("records.hrl").
 
 %%====================================================================
 %% API
@@ -71,8 +62,8 @@ register_channel(ChannelId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec add_listener_to_channel(binary(), pid()) -> ok | {error, channel_not_found}.
-add_listener_to_channel(ChannelId, Pid) ->
+-spec add_listener_to_channel(binary(), pid(), node()) -> ok | {error, channel_not_found}.
+add_listener_to_channel(ChannelId, Pid, Node) ->
     Transaction = fun() ->
                           case mnesia:read(?LIVE_CHANNELS_TABLE, ChannelId) of
                               [] -> {error, channel_not_found};
@@ -80,6 +71,7 @@ add_listener_to_channel(ChannelId, Pid) ->
                                                , #listeners_table_entry
                                                 { live_channel_id=ChannelId
                                                 , pid=Pid
+                                                , node=Node
                                                 }
                                                , write)
                           end
@@ -88,14 +80,16 @@ add_listener_to_channel(ChannelId, Pid) ->
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
 
--spec get_listeners_on_channel(binary()) -> {ok, [pid()]} | {error, channel_not_found}.
+-spec get_listeners_on_channel(binary()) -> {ok, [#listeners_table_entry{}]}
+                                                | {error, channel_not_found}.
 get_listeners_on_channel(ChannelId) ->
     MatchHead = #listeners_table_entry{ live_channel_id='$1'
                                       , pid='$2'
+                                      , node='$3'
                                       },
     %% Check that neither the id, username or email matches another
     Guard = {'==', '$1', ChannelId},
-    ResultColumn = '$2',
+    ResultColumn = '$_',
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
     Transaction = fun() ->
@@ -106,33 +100,27 @@ get_listeners_on_channel(ChannelId) ->
                   end,
 
     {atomic, Result} = mnesia:transaction(Transaction),
-    Result.
 
--spec unlink_listener(pid()) -> ok.
-unlink_listener(Pid) ->
-    %% @TODO Get a reverse lookup table for this purposes?
-    MatchHead = #listeners_table_entry{ live_channel_id='$1'
-                                      , pid='$2'
-                                      },
-    %% Check that neither the id, username or email matches another
-    Guard = {'==', '$2', Pid},
-    ResultColumn = '$1',
-    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
-
-    Transaction = fun() ->
-                          on_all_select(?LISTENERS_TABLE, Matcher,
-                                        fun(Record) ->
-                                                mnesia:delete(?LISTENERS_TABLE, Record, write)
-                                        end)
-                  end,
-
-    {atomic, Result} = mnesia:transaction(Transaction),
-    Result.
+    case Result of
+        {error, Error} -> {error, Error};
+        {ok, Listeners} ->
+            {AliveListeners, DeadListeners} = check_alive_listeners(Listeners),
+            lists:foreach(fun unlink_listener/1, DeadListeners),
+            {ok, AliveListeners}
+    end.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+-spec unlink_listener(#listeners_table_entry{}) -> ok.
+unlink_listener(Entry) ->
+    mnesia:dirty_delete(?LISTENERS_TABLE, Entry).
 
-on_all_select(Tab, Matcher, Callback) ->
-    Objects = mnesia:select(Tab, Matcher),
-    lists:foreach(Callback, Objects).
+-spec check_alive_listeners([#listeners_table_entry{}]) -> { [#listeners_table_entry{}]
+                                                           , [#listeners_table_entry{}]
+                                                           }.
+check_alive_listeners(Connections) ->
+    lists:partition(fun(#listeners_table_entry{pid=Pid, node=Node }) ->
+                            rpc:call(Node, erlang, is_process_alive, [Pid])
+                    end,
+                    Connections).
