@@ -14,7 +14,7 @@
 %% API functions
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% Service registration token table
     ok = case mnesia:create_table(?SERVICE_REGISTRATION_TOKEN_TABLE,

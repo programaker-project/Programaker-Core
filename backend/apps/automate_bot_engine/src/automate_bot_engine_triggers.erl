@@ -40,7 +40,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FO
                                                              , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId }
                                                              }}, _Permissions) ->
 
-    automate_channel_engine:listen_channel(MonitorId, self()),
+    automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
 %% TODO: return a more specific bridge
@@ -51,7 +51,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
     [ServiceId, MonitorKey] = binary:split(MonitorPath, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-    automate_channel_engine:listen_channel(MonitorId, self()),
+    automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
 %% By default let's suppose no special data is needed to keep the program running

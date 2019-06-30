@@ -1,0 +1,264 @@
+_type: export
+__export_format: 4
+__export_date: 2019-06-03T23:13:56.686Z
+__export_source: insomnia.desktop.app:v6.5.4
+resources:
+  - _id: req_2cf3ad66709c454cb2cf5648501b7168
+    authentication: {}
+    body: {}
+    created: 1550783666621
+    description: ""
+    headers:
+      - id: pair_f57c9642b513462cab0fd66c8db3b59c
+        name: Authorization
+        value: ec8ab750-182c-4f10-af15-e65358a9684b
+    isPrivate: false
+    metaSortKey: -1550783666621
+    method: GET
+    modified: 1550783842464
+    name: List templates
+    parameters: []
+    parentId: fld_ba7160d999554c5aa1a540ff921557c6
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingSendCookies: true
+    settingStoreCookies: true
+    url: "{{apiroot}}/users/id/{{ userid  }}/templates/"
+    _type: request
+  - _id: fld_ba7160d999554c5aa1a540ff921557c6
+    created: 1550783660822
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: -1550783660822
+    modified: 1550783660822
+    name: Templates
+    parentId: wrk_345ba95d0c964d4b85b64df4cc2d0f19
+    _type: request_group
+  - _id: wrk_345ba95d0c964d4b85b64df4cc2d0f19
+    created: 1550782382008
+    description: Plaza project API
+    modified: 1550783380599
+    name: Plaza
+    parentId: null
+    _type: workspace
+  - _id: req_b0df3c8bd7b7488b85d062ad85c831ba
+    authentication: {}
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"name": "Insomnia test template",
+        	"content": [
+        		{
+        			"type": "text",
+        			"value": "Test "
+        		},
+        		{
+        			"type": "line",
+        			"value": [
+        				{
+        					"type": "text",
+        					"value": "on double"
+        				},
+        				{
+        					"type": "text",
+        					"value": "line"
+        				}
+        			]
+        		}
+        	]
+        }
+    created: 1550784938678
+    description: ""
+    headers:
+      - id: pair_f57c9642b513462cab0fd66c8db3b59c
+        name: Authorization
+        value: ec8ab750-182c-4f10-af15-e65358a9684b
+      - id: pair_ffe6c4fdea3547d2b304f0c675af17da
+        name: Content-Type
+        value: application/json
+    isPrivate: false
+    metaSortKey: -1550783293328.5
+    method: POST
+    modified: 1550785028091
+    name: Save template
+    parameters: []
+    parentId: fld_ba7160d999554c5aa1a540ff921557c6
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingSendCookies: true
+    settingStoreCookies: true
+    url: "{{apiroot}}/users/id/{{ userid  }}/templates/"
+    _type: request
+  - _id: req_26f321baea21458ebde6b0cc960ad689
+    authentication:
+      disabled: true
+      token: "{{ metrics_token  }}"
+      type: bearer
+    body: {}
+    created: 1550782920036
+    description: ""
+    headers: []
+    isPrivate: false
+    metaSortKey: -1550782920036
+    method: GET
+    modified: 1550783625777
+    name: Get metrics
+    parameters: []
+    parentId: fld_0b477c91d0cb4e72b5df1a454a3a7e35
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingSendCookies: true
+    settingStoreCookies: true
+    url: "{{ host }}/metrics"
+    _type: request
+  - _id: fld_0b477c91d0cb4e72b5df1a454a3a7e35
+    created: 1550782605900
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: -1550782605900
+    modified: 1550782605900
+    name: Monitoring
+    parentId: wrk_345ba95d0c964d4b85b64df4cc2d0f19
+    _type: request_group
+  - _id: req_109668897f254c418d0825bc490f0474
+    authentication: {}
+    body: {}
+    created: 1550782884315
+    description: ""
+    headers: []
+    isPrivate: false
+    metaSortKey: -1550782884315
+    method: GET
+    modified: 1550783059190
+    name: Ping
+    parameters: []
+    parentId: fld_0b477c91d0cb4e72b5df1a454a3a7e35
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingSendCookies: true
+    settingStoreCookies: true
+    url: "{{ apiroot }}/ping"
+    _type: request
+  - _id: req_019223004cfc401c91535ee2e3485f0f
+    authentication: {}
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"username": "{{username}}",
+          "password": "{{password}}"
+        }
+    created: 1559578900860
+    description: ""
+    headers:
+      - id: pair_e9a99395f17245259ac28e7836e86747
+        name: Content-Type
+        value: application/json
+    isPrivate: false
+    metaSortKey: -1550782528257
+    method: POST
+    modified: 1559580025240
+    name: Login
+    parameters: []
+    parentId: wrk_345ba95d0c964d4b85b64df4cc2d0f19
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingSendCookies: true
+    settingStoreCookies: true
+    url: "{{ apiroot }}/sessions/login/"
+    _type: request
+  - _id: req_38a7df4bfe9642fe81a7dc01716e305e
+    authentication: {}
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"username": "{{username}}-2",
+          "password": "{{password}}",
+        	"email": "test-2"
+        }
+    created: 1559599874334
+    description: ""
+    headers:
+      - id: pair_e9a99395f17245259ac28e7836e86747
+        name: Content-Type
+        value: application/json
+    isPrivate: false
+    metaSortKey: -1550782528207
+    method: POST
+    modified: 1559603488332
+    name: Register user
+    parameters: []
+    parentId: wrk_345ba95d0c964d4b85b64df4cc2d0f19
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingSendCookies: true
+    settingStoreCookies: true
+    url: "{{ apiroot }}/sessions/register/"
+    _type: request
+  - _id: env_1ad291d9e0bd469c9992c925c695d3c3
+    color: null
+    created: 1550782382084
+    data: {}
+    dataPropertyOrder: null
+    isPrivate: false
+    metaSortKey: 1550782382084
+    modified: 1550782382084
+    name: New Environment
+    parentId: wrk_345ba95d0c964d4b85b64df4cc2d0f19
+    _type: environment
+  - _id: jar_042c03c5fbf94f8fabd717bdb40f9fff
+    cookies: []
+    created: 1550782382088
+    modified: 1550782382088
+    name: Default Jar
+    parentId: wrk_345ba95d0c964d4b85b64df4cc2d0f19
+    _type: cookie_jar
+  - _id: env_03b19d6edef8419caf63ed319dc8b4a0
+    color: "#48ff00"
+    created: 1550782439725
+    data:
+      apiroot: "{{host}}/api/v0"
+      host: http://127.0.0.1:8888
+      metrics_token: null
+      password: test
+      userid: 166e0391-7dba-4209-8c69-15ac8efed1b9
+      username: test
+    dataPropertyOrder: null
+    isPrivate: false
+    metaSortKey: 1
+    modified: 1559599978615
+    name: Plaza local development
+    parentId: env_1ad291d9e0bd469c9992c925c695d3c3
+    _type: environment
+  - _id: env_5a872eacd5d74e8fb30138b046d6d430
+    color: "#008848"
+    created: 1559580154336
+    data:
+      apiroot: "{{host}}/api/v0"
+      host: http://127.0.0.1:8889
+      password: test
+      userid: 166e0391-7dba-4209-8c69-15ac8efed1b9
+      username: test
+    dataPropertyOrder:
+      "&":
+        - apiroot
+        - host
+        - password
+        - userid
+        - username
+    isPrivate: false
+    metaSortKey: 2
+    modified: 1559599978619
+    name: Plaza local dev. host 2
+    parentId: env_1ad291d9e0bd469c9992c925c695d3c3
+    _type: environment

@@ -1,7 +1,5 @@
 -module(automate_service_port_engine_router).
 
--behaviour(gen_server).
-
 %% API
 -export([ start_link/0
         , connect_bridge/1
@@ -10,24 +8,17 @@
         , answer_message/2
         ]).
 
-%% gen_server callbacks
--export([ init/1, handle_call/3, handle_cast/2, handle_info/2
-        , terminate/2, code_change/3
-        ]).
-
-
 -define(ERROR_CLASSES, no_response | no_connection | not_found | unauthorized).
 -define(SERVER, ?MODULE).
+-ifdef(TEST).
+-define(MAX_WAIT_TIME_SECONDS, 1).
+-else.
 -define(MAX_WAIT_TIME_SECONDS, 100).
+-endif.
 -define(MAX_WAIT_TIME, ?MAX_WAIT_TIME_SECONDS * 1000).
-
--record(state, { bridge_by_id
-               , bridge_id_by_pid
-               , thread_by_message
-               }).
--record(bridge_info, { pid
-                     , bridge_id
-                     }).
+-define(CONNECTED_BRIDGES_TABLE, automate_service_port_connected_bridges_table).
+-define(ON_FLIGHT_MESSAGES_TABLE, automate_service_port_bridge_on_flight_messages_table).
+-include("records.hrl").
 
 %%%===================================================================
 %%% API
@@ -41,7 +32,22 @@
 %% @end
 %%--------------------------------------------------------------------
 connect_bridge(BridgeId) ->
-    gen_server:cast({global, ?SERVER}, { connect_bridge, BridgeId, self() }).
+    Pid = self(),
+    Node = node(),
+    Transaction = fun() ->
+                          ok = mnesia:write(?CONNECTED_BRIDGES_TABLE,
+                                            #bridge_connection_entry{ id=BridgeId
+                                                                    , pid=Pid
+                                                                    , node=Node
+                                                                    },
+                                            write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Error} ->
+            {error, Error}
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -55,30 +61,38 @@ call_bridge(BridgeId, Msg) ->
     automate_stats:log_observation(counter,
                                    automate_bridge_engine_messages_to_bridge,
                                    [BridgeId]),
-    gen_server:cast({global, ?SERVER}, { call_bridge, BridgeId, Msg, self() }),
-    wait_server_response().
 
--spec wait_server_response() -> {ok, map()} | {error, ?ERROR_CLASSES}.
-wait_server_response() ->
-    receive
-        {?SERVER, Response} ->
-            Response;
-        X ->
-            io:fwrite("WTF: ~p~n", [X]),
-            wait_server_response()
-    after ?MAX_WAIT_TIME ->
-            {error, no_response}
+    case get_bridge_alive_connections(BridgeId) of
+        {error, Error} ->
+            {error, Error};
+        {ok, []} ->
+            {error, no_connection};
+        {ok, L} ->
+            Bridge = lists:nth(rand:uniform(length(L)), L),
+            case call_bridge_to_connection(Bridge, Msg, self(), node()) of
+                {ok, _MessageId} ->
+                    wait_bridge_response();
+                {error, Error} ->
+                    {error, Error}
+            end
     end.
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Route a message answer.
 %%
-%% @spec answer_message(MessageId, Response) -> {ok, boolean} | {error, Error}
+%% @spec answer_message(MessageId, Response) -> ok | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 answer_message(MessageId, Response) ->
-    gen_server:call({global, ?SERVER}, { answer_message, MessageId, Response }).
+    case get_caller_pid(MessageId) of
+        {error, Error} ->
+            {error, Error};
+        {ok, Entry=#on_flight_message_entry{pid=Pid}} ->
+            Pid ! {?SERVER, {ok, Response}},
+            ok = remove_on_flight_message(Entry),
+            ok
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -88,9 +102,14 @@ answer_message(MessageId, Response) ->
 %% @end
 %%--------------------------------------------------------------------
 is_bridge_connected(BridgeId) ->
-    gen_server:call({global, ?SERVER}, { is_bridge_connected, BridgeId }).
-
-
+    case get_bridge_alive_connections(BridgeId) of
+        {error, Error} ->
+            {error, Error};
+        {ok, []} ->
+            {ok, false};
+        {ok, _} ->
+            {ok, true}
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -100,144 +119,34 @@ is_bridge_connected(BridgeId) ->
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({global, ?SERVER}, ?MODULE, [], []).
-
-%%%===================================================================
-%%% gen_server callbacks
-%%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Initializes the server
-%%
-%% @spec init(Args) -> {ok, State} |
-%%                     {ok, State, Timeout} |
-%%                     ignore |
-%%                     {stop, Reason}
-%% @end
-%%--------------------------------------------------------------------
-init([]) ->
-    process_flag(trap_exit, true),
-    {ok, #state{ bridge_by_id=#{}
-               , bridge_id_by_pid=#{}
-               , thread_by_message=#{}
-               }}.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling call messages
-%%
-%% @spec handle_call(Request, From, State) ->
-%%                                   {reply, Reply, State} |
-%%                                   {reply, Reply, State, Timeout} |
-%%                                   {noreply, State} |
-%%                                   {noreply, State, Timeout} |
-%%                                   {stop, Reason, Reply, State} |
-%%                                   {stop, Reason, State}
-%% @end
-%%--------------------------------------------------------------------
-handle_call({ is_bridge_connected, BridgeId }, _From, State) ->
-    io:fwrite("Is ~p connected on ~p?~n", [BridgeId, State]),
-    {NextState, IsConnected} =
-        case State of
-            #state{ bridge_by_id=Bridges=#{ BridgeId := Connections }} ->
-                AliveConnections = check_alive_connections(Connections),
-                case AliveConnections of
-                    [] ->
-                        { State#state{ bridge_by_id=maps:remove(BridgeId, Bridges) }
-                        , false
-                        };
-                    _ ->
-                        { State, true }
-                end;
-            _ ->
-                {State, false}
-        end,
-
-    {reply, {ok, IsConnected}, NextState};
-
-handle_call({ answer_message, MessageId, Result }, _From, State) ->
-    case State of
-        #state{ thread_by_message=Messages=#{ MessageId := ThreadId } } ->
-            io:fwrite("Sending message to ~p~n", [ThreadId]),
-            ThreadId ! { ?SERVER, {ok, Result }},
-            {reply, ok, State#state{ thread_by_message=maps:remove(MessageId, Messages)
-                                   }};
-        _ ->
-            io:fwrite("MessageId(~p) not found on state(~p)~n", [MessageId, State]),
-            {reply, { error, no_message_id  }, State}
-    end;
-
-handle_call({ get_routes }, _From, State) ->
-    #state{ bridge_by_id=Routes } = State,
-    Reply = {ok, Routes},
-    {reply, Reply, State};
-
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling cast messages
-%%
-%% @spec handle_cast(Msg, State) -> {noreply, State} |
-%%                                  {noreply, State, Timeout} |
-%%                                  {stop, Reason, State}
-%% @end
-%%--------------------------------------------------------------------
-handle_cast({ call_bridge, BridgeId, Msg, From  }, State) ->
-    case State of
-        #state{ bridge_by_id=Bridges=#{ BridgeId := Connections }
-              , thread_by_message=Messages
-              } ->
-            AliveConnections = check_alive_connections(Connections),
-            case AliveConnections of
-                [First | Rest] ->
-                    {MessageId, ThreadId, WithMessaging} = call_bridge_to_connection(First, Msg, From),
-
-                    { noreply
-                    , State#state { bridge_by_id=Bridges#{ BridgeId => Rest ++ [WithMessaging] }
-                                  , thread_by_message=Messages#{ MessageId => ThreadId
-                                                               }
-                                  }
-                    };
-                _ ->
-                    io:fwrite("No alive connections left on bridgeId (~p)~n", [BridgeId]),
-                    From ! { ?SERVER, { error, no_connection }},
-                    {noreply, State}
-            end;
-        _ ->
-            io:fwrite("BridgeId (~p) in state(~p)~n", [BridgeId, State]),
-            From ! { ?SERVER, { error, no_connection }},
-            {noreply, State}
-    end;
-
-handle_cast({ connect_bridge, BridgeId, Pid }, State) ->
-    #state{ bridge_by_id=Bridges
-          , bridge_id_by_pid=BridgesByPid
-          } = State,
-    PreexistingBridges = case maps:find(BridgeId, Bridges) of
-                              { ok, OtherBridges } -> OtherBridges;
-                              error -> []
-                          end,
-    link(Pid),
-    {noreply, State#state{
-                bridge_by_id=maps:put(BridgeId,
-                                  [ #bridge_info{pid=Pid, bridge_id=BridgeId}
-                                    | PreexistingBridges
-                                  ], Bridges),
-               bridge_id_by_pid=maps:put(Pid, BridgeId, BridgesByPid)
-               }
-    };
-
-handle_cast(_Msg, State) ->
-    {noreply, State}.
-
-
+    Nodes = automate_configuration:get_sync_peers(),
+    %% Connected service ports
+    ok = case mnesia:create_table(?CONNECTED_BRIDGES_TABLE,
+                                  [ { attributes, record_info(fields, bridge_connection_entry)}
+                                  , { ram_copies, Nodes }
+                                  , { record_name, bridge_connection_entry }
+                                  , { type, bag }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+    ok = case mnesia:create_table(?ON_FLIGHT_MESSAGES_TABLE,
+                                  [ { attributes, record_info(fields, on_flight_message_entry)}
+                                  , { ram_copies, Nodes }
+                                  , { record_name, on_flight_message_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+    ok = mnesia:wait_for_tables([ ?CONNECTED_BRIDGES_TABLE
+                                , ?ON_FLIGHT_MESSAGES_TABLE
+                                ], automate_configuration:get_table_wait_time()),
+    ignore.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -247,88 +156,98 @@ handle_cast(_Msg, State) ->
 %% @spec send_to_all(msg, bridges) -> {ok, ContinuingBridges} | { error, Error }
 %% @end
 %%--------------------------------------------------------------------
--spec call_bridge_to_connection(#bridge_info{}, any(), pid()) -> {binary(), pid(), #bridge_info{}}.
-call_bridge_to_connection(Bridge=#bridge_info{ pid=Pid}, Msg, From) ->
+-spec call_bridge_to_connection(#bridge_connection_entry{},
+                                any(), pid(), node()) -> { ok, binary()}
+                                                             | {error, _}.
+call_bridge_to_connection(#bridge_connection_entry{pid=Pid}, Msg, From, FromNode) ->
     MessageId = generate_id(),
-    Pid ! { ?SERVER, Pid, { data, MessageId, Msg }},
-    {MessageId, From, Bridge}.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling all non call/cast messages
-%%
-%% @spec handle_info(Info, State) -> {noreply, State} |
-%%                                   {noreply, State, Timeout} |
-%%                                   {stop, Reason, State}
-%% @end
-%%--------------------------------------------------------------------
-handle_info({'EXIT', Pid, _Reason}, State=#state{ bridge_by_id=Bridges, bridge_id_by_pid=BridgesByPid}) ->
-    %% TODO: consider calling threads failing
-    {NewBridges, NewBridgesById} =
-        case BridgesByPid of
-            #{ Pid := BridgeId } ->
-                WithoutBridgePid = maps:remove(Pid, BridgesByPid),
-
-                case Bridges of
-                    #{ BridgeId := BridgeData } ->
-                        FilteredBridgeData = lists:filter(fun (#bridge_info{pid=InstancePid}) ->
-                                                                  Pid == InstancePid
-                                                          end, BridgeData),
-                        case length(FilteredBridgeData) of
-                            0 ->
-                                {maps:remove(BridgeId, Bridges), WithoutBridgePid};
-                            _ ->
-                                {maps:update(BridgeId, FilteredBridgeData, Bridges), WithoutBridgePid}
-                        end;
-                    _ ->
-                        io:fwrite("[01] Not found ~p on ~p~n", [BridgeId, Bridges]),
-                        { Bridges, WithoutBridgePid}
-                end;
-            _ ->
-                io:fwrite("[02] Not found ~p on ~p~n", [Pid, BridgesByPid]),
-                {Bridges, BridgesByPid}
-        end,
-
-    {noreply, State#state{ bridge_by_id=NewBridges
-                         , bridge_id_by_pid=NewBridgesById
-                         }};
-
-handle_info(_Info, State) ->
-    {noreply, State}.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% This function is called by a gen_server when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any
-%% necessary cleaning up. When it returns, the gen_server terminates
-%% with Reason. The return value is ignored.
-%%
-%% @spec terminate(Reason, State) -> void()
-%% @end
-%%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
-    ok.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Convert process state when code is changed
-%%
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% @end
-%%--------------------------------------------------------------------
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+    Transaction = fun() ->
+                          ok = mnesia:write(?ON_FLIGHT_MESSAGES_TABLE, 
+                                            #on_flight_message_entry{ message_id=MessageId
+                                                                    , pid=From
+                                                                    , node=FromNode
+                                                                    },
+                                            write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, ok} ->
+            Pid ! { ?SERVER, From, { data, MessageId, Msg }},
+            {ok, MessageId};
+        {aborted, Error} ->
+            {error, Error}
+    end.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+-spec generate_id() -> binary().
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
 
+
+-spec get_caller_pid(binary()) -> {ok, #on_flight_message_entry{}} | {error, _}.
+get_caller_pid(MessageId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?ON_FLIGHT_MESSAGES_TABLE, MessageId) of
+                              [] -> {error, no_message_id};
+                              [OnFlightEntry] -> {ok, OnFlightEntry}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Error} ->
+            {error, Error}
+    end.
+
+
+-spec remove_on_flight_message(#on_flight_message_entry{}) -> ok.
+remove_on_flight_message(Entry) ->
+    mnesia:dirty_delete_object(?ON_FLIGHT_MESSAGES_TABLE, Entry).
+
+
+-spec get_bridge_alive_connections(binary()) -> {ok, [#bridge_connection_entry{}]}
+                                                    | {error, any()}.
+get_bridge_alive_connections(BridgeId) ->
+    Transaction = fun() -> %% Maybe a dirty read is enough here
+                          mnesia:read(?CONNECTED_BRIDGES_TABLE, BridgeId)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            { AliveConnections, DeadConnections } = check_alive_connections(Result),
+            drop_dead_connections(DeadConnections),
+            {ok, AliveConnections};
+        {aborted, Error} ->
+            {error, Error}
+    end.
+
+
+-spec drop_dead_connections([#bridge_connection_entry{}]) -> ok.
+drop_dead_connections(DeadConnections) ->
+    lists:foreach(fun(DeadConnection) ->
+                          mnesia:dirty_delete_object(?CONNECTED_BRIDGES_TABLE, DeadConnection)
+                  end, DeadConnections).
+
+
+-spec check_alive_connections([#bridge_connection_entry{}]) -> { [#bridge_connection_entry{}]
+                                                               , [#bridge_connection_entry{}]
+                                                               }.
 check_alive_connections(Connections) ->
-    lists:filter(fun(#bridge_info{ pid=Pid }) ->
-                         erlang:is_process_alive(Pid) end,
-                 Connections).
+    lists:partition(fun(#bridge_connection_entry{pid=Pid, node=Node }) ->
+                            rpc:call(Node, erlang, is_process_alive, [Pid])
+                    end,
+                    Connections).
+
+
+-spec wait_bridge_response() -> {ok, map()} | {error, ?ERROR_CLASSES}.
+wait_bridge_response() ->
+    receive
+        {?SERVER, Response} ->
+            Response;
+        X ->  %% This resets the wait, it shouldn't be a problem
+            io:fwrite("[~p] Unexpected message: ~p~n", [?MODULE, X]),
+            wait_bridge_response()
+    after ?MAX_WAIT_TIME ->
+            io:fwrite("[~p] Wait failed after ~pms~n", [?MODULE, ?MAX_WAIT_TIME]),
+            {error, no_response}
+    end.

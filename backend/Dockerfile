@@ -19,11 +19,15 @@ RUN sh -x -c 'if [ ! -f config/sys.config ]; then cp -v config/sys.config.orig c
 # Prepare release
 RUN rebar3 release
 
+FROM alpine as final
+
+RUN apk add ncurses libstdc++ erlang
+
+COPY --from=develop /app/_build/default/rel/automate/ /app/release/
+ADD ./scripts/ /app/scripts
+
 # API server port
 EXPOSE 8888
 
-## If the dev is launched by itself, start with a shell
-# CMD ["rebar3", "shell"]
-
 # Launch directly the release
-CMD ["_build/default/rel/automate/bin/automate", "foreground"]
+CMD ["/app/scripts/container_init.sh"]

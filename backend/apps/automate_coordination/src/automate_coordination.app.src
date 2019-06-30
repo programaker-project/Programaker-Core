@@ -1,14 +1,12 @@
-{application, automate_storage, [
-    {description, "Auto-mate storage node."},
+{application, automate_coordination, [
+    {description, "Auto-mate cluster coordination module."},
     {vsn, "0.0.0"},
     {registered, []},
-    {mod, { automate_storage_app, [] }},
+    {mod, { automate_coordination_app, [] }},
     {applications, [ kernel
                    , stdlib
+                   , automate_storage
                    , automate_configuration
-                   , mnesia
-                   , uuid
-                   , libsodium
     ]},
     {env, [
     ]},

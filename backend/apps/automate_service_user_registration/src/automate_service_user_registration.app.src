@@ -7,6 +7,7 @@
    {applications, [ kernel
                   , stdlib
                   , automate_storage
+                  , automate_configuration
                   ]},
    {env, [
          ]},
