@@ -16,15 +16,12 @@
 %%====================================================================
 update_program(ProgramId) ->
     case get_program_pid(ProgramId) of
-        { ok, PID } ->
-            try process_info(PID) of
-                undefined -> %% Not alive
+        { ok, Pid } ->
+            case rpc:call(node(Pid), erlang, is_process_alive, [Pid]) of
+                false -> %% Not alive
                     automate_bot_engine_runner_sup:start(ProgramId);
-                _ ->
-                    automate_bot_engine_runner:update(PID)
-            catch ErrorNs:Error ->
-                    io:fwrite("[~p] When getting process info, raised: ~p~n", [?MODULE, {ErrorNs, Error}]),
-                    automate_bot_engine_runner_sup:start(ProgramId)
+                true ->
+                    automate_bot_engine_runner:update(Pid)
             end;
         {error, not_running} ->
             automate_bot_engine_runner_sup:start(ProgramId)
@@ -33,12 +30,12 @@ update_program(ProgramId) ->
 -spec stop_program(binary()) -> {ok, already_stopped | stopped_now}.
 stop_program(ProgramId) ->
     case get_program_pid(ProgramId) of
-        { ok, PID } ->
-            case process_info(PID) of
-                undefined -> %% Not alive
+        { ok, Pid } ->
+            case rpc:call(node(Pid), erlang, is_process_alive, [Pid]) of
+                false -> %% Not alive
                     ok = automate_storage:delete_running_process(ProgramId);
-                _ ->
-                    ok = automate_bot_engine_runner:stop_program(PID),
+                true ->
+                    ok = automate_bot_engine_runner:stop_program(Pid),
                     ok = automate_storage:delete_running_process(ProgramId)
             end,
             {ok, stopped_now};
