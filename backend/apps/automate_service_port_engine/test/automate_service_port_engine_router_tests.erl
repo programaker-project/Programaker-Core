@@ -44,11 +44,11 @@ stop({NodeName}) ->
 
 tests(_SetupResult) ->
     %% Routing
-    [ {"[Service Port Router] Route one-to-one", fun route_one_to_one/0}
-    , {"[Service Port Router] Route two-to-one", fun route_two_to_one/0}
-    , {"[Service Port Router] Route one-to-two", fun route_one_to_two/0}
-    , {"[Service Port Router] Route one-to-zero", fun route_one_to_zero/0}
-    , {"[Service Port Router] Route two-to-zero", fun route_two_to_zero/0}
+    [ {"[Service Port - Router] Route one-to-one", fun route_one_to_one/0}
+    , {"[Service Port - Router] Route two-to-one", fun route_two_to_one/0}
+    , {"[Service Port - Router] Route one-to-two", fun route_one_to_two/0}
+    , {"[Service Port - Router] Route one-to-zero", fun route_one_to_zero/0}
+    , {"[Service Port - Router] Route two-to-zero", fun route_two_to_zero/0}
     ].
 
 %%%% Routing
