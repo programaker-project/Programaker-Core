@@ -55,11 +55,11 @@
                                     , key :: binary()
                                     }).
 
--record(service_port_configuration, { id :: binary() %% Service port Id
-                                    , service_name :: binary()
-                                    , service_id :: binary() | 'undefined'
-                                    , is_public :: boolean()
-                                    , blocks :: [#service_port_block{}]
+-record(service_port_configuration, { id :: binary() | ?MNESIA_SELECTOR %% Service port Id
+                                    , service_name :: binary() | ?MNESIA_SELECTOR
+                                    , service_id :: binary() | 'undefined' | ?MNESIA_SELECTOR
+                                    , is_public :: boolean() | ?MNESIA_SELECTOR
+                                    , blocks :: [#service_port_block{}] | ?MNESIA_SELECTOR
                                     }).
 
 
