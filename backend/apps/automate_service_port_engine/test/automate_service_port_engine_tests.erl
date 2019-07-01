@@ -55,9 +55,9 @@ tests(_SetupResult) ->
     , { "[Service Port - Custom blocks] Owned public blocks appear"
       , fun owned_public_blocks_appear/0
       }
-    %% , { "[Service Port - Custom blocks] Non-owned public blocks appear"
-    %%   , fun non_owned_public_blocks_appear/0
-    %%   }
+    , { "[Service Port - Custom blocks] Non-owned public blocks appear"
+      , fun non_owned_public_blocks_appear/0
+      }
     ].
 
 
@@ -114,6 +114,25 @@ owned_public_blocks_appear() ->
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
 
     check_test_block(CustomBlock).
+
+non_owned_public_blocks_appear() ->
+    OwnerUserId = <<?TEST_ID_PREFIX, "-test-4-owner">>,
+    RequesterUserId = <<?TEST_ID_PREFIX, "-test-4-requester">>,
+    ServicePortName = <<?TEST_ID_PREFIX, "-test-4-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+
+    Configuration = #{ <<"is_public">> => true
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ get_test_block() ]
+                     },
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(RequesterUserId),
+
+    check_test_block(CustomBlock).
+
 
 %%====================================================================
 %% Internal functions
