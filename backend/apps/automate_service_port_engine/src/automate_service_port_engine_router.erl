@@ -234,7 +234,7 @@ drop_dead_connections(DeadConnections) ->
                                                                }.
 check_alive_connections(Connections) ->
     lists:partition(fun(#bridge_connection_entry{pid=Pid, node=Node }) ->
-                            rpc:call(Node, erlang, is_process_alive, [Pid])
+                            automate_coordination_utils:is_process_alive(Pid, Node)
                     end,
                     Connections).
 

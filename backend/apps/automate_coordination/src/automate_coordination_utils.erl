@@ -11,9 +11,11 @@
         ]).
 
 %% Check if a (possibly remote) process is alive
+-spec is_process_alive(pid()) -> boolean().
 is_process_alive(Pid) ->
     is_process_alive(Pid, node(Pid)).
 
+-spec is_process_alive(pid(), node()) -> boolean().
 is_process_alive(Pid, Node) ->
     case rpc:call(Node, erlang, is_process_alive, [Pid]) of
         true -> true;

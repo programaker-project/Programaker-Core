@@ -17,7 +17,7 @@
 update_program(ProgramId) ->
     case get_program_pid(ProgramId) of
         { ok, Pid } ->
-            case rpc:call(node(Pid), erlang, is_process_alive, [Pid]) of
+            case automate_coordination_utils:is_process_alive(Pid) of
                 false -> %% Not alive
                     automate_bot_engine_runner_sup:start(ProgramId);
                 true ->
@@ -31,7 +31,7 @@ update_program(ProgramId) ->
 stop_program(ProgramId) ->
     case get_program_pid(ProgramId) of
         { ok, Pid } ->
-            case rpc:call(node(Pid), erlang, is_process_alive, [Pid]) of
+            case automate_coordination_utils:is_process_alive(Pid) of
                 false -> %% Not alive
                     ok = automate_storage:delete_running_process(ProgramId);
                 true ->
