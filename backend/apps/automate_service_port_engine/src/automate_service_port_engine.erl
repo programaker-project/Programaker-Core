@@ -10,7 +10,7 @@
 -export([ create_service_port/2
         , register_service_port/1
         , from_service_port/3
-        , call_service_port/4
+        , call_service_port/5
         , get_how_to_enable/2
         , send_registration_data/3
         , send_oauth_return/2
@@ -39,13 +39,14 @@ create_service_port(UserId, ServicePortName) ->
 register_service_port(ServicePortId) ->
     ?ROUTER:connect_bridge(ServicePortId).
 
--spec call_service_port(binary(), binary(), binary(), binary()) -> {ok, any()}.
-call_service_port(ServicePortId, FunctionName, Arguments, UserId) ->
+-spec call_service_port(binary(), binary(), binary(), binary(), map()) -> {ok, any()}.
+call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
                                         , <<"user_id">> => UserId
                                         , <<"value">> => #{ <<"function_name">> => FunctionName
                                                           , <<"arguments">> => Arguments
                                                           }
+                                        , <<"extra_data">> => ExtraData
                                         }).
 
 -spec get_how_to_enable(binary(), binary()) -> {ok, any()}.
