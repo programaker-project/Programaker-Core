@@ -11,7 +11,7 @@
 %% Application callbacks
 -export([start_link/0]).
 -define(BACKEND, automate_coordination_mnesia_backend).
-
+-define(UTILS, automate_coordination_utils).
 %%====================================================================
 %% API
 %%====================================================================
@@ -34,29 +34,21 @@ run_task_not_parallel(Function, Id) ->
                      %% TODO: Change this way of checking alive process into
                      %% something reactive, so that if a node is restarted new
                      %% processes cannot be mistaken for old ones.
-                     OnProcessNotAlive = case ?BACKEND:run_on_process_if_not_started_or_pid(
-                                                 Id, RunnerPid, Pid) of
-                                             {ok, not_run_used_pid} ->
-                                                 RunnerPid ! continue,
-                                                 {ok, RunnerPid};
-                                             {ok, is_running, Pid2, Node2} ->
-                                                 case rpc:call(Node2, erlang,
-                                                               is_process_alive, [Pid2]) of
-                                                     {badrpc, nodedown} ->
-                                                         {error, could_not_start};
-                                                     false ->
-                                                         {error, could_not_start};
-                                                     true ->
-                                                         RunnerPid ! cancel,
-                                                         {ok, Pid2}
-                                                 end
-                                         end,
-
-                     case rpc:call(Node, erlang, is_process_alive, [Pid]) of
-                         {badrpc, nodedown} ->
-                             OnProcessNotAlive();
+                     case ?UTILS:is_process_alive(Pid, Node) of
                          false -> %% Stopped
-                             OnProcessNotAlive();
+                             case ?BACKEND:run_on_process_if_not_started_or_pid(Id, RunnerPid, Pid) of
+                                 {ok, not_run_used_pid} ->
+                                     RunnerPid ! continue,
+                                     {ok, RunnerPid};
+                                 {ok, is_running, Pid2, Node2} ->
+                                     case ?UTILS:is_process_alive(Pid2, Node2) of
+                                         false ->
+                                             {error, could_not_start};
+                                         true ->
+                                             RunnerPid ! cancel,
+                                             {ok, Pid2}
+                                     end
+                             end;
                          true ->
                              RunnerPid ! cancel,
                              {ok, Pid}
