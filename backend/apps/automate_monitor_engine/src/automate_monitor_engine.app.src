@@ -11,6 +11,7 @@
                    , inets
                    , mochiweb
                    , mochiweb_xpath
+                   , automate_configuration
     ]},
     {env, [
     ]},

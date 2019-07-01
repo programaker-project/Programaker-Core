@@ -24,11 +24,12 @@
 -define(SERVICE_PORT_CONFIGURATION_TABLE, automate_service_port_configuration_table).
 -define(SERVICE_PORT_USERID_OBFUSCATION_TABLE, automate_service_port_userid_obfuscation_table).
 -define(SERVICE_PORT_CHANNEL_TABLE, automate_service_port_channel_table).
+
 %%====================================================================
 %% API
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% Service port identity table
     ok = case mnesia:create_table(?SERVICE_PORT_TABLE,
@@ -71,16 +72,21 @@ start_link() ->
 
     %% UserId×ServiceId -> ChannelId
     ok = case mnesia:create_table(?SERVICE_PORT_CHANNEL_TABLE,
-                                      [ { attributes, record_info(fields, service_port_monitor_channel_entry)}
-                                      , { disc_copies, Nodes }
-                                      , { record_name, service_port_monitor_channel_entry }
-                                      , { type, set }
-                                      ]) of
-                 { atomic, ok } ->
-                     ok;
-                 { aborted, { already_exists, _ }} ->
-                     ok
-             end,
+                                  [ { attributes, record_info(fields, service_port_monitor_channel_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, service_port_monitor_channel_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+    ok = mnesia:wait_for_tables([ ?SERVICE_PORT_TABLE
+                                , ?SERVICE_PORT_CONFIGURATION_TABLE
+                                , ?SERVICE_PORT_USERID_OBFUSCATION_TABLE
+                                , ?SERVICE_PORT_CHANNEL_TABLE
+                                ], automate_configuration:get_table_wait_time()),
     ignore.
 
 -spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, _, string()}.
@@ -167,7 +173,7 @@ set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
 -spec list_custom_blocks(binary()) -> {ok, map()}.
 list_custom_blocks(UserId) ->
     Transaction = fun() ->
-                          Services = list_userid_ports(UserId),
+                          Services = list_userid_ports(UserId) ++ list_public_ports(),
                           {ok
                           , maps:from_list(
                               lists:filter(fun (X) -> X =/= none end,
@@ -288,6 +294,19 @@ list_userid_ports(UserId) ->
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
     mnesia:select(?SERVICE_PORT_TABLE, Matcher).
+
+list_public_ports() ->
+    MatchHead = #service_port_configuration{ id='$1'
+                                           , service_name='_'
+                                           , service_id='_'
+                                           , is_public='$2'
+                                           , blocks='_'
+                                           },
+    Guard = {'==', '$2', true},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    mnesia:select(?SERVICE_PORT_CONFIGURATION_TABLE, Matcher).
 
 list_blocks_for_port(PortId) ->
     case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, PortId) of

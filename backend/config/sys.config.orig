@@ -1,9 +1,6 @@
-[ { automate_rest_api, [ { port, 8888}
-                         %% Commenting the following line removes the authentication on /metrics
-                       , { metrics_secret, <<"@INSERT HERE RANDOM SECRET FOR METRICS@">> }
-                       ]}
-, { automate_services_telegram, [ { telegram_enabled, false }
-                                , { telegram_token, <<"@INSERT HERE TELEGRAM TOKEN@">> }
-                                , { telegram_bot_name, <<"@INSERT HERE SERVICE TELEGRAM BOT NAME@">> }
-                                ]}
+[  { automate, [ { table_wait_time, 10000 } ] }
+,  { automate_rest_api, [ { port, 8888}
+                          %% Commenting the following line removes the authentication on /metrics
+                        , { metrics_secret, <<"@INSERT HERE RANDOM SECRET FOR METRICS@">> }
+                        ]}
 ].

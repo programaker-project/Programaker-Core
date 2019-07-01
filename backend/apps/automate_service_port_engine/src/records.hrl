@@ -55,11 +55,11 @@
                                     , key :: binary()
                                     }).
 
--record(service_port_configuration, { id :: binary() %% Service port Id
-                                    , service_name :: binary()
-                                    , service_id :: binary() | 'undefined'
-                                    , is_public :: boolean()
-                                    , blocks :: [#service_port_block{}]
+-record(service_port_configuration, { id :: binary() | ?MNESIA_SELECTOR %% Service port Id
+                                    , service_name :: binary() | ?MNESIA_SELECTOR
+                                    , service_id :: binary() | 'undefined' | ?MNESIA_SELECTOR
+                                    , is_public :: boolean() | ?MNESIA_SELECTOR
+                                    , blocks :: [#service_port_block{}] | ?MNESIA_SELECTOR
                                     }).
 
 
@@ -71,3 +71,13 @@
 -record(service_port_monitor_channel_entry, { id :: {binary(), binary()} %% { user id, service port Id }
                                             , channel_id :: binary()
                                             }).
+
+-record(bridge_connection_entry, { id :: binary() %% Bridge id
+                                 , pid :: pid() %% Connection pid
+                                 , node :: atom() %% node() %% Node where the connection pid lives
+                                 }).
+
+-record(on_flight_message_entry, { message_id :: binary()
+                                 , pid :: pid() %% Asker pid. Process that asked the bridge.
+                                 , node :: atom() %% node() %% Node where the "asker" pid lives
+                                 }).

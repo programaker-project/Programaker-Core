@@ -42,7 +42,6 @@ allowed_methods(Req, State) ->
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
 
 content_types_accepted(Req, State) ->
-    io:fwrite("Control types accepted~n", []),
 	{[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
    Req, State}.
 
@@ -54,9 +53,7 @@ accept_json_modify_collection(Req, Session) ->
     case cowboy_req:has_body(Req) of
         true ->
             {ok, Body, Req2} = read_body(Req),
-            io:fwrite("--->~p ~n", [Body]),
             Parsed = [jiffy:decode(Body, [return_maps])],
-            io:fwrite("-+->~p ~n", Parsed),
             case to_register_data(Parsed) of
                 { ok, RegistrationData } ->
                     case automate_rest_api_backend:register_user(RegistrationData) of

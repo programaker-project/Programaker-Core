@@ -14,7 +14,7 @@
 %% API functions
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% Service registration token table
     ok = case mnesia:create_table(?SERVICE_REGISTRATION_TOKEN_TABLE,
@@ -28,6 +28,8 @@ start_link() ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
+    ok = mnesia:wait_for_tables([?SERVICE_REGISTRATION_TOKEN_TABLE], 
+                                automate_configuration:get_table_wait_time()),
     ignore.
 
 

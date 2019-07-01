@@ -40,7 +40,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FO
                                                              , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId }
                                                              }}, _Permissions) ->
 
-    automate_channel_engine:listen_channel(MonitorId, self()),
+    automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
 %% TODO: return a more specific bridge
@@ -51,7 +51,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
     [ServiceId, MonitorKey] = binary:split(MonitorPath, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-    automate_channel_engine:listen_channel(MonitorId, self()),
+    automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
 %% By default let's suppose no special data is needed to keep the program running
@@ -118,9 +118,8 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                           {ok, Thread}
                                   end,
 
-    case automate_bot_engine_variables:resolve_argument(Argument, ThreadWithSavedValue, ProgramState) of
+    case automate_bot_engine_variables:resolve_argument(Argument, ThreadWithSavedValue) of
         {ok, MessageContent} ->
-
             {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
                                 ThreadWithSavedValue, MonitorId, FullMessage),
             {true, NewThread};
@@ -160,7 +159,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.", MonitorPat
     MatchingContent = case MonitorArgs of
                           #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->
                               {ok, ResolvedExpectedValue} = automate_bot_engine_variables:resolve_argument(
-                                                              ExpectedValue, Thread, ProgramState),
+                                                              ExpectedValue, Thread),
                               ActualValue = maps:get(?CHANNEL_MESSAGE_CONTENT, FullMessage, none),
                               ResolvedExpectedValue == ActualValue;
                           _ ->

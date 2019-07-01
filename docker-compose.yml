@@ -20,3 +20,10 @@ services:
 
   plaza-backend:
     build: backend
+    hostname: plaza-backend-single
+    volumes:
+      - plaza-dev-backend-mnesia:/app/mnesia
+
+volumes:
+  plaza-dev-backend-mnesia:
+

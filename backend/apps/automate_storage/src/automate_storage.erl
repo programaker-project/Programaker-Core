@@ -20,16 +20,27 @@
         , delete_program/2
         , delete_running_process/1
 
+        , get_program_owner/1
         , get_program_pid/1
         , register_program_runner/2
         , get_program_from_id/1
-        , user_has_registered_service/2
         , dirty_list_running_programs/0
+
+        , create_thread/2
+        , dirty_list_running_threads/0
+        , register_thread_runner/2
+        , get_thread_from_id/1
+        , delete_thread/1
+        , update_thread/1
 
         , set_program_variable/3
         , get_program_variable/2
+
+        , add_mnesia_node/1
+        , register_table/2
         ]).
 -export([start_link/0]).
+-define(SERVER, ?MODULE).
 
 %% Structures
 -define(REGISTERED_USERS_TABLE, automate_registered_users).
@@ -37,13 +48,15 @@
 -define(USER_MONITORS_TABLE, automate_user_monitors).
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
--define(REGISTERED_SERVICES_TABLE, automate_registered_services).
+-define(RUNNING_THREADS_TABLE, automate_running_program_threads).
+
 -define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
 
 -include("./records.hrl").
+-include("../automate_bot_engine/src/program_records.hrl").
 
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
-
+-define(WAIT_READY_LOOP_TIME, 1000).
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -265,6 +278,15 @@ get_program_pid(ProgramId) ->
             {error, Reason}
     end.
 
+-spec get_program_owner(binary()) -> {'ok', binary() | undefined} | {error, not_found}.
+get_program_owner(ProgramId) ->
+    case get_program_from_id(ProgramId) of
+        {ok, #user_program_entry{user_id=UserId}} ->
+            {ok, UserId};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
 -spec register_program_runner(binary(), pid()) -> 'ok' | {error, not_running}.
 register_program_runner(ProgramId, Pid) ->
     Transaction = fun() ->
@@ -283,7 +305,6 @@ register_program_runner(ProgramId, Pid) ->
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
-            io:format("Register result: ~p~n", [Result]),
             Result;
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
@@ -311,17 +332,104 @@ get_program_from_id(ProgramId) ->
 dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
 
-user_has_registered_service(Username, ServiceId) ->
-    case try_get_user_registered_service(Username, ServiceId) of
-        {ok, true} ->
-            {ok, true};
-        {ok, false} ->
-            {ok, false};
-        {ok, not_found} ->
-            {ok, false};
+-spec create_thread(binary(), #program_thread{}) -> {ok, thread_id()}.
+create_thread(ParentProgramId, #program_thread{ program=Instructions
+                                              , global_memory=Memory
+                                              , instruction_memory=InstructionMemory
+                                              , position=Position
+                                              }) ->
+    ThreadId = generate_id(),
+    UserThread = #running_program_thread_entry{ thread_id=ThreadId
+                                              , runner_pid=undefined
+                                              , parent_program_id=ParentProgramId
+                                              , instructions=Instructions
+                                              , memory=Memory
+                                              , instruction_memory=InstructionMemory
+                                              , position=Position
+                                              , stats=#{}
+                                              },
+
+    case store_new_thread(UserThread) of
+        ok ->
+            { ok, ThreadId };
         {error, Reason} ->
-            {error, Reason}
+            { error, Reason }
     end.
+
+
+-spec delete_thread(binary()) -> ok | {error, not_found}.
+delete_thread(ThreadId) ->
+    Transaction = fun() ->
+                          ok = mnesia:delete(?RUNNING_THREADS_TABLE, ThreadId, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("[Thread delete] Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec update_thread(#running_program_thread_entry{}) -> ok | {error, not_found}.
+update_thread(Thread=#running_program_thread_entry{ thread_id=Id }) ->
+    Transaction = fun() ->
+                          case mnesia:read(?RUNNING_THREADS_TABLE, Id) of
+                              [] ->
+                                  {error, not_found};
+                              [_] ->
+                                  ok = mnesia:write(?RUNNING_THREADS_TABLE, Thread, write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("[Thread update] Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
+dirty_list_running_threads() ->
+    {ok, mnesia:dirty_all_keys(?RUNNING_THREADS_TABLE)}.
+
+
+-spec register_thread_runner(binary(), pid()) -> 'ok' | {error, not_running}.
+register_thread_runner(ThreadId, Pid) ->
+    Transaction = fun() ->
+                          case mnesia:read(?RUNNING_THREADS_TABLE, ThreadId) of
+                              [Thread] ->
+                                  ok = mnesia:write(?RUNNING_THREADS_TABLE,
+                                                    Thread#running_program_thread_entry{runner_pid=Pid},
+                                                    write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+           Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec get_thread_from_id(binary()) -> {ok, #running_program_thread_entry{}} | {error, binary()}.
+get_thread_from_id(ThreadId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?RUNNING_THREADS_TABLE, ThreadId) of
+                              [] ->
+                                  {error, not_found};
+                              [Thread] ->
+                                  {ok, Thread}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
 
 -spec get_program_variable(binary(), atom()) -> {ok, any()} | {error, not_found}.
 get_program_variable(ProgramId, Key) ->
@@ -339,6 +447,9 @@ get_program_variable(ProgramId, Key) ->
     end.
 
 -spec get_userid_from_username(binary()) -> {ok, binary()} | {error, no_user_found}.
+get_userid_from_username(undefined) ->
+    {ok, undefined};
+
 get_userid_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'
                                       , username='$2'
@@ -364,12 +475,17 @@ get_userid_from_username(Username) ->
 
 %% Exposed startup entrypoint
 start_link() ->
-    Nodes = [node()],
-    mnesia:stop(),
-    prepare_nodes(Nodes),
-    mnesia:start(),
-    build_tables(Nodes),
-    ignore.
+    start_coordinator().
+
+-spec add_mnesia_node(node()) -> ok.
+add_mnesia_node(Node) ->
+    ok = rpc:call(Node, mnesia, start, []),
+    {ok, _} = mnesia:change_config(extra_db_nodes, [Node]),
+    ok.
+
+-spec register_table(term(), term()) -> ok.
+register_table(TableName, RecordDef) ->
+    erlang:error(not_implemented).
 
 %%====================================================================
 %% Internal functions
@@ -475,6 +591,15 @@ store_new_program(UserProgram) ->
     Transaction = fun() ->
                           mnesia:write(?USER_PROGRAMS_TABLE
                                       , UserProgram
+                                      , write)
+                  end,
+    {atomic, Result} = mnesia:transaction(Transaction),
+    Result.
+
+store_new_thread(UserThread) ->
+    Transaction = fun() ->
+                          mnesia:write(?RUNNING_THREADS_TABLE
+                                      , UserThread
                                       , write)
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
@@ -706,52 +831,6 @@ get_running_program_id(ProgramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
-try_get_user_registered_service(Username, ServiceId) ->
-    MatchHead = #registered_user_entry{ id='$1'
-                                      , username='$2'
-                                      , password='_'
-                                      , email='_'
-                                      },
-
-    %% Check that neither the id, username or email matches another
-    GuardUsername = {'==', '$2', Username},
-    Guard = GuardUsername,
-    ResultColumn = '$1',
-    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
-
-    Transaction = fun() ->
-                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
-                              [UserId] ->
-                                  ServiceMatchHead = #registered_service_entry{ registration_id='_'
-                                                                              , service_id='$1'
-                                                                              , user_id='$2'
-                                                                              , enabled='$3'
-                                                                              },
-
-                                  %% Check that neither the id, username or email matches another
-                                  GuardService = {'==', '$1', ServiceId},
-                                  GuardUserId = {'==', '$2', UserId},
-                                  ServiceGuard = {'andthen', GuardService, GuardUserId},
-                                  ServiceResultColumn = '$3',
-                                  ServiceMatcher = [{ServiceMatchHead, [ServiceGuard], [ServiceResultColumn]}],
-
-                                  case mnesia:select(?REGISTERED_SERVICES_TABLE, ServiceMatcher) of
-                                      [IsEnabled] ->
-                                          { ok, IsEnabled };
-                                      [] ->
-                                          {ok, not_found}
-                                  end;
-                              [] ->
-                                  {ok, not_found}
-                          end
-                  end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
-    end.
-
 -spec set_program_variable(binary(), atom(), any()) -> ok | {error, any()}.
 set_program_variable(ProgramId, Key, Value) ->
     Transaction = fun() ->
@@ -771,8 +850,103 @@ set_program_variable(ProgramId, Key, Value) ->
 %%====================================================================
 %% Startup functions
 %%====================================================================
+start_coordinator() ->
+    Primary = automate_configuration:get_sync_primary(),
+    IsPrimary = automate_configuration:is_node_primary(node()),
+
+    Spawner = self(),
+    Coordinator = spawn_link(fun() ->
+                                     mnesia:stop(),
+
+                                     register(?SERVER, self()),
+                                     SyncPeers = automate_configuration:get_sync_peers(),
+                                     NonPrimaries = sets:del_element(Primary, sets:from_list(SyncPeers)),
+                                     io:fwrite("Primary: ~p, IP: ~p~n", [Primary, IsPrimary]),
+                                     ok = wait_for_all_nodes_ready(IsPrimary, Primary, NonPrimaries),
+                                     io:fwrite("[Automate storage] Successfully connected to nodes~n"),
+                                     case IsPrimary of
+                                         true ->
+                                             ok = prepare_nodes(SyncPeers),
+                                             ok = mnesia:start(),
+                                             NonPrimaryList = sets:to_list(NonPrimaries),
+                                             lists:foreach(fun (Node) ->
+                                                                   ok = add_mnesia_node(Node)
+                                                           end, NonPrimaryList),
+                                             mnesia:info(),
+                                             io:fwrite("SP: ~p~n", [SyncPeers]),
+                                             ok = build_tables(SyncPeers),
+
+                                             lists:foreach(fun (Node) ->
+                                                                   {?SERVER, Node} ! {self(), storage_started},
+                                                                   io:fwrite("~p ! ~p~n", [ {?SERVER, Node}
+                                                                                          , { self(), storage_started}])
+                                                           end, NonPrimaryList);
+                                         _ ->
+                                             ok
+                                     end,
+
+                                     Spawner ! {self(), ready},
+                                     coordinate_loop(Primary)
+                             end),
+    receive
+        {Coordinator, ready} ->
+            io:fwrite("[Automate storage] Ready~n"),
+            {ok, Coordinator}
+    end.
+
+%% Not a primary node
+wait_for_all_nodes_ready(false, Primary, NonPrimaries) ->
+    {?SERVER, Primary} ! { self(), {node_ready, node() }},
+    io:fwrite("~p ! ~p~n", [{?SERVER, Primary}, { self(), {node_ready, node() }}]),
+    receive 
+        { _From, storage_started } ->
+            ok;
+        X ->
+            io:fwrite("[automate_storage coordinator | ~p | Prim: ~p] Unknown message: ~p~n",
+                      [node(), Primary, X]),
+            wait_for_all_nodes_ready(false, Primary, NonPrimaries)
+    after ?WAIT_READY_LOOP_TIME ->
+            wait_for_all_nodes_ready(false, Primary, NonPrimaries)
+    end;
+
+wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
+    io:fwrite("Primary waiting messages [To go: ~p]~n", [sets:to_list(NonPrimariesToGo)]),
+
+    case sets:is_empty(NonPrimariesToGo) of
+        true ->
+            ok;
+        false ->
+            receive
+                Msg = { From, { node_ready, Node } } ->
+                    io:fwrite("[automate_storage coordinator | Prim, ~p] NodeReady: ~p~n",
+                              [node(), Msg]),
+
+                    case sets:is_element(Node, NonPrimariesToGo) of
+                        true ->
+                            ToGo = sets:del_element(Node, NonPrimariesToGo),
+                            wait_for_all_nodes_ready(true, Primary, ToGo);
+                        _ -> %% Reminded that node is ready... nothing to do
+                            wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo)
+                    end;
+                X ->
+                    io:fwrite("[automate_storage coordinator | Prim, ~p] Unknown message: ~p~n",
+                              [node(), X]),
+                    wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo)
+            end
+    end.
+
+coordinate_loop(Primary) ->
+    receive 
+        %% To be defined
+        X ->
+            io:fwrite("[automate_storage coordinator | ~p | Prim: ~p] Unknown message: ~p~n",
+                      [node(), Primary, X]),
+            coordinate_loop(Primary)
+    end.
+
 prepare_nodes(Nodes) ->
     %% Global structure
+    io:fwrite("Preparing nodes: ~p~n", [Nodes]),
     case mnesia:create_schema(Nodes) of
         ok ->
             ok;
@@ -782,6 +956,7 @@ prepare_nodes(Nodes) ->
 
 build_tables(Nodes) ->
     %% Registered users table
+    io:fwrite("Building tables: ~p~n", [Nodes]),
     ok = case mnesia:create_table(?REGISTERED_USERS_TABLE,
                                   [ {attributes, record_info(fields, registered_user_entry)}
                                   , { disc_copies, Nodes }
@@ -846,11 +1021,11 @@ build_tables(Nodes) ->
                  ok
          end,
 
-    %% Program variable table
-    ok = case mnesia:create_table(?RUNNING_PROGRAMS_TABLE,
-                                  [ {attributes, record_info(fields, running_program_entry)}
+    %% Running program threads table
+    ok = case mnesia:create_table(?RUNNING_THREADS_TABLE,
+                                  [ {attributes, record_info(fields, running_program_thread_entry)}
                                   , { disc_copies, Nodes }
-                                  , { record_name, running_program_entry }
+                                  , { record_name, running_program_thread_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->
@@ -859,7 +1034,7 @@ build_tables(Nodes) ->
                  ok
          end,
 
-    %% Registered services table
+    %% Program variable table
     ok = case mnesia:create_table(?PROGRAM_VARIABLE_TABLE,
                                   [ {attributes, record_info(fields, program_variable_table_entry)}
                                   , { disc_copies, Nodes }
@@ -872,6 +1047,14 @@ build_tables(Nodes) ->
                  ok
          end,
 
+    ok = mnesia:wait_for_tables([ ?REGISTERED_USERS_TABLE
+                                , ?USER_SESSIONS_TABLE
+                                , ?USER_MONITORS_TABLE
+                                , ?USER_PROGRAMS_TABLE
+                                , ?RUNNING_PROGRAMS_TABLE
+                                , ?RUNNING_THREADS_TABLE
+                                , ?PROGRAM_VARIABLE_TABLE
+                                ], automate_configuration:get_table_wait_time()),
     ok.
 
 generate_id() ->

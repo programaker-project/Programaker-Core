@@ -4,7 +4,7 @@
 -define(CONTENTS, <<"contents">>).
 -define(ID, <<"id">>).
 -define(VALUE, <<"value">>).
--define(TEMPLATE_NAME_TYPE, <<"template_name">>).
+-define(TEMPLATE_NAME_TYPE, <<"constant">>).
 
 %%%% Command types
 %%%%  Operations
@@ -16,9 +16,12 @@
 -define(COMMAND_REPEAT, <<"control_repeat">>).
 -define(COMMAND_REPEAT_UNTIL, <<"control_repeat_until">>).
 -define(COMMAND_WAIT_UNTIL, <<"control_wait_until">>).
+-define(COMMAND_IF, <<"control_if">>).
+-define(COMMAND_IF_ELSE, <<"control_if_else">>).
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
+-define(COMMAND_JSON, <<"operator_json_parser">>).
 
 %% Templates
 -define(MATCH_TEMPLATE_STATEMENT, <<"automate_match_template_stmt">>).

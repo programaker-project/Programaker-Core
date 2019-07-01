@@ -1,0 +1,126 @@
+@startuml run-task-once-simple.png
+autonumber
+autoactivate on
+participant node1
+participant run_module as "run once module"
+participant run_table as "run once table transaction"
+participant runner_process as "runner process"
+
+participant node2
+participant run_module2 as "run module on node 2"
+participant runner_process2 as "runner process on node 2"
+
+' participant collector_process as "runner collector process"
+' participant supervisor as "node 1 runner supervisor"
+
+' ... The service starts ...
+' supervisor -> run_module: Run task once (collector)
+
+'   run_module -> runner_process: Prepare pid
+'   return runner_pid (PC)
+
+'   run_module -> run_table: Has not been run or use pid
+'   return not run, used pid
+
+'   register PC global
+  
+'   run_module -> runner_process: Start callback
+'   return callback started (might not be needed)
+
+' return Running on pid PC
+
+... A node starts a process for the first time ...
+
+node1 -> run_module: Run task once
+
+  run_module -> runner_process: Prepare pid
+  return runner_pid (P1)
+
+  run_module -> run_table: Has not been run or use pid
+  return not run, used pid
+
+  run_module -> runner_process: Start callback
+  return callback started (might not be needed)
+
+return started on pid P1
+
+... Same node or other tries to start the same process ...
+node1 -> run_module: Run task once
+
+  run_module -> runner_process: Prepare pid
+  return runner_pid
+
+  run_module -> run_table: Has not been run or use pid
+  return is running, this is the pid (P2)
+
+  run_module -> run_module: check that P1 is not stopped
+  return ok
+
+  run_module -> runner_process: Cancel execution
+  return execution cancelled (might not be needed)
+
+return already running, on pid (P1)
+
+... Process P1 stops...
+
+... Same process is launched again ...
+node1 -> run_module: Run task once
+
+  run_module -> runner_process: Prepare pid
+  return runner_pid (P3)
+
+  run_module -> run_table: Has not been run or use pid
+  return is running, this is the pid (P4)
+ 
+  run_module -> run_module: check that P1 is not stopped
+  return is_stopped
+
+  run_module -> run_table: Has not been run or use pid, even if PID is (P1)
+  return not run, used pid(P3)
+
+  run_module -> runner_process: Start callback
+  return callback started (might not be needed)
+
+return started, on pid (P3)
+
+... P3 stops ...
+
+... A new process was created while checking the one failing ...
+node1 -> run_module: Run task once
+
+  run_module -> runner_process: Prepare pid
+  return runner_pid (P4)
+
+  run_module -> run_table: Has not been run or use pid
+  return is running, this is the pid (P3)
+
+    node2 -> run_module2: Run task once
+      run_module2 -> runner_process2: Prepare pid
+      return runner_pid (P5)
+
+      run_module2 -> run_table: Has not been run or use pid
+      return is running, this is the pid(P3)
+
+      run_module -> run_module: check that P3 is not stopped
+      return is_stopped
+
+      run_module -> run_table: Has not been run or use pid, even if PID is (P3)
+      return not run, used pid(P4)
+
+    return started, on pid(P4)
+
+  ... P4 stops ...
+ 
+  run_module -> run_module: check that P3 is not stopped
+  return is_stopped
+
+  run_module -> run_table: Has not been run or use pid, even if PID is (P3)
+  return not run, used pid(P4)
+
+  run_module -> run_module: check that P4 is not stopped
+  return is_stopped
+
+  note right: Not more retries are made
+
+return "{error, could_not_start}"
+@enduml

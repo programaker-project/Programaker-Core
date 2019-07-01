@@ -107,7 +107,6 @@ to_map(#service_port_entry_extra{ id=Id
 
 %% POST handler
 content_types_accepted(Req, State) ->
-    io:fwrite("Control types accepted~n", []),
     {[{{<<"application">>, <<"json">>, []},
        accept_json_create_service_port}],
      Req, State}.

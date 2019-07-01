@@ -18,11 +18,12 @@
 
 -include("records.hrl").
 -define(TEMPLATE_TABLE, automate_template_engine_templates_table).
+
 %%====================================================================
 %% API
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% Service port identity table
     ok = case mnesia:create_table(?TEMPLATE_TABLE,
@@ -36,6 +37,8 @@ start_link() ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
+    ok = mnesia:wait_for_tables([ ?TEMPLATE_TABLE
+                                ], automate_configuration:get_table_wait_time()),
     ignore.
 
 -spec list_templates_from_user_id(binary()) -> {ok, [map()]}.

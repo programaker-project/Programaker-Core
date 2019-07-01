@@ -6,6 +6,7 @@
    {applications, [ kernel
                   , stdlib
                   , prometheus
+                  , automate_configuration
                   ]},
    {env, [
          ]},

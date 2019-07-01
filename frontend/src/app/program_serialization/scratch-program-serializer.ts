@@ -39,20 +39,31 @@ export default class ScratchProgramSerializer {
 
         let cleanedElement = {
             id: block.id,
-            type: block.getAttribute('type'),
+            type: ScratchProgramSerializer.cleanTypeName(block.getAttribute('type')),
             args: Array.from(block.childNodes)
                 .filter((x: HTMLElement) => x.tagName !== 'NEXT' && x.tagName !== 'STATEMENT')
                 .map(node => this.serializeArg(node as HTMLElement)),
             contents: [],
         };
 
+        this.fixArgOrder(cleanedElement);
+
         cleanedElement = this.rewriteCustomBlock(cleanedElement);
         this.replaceServices(cleanedElement);
         this.replaceMonitors(cleanedElement);
 
         const contents = Array.from(block.childNodes).filter((x: HTMLElement) => x.tagName === 'STATEMENT');
-        if (contents.length > 0) {
+        if (contents.length == 1) {
+            console.log("Contents:", contents);
             cleanedElement.contents = this.serializeBlock(contents[0].firstChild as HTMLElement);
+        }
+        else if (contents.length > 0) {
+            const subContents = [];
+            for (const subContent of contents) {
+                subContents.push({ "contents": this.serializeBlock(subContent.firstChild as HTMLElement) });
+            }
+
+            cleanedElement.contents = subContents;
         }
 
         chain.push(cleanedElement);
@@ -63,6 +74,43 @@ export default class ScratchProgramSerializer {
         }
 
         return chain;
+    }
+
+    private fixArgOrder(cleanedElement: { args: any[] }) {
+        const order = cleanedElement.args.map((value) => {
+            if (!value.name) {
+                return null;
+            }
+
+            const digits = ScratchProgramSerializer.getDigits(value.name);
+            if (digits === null) {
+                return null;
+            }
+
+            return [value, digits];
+        });
+
+        if (order.filter((value) => {
+            return value === null;
+        }).length > 0) {
+            // Bail if the order of any value cannot be retrieved
+            return;
+        }
+
+        cleanedElement.args = order.sort((x, y) => {
+            return x[1] - y[1];
+        }).map((composedValue) => {
+            return composedValue[0];
+        });
+    }
+
+    private static getDigits(s: string): number | null {
+        const match = s.match(/\d+/);
+        if (match === null) {
+            return null;
+        }
+
+        return parseInt(match[0]);
     }
 
     private rewriteCustomBlock(element) {
@@ -117,30 +165,6 @@ export default class ScratchProgramSerializer {
 
     private replaceMonitors(element) {
         switch (element.type) {
-
-            case "chat_whenreceivecommand":
-                // This implies a call to a monitor
-                {
-                    element.type = "wait_for_monitor";
-                    element.args = {
-                        "monitor_id": { "from_service": "c8062378-9b53-4962-b4f4-e5a71e34d335" }, // Telegram monitor ID
-                        "monitor_expected_value": element.args[0]
-                    }
-                    break;
-                }
-
-            case "chat_whenreceiveanycommandtovar":
-                // This implies a call to a monitor and a subsequent save of its value.
-                {
-                    element.type = "wait_for_monitor";
-                    element.args = {
-                        "monitor_id": { "from_service": "c8062378-9b53-4962-b4f4-e5a71e34d335" }, // Telegram monitor ID
-                        "monitor_expected_value": "any_value",
-                        "monitor_save_value_to": element.args[0],
-                    }
-                    break;
-                }
-
             case "time_trigger_at":
                 // This implies a call to a monitor
                 {
@@ -160,9 +184,15 @@ export default class ScratchProgramSerializer {
         }
     }
 
+    private static cleanTypeName(typeName: any): string {
+        // Remove digits (used for parameter ordering) from end of type
+        return typeName.toString().replace(/\d+$/, "");
+    }
+
     private serializeArg(argument: HTMLElement): any {
         if (argument.tagName === 'FIELD') {
             let type = argument.getAttribute('name').toLowerCase();
+
             if (type.startsWith('val')) {
                 type = "constant";
             }
@@ -170,7 +200,9 @@ export default class ScratchProgramSerializer {
                 type = 'constant';  // No block or value, but dropdown/constant
             }
             return {
-                type: type,  // Type here might be 'constant', 'variable' or 'list'
+                name: argument.getAttribute('name'),
+                // Type here might be 'constant', 'variable' or 'list'
+                type: ScratchProgramSerializer.cleanTypeName(type),
                 value: argument.innerText,
             }
         }
@@ -180,6 +212,7 @@ export default class ScratchProgramSerializer {
             && ((argument.childNodes[1] as HTMLElement).tagName === 'BLOCK')) {
 
             return {
+                name: argument.getAttribute('name'),
                 type: 'block',
                 value: this.serializeBlock(argument.childNodes[1] as HTMLElement),
             }
@@ -189,11 +222,11 @@ export default class ScratchProgramSerializer {
             && ((argument.childNodes[0] as HTMLElement).tagName === 'BLOCK')) {
 
             return {
+                name: argument.getAttribute('name'),
                 type: 'block',
                 value: this.serializeBlock(argument.childNodes[0] as HTMLElement),
             }
         }
-
 
         // If there's just one entry, it's only a shadow value.
         // return it's content as constant
@@ -202,6 +235,7 @@ export default class ScratchProgramSerializer {
         }
 
         return {
+            name: argument.getAttribute('name'),
             type: 'constant',
             value: (argument.childNodes[0].firstChild as HTMLElement).innerText,
         }
@@ -217,7 +251,7 @@ export default class ScratchProgramSerializer {
         return {
             id: variable.id,
             name: variable.innerText,
-            type: variable.attributes.getNamedItem('type'),
+            type: ScratchProgramSerializer.cleanTypeName(variable.attributes.getNamedItem('type')),
         }
     }
 }

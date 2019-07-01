@@ -13,7 +13,6 @@
         , update_program/3
         , list_services_from_username/1
         , get_service_enable_how_to/2
-        , list_chats_from_username/1
 
         , update_program_metadata/3
         , delete_program/2
@@ -37,7 +36,6 @@
 -include("./records.hrl").
 -include("../../automate_service_registry/src/records.hrl").
 -include("../../automate_storage/src/records.hrl").
--include("../../automate_chat_registry/src/records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 -include("../../automate_template_engine/src/records.hrl").
 
@@ -201,11 +199,6 @@ get_service_enable_how_to(Username, ServiceId) ->
             {error, not_found}
     end.
 
-
--spec list_chats_from_username(binary()) -> {'ok', [ #chat_entry{} ]} | {error, term(), binary()}.
-list_chats_from_username(Username) ->
-    {ok, UserId} = automate_storage:get_userid_from_username(Username),
-    automate_chat_registry:get_all_chats_for_user(UserId).
 
 -spec create_service_port(binary(), binary()) -> {ok, binary()}.
 create_service_port(Username, ServicePortName) ->

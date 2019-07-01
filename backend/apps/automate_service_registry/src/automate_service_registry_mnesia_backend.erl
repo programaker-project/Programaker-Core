@@ -29,7 +29,7 @@
 %% API
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% Live channels table
     ok = case mnesia:create_table(?SERVICE_REGISTRY_TABLE,
@@ -58,13 +58,17 @@ start_link() ->
                                   [ { attributes, record_info(fields, service_configuration_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, service_configuration_entry }
-                                  , { type, bag }
+                                  , { type, set }
                                   ]) of
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
                  ok
          end,
+    ok = mnesia:wait_for_tables([ ?SERVICE_REGISTRY_TABLE
+                                , ?USER_SERVICE_ALLOWANCE_TABLE
+                                , ?SERVICE_CONFIGURATION_TABLE
+                                ], automate_configuration:get_table_wait_time()),
     ignore.
 
 -spec register(binary(), boolean(), #{ name := binary(), description := binary(), module := module()}) -> ok | {error, term(), string()}.
@@ -262,7 +266,6 @@ delete_service(_UserId, ServiceId) ->
 
 -spec convert_to_map([#services_table_entry{}]) -> service_info_map().
 convert_to_map(TableEntries) ->
-    io:fwrite("Entries: ~p~n", [TableEntries]),
     convert_to_map(TableEntries, #{}).
 
 -spec convert_to_map([#services_table_entry{}], service_info_map()) ->

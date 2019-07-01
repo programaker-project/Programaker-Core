@@ -17,7 +17,6 @@ get_last_monitor_result(MonitorId) ->
     case automate_storage:get_monitor_from_id(MonitorId) of
         #monitor_entry{ type=Type, value=Value } ->
             Result = get_monitor_result(Type, Value),
-            io:format("Result: ~p~n", [Result]),
             Result;
         {error, _} ->
             {error, not_found}
