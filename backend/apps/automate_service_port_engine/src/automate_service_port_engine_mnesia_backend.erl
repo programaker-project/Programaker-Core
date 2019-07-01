@@ -173,7 +173,7 @@ set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
 -spec list_custom_blocks(binary()) -> {ok, map()}.
 list_custom_blocks(UserId) ->
     Transaction = fun() ->
-                          Services = list_userid_ports(UserId),
+                          Services = list_userid_ports(UserId) ++ list_public_ports(),
                           {ok
                           , maps:from_list(
                               lists:filter(fun (X) -> X =/= none end,
@@ -294,6 +294,19 @@ list_userid_ports(UserId) ->
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
     mnesia:select(?SERVICE_PORT_TABLE, Matcher).
+
+list_public_ports() ->
+    MatchHead = #service_port_configuration{ id='$1'
+                                           , service_name='_'
+                                           , service_id='_'
+                                           , is_public='$2'
+                                           , blocks='_'
+                                           },
+    Guard = {'==', '$2', true},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    mnesia:select(?SERVICE_PORT_CONFIGURATION_TABLE, Matcher).
 
 list_blocks_for_port(PortId) ->
     case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, PortId) of
