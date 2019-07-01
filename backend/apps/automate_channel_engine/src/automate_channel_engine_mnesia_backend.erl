@@ -121,6 +121,6 @@ unlink_listener(Entry) ->
                                                            }.
 check_alive_listeners(Connections) ->
     lists:partition(fun(#listeners_table_entry{pid=Pid, node=Node }) ->
-                            rpc:call(Node, erlang, is_process_alive, [Pid])
+                            automate_coordination_utils:is_process_alive(Pid, Node)
                     end,
                     Connections).
