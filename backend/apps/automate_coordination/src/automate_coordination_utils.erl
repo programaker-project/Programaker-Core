@@ -20,5 +20,5 @@ is_process_alive(Pid, Node) ->
     case rpc:call(Node, erlang, is_process_alive, [Pid]) of
         true -> true;
         false -> false;
-        {error, nodedown} -> false
+        {badrpc, nodedown} -> false
     end.
