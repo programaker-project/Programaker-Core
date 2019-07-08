@@ -68,8 +68,10 @@
                                              }).
 
 
--record(service_port_monitor_channel_entry, { id :: {binary(), binary()} %% { user id, service port Id }
-                                            , channel_id :: binary()
+-record(service_port_monitor_channel_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% user id
+                                                    , binary()  | ?MNESIA_SELECTOR  %% bridge id
+                                                    }
+                                            , channel_id :: binary() | ?MNESIA_SELECTOR
                                             }).
 
 -record(bridge_connection_entry, { id :: binary() %% Bridge id
