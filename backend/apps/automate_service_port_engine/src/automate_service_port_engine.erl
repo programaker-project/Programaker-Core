@@ -96,7 +96,23 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                             ServicePortId, UserId),
             case ToUser of
                 null ->
-                    UserId;  %% Knowingly wrong! will write a test to cover this
+                    %% TODO: This looping be removed if the users also listened on
+                    %% a common bridge channel. For this, the service API should allow
+                    %% returning multiple channels when asked.
+                    {ok, Channels} = ?BACKEND:list_bridge_channels(ServicePortId),
+                    Results = lists:map(fun (Channel) ->
+                                                automate_channel_engine:send_to_channel(
+                                                  Channel,
+                                                  #{ <<"key">> => Key
+                                                   , <<"to_user">> => ToUser
+                                                   , <<"value">> => Value
+                                                   , <<"content">> => Content
+                                                   })
+                                        end, Channels),
+                    true = lists:all(fun(Result) -> Result == ok end, Results),
+                    %% Make sure to crash if there's an error, but only after the
+                    %% messages had been sent
+                    ok;
                 _ ->
                     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module,
                                                                                       ToUser),
