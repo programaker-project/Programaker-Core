@@ -92,14 +92,38 @@ from_service_port(ServicePortId, UserId, Msg) ->
          , <<"value">> := Value
          , <<"content">> := Content
          } ->
-            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId, UserId),
-            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-            %% io:fwrite("New message: ~p~nMonitorId: ~p~nMod: ~p~p~n", [Unpacked, MonitorId, Module, UserId]),
-            ok = automate_channel_engine:send_to_channel(MonitorId, #{ <<"key">> => Key
-                                                                     , <<"to_user">> => ToUser
-                                                                     , <<"value">> => Value
-                                                                     , <<"content">> => Content
-                                                                     })
+            case ToUser of
+                null ->
+                    %% TODO: This looping be removed if the users also listened on
+                    %% a common bridge channel. For this, the service API should allow
+                    %% returning multiple channels when asked.
+                    {ok, Channels} = ?BACKEND:list_bridge_channels(ServicePortId),
+                    Results = lists:map(fun (Channel) ->
+                                                automate_channel_engine:send_to_channel(
+                                                  Channel,
+                                                  #{ <<"key">> => Key
+                                                   , <<"to_user">> => ToUser
+                                                   , <<"value">> => Value
+                                                   , <<"content">> => Content
+                                                   })
+                                        end, Channels),
+                    true = lists:all(fun(Result) -> Result == ok end, Results),
+                    %% Make sure to crash if there's an error, but only after the
+                    %% messages had been sent
+                    ok;
+                _ ->
+                    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
+                                                    ServicePortId, ToUser),
+
+                    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module,
+                                                                                      ToUser),
+                    ok = automate_channel_engine:send_to_channel(MonitorId,
+                                                                 #{ <<"key">> => Key
+                                                                  , <<"to_user">> => ToUser
+                                                                  , <<"value">> => Value
+                                                                  , <<"content">> => Content
+                                                                  })
+            end
     end.
 
 -spec list_custom_blocks(binary()) -> {ok, map()}.

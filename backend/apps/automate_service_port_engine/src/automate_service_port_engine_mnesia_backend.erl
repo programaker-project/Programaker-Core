@@ -12,11 +12,13 @@
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
         , get_user_service_ports/1
+        , list_bridge_channels/1
 
         , get_bridge_service/2
         , delete_bridge/2
 
         , get_or_create_monitor_id/2
+        , uninstall/0
         ]).
 
 -include("records.hrl").
@@ -88,6 +90,16 @@ start_link() ->
                                 , ?SERVICE_PORT_CHANNEL_TABLE
                                 ], automate_configuration:get_table_wait_time()),
     ignore.
+
+
+-spec uninstall() -> ok.
+uninstall() ->
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_TABLE),
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_CONFIGURATION_TABLE),
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_USERID_OBFUSCATION_TABLE),
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_CHANNEL_TABLE),
+    ok.
+
 
 -spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, _, string()}.
 create_service_port(UserId, ServicePortName) ->
@@ -234,6 +246,24 @@ get_user_service_ports(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+-spec list_bridge_channels(binary()) -> {ok, [binary()]}.
+list_bridge_channels(ServicePortId) ->
+    Transaction = fun() ->
+                          MatchHead = #service_port_monitor_channel_entry{ id={'_', '$1'}
+                                                                         , channel_id='$2'
+                                                                         },
+                          Guard = {'==', '$1', ServicePortId},
+                          ResultColumn = '$2',
+                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+                          {ok, mnesia:select(?SERVICE_PORT_CHANNEL_TABLE, Matcher)}
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
 
 -spec get_bridge_service(binary(), binary()) -> {ok, undefined | binary()}.
 get_bridge_service(UserId, BridgeId) ->
