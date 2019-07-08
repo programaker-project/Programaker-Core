@@ -11,6 +11,7 @@
 -define(TEST_NODES, [node()]).
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
 -define(TEST_ID_PREFIX, "automate_service_port_engine_custom_blocks_tests").
+-define(RECEIVE_TIMEOUT, 100).
 
 %%====================================================================
 %% Test API
@@ -46,7 +47,7 @@ stop({NodeName}) ->
     ok.
 
 tests(_SetupResult) ->
-    %% Routing
+    %% Custom blocks
     [ { "[Service Port - Custom blocks] Owned private blocks appear"
       , fun owned_private_blocks_appear/0
       }
@@ -59,10 +60,16 @@ tests(_SetupResult) ->
     , { "[Service Port - Custom blocks] Non-owned public blocks appear"
       , fun non_owned_public_blocks_appear/0
       }
+      %% Notification routing
+    , { "[Service port - Notifications] Route notifications targeted to owner"
+      , fun route_notification_targeted_to_owner/0
+      }
     ].
 
 
-%%%% Tests
+%%====================================================================
+%% Custom block tests
+%%====================================================================
 owned_private_blocks_appear() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-test-1-owner">>,
     ServicePortName = <<?TEST_ID_PREFIX, "-test-1-service-port">>,
@@ -136,7 +143,7 @@ non_owned_public_blocks_appear() ->
 
 
 %%====================================================================
-%% Internal functions
+%% Custom block tets - Internal functions
 %%====================================================================
 -define(Arguments, []).
 -define(FunctionName, <<"first_function_name">>).
@@ -171,3 +178,60 @@ check_test_block(Block) ->
 -undef(BlockType).
 -undef(BlockResultType).
 -undef(SaveTo).
+
+
+%%====================================================================
+%% Notification routing tests
+%%====================================================================
+route_notification_targeted_to_owner() ->
+    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-1-owner">>,
+    TargetUserId = OwnerUserId,
+    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-1-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+
+    %% Configure service port
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ ]
+                     },
+
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    %% Listen on the service port
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
+                                                                              TargetUserId),
+    {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
+    ok = automate_channel_engine:listen_channel(ChannelId),
+
+    %% Emit notification
+    {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
+                                              TargetUserId, #{ <<"test">> => 1 }),
+
+    %% Catch notification
+    receive {channel_engine, ChannelId, ReceivedMessage} ->
+            ?assertEqual(ExpectedContent, ReceivedMessage)
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end.
+
+%%====================================================================
+%% Notification routing tests - Internal functions
+%%====================================================================
+emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
+    Key = binary:list_to_bin(atom_to_list(?MODULE)),
+    Value = Content, %% For simplicity
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
+                                                      , <<"key">> => Key
+                                                      , <<"to_user">> => TargetUserId
+                                                      , <<"value">> => Value
+                                                      , <<"content">> => Content
+                                                      })),
+    {ok, #{ <<"content">> => Content
+          , <<"key">> => Key
+          , <<"to_user">> => TargetUserId
+          , <<"value">> => Value
+          }}.
