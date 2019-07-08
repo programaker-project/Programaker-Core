@@ -17,6 +17,7 @@
         , delete_bridge/2
 
         , get_or_create_monitor_id/2
+        , uninstall/0
         ]).
 
 -include("records.hrl").
@@ -88,6 +89,16 @@ start_link() ->
                                 , ?SERVICE_PORT_CHANNEL_TABLE
                                 ], automate_configuration:get_table_wait_time()),
     ignore.
+
+
+-spec uninstall() -> ok.
+uninstall() ->
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_TABLE),
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_CONFIGURATION_TABLE),
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_USERID_OBFUSCATION_TABLE),
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_CHANNEL_TABLE),
+    ok.
+
 
 -spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, _, string()}.
 create_service_port(UserId, ServicePortName) ->

@@ -38,6 +38,7 @@ setup() ->
 %% @doc App infrastructure teardown.
 %% @end
 stop({NodeName}) ->
+    ?BACKEND:uninstall(),
     ok = application:stop(?APPLICATION),
 
     %% Restore the original node name
@@ -95,7 +96,7 @@ non_owned_private_blocks_dont_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
     {ok, Results} = ?APPLICATION:list_custom_blocks(RequesterUserId),
-    ?assert(#{} == Results).
+    ?assertEqual(#{}, Results).
 
 
 owned_public_blocks_appear() ->
