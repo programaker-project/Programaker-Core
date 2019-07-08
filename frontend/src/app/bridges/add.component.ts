@@ -7,6 +7,7 @@ import { GetTypeOfJson, JSONType } from '../json';
 import { MatSnackBar } from '@angular/material';
 import { Router } from '@angular/router';
 
+import * as API from '../api-config';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
 
@@ -48,10 +49,33 @@ export class BridgeAddComponent {
             });
     }
 
+    get_websocket_root(): string {
+        let baseServerPath = document.location.origin;
+        if (API.ApiHost != '') {
+            baseServerPath = API.ApiHost;
+        }
+
+        return this.to_websocket_path(baseServerPath);
+    }
+
+    to_websocket_path(basePath: string): string {
+        // This two cases can be done with a single regexp
+        //  but this is clearer
+        if (basePath.startsWith('http://')) {
+            return basePath.replace(/^http:\/\//, 'ws://')
+        }
+        else if (basePath.startsWith('https://')) {
+            return basePath.replace(/^https:\/\//, 'wss://')
+        }
+
+        // Not sure how to convert this, so just return it
+        return basePath;
+    }
+
     create(): void {
         this.editable = false;
         this.bridgeService.createServicePort(this.portName).then((BridgeMetadata: BridgeMetadata) => {
-            this.portControlUrl = document.location.origin + BridgeMetadata.control_url;
+            this.portControlUrl = this.get_websocket_root() + BridgeMetadata.control_url;
         }).catch(() => {
             this.editable = true;
         });
