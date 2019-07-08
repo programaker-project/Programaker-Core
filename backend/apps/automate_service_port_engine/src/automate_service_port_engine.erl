@@ -92,14 +92,21 @@ from_service_port(ServicePortId, UserId, Msg) ->
          , <<"value">> := Value
          , <<"content">> := Content
          } ->
-            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId, UserId),
-            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-            %% io:fwrite("New message: ~p~nMonitorId: ~p~nMod: ~p~p~n", [Unpacked, MonitorId, Module, UserId]),
-            ok = automate_channel_engine:send_to_channel(MonitorId, #{ <<"key">> => Key
-                                                                     , <<"to_user">> => ToUser
-                                                                     , <<"value">> => Value
-                                                                     , <<"content">> => Content
-                                                                     })
+            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
+                                            ServicePortId, UserId),
+            case ToUser of
+                null ->
+                    UserId;  %% Knowingly wrong! will write a test to cover this
+                _ ->
+                    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module,
+                                                                                      ToUser),
+                    ok = automate_channel_engine:send_to_channel(MonitorId,
+                                                                 #{ <<"key">> => Key
+                                                                  , <<"to_user">> => ToUser
+                                                                  , <<"value">> => Value
+                                                                  , <<"content">> => Content
+                                                                  })
+            end
     end.
 
 -spec list_custom_blocks(binary()) -> {ok, map()}.

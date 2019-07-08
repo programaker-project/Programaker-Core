@@ -283,7 +283,7 @@ route_notification_targeted_to_non_owner_on_public() ->
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
-                                              TargetUserId, #{ <<"test">> => 2 }),
+                                              TargetUserId, #{ <<"test">> => 3 }),
 
     %% Catch notification
     receive {channel_engine, ChannelId, ReceivedMessage} ->
