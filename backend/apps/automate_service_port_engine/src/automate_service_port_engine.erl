@@ -92,8 +92,6 @@ from_service_port(ServicePortId, UserId, Msg) ->
          , <<"value">> := Value
          , <<"content">> := Content
          } ->
-            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                            ServicePortId, UserId),
             case ToUser of
                 null ->
                     %% TODO: This looping be removed if the users also listened on
@@ -114,6 +112,9 @@ from_service_port(ServicePortId, UserId, Msg) ->
                     %% messages had been sent
                     ok;
                 _ ->
+                    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
+                                                    ServicePortId, ToUser),
+
                     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module,
                                                                                       ToUser),
                     ok = automate_channel_engine:send_to_channel(MonitorId,
