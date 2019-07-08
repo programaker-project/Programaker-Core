@@ -67,6 +67,9 @@ tests(_SetupResult) ->
     , { "[Service port - Notifications] Route notifications targeted to owner on public"
       , fun route_notification_targeted_to_owner_on_public/0
       }
+    , { "[Service port - Notifications] Route notifications targeted to non-owner on public"
+      , fun route_notification_targeted_to_non_owner_on_public/0
+      }
     ].
 
 
@@ -225,6 +228,40 @@ route_notification_targeted_to_owner_on_public() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-2-owner">>,
     TargetUserId = OwnerUserId,
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-2-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+
+    %% Configure service port
+    Configuration = #{ <<"is_public">> => true
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ ]
+                     },
+
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    %% Listen on the service port
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
+                                                                              TargetUserId),
+    {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
+    ok = automate_channel_engine:listen_channel(ChannelId),
+
+    %% Emit notification
+    {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
+                                              TargetUserId, #{ <<"test">> => 2 }),
+
+    %% Catch notification
+    receive {channel_engine, ChannelId, ReceivedMessage} ->
+            ?assertEqual(ExpectedContent, ReceivedMessage)
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end.
+
+route_notification_targeted_to_non_owner_on_public() ->
+    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-3-owner">>,
+    TargetUserId = <<?TEST_ID_PREFIX, "-route-test-3-NONowner-TARGET">>,
+    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-3-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     %% Configure service port
