@@ -70,6 +70,9 @@ tests(_SetupResult) ->
     , { "[Service port - Notifications] Route notifications targeted to non-owner on public"
       , fun route_notification_targeted_to_non_owner_on_public/0
       }
+    , { "[Service port - Notifications] Route notifications to all users on public"
+      , fun route_notification_targeted_to_all_users_on_public/0
+      }
     ].
 
 
@@ -290,6 +293,53 @@ route_notification_targeted_to_non_owner_on_public() ->
             ?assertEqual(ExpectedContent, ReceivedMessage)
     after ?RECEIVE_TIMEOUT ->
             ct:fail(timeout)
+    end.
+
+route_notification_targeted_to_all_users_on_public() ->
+    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-4-owner">>,
+    TargetUserId = <<?TEST_ID_PREFIX, "-route-test-4-NONowner-TARGET">>,
+    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-4-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+
+    %% Configure service port
+    Configuration = #{ <<"is_public">> => true
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ ]
+                     },
+
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    %% Listen on the service port for non-owner
+    {ok, #{ module := NonOwnerModule }} = automate_service_registry:get_service_by_id(
+                                            ServicePortId, TargetUserId),
+    {ok, NonOwnerChannelId } = automate_service_registry_query:get_monitor_id(
+                                 NonOwnerModule, TargetUserId),
+    ok = automate_channel_engine:listen_channel(NonOwnerChannelId),
+
+    %% Listen on the service port for owner
+    {ok, #{ module := OwnerModule }} = automate_service_registry:get_service_by_id(
+                                         ServicePortId, TargetUserId),
+    {ok, OwnerChannelId } = automate_service_registry_query:get_monitor_id(
+                              OwnerModule, OwnerUserId),
+    ok = automate_channel_engine:listen_channel(OwnerChannelId),
+
+    %% Emit notification
+    {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
+                                              null, #{ <<"test">> => 4 }),
+
+    %% Get notification twice
+    receive {channel_engine, NonOwnerChannelId, NonOwnerReceivedMessage} ->
+            ?assertEqual(ExpectedContent, NonOwnerReceivedMessage)
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(notif_to_all_users_non_owner_not_received)
+    end,
+    receive {channel_engine, OwnerChannelId, OwnerReceivedMessage} ->
+            ?assertEqual(ExpectedContent, OwnerReceivedMessage)
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(notif_to_all_users_owner_not_received)
     end.
 
 %%====================================================================
