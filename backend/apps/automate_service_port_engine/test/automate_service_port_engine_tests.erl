@@ -365,7 +365,6 @@ emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
                                                       , <<"content">> => Content
                                                       })),
     {ok, #{ <<"content">> => Content
-          , <<"to_user">> => ToUserId
           , <<"key">> => Key
           , <<"value">> => Value
           }}.

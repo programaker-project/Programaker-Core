@@ -102,7 +102,6 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                                 automate_channel_engine:send_to_channel(
                                                   Channel,
                                                   #{ <<"key">> => Key
-                                                   , <<"to_user">> => ToUser
                                                    , <<"value">> => Value
                                                    , <<"content">> => Content
                                                    })
@@ -112,14 +111,15 @@ from_service_port(ServicePortId, UserId, Msg) ->
                     %% messages had been sent
                     ok;
                 _ ->
+                    {ok, ToUserInternalId} = ?BACKEND:service_port_user_id_to_internal_user_id(
+                                                ToUser, ServicePortId),
                     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                                    ServicePortId, ToUser),
+                                                    ServicePortId, ToUserInternalId),
 
-                    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module,
-                                                                                      ToUser),
+                    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
+                                         Module,  ToUserInternalId),
                     ok = automate_channel_engine:send_to_channel(MonitorId,
                                                                  #{ <<"key">> => Key
-                                                                  , <<"to_user">> => ToUser
                                                                   , <<"value">> => Value
                                                                   , <<"content">> => Content
                                                                   })
