@@ -75,13 +75,27 @@ function to_field_name(type) {
     }
 }
 
+function get_argument_type_default_value(type: string): any {
+    switch (type){
+        case 'string':
+            return 'Sample';
+
+        case 'integer': case 'float':
+            return 1;
+
+        default:
+            return 'Sample';
+    }
+}
+
 function argument_to_xml(arg: BlockArgument, index: number): string {
     const type = to_scratch_type(arg.type);
 
     let default_value = (arg as StaticBlockArgument).default_value;
 
-    if ((default_value === null) || (default_value === undefined) || (default_value === '')) {
-        default_value = "Test";
+    if ((default_value === null) || (default_value === '') || (default_value === undefined)) {
+
+        default_value = get_argument_type_default_value((arg as StaticBlockArgument).type);
     }
 
     if ((arg as StaticBlockArgument).class === 'list') {
