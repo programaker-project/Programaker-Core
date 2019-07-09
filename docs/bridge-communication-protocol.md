@@ -172,9 +172,7 @@ Trigger blocks represent an operation that is started when a certain event happe
 ```
 
 * `id` and `function_name`: Define the unique `id` given by the bridge to the operation. **Note** that the internal id operation is duplicated on the `id` and function name. This is a known problem and is something to be fixed. It's recommended to use the the same value on `id` and `function_name` for clarity.
-* `block_type`: Define the nature of the block, can be of two types:
-   * `operation`, defined on scratch as [Stack Block](https://en.scratch-wiki.info/wiki/Stack_Block), can be concatenated.
-   * `getter`, defined on scratch as [Reporter Block](https://en.scratch-wiki.info/wiki/Reporter_Block), can be used in place of a value.
+* `block_type`: Define the nature of the block. Trigger blocks must be defined as `trigger`.
 * `key`: The event channel (of the ones from the bridge) where the event will be expected.
 * `message`: The message shown on the block. All block arguments **must** be present on the message represented as `%<index-of-argument>` (index starts on 0). 
 * `arguments`: the arguments that the operation considers to perform an operation.
