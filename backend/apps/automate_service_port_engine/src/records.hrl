@@ -63,13 +63,15 @@
                                     }).
 
 
--record(service_port_user_obfuscation_entry, { id :: {binary(), binary()} %% { internal Id, service port Id }
-                                             , obfuscated_id :: binary()
+-record(service_port_user_obfuscation_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% internal id
+                                                     , binary() | ?MNESIA_SELECTOR  %% bridge id
+                                                     }
+                                             , obfuscated_id :: binary() | ?MNESIA_SELECTOR
                                              }).
 
 
 -record(service_port_monitor_channel_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% user id
-                                                    , binary()  | ?MNESIA_SELECTOR  %% bridge id
+                                                    , binary() | ?MNESIA_SELECTOR  %% bridge id
                                                     }
                                             , channel_id :: binary() | ?MNESIA_SELECTOR
                                             }).
