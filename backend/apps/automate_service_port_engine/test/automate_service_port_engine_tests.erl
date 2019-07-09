@@ -348,15 +348,23 @@ route_notification_targeted_to_all_users_on_public() ->
 emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
     Key = binary:list_to_bin(atom_to_list(?MODULE)),
     Value = Content, %% For simplicity
+
+    ToUserId = case TargetUserId of
+                   null -> null;
+                   _ ->
+                       {ok, ObfuscatedUserId} =
+                           ?APPLICATION:internal_user_id_to_service_port_user_id(TargetUserId,
+                                                                                 ServicePortId),
+                       ObfuscatedUserId
+               end,
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
                                         jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
                                                       , <<"key">> => Key
-                                                      , <<"to_user">> => TargetUserId
+                                                      , <<"to_user">> => ToUserId
                                                       , <<"value">> => Value
                                                       , <<"content">> => Content
                                                       })),
     {ok, #{ <<"content">> => Content
           , <<"key">> => Key
-          , <<"to_user">> => TargetUserId
           , <<"value">> => Value
           }}.

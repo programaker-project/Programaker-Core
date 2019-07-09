@@ -11,6 +11,7 @@
 
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
+        , service_port_user_id_to_internal_user_id/2
         , get_user_service_ports/1
         , list_bridge_channels/1
 
@@ -224,6 +225,29 @@ internal_user_id_to_service_port_user_id(UserId, ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+-spec service_port_user_id_to_internal_user_id(binary(), binary()) -> {ok, binary()}.
+service_port_user_id_to_internal_user_id(ServicePortUserId, ServicePortId) ->
+    Transaction = fun() ->
+                          MatchHead = #service_port_user_obfuscation_entry{ id={ '$1', '$2' }
+                                                                          , obfuscated_id='$3'
+                                                                          },
+                          Guards = [ { '==', '$2', ServicePortId }
+                                   , { '==', '$3', ServicePortUserId }
+                                   ],
+                          ResultColum = '$1',
+                          Matcher = [{MatchHead, Guards, [ResultColum]}],
+
+                          mnesia:select(?SERVICE_PORT_USERID_OBFUSCATION_TABLE, Matcher)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, [Result]} ->
+            {ok, Result};
+        {atomic, []} ->
+            {error, not_found};
+        %% Not expecting more than one result!
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
 
 -spec get_user_service_ports(binary()) -> {ok, [map()]}.
 get_user_service_ports(UserId) ->
