@@ -78,7 +78,12 @@ function to_field_name(type) {
 function argument_to_xml(arg: BlockArgument, index: number): string {
     const type = to_scratch_type(arg.type);
 
-    const default_value = (arg as StaticBlockArgument).default_value || 'Test';
+    let default_value = (arg as StaticBlockArgument).default_value;
+
+    if ((default_value === null) || (default_value === undefined) || (default_value === '')) {
+        default_value = "Test";
+    }
+
     if ((arg as StaticBlockArgument).class === 'list') {
         return `
         <field name="VAL${index}" variabletype="list" id=""></field>
