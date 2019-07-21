@@ -14,9 +14,6 @@ variables:
 services:
   - docker:dind
 
-before_script:
-  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-
 check-build-frontend:
   stage: build
   before_script:
@@ -32,9 +29,10 @@ build-frontend:
   stage: build
   before_script:
     - cd frontend
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - docker build -t "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA -f scripts/ci-partial.dockerfile .
-    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA
+    - docker build -t "$CI_REGISTRY"/plaza-project/plaza-core:frontend-$CI_COMMIT_SHA -f scripts/ci-partial.dockerfile .
+    - docker push "$CI_REGISTRY"/plaza-project/plaza-core:frontend-$CI_COMMIT_SHA
   only:
     - develop
     - master
