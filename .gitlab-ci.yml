@@ -40,9 +40,6 @@ build-frontend:
 
 build-backend:
   stage: build
-  # tags:
-  #   - erlang
-  #   - backend
   before_script:
     - cd backend
   script:
@@ -52,10 +49,6 @@ build-backend:
 
 test-backend-code:
   stage: test
-  # tags:
-  #   - erlang
-  #   - backend
-  #   - unit-tests
   dependencies:
     - build-backend
   before_script:
@@ -68,10 +61,6 @@ test-backend-code:
 
 dialyze-backend-code:
   stage: test
-  # tags:
-  #   - erlang
-  #   - backend
-  #   - unit-tests
   dependencies:
     - build-backend
   before_script:
