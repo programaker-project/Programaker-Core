@@ -1,4 +1,4 @@
-FROM plazaproject/ci-base-frontend:2a4e818161c1ea7cf6d2d5c7874523b5545684f6 as builder
+FROM plazaproject/ci-base-frontend:f11105a784435cb05241da6ee0b3c410bc39870c as builder
 ADD . /app
 RUN npm install . && make
 RUN npm run build-prod

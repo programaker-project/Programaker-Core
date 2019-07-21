@@ -55,8 +55,17 @@ stop_program(Pid) ->
 start_link(ProgramId) ->
     case automate_storage:get_program_from_id(ProgramId) of
         {ok, Program} ->
-            Pid = spawn_link(fun () -> init(ProgramId, Program) end),
-            {ok, Pid};
+            case automate_coordination:run_task_not_parallel(fun() -> init(ProgramId, Program) end,
+                                                             {?MODULE, ProgramId}) of
+                {started, Pid} ->
+                    true = link(Pid),
+                    {ok, Pid};
+                {already_running, Pid} ->
+                    true = link(Pid),
+                    {ok, Pid};
+                {error, Error} ->
+                    {error, Error}
+            end;
         {error, not_found} ->
             ok = automate_storage:delete_running_process(ProgramId),
             ignore
@@ -134,7 +143,6 @@ loop(State = #state{ check_next_action = CheckContinue
             self() ! {?TRIGGERED_BY_MONITOR, { MonitorId, Message }},
             loop(State);
         _Unknown ->
-            %% io:fwrite("\033[47;30mIgnoring ~p\033[0m~n", [Unknown]),
             loop(State)
     end.
 

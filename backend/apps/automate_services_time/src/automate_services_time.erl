@@ -73,8 +73,19 @@ get_how_to_enable(_) ->
 %% Timekeeping service
 %%====================================================================
 spawn_timekeeper() ->
-    {ok, ChannelId} = get_monitor_id(none),
-    {ok, spawn(fun () -> timekeeping_loop(ChannelId, {0, 0, 0}) end)}.
+    case automate_coordination:run_task_not_parallel(
+           fun() ->
+                   {ok, ChannelId} = get_monitor_id(none),
+                   {ok, _} = automate_service_registry:register_public(automate_services_time),
+                   timekeeping_loop(ChannelId, {0, 0, 0})
+           end, ?MODULE) of
+        {started, Pid} ->
+            {ok, Pid};
+        {already_running, Pid} ->
+            {ok, Pid};
+        {error, Error} ->
+            {error, Error}
+    end.
 
 
 timekeeping_loop(ChannelId, {LHour, LMin, LSec}) ->

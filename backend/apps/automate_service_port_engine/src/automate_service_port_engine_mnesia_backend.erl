@@ -11,12 +11,15 @@
 
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
+        , service_port_user_id_to_internal_user_id/2
         , get_user_service_ports/1
+        , list_bridge_channels/1
 
         , get_bridge_service/2
         , delete_bridge/2
 
         , get_or_create_monitor_id/2
+        , uninstall/0
         ]).
 
 -include("records.hrl").
@@ -29,7 +32,7 @@
 %% API
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% Service port identity table
     ok = case mnesia:create_table(?SERVICE_PORT_TABLE,
@@ -88,6 +91,16 @@ start_link() ->
                                 , ?SERVICE_PORT_CHANNEL_TABLE
                                 ], automate_configuration:get_table_wait_time()),
     ignore.
+
+
+-spec uninstall() -> ok.
+uninstall() ->
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_TABLE),
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_CONFIGURATION_TABLE),
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_USERID_OBFUSCATION_TABLE),
+    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_CHANNEL_TABLE),
+    ok.
+
 
 -spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, _, string()}.
 create_service_port(UserId, ServicePortName) ->
@@ -173,7 +186,7 @@ set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
 -spec list_custom_blocks(binary()) -> {ok, map()}.
 list_custom_blocks(UserId) ->
     Transaction = fun() ->
-                          Services = list_userid_ports(UserId),
+                          Services = list_userid_ports(UserId) ++ list_public_ports(),
                           {ok
                           , maps:from_list(
                               lists:filter(fun (X) -> X =/= none end,
@@ -212,6 +225,29 @@ internal_user_id_to_service_port_user_id(UserId, ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+-spec service_port_user_id_to_internal_user_id(binary(), binary()) -> {ok, binary()}.
+service_port_user_id_to_internal_user_id(ServicePortUserId, ServicePortId) ->
+    Transaction = fun() ->
+                          MatchHead = #service_port_user_obfuscation_entry{ id={ '$1', '$2' }
+                                                                          , obfuscated_id='$3'
+                                                                          },
+                          Guards = [ { '==', '$2', ServicePortId }
+                                   , { '==', '$3', ServicePortUserId }
+                                   ],
+                          ResultColum = '$1',
+                          Matcher = [{MatchHead, Guards, [ResultColum]}],
+
+                          mnesia:select(?SERVICE_PORT_USERID_OBFUSCATION_TABLE, Matcher)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, [Result]} ->
+            {ok, Result};
+        {atomic, []} ->
+            {error, not_found};
+        %% Not expecting more than one result!
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
 
 -spec get_user_service_ports(binary()) -> {ok, [map()]}.
 get_user_service_ports(UserId) ->
@@ -234,6 +270,24 @@ get_user_service_ports(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+-spec list_bridge_channels(binary()) -> {ok, [binary()]}.
+list_bridge_channels(ServicePortId) ->
+    Transaction = fun() ->
+                          MatchHead = #service_port_monitor_channel_entry{ id={'_', '$1'}
+                                                                         , channel_id='$2'
+                                                                         },
+                          Guard = {'==', '$1', ServicePortId},
+                          ResultColumn = '$2',
+                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+                          {ok, mnesia:select(?SERVICE_PORT_CHANNEL_TABLE, Matcher)}
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
 
 -spec get_bridge_service(binary(), binary()) -> {ok, undefined | binary()}.
 get_bridge_service(UserId, BridgeId) ->
@@ -294,6 +348,19 @@ list_userid_ports(UserId) ->
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
     mnesia:select(?SERVICE_PORT_TABLE, Matcher).
+
+list_public_ports() ->
+    MatchHead = #service_port_configuration{ id='$1'
+                                           , service_name='_'
+                                           , service_id='_'
+                                           , is_public='$2'
+                                           , blocks='_'
+                                           },
+    Guard = {'==', '$2', true},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    mnesia:select(?SERVICE_PORT_CONFIGURATION_TABLE, Matcher).
 
 list_blocks_for_port(PortId) ->
     case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, PortId) of

@@ -52,7 +52,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1557347946946,
+  "iteration": 1560978507369,
   "links": [],
   "panels": [
     {
@@ -171,7 +171,7 @@
         "#299c46"
       ],
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Channel engine supervisor",
+      "description": "Bridge engine supervisor",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -186,7 +186,7 @@
         "x": 4,
         "y": 1
       },
-      "id": 33,
+      "id": 55,
       "interval": null,
       "links": [],
       "mappingType": 1,
@@ -223,7 +223,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "automate_service{name=\"automate_channel_engine_sup\"}",
+          "expr": "automate_service{name=\"automate_service_port_engine_sup\"}",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -232,7 +232,7 @@
         }
       ],
       "thresholds": "0,0.5",
-      "title": "Channel engine",
+      "title": "Bridge engine",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -252,7 +252,7 @@
           "value": "1"
         }
       ],
-      "valueName": "avg"
+      "valueName": "current"
     },
     {
       "cacheTimeout": null,
@@ -328,99 +328,6 @@
       ],
       "thresholds": "0,0.5",
       "title": "Bot engine",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        },
-        {
-          "op": "=",
-          "text": "DOWN",
-          "value": "0"
-        },
-        {
-          "op": "=",
-          "text": "UP",
-          "value": "1"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": [
-        "#6d1f62",
-        "#d44a3a",
-        "#299c46"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
-      "description": "Monitor engine supervisor",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": false
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 4,
-        "x": 12,
-        "y": 1
-      },
-      "id": 30,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "automate_service{name=\"automate_monitor_engine_sup\"}",
-          "format": "time_series",
-          "instant": true,
-          "intervalFactor": 1,
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "thresholds": "0,0.5",
-      "title": "Monitor engine",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -677,7 +584,7 @@
         "#299c46"
       ],
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Channel engine monitor",
+      "description": "Channel engine supervisor",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -692,7 +599,7 @@
         "x": 4,
         "y": 2
       },
-      "id": 28,
+      "id": 33,
       "interval": null,
       "links": [],
       "mappingType": 1,
@@ -729,7 +636,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "automate_service{name=\"automate_channel_engine\"}",
+          "expr": "automate_service{name=\"automate_channel_engine_sup\"}",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -738,7 +645,7 @@
         }
       ],
       "thresholds": "0,0.5",
-      "title": "Channel engine monitor",
+      "title": "Channel engine",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -863,99 +770,6 @@
         "#299c46"
       ],
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Monitor engine supervisor",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": false
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 4,
-        "x": 12,
-        "y": 2
-      },
-      "id": 27,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "automate_service{name=\"automate_monitor_engine_runner_sup\"}",
-          "format": "time_series",
-          "instant": true,
-          "intervalFactor": 1,
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "thresholds": "0,0.5",
-      "title": "Monitor engine runner",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        },
-        {
-          "op": "=",
-          "text": "DOWN",
-          "value": "0"
-        },
-        {
-          "op": "=",
-          "text": "UP",
-          "value": "1"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": [
-        "#6d1f62",
-        "#d44a3a",
-        "#299c46"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
       "description": "REST API supervisor",
       "format": "none",
       "gauge": {
@@ -1049,7 +863,7 @@
         "#299c46"
       ],
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Bridge engine supervisor",
+      "description": "Channel engine monitor",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -1064,7 +878,7 @@
         "x": 4,
         "y": 3
       },
-      "id": 55,
+      "id": 28,
       "interval": null,
       "links": [],
       "mappingType": 1,
@@ -1101,7 +915,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "automate_service{name=\"automate_service_port_engine_sup\"}",
+          "expr": "automate_service{name=\"automate_channel_engine\"}",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -1110,7 +924,7 @@
         }
       ],
       "thresholds": "0,0.5",
-      "title": "Bridge engine",
+      "title": "Channel engine monitor",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -1130,7 +944,7 @@
           "value": "1"
         }
       ],
-      "valueName": "current"
+      "valueName": "avg"
     },
     {
       "cacheTimeout": null,
@@ -1210,192 +1024,6 @@
         {
           "op": "=",
           "text": "DOWN",
-          "value": "null"
-        },
-        {
-          "op": "=",
-          "text": "DOWN",
-          "value": "0"
-        },
-        {
-          "op": "=",
-          "text": "UP",
-          "value": "1"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": [
-        "#6d1f62",
-        "#d44a3a",
-        "#299c46"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
-      "description": "Telegram supervisor",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": false
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 4,
-        "x": 12,
-        "y": 3
-      },
-      "id": 32,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "automate_service{name=\"automate_services_telegram_sup\"}",
-          "format": "time_series",
-          "instant": true,
-          "intervalFactor": 1,
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "thresholds": "0,0.5",
-      "title": "Telegram",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        },
-        {
-          "op": "=",
-          "text": "DOWN",
-          "value": "0"
-        },
-        {
-          "op": "=",
-          "text": "UP",
-          "value": "1"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": [
-        "#6d1f62",
-        "#d44a3a",
-        "#299c46"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
-      "description": "Telegram demux service",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": false
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 4,
-        "x": 12,
-        "y": 4
-      },
-      "id": 26,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "automate_service{name=\"automate_services_telegram_demux\"}",
-          "format": "time_series",
-          "instant": true,
-          "intervalFactor": 1,
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "thresholds": "0,0.5",
-      "title": "Telegram demux",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
           "value": "null"
         },
         {
@@ -2176,109 +1804,6 @@
         {
           "format": "short",
           "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "decimals": null,
-      "description": "Registered chats",
-      "fill": 1,
-      "gridPos": {
-        "h": 5,
-        "w": 10,
-        "x": 14,
-        "y": 17
-      },
-      "id": 51,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "percentage": false,
-      "pointradius": 0.5,
-      "points": true,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "Chat services",
-          "yaxis": 2
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "automate_chat_count",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "Chats",
-          "refId": "A"
-        },
-        {
-          "expr": "automate_chat_service_count",
-          "format": "time_series",
-          "instant": false,
-          "intervalFactor": 1,
-          "legendFormat": "Chat services",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Chat channels",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": 0,
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "decimals": 0,
-          "format": "short",
-          "label": "",
           "logBase": 1,
           "max": null,
           "min": null,
@@ -3695,5 +3220,5 @@
   "timezone": "browser",
   "title": "Plaza",
   "uid": "iKcIpW8mk",
-  "version": 9
+  "version": 11
 }

@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_services_telegram APP API
+%% @doc automate_coordination APP
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_services_telegram_app).
+-module(automate_coordination_app).
 
 -behaviour(application).
 
@@ -15,14 +15,7 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-    case automate_services_telegram:is_enabled() of
-        true ->
-            {ok, _} = automate_service_registry:register_public(automate_services_telegram),
-            ok = automate_services_telegram_chat_registry:start_link(),
-            automate_services_telegram_sup:start_link();
-        false ->
-            {ok, self()}
-    end.
+    automate_coordination_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->

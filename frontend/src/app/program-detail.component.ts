@@ -10,8 +10,6 @@ import * as progbar from './ui/progbar';
 /// <reference path="./blocks/blockly-core.d.ts" />
 import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
 import { MonitorService } from './monitor.service';
-import { ChatService } from './chat.service';
-import { Chat } from './chat';
 import { CustomBlockService } from './custom_block.service';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -23,7 +21,7 @@ import { TemplateService } from './templates/template.service';
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [CustomBlockService, MonitorService, ProgramService, ChatService, TemplateService],
+    providers: [CustomBlockService, MonitorService, ProgramService, TemplateService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
@@ -46,7 +44,6 @@ export class ProgramDetailComponent implements OnInit {
         private monitorService: MonitorService,
         private programService: ProgramService,
         private customBlockService: CustomBlockService,
-        private chatService: ChatService,
         private route: ActivatedRoute,
         private location: Location,
         private router: Router,
@@ -85,19 +82,16 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     prepareWorkspace(): Promise<void> {
-        return this.chatService.getAvailableChats().then((chats: Chat[]) => {
-            return new Toolbox(
-                this.monitorService,
-                this.customBlockService,
-                chats,
-                this.dialog,
-                this.templateService,
-            )
-                .inject()
-                .then(([toolbox, registrations, controller]) => {
-                    this.injectWorkspace(toolbox, registrations, controller);
-                });
-        });
+        return new Toolbox(
+            this.monitorService,
+            this.customBlockService,
+            this.dialog,
+            this.templateService,
+        )
+            .inject()
+            .then(([toolbox, registrations, controller]) => {
+                this.injectWorkspace(toolbox, registrations, controller);
+            });
     }
 
     injectWorkspace(toolbox: HTMLElement, registrations: Function[], controller: ToolboxController) {

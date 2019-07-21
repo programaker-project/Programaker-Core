@@ -7,6 +7,7 @@
   {applications, [ automate_service_registry
                  , automate_channel_engine
                  , automate_monitor_engine
+                 , automate_configuration
                  ]},
   {env, [
         ]},

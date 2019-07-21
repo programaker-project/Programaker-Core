@@ -29,7 +29,7 @@
 %% API
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% Live channels table
     ok = case mnesia:create_table(?SERVICE_REGISTRY_TABLE,
@@ -58,7 +58,7 @@ start_link() ->
                                   [ { attributes, record_info(fields, service_configuration_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, service_configuration_entry }
-                                  , { type, bag }
+                                  , { type, set }
                                   ]) of
              { atomic, ok } ->
                  ok;

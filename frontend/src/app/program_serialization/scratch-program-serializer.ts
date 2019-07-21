@@ -165,30 +165,6 @@ export default class ScratchProgramSerializer {
 
     private replaceMonitors(element) {
         switch (element.type) {
-
-            case "chat_whenreceivecommand":
-                // This implies a call to a monitor
-                {
-                    element.type = "wait_for_monitor";
-                    element.args = {
-                        "monitor_id": { "from_service": "c8062378-9b53-4962-b4f4-e5a71e34d335" }, // Telegram monitor ID
-                        "monitor_expected_value": element.args[0]
-                    }
-                    break;
-                }
-
-            case "chat_whenreceiveanycommandtovar":
-                // This implies a call to a monitor and a subsequent save of its value.
-                {
-                    element.type = "wait_for_monitor";
-                    element.args = {
-                        "monitor_id": { "from_service": "c8062378-9b53-4962-b4f4-e5a71e34d335" }, // Telegram monitor ID
-                        "monitor_expected_value": "any_value",
-                        "monitor_save_value_to": element.args[0],
-                    }
-                    break;
-                }
-
             case "time_trigger_at":
                 // This implies a call to a monitor
                 {

@@ -72,6 +72,10 @@ export class CustomBlockService {
         let options;
         try {
             options = await this.getArgOptions(dynamicArg, block);
+
+            if (options.length === 0){
+                throw Error("No options found for dynamic argument: " + arg);
+            }
         }
         catch(exception) {
             console.warn(exception);

@@ -7,8 +7,11 @@
    {applications, [ kernel
                   , stdlib
                   , mnesia
+                  , automate_channel_engine
                   , automate_service_registry
                   , automate_stats
+                  , automate_storage
+                  , automate_configuration
                   ]},
    {env, [
          ]},

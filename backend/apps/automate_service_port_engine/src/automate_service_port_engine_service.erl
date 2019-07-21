@@ -29,8 +29,22 @@ get_monitor_id(UserId, [ServicePortId]) ->
     ?BACKEND:get_or_create_monitor_id(UserId, ServicePortId).
 
 call(FunctionName, Values, Thread, UserId, [ServicePortId]) ->
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
+                                                                              UserId),
+    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
+    LastMonitorValue = case automate_bot_engine_variables:get_last_monitor_value(
+                              Thread, MonitorId) of
+                           {ok, Value} -> Value;
+                           {error, not_found} -> null
+                       end,
+
     {ok, ObfuscatedUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
-    {ok, #{ <<"result">> := Result }} = automate_service_port_engine:call_service_port(ServicePortId, FunctionName, Values, ObfuscatedUserId),
+    {ok, #{ <<"result">> := Result }} = automate_service_port_engine:call_service_port(
+                                          ServicePortId,
+                                          FunctionName,
+                                          Values,
+                                          ObfuscatedUserId,
+                                          #{ <<"last_monitor_value">> => LastMonitorValue}),
     {ok, Thread, Result}.
 
 %% Is enabled for all users

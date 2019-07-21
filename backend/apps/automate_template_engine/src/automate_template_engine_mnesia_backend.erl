@@ -23,7 +23,7 @@
 %% API
 %%====================================================================
 start_link() ->
-    Nodes = [node()],
+    Nodes = automate_configuration:get_sync_peers(),
 
     %% Service port identity table
     ok = case mnesia:create_table(?TEMPLATE_TABLE,

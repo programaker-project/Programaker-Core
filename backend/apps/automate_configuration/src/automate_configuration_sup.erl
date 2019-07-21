@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_chat_registry top level supervisor.
+%% @doc automate_configuration top level supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_chat_registry_sup).
+-module(automate_configuration_sup).
 
 -behaviour(supervisor).
 
@@ -29,15 +29,15 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-
-    {ok, { {one_for_all, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD},
-           [ #{ id => automate_chat_registry_mnesia_backend
-              , start => {automate_chat_registry_mnesia_backend, start_link, []}
+    {ok, { {one_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD},
+           [ #{ id => automate_configuration_distributed
+              , start => {automate_configuration_distributed, start_link, []}
               , restart => permanent
               , shutdown => 2000
               , type => worker
-              , modules => [automate_chat_registry_mnesia_backend]
+              , modules => [automate_configuration_distributed]
               }
+
            ]} }.
 
 %%====================================================================
