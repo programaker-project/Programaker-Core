@@ -14,6 +14,9 @@ variables:
 services:
   - docker:dind
 
+before_script:
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
 build-addons:
   stage: build
   # tags:
@@ -23,15 +26,28 @@ build-addons:
     - docker build -t "$DOCKER_IMAGE_ADDONS" addons
     - docker run -i --rm -v `pwd`/addons:/app "$DOCKER_IMAGE_ADDONS"
 
-build-frontend:
+check-build-frontend:
   stage: build
-  # tags:
-  #   - javascript
-  #   - frontend
   before_script:
     - cd frontend
   script:
-    - docker build --target builder -t "$DOCKER_IMAGE_FRONTEND" -f scripts/ci-partial.dockerfile .
+    - docker build -t "$DOCKER_IMAGE_FRONTEND" -f scripts/ci-partial.dockerfile .
+  except:
+    - develop
+    - master
+    - push-docker-images-on-ci
+
+build-frontend:
+  stage: build
+  before_script:
+    - cd frontend
+  script:
+    - docker build -t "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA -f scripts/ci-partial.dockerfile .
+    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA
+  only:
+    - develop
+    - master
+    - push-docker-images-on-ci
 
 build-backend:
   stage: build
@@ -42,6 +58,8 @@ build-backend:
     - cd backend
   script:
     - docker build -t "$DOCKER_IMAGE_BACKEND" -f scripts/ci-partial.dockerfile .
+  except:
+    - push-docker-images-on-ci
 
 test-backend-code:
   stage: test
@@ -56,6 +74,8 @@ test-backend-code:
   script:
     - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
     - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 eunit
+  except:
+    - push-docker-images-on-ci
 
 dialyze-backend-code:
   stage: test
@@ -70,4 +90,5 @@ dialyze-backend-code:
   script:
     - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
     - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 dialyzer
-
+  except:
+    - push-docker-images-on-ci
