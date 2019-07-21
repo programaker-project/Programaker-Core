@@ -17,15 +17,6 @@ services:
 before_script:
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
-build-addons:
-  stage: build
-  # tags:
-  #   - javascript
-  #   - browser-addon
-  script:
-    - docker build -t "$DOCKER_IMAGE_ADDONS" addons
-    - docker run -i --rm -v `pwd`/addons:/app "$DOCKER_IMAGE_ADDONS"
-
 check-build-frontend:
   stage: build
   before_script:
