@@ -14,7 +14,9 @@ variables:
 services:
   - docker:dind
 
-check-build-frontend:
+## Frontend
+# Non-pushing
+nopush-build-frontend:
   stage: build
   before_script:
     - cd frontend
@@ -25,6 +27,7 @@ check-build-frontend:
     - master
     - push-docker-images-on-ci
 
+# Pushing
 build-frontend:
   stage: build
   before_script:
@@ -36,16 +39,59 @@ build-frontend:
   only:
     - develop
     - master
-    - push-docker-images-on-ci
 
-build-backend:
+## Backend
+# Non-pushing
+nopush-build-backend:
   stage: build
   before_script:
     - cd backend
   script:
     - docker build -t "$DOCKER_IMAGE_BACKEND" -f scripts/ci-partial.dockerfile .
   except:
-    - push-docker-images-on-ci
+    - master
+    - develop
+
+nopush-test-backend:
+  stage: test
+  dependencies:
+    - nopush-build-backend
+  before_script:
+    - cd backend
+  script:
+    - docker build -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
+    - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 eunit
+  except:
+    - master
+    - develop
+
+nopush-dialyze-backend:
+  stage: test
+  dependencies:
+    - nopush-build-backend
+  before_script:
+    - cd backend
+  script:
+    - docker build -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
+    - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
+    - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 dialyzer
+  except:
+    - master
+    - develop
+
+# Pushing
+build-backend:
+  stage: build
+  before_script:
+    - cd backend
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA -f scripts/ci-partial.dockerfile .
+    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA
+  only:
+    - develop
+    - master
+    - push-docker-images-on-ci # TODO: Remove
 
 test-backend-code:
   stage: test
@@ -53,11 +99,13 @@ test-backend-code:
     - build-backend
   before_script:
     - cd backend
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
-    - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 eunit
-  except:
-    - push-docker-images-on-ci
+    - docker run -t --rm "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA rebar3 eunit
+  only:
+    - master
+    - develop
+    - push-docker-images-on-ci # TODO: Remove
 
 dialyze-backend-code:
   stage: test
@@ -65,8 +113,10 @@ dialyze-backend-code:
     - build-backend
   before_script:
     - cd backend
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
-    - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 dialyzer
-  except:
-    - push-docker-images-on-ci
+    - docker run -t --rm "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA rebar3 dialyzer
+  only:
+    - master
+    - develop
+    - push-docker-images-on-ci # TODO: Remove
