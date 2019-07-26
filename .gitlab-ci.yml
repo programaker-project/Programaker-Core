@@ -79,27 +79,27 @@ build-backend:
     - docker build -t $DOCKER_IMAGE_BACKEND -f scripts/ci-partial.dockerfile .
     - docker save $DOCKER_IMAGE_BACKEND -o ../tmp_docker_images/backend.tar
 
-test-backend:
-  stage: test
-  dependencies:
-    - build-backend
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker load -i tmp_docker_images/backend.tar
-    - cd backend
-  script:
-    - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 eunit
+# test-backend:
+#   stage: test
+#   dependencies:
+#     - build-backend
+#   before_script:
+#     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+#     - docker load -i tmp_docker_images/backend.tar
+#     - cd backend
+#   script:
+#     - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 eunit
 
-dialyze-backend:
-  stage: test
-  dependencies:
-    - build-backend
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker load -i tmp_docker_images/backend.tar
-    - cd backend
-  script:
-    - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 dialyzer
+# dialyze-backend:
+#   stage: test
+#   dependencies:
+#     - build-backend
+#   before_script:
+#     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+#     - docker load -i tmp_docker_images/backend.tar
+#     - cd backend
+#   script:
+#     - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 dialyzer
 
 optimize-image-backend:
   stage: optimize-image
