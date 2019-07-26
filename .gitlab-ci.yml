@@ -3,6 +3,7 @@ image: docker:latest
 stages:
   - build
   - test
+  - tag
 
 variables:
   DOCKER_IMAGE_ADDONS: plaza-core-addons
@@ -25,7 +26,7 @@ nopush-build-frontend:
   except:
     - develop
     - master
-    - push-docker-images-on-ci
+    - push-docker-images-on-ci # TODO: Remove
 
 # Pushing
 build-frontend:
@@ -39,6 +40,23 @@ build-frontend:
   only:
     - develop
     - master
+    - push-docker-images-on-ci # TODO: Remove
+
+tag-frontend:
+  stage: tag
+  dependencies:
+    - build-frontend
+  before_script:
+    - cd frontend
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker pull "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA
+    - docker tag "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_REF_NAME
+    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_REF_NAME
+  only:
+    - develop
+    - master
+    - push-docker-images-on-ci # TODO: Remove
 
 ## Backend
 # Non-pushing
@@ -51,6 +69,7 @@ nopush-build-backend:
   except:
     - master
     - develop
+    - push-docker-images-on-ci # TODO: Remove
 
 nopush-test-backend:
   stage: test
@@ -64,6 +83,7 @@ nopush-test-backend:
   except:
     - master
     - develop
+    - push-docker-images-on-ci # TODO: Remove
 
 nopush-dialyze-backend:
   stage: test
@@ -78,6 +98,7 @@ nopush-dialyze-backend:
   except:
     - master
     - develop
+    - push-docker-images-on-ci # TODO: Remove
 
 # Pushing
 build-backend:
@@ -93,7 +114,7 @@ build-backend:
     - master
     - push-docker-images-on-ci # TODO: Remove
 
-test-backend-code:
+test-backend:
   stage: test
   dependencies:
     - build-backend
@@ -107,7 +128,7 @@ test-backend-code:
     - develop
     - push-docker-images-on-ci # TODO: Remove
 
-dialyze-backend-code:
+dialyze-backend:
   stage: test
   dependencies:
     - build-backend
@@ -119,4 +140,22 @@ dialyze-backend-code:
   only:
     - master
     - develop
+    - push-docker-images-on-ci # TODO: Remove
+
+tag-backend:
+  stage: tag
+  dependencies:
+    - test-backend
+    - test-backend
+    - dialyze-backend
+  before_script:
+    - cd backend
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker pull "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA
+    - docker tag "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_REF_NAME
+    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_REF_NAME
+  only:
+    - develop
+    - master
     - push-docker-images-on-ci # TODO: Remove
