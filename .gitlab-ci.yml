@@ -3,7 +3,8 @@ image: docker:latest
 stages:
   - build
   - test
-  - tag
+  - push-commit
+  - push-branch  # To avoid duplicating the upload do it sequentially
 
 variables:
   DOCKER_IMAGE_ADDONS: plaza-core-addons
@@ -16,41 +17,38 @@ services:
   - docker:dind
 
 ## Frontend
-# Non-pushing
-nopush-build-frontend:
-  stage: build
-  before_script:
-    - cd frontend
-  script:
-    - docker build -t "$DOCKER_IMAGE_FRONTEND" -f scripts/ci-partial.dockerfile .
-  except:
-    - develop
-    - master
-    - push-docker-images-on-ci # TODO: Remove
-
-# Pushing
 build-frontend:
   stage: build
   before_script:
+    - mkdir -p tmp_docker_images/ || true
     - cd frontend
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  artifacts:
+    paths:
+      - tmp_docker_images/
   script:
     - docker build -t "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA -f scripts/ci-partial.dockerfile .
+    - docker save "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA -o ../tmp_docker_images/frontend.tar
+
+push-frontend:
+  stage: push-commit
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/frontend.tar
+    - cd frontend
+  script:
     - docker push "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA
   only:
     - develop
     - master
     - push-docker-images-on-ci # TODO: Remove
 
-tag-frontend:
-  stage: tag
-  dependencies:
-    - build-frontend
+tag-frontend-branch:
+  stage: push-branch
   before_script:
-    - cd frontend
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/frontend.tar
+    - cd frontend
   script:
-    - docker pull "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA
     - docker tag "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_REF_NAME
     - docker push "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_REF_NAME
   only:
@@ -59,100 +57,60 @@ tag-frontend:
     - push-docker-images-on-ci # TODO: Remove
 
 ## Backend
-# Non-pushing
-nopush-build-backend:
-  stage: build
-  before_script:
-    - cd backend
-  script:
-    - docker build -t "$DOCKER_IMAGE_BACKEND" -f scripts/ci-partial.dockerfile .
-  except:
-    - master
-    - develop
-    - push-docker-images-on-ci # TODO: Remove
-
-nopush-test-backend:
-  stage: test
-  dependencies:
-    - nopush-build-backend
-  before_script:
-    - cd backend
-  script:
-    - docker build -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
-    - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 eunit
-  except:
-    - master
-    - develop
-    - push-docker-images-on-ci # TODO: Remove
-
-nopush-dialyze-backend:
-  stage: test
-  dependencies:
-    - nopush-build-backend
-  before_script:
-    - cd backend
-  script:
-    - docker build -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
-    - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
-    - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 dialyzer
-  except:
-    - master
-    - develop
-    - push-docker-images-on-ci # TODO: Remove
-
-# Pushing
 build-backend:
   stage: build
+  artifacts:
+    paths:
+      - tmp_docker_images/
   before_script:
-    - cd backend
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - mkdir -p tmp_docker_images/ || true
+    - cd backend
   script:
     - docker build -t "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA -f scripts/ci-partial.dockerfile .
+    - docker save "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA -o ../tmp_docker_images/backend.tar
+
+test-backend:
+  stage: test
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/backend.tar
+    - cd backend
+  script:
+    - docker run -t --rm "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA rebar3 eunit
+
+dialyze-backend:
+  stage: test
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/backend.tar
+    - cd backend
+  script:
+    - docker run -t --rm "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA rebar3 dialyzer
+
+push-backend:
+  stage: push-commit
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/backend.tar
+    - cd backend
+  script:
     - docker push "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA
   only:
     - develop
     - master
     - push-docker-images-on-ci # TODO: Remove
 
-test-backend:
-  stage: test
+tag-backend-branch:
+  stage: push-branch
   dependencies:
     - build-backend
+    - push-backend  # To avoid duplicating the upload do it sequentially
   before_script:
-    - cd backend
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  script:
-    - docker run -t --rm "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA rebar3 eunit
-  only:
-    - master
-    - develop
-    - push-docker-images-on-ci # TODO: Remove
-
-dialyze-backend:
-  stage: test
-  dependencies:
-    - build-backend
-  before_script:
+    - docker load -i tmp_docker_images/backend.tar
     - cd backend
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - docker run -t --rm "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA rebar3 dialyzer
-  only:
-    - master
-    - develop
-    - push-docker-images-on-ci # TODO: Remove
-
-tag-backend:
-  stage: tag
-  dependencies:
-    - test-backend
-    - test-backend
-    - dialyze-backend
-  before_script:
-    - cd backend
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  script:
-    - docker pull "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA
     - docker tag "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_REF_NAME
     - docker push "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_REF_NAME
   only:
