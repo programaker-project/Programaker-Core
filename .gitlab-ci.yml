@@ -3,71 +3,148 @@ image: docker:latest
 stages:
   - build
   - test
+  - optimize-image
+  - push-commit
+  - push-branch  # To avoid duplicating the upload do it sequentially
 
 variables:
-  DOCKER_IMAGE_ADDONS: plaza-core-addons
   DOCKER_IMAGE_FRONTEND: plaza-core-frontend
   DOCKER_IMAGE_BACKEND: plaza-core-backend
-  DOCKER_IMAGE_BACKEND_TEST: plaza-core-backend-test
-  DOCKER_BACKEND_CI_BASE: plazaproject/ci-base-backend:52db1adcf019a16a12fd9fe4d6c1c2534d68b561
+  DOCKER_IMAGE_BACKEND_OPTIMIZED: plaza-core-backend-optimized
 
 services:
   - docker:dind
 
-build-addons:
-  stage: build
-  # tags:
-  #   - javascript
-  #   - browser-addon
-  script:
-    - docker build -t "$DOCKER_IMAGE_ADDONS" addons
-    - docker run -i --rm -v `pwd`/addons:/app "$DOCKER_IMAGE_ADDONS"
-
+## Frontend
 build-frontend:
   stage: build
-  # tags:
-  #   - javascript
-  #   - frontend
   before_script:
+    - mkdir -p tmp_docker_images/ || true
+    - cd frontend
+  artifacts:
+    paths:
+      - tmp_docker_images/
+    expire_in: 24h # No need to keep it around
+  script:
+    - docker build -t $DOCKER_IMAGE_FRONTEND -f scripts/ci-partial.dockerfile .
+    - docker save $DOCKER_IMAGE_FRONTEND -o ../tmp_docker_images/frontend.tar
+
+# On frontend there's NO NEED for optimizing the image
+# as it's minified by default (while there are no tests)
+
+push-frontend:
+  stage: push-commit
+  dependencies:
+    - build-frontend
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/frontend.tar
     - cd frontend
   script:
-    - docker build --target builder -t "$DOCKER_IMAGE_FRONTEND" -f scripts/ci-partial.dockerfile .
+    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA
+    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA
+  only:
+    - develop
+    - master
 
+tag-frontend-branch:
+  stage: push-branch
+  dependencies:
+    - build-frontend
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/frontend.tar
+    - cd frontend
+  script:
+    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_REF_NAME
+    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_REF_NAME
+  only:
+    - develop
+    - master
+
+## Backend
 build-backend:
   stage: build
-  # tags:
-  #   - erlang
-  #   - backend
+  artifacts:
+    paths:
+      - tmp_docker_images/
+    expire_in: 24h # No need to keep it around
   before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - mkdir -p tmp_docker_images/ || true
     - cd backend
   script:
-    - docker build -t "$DOCKER_IMAGE_BACKEND" -f scripts/ci-partial.dockerfile .
+    - docker build -t $DOCKER_IMAGE_BACKEND -f scripts/ci-partial.dockerfile .
+    - docker save $DOCKER_IMAGE_BACKEND -o ../tmp_docker_images/backend.tar
 
-test-backend-code:
+test-backend:
   stage: test
-  # tags:
-  #   - erlang
-  #   - backend
-  #   - unit-tests
   dependencies:
     - build-backend
   before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/backend.tar
     - cd backend
   script:
-    - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
-    - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 eunit
+    - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 eunit
 
-dialyze-backend-code:
+dialyze-backend:
   stage: test
-  # tags:
-  #   - erlang
-  #   - backend
-  #   - unit-tests
   dependencies:
     - build-backend
   before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/backend.tar
     - cd backend
   script:
-    - docker build --cache-from "$DOCKER_BACKEND_CI_BASE" -t "$DOCKER_IMAGE_BACKEND_TEST" -f scripts/ci-partial.dockerfile .
-    - docker run -t --rm "$DOCKER_IMAGE_BACKEND_TEST" rebar3 dialyzer
+    - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 dialyzer
 
+optimize-image-backend:
+  stage: optimize-image
+  dependencies:
+    - build-backend
+  artifacts:
+    paths:
+      - tmp_docker_images_optimized/ # Don't carry the unoptimized around
+    expire_in: 24h # No need to keep it around
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/backend.tar
+    - mkdir -p tmp_docker_images_optimized/ || true
+    - cd backend
+  script:
+    - sh ../utils/ci-preparations/optimize-backend-image.sh $DOCKER_IMAGE_BACKEND $DOCKER_IMAGE_BACKEND_OPTIMIZED
+    - docker save $DOCKER_IMAGE_BACKEND_OPTIMIZED -o ../tmp_docker_images_optimized/backend-optimized.tar
+  only:
+    - develop
+    - master
+
+push-backend:
+  stage: push-commit
+  dependencies:
+    - optimize-image-backend
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images_optimized/backend-optimized.tar
+    - cd backend
+  script:
+    - docker tag $DOCKER_IMAGE_BACKEND_OPTIMIZED "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA
+    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA
+  only:
+    - develop
+    - master
+
+tag-backend-branch:
+  stage: push-branch
+  dependencies:
+    - optimize-image-backend
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images_optimized/backend-optimized.tar
+    - cd backend
+  script:
+    - docker tag $DOCKER_IMAGE_BACKEND_OPTIMIZED "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_REF_NAME
+    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_REF_NAME
+  only:
+    - develop
+    - master
