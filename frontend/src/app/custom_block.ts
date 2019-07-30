@@ -135,7 +135,14 @@ export function get_block_category(block: CustomBlock): string {
         return 'shape_statement';
     }
     else if (block.block_type == 'getter') {
-        return 'output_string'; // TODO: adapt to the appropriate type
+        switch (block.block_result_type) {
+            case 'boolean':
+                return 'output_boolean';
+            case 'number':
+                return 'output_boolean';
+            default:
+                return 'output_string';
+        }
     }
     else {
         console.log('Unknown block type:', block.block_type);
