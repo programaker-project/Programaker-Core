@@ -69,7 +69,7 @@ export class CustomBlockService {
         }
 
         const dynamicArg = arg as DynamicBlockArgument;
-        let options;
+        let options : [string, string][];
         try {
             options = await this.getArgOptions(dynamicArg, block);
 
@@ -79,9 +79,9 @@ export class CustomBlockService {
         }
         catch(exception) {
             console.warn(exception);
-            (dynamicArg as any).default_value = "Not found";
-            return dynamicArg as any as StaticBlockArgument;
+            options = [["Not found", "__plaza_internal_not_found"]];
         }
+
         const resolved = dynamicArg as ResolvedDynamicBlockArgument;
         resolved.options = options;
 
