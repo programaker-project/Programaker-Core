@@ -1,11 +1,10 @@
 {application, automate_logging,
- [ {description, "Logging service to send data to logstash."},
+ [ {description, "Logging service forwarder."},
    {vsn, "0.0.0"},
    {registered, []},
    {mod, { automate_logging_app, [] }},
    {applications, [ kernel
                   , stdlib
-                  , prometheus
                   , automate_configuration
                   , inets
                   ]},

@@ -44,15 +44,13 @@ register_service_port(ServicePortId) ->
 -spec call_service_port(binary(), binary(), binary(), binary(), map()) -> {ok, any()}.
 call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
     ?LOGGING:log_call_to_bridge(ServicePortId,FunctionName,Arguments,UserId,ExtraData),
-    Result = ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
+    ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
                                         , <<"user_id">> => UserId
                                         , <<"value">> => #{ <<"function_name">> => FunctionName
                                                           , <<"arguments">> => Arguments
                                                           }
                                         , <<"extra_data">> => ExtraData
-                                        }),
-    io:fwrite("NEW CALL TO BRIDGE: ~p ~p ~n",[ServicePortId,FunctionName]),
-    Result.
+                                        }).
 
 -spec get_how_to_enable(binary(), binary()) -> {ok, any()}.
 get_how_to_enable(ServicePortId, UserId) ->
@@ -166,13 +164,14 @@ callback_bridge(UserId, BridgeId, Callback) ->
                                    }).
 
 
+-spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
 get_channel_origin_bridge(ChannelId) ->
-  case automate_services_time:get_monitor_id(none) of
-      {ok, ChannelId} -> 
-        {ok, automate_services_time:get_uuid()};
-      _ ->
-        ?BACKEND:get_channel_origin_bridge(ChannelId)
-  end.
+    case automate_services_time:get_monitor_id(none) of
+        {ok, ChannelId} -> 
+            {ok, automate_services_time:get_uuid()};
+        _ ->
+            ?BACKEND:get_channel_origin_bridge(ChannelId)
+    end.
 
 %%====================================================================
 %% Internal functions

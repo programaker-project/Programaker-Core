@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_stats top level supervisor.
+%% @doc automate_logging top level supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
