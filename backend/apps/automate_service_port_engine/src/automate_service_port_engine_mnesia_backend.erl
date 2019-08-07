@@ -20,6 +20,7 @@
 
         , get_or_create_monitor_id/2
         , uninstall/0
+        , get_channel_origin_bridge/1
         ]).
 
 -include("records.hrl").
@@ -333,6 +334,27 @@ get_or_create_monitor_id(UserId, ServicePortId) ->
                     {error, Reason, mnesia:error_description(Reason)}
             end
     end.
+
+get_channel_origin_bridge(ChannelId) ->
+    Transaction = fun() ->
+      MatchHead = #service_port_monitor_channel_entry{ id='$1'
+                                                     , channel_id='$2'
+                                                     },
+      Guard = {'==', '$2', ChannelId},
+      ResultColumn = '$1',
+      Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+      mnesia:select(?SERVICE_PORT_CHANNEL_TABLE, Matcher)
+    end,
+    case mnesia:transaction(Transaction) of
+        {atomic, []} ->
+            {error, not_found};
+        {atomic, [{_UserId, BridgeId}]} ->
+            {ok, BridgeId};
+        {aborted, Reason} ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 
 %%====================================================================
 %% Internal functions

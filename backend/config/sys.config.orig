@@ -3,4 +3,13 @@
                           %% Commenting the following line removes the authentication on /metrics
                         , { metrics_secret, <<"@INSERT HERE RANDOM SECRET FOR METRICS@">> }
                         ]}
+%% If you uncomment this you can add elastic search logs and exclude some channels.
+%%,  { automate_logging, [ { endpoint, [ #{ "type" => elasticsearch
+%%                                        , "url" => "URL" 
+%%                                        , "index_prefix" => "plaza"
+%%                                        , "exclude_bridges" => [ <<"0093325b-373f-4f1c-bace-4532cce79df4">> %% Time
+%%                                                               ] 
+%%                                        }
+%%                                     ] }
+%%					   ]}
 ].

@@ -20,12 +20,14 @@
         , get_user_service_ports/1
         , delete_bridge/2
         , callback_bridge/3
+        , get_channel_origin_bridge/1
         ]).
 
 -include("records.hrl").
 
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
 -define(ROUTER, automate_service_port_engine_router).
+-define(LOGGING, automate_logging).
 
 %%====================================================================
 %% API
@@ -41,13 +43,16 @@ register_service_port(ServicePortId) ->
 
 -spec call_service_port(binary(), binary(), binary(), binary(), map()) -> {ok, any()}.
 call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
-    ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
+    ?LOGGING:log_call_to_bridge(ServicePortId,FunctionName,Arguments,UserId,ExtraData),
+    Result = ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
                                         , <<"user_id">> => UserId
                                         , <<"value">> => #{ <<"function_name">> => FunctionName
                                                           , <<"arguments">> => Arguments
                                                           }
                                         , <<"extra_data">> => ExtraData
-                                        }).
+                                        }),
+    io:fwrite("NEW CALL TO BRIDGE: ~p ~p ~n",[ServicePortId,FunctionName]),
+    Result.
 
 -spec get_how_to_enable(binary(), binary()) -> {ok, any()}.
 get_how_to_enable(ServicePortId, UserId) ->
@@ -159,6 +164,15 @@ callback_bridge(UserId, BridgeId, Callback) ->
                                    , <<"value">> => #{ <<"callback">> => Callback
                                                      }
                                    }).
+
+
+get_channel_origin_bridge(ChannelId) ->
+  case automate_services_time:get_monitor_id(none) of
+      {ok, ChannelId} -> 
+        {ok, automate_services_time:get_uuid()};
+      _ ->
+        ?BACKEND:get_channel_origin_bridge(ChannelId)
+  end.
 
 %%====================================================================
 %% Internal functions
