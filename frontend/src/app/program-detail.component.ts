@@ -113,7 +113,7 @@ export class ProgramDetailComponent implements OnInit {
             media: '../media/',
             readOnly: false,
             rtl: rtl,
-            scrollbars: false,
+            scrollbars: true,
             toolbox: toolbox,
             toolboxPosition: 'start',
             horizontalLayout: false,
