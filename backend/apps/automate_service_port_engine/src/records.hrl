@@ -72,7 +72,7 @@
 
 -record(service_port_monitor_channel_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% user id
                                                     , binary() | ?MNESIA_SELECTOR  %% bridge id
-                                                    }
+                                                    } | ?MNESIA_SELECTOR
                                             , channel_id :: binary() | ?MNESIA_SELECTOR
                                             }).
 

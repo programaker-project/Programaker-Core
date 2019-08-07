@@ -108,7 +108,6 @@ get_listeners_on_channel(ChannelId) ->
             lists:foreach(fun unlink_listener/1, DeadListeners),
             {ok, AliveListeners}
     end.
-
 %%====================================================================
 %% Internal functions
 %%====================================================================
