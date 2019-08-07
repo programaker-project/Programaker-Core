@@ -335,17 +335,18 @@ get_or_create_monitor_id(UserId, ServicePortId) ->
             end
     end.
 
+-spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
 get_channel_origin_bridge(ChannelId) ->
     Transaction = fun() ->
-      MatchHead = #service_port_monitor_channel_entry{ id='$1'
-                                                     , channel_id='$2'
-                                                     },
-      Guard = {'==', '$2', ChannelId},
-      ResultColumn = '$1',
-      Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+                          MatchHead = #service_port_monitor_channel_entry{ id='$1'
+                                                                         , channel_id='$2'
+                                                                         },
+                          Guard = {'==', '$2', ChannelId},
+                          ResultColumn = '$1',
+                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
-      mnesia:select(?SERVICE_PORT_CHANNEL_TABLE, Matcher)
-    end,
+                          mnesia:select(?SERVICE_PORT_CHANNEL_TABLE, Matcher)
+                  end,
     case mnesia:transaction(Transaction) of
         {atomic, []} ->
             {error, not_found};
@@ -354,7 +355,6 @@ get_channel_origin_bridge(ChannelId) ->
         {aborted, Reason} ->
             {error, mnesia:error_description(Reason)}
     end.
-
 
 %%====================================================================
 %% Internal functions
