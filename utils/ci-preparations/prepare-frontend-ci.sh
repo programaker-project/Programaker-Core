@@ -11,7 +11,7 @@ TAG=`git rev-parse HEAD`
 LOCAL_NAME="plaza-frontend-ci-base-preparation:$TAG"
 REMOTE_NAME="plazaproject/ci-base-frontend:$TAG"
 
-docker build -t "${LOCAL_NAME}" --target ci-base .
+docker build --no-cache -t "${LOCAL_NAME}" --target ci-base .
 
 docker tag "${LOCAL_NAME}" "${REMOTE_NAME}"
 

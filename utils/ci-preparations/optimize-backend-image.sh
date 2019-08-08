@@ -7,7 +7,8 @@ DESTINATION_IMAGE="$2"
 TMP_FILE="${3:-OPTIMIZED_IMAGE.dockerfile}"
 [ ! -f "${TMP_FILE}" ] # Check that TMP_FILE does not exist
 
-TEMPLATE="FROM alpine as final
+# Check base image of erlang:alpine
+TEMPLATE="FROM alpine:3.9 as final
 
 RUN apk add ncurses libstdc++ erlang
 
@@ -18,7 +19,7 @@ ADD ./scripts/ /app/scripts
 EXPOSE 8888
 
 # Launch directly the release
-CMD ['/app/scripts/container_init.sh']
+CMD [\"/app/scripts/container_init.sh\"]
 "
 
 echo "$TEMPLATE" > "${TMP_FILE}"
