@@ -28,10 +28,13 @@ log_event(Channel, Message) ->
                  , "url" := BaseURL
                  , "index_prefix" := Index
                  , "exclude_bridges" := Excluded
+                 , "user" := User
+                 , "password" := Password
                  } ->
                     case lists:member(BridgeId, Excluded) of
                         false ->
-                            Header = [],
+                            Token  = base64:encode_to_string(User ++ ":" ++ Password),
+                            Header = [{"Authorization", "Basic " ++ Token }],
                             URL = BaseURL ++ Index ++ "_event/_doc",
                             Type = "application/json",
                             Body = jiffy:encode(Info),
@@ -65,8 +68,11 @@ log_call_to_bridge(BridgeId, FunctionName, Arguments, UserId, ExtraData) ->
         #{ "type" := elasticsearch
          , "url" := BaseURL
          , "index_prefix" := Index
+         , "user" := User
+         , "password" := Password
          } ->
-            Header = [],
+            Token  = base64:encode_to_string(User ++ ":" ++ Password),
+            Header = [{"Authorization", "Basic " ++ Token }],
             URL = BaseURL ++ Index ++ "_call_to_bridge/_doc",
             Type = "application/json",
             Body = jiffy:encode(Info),
