@@ -18,7 +18,7 @@ ADD ./scripts/ /app/scripts
 EXPOSE 8888
 
 # Launch directly the release
-CMD ['/app/scripts/container_init.sh']
+CMD [\"/app/scripts/container_init.sh\"]
 "
 
 echo "$TEMPLATE" > "${TMP_FILE}"
