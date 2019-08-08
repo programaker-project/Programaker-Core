@@ -8,7 +8,9 @@
 %%                                        , "url" => "@INSERT HERE YOUR ES SERVER URL" 
 %%                                        , "index_prefix" => "plaza"
 %%                                        , "exclude_bridges" => [ <<"0093325b-373f-4f1c-bace-4532cce79df4">> %% Time
-%%                                                               ] 
+%%                                                               ]
+%%										  , "user" => "USER"
+%%										  , "password" => "PASSWORD"
 %%                                        }
 %%                                     ] }
 %%					   ]}
