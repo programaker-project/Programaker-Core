@@ -3,7 +3,6 @@ image: docker:latest
 stages:
   - build
   - test
-  - optimize-image
   - push-commit
   - push-branch  # To avoid duplicating the upload do it sequentially
 
@@ -100,7 +99,7 @@ dialyze-backend:
     - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 dialyzer
 
 optimize-image-backend:
-  stage: optimize-image
+  stage: test
   dependencies:
     - build-backend
   artifacts:
@@ -114,10 +113,9 @@ optimize-image-backend:
     - cd backend
   script:
     - sh ../utils/ci-preparations/optimize-backend-image.sh $DOCKER_IMAGE_BACKEND $DOCKER_IMAGE_BACKEND_OPTIMIZED
+    # Run sanity check
+    - docker run -t --rm $DOCKER_IMAGE_BACKEND_OPTIMIZED /app/release/bin/automate escript ../scripts/sanity_check.erl
     - docker save $DOCKER_IMAGE_BACKEND_OPTIMIZED -o ../tmp_docker_images_optimized/backend-optimized.tar
-  only:
-    - develop
-    - master
 
 push-backend:
   stage: push-commit
