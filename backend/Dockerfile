@@ -1,4 +1,4 @@
-FROM erlang:alpine as plaza-backend-ci-base
+FROM erlang:22-alpine as plaza-backend-ci-base
 
 # Build dependencies
 RUN apk add git gcc libc-dev g++ make libtool autoconf automake
