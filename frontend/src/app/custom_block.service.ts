@@ -9,12 +9,16 @@ import { CustomBlock, ResolvedCustomBlock, ResolvedBlockArgument, BlockArgument,
 
 @Injectable()
 export class CustomBlockService {
+    static DataCallbackCachePrefix = "plaza-data-callback";
+    onFlightCallbackQueries: {[key: string]: Promise<[string, string][]>} = {};
+
     constructor(
         private http: HttpClient,
         private sessionService: SessionService
     ) {
         this.http = http;
         this.sessionService = sessionService;
+        this.onFlightCallbackQueries = {};
     }
 
     async getCustomBlocksUrl() {
@@ -71,14 +75,39 @@ export class CustomBlockService {
         const dynamicArg = arg as DynamicBlockArgument;
         let options : [string, string][];
         try {
-            options = await this.getArgOptions(dynamicArg, block);
+            options = await this.getCachedArgOptions(dynamicArg, block);
+            const loading = options[0][1] === '__plaza_internal_loading';
+
+            // Reload asynchronously
+            this.getArgOptions(dynamicArg, block).then((result) => {
+                if (result.length === 0){
+                    throw Error("No options found for dynamic argument: " + arg);
+                }
+
+                this.cacheArgOptions(dynamicArg, block, result);
+
+                // Replace all options in place
+                let index;
+                for (index = 0; index < result.length; index++) {
+                    options[index] = result[index];
+                }
+
+                while (options.length > index) {
+                    options.pop();
+                }
+            }).catch((err) => {
+                console.error(err);
+                if (loading) {
+                    options[0] = ["Not found", "__plaza_internal_not_found"];
+                }
+            });
 
             if (options.length === 0){
                 throw Error("No options found for dynamic argument: " + arg);
             }
         }
         catch(exception) {
-            console.warn(exception);
+            console.error(exception);
             options = [["Not found", "__plaza_internal_not_found"]];
         }
 
@@ -88,15 +117,41 @@ export class CustomBlockService {
         return resolved;
     }
 
+    getCallbackCacheId(arg: DynamicBlockArgument, block: CustomBlock): string {
+        return (CustomBlockService.DataCallbackCachePrefix
+                + '/'
+                + block.service_port_id
+                + '/'
+                + arg.callback);
+    }
+
+    async getCachedArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
+        const storage = window.localStorage;
+        const results = storage.getItem(this.getCallbackCacheId(arg, block));
+
+        if ((results === null) || (results.length == 0)) {
+            return [["Loading", "__plaza_internal_loading"]];
+        }
+        return JSON.parse(results);
+    }
+
+    async cacheArgOptions(arg: DynamicBlockArgument, block: CustomBlock, result: [string, string][]) {
+        const storage = window.localStorage;
+        const results = storage.setItem(this.getCallbackCacheId(arg, block),
+                                        JSON.stringify(result));
+    }
+
     async getArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
         const userApiRoot = await this.sessionService.getApiRootForUserId();
+        const url = userApiRoot + '/bridges/id/' + block.service_port_id + '/callback/' + arg.callback;
 
-        return (this.http.get(userApiRoot + '/bridges/id/' + block.service_port_id + '/callback/' + arg.callback,
-            {
-                headers: this.sessionService.getAuthHeader(),
-            })
+        // Already being performed, "attach" to the on flight query
+        if (this.onFlightCallbackQueries[url] !== undefined) {
+            return this.onFlightCallbackQueries[url];
+        }
+
+        const query = this.http.get(url, { headers: this.sessionService.getAuthHeader() })
             .map((response: { result: { [key: string]: { name: string } } }) => {
-                console.log("Options:", response);
                 const options = [];
                 const result = response.result;
 
@@ -106,6 +161,9 @@ export class CustomBlockService {
 
                 return options;
             })
-            .toPromise());
+            .toPromise();
+
+        this.onFlightCallbackQueries[url] = query;
+        return query;
     }
 }

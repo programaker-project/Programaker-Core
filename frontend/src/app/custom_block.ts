@@ -123,7 +123,6 @@ export function block_to_xml(block: CustomBlock): string {
     </block>
     `;
 
-    console.log(xml);
     return xml;
 }
 
