@@ -10,6 +10,7 @@ import { CustomBlock, ResolvedCustomBlock, ResolvedBlockArgument, BlockArgument,
 @Injectable()
 export class CustomBlockService {
     static DataCallbackCachePrefix = "plaza-data-callback";
+    onFlightCallbackQueries: {[key: string]: Promise<[string, string][]>} = {};
 
     constructor(
         private http: HttpClient,
@@ -17,6 +18,7 @@ export class CustomBlockService {
     ) {
         this.http = http;
         this.sessionService = sessionService;
+        this.onFlightCallbackQueries = {};
     }
 
     async getCustomBlocksUrl() {
@@ -141,11 +143,14 @@ export class CustomBlockService {
 
     async getArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
         const userApiRoot = await this.sessionService.getApiRootForUserId();
+        const url = userApiRoot + '/bridges/id/' + block.service_port_id + '/callback/' + arg.callback;
 
-        return (this.http.get(userApiRoot + '/bridges/id/' + block.service_port_id + '/callback/' + arg.callback,
-            {
-                headers: this.sessionService.getAuthHeader(),
-            })
+        // Already being performed, "attach" to the on flight query
+        if (this.onFlightCallbackQueries[url] !== undefined) {
+            return this.onFlightCallbackQueries[url];
+        }
+
+        const query = this.http.get(url, { headers: this.sessionService.getAuthHeader() })
             .map((response: { result: { [key: string]: { name: string } } }) => {
                 const options = [];
                 const result = response.result;
@@ -156,6 +161,9 @@ export class CustomBlockService {
 
                 return options;
             })
-            .toPromise());
+            .toPromise();
+
+        this.onFlightCallbackQueries[url] = query;
+        return query;
     }
 }
