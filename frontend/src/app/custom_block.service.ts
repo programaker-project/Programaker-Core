@@ -71,7 +71,24 @@ export class CustomBlockService {
         const dynamicArg = arg as DynamicBlockArgument;
         let options : [string, string][];
         try {
-            options = await this.getArgOptions(dynamicArg, block);
+            options = await this.getCachedArgOptions(dynamicArg, block);
+
+            // Reload asynchronously
+            this.getArgOptions(dynamicArg, block).then((result) => {
+                if (result.length === 0){
+                    throw Error("No options found for dynamic argument: " + arg);
+                }
+
+                // Replace all options in place
+                let index;
+                for (index = 0; index < result.length; index++) {
+                    options[index] = result[index];
+                }
+
+                while (options.length > index) {
+                    options.pop();
+                }
+            });
 
             if (options.length === 0){
                 throw Error("No options found for dynamic argument: " + arg);
@@ -86,6 +103,10 @@ export class CustomBlockService {
         resolved.options = options;
 
         return resolved;
+    }
+
+    async getCachedArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
+        return [["Loading", "__plaza_internal_loading"]];
     }
 
     async getArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
