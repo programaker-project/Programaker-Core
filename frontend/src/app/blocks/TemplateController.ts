@@ -159,6 +159,7 @@ export class TemplateController {
             name: "Templates",
             colour: "#40BF4A",
             secondaryColour: "#389438",
+            id: "templates",
         })
 
         cat.appendChild(createDom('button', {

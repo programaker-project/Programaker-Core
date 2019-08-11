@@ -239,7 +239,7 @@ export class Toolbox {
             return block_to_xml(block);
         });
 
-        return `<category name="Custom" colour="${CustomPrimaryColor}" secondaryColour="${CustomSecondaryColor}">
+        return `<category name="Custom" id="custom" colour="${CustomPrimaryColor}" secondaryColour="${CustomSecondaryColor}">
         ${custom_blocks_xml.join('\n')}
         </category>`;
     }
@@ -251,7 +251,7 @@ export class Toolbox {
 
         Blockly.Blocks.factoryDefaultToolbox = Blockly.Blocks.defaultToolbox;
 
-        const eventsCategory = ''; //   '<category name="Events" colour="#FFD500" secondaryColour="#CC9900">' +
+        const eventsCategory = ''; //   '<category name="Events" id="events" colour="#FFD500" secondaryColour="#CC9900">' +
         //   '<block type="event_broadcast" id="event_broadcast">' +
         //     '<value name="BROADCAST_INPUT">' +
         //       '<shadow type="event_broadcast_menu"></shadow>' +
@@ -265,7 +265,7 @@ export class Toolbox {
         // '</category>'
 
         const controlCategory = `
-        <category name="Control" colour="#FFAB19" secondaryColour="#CF8B17">
+        <category name="Control" id="control" colour="#FFAB19" secondaryColour="#CF8B17">
           <block type="control_wait" id="control_wait">
             <value name="DURATION">
               <shadow type="math_positive_number">
@@ -300,7 +300,7 @@ export class Toolbox {
         </category>`;
 
         const operatorsCategory = `
-        <category name="Operators" colour="#40BF4A" secondaryColour="#389438">
+        <category name="Operators" id="operators" colour="#40BF4A" secondaryColour="#389438">
             <block type="operator_add" id="operator_add">
               <value name="NUM1">
                 <shadow type="math_number">
@@ -492,6 +492,7 @@ export class Toolbox {
             colour: "#FF8C1A",
             secondaryColour: "#DB6E00",
             custom: "VARIABLE",
+            id: "variables",
         });
 
         const proceduresCategory = createDom('category', {
@@ -499,12 +500,13 @@ export class Toolbox {
             colour: "#FF6680",
             secondaryColour: "#FF4D6A",
             custom: "PROCEDURE",
+            id: "more",
         });
 
         const monitorsCategory = this.buildMonitorsCategory(monitors);
 
         const timeCategory = `
-        <category name="Time" colour="#85CCB3" secondaryColour="#1D1D5F">
+        <category name="Time" id="time" colour="#85CCB3" secondaryColour="#1D1D5F">
           <block type="time_trigger_at" id="time_trigger_at">
             <value name="HOUR">
               <shadow type="math_positive_number">
@@ -560,6 +562,7 @@ export class Toolbox {
 
         const category = [
             `<category name="Monitors"
+                       id="monitors"
                        colour="${MonitorPrimaryColor}"
                        secondaryColour="${MonitorSecondaryColor}">`
         ];
