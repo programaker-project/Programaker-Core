@@ -9,6 +9,8 @@ import { CustomBlock, ResolvedCustomBlock, ResolvedBlockArgument, BlockArgument,
 
 @Injectable()
 export class CustomBlockService {
+    static DataCallbackCachePrefix = "plaza-data-callback";
+
     constructor(
         private http: HttpClient,
         private sessionService: SessionService
@@ -72,12 +74,15 @@ export class CustomBlockService {
         let options : [string, string][];
         try {
             options = await this.getCachedArgOptions(dynamicArg, block);
+            const loading = options[0][1] === '__plaza_internal_loading';
 
             // Reload asynchronously
             this.getArgOptions(dynamicArg, block).then((result) => {
                 if (result.length === 0){
                     throw Error("No options found for dynamic argument: " + arg);
                 }
+
+                this.cacheArgOptions(dynamicArg, block, result);
 
                 // Replace all options in place
                 let index;
@@ -88,6 +93,11 @@ export class CustomBlockService {
                 while (options.length > index) {
                     options.pop();
                 }
+            }).catch((err) => {
+                console.error(err);
+                if (loading) {
+                    options[0] = ["Not found", "__plaza_internal_not_found"];
+                }
             });
 
             if (options.length === 0){
@@ -95,7 +105,7 @@ export class CustomBlockService {
             }
         }
         catch(exception) {
-            console.warn(exception);
+            console.error(exception);
             options = [["Not found", "__plaza_internal_not_found"]];
         }
 
@@ -105,8 +115,28 @@ export class CustomBlockService {
         return resolved;
     }
 
+    getCallbackCacheId(arg: DynamicBlockArgument, block: CustomBlock): string {
+        return (CustomBlockService.DataCallbackCachePrefix
+                + '/'
+                + block.service_port_id
+                + '/'
+                + arg.callback);
+    }
+
     async getCachedArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
-        return [["Loading", "__plaza_internal_loading"]];
+        const storage = window.localStorage;
+        const results = storage.getItem(this.getCallbackCacheId(arg, block));
+
+        if ((results === null) || (results.length == 0)) {
+            return [["Loading", "__plaza_internal_loading"]];
+        }
+        return JSON.parse(results);
+    }
+
+    async cacheArgOptions(arg: DynamicBlockArgument, block: CustomBlock, result: [string, string][]) {
+        const storage = window.localStorage;
+        const results = storage.setItem(this.getCallbackCacheId(arg, block),
+                                        JSON.stringify(result));
     }
 
     async getArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
@@ -117,7 +147,6 @@ export class CustomBlockService {
                 headers: this.sessionService.getAuthHeader(),
             })
             .map((response: { result: { [key: string]: { name: string } } }) => {
-                console.log("Options:", response);
                 const options = [];
                 const result = response.result;
 
