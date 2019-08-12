@@ -145,12 +145,12 @@ get_user_service_ports(UserId) ->
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->
-    ok = case ?BACKEND:get_bridge_service(UserId, BridgeId) of
-        {ok, undefined} ->
-            ok;
-        {ok, ServiceId} ->
-            automate_service_registry:delete_service(UserId, ServiceId)
-    end,
+    ok = case ?BACKEND:get_service_id_for_port(BridgeId) of
+             {error, not_found} ->
+                 ok;
+             {ok, ServiceId} ->
+                 automate_service_registry:delete_service(UserId, ServiceId)
+         end,
     ?BACKEND:delete_bridge(UserId, BridgeId).
 
 
@@ -167,7 +167,7 @@ callback_bridge(UserId, BridgeId, Callback) ->
 -spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
 get_channel_origin_bridge(ChannelId) ->
     case automate_services_time:get_monitor_id(none) of
-        {ok, ChannelId} -> 
+        {ok, ChannelId} ->
             {ok, automate_services_time:get_uuid()};
         _ ->
             ?BACKEND:get_channel_origin_bridge(ChannelId)

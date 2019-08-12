@@ -175,9 +175,14 @@ get_all_services_for_user(UserId) ->
     Transaction = fun() ->
                           Public = mnesia:select(?SERVICE_REGISTRY_TABLE, PublicMatcher),
                           UserAllowanceIds = mnesia:select(?USER_SERVICE_ALLOWANCE_TABLE, AllowancesMatcher),
-                          UserAllowances = [ lists:nth(1, mnesia:read(?SERVICE_REGISTRY_TABLE, ServiceId))
-                                             || ServiceId <- UserAllowanceIds
-                                           ],
+                          UserAllowances = lists:filtermap(fun (ServiceId) ->
+                                                                   case mnesia:read(?SERVICE_REGISTRY_TABLE, ServiceId) of
+                                                                       [] ->
+                                                                           false;
+                                                                       [Result] ->
+                                                                           {true, Result}
+                                                                   end
+                                                           end, UserAllowanceIds),
                           {Public, UserAllowances}
                   end,
 
