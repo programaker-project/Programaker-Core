@@ -4,6 +4,8 @@
                             , name  :: binary() | ?MNESIA_SELECTOR
                             , owner :: binary() | ?MNESIA_SELECTOR %% User id
                             , service_id :: binary() | 'undefined' | ?MNESIA_SELECTOR
+%%% Note: This service ID is unused and to be dropped.
+%%% Check the service_port_configuration record.
                             }).
 
 -record(service_port_entry_extra, { id    :: binary()

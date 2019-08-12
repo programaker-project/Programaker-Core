@@ -156,30 +156,39 @@ non_owned_public_blocks_appear() ->
 owned_delete_bridge_blocks() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-test-5-owner">>,
     ServicePortName = <<?TEST_ID_PREFIX, "-test-5-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
                      , <<"blocks">> => [ get_test_block() ]
                      },
-    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUserId,
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
-    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    {ok, #{ BridgeId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
     %% Blocks are created
     check_test_block(CustomBlock),
 
+    {ok, ServiceId} = automate_service_port_engine_mnesia_backend:get_service_id_for_port(BridgeId),
+    ?assertMatch({ok, _}, automate_service_registry:get_service_by_id(ServiceId, OwnerUserId)),
+
+    {ok, ResultsOk} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    ?assertMatch({ok, _}, maps:find(ServiceId, ResultsOk)),
+
     %% Delete bridge
-    ok = automate_service_port_engine:delete_bridge(OwnerUserId, ServicePortId),
+    ok = automate_service_port_engine:delete_bridge(OwnerUserId, BridgeId),
 
     %% Blocks are destroyed
     {ok, Results} = ?APPLICATION:list_custom_blocks(OwnerUserId),
-    ?assertEqual(#{}, Results).
+    ?assertEqual(error, maps:find(ServiceId, Results)),
 
+    %% Service deregistred
+    ?assertEqual({error, not_found}, automate_service_port_engine_mnesia_backend:get_service_id_for_port(BridgeId)),
+    ?assertEqual({error, not_found}, automate_service_registry:get_service_by_id(ServiceId, OwnerUserId)).
 
 %%====================================================================
-%% Custom block tets - Internal functions
+%% Custom block tests - Internal functions
 %%====================================================================
 -define(Arguments, []).
 -define(FunctionName, <<"first_function_name">>).
@@ -214,7 +223,6 @@ check_test_block(Block) ->
 -undef(BlockType).
 -undef(BlockResultType).
 -undef(SaveTo).
-
 
 %%====================================================================
 %% Notification routing tests

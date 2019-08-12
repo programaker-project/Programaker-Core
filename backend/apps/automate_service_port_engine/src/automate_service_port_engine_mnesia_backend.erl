@@ -15,7 +15,7 @@
         , get_user_service_ports/1
         , list_bridge_channels/1
 
-        , get_bridge_service/2
+        , get_service_id_for_port/1
         , delete_bridge/2
 
         , get_or_create_monitor_id/2
@@ -289,13 +289,6 @@ list_bridge_channels(ServicePortId) ->
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
-
--spec get_bridge_service(binary(), binary()) -> {ok, undefined | binary()}.
-get_bridge_service(UserId, BridgeId) ->
-    [#service_port_entry{ owner=UserId
-                        , service_id=ServiceId
-                        }] = mnesia:dirty_read(?SERVICE_PORT_TABLE, BridgeId),
-    {ok, ServiceId}.
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->
