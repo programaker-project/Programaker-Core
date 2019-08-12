@@ -175,6 +175,7 @@ owned_delete_bridge_blocks() ->
 
     {ok, ResultsOk} = ?APPLICATION:list_custom_blocks(OwnerUserId),
     ?assertMatch({ok, _}, maps:find(ServiceId, ResultsOk)),
+    {ok, BeforeDeleteServices} = automate_service_registry:get_all_services_for_user(OwnerUserId),
 
     %% Delete bridge
     ok = automate_service_port_engine:delete_bridge(OwnerUserId, BridgeId),
@@ -185,7 +186,10 @@ owned_delete_bridge_blocks() ->
 
     %% Service deregistred
     ?assertEqual({error, not_found}, automate_service_port_engine_mnesia_backend:get_service_id_for_port(BridgeId)),
-    ?assertEqual({error, not_found}, automate_service_registry:get_service_by_id(ServiceId, OwnerUserId)).
+    ?assertEqual({error, not_found}, automate_service_registry:get_service_by_id(ServiceId, OwnerUserId)),
+
+    {ok, Services} = automate_service_registry:get_all_services_for_user(OwnerUserId),
+    ?assertEqual(error, maps:find(ServiceId, Services)).
 
 %%====================================================================
 %% Custom block tests - Internal functions
