@@ -60,6 +60,9 @@ tests(_SetupResult) ->
     , { "[Service Port - Custom blocks] Non-owned public blocks appear"
       , fun non_owned_public_blocks_appear/0
       }
+    , { "[Service Port - Custom blocks] Deleting a bridge deletes its custom blocks"
+      , fun owned_delete_bridge_blocks/0
+      }
       %% Notification routing
     , { "[Service port - Notifications] Route notifications targeted to owner"
       , fun route_notification_targeted_to_owner/0
@@ -120,7 +123,7 @@ owned_public_blocks_appear() ->
     ServicePortName = <<?TEST_ID_PREFIX, "-test-3-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
-    Configuration = #{ <<"is_public">> => public
+    Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
                      , <<"blocks">> => [ get_test_block() ]
                      },
@@ -149,6 +152,30 @@ non_owned_public_blocks_appear() ->
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(RequesterUserId),
 
     check_test_block(CustomBlock).
+
+owned_delete_bridge_blocks() ->
+    OwnerUserId = <<?TEST_ID_PREFIX, "-test-5-owner">>,
+    ServicePortName = <<?TEST_ID_PREFIX, "-test-5-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+
+    Configuration = #{ <<"is_public">> => true
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ get_test_block() ]
+                     },
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    %% Blocks are created
+    check_test_block(CustomBlock),
+
+    %% Delete bridge
+    ok = automate_service_port_engine:delete_bridge(OwnerUserId, ServicePortId),
+
+    %% Blocks are destroyed
+    {ok, Results} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    ?assertEqual(#{}, Results).
 
 
 %%====================================================================
