@@ -46,6 +46,16 @@ export interface ResolvedCustomBlock {
     save_to: undefined | string;
 }
 
+export interface CategorizedCustomBlock {
+    bridge_data: BridgeData;
+    resolved_custom_blocks: ResolvedCustomBlock[]
+}
+
+export interface BridgeData {
+    bridge_name: string;
+    bridge_id: string;
+}
+
 function to_scratch_type(type) {
     switch (type) {
         case 'string':

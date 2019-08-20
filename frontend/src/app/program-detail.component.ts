@@ -17,11 +17,12 @@ import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { ToolboxController } from './blocks/ToolboxController';
 import { TemplateService } from './templates/template.service';
+import { ServiceService } from './service.service';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [CustomBlockService, MonitorService, ProgramService, TemplateService],
+    providers: [CustomBlockService, MonitorService, ProgramService, TemplateService, ServiceService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
@@ -45,6 +46,7 @@ export class ProgramDetailComponent implements OnInit {
         private router: Router,
         public dialog: MatDialog,
         private templateService: TemplateService,
+        private serviceService: ServiceService,
     ) {
         this.monitorService = monitorService;
         this.programService = programService;
@@ -52,6 +54,7 @@ export class ProgramDetailComponent implements OnInit {
         this.route = route;
         this.location = location;
         this.router = router;
+        this.serviceService = serviceService;
     }
 
     ngOnInit(): void {
@@ -83,6 +86,7 @@ export class ProgramDetailComponent implements OnInit {
             this.customBlockService,
             this.dialog,
             this.templateService,
+            this.serviceService,
         )
             .inject()
             .then(([toolbox, registrations, controller]) => {
