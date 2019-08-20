@@ -247,7 +247,6 @@ export class Toolbox {
                            + ('00' + sec_g.toString(16)).substr(-2)
                            + ('00' + sec_b.toString(16)).substr(-2));
 
-        console.log(color, 'to', sec_color);
         return '#' + sec_color;
     }
 
