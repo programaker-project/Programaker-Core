@@ -48,7 +48,7 @@ export interface ResolvedCustomBlock {
 
 export interface CategorizedCustomBlock {
     bridge_data: BridgeData;
-    resolved_custom_blocks: ResolvedCustomBlock[]
+    resolved_custom_blocks: ResolvedCustomBlock[];
 }
 
 export interface BridgeData {

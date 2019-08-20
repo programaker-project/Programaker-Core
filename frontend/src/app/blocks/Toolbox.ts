@@ -56,23 +56,28 @@ export class Toolbox {
     }
 
     categorize_blocks(custom_blocks: ResolvedCustomBlock[], services: AvailableService[]): CategorizedCustomBlock[]{
-      const categorized_blocks: CategorizedCustomBlock[] = [];
-      for (const service of services) {
-        const category_blocks: ResolvedCustomBlock[] = [];
-        for (const block of custom_blocks) {
-          if (service.id == block.service_port_id)
-          {
-            category_blocks.push(block);
-          }
+        const categorized_blocks: CategorizedCustomBlock[] = [];
+        for (const service of services) {
+            const category_blocks: ResolvedCustomBlock[] = [];
+            for (const block of custom_blocks) {
+                if (service.id === block.service_port_id) {
+                    category_blocks.push(block);
+                }
+            }
+            if(category_blocks.length > 0) {
+                const bridge_data: BridgeData = {
+                    bridge_name: service.name,
+                    bridge_id: service.id,
+                };
+
+                categorized_blocks.push({
+                    bridge_data: bridge_data,
+                    resolved_custom_blocks: category_blocks,
+                });
+            }
         }
-        if(category_blocks.length >0)
-        {
-          const bridge_data: BridgeData = {bridge_name: service.name, bridge_id: service.id}
-          categorized_blocks.push({bridge_data: bridge_data,resolved_custom_blocks: category_blocks});
-        }
-      }
-      console.log(categorized_blocks);
-      return categorized_blocks;
+
+        return categorized_blocks;
     }
 
     injectBlocks(monitors: MonitorMetadata[], custom_blocks: CategorizedCustomBlock[], services: AvailableService[]): Function[] {
@@ -224,6 +229,10 @@ export class Toolbox {
         }
     }
 
+    static get_bridge_color(bridge_id: string): string {
+        return '#' + bridge_id.replace(/\D/g,'').substring(0,6);
+    }
+
     injectCustomBlocks(categorized_custom_blocks: CategorizedCustomBlock[]) {
       for (const blocks of categorized_custom_blocks){
         for (const block of blocks.resolved_custom_blocks) {
@@ -233,7 +242,8 @@ export class Toolbox {
                         'id': block.id,
                         'message0': block.message,
                         'category': Blockly.Categories.event,
-                        'extensions': ["colours_bridge_" + blocks.bridge_data.bridge_id, get_block_category(block)],
+                        'extensions': ['colours_bridge_' + blocks.bridge_data.bridge_id,
+                                       get_block_category(block)],
                         'args0': get_block_toolbox_arguments(block)
                     });
                 }
@@ -242,9 +252,10 @@ export class Toolbox {
 
           if (blocks.resolved_custom_blocks.length > 0) {
             try {
-                Blockly.Extensions.register("colours_bridge_" + blocks.bridge_data.bridge_id,
+                Blockly.Extensions.register('colours_bridge_' + blocks.bridge_data.bridge_id,
                     function () {
-                        this.setColourFromRawValues_("#"+blocks.bridge_data.bridge_id.replace(/\D/g,'').substring(0,6),
+                        this.setColourFromRawValues_(
+                            Toolbox.get_bridge_color(blocks.bridge_data.bridge_id),
                             CustomSecondaryColor,
                             '#222222');
                     });
@@ -256,27 +267,31 @@ export class Toolbox {
                 }
             }
           }
-        
+
       }
     }
 
     gen_toolbox_xml_from_blocks(categorized_custom_blocks: CategorizedCustomBlock[]) {
-      console.log(categorized_custom_blocks);
-      var categories = [];
-      for (const custom_blocks of categorized_custom_blocks){
-        if (custom_blocks.resolved_custom_blocks.length == 0) {
-            return '';
+        const categories = [];
+        for (const custom_blocks of categorized_custom_blocks){
+            if (custom_blocks.resolved_custom_blocks.length == 0) {
+                continue;
+            }
+
+            const custom_blocks_xml = custom_blocks.resolved_custom_blocks.map(
+                (block, _index, _array) => {
+                    return block_to_xml(block);
+                });
+
+            const bridge_color = Toolbox.get_bridge_color(custom_blocks.bridge_data.bridge_id);
+            categories.push(`<category name="${custom_blocks.bridge_data.bridge_name}"
+                                       id="${custom_blocks.bridge_data.bridge_name}"
+                                       colour="${bridge_color}"
+                                       secondaryColour="${CustomSecondaryColor}">
+                                 ${custom_blocks_xml.join('\n')}
+                             </category>`);
         }
-
-        const custom_blocks_xml = custom_blocks.resolved_custom_blocks.map((block, _index, _array) => {
-            return block_to_xml(block);
-        });
-
-        categories.push(`<category name="`+custom_blocks.bridge_data.bridge_name+`" id="`+custom_blocks.bridge_data.bridge_name+`" colour="`+"#"+custom_blocks.bridge_data.bridge_id.replace(/\D/g,'').substring(0,6)+`" secondaryColour="${CustomSecondaryColor}">
-        ${custom_blocks_xml.join('\n')}
-        </category>`);
-      }
-      return categories.join('')
+        return categories.join('');
     }
 
     async injectToolbox(monitors: MonitorMetadata[], categorized_custom_blocks: CategorizedCustomBlock[]): Promise<HTMLElement> {
