@@ -1,12 +1,14 @@
 import { MonitorService } from '../monitor.service';
 import { MonitorMetadata } from '../monitor';
 import { CustomBlockService } from '../custom_block.service';
-import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments, ResolvedCustomBlock } from '../custom_block';
+import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments, ResolvedCustomBlock, CategorizedCustomBlock, BridgeData } from '../custom_block';
 import { MatDialog } from '@angular/material';
 import { alreadyRegisteredException, createDom } from './utils';
 import { TemplateController } from './TemplateController';
 import { ToolboxController } from './ToolboxController';
 import { TemplateService } from '../templates/template.service';
+import { ServiceService } from '../service.service';
+import { AvailableService } from '../service';
 
 declare const Blockly;
 
@@ -21,16 +23,18 @@ export class Toolbox {
     dialog: MatDialog;
     templateController: TemplateController;
     controller: ToolboxController;
-
+    serviceService: ServiceService;
     constructor(
         monitorService: MonitorService,
         customBlockService: CustomBlockService,
         dialog: MatDialog,
         templateService: TemplateService,
+        serviceService: ServiceService,
     ) {
         this.monitorService = monitorService;
         this.customBlockService = customBlockService;
         this.dialog = dialog;
+        this.serviceService = serviceService;
 
         this.controller = new ToolboxController();
         this.templateController = new TemplateController(this.dialog, this.controller, templateService);
@@ -39,16 +43,44 @@ export class Toolbox {
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
         const monitors = await this.monitorService.getMonitors();
         const custom_blocks = await this.customBlockService.getCustomBlocks();
+        const services = await this.serviceService.getAvailableServices();
         this.controller.addCustomBlocks(custom_blocks);
 
-        const registrations = this.injectBlocks(monitors, custom_blocks);
-        const toolboxXML = await this.injectToolbox(monitors, custom_blocks);
+        const categorized_blocks =  this.categorize_blocks(custom_blocks,services);
+
+        const registrations = this.injectBlocks(monitors, categorized_blocks, services);
+        const toolboxXML = await this.injectToolbox(monitors, categorized_blocks);
         this.controller.setToolbox(toolboxXML);
 
         return [toolboxXML, registrations, this.controller];
     }
 
-    injectBlocks(monitors: MonitorMetadata[], custom_blocks: ResolvedCustomBlock[]): Function[] {
+    categorize_blocks(custom_blocks: ResolvedCustomBlock[], services: AvailableService[]): CategorizedCustomBlock[]{
+        const categorized_blocks: CategorizedCustomBlock[] = [];
+        for (const service of services) {
+            const category_blocks: ResolvedCustomBlock[] = [];
+            for (const block of custom_blocks) {
+                if (service.id === block.service_port_id) {
+                    category_blocks.push(block);
+                }
+            }
+            if(category_blocks.length > 0) {
+                const bridge_data: BridgeData = {
+                    bridge_name: service.name,
+                    bridge_id: service.id,
+                };
+
+                categorized_blocks.push({
+                    bridge_data: bridge_data,
+                    resolved_custom_blocks: category_blocks,
+                });
+            }
+        }
+
+        return categorized_blocks;
+    }
+
+    injectBlocks(monitors: MonitorMetadata[], custom_blocks: CategorizedCustomBlock[], services: AvailableService[]): Function[] {
         let registrations = [];
 
         this.injectMonitorBlocks(monitors);
@@ -197,26 +229,51 @@ export class Toolbox {
         }
     }
 
-    injectCustomBlocks(blocks: ResolvedCustomBlock[]) {
-        for (const block of blocks) {
-            Blockly.Blocks[block.id] = {
+    static get_bridge_color(bridge_id: string): string {
+        return '#' + bridge_id.replace(/\D/g,'').substring(0,6);
+    }
+
+    static get_bridge_secondary_color(bridge_id: string): string {
+        const color = Toolbox.get_bridge_color(bridge_id);
+        const r = parseInt(color.substring(0, 2), 16);
+        const g = parseInt(color.substring(2, 4), 16);
+        const b = parseInt(color.substring(4, 6), 16);
+
+        const sec_r = Math.max(r - 0x30, 0x00);
+        const sec_g = Math.max(g - 0x30, 0x00);
+        const sec_b = Math.max(b - 0x30, 0x00);
+
+        const sec_color = (('00' + sec_r.toString(16)).substr(-2)
+                           + ('00' + sec_g.toString(16)).substr(-2)
+                           + ('00' + sec_b.toString(16)).substr(-2));
+
+        console.log(color, 'to', sec_color);
+        return '#' + sec_color;
+    }
+
+    injectCustomBlocks(categorized_custom_blocks: CategorizedCustomBlock[]) {
+      for (const blocks of categorized_custom_blocks){
+        for (const block of blocks.resolved_custom_blocks) {
+          Blockly.Blocks[block.id] = {
                 init: function () {
                     this.jsonInit({
                         'id': block.id,
                         'message0': block.message,
                         'category': Blockly.Categories.event,
-                        'extensions': ['colours_custom', get_block_category(block)],
+                        'extensions': ['colours_bridge_' + blocks.bridge_data.bridge_id,
+                                       get_block_category(block)],
                         'args0': get_block_toolbox_arguments(block)
                     });
                 }
             };
         }
 
-        if (blocks.length > 0) {
+          if (blocks.resolved_custom_blocks.length > 0) {
             try {
-                Blockly.Extensions.register('colours_custom',
+                Blockly.Extensions.register('colours_bridge_' + blocks.bridge_data.bridge_id,
                     function () {
-                        this.setColourFromRawValues_(CustomPrimaryColor,
+                        this.setColourFromRawValues_(
+                            Toolbox.get_bridge_color(blocks.bridge_data.bridge_id),
                             CustomSecondaryColor,
                             '#222222');
                     });
@@ -227,24 +284,37 @@ export class Toolbox {
                     throw e;
                 }
             }
-        }
+          }
+
+      }
     }
 
-    gen_toolbox_xml_from_blocks(custom_blocks: CustomBlock[]) {
-        if (custom_blocks.length == 0) {
-            return '';
+    gen_toolbox_xml_from_blocks(categorized_custom_blocks: CategorizedCustomBlock[]) {
+        const categories = [];
+        for (const custom_blocks of categorized_custom_blocks){
+            if (custom_blocks.resolved_custom_blocks.length == 0) {
+                continue;
+            }
+
+            const custom_blocks_xml = custom_blocks.resolved_custom_blocks.map(
+                (block, _index, _array) => {
+                    return block_to_xml(block);
+                });
+
+            const primary_color = Toolbox.get_bridge_color(custom_blocks.bridge_data.bridge_id);
+            const secondary_color = Toolbox.get_bridge_secondary_color(
+                custom_blocks.bridge_data.bridge_id);
+            categories.push(`<category name="${custom_blocks.bridge_data.bridge_name}"
+                                       id="${custom_blocks.bridge_data.bridge_name}"
+                                       colour="${primary_color}"
+                                       secondaryColour="${secondary_color}">
+                                 ${custom_blocks_xml.join('\n')}
+                             </category>`);
         }
-
-        const custom_blocks_xml = custom_blocks.map((block, _index, _array) => {
-            return block_to_xml(block);
-        });
-
-        return `<category name="Custom" id="custom" colour="${CustomPrimaryColor}" secondaryColour="${CustomSecondaryColor}">
-        ${custom_blocks_xml.join('\n')}
-        </category>`;
+        return categories.join('');
     }
 
-    async injectToolbox(monitors: MonitorMetadata[], custom_blocks: CustomBlock[]): Promise<HTMLElement> {
+    async injectToolbox(monitors: MonitorMetadata[], categorized_custom_blocks: CategorizedCustomBlock[]): Promise<HTMLElement> {
         (goog as any).provide('Blockly.Blocks.defaultToolbox');
 
         (goog as any).require('Blockly.Blocks');
@@ -530,7 +600,7 @@ export class Toolbox {
         </category>
         `;
 
-        const customCategory = this.gen_toolbox_xml_from_blocks(custom_blocks);
+        const customCategory = this.gen_toolbox_xml_from_blocks(categorized_custom_blocks);
 
         const toolboxXML = createDom('xml', {
             id: "toolbox-categories",
