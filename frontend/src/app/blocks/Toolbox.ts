@@ -233,6 +233,24 @@ export class Toolbox {
         return '#' + bridge_id.replace(/\D/g,'').substring(0,6);
     }
 
+    static get_bridge_secondary_color(bridge_id: string): string {
+        const color = Toolbox.get_bridge_color(bridge_id);
+        const r = parseInt(color.substring(0, 2), 16);
+        const g = parseInt(color.substring(2, 4), 16);
+        const b = parseInt(color.substring(4, 6), 16);
+
+        const sec_r = Math.max(r - 0x30, 0x00);
+        const sec_g = Math.max(g - 0x30, 0x00);
+        const sec_b = Math.max(b - 0x30, 0x00);
+
+        const sec_color = (('00' + sec_r.toString(16)).substr(-2)
+                           + ('00' + sec_g.toString(16)).substr(-2)
+                           + ('00' + sec_b.toString(16)).substr(-2));
+
+        console.log(color, 'to', sec_color);
+        return '#' + sec_color;
+    }
+
     injectCustomBlocks(categorized_custom_blocks: CategorizedCustomBlock[]) {
       for (const blocks of categorized_custom_blocks){
         for (const block of blocks.resolved_custom_blocks) {
@@ -283,11 +301,13 @@ export class Toolbox {
                     return block_to_xml(block);
                 });
 
-            const bridge_color = Toolbox.get_bridge_color(custom_blocks.bridge_data.bridge_id);
+            const primary_color = Toolbox.get_bridge_color(custom_blocks.bridge_data.bridge_id);
+            const secondary_color = Toolbox.get_bridge_secondary_color(
+                custom_blocks.bridge_data.bridge_id);
             categories.push(`<category name="${custom_blocks.bridge_data.bridge_name}"
                                        id="${custom_blocks.bridge_data.bridge_name}"
-                                       colour="${bridge_color}"
-                                       secondaryColour="${CustomSecondaryColor}">
+                                       colour="${primary_color}"
+                                       secondaryColour="${secondary_color}">
                                  ${custom_blocks_xml.join('\n')}
                              </category>`);
         }
