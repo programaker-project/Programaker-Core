@@ -44,7 +44,6 @@ export class Toolbox {
         const monitors = await this.monitorService.getMonitors();
         const custom_blocks = await this.customBlockService.getCustomBlocks();
         const services = await this.serviceService.getAvailableServices();
-        console.log(services);
         this.controller.addCustomBlocks(custom_blocks);
 
         const categorized_blocks =  this.categorize_blocks(custom_blocks,services);
