@@ -40,8 +40,8 @@ push-frontend:
     - docker load -i tmp_docker_images/frontend.tar
     - cd frontend
   script:
-    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA
-    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_SHA
+    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend:$CI_COMMIT_SHA
+    - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend:$CI_COMMIT_SHA
   only:
     - develop
     - master
@@ -55,8 +55,8 @@ tag-frontend-branch:
     - docker load -i tmp_docker_images/frontend.tar
     - cd frontend
   script:
-    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_REF_NAME
-    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/frontend:$CI_COMMIT_REF_NAME
+    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend:$CI_COMMIT_REF_NAME
+    - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend:$CI_COMMIT_REF_NAME
   only:
     - develop
     - master
@@ -126,8 +126,8 @@ push-backend:
     - docker load -i tmp_docker_images_optimized/backend-optimized.tar
     - cd backend
   script:
-    - docker tag $DOCKER_IMAGE_BACKEND_OPTIMIZED "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA
-    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_SHA
+    - docker tag $DOCKER_IMAGE_BACKEND_OPTIMIZED "$CI_REGISTRY"/"$CI_PROJECT_PATH"/backend:$CI_COMMIT_SHA
+    - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/backend:$CI_COMMIT_SHA
   only:
     - develop
     - master
@@ -141,8 +141,8 @@ tag-backend-branch:
     - docker load -i tmp_docker_images_optimized/backend-optimized.tar
     - cd backend
   script:
-    - docker tag $DOCKER_IMAGE_BACKEND_OPTIMIZED "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_REF_NAME
-    - docker push "$CI_REGISTRY"/plaza-project/plaza-core/backend:$CI_COMMIT_REF_NAME
+    - docker tag $DOCKER_IMAGE_BACKEND_OPTIMIZED "$CI_REGISTRY"/"$CI_PROJECT_PATH"/backend:$CI_COMMIT_REF_NAME
+    - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/backend:$CI_COMMIT_REF_NAME
   only:
     - develop
     - master
