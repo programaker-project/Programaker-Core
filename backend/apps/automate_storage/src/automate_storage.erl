@@ -24,6 +24,8 @@
         , get_program_pid/1
         , register_program_runner/2
         , get_program_from_id/1
+        , register_program_tags/2
+        , get_tags_program_from_id/1
         , dirty_list_running_programs/0
 
         , create_thread/2
@@ -48,6 +50,7 @@
 -define(USER_MONITORS_TABLE, automate_user_monitors).
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
+-define(PROGRAM_TAGS_TABLE, automate_program_tags).
 -define(RUNNING_THREADS_TABLE, automate_running_program_threads).
 
 -define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
@@ -328,6 +331,46 @@ get_program_from_id(ProgramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec register_program_tags(binary(), [binary()]) -> 'ok' | {error, not_running}.
+register_program_tags(ProgramId, Tags) ->
+    Transaction = fun() ->
+                          case mnesia:read(?PROGRAM_TAGS_TABLE, ProgramId) of
+                              [] ->
+                                  ok = mnesia:write(?PROGRAM_TAGS_TABLE,
+                                               #program_tags_entry{ program_id=ProgramId
+                                                                  , tags=Tags
+                                                                  }, write);
+                              [Program] ->
+                                  ok = mnesia:write(?PROGRAM_TAGS_TABLE,
+                                               Program#program_tags_entry{ program_id=ProgramId
+                                                                         , tags=Tags
+                                                                         }, write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+get_tags_program_from_id(ProgramId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?PROGRAM_TAGS_TABLE, ProgramId) of
+                              [] ->
+                                  {ok, []};
+                              [#program_tags_entry{tags=Tags}] ->
+                                  {ok, Tags}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
 
 dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
@@ -995,11 +1038,37 @@ build_tables(Nodes) ->
                  ok
          end,
 
+    %% Running program threads table
+    ok = case mnesia:create_table(?RUNNING_THREADS_TABLE,
+                                  [ {attributes, record_info(fields, running_program_thread_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, running_program_thread_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
     %% User programs table
     ok = case mnesia:create_table(?USER_PROGRAMS_TABLE,
                                   [ {attributes, record_info(fields, user_program_entry)}
                                   , { disc_copies, Nodes }
                                   , { record_name, user_program_entry }
+                                  , { type, set }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    %% Program tags table
+    ok = case mnesia:create_table(?PROGRAM_TAGS_TABLE,
+                                  [ {attributes, record_info(fields, program_tags_entry)}
+                                  , { disc_copies, Nodes }
+                                  , { record_name, program_tags_entry }
                                   , { type, set }
                                   ]) of
              { atomic, ok } ->
@@ -1051,6 +1120,7 @@ build_tables(Nodes) ->
                                 , ?USER_SESSIONS_TABLE
                                 , ?USER_MONITORS_TABLE
                                 , ?USER_PROGRAMS_TABLE
+                                , ?PROGRAM_TAGS_TABLE
                                 , ?RUNNING_PROGRAMS_TABLE
                                 , ?RUNNING_THREADS_TABLE
                                 , ?PROGRAM_VARIABLE_TABLE

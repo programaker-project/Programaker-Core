@@ -27,7 +27,7 @@ setup() ->
     NodeName = node(),
 
     %% Use a custom node name to avoid overwriting the actual databases
-    net_kernel:start([?MODULE, shortnames]),
+    net_kernel:start([testing, shortnames]),
 
     {ok, _Pid} = application:ensure_all_started(?APPLICATION),
 
@@ -38,8 +38,6 @@ setup() ->
 stop({NodeName}) ->
     ok = application:stop(?APPLICATION),
 
-    %% Restore the original node name
-    net_kernel:start([NodeName, shortnames]),
     ok.
 
 tests(_SetupResult) ->

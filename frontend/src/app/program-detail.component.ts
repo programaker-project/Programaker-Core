@@ -34,6 +34,7 @@ export class ProgramDetailComponent implements OnInit {
     currentFillingInput: string;
     workspace: Blockly.Workspace;
     programUserId: string;
+    programId: string;
 
     toolboxController: ToolboxController;
 
@@ -62,6 +63,7 @@ export class ProgramDetailComponent implements OnInit {
             this.route.params
                 .switchMap((params: Params) => {
                     this.programUserId = params['user_id'];
+                    this.programId = params['program_id'];
                     return this.programService.getProgram(params['user_id'], params['program_id']);
                 })
                 .subscribe(program => {

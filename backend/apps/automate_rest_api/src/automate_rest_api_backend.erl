@@ -9,6 +9,8 @@
         , lists_monitors_from_username/1
         , create_program/1
         , get_program/2
+        , update_program_tags/3
+        , get_program_tags/2
         , lists_programs_from_username/1
         , update_program/3
         , list_services_from_username/1
@@ -123,6 +125,22 @@ get_program(Username, ProgramName) ->
     case automate_storage:get_program(Username, ProgramName) of
         {ok, ProgramData} ->
             {ok, program_entry_to_program(ProgramData)};
+        X ->
+            X
+    end.
+
+update_program_tags(Username, ProgramName, Tags) ->
+    case automate_storage:register_program_tags(ProgramName, Tags) of
+        ok ->
+            ok;
+        { error, Reason } ->
+            {error, Reason}
+    end.
+
+get_program_tags(Username, ProgramId) ->
+    case automate_storage:get_tags_program_from_id(ProgramId) of
+        {ok, Tags} ->
+            {ok, Tags};
         X ->
             X
     end.
