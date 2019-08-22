@@ -107,7 +107,6 @@ export class ProgramDetailComponent implements OnInit {
         this.hide_workspace(workspaceElement);
         window.onresize = () => this.calculate_size(workspaceElement);
         this.calculate_size(workspaceElement);
-
         const rtl = false;
         const side = 'bottom';
         const soundsEnabled = false;
