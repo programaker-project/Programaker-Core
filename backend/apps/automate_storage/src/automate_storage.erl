@@ -337,14 +337,14 @@ register_program_tags(ProgramId, Tags) ->
                           case mnesia:read(?PROGRAM_TAGS_TABLE, ProgramId) of
                               [] ->
                                   ok = mnesia:write(?PROGRAM_TAGS_TABLE,
-                                               #program_tags_entry{ program_id=ProgramId
-                                                                  , tags=Tags
-                                                                  }, write);
+                                                    #program_tags_entry{ program_id=ProgramId
+                                                                       , tags=Tags
+                                                                       }, write);
                               [Program] ->
                                   ok = mnesia:write(?PROGRAM_TAGS_TABLE,
-                                               Program#program_tags_entry{ program_id=ProgramId
-                                                                         , tags=Tags
-                                                                         }, write)
+                                                    Program#program_tags_entry{ program_id=ProgramId
+                                                                              , tags=Tags
+                                                                              }, write)
                           end
                   end,
     case mnesia:transaction(Transaction) of
@@ -941,7 +941,7 @@ start_coordinator() ->
 wait_for_all_nodes_ready(false, Primary, NonPrimaries) ->
     {?SERVER, Primary} ! { self(), {node_ready, node() }},
     io:fwrite("~p ! ~p~n", [{?SERVER, Primary}, { self(), {node_ready, node() }}]),
-    receive 
+    receive
         { _From, storage_started } ->
             ok;
         X ->
@@ -979,7 +979,7 @@ wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
     end.
 
 coordinate_loop(Primary) ->
-    receive 
+    receive
         %% To be defined
         X ->
             io:fwrite("[automate_storage coordinator | ~p | Prim: ~p] Unknown message: ~p~n",
