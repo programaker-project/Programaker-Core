@@ -77,9 +77,9 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 -spec accept_tags_update(_, #program_tag_opts{})
-                                -> {'false',_,#program_tag_opts{}} | {'true',_,#program_tag_opts{}}.
+                        -> {'false',_,#program_tag_opts{}} | {'true',_,#program_tag_opts{}}.
 accept_tags_update(Req, #program_tag_opts{user_id=UserId
-                                         ,program_id=ProgramId
+                                         , program_id=ProgramId
                                          }) ->
     {ok, Body, _} = read_body(Req),
     #{<<"tags">> := Tags } = jiffy:decode(Body, [return_maps]),
@@ -94,9 +94,9 @@ accept_tags_update(Req, #program_tag_opts{user_id=UserId
             Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
 
-            { true, Res3, #program_tag_opts{user_id=UserId
-                                           ,program_id=ProgramId
-                                           } 
+            { true, Res3, #program_tag_opts{ user_id=UserId
+                                           , program_id=ProgramId
+                                           }
             };
         {error, _} ->
             Output = jiffy:encode(#{ <<"success">> => false
@@ -106,9 +106,9 @@ accept_tags_update(Req, #program_tag_opts{user_id=UserId
             Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
 
-            { false, Res3, #program_tag_opts{user_id=UserId
-                                           ,program_id=ProgramId
-                                           } 
+            { false, Res3, #program_tag_opts{ user_id=UserId
+                                            , program_id=ProgramId
+                                            }
             }
     end.
 
@@ -120,10 +120,9 @@ content_types_provided(Req, State) ->
 -spec to_json(cowboy_req:req(), #program_tag_opts{})
              -> {binary(),cowboy_req:req(), #program_tag_opts{}}.
 to_json(Req, State) ->
-    #program_tag_opts{user_id=UserId,program_id=ProgramId} = State,
-    case automate_rest_api_backend:get_program_tags(UserId,ProgramId) of
+    #program_tag_opts{user_id=UserId, program_id=ProgramId} = State,
+    case automate_rest_api_backend:get_program_tags(UserId, ProgramId) of
         { ok, Tags } ->
-            io:fwrite("Tags: ~p~n", [Tags]),
             Output = jiffy:encode(Tags),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
