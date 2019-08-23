@@ -31,18 +31,18 @@ export class ProgramService {
     }
 
     async getRetrieveProgramUrl(_user_id: string, program_id: string) {
-      const userApiRoot = await this.sessionService.getUserApiRoot();
-      return userApiRoot + '/programs/' + program_id;
+        const userApiRoot = await this.sessionService.getUserApiRoot();
+        return userApiRoot + '/programs/' + program_id;
     }
 
     async getUpdateProgramUrl(programUserName: string, program_id: string) {
-      const userApiRoot = await this.sessionService.getApiRootForUser(programUserName);
-      return userApiRoot + '/programs/' + encodeURIComponent(program_id);
+        const userApiRoot = await this.sessionService.getApiRootForUser(programUserName);
+        return userApiRoot + '/programs/' + encodeURIComponent(program_id);
     }
 
     async getProgramTagsUrl(programUserId: string, program_id: string) {
-      const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
-      return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/tags';
+        const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
+        return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/tags';
     }
 
     getPrograms(): Promise<ProgramMetadata[]> {

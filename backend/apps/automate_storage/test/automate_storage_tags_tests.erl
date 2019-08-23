@@ -42,8 +42,8 @@ stop({NodeName, _Pid}) ->
     ok.
 
 tests(_SetupResult) ->
-    [ {"[Storage program tags] Get tags of an empty program", fun test_get_tags_empty_program/0},
-      {"[Storage program tags] Get tags of an program created", fun test_get_tags_inserted/0}
+    [ {"[Storage program tags] Get tags of an empty program", fun test_get_tags_empty_program/0}
+    , {"[Storage program tags] Get tags of an program created", fun test_get_tags_inserted/0}
     ].
 
 get_uuid() ->
@@ -56,7 +56,6 @@ test_get_tags_empty_program() ->
     Uuid = get_uuid(),
     {ok, Tags} = automate_storage:get_tags_program_from_id(Uuid),
     ?assertMatch(Tags, []).
-    %%ct:fail("This is a test").
 
 test_get_tags_inserted() ->
     Tags = get_tags(),
