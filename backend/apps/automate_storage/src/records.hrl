@@ -19,6 +19,10 @@
                             , program_orig
                             }).
 
+-record(program_tags_entry, { program_id
+                            , tags
+                            }).
+
 -record(editable_user_program_metadata, { program_name :: binary()
                                         }).
 

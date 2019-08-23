@@ -10,6 +10,7 @@ export class ProgramContent extends ProgramMetadata {
     type: ProgramType;
     parsed: any;
     orig: any;
+    owner: string;
 
     constructor (metadata: ProgramMetadata, parsed: any, orig: any, type: ProgramType) {
       super();

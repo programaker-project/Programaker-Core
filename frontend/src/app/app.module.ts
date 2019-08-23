@@ -1,10 +1,11 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule, MatCheckboxModule } from '@angular/material';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -15,6 +16,8 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatFormFieldModule } from '@angular/material';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatChipsModule } from '@angular/material/chips';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -28,6 +31,7 @@ import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
+import { ProgramMetadataComponent } from './program_metadata/program-metadata.component';
 
 // Services
 import { AddServicesComponent } from './add-services.component';
@@ -55,6 +59,7 @@ import 'hammerjs';
         DashboardComponent,
         ProgramsComponent,
         ProgramDetailComponent,
+        ProgramMetadataComponent,
         AddServicesComponent,
         BridgeIndexComponent,
         BridgeAddComponent,
@@ -73,6 +78,7 @@ import 'hammerjs';
         SelectFromJSON,
     ],
     imports: [
+        MatAutocompleteModule,
         MatButtonModule,
         MatCheckboxModule,
         MatIconModule,
@@ -84,11 +90,14 @@ import 'hammerjs';
         MatMenuModule,
         MatFormFieldModule,
         MatDialogModule,
+        MatTabsModule,
+        MatChipsModule,
 
         BrowserAnimationsModule,
 
         BrowserModule,
         FormsModule,
+        ReactiveFormsModule,
         HttpModule,
         HttpClientModule,
         AlertModule.forRoot(),

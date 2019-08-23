@@ -31,13 +31,18 @@ export class ProgramService {
     }
 
     async getRetrieveProgramUrl(_user_id: string, program_id: string) {
-      const userApiRoot = await this.sessionService.getUserApiRoot();
-      return userApiRoot + '/programs/' + program_id;
+        const userApiRoot = await this.sessionService.getUserApiRoot();
+        return userApiRoot + '/programs/' + program_id;
     }
 
     async getUpdateProgramUrl(programUserName: string, program_id: string) {
-      const userApiRoot = await this.sessionService.getApiRootForUser(programUserName);
-      return userApiRoot + '/programs/' + encodeURIComponent(program_id);
+        const userApiRoot = await this.sessionService.getApiRootForUser(programUserName);
+        return userApiRoot + '/programs/' + encodeURIComponent(program_id);
+    }
+
+    async getProgramTagsUrl(programUserId: string, program_id: string) {
+        const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
+        return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/tags';
     }
 
     getPrograms(): Promise<ProgramMetadata[]> {
@@ -51,6 +56,13 @@ export class ProgramService {
         return this.getRetrieveProgramUrl(user_id, program_id).then(url =>
             this.http.get(url, {headers: this.sessionService.getAuthHeader()})
                 .map(response => response as ProgramContent)
+                .toPromise());
+    }
+
+    getProgramTags(user_id: string, program_id: string): Promise<string[]> {
+        return this.getProgramTagsUrl(user_id, program_id).then(url =>
+            this.http.get(url, {headers: this.sessionService.getAuthHeader()})
+                .map(response => response as string[])
                 .toPromise());
     }
 
@@ -71,6 +83,21 @@ export class ProgramService {
         return this.getUpdateProgramUrl(username, program.name).then(url =>
             this.http
                 .put(url, JSON.stringify({type: program.type, orig: program.orig, parsed: program.parsed}),
+                     {headers: this.sessionService.addContentType(
+                                  this.sessionService.getAuthHeader(),
+                                     ContentType.Json)})
+                .map(response => {
+                    return true;
+                })
+                .toPromise()
+                .catch(_ => false)
+        );
+    }
+
+    updateProgramTags(user_id: string, program_id: string, programTags: string[]): Promise<boolean> {
+        return this.getProgramTagsUrl(user_id, program_id).then(url =>
+            this.http
+                .post(url, JSON.stringify({tags: programTags}),
                      {headers: this.sessionService.addContentType(
                                   this.sessionService.getAuthHeader(),
                                      ContentType.Json)})
