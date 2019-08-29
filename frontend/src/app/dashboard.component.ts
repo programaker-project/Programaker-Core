@@ -14,6 +14,7 @@ import { SessionService } from './session.service';
 import { AvailableService, ServiceEnableHowTo } from './service';
 import { ServiceService } from './service.service';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSlideToggle, MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 import { MonitorMetadata } from './monitor';
 import { MonitorService } from './monitor.service';
@@ -78,6 +79,11 @@ export class DashboardComponent {
             })
     }
 
+    onToggleChange(ob: MatSlideToggleChange,program_id: string) {
+        this.sessionService.getSession().then(session => {
+            this.programService.toggleStatusProgram(ob.checked,program_id,session.user_id)
+        });
+    } 
 
     addProgram(): void {
         this.programService.createProgram().then(program => {

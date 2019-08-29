@@ -15,6 +15,7 @@ import { CustomBlockService } from './custom_block.service';
 import { MatDialog } from '@angular/material/dialog';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
+import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
 import { ToolboxController } from './blocks/ToolboxController';
 import { TemplateService } from './templates/template.service';
 import { ServiceService } from './service.service';
@@ -265,6 +266,31 @@ export class ProgramDetailComponent implements OnInit {
                     console.log("Changing name to", this.program);
                 }));
             progbar.track(rename);
+        });
+    }
+
+    stopThreadsProgram() {
+        const programData = { name: this.program.name };
+        const dialogRef = this.dialog.open(StopThreadProgramDialogComponent, {
+            data: programData
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            const stopThreads = (this.programService.stopThreadsProgram(this.program.owner, this.program.id)
+                .catch(() => { return false; })
+                .then(success => {
+                    if (!success) {
+                        return;
+                    }
+
+                    this.goBack();
+                }));
+            progbar.track(stopThreads);
         });
     }
 
