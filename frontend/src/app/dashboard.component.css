@@ -2,10 +2,6 @@
     padding: 1em;
 }
 
-mat-card {
-    cursor: pointer;
-}
-
 mat-card.not-enabled {
     background: repeating-linear-gradient(
         45deg,
@@ -34,4 +30,5 @@ div.letter-call-to-action {
 mat-card.module > h4 {
     overflow: hidden;
     font-size: 1.15rem;
+    cursor: pointer;
 }

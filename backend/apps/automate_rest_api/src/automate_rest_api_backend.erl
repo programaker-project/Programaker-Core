@@ -147,11 +147,9 @@ get_program_tags(Username, ProgramId) ->
     end.
 
 stop_program_threads(Username, ProgramId) ->
-    case automate_bot_engine:stop_program_threads(Username, ProgramId) of
-        ok ->
-            ok;
-        { error, Reason } ->
-            {error, Reason}
+    case automate_bot_engine_launcher:stop_program(ProgramId) of
+        { ok, _} ->
+            ok
     end.
 
 -spec lists_programs_from_username(binary()) -> {'ok', [ #program_metadata{} ] }.

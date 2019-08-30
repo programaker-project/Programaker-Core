@@ -18,6 +18,7 @@ import { MatFormFieldModule } from '@angular/material';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBarModule } from '@angular/material/snack-bar'
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -94,6 +95,7 @@ import 'hammerjs';
         MatDialogModule,
         MatTabsModule,
         MatChipsModule,
+        MatSnackBarModule,
 
         BrowserAnimationsModule,
 

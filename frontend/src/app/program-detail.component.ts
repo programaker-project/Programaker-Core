@@ -13,6 +13,7 @@ import { MonitorService } from './monitor.service';
 import { CustomBlockService } from './custom_block.service';
 
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
@@ -49,6 +50,7 @@ export class ProgramDetailComponent implements OnInit {
         public dialog: MatDialog,
         private templateService: TemplateService,
         private serviceService: ServiceService,
+        private notification: MatSnackBar,
     ) {
         this.monitorService = monitorService;
         this.programService = programService;
@@ -287,8 +289,9 @@ export class ProgramDetailComponent implements OnInit {
                     if (!success) {
                         return;
                     }
-
-                    this.goBack();
+                    this.notification.open('All Threads stopped', 'ok', {
+                      duration: 5000
+                    });
                 }));
             progbar.track(stopThreads);
         });

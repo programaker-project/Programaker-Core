@@ -79,7 +79,7 @@ content_types_accepted(Req, State) ->
 accept_thread_program_stop(Req, #program_stop_thread_opts{user_id=UserId
                                          ,program_id=ProgramId
                                          }) ->
-    {ok, Body, _} = read_body(Req),
+    {ok, _, _} = read_body(Req),
 
     case automate_rest_api_backend:stop_program_threads(UserId, ProgramId) of
         ok ->
@@ -92,18 +92,6 @@ accept_thread_program_stop(Req, #program_stop_thread_opts{user_id=UserId
             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
 
             { true, Res3, #program_stop_thread_opts{user_id=UserId
-                                           ,program_id=ProgramId
-                                           } 
-            };
-        {error, _} ->
-            Output = jiffy:encode(#{ <<"success">> => false
-                                   }),
-
-            Res1 = cowboy_req:set_resp_body(Output, Req),
-            Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
-            Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
-
-            { false, Res3, #program_stop_thread_opts{user_id=UserId
                                            ,program_id=ProgramId
                                            } 
             }

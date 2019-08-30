@@ -34,7 +34,6 @@
         , get_thread_from_id/1
         , delete_thread/1
         , update_thread/1
-        , get_threads_from_program/1
 
         , set_program_variable/3
         , get_program_variable/2
@@ -431,31 +430,6 @@ update_thread(Thread=#running_program_thread_entry{ thread_id=Id }) ->
             io:format("[Thread update] Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
-
--spec get_threads_from_program(binary()) -> ok | {error, not_found}.
-get_threads_from_program(ParentProgramId) ->
-    MatchHead = #running_program_thread_entry{ thread_id = '$1'
-                                             , runner_pid = '_'
-                                             , parent_program_id = '$2'
-                                             , instructions = '_'
-                                             , memory = '_'
-                                             , instruction_memory = '_'
-                                             , position = '_'
-                                             , stats = '_'
-                                             },
-    Guard = {'==', '$2', ParentProgramId},
-    ResultColumn = '$1',
-    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
-    Transaction = fun() ->
-                          mnesia:select(?RUNNING_THREADS_TABLE, Matcher)
-                  end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, Reason}
-    end.
-
 
 dirty_list_running_threads() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_THREADS_TABLE)}.

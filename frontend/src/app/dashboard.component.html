@@ -8,15 +8,6 @@
             <div *ngFor="let program of programs" class="col-sm-4">
                 <mat-card class="module program">
                     <h4 role="button" (click)="openProgram(program)">{{program.name}}</h4>
-                      <mat-slide-toggle
-                      (change)="onToggleChange($event,program.id)"
-                      class=""
-                      aria-label=""
-                      matTooltip="Enable/disable program"
-                      [color]="color"
-                      [checked]="checked"
-                      [disabled]="disabled">
-                  </mat-slide-toggle>
                 </mat-card>
             </div>
             <div class="col-sm-4">
