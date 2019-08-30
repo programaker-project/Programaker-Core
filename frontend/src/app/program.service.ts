@@ -42,7 +42,6 @@ export class ProgramService {
 
     async getProgramTagsUrl(programUserId: string, program_id: string) {
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
-        console.log(userApiRoot);
         return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/tags';
     }
 
