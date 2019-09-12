@@ -19,7 +19,6 @@
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
 -include("instructions.hrl").
--include_lib("eunit/include/eunit.hrl").
 
 -record(state, { program
                , check_next_action

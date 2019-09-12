@@ -464,21 +464,23 @@ dirty_list_running_threads() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_THREADS_TABLE)}.
 
 
--spec register_thread_runner(binary(), pid()) -> 'ok' | {error, not_running}.
+-spec register_thread_runner(binary(), pid()) -> {'ok', #running_program_thread_entry{}} | {error, not_running}.
 register_thread_runner(ThreadId, Pid) ->
     Transaction = fun() ->
                           case mnesia:read(?RUNNING_THREADS_TABLE, ThreadId) of
                               [Thread] ->
+                                  NewEntry = Thread#running_program_thread_entry{runner_pid=Pid},
                                   ok = mnesia:write(?RUNNING_THREADS_TABLE,
-                                                    Thread#running_program_thread_entry{runner_pid=Pid},
-                                                    write)
+                                                    NewEntry,
+                                                    write),
+                                  {ok, NewEntry}
                           end
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
-           Result;
+            Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:fwrite("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
