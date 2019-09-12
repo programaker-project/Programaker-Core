@@ -141,11 +141,11 @@ list_all_public() ->
 -spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
 allow_user(ServiceId, UserId) ->
     Transaction = fun() ->
-                           ok = mnesia:write(?USER_SERVICE_ALLOWANCE_TABLE,
-                                             #user_service_allowance_entry{ service_id=ServiceId
-                                                                          , user_id=UserId
-                                                                          },
-                                             write)
+                          ok = mnesia:write(?USER_SERVICE_ALLOWANCE_TABLE,
+                                            #user_service_allowance_entry{ service_id=ServiceId
+                                                                         , user_id=UserId
+                                                                         },
+                                            write)
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
@@ -274,7 +274,7 @@ convert_to_map(TableEntries) ->
     convert_to_map(TableEntries, #{}).
 
 -spec convert_to_map([#services_table_entry{}], service_info_map()) ->
-    service_info_map().
+                            service_info_map().
 convert_to_map([], Acc) ->
     Acc;
 

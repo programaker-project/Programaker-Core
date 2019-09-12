@@ -67,7 +67,7 @@ content_types_provided(Req, State) ->
      Req, State}.
 
 -spec to_json(cowboy_req:req(), #state{})
-                                   -> {binary(),cowboy_req:req(), #state{}}.
+             -> {binary(),cowboy_req:req(), #state{}}.
 to_json(Req, State) ->
     #state{username=Username, service_id=ServiceId} = State,
     case automate_rest_api_backend:get_service_enable_how_to(Username, ServiceId) of
