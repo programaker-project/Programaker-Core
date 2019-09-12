@@ -146,8 +146,8 @@ get_program_tags(Username, ProgramId) ->
             X
     end.
 
-stop_program_threads(Username, ProgramId) ->
-    case automate_bot_engine:stop_program_threads(Username, ProgramId) of
+stop_program_threads(UserId, ProgramId) ->
+    case automate_bot_engine:stop_program_threads(UserId, ProgramId) of
         ok ->
             ok;
         { error, Reason } ->

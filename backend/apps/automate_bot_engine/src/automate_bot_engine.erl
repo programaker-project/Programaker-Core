@@ -9,7 +9,7 @@
 -export([stop_program_threads/2]).
 
 -spec stop_program_threads(binary(),binary()) -> ok | {error, any()}.
-stop_program_threads(Username, ProgramId) ->
+stop_program_threads(_UserId, ProgramId) ->
     case automate_storage:get_threads_from_program(ProgramId) of
         { ok, Threads } ->
             lists:foreach(fun (ThreadId) ->
