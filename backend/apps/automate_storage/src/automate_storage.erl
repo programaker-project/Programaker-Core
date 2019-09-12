@@ -65,7 +65,10 @@
 %%====================================================================
 create_user(Username, Password, Email) ->
     UserId = generate_id(),
-    CipheredPassword = cipher_password(Password),
+    CipheredPassword = case Password of
+                           undefined -> undefined;
+                           _ -> cipher_password(Password)
+                       end,
     RegisteredUserData = #registered_user_entry{ id=UserId
                                                , username=Username
                                                , password=CipheredPassword
