@@ -45,6 +45,16 @@ export class ProgramService {
         return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/tags';
     }
 
+    async getProgramStopThreadsUrl(programUserId: string, program_id: string) {
+        const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
+        return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/stop-threads';
+    }
+
+    async getStateProgramsUrl(programUserId: string, program_id: string) {
+        const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
+        return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/state';
+    }
+
     getPrograms(): Promise<ProgramMetadata[]> {
         return this.getListProgramsUrl().then(url =>
           this.http.get(url, {headers: this.sessionService.getAuthHeader()})
@@ -114,6 +124,33 @@ export class ProgramService {
             url => (this.http
                     .patch(url,
                            JSON.stringify({name: new_name}),
+                           {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                      ContentType.Json)})
+                    .map(response => {
+                        console.log("R:", response);
+                        return true;
+                    })
+                    .toPromise()));
+    }
+
+    stopThreadsProgram(user_id: string, program_id: string): Promise<boolean> {
+        return this.getProgramStopThreadsUrl(user_id, program_id).then(
+            url => (this.http
+                    .post(url,"",
+                           {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                      ContentType.Json)})
+                    .map(response => {
+                        console.log("R:", response);
+                        return true;
+                    })
+                    .toPromise()));
+    }
+
+    toggleStatusProgram(status:boolean, program_id:string, user_id:string){
+        return this.getStateProgramsUrl(user_id, program_id).then(
+            url => (this.http
+                    .patch(url,
+                           JSON.stringify({status:status}),
                            {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
                                                                       ContentType.Json)})
                     .map(response => {

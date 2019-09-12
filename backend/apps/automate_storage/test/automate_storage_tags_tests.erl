@@ -47,7 +47,7 @@ tests(_SetupResult) ->
     ].
 
 get_uuid() ->
-    <<"b2173c01-465c-4f6e-99df-ba2bfc608e94">>.
+    binary:list_to_bin(uuid:to_string(uuid:uuid4())).
 
 get_tags() ->
     [<<"red">>,<<"blue">>,<<"orange">>].
@@ -55,7 +55,7 @@ get_tags() ->
 test_get_tags_empty_program() ->
     Uuid = get_uuid(),
     {ok, Tags} = automate_storage:get_tags_program_from_id(Uuid),
-    ?assertMatch(Tags, []).
+    ?assertEqual(Tags, []).
 
 test_get_tags_inserted() ->
     Tags = get_tags(),

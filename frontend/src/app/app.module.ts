@@ -18,6 +18,7 @@ import { MatFormFieldModule } from '@angular/material';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBarModule } from '@angular/material/snack-bar'
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -31,6 +32,7 @@ import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
+import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
 import { ProgramMetadataComponent } from './program_metadata/program-metadata.component';
 
 // Services
@@ -72,6 +74,7 @@ import 'hammerjs';
         RenameProgramDialogComponent,
         DeleteProgramDialogComponent,
         TemplateCreateDialogComponent,
+        StopThreadProgramDialogComponent,
 
         // Pipes
         SummarizeJSON,
@@ -92,6 +95,7 @@ import 'hammerjs';
         MatDialogModule,
         MatTabsModule,
         MatChipsModule,
+        MatSnackBarModule,
 
         BrowserAnimationsModule,
 
@@ -113,6 +117,7 @@ import 'hammerjs';
         RenameProgramDialogComponent,
         DeleteProgramDialogComponent,
         TemplateCreateDialogComponent,
+        StopThreadProgramDialogComponent,
     ],
     providers: [],
     bootstrap: [AppComponent],

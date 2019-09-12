@@ -48,14 +48,14 @@
                                , stats
                                }).
 
--record(running_program_thread_entry, { thread_id :: thread_id()
-                                      , runner_pid :: undefined | pid()
-                                      , parent_program_id :: program_id()
-                                      , instructions :: [_]  %% The parent program instructions might have changed
-                                      , memory :: map()
-                                      , instruction_memory :: map()
-                                      , position :: [pos_integer()]
-                                      , stats
+-record(running_program_thread_entry, { thread_id :: thread_id()        | ?MNESIA_SELECTOR
+                                      , runner_pid :: undefined | pid() | ?MNESIA_SELECTOR
+                                      , parent_program_id :: program_id() | ?MNESIA_SELECTOR
+                                      , instructions :: [_]| ?MNESIA_SELECTOR  %% The parent program instructions might have changed
+                                      , memory :: map()    | ?MNESIA_SELECTOR
+                                      , instruction_memory :: map() | ?MNESIA_SELECTOR
+                                      , position :: [pos_integer()] | ?MNESIA_SELECTOR
+                                      , stats :: any() | ?MNESIA_SELECTOR
                                       }).
 
 -record(registered_service_entry, { registration_id :: binary() | ?MNESIA_SELECTOR

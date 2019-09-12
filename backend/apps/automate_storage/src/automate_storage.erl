@@ -34,6 +34,7 @@
         , get_thread_from_id/1
         , delete_thread/1
         , update_thread/1
+        , get_threads_from_program/1
 
         , set_program_variable/3
         , get_program_variable/2
@@ -65,7 +66,10 @@
 %%====================================================================
 create_user(Username, Password, Email) ->
     UserId = generate_id(),
-    CipheredPassword = cipher_password(Password),
+    CipheredPassword = case Password of
+                           undefined -> undefined;
+                           _ -> cipher_password(Password)
+                       end,
     RegisteredUserData = #registered_user_entry{ id=UserId
                                                , username=Username
                                                , password=CipheredPassword
@@ -431,26 +435,52 @@ update_thread(Thread=#running_program_thread_entry{ thread_id=Id }) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec get_threads_from_program(binary()) -> {ok, [thread_id()]} | {error, not_found}.
+get_threads_from_program(ParentProgramId) ->
+    MatchHead = #running_program_thread_entry{ thread_id = '$1'
+                                             , runner_pid = '_'
+                                             , parent_program_id = '$2'
+                                             , instructions = '_'
+                                             , memory = '_'
+                                             , instruction_memory = '_'
+                                             , position = '_'
+                                             , stats = '_'
+                                             },
+    Guard = {'==', '$2', ParentProgramId},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+    Transaction = fun() ->
+                          mnesia:select(?RUNNING_THREADS_TABLE, Matcher)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            {ok, Result};
+        { aborted, Reason } ->
+            {error, Reason}
+    end.
+
 
 dirty_list_running_threads() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_THREADS_TABLE)}.
 
 
--spec register_thread_runner(binary(), pid()) -> 'ok' | {error, not_running}.
+-spec register_thread_runner(binary(), pid()) -> {'ok', #running_program_thread_entry{}} | {error, not_running}.
 register_thread_runner(ThreadId, Pid) ->
     Transaction = fun() ->
                           case mnesia:read(?RUNNING_THREADS_TABLE, ThreadId) of
                               [Thread] ->
+                                  NewEntry = Thread#running_program_thread_entry{runner_pid=Pid},
                                   ok = mnesia:write(?RUNNING_THREADS_TABLE,
-                                                    Thread#running_program_thread_entry{runner_pid=Pid},
-                                                    write)
+                                                    NewEntry,
+                                                    write),
+                                  {ok, NewEntry}
                           end
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
-           Result;
+            Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:fwrite("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 

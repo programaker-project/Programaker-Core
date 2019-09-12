@@ -78,7 +78,6 @@ export class DashboardComponent {
             })
     }
 
-
     addProgram(): void {
         this.programService.createProgram().then(program => {
             this.openProgram(program);
