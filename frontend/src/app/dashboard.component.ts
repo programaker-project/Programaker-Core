@@ -14,6 +14,8 @@ import { SessionService } from './session.service';
 import { AvailableService, ServiceEnableHowTo } from './service';
 import { ServiceService } from './service.service';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSlideToggle } from '@angular/material/slide-toggle';
+import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 import { MonitorMetadata } from './monitor';
 import { MonitorService } from './monitor.service';
@@ -105,4 +107,13 @@ export class DashboardComponent {
 
         dialogRef.afterClosed().subscribe(result => { });
     }
+
+    onChange(ob: MatSlideToggleChange, program: ProgramMetadata) {
+      console.log(ob.checked);
+      this.sessionService.getSession().then(session =>
+          this.programService.setProgramStatus(ob.checked, program.id, session.user_id));
+      let matSlideToggle: MatSlideToggle = ob.source;
+      console.log(matSlideToggle.color);
+      console.log(matSlideToggle.required);
+    } 
 }

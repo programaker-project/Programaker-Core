@@ -50,9 +50,9 @@ export class ProgramService {
         return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/stop-threads';
     }
 
-    async getStateProgramsUrl(programUserId: string, program_id: string) {
+    async getProgramsStatusUrl(programUserId: string, program_id: string) {
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
-        return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/state';
+        return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/status';
     }
 
     getPrograms(): Promise<ProgramMetadata[]> {
@@ -146,8 +146,8 @@ export class ProgramService {
                     .toPromise()));
     }
 
-    toggleStatusProgram(status:boolean, program_id:string, user_id:string){
-        return this.getStateProgramsUrl(user_id, program_id).then(
+    setProgramStatus(status:boolean, program_id:string, user_id:string){
+        return this.getProgramsStatusUrl(user_id, program_id).then(
             url => (this.http
                     .patch(url,
                            JSON.stringify({status:status}),

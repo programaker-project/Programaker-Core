@@ -42,7 +42,7 @@ merge_thread_structures(Thread, #program_thread{ position=Position
 
 build_check_next_action(ExpectedMessages) ->
     fun(_, {Type, _Content}) ->
-            %% io:format("Received ~p expecting ~p :: ~p~n", [Type, ExpectedMessages, lists:member(Type, ExpectedMessages)]),
+            %io:format("Received ~p expecting ~p :: ~p~n", [Type, ExpectedMessages, lists:member(Type, ExpectedMessages)]),
             case lists:member(Type, ExpectedMessages) of
                 true ->
                     continue;

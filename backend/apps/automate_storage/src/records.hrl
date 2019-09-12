@@ -17,6 +17,7 @@
                             , program_type
                             , program_parsed
                             , program_orig
+                            , enable :: boolean()
                             }).
 
 -record(program_tags_entry, { program_id
