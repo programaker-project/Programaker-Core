@@ -74,9 +74,6 @@ start_thread_and_stop_threads_continues() ->
     %% Thread                            *-- wait ........YES..........X                                    NO
 
     %% Program creation
-    TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
-                           , { ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }}},
-
     {Username, ProgramName, ProgramId} = create_anonymous_program(),
 
     Program = #program_state{ program_id=?JUST_WAIT_PROGRAM_ID
@@ -108,12 +105,24 @@ start_thread_and_stop_threads_continues() ->
     ?assert(is_process_alive(ProgramPid)),
 
     %% Trigger sent, thread is spawned
-    ?assertMatch({ok, [_Thread]}, automate_bot_engine_triggers:get_triggered_threads(Program, TriggerMonitorSignal)),
+    ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
+    ok = wait_for_check_ok(fun() ->
+        case automate_storage:get_threads_from_program(ProgramId) of
+           {ok, [ThreadId]} -> 
+               case automate_storage:get_thread_from_id(ThreadId) of
+                {ok, #running_program_thread_entry{runner_pid=undefined}} ->
+                    false;
+                {ok, _} -> true
+                end;
+            _ ->
+             false
+        end
+    end, 10, 100),
 
-    %% %% Check that thread is alive
-    %% @TODO: Get program threads has yet to be implemented
-    %% [{Pid, ThreadId}] = automate_storage:get_program_threads(ProgramId),
-    %% ?assert(is_process_alive(ThreadId)),
+    %% Check that thread is alive
+    {ok, [ThreadId]} = automate_storage:get_threads_from_program(ProgramId),
+    {ok, #running_program_thread_entry{runner_pid=ThreadRunnerId}} = automate_storage:get_thread_from_id(ThreadId),
+    ?assert(is_process_alive(ThreadRunnerId)),
 
     %% Stop threads
     ok = automate_rest_api_backend:stop_program_threads(undefined, ProgramId),
@@ -122,9 +131,15 @@ start_thread_and_stop_threads_continues() ->
     {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),
     ?assert(is_process_alive(ProgramPid2)),
 
-    %% %% Check that thread is dead
-    %% @TODO: Get program threads has yet to be implemented
-    %% ?assert(length(automate_storage:get_program_thread(ProgramId)) == 0),
+    %% Check that thread is dead
+    wait_for_check_ok(fun() ->
+        case automate_storage:get_threads_from_program(ProgramId) of
+            {ok, []} -> true;
+            _ -> false
+        end
+    end, 10, 100),
+    {ok, FinishedTreads} = automate_storage:get_threads_from_program(ProgramId),
+    ?assert(length(FinishedTreads) == 0),
 
     ok.
 
@@ -212,3 +227,14 @@ wait_for_program_alive(ProgramId, TestTimes, SleepTime) ->
             timer:sleep(SleepTime),
             wait_for_program_alive(ProgramId, TestTimes - 1, SleepTime)
     end.
+
+
+wait_for_check_ok(Check, 0, SleepTime) ->
+    {error, timeout};
+wait_for_check_ok(Check, TestTimes, SleepTime) ->
+    case Check() of
+        true -> ok;
+        false ->
+            timer:sleep(SleepTime),
+            wait_for_check_ok(Check, TestTimes - 1, SleepTime)
+    end. 

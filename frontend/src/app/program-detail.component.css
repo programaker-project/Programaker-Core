@@ -15,7 +15,7 @@ button#program-rename-button, button#program-start-button, button#program-delete
     padding: 1ex;
 }
 
-button#program-delete-button {
+button#program-delete-button{
     float: right;
 }
 
