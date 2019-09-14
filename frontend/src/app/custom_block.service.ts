@@ -7,6 +7,14 @@ import { SessionService } from './session.service';
 import { ContentType } from './content-type';
 import { CustomBlock, ResolvedCustomBlock, ResolvedBlockArgument, BlockArgument, DynamicBlockArgument, StaticBlockArgument, ResolvedDynamicBlockArgument } from './custom_block';
 
+
+type CallbackResult = (
+    { [key: string]: { name: string } }   // Old style
+        | [ {id: string, name: string} ]  // New style
+);
+
+
+
 @Injectable()
 export class CustomBlockService {
     static DataCallbackCachePrefix = "plaza-data-callback";
@@ -151,15 +159,32 @@ export class CustomBlockService {
         }
 
         const query = this.http.get(url, { headers: this.sessionService.getAuthHeader() })
-            .map((response: { result: { [key: string]: { name: string } } }) => {
-                const options = [];
-                const result = response.result;
+            .map((response: { result: CallbackResult } ) => {
 
-                for (const key of Object.keys(result)) {
-                    options.push([result[key].name, key]);
+                console.log(response.result.constructor == Object);
+                if (response.result.constructor == Object) {
+                    // Data from callback as dictionary
+                    const options = [];
+                    const result = response.result as { [key: string]: { name: string } };
+
+                    for (const key of Object.keys(result)) {
+                        options.push([result[key].name, key]);
+                    }
+
+                    return options;
                 }
+                else {
+                    // Data from callback as list
+                    // Data from callback as dictionary
+                    const options = [];
+                    const result = response.result as [ {id: string, name: string} ];
 
-                return options;
+                    for (const item of result) {
+                        options.push([item.name, item.id]);
+                    }
+
+                    return options;
+                }
             })
             .toPromise();
 
