@@ -50,3 +50,5 @@ ok.
 escript restore.tmp.escript
 
 rm "$BACKUP_FILE"
+
+echo 'Restoration complete, now restart the backend pods'
