@@ -56,6 +56,8 @@ tests(_SetupResult) ->
       , fun start_program_launch_thread_and_disable_program_it_continues/0 }
     , { "[Bot runner - Disable program2] Create a program, disable it and try to launch a command"
       , fun start_program_and_disable_it_no_commands/0 }
+    , { "[Bot runner - Disable program3] Create a program, disable it, enable it and launch a command"
+      , fun start_program_disable_enable_and_launch_command/0 }
     ].
 
 
@@ -120,9 +122,6 @@ start_program_launch_thread_and_disable_program_it_continues() ->
     %% Disable program
     ok = automate_bot_engine:change_program_status(Username,ProgramId,false),
 
-    %% Stop threads
-    %%ok = automate_rest_api_backend:stop_program_threads(undefined, ProgramId),
-
     %% Check that program is alive
     {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),
     ?assert(is_process_alive(ProgramPid2)),
@@ -174,14 +173,81 @@ start_program_and_disable_it_no_commands() ->
     {ok, ProgramPid} = automate_storage:get_program_pid(ProgramId),
     ?assert(is_process_alive(ProgramPid)),
 
-    %% Stop threads
-    ok = automate_rest_api_backend:stop_program_threads(undefined, ProgramId),
+    %% Disable program
+    ok = automate_bot_engine:change_program_status(Username,ProgramId,false),
 
     %% Check that program is alive
     {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),
     ?assert(is_process_alive(ProgramPid2)),
 
+    %% Trigger sent, thread is spawned
+    ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
+    timer:sleep(1000),
+
+    {ok, Threads} = automate_storage:get_threads_from_program(ProgramId),
+    ?assert(length(Threads) == 0),
+
     ok.
+
+start_program_disable_enable_and_launch_command()->
+    %% Program creation
+    {Username, ProgramName, ProgramId} = create_anonymous_program(),
+
+    %% Launch program
+    ?assertMatch({ok, ProgramId},
+                 automate_storage:update_program(
+                   Username, ProgramName,
+                   #stored_program_content{ type=?JUST_WAIT_PROGRAM_TYPE
+                                          , parsed=#{ <<"blocks">> => [[ ?JUST_WAIT_PROGRAM_TRIGGER
+                                                                         | ?JUST_WAIT_PROGRAM_INSTRUCTIONS ]]
+                                                    , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
+                                                    }
+                                          , orig=?JUST_WAIT_PROGRAM_ORIG
+                                          })),
+
+    ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
+
+    %% Check that program id alive
+    ?assertMatch(ok, wait_for_program_alive(ProgramId, 10, 100)),
+
+    {ok, ProgramPid} = automate_storage:get_program_pid(ProgramId),
+    ?assert(is_process_alive(ProgramPid)),
+
+    %% Disable program
+    ok = automate_bot_engine:change_program_status(Username,ProgramId,false),
+
+    %% Check that program is alive
+    {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),
+    ?assert(is_process_alive(ProgramPid2)),
+
+    ok = automate_bot_engine:change_program_status(Username,ProgramId,true),
+
+    %% Trigger sent, thread is spawned
+    ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
+    ok = wait_for_check_ok(fun() ->
+        case automate_storage:get_threads_from_program(ProgramId) of
+           {ok, [ThreadId]} -> 
+               case automate_storage:get_thread_from_id(ThreadId) of
+                {ok, #running_program_thread_entry{runner_pid=undefined}} ->
+                    false;
+                {ok, _} -> true
+                end;
+            _ ->
+             false
+        end
+    end, 10, 100),
+
+    %% Check that thread is alive
+    {ok, [ThreadId]} = automate_storage:get_threads_from_program(ProgramId),
+    {ok, #running_program_thread_entry{runner_pid=ThreadRunnerId}} = automate_storage:get_thread_from_id(ThreadId),
+    ?assert(is_process_alive(ThreadRunnerId)),
+
+    {ok, FinishedTreads} = automate_storage:get_threads_from_program(ProgramId),
+    ?assert(length(FinishedTreads) == 1),
+
+    ok.
+
+    
 
 
 %%====================================================================

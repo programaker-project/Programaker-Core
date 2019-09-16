@@ -26,6 +26,7 @@ stop_program_threads(_UserId, ProgramId) ->
 change_program_status(Username, ProgramId, Status) ->
 	case automate_storage:update_program_status(Username, ProgramId, Status) of
 		ok ->
+      ok = automate_bot_engine_launcher:update_program(ProgramId),
 			ok;
 		{ error, Reason } ->
 			{ error, Reason }
