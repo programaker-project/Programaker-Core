@@ -25,8 +25,8 @@ init(Req, _Opts) ->
     ProgramId = cowboy_req:binding(program_id, Req),
     {cowboy_rest, Req
     , #program_status_opts{ user_id=UserId
-                       , program_id=ProgramId
-                       }}.
+                          , program_id=ProgramId
+                          }}.
 
 resource_exists(Req, State) ->
     case cowboy_req:method(Req) of
@@ -76,10 +76,10 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 -spec accept_status_update(_, #program_status_opts{})
-                        -> {'false',_,#program_status_opts{}} | {'true',_,#program_status_opts{}}.
+                          -> {'false',_,#program_status_opts{}} | {'true',_,#program_status_opts{}}.
 accept_status_update(Req, #program_status_opts{user_id=UserId
-                                         , program_id=ProgramId
-                                         }) ->
+                                              , program_id=ProgramId
+                                              }) ->
     {ok, Body, _} = read_body(Req),
     #{<<"enable">> := Status } = jiffy:decode(Body, [return_maps]),
 
@@ -94,8 +94,8 @@ accept_status_update(Req, #program_status_opts{user_id=UserId
             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
 
             { true, Res3, #program_status_opts{ user_id=UserId
-                                           , program_id=ProgramId
-                                           }
+                                              , program_id=ProgramId
+                                              }
             };
         {error, _} ->
             Output = jiffy:encode(#{ <<"success">> => false
@@ -106,8 +106,8 @@ accept_status_update(Req, #program_status_opts{user_id=UserId
             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
 
             { false, Res3, #program_status_opts{ user_id=UserId
-                                            , program_id=ProgramId
-                                            }
+                                               , program_id=ProgramId
+                                               }
             }
     end.
 

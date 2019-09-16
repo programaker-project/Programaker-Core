@@ -84,7 +84,7 @@ accept_json_create_program(Req, State) ->
                                    , <<"name">> => ProgramName
                                    , <<"link">> =>  ProgramUrl
                                    }),
-            
+
             Res1 = cowboy_req:set_resp_body(Output, Req),
             Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),

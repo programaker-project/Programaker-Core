@@ -101,18 +101,18 @@ start_program_launch_thread_and_disable_program_it_continues() ->
     %% Trigger sent, thread is spawned
     ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
     ok = wait_for_check_ok(fun() ->
-        case automate_storage:get_threads_from_program(ProgramId) of
-           {ok, [ThreadId]} -> 
-               case automate_storage:get_thread_from_id(ThreadId) of
-                {ok, #running_program_thread_entry{runner_pid=undefined}} ->
-                    io:fwrite("UNDEF~n"),
-                    false;
-                {ok, _} -> true
-                end;
-            _ ->
-             false
-        end
-    end, 10, 100),
+                                   case automate_storage:get_threads_from_program(ProgramId) of
+                                       {ok, [ThreadId]} -> 
+                                           case automate_storage:get_thread_from_id(ThreadId) of
+                                               {ok, #running_program_thread_entry{runner_pid=undefined}} ->
+                                                   io:fwrite("UNDEF~n"),
+                                                   false;
+                                               {ok, _} -> true
+                                           end;
+                                       _ ->
+                                           false
+                                   end
+                           end, 10, 100),
 
     %% Check that thread is alive
     {ok, [ThreadId]} = automate_storage:get_threads_from_program(ProgramId),
@@ -128,11 +128,11 @@ start_program_launch_thread_and_disable_program_it_continues() ->
 
     %% Check that thread is dead
     wait_for_check_ok(fun() ->
-        case automate_storage:get_threads_from_program(ProgramId) of
-            {ok, []} -> true;
-            _ -> false
-        end
-    end, 10, 100),
+                              case automate_storage:get_threads_from_program(ProgramId) of
+                                  {ok, []} -> true;
+                                  _ -> false
+                              end
+                      end, 10, 100),
     {ok, FinishedTreads} = automate_storage:get_threads_from_program(ProgramId),
     ?assert(length(FinishedTreads) == 1),
 
@@ -225,17 +225,17 @@ start_program_disable_enable_and_launch_command()->
     %% Trigger sent, thread is spawned
     ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
     ok = wait_for_check_ok(fun() ->
-        case automate_storage:get_threads_from_program(ProgramId) of
-           {ok, [ThreadId]} -> 
-               case automate_storage:get_thread_from_id(ThreadId) of
-                {ok, #running_program_thread_entry{runner_pid=undefined}} ->
-                    false;
-                {ok, _} -> true
-                end;
-            _ ->
-             false
-        end
-    end, 10, 100),
+                                   case automate_storage:get_threads_from_program(ProgramId) of
+                                       {ok, [ThreadId]} -> 
+                                           case automate_storage:get_thread_from_id(ThreadId) of
+                                               {ok, #running_program_thread_entry{runner_pid=undefined}} ->
+                                                   false;
+                                               {ok, _} -> true
+                                           end;
+                                       _ ->
+                                           false
+                                   end
+                           end, 10, 100),
 
     %% Check that thread is alive
     {ok, [ThreadId]} = automate_storage:get_threads_from_program(ProgramId),
@@ -247,7 +247,7 @@ start_program_disable_enable_and_launch_command()->
 
     ok.
 
-    
+
 
 
 %%====================================================================
