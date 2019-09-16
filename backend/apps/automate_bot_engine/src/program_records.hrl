@@ -16,4 +16,5 @@
                        , permissions :: #program_permissions{} | undefined
                        , variables   :: [any()]
                        , triggers    :: [#program_trigger{}]
+                       , enabled :: boolean()
                        }).

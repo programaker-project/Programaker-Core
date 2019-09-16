@@ -2,7 +2,7 @@
 %%% Automate bot engine tests.
 %%% @end
 
--module(automate_bot_engine_thread_stopping_tests).
+-module(automate_bot_engine_program_disabled).
 -include_lib("eunit/include/eunit.hrl").
 
 %% Data structures
@@ -52,15 +52,15 @@ stop({_NodeName}) ->
 
 
 tests(_SetupResult) ->
-    [ { "[Bot runner - Stop threads] Start a thread and stop it, the program must continue running"
-      , fun start_thread_and_stop_threads_continues/0 }
-    , { "[Bot runner - Stop threads] Create a program and stop it's threads (none). Nothing happens"
-      , fun start_program_and_stop_threads_nothing/0 }
+    [ { "[Bot runner - Disable program] Start a program, launch a thread, disable program, the program must continue running"
+      , fun start_program_launch_thread_and_disable_program_it_continues/0 }
+    , { "[Bot runner - Disable program2] Create a program, disable it and try to launch a command"
+      , fun start_program_and_disable_it_no_commands/0 }
     ].
 
 
 %%%% Bot runner
-start_thread_and_stop_threads_continues() ->
+start_program_launch_thread_and_disable_program_it_continues() ->
     %% Sequence
     %%
     %% Test (this)  *---+--------------+.............+-----+---------+...........+---------+----------------+
@@ -103,6 +103,7 @@ start_thread_and_stop_threads_continues() ->
            {ok, [ThreadId]} -> 
                case automate_storage:get_thread_from_id(ThreadId) of
                 {ok, #running_program_thread_entry{runner_pid=undefined}} ->
+                    io:fwrite("UNDEF~n"),
                     false;
                 {ok, _} -> true
                 end;
@@ -116,8 +117,11 @@ start_thread_and_stop_threads_continues() ->
     {ok, #running_program_thread_entry{runner_pid=ThreadRunnerId}} = automate_storage:get_thread_from_id(ThreadId),
     ?assert(is_process_alive(ThreadRunnerId)),
 
+    %% Disable program
+    ok = automate_bot_engine:change_program_status(Username,ProgramId,false),
+
     %% Stop threads
-    ok = automate_rest_api_backend:stop_program_threads(undefined, ProgramId),
+    %%ok = automate_rest_api_backend:stop_program_threads(undefined, ProgramId),
 
     %% Check that program is alive
     {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),
@@ -131,11 +135,11 @@ start_thread_and_stop_threads_continues() ->
         end
     end, 10, 100),
     {ok, FinishedTreads} = automate_storage:get_threads_from_program(ProgramId),
-    ?assert(length(FinishedTreads) == 0),
+    ?assert(length(FinishedTreads) == 1),
 
     ok.
 
-start_program_and_stop_threads_nothing() ->
+start_program_and_disable_it_no_commands() ->
     %% Sequence
     %%
     %% Test (this)  *---+-----------+...........+---------+--→ OK

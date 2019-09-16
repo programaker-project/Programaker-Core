@@ -16,7 +16,8 @@
 initialize_program(ProgramId,
                    #user_program_entry
                    { user_id=OwnerUserId
-                   , program_parsed=Parsed}) ->
+                   , program_parsed=Parsed
+                   , enabled=Enabled}) ->
 
     {ok, #{ <<"variables">> := Variables
           , <<"blocks">> := Blocks
@@ -26,19 +27,22 @@ initialize_program(ProgramId,
                     , variables=Variables
                     , permissions=#program_permissions{ owner_user_id=OwnerUserId }
                     , triggers=get_triggers(Blocks)
+                    , enabled=Enabled
                     }}.
 
 -spec update_program(#program_state{}, #user_program_entry{}) -> {ok, #program_state{}}.
 update_program(State,
                #user_program_entry
                { user_id=OwnerUserId
-               , program_parsed=Parsed}) ->
+               , program_parsed=Parsed
+               , enabled=Enabled}) ->
     {ok, #{ <<"variables">> := Variables
           , <<"blocks">> := Blocks
           }} = automate_program_linker:link_program(Parsed, OwnerUserId),
     { ok
     , State#program_state{ variables=Variables %% TODO port old variable values
                          , triggers=get_triggers(Blocks)
+                         , enabled=Enabled
                          }}.
 
 

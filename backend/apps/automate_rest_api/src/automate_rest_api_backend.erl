@@ -10,6 +10,7 @@
         , create_program/1
         , get_program/2
         , update_program_tags/3
+        , update_program_status/3
         , get_program_tags/2
         , stop_program_threads/2
         , lists_programs_from_username/1
@@ -138,6 +139,14 @@ update_program_tags(Username, ProgramName, Tags) ->
             {error, Reason}
     end.
 
+update_program_status(Username, ProgramName, Status) ->
+    case automate_bot_engine:change_program_status(Username, ProgramName, Status) of
+        ok ->
+            ok;
+        { error, Reason } ->
+            { error , Reason }
+    end.
+
 get_program_tags(Username, ProgramId) ->
     case automate_storage:get_tags_program_from_id(ProgramId) of
         {ok, Tags} ->
@@ -161,8 +170,9 @@ lists_programs_from_username(Username) ->
             {ok, [#program_metadata{ id=ProgramId
                                    , name=ProgramName
                                    , link=generate_url_for_program_name(Username, ProgramName)
+                                   , enabled=Enabled
                                    }
-                  || {ProgramId, ProgramName} <- Programs]}
+                  || {ProgramId, ProgramName, Enabled} <- Programs]}
     end.
 
 update_program(Username, ProgramName,
@@ -341,6 +351,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                                             , program_type=ProgramType
                                             , program_parsed=ProgramParsed
                                             , program_orig=ProgramOrig
+                                            , enabled=Enabled
                                             }) ->
     #user_program{ id=Id
                  , user_id=UserId

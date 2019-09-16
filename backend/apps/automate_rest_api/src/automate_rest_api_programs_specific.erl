@@ -92,6 +92,7 @@ program_to_json(#user_program{ id=Id
                              , program_type=ProgramType
                              , program_parsed=ProgramParsed
                              , program_orig=ProgramOrig
+                             , enabled=Enabled
                              }) ->
     jiffy:encode(#{ <<"id">> => Id
                   , <<"owner">> => UserId
@@ -99,6 +100,7 @@ program_to_json(#user_program{ id=Id
                   , <<"type">> => ProgramType
                   , <<"parsed">> => ProgramParsed
                   , <<"orig">> => ProgramOrig
+                  , <<"enabled">> => Enabled
                   }).
 
 

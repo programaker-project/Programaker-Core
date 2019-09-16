@@ -6,13 +6,13 @@
       <div class="grid grid-pad">
           <div class="row">
             <div *ngFor="let program of programs" class="col-sm-4">
-                <mat-card class="module program">
+                <mat-card class="module program" [ngStyle]="{'background-color':program.enable ? 'white' : 'lightgrey' }">
                     <h4 role="button" (click)="openProgram(program)">{{program.name}}</h4>
                     <mat-slide-toggle
                         [color]="primary"
-                        [checked]=true
+                        [checked]=program.enable
                         (change)="onChange($event,program)">
-                      Disable
+                      <span>{{ program.enable == true ? 'Enabled' : 'Disabled' }}</span>
                     </mat-slide-toggle>
                 </mat-card>
             </div>

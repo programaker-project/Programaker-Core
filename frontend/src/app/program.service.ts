@@ -146,11 +146,11 @@ export class ProgramService {
                     .toPromise()));
     }
 
-    setProgramStatus(status:boolean, program_id:string, user_id:string){
+    setProgramStatus(status:string, program_id:string, user_id:string){
         return this.getProgramsStatusUrl(user_id, program_id).then(
             url => (this.http
-                    .patch(url,
-                           JSON.stringify({status:status}),
+                    .post(url,
+                           status,
                            {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
                                                                       ContentType.Json)})
                     .map(response => {
