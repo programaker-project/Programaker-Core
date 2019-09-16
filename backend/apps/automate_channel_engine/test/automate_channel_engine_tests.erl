@@ -67,8 +67,8 @@ simple_listen_send() ->
 
     ok = automate_channel_engine:listen_channel(ChannelId),
     spawn_link(fun () ->
-                             automate_channel_engine:send_to_channel(ChannelId, Message)
-                     end),
+                       automate_channel_engine:send_to_channel(ChannelId, Message)
+               end),
     receive
         {channel_engine, ChannelId, ReceivedMessage} ->
             ?assertMatch(Message, ReceivedMessage)
@@ -105,7 +105,7 @@ register_and_close() ->
 
     Pid = spawn_link(fun() ->
                              ok = automate_channel_engine:listen_channel(ChannelId)
-               end),
+                     end),
 
     receive {'EXIT', Pid, normal} ->
             ok

@@ -155,8 +155,8 @@ get_program_tags(Username, ProgramId) ->
             X
     end.
 
-stop_program_threads(Username, ProgramId) ->
-    case automate_bot_engine:stop_program_threads(Username, ProgramId) of
+stop_program_threads(UserId, ProgramId) ->
+    case automate_bot_engine:stop_program_threads(UserId, ProgramId) of
         ok ->
             ok;
         { error, Reason } ->
@@ -342,7 +342,7 @@ generate_url_for_monitor_name(Username, MonitorName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/monitors/~s", [Username, MonitorName]))).
 
 generate_url_for_service_port(UserId, ServicePortId) ->
-        binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/bridges/id/~s/communication", [UserId, ServicePortId]))).
+    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/bridges/id/~s/communication", [UserId, ServicePortId]))).
 
 
 program_entry_to_program(#user_program_entry{ id=Id

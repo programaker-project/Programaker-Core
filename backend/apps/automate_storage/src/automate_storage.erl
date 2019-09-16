@@ -284,7 +284,7 @@ delete_program(Username, ProgramName)->
 -spec delete_running_process(binary()) -> ok | {error, not_found}.
 delete_running_process(ProcessId) ->
     Transaction = fun() ->
-                         ok = mnesia:delete(?RUNNING_PROGRAMS_TABLE, ProcessId, write)
+                          ok = mnesia:delete(?RUNNING_PROGRAMS_TABLE, ProcessId, write)
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
@@ -320,14 +320,14 @@ register_program_runner(ProgramId, Pid) ->
                           case mnesia:read(?RUNNING_PROGRAMS_TABLE, ProgramId) of
                               [] ->
                                   ok = mnesia:write(?RUNNING_PROGRAMS_TABLE,
-                                               #running_program_entry{ program_id=ProgramId
-                                                                     , runner_pid=Pid
-                                                                     , variables=#{}
-                                                                     , stats=#{}
-                                                                     }, write);
+                                                    #running_program_entry{ program_id=ProgramId
+                                                                          , runner_pid=Pid
+                                                                          , variables=#{}
+                                                                          , stats=#{}
+                                                                          }, write);
                               [Program] ->
                                   ok = mnesia:write(?RUNNING_PROGRAMS_TABLE,
-                                               Program#running_program_entry{runner_pid=Pid}, write)
+                                                    Program#running_program_entry{runner_pid=Pid}, write)
                           end
                   end,
     case mnesia:transaction(Transaction) of
@@ -484,21 +484,23 @@ dirty_list_running_threads() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_THREADS_TABLE)}.
 
 
--spec register_thread_runner(binary(), pid()) -> 'ok' | {error, not_running}.
+-spec register_thread_runner(binary(), pid()) -> {'ok', #running_program_thread_entry{}} | {error, not_running}.
 register_thread_runner(ThreadId, Pid) ->
     Transaction = fun() ->
                           case mnesia:read(?RUNNING_THREADS_TABLE, ThreadId) of
                               [Thread] ->
+                                  NewEntry = Thread#running_program_thread_entry{runner_pid=Pid},
                                   ok = mnesia:write(?RUNNING_THREADS_TABLE,
-                                                    Thread#running_program_thread_entry{runner_pid=Pid},
-                                                    write)
+                                                    NewEntry,
+                                                    write),
+                                  {ok, NewEntry}
                           end
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
-           Result;
+            Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:fwrite("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -595,7 +597,7 @@ add_token_to_user(UserId, SessionToken) ->
                                       , #user_session_entry{ session_id=SessionToken
                                                            , user_id=UserId
                                                            , session_start_time=StartTime
-                                          }
+                                                           }
                                       , write)
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
@@ -822,7 +824,7 @@ store_new_program_content(Username, ProgramName,
                                                  , parsed=ProgramParsed
                                                  , type=ProgramType
                                                  })->
-        Transaction = fun() ->
+    Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
                                                                 , username='$2'

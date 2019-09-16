@@ -33,9 +33,9 @@ get_monitor_result(<<"xpath_v1">>, #{ <<"url">> := Url
     Orig = self(),
     process_flag(trap_exit, true),
     NewPid = spawn_link(fun() ->
-                       Result = resolve_xpath(Url, XPath),
-                       Orig ! Result
-               end),
+                                Result = resolve_xpath(Url, XPath),
+                                Orig ! Result
+                        end),
     receive
         ExitCode = {'EXIT', _, _} ->
             io:format("Exited: ~p~n", [ExitCode]),
@@ -62,18 +62,18 @@ wait_for_pid(Pid) ->
     case is_process_alive(Pid) of
         false ->
             receive {'EXIT', Pid, _} ->
-                io:format("Previously exited~n"),
-                ok
+                    io:format("Previously exited~n"),
+                    ok
             after 0 ->
-                %% Stop immediately if exit message not received
-                ok
+                    %% Stop immediately if exit message not received
+                    ok
             end;
         true ->
             receive {'EXIT', Pid, _} ->
-                io:format("Got exited~n"),
-                ok
+                    io:format("Got exited~n"),
+                    ok
             after ?WAIT_FOR_PID_TIMEOUT ->
-                timeout
+                    timeout
             end
     end.
 

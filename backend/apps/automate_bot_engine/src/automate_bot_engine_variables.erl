@@ -127,11 +127,11 @@ set_memory([H], V, Mem) ->
     Mem#{ H => V };
 set_memory([H | T], V, Mem) ->
     SubMem = case Mem of
-        #{ H := SubValue } ->
-            SubValue;
-        _ ->
-            #{}
-    end,
+                 #{ H := SubValue } ->
+                     SubValue;
+                 _ ->
+                     #{}
+             end,
     Mem#{ H => set_memory(T, V, SubMem) }.
 
 -spec get_thread_value(#program_thread{}, [atom()|binary()]) -> {ok, any()} | {error, not_found}.

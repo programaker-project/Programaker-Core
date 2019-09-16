@@ -98,18 +98,19 @@ start_thread_and_stop_threads_continues() ->
 
     %% Trigger sent, thread is spawned
     ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
-    ok = wait_for_check_ok(fun() ->
-        case automate_storage:get_threads_from_program(ProgramId) of
-           {ok, [ThreadId]} -> 
-               case automate_storage:get_thread_from_id(ThreadId) of
-                {ok, #running_program_thread_entry{runner_pid=undefined}} ->
-                    false;
-                {ok, _} -> true
-                end;
-            _ ->
-             false
-        end
-    end, 10, 100),
+    ok = wait_for_check_ok(
+           fun() ->
+                   case automate_storage:get_threads_from_program(ProgramId) of
+                       {ok, [ThreadId]} ->
+                           case automate_storage:get_thread_from_id(ThreadId) of
+                               {ok, #running_program_thread_entry{runner_pid=undefined}} ->
+                                   false;
+                               {ok, _} -> true
+                           end;
+                       _ ->
+                           false
+                   end
+           end, 10, 100),
 
     %% Check that thread is alive
     {ok, [ThreadId]} = automate_storage:get_threads_from_program(ProgramId),
@@ -124,15 +125,15 @@ start_thread_and_stop_threads_continues() ->
     ?assert(is_process_alive(ProgramPid2)),
 
     %% Check that thread is dead
-    wait_for_check_ok(fun() ->
-        case automate_storage:get_threads_from_program(ProgramId) of
-            {ok, []} -> true;
-            _ -> false
-        end
-    end, 10, 100),
+    wait_for_check_ok(
+      fun() ->
+              case automate_storage:get_threads_from_program(ProgramId) of
+                  {ok, []} -> true;
+                  _ -> false
+              end
+      end, 10, 100),
     {ok, FinishedTreads} = automate_storage:get_threads_from_program(ProgramId),
     ?assert(length(FinishedTreads) == 0),
-
     ok.
 
 start_program_and_stop_threads_nothing() ->

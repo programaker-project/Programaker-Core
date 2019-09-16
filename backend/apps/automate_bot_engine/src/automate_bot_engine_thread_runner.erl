@@ -12,6 +12,7 @@
 -export([ loop/1
         , start_link/1
         , stop/1
+        , stop_by_id/1
         ]).
 
 -define(SERVER, ?MODULE).
@@ -35,6 +36,13 @@ stop(Pid) ->
             X
     end.
 
+-spec stop_by_id(binary()) -> ok.
+stop_by_id(ThreadId) ->
+    case automate_storage:get_thread_from_id(ThreadId) of
+        {ok, #running_program_thread_entry{runner_pid=Pid}} ->
+            stop(Pid)
+    end.
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
@@ -45,14 +53,8 @@ stop(Pid) ->
                               {error, Error :: term()} |
                               ignore.
 start_link(ThreadId) ->
-    case automate_storage:get_thread_from_id(ThreadId) of
-        {ok, Thread} ->
-            Pid = spawn_link(fun () -> init(ThreadId, Thread) end),
-            {ok, Pid}
-        %% We could guard agains this ↓. But as it shouldn't happen, better detect it ASAP
-        %% {error, not_found} ->
-        %%     ignore
-    end.
+    Pid = spawn_link(fun () -> init(ThreadId) end),
+    {ok, Pid}.
 
 
 %%%===================================================================
@@ -65,18 +67,22 @@ start_link(ThreadId) ->
 %% Initializes the server
 %% @end
 %%--------------------------------------------------------------------
--spec init(binary(), #running_program_thread_entry{}) -> {ok, State :: term()} |
-                                                      {ok, State :: term(), Timeout :: timeout()} |
-                                                      {ok, State :: term(), hibernate} |
-                                                      {stop, Reason :: term()} |
-                                                      ignore.
-init(ThreadId, Thread) ->
-    ok = automate_storage:register_thread_runner(ThreadId, self()),
-
-    self() ! {?SIGNAL_PROGRAM_TICK, {}},
-    loop(#state{ thread=Thread
-               , check_next_action=fun(_, _) -> continue end
-               }).
+-spec init(binary()) -> {ok, State :: term()} |
+                        {ok, State :: term(), Timeout :: timeout()} |
+                        {ok, State :: term(), hibernate} |
+                        {stop, Reason :: term()} |
+                        ignore.
+init(ThreadId) ->
+    case automate_storage:register_thread_runner(ThreadId, self()) of
+        {ok, NewThread} ->
+            self() ! {?SIGNAL_PROGRAM_TICK, {}},
+            loop(#state{ thread=NewThread
+                       , check_next_action=fun(_, _) -> continue end
+                       })
+            %% We could guard agains this ↓. But as it shouldn't happen, better detect it ASAP
+            %% {error, not_found} ->
+            %%     ignore
+    end.
 
 
 -spec loop(#state{}) -> no_return().

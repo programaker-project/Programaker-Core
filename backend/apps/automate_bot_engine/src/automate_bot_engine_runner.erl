@@ -19,7 +19,6 @@
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
 -include("instructions.hrl").
--include_lib("eunit/include/eunit.hrl").
 
 -record(state, { program
                , check_next_action
@@ -84,10 +83,10 @@ start_link(ProgramId) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec init(binary(), #user_program_entry{}) -> {ok, State :: term()} |
-                                  {ok, State :: term(), Timeout :: timeout()} |
-                                  {ok, State :: term(), hibernate} |
-                                  {stop, Reason :: term()} |
-                                  ignore.
+                                               {ok, State :: term(), Timeout :: timeout()} |
+                                               {ok, State :: term(), hibernate} |
+                                               {stop, Reason :: term()} |
+                                               ignore.
 init(ProgramId, Program) ->
     ok = automate_storage:register_program_runner(ProgramId, self()),
     {ok, ProgramState} = automate_bot_engine_program_decoder:initialize_program(ProgramId, Program),

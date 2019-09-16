@@ -71,7 +71,7 @@ content_types_provided(Req, State) ->
      Req, State}.
 
 -spec to_json(cowboy_req:req(), #get_program_seq{})
-                                   -> {binary(),cowboy_req:req(), #get_program_seq{}}.
+             -> {binary(),cowboy_req:req(), #get_program_seq{}}.
 to_json(Req, State) ->
     #get_program_seq{username=Username, program_name=ProgramName} = State,
     case automate_rest_api_backend:get_program(Username, ProgramName) of

@@ -60,8 +60,8 @@ route_one_to_one() ->
                        Orig ! ready,
                        receive
                            Data = { automate_service_port_engine_router
-                           , _From
-                           , { data, MessageId, RecvMessage }} ->
+                                  , _From
+                                  , { data, MessageId, RecvMessage }} ->
                                ?assertMatch(Message, RecvMessage),
 
                                ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
