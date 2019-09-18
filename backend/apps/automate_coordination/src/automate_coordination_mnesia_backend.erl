@@ -61,7 +61,7 @@ run_on_process_if_not_started_or_pid(Id, CandidatePid, DisqualifiedPid) ->
                                                                                },
                                                     write),
                                   {ok, not_run_used_pid};
-                              [#run_once_tasks_table_entry{task_id=DisqualifiedPid}] ->
+                              [#run_once_tasks_table_entry{pid=DisqualifiedPid}] ->
                                   ok = mnesia:write(?RUN_ONCE_TASKS_TABLE,
                                                     #run_once_tasks_table_entry{ task_id=Id
                                                                                , node=Node

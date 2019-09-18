@@ -40,6 +40,8 @@ run_task_not_parallel(Function, Id) ->
                                  {ok, not_run_used_pid} ->
                                      RunnerPid ! continue,
                                      {ok, RunnerPid};
+                                 {ok, is_running, Pid, Node} ->
+                                     erlang:error("Disqualified PID returned");
                                  {ok, is_running, Pid2, Node2} ->
                                      case ?UTILS:is_process_alive(Pid2, Node2) of
                                          false ->
