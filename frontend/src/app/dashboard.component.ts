@@ -109,12 +109,10 @@ export class DashboardComponent {
     }
 
     onChange(ob: MatSlideToggleChange, program: ProgramMetadata) {
-        program.enable = ob.checked;
+        program.enabled = ob.checked;
         console.log(ob.checked);
       this.sessionService.getSession().then(session =>
           this.programService.setProgramStatus(JSON.stringify({"enable":ob.checked}), program.id, session.user_id));
       let matSlideToggle: MatSlideToggle = ob.source;
-      console.log(matSlideToggle.color);
-      console.log(matSlideToggle.required);
     } 
 }
