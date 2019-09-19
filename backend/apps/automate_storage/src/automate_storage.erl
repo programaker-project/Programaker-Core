@@ -847,29 +847,27 @@ store_new_program_content(Username, ProgramName,
                                                                         , program_type='_'
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
-                                                                        , enabled=true
+                                                                        , enabled='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
                                                  , {'==', '$3', ProgramName}},
-                                  ProgramResultColumn = '$1',
+                                  ProgramResultColumn = '$_',
                                   ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultColumn]}],
 
                                   case mnesia:select(?USER_PROGRAMS_TABLE, ProgramMatcher) of
                                       [] ->
                                           [];
 
-                                      [ProgramId] ->
+                                      [Program] ->
                                           ok = mnesia:write(?USER_PROGRAMS_TABLE,
-                                                            #user_program_entry{ id=ProgramId
-                                                                               , user_id=UserId
-                                                                               , program_name=ProgramName
-                                                                               , program_type=ProgramType
-                                                                               , program_parsed=ProgramParsed
-                                                                               , program_orig=ProgramOrig
-                                                                               , enabled=true
-                                                                               }, write),
-                                          { ok, ProgramId }
+                                                            Program#user_program_entry{ user_id=UserId
+                                                                                      , program_name=ProgramName
+                                                                                      , program_type=ProgramType
+                                                                                      , program_parsed=ProgramParsed
+                                                                                      , program_orig=ProgramOrig
+                                                                                      }, write),
+                                          { ok, Program#user_program_entry.id }
                                   end
                           end
                   end,
