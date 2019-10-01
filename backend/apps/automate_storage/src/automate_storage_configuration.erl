@@ -5,14 +5,14 @@
 
 -module(automate_storage_configuration).
 
--exports([ get_versioning/0
-         ]).
+-export([ get_versioning/1
+        ]).
 
 -include("./databases.hrl").
 -include("./versioning.hrl").
 
--spec get_versioning() -> #database_version_progression{}.
-get_versioning() ->
+-spec get_versioning([node()]) -> #database_version_progression{}.
+get_versioning(Nodes) ->
     %% Registered users table
     Version_1 = [ #database_version_data{ database_name=?REGISTERED_USERS_TABLE
                                         , records=[ id, username, password, email ]
@@ -31,29 +31,26 @@ get_versioning() ->
                                         , record_name=monitor_entry
                                         }
 
+                  %% User programs table
+                , #database_version_data{ database_name=?USER_PROGRAMS_TABLE
+                                        , records=[ id, user_id, program_name, program_type
+                                                  , program_parsed, program_orig
+                                                  ]
+                                        , record_name=user_program_entry
+                                        }
+
                   %% Running program threads table
                 , #database_version_data{ database_name=?RUNNING_THREADS_TABLE
                                         , records=[ thread_id
                                                   , runner_pid
                                                   , parent_program_id
                                                   , instructions
+                                                  , memory
                                                   , instruction_memory
                                                   , position
                                                   , stats
                                                   ]
                                         , record_name=running_program_thread_entry
-                                        }
-
-                  %% User programs table
-                , #database_version_data{ database_name=?RUNNING_THREADS_TABLE
-                                        , records=[ id
-                                                  , user_id
-                                                  , program_name
-                                                  , program_type
-                                                  , program_parsed
-                                                  , program_orig
-                                                  ]
-                                        , record_name=user_program_entry
                                         }
 
                   %% Program tags table
@@ -75,6 +72,26 @@ get_versioning() ->
                                         }
                 ],
 
-    { base=Version_1
-    , updates=[]
-    }.
+    #database_version_progression
+        { base=Version_1
+        , updates=
+              [ #database_version_transformation
+                %% Add *Installation configuration table*
+                %%
+                %% Keeps track of the database versions and offers a place
+                %% to store Key-Value data.
+                %%
+                { id=1
+                , apply=fun() ->
+                                automate_storage_versioning:create_database(
+                                  #database_version_data
+                                  { database_name=?INSTALLATION_CONFIGURATION_TABLE
+                                  , records=[ id
+                                            , value
+                                            ]
+                                  , record_name=storage_configuration_entry
+                                  }, Nodes)
+                        end
+                }
+              ]
+        }.

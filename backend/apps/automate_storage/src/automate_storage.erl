@@ -661,9 +661,9 @@ store_new_program(UserProgram) ->
 
 store_new_thread(UserThread) ->
     Transaction = fun() ->
-                          mnesia:write(?RUNNING_THREADS_TABLE
-                                      , UserThread
-                                      , write)
+                          ok = mnesia:write(?RUNNING_THREADS_TABLE
+                                           , UserThread
+                                           , write)
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
@@ -980,7 +980,7 @@ wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
             ok;
         false ->
             receive
-                Msg = { From, { node_ready, Node } } ->
+                Msg = { _From, { node_ready, Node } } ->
                     io:fwrite("[automate_storage coordinator | Prim, ~p] NodeReady: ~p~n",
                               [node(), Msg]),
 
@@ -1020,18 +1020,8 @@ prepare_nodes(Nodes) ->
 build_tables(Nodes) ->
     %% Registered users table
     io:fwrite("Building tables: ~p~n", [Nodes]),
-    automate_storage_versioning:apply_versioning(automate_storage_configuration:get_versioning()),
-
-    ok = mnesia:wait_for_tables([ ?REGISTERED_USERS_TABLE
-                                , ?USER_SESSIONS_TABLE
-                                , ?USER_MONITORS_TABLE
-                                , ?USER_PROGRAMS_TABLE
-                                , ?PROGRAM_TAGS_TABLE
-                                , ?RUNNING_PROGRAMS_TABLE
-                                , ?RUNNING_THREADS_TABLE
-                                , ?PROGRAM_VARIABLE_TABLE
-                                ], automate_configuration:get_table_wait_time()),
-    ok.
+    ok = automate_storage_versioning:apply_versioning(automate_storage_configuration:get_versioning(Nodes),
+                                                      Nodes).
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).

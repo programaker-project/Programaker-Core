@@ -69,3 +69,6 @@
                                       }).
 
 
+-record(storage_configuration_entry, { id :: any()
+                                     , value :: any()
+                                     }).

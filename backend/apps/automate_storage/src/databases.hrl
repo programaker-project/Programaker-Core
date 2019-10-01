@@ -1,3 +1,6 @@
+%% Installation meta-data
+-define(INSTALLATION_CONFIGURATION_TABLE, automate_installation_configuration).
+
 %% Structures
 -define(REGISTERED_USERS_TABLE, automate_registered_users).
 -define(USER_SESSIONS_TABLE, automate_user_sessions).
