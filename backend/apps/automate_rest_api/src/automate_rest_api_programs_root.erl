@@ -123,9 +123,11 @@ encode_program_list([H | T], Acc) ->
     #program_metadata{ id=Id
                      , name=Name
                      , link=Link
+                     , enabled=Enabled
                      } = H,
     AsDictionary = #{ <<"id">> => Id
                     , <<"name">> => Name
                     , <<"link">> =>  Link
+                    , <<"enabled">> => Enabled
                     },
     encode_program_list(T, [AsDictionary | Acc]).

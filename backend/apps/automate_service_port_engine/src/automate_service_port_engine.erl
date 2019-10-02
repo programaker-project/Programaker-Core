@@ -102,14 +102,21 @@ from_service_port(ServicePortId, UserId, Msg) ->
                     %% returning multiple channels when asked.
                     {ok, Channels} = ?BACKEND:list_bridge_channels(ServicePortId),
                     Results = lists:map(fun (Channel) ->
-                                                automate_channel_engine:send_to_channel(
-                                                  Channel,
-                                                  #{ <<"key">> => Key
-                                                   , <<"value">> => Value
-                                                   , <<"content">> => Content
-                                                   })
+                                                { Channel
+                                                , automate_channel_engine:send_to_channel(
+                                                    Channel,
+                                                    #{ <<"key">> => Key
+                                                     , <<"value">> => Value
+                                                     , <<"content">> => Content
+                                                     })}
                                         end, Channels),
-                    true = lists:all(fun(Result) -> Result == ok end, Results),
+                    lists:foreach(
+                      fun({Channel, Result}) ->
+                              case Result of
+                                  ok -> ok;
+                                  Err -> io:fwrite("Error sending to channel (~p): ~p~n", [Channel, Err])
+                              end
+                      end, Results),
                     %% Make sure to crash if there's an error, but only after the
                     %% messages had been sent
                     ok;

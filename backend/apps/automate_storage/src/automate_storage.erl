@@ -19,6 +19,7 @@
         , update_program_metadata/3
         , delete_program/2
         , delete_running_process/1
+        , update_program_status/3
 
         , get_program_owner/1
         , get_program_pid/1
@@ -173,6 +174,7 @@ create_program(Username, ProgramName) ->
                                      , program_type=?DEFAULT_PROGRAM_TYPE
                                      , program_parsed=undefined
                                      , program_orig=undefined
+                                     , enabled=true
                                      },
     case store_new_program(UserProgram) of
         ok ->
@@ -186,12 +188,12 @@ get_program(Username, ProgramName) ->
     retrieve_program(Username, ProgramName).
 
 
--spec lists_programs_from_username(binary()) -> {'ok', [ { binary(), binary() } ] }.
+-spec lists_programs_from_username(binary()) -> {'ok', [ { binary(), binary(), boolean() } ] }.
 lists_programs_from_username(Username) ->
     case retrieve_program_list_from_username(Username) of
         {ok, Programs} ->
             { ok
-            , [{Id, Name} || [#user_program_entry{id=Id, program_name=Name}] <- Programs]};
+            , [{Id, Name, Enable} || [#user_program_entry{id=Id, program_name=Name, enabled=Enable}] <- Programs]};
         X ->
             X
     end.
@@ -200,9 +202,27 @@ list_programs_from_userid(Userid) ->
     case retrieve_program_list_from_userid(Userid) of
         {ok, Programs} ->
             { ok
-            , [{Id, Name} || [#user_program_entry{id=Id, program_name=Name}] <- Programs]};
+            , [{Id, Name, Enabled} || [#user_program_entry{id=Id, program_name=Name, enabled=Enabled}] <- Programs]};
         X ->
             X
+    end.
+
+-spec update_program_status(binary(), binary(), boolean()) -> 'ok' | { 'error', any() }.
+update_program_status(Username, ProgramId, Status)->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
+                              [Program] ->
+                                  ok = mnesia:write(?USER_PROGRAMS_TABLE,
+                                                    Program#user_program_entry{ enabled=Status
+                                                                              }, write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            ok;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
     end.
 
 -spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
@@ -692,6 +712,7 @@ retrieve_program(Username, ProgramName) ->
                                                                         , program_type='_'
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
+                                                                        , enabled='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -741,6 +762,7 @@ retrieve_program_list_from_username(Username) ->
                                                                         , program_type='_'
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
+                                                                        , enabled='_'
                                                                         },
                                   ProgramGuard = {'==', '$2', UserId},
                                   ProgramResultsColumn = '$1',
@@ -768,6 +790,7 @@ retrieve_program_list_from_userid(UserId) ->
                                                                 , program_type='_'
                                                                 , program_parsed='_'
                                                                 , program_orig='_'
+                                                                , enabled='_'
                                                                 },
                           ProgramGuard = {'==', '$2', UserId},
                           ProgramResultsColumn = '$1',
@@ -814,27 +837,27 @@ store_new_program_content(Username, ProgramName,
                                                                         , program_type='_'
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
+                                                                        , enabled='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
                                                  , {'==', '$3', ProgramName}},
-                                  ProgramResultColumn = '$1',
+                                  ProgramResultColumn = '$_',
                                   ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultColumn]}],
 
                                   case mnesia:select(?USER_PROGRAMS_TABLE, ProgramMatcher) of
                                       [] ->
                                           [];
 
-                                      [ProgramId] ->
+                                      [Program] ->
                                           ok = mnesia:write(?USER_PROGRAMS_TABLE,
-                                                            #user_program_entry{ id=ProgramId
-                                                                               , user_id=UserId
-                                                                               , program_name=ProgramName
-                                                                               , program_type=ProgramType
-                                                                               , program_parsed=ProgramParsed
-                                                                               , program_orig=ProgramOrig
-                                                                               }, write),
-                                          { ok, ProgramId }
+                                                            Program#user_program_entry{ user_id=UserId
+                                                                                      , program_name=ProgramName
+                                                                                      , program_type=ProgramType
+                                                                                      , program_parsed=ProgramParsed
+                                                                                      , program_orig=ProgramOrig
+                                                                                      }, write),
+                                          { ok, Program#user_program_entry.id }
                                   end
                           end
                   end,

@@ -20,11 +20,13 @@
                       , program_type
                       , program_parsed
                       , program_orig
+                      , enabled
                       }).
 
 -record(program_metadata, { id
                           , name
                           , link
+                          , enabled
                           }).
 
 -record(program_content, { type

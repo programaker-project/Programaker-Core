@@ -76,7 +76,7 @@ to_json(Req, State) ->
     #get_program_seq{username=Username, program_name=ProgramName} = State,
     case automate_rest_api_backend:get_program(Username, ProgramName) of
         { ok, Program } ->
-
+            io:fwrite("PROGRAM: ~p~n", [Program]),
             Output = program_to_json(Program),
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
@@ -92,6 +92,7 @@ program_to_json(#user_program{ id=Id
                              , program_type=ProgramType
                              , program_parsed=ProgramParsed
                              , program_orig=ProgramOrig
+                             , enabled=Enabled
                              }) ->
     jiffy:encode(#{ <<"id">> => Id
                   , <<"owner">> => UserId
@@ -99,6 +100,7 @@ program_to_json(#user_program{ id=Id
                   , <<"type">> => ProgramType
                   , <<"parsed">> => ProgramParsed
                   , <<"orig">> => ProgramOrig
+                  , <<"enabled">> => Enabled
                   }).
 
 

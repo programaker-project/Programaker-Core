@@ -2,6 +2,7 @@ export class ProgramMetadata {
     id: string;
     name: string;
     link: string;
+    enabled: boolean;
 }
 
 export type ProgramType = 'scratch_program';
