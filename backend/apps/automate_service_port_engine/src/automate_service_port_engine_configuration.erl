@@ -19,7 +19,7 @@ get_versioning(_Nodes) ->
                                         , record_name=service_port_entry
                                         }
 
-                 %% Service port configuration table
+                  %% Service port configuration table
                 , #database_version_data{ database_name=?SERVICE_PORT_CONFIGURATION_TABLE
                                         , records=[ id, service_name, service_id, is_public, blocks ]
                                         , record_name=service_port_configuration

@@ -112,11 +112,11 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                         end, Channels),
                     lists:foreach(
                       fun({Channel, Result}) ->
-                        case Result of
-                          ok -> ok;
-                          Err -> io:fwrite("Error sending to channel (~p): ~p~n", [Channel, Err])
-                        end
-                    end, Results),
+                              case Result of
+                                  ok -> ok;
+                                  Err -> io:fwrite("Error sending to channel (~p): ~p~n", [Channel, Err])
+                              end
+                      end, Results),
                     %% Make sure to crash if there's an error, but only after the
                     %% messages had been sent
                     ok;
