@@ -19,6 +19,7 @@ apply_versioning(#database_version_progression{base=Base, updates=Updates}, Node
     ok = check_updates_integrity(Updates),
 
     DBNames = lists:map(fun(DBData = #database_version_data{ database_name=DBName }) ->
+                                io:fwrite("[~p] Checking base database: ~p~n", [ModuleName, DBName]),
                                 create_database(DBData, Nodes),
                                 DBName
                         end, Base),

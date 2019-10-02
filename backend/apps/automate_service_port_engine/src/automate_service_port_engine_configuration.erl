@@ -1,9 +1,9 @@
--module(automate_service_port_engine_configuration).
-
 %%%-------------------------------------------------------------------
 %% @doc automate service port engine configuration and versioning
 %% @end
 %%%-------------------------------------------------------------------
+
+-module(automate_service_port_engine_configuration).
 
 -export([ get_versioning/1
         ]).

@@ -21,9 +21,7 @@
         ]).
 
 -include("records.hrl").
--define(SERVICE_REGISTRY_TABLE, automate_service_registry_services_table).
--define(USER_SERVICE_ALLOWANCE_TABLE, automate_service_registry_user_service_allowance_table).
--define(SERVICE_CONFIGURATION_TABLE, automate_service_registry_service_configuration_table).
+-include("databases.hrl").
 
 %%====================================================================
 %% API
@@ -31,44 +29,9 @@
 start_link() ->
     Nodes = automate_configuration:get_sync_peers(),
 
-    %% Live channels table
-    ok = case mnesia:create_table(?SERVICE_REGISTRY_TABLE,
-                                  [ { attributes, record_info(fields, services_table_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, services_table_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-    ok = case mnesia:create_table(?USER_SERVICE_ALLOWANCE_TABLE,
-                                  [ { attributes, record_info(fields, user_service_allowance_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, user_service_allowance_entry }
-                                  , { type, bag }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-    ok = case mnesia:create_table(?SERVICE_CONFIGURATION_TABLE,
-                                  [ { attributes, record_info(fields, service_configuration_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_configuration_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-    ok = mnesia:wait_for_tables([ ?SERVICE_REGISTRY_TABLE
-                                , ?USER_SERVICE_ALLOWANCE_TABLE
-                                , ?SERVICE_CONFIGURATION_TABLE
-                                ], automate_configuration:get_table_wait_time()),
+    ok = automate_storage_versioning:apply_versioning(automate_service_registry_configuration:get_versioning(Nodes),
+                                                      Nodes, ?MODULE),
+
     ignore.
 
 -spec register(binary(), boolean(), #{ name := binary(), description := binary(), module := module()}) -> ok | {error, term(), string()}.
