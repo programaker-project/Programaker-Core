@@ -14,10 +14,10 @@
 -record(user_program_entry, { id :: binary()            | ?MNESIA_SELECTOR
                             , user_id ::binary()        | ?MNESIA_SELECTOR
                             , program_name ::binary()   | ?MNESIA_SELECTOR
-                            , program_type :: atom()  | ?MNESIA_SELECTOR
+                            , program_type :: atom()    | ?MNESIA_SELECTOR
                             , program_parsed :: any()   | ?MNESIA_SELECTOR
-                            , program_orig ::any()      | ?MNESIA_SELECTOR     
-                            , enabled :: boolean()      | ?MNESIA_SELECTOR
+                            , program_orig :: any()     | ?MNESIA_SELECTOR
+                            , enabled=true :: boolean() | ?MNESIA_SELECTOR
                             }).
 
 -record(program_tags_entry, { program_id

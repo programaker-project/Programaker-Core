@@ -12,9 +12,9 @@
 -record(program_permissions, { owner_user_id :: binary()
                              }).
 
--record(program_state, { program_id  :: binary()
-                       , permissions :: #program_permissions{} | undefined
-                       , variables   :: [any()]
-                       , triggers    :: [#program_trigger{}]
-                       , enabled :: boolean()
+-record(program_state, { program_id   :: binary()
+                       , permissions  :: #program_permissions{} | undefined
+                       , variables    :: [any()]
+                       , triggers     :: [#program_trigger{}]
+                       , enabled=true :: boolean()
                        }).
