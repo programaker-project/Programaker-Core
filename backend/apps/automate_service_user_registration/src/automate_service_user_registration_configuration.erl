@@ -1,8 +1,8 @@
 %%%-------------------------------------------------------------------
-%% @doc automate template engine configuration and versioning
+%% @doc automate service user configuration's configuration and versioning
 %% @end
 %%%-------------------------------------------------------------------
--module(automate_template_engine_configuration).
+-module(automate_service_user_registration_configuration).
 
 -export([ get_versioning/1
         ]).
@@ -12,10 +12,10 @@
 
 -spec get_versioning([node()]) -> #database_version_progression{}.
 get_versioning(_Nodes) ->
-    %% Service port identity table
-    Version_1 = [ #database_version_data{ database_name=?TEMPLATE_TABLE
-                                        , records=[ id, name, owner, content ]
-                                        , record_name=template_entry
+    %% Service registration token table
+    Version_1 = [ #database_version_data{ database_name=?SERVICE_REGISTRATION_TOKEN_TABLE
+                                        , records=[ token, service_id, user_id ]
+                                        , record_name=service_registration_token
                                         }
                 ],
 

@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%% @doc automate service registry engine configuration and versioning
+%% @doc automate service registry configuration and versioning
 %% @end
 %%%-------------------------------------------------------------------
 -module(automate_service_registry_configuration).
