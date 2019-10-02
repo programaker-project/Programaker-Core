@@ -96,5 +96,26 @@ get_versioning(Nodes) ->
                                                             automate_configuration:get_table_wait_time())
                         end
                 }
+
+                %% Add *enabled* property to user programs
+                %%
+                %% Allows for disabling programs while keeping it's threads
+                %%  and variables untouched.
+              , #database_version_transformation
+                { id=2
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  ?USER_PROGRAMS_TABLE,
+                                  fun({user_program_entry, Id, UserId, ProgramName,
+                                       ProgramType, ProgramParsed, ProgramOrig }) ->
+                                          %% Replicate the entry. Just set enabled to true.
+                                          {user_program_entry, Id, UserId, ProgramName,
+                                           ProgramType, ProgramParsed, ProgramOrig, true }
+                                  end,
+                                  [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled],
+                                  user_program_entry
+                                 )
+                        end
+                }
               ]
         }.
