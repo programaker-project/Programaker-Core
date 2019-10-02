@@ -5,5 +5,5 @@
 
 export const environment = {
     production: false,
-    ApiHost: 'http://localhost:8888',//'http://disruptionlab.tech'//
+    ApiHost: 'http://localhost:8888',
   };
