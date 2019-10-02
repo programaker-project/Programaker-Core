@@ -8,7 +8,7 @@
 
 -include("records.hrl").
 -include("../../automate_storage/src/records.hrl").
--define(SERVICE_REGISTRATION_TOKEN_TABLE, automate_service_registration_token_table).
+-include("databases.hrl").
 
 %%====================================================================
 %% API functions
@@ -16,20 +16,10 @@
 start_link() ->
     Nodes = automate_configuration:get_sync_peers(),
 
-    %% Service registration token table
-    ok = case mnesia:create_table(?SERVICE_REGISTRATION_TOKEN_TABLE,
-                                  [ {attributes, record_info(fields, service_registration_token)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_registration_token }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-    ok = mnesia:wait_for_tables([?SERVICE_REGISTRATION_TOKEN_TABLE], 
-                                automate_configuration:get_table_wait_time()),
+    ok = automate_storage_versioning:apply_versioning(
+           automate_service_user_registration_configuration:get_versioning(Nodes),
+           Nodes, ?MODULE),
+
     ignore.
 
 

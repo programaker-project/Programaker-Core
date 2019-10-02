@@ -24,10 +24,7 @@
         ]).
 
 -include("records.hrl").
--define(SERVICE_PORT_TABLE, automate_service_port_table).
--define(SERVICE_PORT_CONFIGURATION_TABLE, automate_service_port_configuration_table).
--define(SERVICE_PORT_USERID_OBFUSCATION_TABLE, automate_service_port_userid_obfuscation_table).
--define(SERVICE_PORT_CHANNEL_TABLE, automate_service_port_channel_table).
+-include("databases.hrl").
 
 %%====================================================================
 %% API
@@ -35,62 +32,8 @@
 start_link() ->
     Nodes = automate_configuration:get_sync_peers(),
 
-    %% Service port identity table
-    ok = case mnesia:create_table(?SERVICE_PORT_TABLE,
-                                  [ { attributes, record_info(fields, service_port_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_port_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Service port configuration table
-    ok = case mnesia:create_table(?SERVICE_PORT_CONFIGURATION_TABLE,
-                                  [ { attributes, record_info(fields, service_port_configuration)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_port_configuration }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Service port userId obfuscation
-    ok = case mnesia:create_table(?SERVICE_PORT_USERID_OBFUSCATION_TABLE,
-                                  [ { attributes, record_info(fields, service_port_user_obfuscation_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_port_user_obfuscation_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% UserId×ServiceId -> ChannelId
-    ok = case mnesia:create_table(?SERVICE_PORT_CHANNEL_TABLE,
-                                  [ { attributes, record_info(fields, service_port_monitor_channel_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_port_monitor_channel_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-    ok = mnesia:wait_for_tables([ ?SERVICE_PORT_TABLE
-                                , ?SERVICE_PORT_CONFIGURATION_TABLE
-                                , ?SERVICE_PORT_USERID_OBFUSCATION_TABLE
-                                , ?SERVICE_PORT_CHANNEL_TABLE
-                                ], automate_configuration:get_table_wait_time()),
+    ok = automate_storage_versioning:apply_versioning(automate_service_port_engine_configuration:get_versioning(Nodes),
+                                                      Nodes, ?MODULE),
     ignore.
 
 
