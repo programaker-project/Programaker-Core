@@ -12,7 +12,6 @@
 
 -spec get_versioning([node()]) -> #database_version_progression{}.
 get_versioning(_Nodes) ->
-    %% Live channels table
     Version_1 = [ #database_version_data{ database_name=?SERVICE_REGISTRY_TABLE
                                         , records=[ id, public, name, description, module ]
                                         , record_name=services_table_entry

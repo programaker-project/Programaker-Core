@@ -1,0 +1,1 @@
+-define(TEMPLATE_TABLE, automate_template_engine_templates_table).
