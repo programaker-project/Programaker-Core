@@ -1021,7 +1021,7 @@ build_tables(Nodes) ->
     %% Registered users table
     io:fwrite("Building tables: ~p~n", [Nodes]),
     ok = automate_storage_versioning:apply_versioning(automate_storage_configuration:get_versioning(Nodes),
-                                                      Nodes).
+                                                      Nodes, ?MODULE).
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).

@@ -90,7 +90,10 @@ get_versioning(Nodes) ->
                                             , value
                                             ]
                                   , record_name=storage_configuration_entry
-                                  }, Nodes)
+                                  }, Nodes),
+
+                                ok = mnesia:wait_for_tables([ ?INSTALLATION_CONFIGURATION_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
                         end
                 }
               ]
