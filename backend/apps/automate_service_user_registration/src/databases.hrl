@@ -1,0 +1,1 @@
+-define(SERVICE_REGISTRATION_TOKEN_TABLE, automate_service_registration_token_table).

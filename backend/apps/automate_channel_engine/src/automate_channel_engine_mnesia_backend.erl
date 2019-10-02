@@ -11,27 +11,20 @@
         , get_listeners_on_channel/1
         ]).
 
--define(LIVE_CHANNELS_TABLE, automate_channel_engine_live_channels_table).
--define(LISTENERS_TABLE, automate_channel_engine_listeners_table).
 -include("records.hrl").
+-include("databases.hrl").
 
 %%====================================================================
 %% API
 %%====================================================================
 start_link() ->
     Nodes = automate_configuration:get_sync_peers(),
-    %% Live channels table
-    ok = case mnesia:create_table(?LIVE_CHANNELS_TABLE,
-                                  [ { attributes, record_info(fields, live_channels_table_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, live_channels_table_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
+
+    ok = automate_storage_versioning:apply_versioning(
+           automate_channel_engine_configuration:get_versioning(Nodes),
+           Nodes, ?MODULE),
+
+    %% This runs on RAM, so it's created manually
     ok = case mnesia:create_table(?LISTENERS_TABLE,
                                   [ { attributes, record_info(fields, listeners_table_entry)}
                                   , { ram_copies, Nodes }

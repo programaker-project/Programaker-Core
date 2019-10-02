@@ -46,17 +46,7 @@
 -export([start_link/0]).
 -define(SERVER, ?MODULE).
 
-%% Structures
--define(REGISTERED_USERS_TABLE, automate_registered_users).
--define(USER_SESSIONS_TABLE, automate_user_sessions).
--define(USER_MONITORS_TABLE, automate_user_monitors).
--define(USER_PROGRAMS_TABLE, automate_user_programs).
--define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
--define(PROGRAM_TAGS_TABLE, automate_program_tags).
--define(RUNNING_THREADS_TABLE, automate_running_program_threads).
-
--define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
-
+-include("./databases.hrl").
 -include("./records.hrl").
 -include("../automate_bot_engine/src/program_records.hrl").
 
@@ -691,9 +681,9 @@ store_new_program(UserProgram) ->
 
 store_new_thread(UserThread) ->
     Transaction = fun() ->
-                          mnesia:write(?RUNNING_THREADS_TABLE
-                                      , UserThread
-                                      , write)
+                          ok = mnesia:write(?RUNNING_THREADS_TABLE
+                                           , UserThread
+                                           , write)
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
@@ -1013,7 +1003,7 @@ wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
             ok;
         false ->
             receive
-                Msg = { From, { node_ready, Node } } ->
+                Msg = { _From, { node_ready, Node } } ->
                     io:fwrite("[automate_storage coordinator | Prim, ~p] NodeReady: ~p~n",
                               [node(), Msg]),
 
@@ -1053,132 +1043,8 @@ prepare_nodes(Nodes) ->
 build_tables(Nodes) ->
     %% Registered users table
     io:fwrite("Building tables: ~p~n", [Nodes]),
-    ok = case mnesia:create_table(?REGISTERED_USERS_TABLE,
-                                  [ {attributes, record_info(fields, registered_user_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, registered_user_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% User session table
-    ok = case mnesia:create_table(?USER_SESSIONS_TABLE,
-                                  [ {attributes, record_info(fields, user_session_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, user_session_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% User monitors table
-    ok = case mnesia:create_table(?USER_MONITORS_TABLE,
-                                  [ {attributes, record_info(fields, monitor_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, monitor_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Running program threads table
-    ok = case mnesia:create_table(?RUNNING_THREADS_TABLE,
-                                  [ {attributes, record_info(fields, running_program_thread_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, running_program_thread_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% User programs table
-    ok = case mnesia:create_table(?USER_PROGRAMS_TABLE,
-                                  [ {attributes, record_info(fields, user_program_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, user_program_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Program tags table
-    ok = case mnesia:create_table(?PROGRAM_TAGS_TABLE,
-                                  [ {attributes, record_info(fields, program_tags_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, program_tags_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Running programs table
-    ok = case mnesia:create_table(?RUNNING_PROGRAMS_TABLE,
-                                  [ {attributes, record_info(fields, running_program_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, running_program_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Running program threads table
-    ok = case mnesia:create_table(?RUNNING_THREADS_TABLE,
-                                  [ {attributes, record_info(fields, running_program_thread_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, running_program_thread_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Program variable table
-    ok = case mnesia:create_table(?PROGRAM_VARIABLE_TABLE,
-                                  [ {attributes, record_info(fields, program_variable_table_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, program_variable_table_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    ok = mnesia:wait_for_tables([ ?REGISTERED_USERS_TABLE
-                                , ?USER_SESSIONS_TABLE
-                                , ?USER_MONITORS_TABLE
-                                , ?USER_PROGRAMS_TABLE
-                                , ?PROGRAM_TAGS_TABLE
-                                , ?RUNNING_PROGRAMS_TABLE
-                                , ?RUNNING_THREADS_TABLE
-                                , ?PROGRAM_VARIABLE_TABLE
-                                ], automate_configuration:get_table_wait_time()),
-    ok.
+    ok = automate_storage_versioning:apply_versioning(automate_storage_configuration:get_versioning(Nodes),
+                                                      Nodes, ?MODULE).
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
