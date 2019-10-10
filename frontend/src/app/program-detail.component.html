@@ -29,6 +29,9 @@
     </div>
 
     <div id="metadata" class="float-right">
-        <program-metadata-component programUserId="{{this.program.owner}}" programId="{{this.program.id}}"></program-metadata-component>
+        <program-metadata-component
+            *ngIf="program !== undefined"
+            programUserId="{{program.owner}}"
+            programId="{{program.id}}"></program-metadata-component>
     </div>
     <div id="workspace"></div>

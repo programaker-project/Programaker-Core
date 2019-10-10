@@ -67,13 +67,20 @@ export class ProgramDetailComponent implements OnInit {
                 .switchMap((params: Params) => {
                     this.programUserId = params['user_id'];
                     this.programId = params['program_id'];
-                    return this.programService.getProgram(params['user_id'], params['program_id']);
+                    return this.programService.getProgram(params['user_id'], params['program_id']).catch(err => {
+                        console.error("Error:", err);
+                        this.goBack();
+                        throw Error("Error loading");
+                    });
                 })
                 .subscribe(program => {
                     this.prepareWorkspace().then(() => {
                         this.program = program;
                         this.load_program(program);
                         resolve();
+                    }).catch(err => {
+                        console.error("Error:", err);
+                        this.goBack();
                     });
                 });
         }));
@@ -195,6 +202,7 @@ export class ProgramDetailComponent implements OnInit {
 
     calculate_size(workspace: HTMLElement) {
         const header = document.getElementById('program-header');
+        if (!header) { return; }
         const header_pos = this.get_position(header);
         const header_end = header_pos.y + header.clientHeight;
 

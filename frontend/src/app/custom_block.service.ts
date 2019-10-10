@@ -52,14 +52,64 @@ export class CustomBlockService {
                         }
                     }
 
-                    console.log("Blocks:", blocks);
+                    console.debug("Blocks:", blocks);
                     return blocks;
                 })
                 .toPromise());
 
-        return Promise.all(blocks.map(async (block): Promise<ResolvedCustomBlock> => {
+        const resolvedBlocks = await Promise.all(blocks.map(async (block): Promise<ResolvedCustomBlock> => {
             return await this._resolveBlock(block);
         }));
+
+        return resolvedBlocks.filter((v, _i, _a) => {
+            return v !== undefined;
+        });
+    }
+
+    private _fixBlockErrors(block: ResolvedCustomBlock): ResolvedCustomBlock {
+        try {
+            const matcher = (block.message as any).matchAll(/%\d/g);
+            let arguments_in_message = 0;
+            while (true) {
+                const next = matcher.next();
+                if (next.done) {
+                    break;
+                }
+
+                arguments_in_message++;
+            }
+
+            let arguments_declared = block.arguments.length;
+
+            // Validate & fill arguments declared
+            if (arguments_in_message > arguments_declared) {
+                console.error("(arguments_in_message > arguments_declared) on ", block);
+            }
+
+            while (arguments_in_message > arguments_declared) {
+                block.arguments.push({
+                    type: "string",
+                    class: undefined,
+                    default_value: "change_this",
+                });
+                arguments_declared++;
+            }
+
+            // Validate & fill arguments in message
+            if (arguments_in_message < arguments_declared) {
+                console.error("(arguments_in_message < arguments_declared) on ", block);
+            }
+
+            while (arguments_in_message < arguments_declared) {
+                block.message += ` %${arguments_in_message + 1} `;
+                arguments_in_message++;
+            }
+        }
+        catch(err) {
+            console.error(err);
+            return undefined;
+        }
+        return block;
     }
 
     private async _resolveBlock(block: CustomBlock): Promise<ResolvedCustomBlock> {
@@ -71,6 +121,9 @@ export class CustomBlockService {
         }
 
         resolvedBlock.arguments = newArguments;
+
+        this._fixBlockErrors(resolvedBlock);
+
         return resolvedBlock;
     }
 
@@ -104,7 +157,7 @@ export class CustomBlockService {
                     options.pop();
                 }
             }).catch((err) => {
-                console.error(err);
+                console.warn(err);
                 if (loading) {
                     options[0] = ["Not found", "__plaza_internal_not_found"];
                 }
@@ -161,7 +214,6 @@ export class CustomBlockService {
         const query = this.http.get(url, { headers: this.sessionService.getAuthHeader() })
             .map((response: { result: CallbackResult } ) => {
 
-                console.log(response.result.constructor == Object);
                 if (response.result.constructor == Object) {
                     // Data from callback as dictionary
                     const options = [];
