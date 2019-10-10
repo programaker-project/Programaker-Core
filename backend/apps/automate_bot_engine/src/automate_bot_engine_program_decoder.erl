@@ -19,16 +19,28 @@ initialize_program(ProgramId,
                    , program_parsed=Parsed
                    , enabled=Enabled}) ->
 
-    {ok, #{ <<"variables">> := Variables
-          , <<"blocks">> := Blocks
-          }} = automate_program_linker:link_program(Parsed, OwnerUserId),
-    { ok
-    , #program_state{ program_id=ProgramId
-                    , variables=Variables
-                    , permissions=#program_permissions{ owner_user_id=OwnerUserId }
-                    , triggers=get_triggers(Blocks)
-                    , enabled=Enabled
-                    }}.
+    try automate_program_linker:link_program(Parsed, OwnerUserId) of
+        {ok, #{ <<"variables">> := Variables
+              , <<"blocks">> := Blocks
+              }} ->
+
+            { ok
+            , #program_state{ program_id=ProgramId
+                            , variables=Variables
+                            , permissions=#program_permissions{ owner_user_id=OwnerUserId }
+                            , triggers=get_triggers(Blocks)
+                            , enabled=Enabled
+                            }}
+
+    catch ErrNS:Err:_StackTrace ->
+            io:fwrite("\033[41;37m Error decoding program: ~p \033[0m~n", [{ErrNS, Err}]),
+            {ok, #program_state{ program_id=ProgramId
+                               , variables=[]
+                               , permissions=#program_permissions{ owner_user_id=OwnerUserId }
+                               , triggers=[]
+                               , enabled=Enabled
+                               }}
+    end.
 
 -spec update_program(#program_state{}, #user_program_entry{}) -> {ok, #program_state{}}.
 update_program(State,
