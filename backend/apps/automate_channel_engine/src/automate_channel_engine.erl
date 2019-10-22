@@ -29,19 +29,23 @@ listen_channel(ChannelId) ->
 
 -spec send_to_channel(binary(), any()) -> ok.
 send_to_channel(ChannelId, Message) ->
-    automate_stats:log_observation(counter,
-                                   automate_channel_engine_messages_in,
-                                   [ChannelId]),
-    ?LOGGING:log_event(ChannelId, Message),
-
+    spawn(fun () ->
+       automate_stats:log_observation(counter,
+                                      automate_channel_engine_messages_in,
+                                      [ChannelId])
+       ?LOGGING:log_event(ChannelId, Message),
+    end),
+    
     case automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId) of
         {ok, Listeners} ->
             %% io:format("Forwarding ~p to ~p~n", [Message, Listeners]),
             lists:foreach(fun(#listeners_table_entry{pid=Pid}) ->
                                   Pid ! {channel_engine, ChannelId, Message},
-                                  automate_stats:log_observation(counter,
-                                                                 automate_channel_engine_messages_out,
-                                                                 [ChannelId])
+                                  spawn(fun () ->   
+                                      automate_stats:log_observation(counter,
+                                                                     automate_channel_engine_messages_out,
+                                                                     [ChannelId])
+                                      end)
                           end, Listeners),
             ok;
         X ->
