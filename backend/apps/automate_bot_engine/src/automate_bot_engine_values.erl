@@ -15,7 +15,7 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec add(binary(), binary()) -> {ok, binary()}.
+-spec add(_, _) -> {ok, number()}.
 add(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->
@@ -23,14 +23,14 @@ add(Left, Right) when is_binary(Left) and is_binary(Right) ->
         {float, PreviousF, ChangeF} ->
             {ok, PreviousF + ChangeF};
         {string, PreviousS, ChangeS} ->
-            {ok, <<PreviousS/binary, ChangeS/binary>>}
+            {error, not_found}
     end;
 
 %% If everything else failed, just do simple concatenation
 add(V1, V2) ->
     add(to_bin(V1), to_bin(V2)).
 
--spec join(binary(), binary()) -> {ok, binary()}.
+-spec join(_, _) -> {ok, binary()}.
 join(V1, V2) ->
     {ok, binary:list_to_bin(lists:flatten(io_lib:format("~s~s", [to_string(V1), to_string(V2)])))}.
 
@@ -45,7 +45,7 @@ get_value_by_key(Key, Map) when is_map(Map) and is_binary(Key) ->
 get_value_by_key(V1, V2) ->
     {error, not_found}.
 
--spec subtract(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec subtract(_, _) -> {ok, number()} | {error, not_found}.
 subtract(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->
@@ -60,7 +60,7 @@ subtract(V1, V2) ->
     subtract(to_bin(V1), to_bin(V2)).
 
 
--spec multiply(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec multiply(_, _) -> {ok, number()} | {error, not_found}.
 multiply(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->
@@ -75,7 +75,7 @@ multiply(V1, V2) ->
     multiply(to_bin(V1), to_bin(V2)).
 
 
--spec divide(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec divide(_, _) -> {ok, number()} | {error, not_found}.
 divide(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->
@@ -90,7 +90,7 @@ divide(V1, V2) ->
     divide(to_bin(V1), to_bin(V2)).
 
 
--spec is_less_than(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec is_less_than(_, _) -> {ok, boolean()} | {error, not_found}.
 is_less_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
     case combined_type(V1, V2) of
         {integer, Int1, Int2} ->
@@ -104,7 +104,7 @@ is_less_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
 is_less_than(V1, V2) ->
     {error, not_found}.
 
--spec is_greater_than(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec is_greater_than(_, _) -> {ok, boolean()} | {error, not_found}.
 is_greater_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
     case combined_type(V1, V2) of
         {integer, Int1, Int2} ->
@@ -118,7 +118,7 @@ is_greater_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
 is_greater_than(V1, V2) ->
     {error, not_found}.
 
--spec is_equal_to(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec is_equal_to(_, _) -> {ok, boolean()} | {error, not_found}.
 is_equal_to(V1, V2) when is_binary(V1) and is_binary(V2) ->
     case combined_type(V1, V2) of
         {integer, Int1, Int2} ->
