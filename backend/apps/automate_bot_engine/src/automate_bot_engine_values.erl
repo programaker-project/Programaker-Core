@@ -102,7 +102,7 @@ is_less_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
     end;
 
 is_less_than(V1, V2) ->
-    {error, not_found}.
+    is_less_than(to_bin(V1), to_bin(V2)).
 
 -spec is_greater_than(_, _) -> {ok, boolean()} | {error, not_found}.
 is_greater_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
@@ -116,7 +116,7 @@ is_greater_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
     end;
 
 is_greater_than(V1, V2) ->
-    {error, not_found}.
+    is_greater_than(to_bin(V1), to_bin(V2)).
 
 -spec is_equal_to(_, _) -> {ok, boolean()} | {error, not_found}.
 is_equal_to(V1, V2) when is_binary(V1) and is_binary(V2) ->
