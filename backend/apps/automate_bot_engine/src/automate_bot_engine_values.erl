@@ -2,6 +2,7 @@
 
 %% API
 -export([ add/2
+        , join/2
         , get_value_by_key/2
         , subtract/2
         , multiply/2
@@ -18,15 +19,19 @@
 add(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->
-            {ok, erlang:integer_to_binary(PreviousInt + ChangeInt)};
+            {ok, PreviousInt + ChangeInt};
         {float, PreviousF, ChangeF} ->
-            {ok, erlang:float_to_binary(PreviousF + ChangeF)};
+            {ok, PreviousF + ChangeF};
         {string, PreviousS, ChangeS} ->
             {ok, <<PreviousS/binary, ChangeS/binary>>}
     end;
 
 %% If everything else failed, just do simple concatenation
 add(V1, V2) ->
+    add(to_bin(V1), to_bin(V2)).
+
+-spec join(binary(), binary()) -> {ok, binary()}.
+join(V1, V2) ->
     {ok, binary:list_to_bin(lists:flatten(io_lib:format("~s~s", [to_string(V1), to_string(V2)])))}.
 
 -spec get_value_by_key(binary(), map()) -> {ok, binary()}.
@@ -44,45 +49,45 @@ get_value_by_key(V1, V2) ->
 subtract(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->
-            {ok, erlang:integer_to_binary(PreviousInt - ChangeInt)};
+            {ok, PreviousInt - ChangeInt};
         {float, PreviousF, ChangeF} ->
-            {ok, erlang:float_to_binary(PreviousF - ChangeF)};
+            {ok, PreviousF - ChangeF};
         _ ->
             {error, not_found}
     end;
 
-subtract(_, _) ->
-    {error, not_found}.
+subtract(V1, V2) ->
+    subtract(to_bin(V1), to_bin(V2)).
 
 
 -spec multiply(binary(), binary()) -> {ok, binary()} | {error, not_found}.
 multiply(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->
-            {ok, erlang:integer_to_binary(PreviousInt * ChangeInt)};
+            {ok, PreviousInt * ChangeInt};
         {float, PreviousF, ChangeF} ->
-            {ok, erlang:float_to_binary(PreviousF * ChangeF)};
+            {ok, PreviousF * ChangeF};
         _ ->
             {error, not_found}
     end;
 
-multiply(_, _) ->
-    {error, not_found}.
+multiply(V1, V2) ->
+    multiply(to_bin(V1), to_bin(V2)).
 
 
 -spec divide(binary(), binary()) -> {ok, binary()} | {error, not_found}.
 divide(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->
-            {ok, erlang:float_to_binary(PreviousInt / ChangeInt)};
+            {ok, PreviousInt / ChangeInt};
         {float, PreviousF, ChangeF} ->
-            {ok, erlang:float_to_binary(PreviousF / ChangeF)};
+            {ok, PreviousF / ChangeF};
         _ ->
             {error, not_found}
     end;
 
-divide(_, _) ->
-    {error, not_found}.
+divide(V1, V2) ->
+    divide(to_bin(V1), to_bin(V2)).
 
 
 -spec is_less_than(binary(), binary()) -> {ok, binary()} | {error, not_found}.
@@ -125,12 +130,17 @@ is_equal_to(V1, V2) when is_binary(V1) and is_binary(V2) ->
     end;
 
 is_equal_to(V1, V2) ->
-    {error, not_found}.
+    is_equal_to(to_bin(V1), to_bin(V2)).
 
 
 %%%===================================================================
 %%% Type handling methods
 %%%===================================================================
+to_bin(V) when is_binary(V) ->
+    V;
+to_bin(V) ->
+    binary:list_to_bin(to_string(V)).
+
 to_string(V) when is_binary(V) ->
     V;
 to_string(V) when is_list(V) ->
