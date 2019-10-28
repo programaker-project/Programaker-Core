@@ -101,11 +101,46 @@ tests(_SetupResult) ->
 
       %%# Comparisons
       %% Less than
+    , {"[Bot operation][Equals] Less than string and string (true)",  fun lt_string_and_string_true/0}
+    , {"[Bot operation][Equals] Less than string and string (false)", fun lt_string_and_string_false/0}
+    , {"[Bot operation][Equals] Less than string and int (true)",     fun lt_string_and_int_true/0}
+    , {"[Bot operation][Equals] Less than string and int (false)",    fun lt_string_and_int_false/0}
+    , {"[Bot operation][Equals] Less than string and float (true)",   fun lt_string_and_float_true/0}
+    , {"[Bot operation][Equals] Less than string and float (false)",  fun lt_string_and_float_false/0}
+    , {"[Bot operation][Equals] Less than int and int (true)",        fun lt_int_and_int_true/0}
+    , {"[Bot operation][Equals] Less than int and int (false)",       fun lt_int_and_int_false/0}
+    , {"[Bot operation][Equals] Less than int and float (true)",      fun lt_int_and_float_true/0}
+    , {"[Bot operation][Equals] Less than int and float (false)",     fun lt_int_and_float_false/0}
+    , {"[Bot operation][Equals] Less than float and float (true)",    fun lt_float_and_float_true/0}
+    , {"[Bot operation][Equals] Less than float and float (false)",   fun lt_float_and_float_false/0}
+
       %% Greater than
+    , {"[Bot operation][Equals] Greater than string and string (true)",  fun gt_string_and_string_true/0}
+    , {"[Bot operation][Equals] Greater than string and string (false)", fun gt_string_and_string_false/0}
+    , {"[Bot operation][Equals] Greater than string and int (true)",     fun gt_string_and_int_true/0}
+    , {"[Bot operation][Equals] Greater than string and int (false)",    fun gt_string_and_int_false/0}
+    , {"[Bot operation][Equals] Greater than string and float (true)",   fun gt_string_and_float_true/0}
+    , {"[Bot operation][Equals] Greater than string and float (false)",  fun gt_string_and_float_false/0}
+    , {"[Bot operation][Equals] Greater than int and int (true)",        fun gt_int_and_int_true/0}
+    , {"[Bot operation][Equals] Greater than int and int (false)",       fun gt_int_and_int_false/0}
+    , {"[Bot operation][Equals] Greater than int and float (true)",      fun gt_int_and_float_true/0}
+    , {"[Bot operation][Equals] Greater than int and float (false)",     fun gt_int_and_float_false/0}
+    , {"[Bot operation][Equals] Greater than float and float (true)",    fun gt_float_and_float_true/0}
+    , {"[Bot operation][Equals] Greater than float and float (false)",   fun gt_float_and_float_false/0}
+
       %% Equal to
-    , {"[Bot operation][Equals] Compare equal integer strings as int", fun compare_bin_int_bin_int_eq_true/0}
-    , {"[Bot operation][Equals] Compare different integer strings as int", fun compare_bin_int_bin_int_eq_false/0}
-    , {"[Bot operation][Equals] Compare equal string to int", fun compare_bin_in_raw_int_eq_true/0}
+    , {"[Bot operation][Equals] Equal string and string (true)",  fun eq_string_and_string_true/0}
+    , {"[Bot operation][Equals] Equal string and string (false)", fun eq_string_and_string_false/0}
+    , {"[Bot operation][Equals] Equal string and int (true)",     fun eq_string_and_int_true/0}
+    , {"[Bot operation][Equals] Equal string and int (false)",    fun eq_string_and_int_false/0}
+    , {"[Bot operation][Equals] Equal string and float (true)",   fun eq_string_and_float_true/0}
+    , {"[Bot operation][Equals] Equal string and float (false)",  fun eq_string_and_float_false/0}
+    , {"[Bot operation][Equals] Equal int and int (true)",        fun eq_int_and_int_true/0}
+    , {"[Bot operation][Equals] Equal int and int (false)",       fun eq_int_and_int_false/0}
+    , {"[Bot operation][Equals] Equal int and float (true)",      fun eq_int_and_float_true/0}
+    , {"[Bot operation][Equals] Equal int and float (false)",     fun eq_int_and_float_false/0}
+    , {"[Bot operation][Equals] Equal float and float (true)",    fun eq_float_and_float_true/0}
+    , {"[Bot operation][Equals] Equal float and float (false)",   fun eq_float_and_float_false/0}
     ].
 
 %%%% Operations
@@ -356,8 +391,202 @@ divide_float_and_float() ->
     ?assertMatch({ok, 5.25}, R).
 
 %%%% Comparisons
+%%% Less than
+lt_string_and_string_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"1">>)
+                                                                   , constant_val(<<"2">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+lt_string_and_string_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"1">>)
+                                                                   , constant_val(<<"0">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+lt_string_and_int_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"0">>)
+                                                                   , constant_val(1)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+lt_string_and_int_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"2">>)
+                                                                   , constant_val(1)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+lt_string_and_float_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"1">>)
+                                                                   , constant_val(2.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+lt_string_and_float_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"1.5">>)
+                                                                   , constant_val(1.1)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+lt_int_and_int_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+lt_int_and_int_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(0)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+lt_int_and_float_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(0)
+                                                                   , constant_val(0.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+lt_int_and_float_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(2)
+                                                                   , constant_val(1.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+lt_float_and_float_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(1.5)
+                                                                   , constant_val(2.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+lt_float_and_float_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
+                                                   , ?ARGUMENTS => [ constant_val(1.5)
+                                                                   , constant_val(0.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+%%% Greater than
+gt_string_and_string_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"2">>)
+                                                                   , constant_val(<<"1">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+gt_string_and_string_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"0">>)
+                                                                   , constant_val(<<"1">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+gt_string_and_int_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"1">>)
+                                                                   , constant_val(0)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+gt_string_and_int_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"1">>)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+gt_string_and_float_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"2">>)
+                                                                   , constant_val(1.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+gt_string_and_float_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(<<"1.1">>)
+                                                                   , constant_val(1.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+gt_int_and_int_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(2)
+                                                                   , constant_val(1)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+gt_int_and_int_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(0)
+                                                                   , constant_val(1)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+gt_int_and_float_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(0.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+gt_int_and_float_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(1.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+gt_float_and_float_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(2.5)
+                                                                   , constant_val(1.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+gt_float_and_float_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
+                                                   , ?ARGUMENTS => [ constant_val(0.5)
+                                                                   , constant_val(2.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
 %%% Equal to
-compare_bin_int_bin_int_eq_true() ->
+eq_string_and_string_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
                                                    , ?ARGUMENTS => [ constant_val(<<"1">>)
                                                                    , constant_val(<<"1">>)
@@ -365,21 +594,93 @@ compare_bin_int_bin_int_eq_true() ->
                                                    }, ?EMPTY_THREAD),
     ?assertMatch({ok, true}, R).
 
-compare_bin_int_bin_int_eq_false() ->
+eq_string_and_string_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
-                                                   , ?ARGUMENTS => [ constant_val(<<"2">>)
-                                                                   , constant_val(<<"3">>)
+                                                   , ?ARGUMENTS => [ constant_val(<<"1">>)
+                                                                   , constant_val(<<"2">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
     ?assertMatch({ok, false}, R).
 
-compare_bin_in_raw_int_eq_true() ->
+eq_string_and_int_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
                                                    , ?ARGUMENTS => [ constant_val(<<"1">>)
                                                                    , constant_val(1)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
     ?assertMatch({ok, true}, R).
+
+eq_string_and_int_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(<<"1">>)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+eq_string_and_float_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(<<"1.5">>)
+                                                                   , constant_val(1.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+eq_string_and_float_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(<<"1.1">>)
+                                                                   , constant_val(1.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+eq_int_and_int_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(1)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+eq_int_and_int_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+eq_int_and_float_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(1.0)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+eq_int_and_float_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(1.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
+
+eq_float_and_float_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1.5)
+                                                                   , constant_val(1.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true}, R).
+
+eq_float_and_float_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1.5)
+                                                                   , constant_val(2.5)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false}, R).
 
 %%====================================================================
 %% Util functions
