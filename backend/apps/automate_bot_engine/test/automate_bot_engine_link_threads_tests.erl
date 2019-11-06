@@ -1,8 +1,8 @@
 %%% @doc
-%%% Automate bot engine tests.
+%%% Automate bot thread linking.
 %%% @end
 
--module(automate_bot_engine_link_threads).
+-module(automate_bot_engine_link_threads_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 %% Data structures
@@ -52,21 +52,37 @@ stop({_NodeName}) ->
 
 tests(_SetupResult) ->
     [ { "[Bot engine][Link threads] Link UTC-hour operation", fun thread_link_utc_hour/0 }
+    , { "[Bot engine][Link threads] Link UTC-minute operation", fun thread_link_utc_minute/0 }
+    , { "[Bot engine][Link threads] Link UTC-seconds operation", fun thread_link_utc_seconds/0 }
     ].
 
 
 %%%% Bot runner
 thread_link_utc_hour() ->
+    TimeUuid = automate_services_time:get_uuid(),
+    thread_link(<<"time_get_utc_hour">>, get_utc_hour, TimeUuid).
+
+thread_link_utc_minute() ->
+    TimeUuid = automate_services_time:get_uuid(),
+    thread_link(<<"time_get_utc_minute">>, get_utc_minute, TimeUuid).
+
+thread_link_utc_seconds() ->
+    TimeUuid = automate_services_time:get_uuid(),
+    thread_link(<<"time_get_utc_seconds">>, get_utc_seconds, TimeUuid).
+
+thread_link(OrigCall, ResultAction, ServiceId) ->
     %% Program creation
     {Username, ProgramName, ProgramId} = create_anonymous_program(),
 
     %% Launch program
+    Blocks = [[ ?JUST_WAIT_PROGRAM_TRIGGER
+                | wait_and_print(OrigCall)]],
+
     ?assertMatch({ok, ProgramId},
                  automate_storage:update_program(
                    Username, ProgramName,
                    #stored_program_content{ type=?JUST_WAIT_PROGRAM_TYPE
-                                          , parsed=#{ <<"blocks">> => [[ ?JUST_WAIT_PROGRAM_TRIGGER
-                                                                         | wait_and_print(<<"time_get_utc_hour">>)]]
+                                          , parsed=#{ <<"blocks">> => Blocks
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
                                           , orig=?JUST_WAIT_PROGRAM_ORIG
@@ -102,13 +118,16 @@ thread_link_utc_hour() ->
                                        runner_pid=ThreadRunnerId}} = automate_storage:get_thread_from_id(ThreadId),
     ?assert(is_process_alive(ThreadRunnerId)),
 
-    %% Get thread content
-    ?debugFmt("Program: \033[7m~p\033[0m~n", [Program]),
     %% Get second block, first argument, <<"type">>
-    TimeUuid = automate_services_time:get_uuid(),
-    Call = <<"services.", TimeUuid/binary, ".get_utc_hour">>,
-    ?assertMatch(#{<<"args">> :=
-                       [ #{ <<"type">> := Call
+    ?assertMatch(#{ ?ARGUMENTS :=
+                       [ #{ ?TYPE := ?COMMAND_CALL_SERVICE
+                          , ?ARGUMENTS :=
+                                #{ ?SERVICE_ACTION := ResultAction
+                                 , ?SERVICE_ID := ServiceId
+                                 , ?SERVICE_CALL_VALUES :=
+                                       #{ ?TYPE := OrigCall
+                                        }
+                                 }
                           }]},
                  lists:nth(2, Program)).
 
