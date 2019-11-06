@@ -74,9 +74,9 @@ export class ProgramDetailComponent implements OnInit {
                     });
                 })
                 .subscribe(program => {
-                    this.prepareWorkspace().then(() => {
+                    this.prepareWorkspace().then((controller: ToolboxController) => {
                         this.program = program;
-                        this.load_program(program);
+                        this.load_program(controller, program);
                         resolve();
                     }).catch(err => {
                         console.error("Error:", err);
@@ -87,12 +87,70 @@ export class ProgramDetailComponent implements OnInit {
         this.currentFillingInput = '';
     }
 
-    load_program(program: ProgramContent) {
+    /**
+     * Check if an DOM element is a Scratch block object.
+     */
+    is_block(blockCandidate: Element) {
+        if (blockCandidate.tagName === undefined) {
+            return false;
+        }
+        return blockCandidate.tagName.toUpperCase() === 'BLOCK';
+    }
+
+    /**
+     * Clean a program in DOM format in-place.
+     *
+     * The resulting program doesn't contain any block that is not present
+     *  on the Scratch Toolbox.
+     *
+     */
+    removeNonExistingBlocks(dom: Element, controller: ToolboxController)  {
+        const children = dom.childNodes;
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i] as Element;
+            if (child.tagName !== 'block') {
+                continue;
+            }
+
+            // Clean the contents of the block
+            const next = child.getElementsByTagName('next')[0];
+            let next_blocks = [];
+            if (next !== undefined) {
+                this.removeNonExistingBlocks(next, controller);
+
+                next_blocks = (Array.from(next.childNodes)
+                               .filter((x: Element) => this.is_block(x)));
+
+                if (next_blocks.length == 0) {
+                    child.removeChild(next);
+                }
+            }
+
+            const _type = child.getAttribute('type');
+            // Check if the current block
+            if (!controller.isKnownBlock(_type)) {
+                // If it's not known, pull the next into the top level "function"
+                if (next !== undefined) {
+                    next.removeChild(next_blocks[0]);
+                    dom.insertBefore(next_blocks[0], child);
+                    child.removeChild(next);
+                    this.removeNonExistingBlocks(next, controller);
+                }
+
+                // Remove top level
+                dom.removeChild(child);
+                console.debug("To replace:", child, 'with', next);
+            }
+        }
+    }
+
+    load_program(controller: ToolboxController, program: ProgramContent) {
         const xml = Blockly.Xml.textToDom(program.orig);
+        this.removeNonExistingBlocks(xml, controller);
         Blockly.Xml.domToWorkspace(xml, this.workspace);
     }
 
-    prepareWorkspace(): Promise<void> {
+    prepareWorkspace(): Promise<ToolboxController> {
         return new Toolbox(
             this.monitorService,
             this.customBlockService,
@@ -103,6 +161,8 @@ export class ProgramDetailComponent implements OnInit {
             .inject()
             .then(([toolbox, registrations, controller]) => {
                 this.injectWorkspace(toolbox, registrations, controller);
+
+                return controller;
             });
     }
 
