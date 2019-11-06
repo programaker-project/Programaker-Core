@@ -35,6 +35,18 @@ export class ToolboxController {
         this.workspace.updateToolbox(this.toolboxXML);
     }
 
+    isKnownBlock(blockType: string) {
+        if (!blockType.startsWith('services.')) {
+            // We probably only have doubts on service blocks
+            //  as they can "dissapear".
+            return true;
+        }
+
+        // It it's a service block, check if we have info
+        //  about it.
+        return this.getBlockInfo(blockType) !== undefined;
+    }
+
     getStringVariables(): string[] {
         return this.workspace
             .getAllVariables()
