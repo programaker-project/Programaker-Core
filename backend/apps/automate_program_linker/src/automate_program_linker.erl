@@ -13,19 +13,20 @@
 -spec link_program(program(), binary()) -> {ok, program()}.
 link_program(Program = #{ <<"blocks">> := Blocks },
              UserId) ->
-    RelinkedBlocks = lists:map(fun (Subprogram) -> relink_subprogram(Subprogram, UserId) end, Blocks),
+    RelinkedBlocks = [relink_subprogram(Subprogram, UserId) || Subprogram <- Blocks],
     {ok, Program#{ <<"blocks">> => RelinkedBlocks }}.
 
 
 relink_subprogram(Subprogram, UserId) ->
-    lists:map(fun (Block) -> relink_block(Block, UserId) end, Subprogram).
+    [relink_block(Block, UserId) || Block <- Subprogram].
 
 
 %% Relink service monitor
 relink_block(Block, UserId) ->
     B1 = relink_block_contents(Block, UserId),
     B2 = relink_block_args(B1, UserId),
-    relink_block_values(B2, UserId).
+    B3 = relink_block_args_values(B2, UserId),
+    relink_block_values(B3, UserId).
 
 relink_block_contents(Block=#{ ?CONTENTS := Contents
                              }, UserId) when is_list(Contents) ->
@@ -42,6 +43,14 @@ relink_block_args(Block=#{ ?ARGUMENTS := Arguments
     B1;
 
 relink_block_args(Block, _UserId) ->
+    Block.
+
+
+relink_block_args_values(Block=#{ ?ARGUMENTS := Arguments
+                                }, _UserId) when is_list(Arguments) ->
+    Block#{ ?ARGUMENTS := [ relink_value(Arg) || Arg <- Arguments ] };
+
+relink_block_args_values(Block, _UserId) ->
     Block.
 
 

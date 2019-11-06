@@ -9,9 +9,8 @@
                    , automate_coordination
                    , automate_services_all
                    , automate_configuration
-
+                   , automate_channel_engine
                      %% , automate_program_linker %% Not an application, just a module
-
     ]},
     {env, [
     ]},
