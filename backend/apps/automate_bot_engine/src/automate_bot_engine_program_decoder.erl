@@ -32,15 +32,17 @@ initialize_program(ProgramId,
                             , enabled=Enabled
                             }}
 
-    catch ErrNS:Err:_StackTrace ->
-            io:fwrite("\033[41;37m Error decoding program: ~p \033[0m~n", [{ErrNS, Err}]),
+    catch ErrNS:Err:StackTrace ->
+            io:fwrite("\033[41;37m Error decoding program: ~p \033[0m~n", [{ErrNS, Err, StackTrace}]),
+            io:fwrite("------- 8< ---------~n~p~n------- 8< ---------~n", [Parsed]),
             {ok, #program_state{ program_id=ProgramId
                                , variables=[]
                                , permissions=#program_permissions{ owner_user_id=OwnerUserId }
                                , triggers=[]
                                , enabled=Enabled
                                }}
-    end.
+    end
+        .
 
 -spec update_program(#program_state{}, #user_program_entry{}) -> {ok, #program_state{}}.
 update_program(State,
