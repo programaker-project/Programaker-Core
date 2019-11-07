@@ -147,7 +147,7 @@ export class ProgramDetailComponent implements OnInit {
     load_program(controller: ToolboxController, program: ProgramContent) {
         const xml = Blockly.Xml.textToDom(program.orig);
         this.removeNonExistingBlocks(xml, controller);
-        Blockly.Xml.domToWorkspace(xml, this.workspace);
+        (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
     }
 
     prepareWorkspace(): Promise<ToolboxController> {
