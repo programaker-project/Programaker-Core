@@ -216,7 +216,7 @@ export class ProgramDetailComponent implements OnInit {
         controller.setWorkspace(this.workspace);
         controller.update();
 
-        // HACK#1
+        // HACK:
         // Defer a hide action, this is to compsensate for (what feels like)
         // scratch deferring re-setting the visibility of the sidebar
         // after the creation.
