@@ -75,7 +75,7 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 -spec accept_json_create_template(cowboy_req:req(), #state{})
-                                -> {'true',cowboy_req:req(), #state{}}.
+                                 -> {'true',cowboy_req:req(), #state{}}.
 accept_json_create_template(Req, State) ->
     #state{user_id=UserId} = State,
 

@@ -30,7 +30,7 @@ setup() ->
     NodeName = node(),
 
     %% Use a custom node name to avoid overwriting the actual databases
-    net_kernel:start([?MODULE, shortnames]),
+    net_kernel:start([testing, shortnames]),
 
     {ok, Pid} = application:ensure_all_started(automate_channel_engine),
 
@@ -41,8 +41,6 @@ setup() ->
 stop({NodeName, _Pid}) ->
     application:stop(automate_channel_engine),
 
-    %% Restore the original node name
-    net_kernel:start([NodeName, shortnames]),
     ok.
 
 tests(_SetupResult) ->
@@ -69,8 +67,8 @@ simple_listen_send() ->
 
     ok = automate_channel_engine:listen_channel(ChannelId),
     spawn_link(fun () ->
-                             automate_channel_engine:send_to_channel(ChannelId, Message)
-                     end),
+                       automate_channel_engine:send_to_channel(ChannelId, Message)
+               end),
     receive
         {channel_engine, ChannelId, ReceivedMessage} ->
             ?assertMatch(Message, ReceivedMessage)
@@ -107,7 +105,7 @@ register_and_close() ->
 
     Pid = spawn_link(fun() ->
                              ok = automate_channel_engine:listen_channel(ChannelId)
-               end),
+                     end),
 
     receive {'EXIT', Pid, normal} ->
             ok

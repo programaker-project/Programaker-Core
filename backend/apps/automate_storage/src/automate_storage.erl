@@ -19,11 +19,14 @@
         , update_program_metadata/3
         , delete_program/2
         , delete_running_process/1
+        , update_program_status/3
 
         , get_program_owner/1
         , get_program_pid/1
         , register_program_runner/2
         , get_program_from_id/1
+        , register_program_tags/2
+        , get_tags_program_from_id/1
         , dirty_list_running_programs/0
 
         , create_thread/2
@@ -32,6 +35,7 @@
         , get_thread_from_id/1
         , delete_thread/1
         , update_thread/1
+        , get_threads_from_program/1
 
         , set_program_variable/3
         , get_program_variable/2
@@ -42,16 +46,7 @@
 -export([start_link/0]).
 -define(SERVER, ?MODULE).
 
-%% Structures
--define(REGISTERED_USERS_TABLE, automate_registered_users).
--define(USER_SESSIONS_TABLE, automate_user_sessions).
--define(USER_MONITORS_TABLE, automate_user_monitors).
--define(USER_PROGRAMS_TABLE, automate_user_programs).
--define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
--define(RUNNING_THREADS_TABLE, automate_running_program_threads).
-
--define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
-
+-include("./databases.hrl").
 -include("./records.hrl").
 -include("../automate_bot_engine/src/program_records.hrl").
 
@@ -62,7 +57,10 @@
 %%====================================================================
 create_user(Username, Password, Email) ->
     UserId = generate_id(),
-    CipheredPassword = cipher_password(Password),
+    CipheredPassword = case Password of
+                           undefined -> undefined;
+                           _ -> cipher_password(Password)
+                       end,
     RegisteredUserData = #registered_user_entry{ id=UserId
                                                , username=Username
                                                , password=CipheredPassword
@@ -176,6 +174,7 @@ create_program(Username, ProgramName) ->
                                      , program_type=?DEFAULT_PROGRAM_TYPE
                                      , program_parsed=undefined
                                      , program_orig=undefined
+                                     , enabled=true
                                      },
     case store_new_program(UserProgram) of
         ok ->
@@ -189,12 +188,12 @@ get_program(Username, ProgramName) ->
     retrieve_program(Username, ProgramName).
 
 
--spec lists_programs_from_username(binary()) -> {'ok', [ { binary(), binary() } ] }.
+-spec lists_programs_from_username(binary()) -> {'ok', [ { binary(), binary(), boolean() } ] }.
 lists_programs_from_username(Username) ->
     case retrieve_program_list_from_username(Username) of
         {ok, Programs} ->
             { ok
-            , [{Id, Name} || [#user_program_entry{id=Id, program_name=Name}] <- Programs]};
+            , [{Id, Name, Enable} || [#user_program_entry{id=Id, program_name=Name, enabled=Enable}] <- Programs]};
         X ->
             X
     end.
@@ -203,9 +202,27 @@ list_programs_from_userid(Userid) ->
     case retrieve_program_list_from_userid(Userid) of
         {ok, Programs} ->
             { ok
-            , [{Id, Name} || [#user_program_entry{id=Id, program_name=Name}] <- Programs]};
+            , [{Id, Name, Enabled} || [#user_program_entry{id=Id, program_name=Name, enabled=Enabled}] <- Programs]};
         X ->
             X
+    end.
+
+-spec update_program_status(binary(), binary(), boolean()) -> 'ok' | { 'error', any() }.
+update_program_status(Username, ProgramId, Status)->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
+                              [Program] ->
+                                  ok = mnesia:write(?USER_PROGRAMS_TABLE,
+                                                    Program#user_program_entry{ enabled=Status
+                                                                              }, write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            ok;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
     end.
 
 -spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
@@ -257,7 +274,7 @@ delete_program(Username, ProgramName)->
 -spec delete_running_process(binary()) -> ok | {error, not_found}.
 delete_running_process(ProcessId) ->
     Transaction = fun() ->
-                         ok = mnesia:delete(?RUNNING_PROGRAMS_TABLE, ProcessId, write)
+                          ok = mnesia:delete(?RUNNING_PROGRAMS_TABLE, ProcessId, write)
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
@@ -293,14 +310,14 @@ register_program_runner(ProgramId, Pid) ->
                           case mnesia:read(?RUNNING_PROGRAMS_TABLE, ProgramId) of
                               [] ->
                                   ok = mnesia:write(?RUNNING_PROGRAMS_TABLE,
-                                               #running_program_entry{ program_id=ProgramId
-                                                                     , runner_pid=Pid
-                                                                     , variables=#{}
-                                                                     , stats=#{}
-                                                                     }, write);
+                                                    #running_program_entry{ program_id=ProgramId
+                                                                          , runner_pid=Pid
+                                                                          , variables=#{}
+                                                                          , stats=#{}
+                                                                          }, write);
                               [Program] ->
                                   ok = mnesia:write(?RUNNING_PROGRAMS_TABLE,
-                                               Program#running_program_entry{runner_pid=Pid}, write)
+                                                    Program#running_program_entry{runner_pid=Pid}, write)
                           end
                   end,
     case mnesia:transaction(Transaction) of
@@ -328,6 +345,46 @@ get_program_from_id(ProgramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec register_program_tags(binary(), [binary()]) -> 'ok' | {error, not_running}.
+register_program_tags(ProgramId, Tags) ->
+    Transaction = fun() ->
+                          case mnesia:read(?PROGRAM_TAGS_TABLE, ProgramId) of
+                              [] ->
+                                  ok = mnesia:write(?PROGRAM_TAGS_TABLE,
+                                                    #program_tags_entry{ program_id=ProgramId
+                                                                       , tags=Tags
+                                                                       }, write);
+                              [Program] ->
+                                  ok = mnesia:write(?PROGRAM_TAGS_TABLE,
+                                                    Program#program_tags_entry{ program_id=ProgramId
+                                                                              , tags=Tags
+                                                                              }, write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+get_tags_program_from_id(ProgramId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?PROGRAM_TAGS_TABLE, ProgramId) of
+                              [] ->
+                                  {ok, []};
+                              [#program_tags_entry{tags=Tags}] ->
+                                  {ok, Tags}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
 
 dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
@@ -388,26 +445,52 @@ update_thread(Thread=#running_program_thread_entry{ thread_id=Id }) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec get_threads_from_program(binary()) -> {ok, [thread_id()]} | {error, not_found}.
+get_threads_from_program(ParentProgramId) ->
+    MatchHead = #running_program_thread_entry{ thread_id = '$1'
+                                             , runner_pid = '_'
+                                             , parent_program_id = '$2'
+                                             , instructions = '_'
+                                             , memory = '_'
+                                             , instruction_memory = '_'
+                                             , position = '_'
+                                             , stats = '_'
+                                             },
+    Guard = {'==', '$2', ParentProgramId},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+    Transaction = fun() ->
+                          mnesia:select(?RUNNING_THREADS_TABLE, Matcher)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            {ok, Result};
+        { aborted, Reason } ->
+            {error, Reason}
+    end.
+
 
 dirty_list_running_threads() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_THREADS_TABLE)}.
 
 
--spec register_thread_runner(binary(), pid()) -> 'ok' | {error, not_running}.
+-spec register_thread_runner(binary(), pid()) -> {'ok', #running_program_thread_entry{}} | {error, not_running}.
 register_thread_runner(ThreadId, Pid) ->
     Transaction = fun() ->
                           case mnesia:read(?RUNNING_THREADS_TABLE, ThreadId) of
                               [Thread] ->
+                                  NewEntry = Thread#running_program_thread_entry{runner_pid=Pid},
                                   ok = mnesia:write(?RUNNING_THREADS_TABLE,
-                                                    Thread#running_program_thread_entry{runner_pid=Pid},
-                                                    write)
+                                                    NewEntry,
+                                                    write),
+                                  {ok, NewEntry}
                           end
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
-           Result;
+            Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:fwrite("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -504,7 +587,7 @@ add_token_to_user(UserId, SessionToken) ->
                                       , #user_session_entry{ session_id=SessionToken
                                                            , user_id=UserId
                                                            , session_start_time=StartTime
-                                          }
+                                                           }
                                       , write)
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
@@ -598,9 +681,9 @@ store_new_program(UserProgram) ->
 
 store_new_thread(UserThread) ->
     Transaction = fun() ->
-                          mnesia:write(?RUNNING_THREADS_TABLE
-                                      , UserThread
-                                      , write)
+                          ok = mnesia:write(?RUNNING_THREADS_TABLE
+                                           , UserThread
+                                           , write)
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
@@ -629,6 +712,7 @@ retrieve_program(Username, ProgramName) ->
                                                                         , program_type='_'
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
+                                                                        , enabled='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -678,6 +762,7 @@ retrieve_program_list_from_username(Username) ->
                                                                         , program_type='_'
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
+                                                                        , enabled='_'
                                                                         },
                                   ProgramGuard = {'==', '$2', UserId},
                                   ProgramResultsColumn = '$1',
@@ -705,6 +790,7 @@ retrieve_program_list_from_userid(UserId) ->
                                                                 , program_type='_'
                                                                 , program_parsed='_'
                                                                 , program_orig='_'
+                                                                , enabled='_'
                                                                 },
                           ProgramGuard = {'==', '$2', UserId},
                           ProgramResultsColumn = '$1',
@@ -728,7 +814,7 @@ store_new_program_content(Username, ProgramName,
                                                  , parsed=ProgramParsed
                                                  , type=ProgramType
                                                  })->
-        Transaction = fun() ->
+    Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
                                                                 , username='$2'
@@ -751,27 +837,27 @@ store_new_program_content(Username, ProgramName,
                                                                         , program_type='_'
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
+                                                                        , enabled='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
                                                  , {'==', '$3', ProgramName}},
-                                  ProgramResultColumn = '$1',
+                                  ProgramResultColumn = '$_',
                                   ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultColumn]}],
 
                                   case mnesia:select(?USER_PROGRAMS_TABLE, ProgramMatcher) of
                                       [] ->
                                           [];
 
-                                      [ProgramId] ->
+                                      [Program] ->
                                           ok = mnesia:write(?USER_PROGRAMS_TABLE,
-                                                            #user_program_entry{ id=ProgramId
-                                                                               , user_id=UserId
-                                                                               , program_name=ProgramName
-                                                                               , program_type=ProgramType
-                                                                               , program_parsed=ProgramParsed
-                                                                               , program_orig=ProgramOrig
-                                                                               }, write),
-                                          { ok, ProgramId }
+                                                            Program#user_program_entry{ user_id=UserId
+                                                                                      , program_name=ProgramName
+                                                                                      , program_type=ProgramType
+                                                                                      , program_parsed=ProgramParsed
+                                                                                      , program_orig=ProgramOrig
+                                                                                      }, write),
+                                          { ok, Program#user_program_entry.id }
                                   end
                           end
                   end,
@@ -898,7 +984,7 @@ start_coordinator() ->
 wait_for_all_nodes_ready(false, Primary, NonPrimaries) ->
     {?SERVER, Primary} ! { self(), {node_ready, node() }},
     io:fwrite("~p ! ~p~n", [{?SERVER, Primary}, { self(), {node_ready, node() }}]),
-    receive 
+    receive
         { _From, storage_started } ->
             ok;
         X ->
@@ -917,7 +1003,7 @@ wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
             ok;
         false ->
             receive
-                Msg = { From, { node_ready, Node } } ->
+                Msg = { _From, { node_ready, Node } } ->
                     io:fwrite("[automate_storage coordinator | Prim, ~p] NodeReady: ~p~n",
                               [node(), Msg]),
 
@@ -936,7 +1022,7 @@ wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
     end.
 
 coordinate_loop(Primary) ->
-    receive 
+    receive
         %% To be defined
         X ->
             io:fwrite("[automate_storage coordinator | ~p | Prim: ~p] Unknown message: ~p~n",
@@ -957,105 +1043,8 @@ prepare_nodes(Nodes) ->
 build_tables(Nodes) ->
     %% Registered users table
     io:fwrite("Building tables: ~p~n", [Nodes]),
-    ok = case mnesia:create_table(?REGISTERED_USERS_TABLE,
-                                  [ {attributes, record_info(fields, registered_user_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, registered_user_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% User session table
-    ok = case mnesia:create_table(?USER_SESSIONS_TABLE,
-                                  [ {attributes, record_info(fields, user_session_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, user_session_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% User monitors table
-    ok = case mnesia:create_table(?USER_MONITORS_TABLE,
-                                  [ {attributes, record_info(fields, monitor_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, monitor_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% User programs table
-    ok = case mnesia:create_table(?USER_PROGRAMS_TABLE,
-                                  [ {attributes, record_info(fields, user_program_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, user_program_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Running programs table
-    ok = case mnesia:create_table(?RUNNING_PROGRAMS_TABLE,
-                                  [ {attributes, record_info(fields, running_program_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, running_program_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Running program threads table
-    ok = case mnesia:create_table(?RUNNING_THREADS_TABLE,
-                                  [ {attributes, record_info(fields, running_program_thread_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, running_program_thread_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Program variable table
-    ok = case mnesia:create_table(?PROGRAM_VARIABLE_TABLE,
-                                  [ {attributes, record_info(fields, program_variable_table_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, program_variable_table_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    ok = mnesia:wait_for_tables([ ?REGISTERED_USERS_TABLE
-                                , ?USER_SESSIONS_TABLE
-                                , ?USER_MONITORS_TABLE
-                                , ?USER_PROGRAMS_TABLE
-                                , ?RUNNING_PROGRAMS_TABLE
-                                , ?RUNNING_THREADS_TABLE
-                                , ?PROGRAM_VARIABLE_TABLE
-                                ], automate_configuration:get_table_wait_time()),
-    ok.
+    ok = automate_storage_versioning:apply_versioning(automate_storage_configuration:get_versioning(Nodes),
+                                                      Nodes, ?MODULE).
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).

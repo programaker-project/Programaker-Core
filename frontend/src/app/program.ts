@@ -2,6 +2,7 @@ export class ProgramMetadata {
     id: string;
     name: string;
     link: string;
+    enabled: boolean;
 }
 
 export type ProgramType = 'scratch_program';
@@ -10,6 +11,7 @@ export class ProgramContent extends ProgramMetadata {
     type: ProgramType;
     parsed: any;
     orig: any;
+    owner: string;
 
     constructor (metadata: ProgramMetadata, parsed: any, orig: any, type: ProgramType) {
       super();

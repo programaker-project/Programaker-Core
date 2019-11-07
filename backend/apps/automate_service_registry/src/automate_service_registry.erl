@@ -25,10 +25,10 @@
 -include("records.hrl").
 -define(BACKEND, automate_service_registry_mnesia_backend).
 -define(MODULE_MAP, #{ name := binary()
-                      , description := binary()
-                      , module := {module(), [_]}
-                      , uuid := binary()
-                      }).
+                     , description := binary()
+                     , module := {module(), [_]}
+                     , uuid := binary()
+                     }).
 
 %%====================================================================
 %% API functions

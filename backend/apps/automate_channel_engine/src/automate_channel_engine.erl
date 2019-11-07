@@ -8,6 +8,7 @@
 %% Public API
 -export([create_channel/0, listen_channel/1, send_to_channel/2]).
 -include("records.hrl").
+-define(LOGGING, automate_logging).
 
 %%====================================================================
 %% API
@@ -31,6 +32,7 @@ send_to_channel(ChannelId, Message) ->
     automate_stats:log_observation(counter,
                                    automate_channel_engine_messages_in,
                                    [ChannelId]),
+    ?LOGGING:log_event(ChannelId, Message),
 
     case automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId) of
         {ok, Listeners} ->

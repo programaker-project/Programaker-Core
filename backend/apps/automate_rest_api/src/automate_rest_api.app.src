@@ -17,7 +17,7 @@
                   , automate_configuration
                   ]}
 
- , {env, [ {port, 8080} ]}
+ , {env, [ {port, 8888} ]}
  , {modules, []}
 
  , {maintaniners, []}

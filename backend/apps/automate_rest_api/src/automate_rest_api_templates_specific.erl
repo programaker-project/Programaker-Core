@@ -151,10 +151,10 @@ send_json_output(Output, Req) ->
 
 
 template_to_json(#template_entry{ id=Id
-                               , name=Name
-                               , owner=Owner
-                               , content=Content
-                               }) ->
+                                , name=Name
+                                , owner=Owner
+                                , content=Content
+                                }) ->
     #{ id => Id
      , name => Name
      , owner => Owner

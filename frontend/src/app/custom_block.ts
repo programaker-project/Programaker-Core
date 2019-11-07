@@ -46,6 +46,16 @@ export interface ResolvedCustomBlock {
     save_to: undefined | string;
 }
 
+export interface CategorizedCustomBlock {
+    bridge_data: BridgeData;
+    resolved_custom_blocks: ResolvedCustomBlock[];
+}
+
+export interface BridgeData {
+    bridge_name: string;
+    bridge_id: string;
+}
+
 function to_scratch_type(type) {
     switch (type) {
         case 'string':
@@ -123,7 +133,6 @@ export function block_to_xml(block: CustomBlock): string {
     </block>
     `;
 
-    console.log(xml);
     return xml;
 }
 
@@ -135,7 +144,14 @@ export function get_block_category(block: CustomBlock): string {
         return 'shape_statement';
     }
     else if (block.block_type == 'getter') {
-        return 'output_string'; // TODO: adapt to the appropriate type
+        switch (block.block_result_type) {
+            case 'boolean':
+                return 'output_boolean';
+            case 'number':
+                return 'output_boolean';
+            default:
+                return 'output_string';
+        }
     }
     else {
         console.log('Unknown block type:', block.block_type);

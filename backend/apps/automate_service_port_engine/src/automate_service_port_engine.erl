@@ -20,12 +20,14 @@
         , get_user_service_ports/1
         , delete_bridge/2
         , callback_bridge/3
+        , get_channel_origin_bridge/1
         ]).
 
 -include("records.hrl").
 
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
 -define(ROUTER, automate_service_port_engine_router).
+-define(LOGGING, automate_logging).
 
 %%====================================================================
 %% API
@@ -41,6 +43,7 @@ register_service_port(ServicePortId) ->
 
 -spec call_service_port(binary(), binary(), binary(), binary(), map()) -> {ok, any()}.
 call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
+    ?LOGGING:log_call_to_bridge(ServicePortId,FunctionName,Arguments,UserId,ExtraData),
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
                                         , <<"user_id">> => UserId
                                         , <<"value">> => #{ <<"function_name">> => FunctionName
@@ -99,14 +102,21 @@ from_service_port(ServicePortId, UserId, Msg) ->
                     %% returning multiple channels when asked.
                     {ok, Channels} = ?BACKEND:list_bridge_channels(ServicePortId),
                     Results = lists:map(fun (Channel) ->
-                                                automate_channel_engine:send_to_channel(
-                                                  Channel,
-                                                  #{ <<"key">> => Key
-                                                   , <<"value">> => Value
-                                                   , <<"content">> => Content
-                                                   })
+                                                { Channel
+                                                , automate_channel_engine:send_to_channel(
+                                                    Channel,
+                                                    #{ <<"key">> => Key
+                                                     , <<"value">> => Value
+                                                     , <<"content">> => Content
+                                                     })}
                                         end, Channels),
-                    true = lists:all(fun(Result) -> Result == ok end, Results),
+                    lists:foreach(
+                      fun({Channel, Result}) ->
+                              case Result of
+                                  ok -> ok;
+                                  Err -> io:fwrite("Error sending to channel (~p): ~p~n", [Channel, Err])
+                              end
+                      end, Results),
                     %% Make sure to crash if there's an error, but only after the
                     %% messages had been sent
                     ok;
@@ -142,12 +152,12 @@ get_user_service_ports(UserId) ->
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->
-    ok = case ?BACKEND:get_bridge_service(UserId, BridgeId) of
-        {ok, undefined} ->
-            ok;
-        {ok, ServiceId} ->
-            automate_service_registry:delete_service(UserId, ServiceId)
-    end,
+    ok = case ?BACKEND:get_service_id_for_port(BridgeId) of
+             {error, not_found} ->
+                 ok;
+             {ok, ServiceId} ->
+                 automate_service_registry:delete_service(UserId, ServiceId)
+         end,
     ?BACKEND:delete_bridge(UserId, BridgeId).
 
 
@@ -159,6 +169,16 @@ callback_bridge(UserId, BridgeId, Callback) ->
                                    , <<"value">> => #{ <<"callback">> => Callback
                                                      }
                                    }).
+
+
+-spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
+get_channel_origin_bridge(ChannelId) ->
+    case automate_services_time:get_monitor_id(none) of
+        {ok, ChannelId} ->
+            {ok, automate_services_time:get_uuid()};
+        _ ->
+            ?BACKEND:get_channel_origin_bridge(ChannelId)
+    end.
 
 %%====================================================================
 %% Internal functions

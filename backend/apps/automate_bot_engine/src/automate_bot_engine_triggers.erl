@@ -111,12 +111,12 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                             , program_id=ProgramId
                             },
 
-     {ok, ThreadWithSavedValue} = case MonitorArgs of
-                                      #{ ?MONITOR_SAVE_VALUE_TO := SaveTo } ->
-                                          save_value(Thread, SaveTo, MessageContent);
-                                      _ ->
-                                          {ok, Thread}
-                                  end,
+    {ok, ThreadWithSavedValue} = case MonitorArgs of
+                                     #{ ?MONITOR_SAVE_VALUE_TO := SaveTo } ->
+                                         save_value(Thread, SaveTo, MessageContent);
+                                     _ ->
+                                         {ok, Thread}
+                                 end,
 
     case automate_bot_engine_variables:resolve_argument(Argument, ThreadWithSavedValue) of
         {ok, MessageContent} ->

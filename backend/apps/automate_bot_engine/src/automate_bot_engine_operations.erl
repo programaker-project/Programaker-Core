@@ -457,7 +457,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
 
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
-            automate_bot_engine_values:add(FirstValue, SecondValue);
+            automate_bot_engine_values:join(FirstValue, SecondValue);
         _ ->
             {error, not_found}
     end;

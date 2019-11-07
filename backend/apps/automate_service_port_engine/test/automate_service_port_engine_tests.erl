@@ -30,7 +30,7 @@ setup() ->
     NodeName = node(),
 
     %% Use a custom node name to avoid overwriting the actual databases
-    net_kernel:start([?MODULE, shortnames]),
+    net_kernel:start([testing, shortnames]),
 
     {ok, _Pid} = application:ensure_all_started(?APPLICATION),
 
@@ -42,8 +42,6 @@ stop({NodeName}) ->
     ?BACKEND:uninstall(),
     ok = application:stop(?APPLICATION),
 
-    %% Restore the original node name
-    net_kernel:start([NodeName, shortnames]),
     ok.
 
 tests(_SetupResult) ->
@@ -59,6 +57,9 @@ tests(_SetupResult) ->
       }
     , { "[Service Port - Custom blocks] Non-owned public blocks appear"
       , fun non_owned_public_blocks_appear/0
+      }
+    , { "[Service Port - Custom blocks] Deleting a bridge deletes its custom blocks"
+      , fun owned_delete_bridge_blocks/0
       }
       %% Notification routing
     , { "[Service port - Notifications] Route notifications targeted to owner"
@@ -120,7 +121,7 @@ owned_public_blocks_appear() ->
     ServicePortName = <<?TEST_ID_PREFIX, "-test-3-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
-    Configuration = #{ <<"is_public">> => public
+    Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
                      , <<"blocks">> => [ get_test_block() ]
                      },
@@ -150,9 +151,46 @@ non_owned_public_blocks_appear() ->
 
     check_test_block(CustomBlock).
 
+owned_delete_bridge_blocks() ->
+    OwnerUserId = <<?TEST_ID_PREFIX, "-test-5-owner">>,
+    ServicePortName = <<?TEST_ID_PREFIX, "-test-5-service-port">>,
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+
+    Configuration = #{ <<"is_public">> => true
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ get_test_block() ]
+                     },
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+    {ok, #{ BridgeId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    %% Blocks are created
+    check_test_block(CustomBlock),
+
+    {ok, ServiceId} = automate_service_port_engine_mnesia_backend:get_service_id_for_port(BridgeId),
+    ?assertMatch({ok, _}, automate_service_registry:get_service_by_id(ServiceId, OwnerUserId)),
+
+    {ok, ResultsOk} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    ?assertMatch({ok, _}, maps:find(ServiceId, ResultsOk)),
+    {ok, BeforeDeleteServices} = automate_service_registry:get_all_services_for_user(OwnerUserId),
+
+    %% Delete bridge
+    ok = automate_service_port_engine:delete_bridge(OwnerUserId, BridgeId),
+
+    %% Blocks are destroyed
+    {ok, Results} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    ?assertEqual(error, maps:find(ServiceId, Results)),
+
+    %% Service deregistred
+    ?assertEqual({error, not_found}, automate_service_port_engine_mnesia_backend:get_service_id_for_port(BridgeId)),
+    ?assertEqual({error, not_found}, automate_service_registry:get_service_by_id(ServiceId, OwnerUserId)),
+
+    {ok, Services} = automate_service_registry:get_all_services_for_user(OwnerUserId),
+    ?assertEqual(error, maps:find(ServiceId, Services)).
 
 %%====================================================================
-%% Custom block tets - Internal functions
+%% Custom block tests - Internal functions
 %%====================================================================
 -define(Arguments, []).
 -define(FunctionName, <<"first_function_name">>).
@@ -187,7 +225,6 @@ check_test_block(Block) ->
 -undef(BlockType).
 -undef(BlockResultType).
 -undef(SaveTo).
-
 
 %%====================================================================
 %% Notification routing tests

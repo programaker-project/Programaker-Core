@@ -83,10 +83,10 @@ start_link(ProgramId) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec init(binary(), #user_program_entry{}) -> {ok, State :: term()} |
-                                  {ok, State :: term(), Timeout :: timeout()} |
-                                  {ok, State :: term(), hibernate} |
-                                  {stop, Reason :: term()} |
-                                  ignore.
+                                               {ok, State :: term(), Timeout :: timeout()} |
+                                               {ok, State :: term(), hibernate} |
+                                               {stop, Reason :: term()} |
+                                               ignore.
 init(ProgramId, Program) ->
     ok = automate_storage:register_program_runner(ProgramId, self()),
     {ok, ProgramState} = automate_bot_engine_program_decoder:initialize_program(ProgramId, Program),
@@ -108,8 +108,8 @@ update_state(State = #program_state{ program_id=ProgramId } ) ->
           }.
 
 -spec loop(#state{}) -> no_return().
-loop(State = #state{ check_next_action = CheckContinue
-                   , program = Program
+loop(State = #state{ check_next_action=CheckContinue
+                   , program=Program
                    }) ->
     receive
         {stop_program, From} ->
@@ -121,8 +121,9 @@ loop(State = #state{ check_next_action = CheckContinue
         {quit, _From} ->
             ok;
         {Signal, Message} ->
-            NextState = case apply(CheckContinue, [State, {Signal, Message}]) of
-                            continue ->
+            #program_state{ enabled=Enabled } = Program,
+            NextState = case {Enabled, apply(CheckContinue, [State, {Signal, Message}])} of
+                            {true, continue} ->
                                 try
                                     run_tick(State, {Signal, Message})
                                 of
@@ -133,6 +134,9 @@ loop(State = #state{ check_next_action = CheckContinue
                                         io:fwrite("Error running program tick ~p~n", [{ErrNS, Err, StackTrace}]),
                                         State
                                 end;
+                            {false, _} ->
+                                io:format("\033[47;30mIgnoring (app stopped)\033[0m~n", []),
+                                State;
                             X ->
                                 io:format("\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [X]),
                                 State

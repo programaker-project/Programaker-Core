@@ -24,7 +24,7 @@ import { BridgeMetadata } from './bridge';
 
 export class BridgeAddComponent {
     session: Session;
-    portName = "";
+    bridgeName = "";
     portControlUrl = "";
     editable = true;
 
@@ -74,7 +74,7 @@ export class BridgeAddComponent {
 
     create(): void {
         this.editable = false;
-        this.bridgeService.createServicePort(this.portName).then((BridgeMetadata: BridgeMetadata) => {
+        this.bridgeService.createServicePort(this.bridgeName).then((BridgeMetadata: BridgeMetadata) => {
             this.portControlUrl = this.get_websocket_root() + BridgeMetadata.control_url;
         }).catch(() => {
             this.editable = true;

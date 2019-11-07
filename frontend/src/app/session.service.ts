@@ -60,7 +60,6 @@ export class SessionService {
                 session = await this.getSession();
             }
             user_id = session.user_id;
-
         }
         return API.ApiRoot + '/users/id/' + user_id;
     }

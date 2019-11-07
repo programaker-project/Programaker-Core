@@ -42,11 +42,11 @@ allowed_methods(Req, State) ->
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
 
 content_types_accepted(Req, State) ->
-	{[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
-   Req, State}.
+    {[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
+     Req, State}.
 
 %%%% POST
-%
+                                                %
 -spec accept_json_modify_collection(cowboy_req:req(),#registration_seq{})
                                    -> {'false' | {'true', binary()},cowboy_req:req(),#registration_seq{}}.
 accept_json_modify_collection(Req, Session) ->

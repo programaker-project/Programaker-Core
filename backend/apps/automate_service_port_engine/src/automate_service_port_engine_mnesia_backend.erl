@@ -15,18 +15,16 @@
         , get_user_service_ports/1
         , list_bridge_channels/1
 
-        , get_bridge_service/2
+        , get_service_id_for_port/1
         , delete_bridge/2
 
         , get_or_create_monitor_id/2
         , uninstall/0
+        , get_channel_origin_bridge/1
         ]).
 
 -include("records.hrl").
--define(SERVICE_PORT_TABLE, automate_service_port_table).
--define(SERVICE_PORT_CONFIGURATION_TABLE, automate_service_port_configuration_table).
--define(SERVICE_PORT_USERID_OBFUSCATION_TABLE, automate_service_port_userid_obfuscation_table).
--define(SERVICE_PORT_CHANNEL_TABLE, automate_service_port_channel_table).
+-include("databases.hrl").
 
 %%====================================================================
 %% API
@@ -34,62 +32,8 @@
 start_link() ->
     Nodes = automate_configuration:get_sync_peers(),
 
-    %% Service port identity table
-    ok = case mnesia:create_table(?SERVICE_PORT_TABLE,
-                                  [ { attributes, record_info(fields, service_port_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_port_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Service port configuration table
-    ok = case mnesia:create_table(?SERVICE_PORT_CONFIGURATION_TABLE,
-                                  [ { attributes, record_info(fields, service_port_configuration)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_port_configuration }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% Service port userId obfuscation
-    ok = case mnesia:create_table(?SERVICE_PORT_USERID_OBFUSCATION_TABLE,
-                                  [ { attributes, record_info(fields, service_port_user_obfuscation_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_port_user_obfuscation_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-
-    %% UserId×ServiceId -> ChannelId
-    ok = case mnesia:create_table(?SERVICE_PORT_CHANNEL_TABLE,
-                                  [ { attributes, record_info(fields, service_port_monitor_channel_entry)}
-                                  , { disc_copies, Nodes }
-                                  , { record_name, service_port_monitor_channel_entry }
-                                  , { type, set }
-                                  ]) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _ }} ->
-                 ok
-         end,
-    ok = mnesia:wait_for_tables([ ?SERVICE_PORT_TABLE
-                                , ?SERVICE_PORT_CONFIGURATION_TABLE
-                                , ?SERVICE_PORT_USERID_OBFUSCATION_TABLE
-                                , ?SERVICE_PORT_CHANNEL_TABLE
-                                ], automate_configuration:get_table_wait_time()),
+    ok = automate_storage_versioning:apply_versioning(automate_service_port_engine_configuration:get_versioning(Nodes),
+                                                      Nodes, ?MODULE),
     ignore.
 
 
@@ -289,13 +233,6 @@ list_bridge_channels(ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_bridge_service(binary(), binary()) -> {ok, undefined | binary()}.
-get_bridge_service(UserId, BridgeId) ->
-    [#service_port_entry{ owner=UserId
-                        , service_id=ServiceId
-                        }] = mnesia:dirty_read(?SERVICE_PORT_TABLE, BridgeId),
-    {ok, ServiceId}.
-
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->
     Transaction = fun() ->
@@ -332,6 +269,27 @@ get_or_create_monitor_id(UserId, ServicePortId) ->
                 {aborted, Reason} ->
                     {error, Reason, mnesia:error_description(Reason)}
             end
+    end.
+
+-spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
+get_channel_origin_bridge(ChannelId) ->
+    Transaction = fun() ->
+                          MatchHead = #service_port_monitor_channel_entry{ id='$1'
+                                                                         , channel_id='$2'
+                                                                         },
+                          Guard = {'==', '$2', ChannelId},
+                          ResultColumn = '$1',
+                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+                          mnesia:select(?SERVICE_PORT_CHANNEL_TABLE, Matcher)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, []} ->
+            {error, not_found};
+        {atomic, [{_UserId, BridgeId}]} ->
+            {ok, BridgeId};
+        {aborted, Reason} ->
+            {error, mnesia:error_description(Reason)}
     end.
 
 %%====================================================================

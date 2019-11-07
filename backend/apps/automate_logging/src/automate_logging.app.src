@@ -1,0 +1,16 @@
+{application, automate_logging,
+ [ {description, "Logging service forwarder."},
+   {vsn, "0.0.0"},
+   {registered, []},
+   {mod, { automate_logging_app, [] }},
+   {applications, [ kernel
+                  , stdlib
+                  , automate_configuration
+                  , inets
+                  ]},
+   {env, [
+         ]},
+   {modules, []},
+   {licenses, ["Apache 2.0"]},
+   {links, []}
+ ]}.

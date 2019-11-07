@@ -1,0 +1,2 @@
+-define(LIVE_CHANNELS_TABLE, automate_channel_engine_live_channels_table).
+-define(LISTENERS_TABLE, automate_channel_engine_listeners_table).
