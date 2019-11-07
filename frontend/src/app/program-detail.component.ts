@@ -185,7 +185,7 @@ export class ProgramDetailComponent implements OnInit {
             comments: false,
             disable: false,
             collapse: true,
-            media: '../media/',
+            media: '../assets/scratch-media/',
             readOnly: false,
             rtl: rtl,
             scrollbars: true,
