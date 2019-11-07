@@ -185,8 +185,9 @@ export class ProgramDetailComponent implements OnInit {
             comments: false,
             disable: false,
             collapse: true,
-            media: '../media/',
+            media: '../assets/scratch-media/',
             readOnly: false,
+            trashcan: true,
             rtl: rtl,
             scrollbars: true,
             toolbox: toolbox,
@@ -215,7 +216,7 @@ export class ProgramDetailComponent implements OnInit {
         controller.setWorkspace(this.workspace);
         controller.update();
 
-        // HACK#1
+        // HACK:
         // Defer a hide action, this is to compsensate for (what feels like)
         // scratch deferring re-setting the visibility of the sidebar
         // after the creation.
@@ -286,6 +287,10 @@ export class ProgramDetailComponent implements OnInit {
 
     show_workspace(workspace: HTMLElement) {
         workspace.style.visibility = 'visible';
+
+        // Elements might have moved around.
+        // We trigger a resize to notify SVG elements.
+        window.dispatchEvent(new Event('resize'));
     }
 
     hide_workspace(workspace: HTMLElement) {
