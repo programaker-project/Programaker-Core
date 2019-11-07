@@ -287,6 +287,10 @@ export class ProgramDetailComponent implements OnInit {
 
     show_workspace(workspace: HTMLElement) {
         workspace.style.visibility = 'visible';
+
+        // Elements might have moved around.
+        // We trigger a resize to notify SVG elements.
+        window.dispatchEvent(new Event('resize'));
     }
 
     hide_workspace(workspace: HTMLElement) {
