@@ -11,8 +11,12 @@ export class ToolboxController {
 
     addCustomBlocks(blocks: ResolvedCustomBlock[]) {
         for (const block of blocks) {
-            this.customBlocks[block.id] = block;
+            this.addCustomBlock(block);
         }
+    }
+
+    addCustomBlock(block: ResolvedCustomBlock) {
+        this.customBlocks[block.id] = block;
     }
 
     getBlockInfo(blockId: string) {
