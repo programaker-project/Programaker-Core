@@ -58,7 +58,23 @@ call(get_utc_minute, _Values, Thread, _UserId) ->
 
 call(get_utc_seconds, _Values, Thread, _UserId) ->
     {{_Y1970, _Mon, _Day}, {_Hour, _Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
-    {ok, Thread, Sec}.
+    {ok, Thread, Sec};
+
+call(<<"utc_is_day_of_week">>, [DayOfWeek], Thread, _UserId) ->
+    {{Y1970, Mon, Day}, {_Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    %% Note that technically, calendar:day_of_the_week takes a Year, not Year1970 .
+    %%  It should not affect this calculation, but keep it in mind.
+    %%  See http://erlang.org/doc/man/calendar.html#type-year
+    Id = day_of_week_to_id(calendar:day_of_the_week(Y1970, Mon, Day)),
+    {ok, Thread, Id == DayOfWeek}.
+
+day_of_week_to_id(1) -> <<"mon">>;
+day_of_week_to_id(2) -> <<"tue">>;
+day_of_week_to_id(3) -> <<"wed">>;
+day_of_week_to_id(4) -> <<"thu">>;
+day_of_week_to_id(5) -> <<"fri">>;
+day_of_week_to_id(6) -> <<"sat">>;
+day_of_week_to_id(7) -> <<"sun">>.
 
 %% Is enabled for all users
 is_enabled_for_user(_Username) ->

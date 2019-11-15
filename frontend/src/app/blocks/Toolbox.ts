@@ -17,6 +17,10 @@ const MonitorSecondaryColor = '#773377';
 const CustomPrimaryColor = '#777777';
 const CustomSecondaryColor = '#E7E7E7';
 
+// Constant Ids, to reference the time service.
+const TimeServiceUuid = "0093325b-373f-4f1c-bace-4532cce79df4";
+const UtcTimeOfDayBlockId = `services.${TimeServiceUuid}.utc_is_day_of_week`;
+
 export class Toolbox {
     monitorService: MonitorService;
     customBlockService: CustomBlockService;
@@ -153,6 +157,32 @@ export class Toolbox {
                     ],
                     'category': Blockly.Categories.event,
                     'extensions': ['colours_time', 'output_string']
+                });
+            }
+        };
+
+        Blockly.Blocks[UtcTimeOfDayBlockId] = {
+            init: function () {
+                this.jsonInit({
+                    'id': UtcTimeOfDayBlockId,
+                    'message0': 'Is current day of week %1',
+                    'args0': [
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'DAY_OF_WEEK',
+                            'options': [
+                                ["Monday", "mon"],
+                                ["Tuesday", "tue"],
+                                ["Wednesday", "wed"],
+                                ["Thursday", "thu"],
+                                ["Friday", "fri"],
+                                ["Saturday", "sat"],
+                                ["Sunday", "sun"],
+                            ]
+                        },
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'output_boolean']
                 });
             }
         };
@@ -596,6 +626,11 @@ export class Toolbox {
           <block type="time_get_utc_hour" id="time_get_utc_hour"></block>
           <block type="time_get_utc_minute" id="time_get_utc_minute"></block>
           <block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>
+          <block type="${UtcTimeOfDayBlockId}" id="${UtcTimeOfDayBlockId}">
+            <value name="DAY_OF_WEEK">
+              <shadow type="field_dropdown"></shadow>
+            </value>
+          </block>
         </category>
         `;
 
