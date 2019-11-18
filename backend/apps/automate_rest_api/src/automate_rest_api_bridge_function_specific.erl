@@ -65,7 +65,6 @@ is_authorized(Req, State) ->
                         {true, UserId} ->
                             { true, Req1, State };
                         {true, TokenUserId} -> %% Non matching user_id
-                            io:fwrite("Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId]),
                             { { false, <<"Unauthorized to create a program here">>}, Req1, State };
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
