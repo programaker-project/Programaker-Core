@@ -28,6 +28,7 @@
         , list_bridges/1
         , delete_bridge/2
         , callback_bridge/3
+        , bridge_function_call/4
 
         , create_template/3
         , list_templates_from_user_id/1
@@ -276,6 +277,9 @@ delete_bridge(UserId, BridgeId) ->
 callback_bridge(UserId, BridgeId, Callback) ->
     automate_service_port_engine:callback_bridge(UserId, BridgeId, Callback).
 
+-spec bridge_function_call(binary(), binary(), binary(), any()) -> {ok, map()} |{ error, term()}.
+bridge_function_call(UserId, BridgeId, FunctionName, Arguments) ->
+    automate_service_port_engine:call_service_port(BridgeId, FunctionName, Arguments, UserId, #{}).
 
 -spec create_template(binary(), binary(), [any()]) -> {ok, binary()}.
 create_template(UserId, TemplateName, TemplateContent) ->
