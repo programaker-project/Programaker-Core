@@ -362,8 +362,6 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            console.log("Updating tags to:", data.tags);
-
             const update = (this.programService.updateProgramTags(this.program.owner, this.program.id, data.tags)
                             .then((success) => {
                                 if (!success) {

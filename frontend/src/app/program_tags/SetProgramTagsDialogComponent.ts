@@ -84,6 +84,7 @@ export class SetProgramTagsDialogComponent {
             // Add our tag
             if ((value || '').trim()) {
                 this.tags.push(value.trim());
+                this.deduplicateTags();
             }
 
             // Reset the input value
@@ -93,7 +94,22 @@ export class SetProgramTagsDialogComponent {
 
             this.tagCtrl.setValue(null);
         }
-        console.log(this.data.tags, this.tags);
+    }
+
+    // Remove duplicated tags
+    deduplicateTags(): void {
+        const past = {};
+        for (let index = 0; index < this.tags.length;) {
+            const tag = this.tags[index];
+            if (past[tag]) {
+                // Duplicated, remove
+                this.tags.splice(index, 1);
+            }
+            else {
+                past[tag] = true;
+                index++;
+            }
+        }
     }
 
     remove(tag: string): void {
@@ -108,6 +124,7 @@ export class SetProgramTagsDialogComponent {
         this.tags.push(event.option.viewValue);
         this.tagInput.nativeElement.value = '';
         this.tagCtrl.setValue(null);
+        this.deduplicateTags();
     }
 
     private _filter(value: string): string[] {
