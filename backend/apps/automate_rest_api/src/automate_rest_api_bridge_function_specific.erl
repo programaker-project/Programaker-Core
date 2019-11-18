@@ -104,11 +104,12 @@ accept_function_call(Req, State) ->
 
 %% Helper functions
 encode_result(#{ <<"success">> := true, <<"result">> := Result }) ->
+    %% Positive result, just send the necessary data.
     jiffy:encode(#{ <<"result">> => Result
                   , <<"success">> => true
                   });
 encode_result(Result) ->
-    %% Non positive, so we just
+    %% Not a positive result, just encode the returned data to help debugging.
     jiffy:encode(Result).
 
 read_body(Req0) ->
