@@ -10,7 +10,11 @@
     border-bottom: 1px solid #AAA;
 }
 
-button#program-rename-button, button#program-start-button, button#program-delete-button, button#program-stop-button {
+button#program-rename-button,
+button#program-start-button,
+button#program-delete-button,
+button#program-stop-button,
+button#advancedProgramControls {
     vertical-align: super;
     padding: 1ex;
 }
