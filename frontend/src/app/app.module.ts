@@ -33,7 +33,7 @@ import { ProgramDetailComponent } from './program-detail.component';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
-import { ProgramMetadataComponent } from './program_metadata/program-metadata.component';
+import { SetProgramTagsDialogComponent } from './program_tags/SetProgramTagsDialogComponent';
 
 // Services
 import { AddServicesComponent } from './add-services.component';
@@ -61,7 +61,6 @@ import 'hammerjs';
         DashboardComponent,
         ProgramsComponent,
         ProgramDetailComponent,
-        ProgramMetadataComponent,
         AddServicesComponent,
         BridgeIndexComponent,
         BridgeAddComponent,
@@ -75,6 +74,7 @@ import 'hammerjs';
         DeleteProgramDialogComponent,
         TemplateCreateDialogComponent,
         StopThreadProgramDialogComponent,
+        SetProgramTagsDialogComponent,
 
         // Pipes
         SummarizeJSON,
@@ -118,6 +118,7 @@ import 'hammerjs';
         DeleteProgramDialogComponent,
         TemplateCreateDialogComponent,
         StopThreadProgramDialogComponent,
+        SetProgramTagsDialogComponent,
     ],
     providers: [],
     bootstrap: [AppComponent],

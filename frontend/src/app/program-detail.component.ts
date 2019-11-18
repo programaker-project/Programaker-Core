@@ -17,6 +17,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
+import { SetProgramTagsDialogComponent } from './program_tags/SetProgramTagsDialogComponent';
 import { ToolboxController } from './blocks/ToolboxController';
 import { TemplateService } from './templates/template.service';
 import { ServiceService } from './service.service';
@@ -35,7 +36,7 @@ export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
     currentFillingInput: string;
     workspace: Blockly.Workspace;
-    programUserId: string;
+    programUserName: string;
     programId: string;
 
     toolboxController: ToolboxController;
@@ -65,7 +66,7 @@ export class ProgramDetailComponent implements OnInit {
         progbar.track(new Promise((resolve) => {
             this.route.params
                 .switchMap((params: Params) => {
-                    this.programUserId = params['user_id'];
+                    this.programUserName = params['user_id'];
                     this.programId = params['program_id'];
                     return this.programService.getProgram(params['user_id'], params['program_id']).catch(err => {
                         console.error("Error:", err);
@@ -310,7 +311,7 @@ export class ProgramDetailComponent implements OnInit {
         const program = new ScratchProgram(this.program,
             serialized.parsed,
             serialized.orig);
-        this.programService.updateProgram(this.programUserId, program);
+        this.programService.updateProgram(this.programUserName, program);
     }
 
     renameProgram() {
@@ -326,7 +327,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const rename = (this.programService.renameProgram(this.programUserId, this.program, programData.name)
+            const rename = (this.programService.renameProgram(this.programUserName, this.program, programData.name)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {
@@ -341,6 +342,44 @@ export class ProgramDetailComponent implements OnInit {
                     console.log("Changing name to", this.program);
                 }));
             progbar.track(rename);
+        });
+    }
+
+    setProgramTags() {
+        const data = {
+            program: this.program,
+            user_id: this.program.owner,
+            tags: [], // Initially empty, to be updated by dialog
+        };
+
+        const dialogRef = this.dialog.open(SetProgramTagsDialogComponent, {
+            data: data
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            const update = (this.programService.updateProgramTags(this.program.owner, this.program.id, data.tags)
+                            .then((success) => {
+                                if (!success) {
+                                    return;
+                                }
+
+                                this.notification.open('Tags updated', 'ok', {
+                                    duration: 5000
+                                });
+                            })
+                            .catch((error) => {
+                                console.error(error);
+
+                                this.notification.open('Error updating tags', 'ok', {
+                                    duration: 5000
+                                });
+                            }));
+            progbar.track(update);
         });
     }
 
@@ -383,7 +422,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const deletion = (this.programService.deleteProgram(this.programUserId, this.program)
+            const deletion = (this.programService.deleteProgram(this.programUserName, this.program)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {

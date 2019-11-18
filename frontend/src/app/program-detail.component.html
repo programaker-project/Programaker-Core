@@ -5,6 +5,7 @@
             <span class="program-title" *ngIf="program !== undefined">{{program.name}}</span>
             <span class="program-title" *ngIf="program === undefined">Loading program...</span>
         </h1>
+        <!-- Basic functions -->
         <button id="program-rename-button" color="secondary"
                 *ngIf="program !== undefined"
                 (click)="renameProgram()" mat-button>
@@ -21,6 +22,22 @@
                 (click)="stopThreadsProgram()" mat-button>
             <mat-icon>stop</mat-icon> Stop all
         </button>
+        <!-- Advanced functions, on a menu -->
+        <button id="advancedProgramControls" color="secondary"
+                [matMenuTriggerFor]="advancedProgramControls"
+                *ngIf="program !== undefined" mat-button>
+            <mat-icon>more_vert</mat-icon> Advanced
+        </button>
+        <mat-menu #advancedProgramControls="matMenu">
+            <button mat-menu-item
+                    (click)="setProgramTags()">
+                <mat-icon class="example-tab-icon">label</mat-icon>
+                Tags
+            </button>
+        </mat-menu>
+
+
+        <!-- Dangerous stuff, by itself -->
         <button id="program-delete-button" color="warn"
                 *ngIf="program !== undefined"
                 (click)="deleteProgram()" mat-button>
@@ -28,10 +45,4 @@
         </button>
     </div>
 
-    <div id="metadata" class="float-right">
-        <program-metadata-component
-            *ngIf="program !== undefined"
-            programUserId="{{program.owner}}"
-            programId="{{program.id}}"></program-metadata-component>
-    </div>
     <div id="workspace"></div>
