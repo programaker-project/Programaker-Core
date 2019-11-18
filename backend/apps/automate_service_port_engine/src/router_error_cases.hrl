@@ -1,0 +1,1 @@
+-define(ROUTER_ERROR_CLASSES, no_response | no_connection | not_found | unauthorized).

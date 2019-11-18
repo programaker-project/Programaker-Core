@@ -15,6 +15,7 @@
         ]).
 
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
+-include("../../automate_bot_engine/src/program_records.hrl").
 
 %%====================================================================
 %% Service API
@@ -28,6 +29,7 @@ start_link() ->
 get_monitor_id(UserId, [ServicePortId]) ->
     ?BACKEND:get_or_create_monitor_id(UserId, ServicePortId).
 
+-spec call(binary(), any(), #program_thread{}, binary(), _) -> {ok, #program_thread{}, any()}.
 call(FunctionName, Values, Thread, UserId, [ServicePortId]) ->
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
                                                                               UserId),

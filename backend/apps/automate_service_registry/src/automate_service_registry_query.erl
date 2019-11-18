@@ -15,6 +15,8 @@
 
 -define(SERVER, ?MODULE).
 -include("records.hrl").
+-include("../../automate_bot_engine/src/program_records.hrl").
+
 
 %%====================================================================
 %% API functions
@@ -31,6 +33,7 @@ get_how_to_enable({Module, Params}, UserInfo) ->
 get_how_to_enable(Module, UserInfo) ->
     Module:get_how_to_enable(UserInfo).
 
+-spec call(module() | {module(), any()}, binary(), any(), #program_thread{}, binary()) -> {ok, #program_thread{}, any()}.
 call({Module, Params}, Action, Values, Thread, UserId) ->
     Module:call(Action, Values, Thread, UserId, Params);
 
