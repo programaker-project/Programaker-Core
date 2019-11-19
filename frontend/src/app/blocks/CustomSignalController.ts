@@ -1,6 +1,8 @@
+import { MatDialog } from '@angular/material';
+import { MatSnackBar } from '@angular/material/snack-bar';
+
 import { CustomSignalCreateDialogComponent } from '../custom_signals/create-dialog.component';
 import { alreadyRegisteredException, createDom } from './utils';
-import { MatDialog } from '@angular/material';
 import { ToolboxController } from './ToolboxController';
 import { CustomSignalService } from '../custom_signals/custom_signal.service';
 import { CustomSignal } from '../custom_signals/custom_signal';
@@ -44,11 +46,11 @@ export class CustomSignalController {
             init: function () {
                 this.jsonInit({
                     'id': 'automate_trigger_custom_signal',
-                    'message0': 'Trigger %1. Data %2',
+                    'message0': 'Trigger %1. Send: %2',
                     'args0': [
                         {
                             'type': 'field_dropdown',
-                            'name': 'SIGNAL_NAME',
+                            'name': 'SIGNAL',
                             'options': availableCustomSignals,
                         },
                         {
@@ -72,7 +74,7 @@ export class CustomSignalController {
             init: function () {
                 this.jsonInit({
                     'id': 'automate_on_custom_signal',
-                    'message0': 'On signal %1. Save %2',
+                    'message0': 'On signal %1. Save to %2',
                     'args0': [
                         {
                             'type': 'field_dropdown',
@@ -117,7 +119,6 @@ export class CustomSignalController {
             (workspace) => {
                 workspace.registerButtonCallback('AUTOMATE_CREATE_CUSTOM_SIGNAL', (x, y, z) => {
                     this.create_custom_signal().then((custom_signal_name) => {
-                        console.log("Custom signal:", custom_signal_name);
 
                         this.customSignalService.saveCustomSignal(custom_signal_name)
                             .then((custom_signal_creation) => {
@@ -125,6 +126,8 @@ export class CustomSignalController {
                                     console.error("No custom signals toolbox found");
                                     return;
                                 }
+
+                                console.log('Signal created');
 
                                 this.availableCustomSignals.push([custom_signal_name, custom_signal_creation.id]);
                                 this.register_custom_signal_blocks();

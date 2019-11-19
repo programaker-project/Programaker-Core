@@ -1,11 +1,9 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { Location } from '@angular/common';
-import { ProgramMetadata, ProgramContent, ScratchProgram } from './program';
+import {  ProgramContent, ScratchProgram } from './program';
 import { ProgramService } from './program.service';
 import 'rxjs/add/operator/switchMap';
 import { Toolbox } from './blocks/Toolbox';
-import { ContentType } from './content-type';
 import * as progbar from './ui/progbar';
 /// <reference path="./blocks/blockly-core.d.ts" />
 import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
@@ -48,7 +46,6 @@ export class ProgramDetailComponent implements OnInit {
         private customBlockService: CustomBlockService,
         private customSignalService: CustomSignalService,
         private route: ActivatedRoute,
-        private location: Location,
         private router: Router,
         public dialog: MatDialog,
         private templateService: TemplateService,
@@ -60,7 +57,6 @@ export class ProgramDetailComponent implements OnInit {
         this.customBlockService = customBlockService;
         this.customSignalService = customSignalService;
         this.route = route;
-        this.location = location;
         this.router = router;
         this.serviceService = serviceService;
     }

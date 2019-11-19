@@ -43,19 +43,30 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FO
     automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
-%% TODO: return a more specific bridge
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
                                                              , ?ARGUMENTS := _Arguments
                                                              }},
                                  #program_permissions{owner_user_id=UserId}) ->
-    [ServiceId, MonitorKey] = binary:split(MonitorPath, <<".">>),
+    [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
     automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
+get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
+                                                             , ?ARGUMENTS := [ #{ ?TYPE := <<"constant">>
+                                                                                , ?VALUE := ChannelId
+                                                                                }
+                                                                             , _SaveToVal
+                                                                             ]
+                                                             }}, #program_permissions{}) ->
+
+    automate_channel_engine:listen_channel(ChannelId),
+    ?TRIGGERED_BY_MONITOR;
+
 %% By default let's suppose no special data is needed to keep the program running
-get_expected_action_from_trigger(_Trigger, _Permissions) ->
+get_expected_action_from_trigger(Trigger, _Permissions) ->
+    io:fwrite("[WARN][Bot/Triggers] Unknown trigger: ~p~n", [Trigger]),
     ?SIGNAL_PROGRAM_TICK.
 
 %%%% Thread creation
@@ -182,6 +193,36 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.", MonitorPat
         _ ->
             false
     end;
+
+%% Custom trigger
+trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
+                                            , ?ARGUMENTS := [ #{ ?TYPE := <<"constant">>
+                                                               , ?VALUE := ChannelId
+                                                               }
+                                                            ,  SaveTo
+                                                            ]
+                                            }
+                               , subprogram=Program
+                               },
+               { ?TRIGGERED_BY_MONITOR, { ChannelId
+                                        , MessageContent
+                                        } },
+               #program_state{ program_id=ProgramId }) ->
+
+    Thread = #program_thread{ position=[1]
+                            , program=Program
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            },
+
+    case SaveTo of
+        #{ ?TYPE := ?VARIABLE_VARIABLE } ->
+            save_value(Thread, SaveTo, MessageContent);
+        _ ->
+            ok
+    end,
+    {true, Thread};
 
 %% If no match is found, don't create a thread
 trigger_thread(Trigger, Message, ProgramState) ->

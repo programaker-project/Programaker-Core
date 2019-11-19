@@ -1,11 +1,9 @@
 import { Injectable } from '@angular/core';
 import { CustomSignal, CustomSignalCreationResponse } from './custom_signal';
-import * as API from '../api-config';
 import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/map';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from '../session.service';
-import { ContentType } from '../content-type';
 
 @Injectable()
 export class CustomSignalService {
@@ -20,12 +18,6 @@ export class CustomSignalService {
     async getCustomSignalIndexUrl(): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId();
         return root + '/custom_signals/';
-    }
-
-    async getSpecificCustomSignalUrl(user_id: string, custom_signal_id: string): Promise<string> {
-        const root = await this.sessionService.getApiRootForUserId(user_id);
-
-        return root + '/custom_signals/id/' + custom_signal_id;
     }
 
     async saveCustomSignal(custom_signal_name: string): Promise<CustomSignalCreationResponse> {
@@ -46,17 +38,16 @@ export class CustomSignalService {
     }
 
     async getCustomSignals(): Promise<CustomSignal[]> {
-        return Promise.resolve([]);
-        //     const indexUrl = await this.getCustomSignalIndexUrl();
+        const indexUrl = await this.getCustomSignalIndexUrl();
 
-        //     return this.http
-        //         .get(indexUrl, {
-        //             headers: this.sessionService.getAuthHeader()
-        //         })
-        //         .map(response => {
-        //             return response as CustomSignal[];
-        //         })
-        //         .toPromise();
+        return this.http
+            .get(indexUrl, {
+                headers: this.sessionService.getAuthHeader()
+            })
+            .map(response => {
+                return response as CustomSignal[];
+            })
+            .toPromise();
     }
 
 }

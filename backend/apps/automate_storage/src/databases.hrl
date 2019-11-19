@@ -11,3 +11,4 @@
 -define(RUNNING_THREADS_TABLE, automate_running_program_threads).
 
 -define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
+-define(CUSTOM_SIGNALS_TABLE, automate_custom_signals_table).

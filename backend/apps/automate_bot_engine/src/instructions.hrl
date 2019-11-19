@@ -67,6 +67,10 @@
 %%%% Signal types
 -define(SIGNAL_PROGRAM_TICK, tick).
 
+%% Custom signals
+-define(SIGNAL_PROGRAM_CUSTOM, <<"automate_on_custom_signal">>). % Listener
+-define(COMMAND_CUSTOM_SIGNAL, <<"automate_trigger_custom_signal">>). % Caller
+
 %%%% Operation parameters
 -define(MILLIS_PER_TICK, 100).
 
