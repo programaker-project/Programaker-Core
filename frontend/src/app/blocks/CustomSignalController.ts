@@ -118,7 +118,7 @@ export class CustomSignalController {
         try {
             Blockly.Extensions.register('colours_custom_signals',
                 function () {
-                    this.setColourFromRawValues_('#d400e6', '#72007b', '#72007b');
+                    this.setColourFromRawValues_('#72007b', '#d400e6', '#310034');
                 });
         } catch (e) {
             // If the extension was registered before
@@ -188,8 +188,8 @@ export class CustomSignalController {
 
         const cat = createDom('category', {
             name: "Signals",
-            colour: "#d400e6",
-            secondaryColour: "#72007b",
+            colour: "#72007b",
+            secondaryColour: "#310034",
             id: "signals",
         })
 
