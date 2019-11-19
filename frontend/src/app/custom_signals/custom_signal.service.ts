@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { Template, TemplateCreationResponse } from './template';
+import { CustomSignal, CustomSignalCreationResponse } from './custom_signal';
 import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/map';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from '../session.service';
 
 @Injectable()
-export class TemplateService {
+export class CustomSignalService {
     constructor(
         private http: HttpClient,
         private sessionService: SessionService
@@ -15,44 +15,37 @@ export class TemplateService {
         this.sessionService = sessionService;
     }
 
-    async getTemplateIndexUrl(): Promise<string> {
+    async getCustomSignalIndexUrl(): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId();
-        return root + '/templates/';
+        return root + '/custom_signals/';
     }
 
-    async getSpecificTemplateUrl(user_id: string, template_id: string): Promise<string> {
-        const root = await this.sessionService.getApiRootForUserId(user_id);
-
-        return root + '/templates/id/' + template_id;
-    }
-
-    async saveTemplate(template_name: string, template_content: any[]): Promise<TemplateCreationResponse> {
-        const indexUrl = await this.getTemplateIndexUrl();
+    async saveCustomSignal(custom_signal_name: string): Promise<CustomSignalCreationResponse> {
+        const indexUrl = await this.getCustomSignalIndexUrl();
 
         return this.http
             .post(indexUrl, JSON.stringify({
-                name: template_name,
-                content: template_content,
+                name: custom_signal_name,
             }),
                 {
                     headers: this.sessionService.addJsonContentType(
                         this.sessionService.getAuthHeader())
                 })
             .map(response => {
-                return response as TemplateCreationResponse;
+                return response as CustomSignalCreationResponse;
             })
             .toPromise();
     }
 
-    async getTemplates(): Promise<Template[]> {
-        const indexUrl = await this.getTemplateIndexUrl();
+    async getCustomSignals(): Promise<CustomSignal[]> {
+        const indexUrl = await this.getCustomSignalIndexUrl();
 
         return this.http
             .get(indexUrl, {
                 headers: this.sessionService.getAuthHeader()
             })
             .map(response => {
-                return response as Template[];
+                return response as CustomSignal[];
             })
             .toPromise();
     }

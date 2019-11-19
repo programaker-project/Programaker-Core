@@ -117,5 +117,26 @@ get_versioning(Nodes) ->
                                  )
                         end
                 }
+
+                %% Add *custom signals* table
+                %%
+                %% Allows for user-defined (not bridge-defined) signals.
+              , #database_version_transformation
+                { id=3
+                , apply=fun() ->
+                                automate_storage_versioning:create_database(
+                                  #database_version_data
+                                  { database_name=?CUSTOM_SIGNALS_TABLE
+                                  , records=[ id
+                                            , name
+                                            , owner
+                                            ]
+                                  , record_name=custom_signal_entry
+                                  }, Nodes),
+
+                                ok = mnesia:wait_for_tables([ ?CUSTOM_SIGNALS_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
+                        end
+                }
               ]
         }.

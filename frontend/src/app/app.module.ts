@@ -45,6 +45,9 @@ import { BridgeIndexComponent } from './bridges/index.component';
 import { BridgeAddComponent } from './bridges/add.component';
 import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
 
+// Custom signals
+import { CustomSignalCreateDialogComponent } from './custom_signals/create-dialog.component';
+
 // Templates
 import { TemplateCreateDialogComponent } from './templates/create-dialog.component';
 
@@ -72,6 +75,7 @@ import 'hammerjs';
         HowToEnableServiceDialogComponent,
         RenameProgramDialogComponent,
         DeleteProgramDialogComponent,
+        CustomSignalCreateDialogComponent,
         TemplateCreateDialogComponent,
         StopThreadProgramDialogComponent,
         SetProgramTagsDialogComponent,
@@ -116,6 +120,7 @@ import 'hammerjs';
         HowToEnableServiceDialogComponent,
         RenameProgramDialogComponent,
         DeleteProgramDialogComponent,
+        CustomSignalCreateDialogComponent,
         TemplateCreateDialogComponent,
         StopThreadProgramDialogComponent,
         SetProgramTagsDialogComponent,

@@ -27,7 +27,7 @@
 start_link() ->
     spawn_timekeeper().
 
-%% This will return a fine one: https://duckduckgo.com/?q=uuid&ia=answer
+%% This one can be considered static.
 get_uuid() ->
     <<"0093325b-373f-4f1c-bace-4532cce79df4">>.
 

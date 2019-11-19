@@ -69,6 +69,11 @@
                                       , value :: any()
                                       }).
 
+-record(custom_signal_entry, { id    :: binary() | ?MNESIA_SELECTOR
+                             , name  :: binary() | ?MNESIA_SELECTOR
+                             , owner :: binary() | ?MNESIA_SELECTOR %% User id
+                             }).
+
 
 -record(storage_configuration_entry, { id :: any()
                                      , value :: any()
