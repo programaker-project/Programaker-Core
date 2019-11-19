@@ -1,14 +1,22 @@
+import { MatDialog } from '@angular/material';
+
+
 import { MonitorService } from '../monitor.service';
 import { MonitorMetadata } from '../monitor';
+
+import { CustomSignalController } from './CustomSignalController';
+import { CustomSignalService } from '../custom_signals/custom_signal.service';
 import { CustomBlockService } from '../custom_block.service';
 import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments, ResolvedCustomBlock, CategorizedCustomBlock, BridgeData } from '../custom_block';
-import { MatDialog } from '@angular/material';
-import { alreadyRegisteredException, createDom } from './utils';
-import { TemplateController } from './TemplateController';
+
 import { ToolboxController } from './ToolboxController';
+
+import { TemplateController } from './TemplateController';
 import { TemplateService } from '../templates/template.service';
 import { ServiceService } from '../service.service';
 import { AvailableService } from '../service';
+
+import { alreadyRegisteredException, createDom } from './utils';
 
 declare const Blockly;
 
@@ -26,14 +34,17 @@ export class Toolbox {
     customBlockService: CustomBlockService;
     dialog: MatDialog;
     templateController: TemplateController;
+    customSignalController: CustomSignalController;
     controller: ToolboxController;
     serviceService: ServiceService;
+
     constructor(
         monitorService: MonitorService,
         customBlockService: CustomBlockService,
         dialog: MatDialog,
         templateService: TemplateService,
         serviceService: ServiceService,
+        customSignalService: CustomSignalService,
     ) {
         this.monitorService = monitorService;
         this.customBlockService = customBlockService;
@@ -42,6 +53,7 @@ export class Toolbox {
 
         this.controller = new ToolboxController();
         this.templateController = new TemplateController(this.dialog, this.controller, templateService);
+        this.customSignalController = new CustomSignalController(this.dialog, this.controller, customSignalService);
     }
 
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
@@ -90,10 +102,11 @@ export class Toolbox {
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
         this.injectJSONBlocks();
-        registrations = registrations.concat(this.templateController.injectTemplateBlocks());
+        registrations = registrations.concat(this.templateController.injectBlocks());
+        registrations = registrations.concat(this.customSignalController.injectBlocks());
         this.injectCustomBlocks(custom_blocks);
 
-        return registrations
+        return registrations;
     }
 
     injectTimeBlocks() {
@@ -650,7 +663,8 @@ export class Toolbox {
             operatorsCategory,
         ].join('\n');
 
-        toolboxXML.appendChild(await this.templateController.genTemplatesCategory());
+        toolboxXML.appendChild(await this.templateController.genCategory());
+        toolboxXML.appendChild(await this.customSignalController.genCategory());
         toolboxXML.appendChild(variablesCategory);
         // toolboxXML.appendChild(proceduresCategory);
 

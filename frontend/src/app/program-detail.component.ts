@@ -21,11 +21,12 @@ import { SetProgramTagsDialogComponent } from './program_tags/SetProgramTagsDial
 import { ToolboxController } from './blocks/ToolboxController';
 import { TemplateService } from './templates/template.service';
 import { ServiceService } from './service.service';
+import { CustomSignalService } from './custom_signals/custom_signal.service';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [CustomBlockService, MonitorService, ProgramService, TemplateService, ServiceService],
+    providers: [CustomBlockService, CustomSignalService, MonitorService, ProgramService, TemplateService, ServiceService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
@@ -45,6 +46,7 @@ export class ProgramDetailComponent implements OnInit {
         private monitorService: MonitorService,
         private programService: ProgramService,
         private customBlockService: CustomBlockService,
+        private customSignalService: CustomSignalService,
         private route: ActivatedRoute,
         private location: Location,
         private router: Router,
@@ -56,6 +58,7 @@ export class ProgramDetailComponent implements OnInit {
         this.monitorService = monitorService;
         this.programService = programService;
         this.customBlockService = customBlockService;
+        this.customSignalService = customSignalService;
         this.route = route;
         this.location = location;
         this.router = router;
@@ -158,6 +161,7 @@ export class ProgramDetailComponent implements OnInit {
             this.dialog,
             this.templateService,
             this.serviceService,
+            this.customSignalService,
         )
             .inject()
             .then(([toolbox, registrations, controller]) => {

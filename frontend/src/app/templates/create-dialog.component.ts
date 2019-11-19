@@ -1,10 +1,8 @@
 import { Component, Inject } from '@angular/core';
-import { ServiceEnableHowTo, ServiceEnableMessage, ServiceEnableEntry, ServiceEnableType } from '../service';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SessionService } from '../session.service';
 import { ServiceService } from '../service.service';
 import { Template } from './template';
-import { variable } from '@angular/compiler/src/output/output_ast';
 
 type VariableType = 'input' | 'ouput';
 type PromiseHandler = { resolve: (value: [string, any[]]) => void, reject: Function };
