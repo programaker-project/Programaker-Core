@@ -42,6 +42,7 @@ export class CustomSignalController {
 
         const availableCustomSignals = this.availableCustomSignals;
 
+        // Create signal trigger block
         Blockly.Blocks['automate_trigger_custom_signal'] = {
             init: function () {
                 this.jsonInit({
@@ -64,12 +65,24 @@ export class CustomSignalController {
             }
         };
 
-        this.customSignalsCategory.appendChild(createDom('block',
-            {
-                type: "automate_trigger_custom_signal",
-                id: "automate_trigger_custom_signal",
-            }));
+        // Declare text field on trigger block
+        const triggerBlock = createDom('block', {
+            type: "automate_trigger_custom_signal",
+            id: "automate_trigger_custom_signal",
+        });
+        const triggerBlockArgValue = createDom('value', { name: 'VALUE' });
+        const triggerBlockArgValueShadow = createDom('shadow', {
+            type: 'text',
+        });
+        triggerBlockArgValueShadow.appendChild(createDom('field', {
+            name: 'TEXT'
+        }));
 
+        triggerBlockArgValue.appendChild(triggerBlockArgValueShadow);
+        triggerBlock.appendChild(triggerBlockArgValue)
+        this.customSignalsCategory.appendChild(triggerBlock);
+
+        // Create a signal receiver
         Blockly.Blocks['automate_on_custom_signal'] = {
             init: function () {
                 this.jsonInit({
