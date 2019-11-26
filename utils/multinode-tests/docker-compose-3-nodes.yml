@@ -3,7 +3,7 @@ version: '3'
 
 services:
   plaza-router:
-    build: utils/router
+    build: ../router
     ports:
       - 8080:80
     links:
@@ -16,10 +16,10 @@ services:
       - BACKEND_PORT=8888
 
   plaza-frontend:
-    build: frontend
+    build: ../../frontend
 
   plaza-backend-0:
-    build: backend
+    build: ../../backend
     hostname: plaza-backend-0
     ports:
       - 8888:8888
@@ -33,7 +33,7 @@ services:
       - "MNESIA_DIR=/app/mnesia"
 
   plaza-backend-1:
-    build: backend
+    build: ../../backend
     hostname: plaza-backend-1
     ports:
       - 8889:8888
@@ -47,7 +47,7 @@ services:
       - "MNESIA_DIR=/app/mnesia"
 
   plaza-backend-2:
-    build: backend
+    build: ../../backend
     hostname: plaza-backend-2
     ports:
       - 8890:8888

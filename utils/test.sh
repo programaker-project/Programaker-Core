@@ -1,4 +1,10 @@
-#!/bin/bash -ex
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+set -x
 
 echo "[INFO] Building BACKEND"
 pushd backend
