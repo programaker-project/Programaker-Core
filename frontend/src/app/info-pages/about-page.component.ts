@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { SessionService } from '../session.service';
 import 'rxjs/add/operator/switchMap';
 
@@ -15,9 +16,15 @@ import 'rxjs/add/operator/switchMap';
 
 export class AboutPageComponent implements OnInit {
     constructor (
+        private router: Router,
     ) {
+        this.router = router;
     }
 
     ngOnInit(): void {
+    }
+
+    followCallToAction() {
+        this.router.navigate(["/register"]);
     }
 }

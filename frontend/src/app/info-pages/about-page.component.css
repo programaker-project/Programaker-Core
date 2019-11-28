@@ -2,7 +2,6 @@
     text-align: center;
     padding: 1ex;
 
-    font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-weight: 800;
     font-size: 80px;
 
@@ -25,4 +24,17 @@
     margin: 0 auto;
     width: 20ex;
     border-bottom: 0.5ex solid #444;
+}
+
+.call-to-action-button-container {
+    text-align: center;
+}
+
+.call-to-action-button-container > button {
+    width: 30ex;
+    height: 5ex;
+    border-radius: 5px;
+    color: white;
+    font-weight: 800;
+    background-color: #ef7c00;
 }

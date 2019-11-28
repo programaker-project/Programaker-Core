@@ -12,7 +12,8 @@ import { DashboardComponent } from './dashboard.component';
 import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
 
-import { LoginFormComponent } from './login-form.component';
+import { LoginFormComponent } from './login-form/login-form.component';
+import { RegisterFormComponent } from './login-form/register-form.component';
 
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { AboutPageComponent } from './info-pages/about-page.component';
@@ -22,6 +23,7 @@ const routes: Routes = [
     { path: 'about', component: AboutPageComponent },
 
     { path: 'login', component: LoginFormComponent },
+    { path: 'register', component: RegisterFormComponent },
 
     // General
     { path: 'dashboard', component: DashboardComponent },

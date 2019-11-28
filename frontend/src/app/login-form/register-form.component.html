@@ -13,8 +13,7 @@
             </mat-form-field>
         </div>
 
-        <div *ngIf="isSignUpMode"
-              class="col-sm-12">
+        <div class="col-sm-12">
             <mat-form-field class="full-size col-sm-12">
                 <input matInput  class="col-sm-12"
                        [(ngModel)]="email"
@@ -34,8 +33,7 @@
             </mat-form-field>
         </div>
 
-        <div *ngIf="isSignUpMode"
-              class="col-sm-12">
+        <div  class="col-sm-12">
             <mat-form-field class="full-size col-sm-12">
                 <input matInput  class="col-sm-12"
                        [(ngModel)]="repeatPassword"
@@ -48,7 +46,6 @@
         <br />
         <div class="col-sm-12 accept-cancel">
             <button color="primary"
-                    *ngIf="isSignUpMode"
                     (click)="doSignUp()"
                     [disabled]="(debugger && false) || (username.length == 0)
                                 ||(isSignUpMode && (email.length == 0))
@@ -57,25 +54,12 @@
                     mat-button mat-raised-button>
                 Sign Up
             </button>
-            <button color="primary"
-                    *ngIf="isLogInMode"
-                    (click)="doLogIn()"
-                    mat-button mat-raised-button>
-                Login
-            </button>
-            <button mat-button>
-                Cancel
-            </button>
         </div>
 
         <br />
         <div class="col-sm-12 text-center ">
             Or
-            <a role="button" *ngIf="!isSignUpMode"
-               (click)="goSignUpMode()">
-                Sign up
-            </a>
-            <a role="button" *ngIf="!isLogInMode"
+            <a role="button"
                (click)="goLogInMode()">
                 Log in
             </a>
