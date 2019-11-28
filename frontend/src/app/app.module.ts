@@ -3,7 +3,6 @@ import { NgModule } from '@angular/core';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 import { HttpClientModule } from '@angular/common/http';
-import { RouterModule } from '@angular/router';
 
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule, MatCheckboxModule } from '@angular/material';
@@ -51,6 +50,11 @@ import { CustomSignalCreateDialogComponent } from './custom_signals/create-dialo
 // Templates
 import { TemplateCreateDialogComponent } from './templates/create-dialog.component';
 
+// Info
+import { HomeRedirectComponent } from './info-pages/home-redirect.component';
+import { AboutPageComponent } from './info-pages/about-page.component';
+
+
 import { AppRoutingModule } from './app-routing.module';
 import { LoginFormComponent } from './login-form.component';
 
@@ -69,6 +73,10 @@ import 'hammerjs';
         BridgeAddComponent,
         ServicesComponent,
         LoginFormComponent,
+
+        // Info pages
+        HomeRedirectComponent,
+        AboutPageComponent,
 
         // Dialogs
         BridgeDeleteDialogComponent,
