@@ -1,0 +1,64 @@
+#project-name {
+    text-align: center;
+    padding: 1ex;
+
+    font-weight: 800;
+    font-size: 80px;
+
+    color: #444;
+    text-shadow: 0px 0px 1px #000;
+}
+
+#project-offer {
+    text-align: center;
+    padding: 2ex;
+    color: #444;
+}
+
+#project-claim {
+    text-align: center;
+    padding: 2em;
+    font-size: larger;
+}
+
+.project-name-offer-separator, .project-call-to-action-blocks-example-separator {
+    margin: 0 auto;
+    width: 20ex;
+    border-bottom: 0.25ex solid #444;
+}
+
+.call-to-action-button-container {
+    text-align: center;
+}
+
+.call-to-action-button-container > button {
+    width: 30ex;
+    height: 5ex;
+    border-radius: 5px;
+    color: white;
+    font-weight: 800;
+    background-color: #ef7c00;
+}
+
+.project-call-to-action-blocks-example-separator {
+    padding-top: 4em;
+}
+
+#scratch-showcases {
+    background: repeating-linear-gradient( 45deg, #fff, #fff 10px,
+                                           #eee 10px, #eee 20px );
+
+}
+
+.showcase-window {
+    min-width: max-content;
+}
+
+.showcase {
+    text-align: center;
+}
+
+.showcase > h2 {
+    font-weight: 800;
+    color: #444;
+}

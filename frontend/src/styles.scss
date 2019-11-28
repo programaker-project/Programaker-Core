@@ -78,8 +78,13 @@ mat-card.module {
     text-align: center;
 }
 
-app-my-login-form, bridge-add-component {
+app-my-login-form, app-my-register-form, bridge-add-component {
     padding: 1ex;
+}
+
+a[role="button"], a[role="button"]:not([href]), a[role="button"]:not([href]):hover, a[role="button"]:hover {
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .login-form {

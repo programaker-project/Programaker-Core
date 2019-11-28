@@ -19,25 +19,7 @@
             "assets": [
               "src/assets",
               "src/favicon.ico",
-              "src/favicon.png",
-
-              "src/assets/scratch-media/zoom-out.svg",
-              "src/assets/scratch-media/sprites.png",
-              "src/assets/scratch-media/rotate-right.svg",
-              "src/assets/scratch-media/zoom-reset.svg",
-              "src/assets/scratch-media/dropdown-arrow.svg",
-              "src/assets/scratch-media/dropdown-arrow-dark.svg",
-              "src/assets/scratch-media/repeat.svg",
-              "src/assets/scratch-media/rotate-left.svg",
-              "src/assets/scratch-media/status-ready.svg",
-              "src/assets/scratch-media/comment-arrow-down.svg",
-              "src/assets/scratch-media/comment-arrow-up.svg",
-              "src/assets/scratch-media/eyedropper.svg",
-              "src/assets/scratch-media/sprites.svg",
-              "src/assets/scratch-media/delete-x.svg",
-              "src/assets/scratch-media/green-flag.svg",
-              "src/assets/scratch-media/zoom-in.svg",
-              "src/assets/scratch-media/status-not-ready.svg",
+              "src/favicon.png"
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
