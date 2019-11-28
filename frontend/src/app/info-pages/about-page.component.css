@@ -12,6 +12,7 @@
 #project-offer {
     text-align: center;
     padding: 2ex;
+    color: #444;
 }
 
 #project-claim {
@@ -20,10 +21,10 @@
     font-size: larger;
 }
 
-.project-name-offer-separator {
+.project-name-offer-separator, .project-call-to-action-blocks-example-separator {
     margin: 0 auto;
     width: 20ex;
-    border-bottom: 0.5ex solid #444;
+    border-bottom: 0.25ex solid #444;
 }
 
 .call-to-action-button-container {
@@ -37,4 +38,27 @@
     color: white;
     font-weight: 800;
     background-color: #ef7c00;
+}
+
+.project-call-to-action-blocks-example-separator {
+    padding-top: 4em;
+}
+
+#scratch-showcases {
+    background: repeating-linear-gradient( 45deg, #fff, #fff 10px,
+                                           #eee 10px, #eee 20px );
+
+}
+
+.showcase-window {
+    min-width: max-content;
+}
+
+.showcase {
+    text-align: center;
+}
+
+.showcase > h2 {
+    font-weight: 800;
+    color: #444;
 }
