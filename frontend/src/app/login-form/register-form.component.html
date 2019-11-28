@@ -47,8 +47,8 @@
         <div class="col-sm-12 accept-cancel">
             <button color="primary"
                     (click)="doSignUp()"
-                    [disabled]="(debugger && false) || (username.length == 0)
-                                ||(isSignUpMode && (email.length == 0))
+                    [disabled]="(username.length == 0)
+                                || (isSignUpMode && (email.length == 0))
                                 || (password.length == 0)
                                 || (isSignUpMode && (password != repeatPassword))"
                     mat-button mat-raised-button>
