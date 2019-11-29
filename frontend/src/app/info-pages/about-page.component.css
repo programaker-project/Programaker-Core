@@ -57,6 +57,7 @@
 .showcase > h2 {
     font-weight: 800;
     color: #444;
+    padding: 1em 1em 0 1em;
 }
 
 .showcase > img {
