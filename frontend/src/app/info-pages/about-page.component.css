@@ -37,7 +37,7 @@
     border-radius: 5px;
     color: white;
     font-weight: 800;
-    background-color: #ef7c00;
+    background-color: orange;
 }
 
 .project-call-to-action-blocks-example-separator {
@@ -50,15 +50,17 @@
 
 }
 
-.showcase-window {
-    min-width: max-content;
-}
-
 .showcase {
     text-align: center;
+    margin: 0 auto;
 }
 
 .showcase > h2 {
     font-weight: 800;
     color: #444;
+    padding: 1em 1em 0 1em;
+}
+
+.showcase > img {
+    max-width: 100%;
 }
