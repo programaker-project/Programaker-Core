@@ -50,10 +50,6 @@
 
 }
 
-.showcase-window {
-    min-width: max-content;
-}
-
 .showcase {
     text-align: center;
 }
@@ -61,4 +57,8 @@
 .showcase > h2 {
     font-weight: 800;
     color: #444;
+}
+
+.showcase > img {
+    max-width: 100%;
 }
