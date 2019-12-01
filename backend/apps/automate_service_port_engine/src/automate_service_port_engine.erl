@@ -21,6 +21,8 @@
         , delete_bridge/2
         , callback_bridge/3
         , get_channel_origin_bridge/1
+
+        , listen_bridge/2
         ]).
 
 -include("records.hrl").
@@ -73,6 +75,14 @@ send_oauth_return(Qs, ServicePortId) ->
                                         , <<"value">> => #{ <<"query_string">> => Qs }
                                         }).
 
+-spec listen_bridge(binary(), binary()) -> ok | {error, term()}.
+listen_bridge(BridgeId, UserId) ->
+    case ?BACKEND:get_bridge_channel_for_user(BridgeId, UserId) of
+        { ok, ChannelId } ->
+            automate_channel_engine:listen_channel(ChannelId);
+        {error, X} ->
+            {error, X}
+    end.
 
 -spec from_service_port(binary(), binary(), binary()) -> ok.
 from_service_port(ServicePortId, UserId, Msg) ->

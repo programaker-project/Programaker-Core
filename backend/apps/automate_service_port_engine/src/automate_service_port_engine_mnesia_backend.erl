@@ -14,6 +14,7 @@
         , service_port_user_id_to_internal_user_id/2
         , get_user_service_ports/1
         , list_bridge_channels/1
+        , get_bridge_channel_for_user/2
 
         , get_service_id_for_port/1
         , delete_bridge/2
@@ -232,6 +233,24 @@ list_bridge_channels(ServicePortId) ->
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
+
+-spec get_bridge_channel_for_user(binary(), binary()) -> {ok, binary()} | {error, term()}.
+get_bridge_channel_for_user(BridgeId, UserId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?SERVICE_PORT_CHANNEL_TABLE, {UserId, BridgeId}) of
+                              [] ->
+                                  {error, not_found};
+                              [#service_port_monitor_channel_entry{ channel_id=ChannelId}] ->
+                                  {ok, ChannelId}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason, mnesia:error_description(Reason)}
+    end.
+
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->
