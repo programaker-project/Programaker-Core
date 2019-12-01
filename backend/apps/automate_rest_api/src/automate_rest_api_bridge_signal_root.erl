@@ -55,7 +55,7 @@ websocket_init(State=#state{ bridge_id=BridgeId
                 ok ->
                     {ok, State};
                 {error, Error} ->
-                    { reply, { close, Error }, State }
+                    { reply, { close, io_lib:format("Error: ~p", [Error]) }, State }
             end
         end.
 
