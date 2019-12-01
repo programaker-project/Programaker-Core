@@ -77,11 +77,11 @@ send_oauth_return(Qs, ServicePortId) ->
 
 -spec listen_bridge(binary(), binary()) -> ok | {error, term()}.
 listen_bridge(BridgeId, UserId) ->
-    case ?BACKEND:get_bridge_channel_for_user(BridgeId, UserId) of
+    case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId);
-        {error, X} ->
-            {error, X}
+        {error, _X, Description} ->
+            {error, Description}
     end.
 
 -spec from_service_port(binary(), binary(), binary()) -> ok.
