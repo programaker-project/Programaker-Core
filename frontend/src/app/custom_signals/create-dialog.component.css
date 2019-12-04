@@ -1,0 +1,13 @@
+.program-name {
+    border-bottom: 2px solid #ffab19;
+
+    font-weight: bold;
+}
+
+.mat-dialog-actions > button.cancellation {
+    margin-left: auto;
+}
+
+button {
+    right: 0;
+}

@@ -1,14 +1,22 @@
+import { MatDialog } from '@angular/material';
+
+
 import { MonitorService } from '../monitor.service';
 import { MonitorMetadata } from '../monitor';
+
+import { CustomSignalController } from './CustomSignalController';
+import { CustomSignalService } from '../custom_signals/custom_signal.service';
 import { CustomBlockService } from '../custom_block.service';
 import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments, ResolvedCustomBlock, CategorizedCustomBlock, BridgeData } from '../custom_block';
-import { MatDialog } from '@angular/material';
-import { alreadyRegisteredException, createDom } from './utils';
-import { TemplateController } from './TemplateController';
+
 import { ToolboxController } from './ToolboxController';
+
+import { TemplateController } from './TemplateController';
 import { TemplateService } from '../templates/template.service';
 import { ServiceService } from '../service.service';
 import { AvailableService } from '../service';
+
+import { alreadyRegisteredException, createDom } from './utils';
 
 declare const Blockly;
 
@@ -17,19 +25,26 @@ const MonitorSecondaryColor = '#773377';
 const CustomPrimaryColor = '#777777';
 const CustomSecondaryColor = '#E7E7E7';
 
+// Constant Ids, to reference the time service.
+const TimeServiceUuid = "0093325b-373f-4f1c-bace-4532cce79df4";
+const UtcTimeOfDayBlockId = `services.${TimeServiceUuid}.utc_is_day_of_week`;
+
 export class Toolbox {
     monitorService: MonitorService;
     customBlockService: CustomBlockService;
     dialog: MatDialog;
     templateController: TemplateController;
+    customSignalController: CustomSignalController;
     controller: ToolboxController;
     serviceService: ServiceService;
+
     constructor(
         monitorService: MonitorService,
         customBlockService: CustomBlockService,
         dialog: MatDialog,
         templateService: TemplateService,
         serviceService: ServiceService,
+        customSignalService: CustomSignalService,
     ) {
         this.monitorService = monitorService;
         this.customBlockService = customBlockService;
@@ -38,6 +53,7 @@ export class Toolbox {
 
         this.controller = new ToolboxController();
         this.templateController = new TemplateController(this.dialog, this.controller, templateService);
+        this.customSignalController = new CustomSignalController(this.dialog, this.controller, customSignalService);
     }
 
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
@@ -86,10 +102,11 @@ export class Toolbox {
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
         this.injectJSONBlocks();
-        registrations = registrations.concat(this.templateController.injectTemplateBlocks());
+        registrations = registrations.concat(this.templateController.injectBlocks());
+        registrations = registrations.concat(this.customSignalController.injectBlocks());
         this.injectCustomBlocks(custom_blocks);
 
-        return registrations
+        return registrations;
     }
 
     injectTimeBlocks() {
@@ -153,6 +170,32 @@ export class Toolbox {
                     ],
                     'category': Blockly.Categories.event,
                     'extensions': ['colours_time', 'output_string']
+                });
+            }
+        };
+
+        Blockly.Blocks[UtcTimeOfDayBlockId] = {
+            init: function () {
+                this.jsonInit({
+                    'id': UtcTimeOfDayBlockId,
+                    'message0': 'Is current day of week %1',
+                    'args0': [
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'DAY_OF_WEEK',
+                            'options': [
+                                ["Monday", "mon"],
+                                ["Tuesday", "tue"],
+                                ["Wednesday", "wed"],
+                                ["Thursday", "thu"],
+                                ["Friday", "fri"],
+                                ["Saturday", "sat"],
+                                ["Sunday", "sun"],
+                            ]
+                        },
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_time', 'output_boolean']
                 });
             }
         };
@@ -596,6 +639,11 @@ export class Toolbox {
           <block type="time_get_utc_hour" id="time_get_utc_hour"></block>
           <block type="time_get_utc_minute" id="time_get_utc_minute"></block>
           <block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>
+          <block type="${UtcTimeOfDayBlockId}" id="${UtcTimeOfDayBlockId}">
+            <value name="DAY_OF_WEEK">
+              <shadow type="field_dropdown"></shadow>
+            </value>
+          </block>
         </category>
         `;
 
@@ -615,7 +663,8 @@ export class Toolbox {
             operatorsCategory,
         ].join('\n');
 
-        toolboxXML.appendChild(await this.templateController.genTemplatesCategory());
+        toolboxXML.appendChild(await this.templateController.genCategory());
+        toolboxXML.appendChild(await this.customSignalController.genCategory());
         toolboxXML.appendChild(variablesCategory);
         // toolboxXML.appendChild(proceduresCategory);
 

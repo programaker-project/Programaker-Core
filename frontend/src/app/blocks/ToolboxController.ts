@@ -11,8 +11,12 @@ export class ToolboxController {
 
     addCustomBlocks(blocks: ResolvedCustomBlock[]) {
         for (const block of blocks) {
-            this.customBlocks[block.id] = block;
+            this.addCustomBlock(block);
         }
+    }
+
+    addCustomBlock(block: ResolvedCustomBlock) {
+        this.customBlocks[block.id] = block;
     }
 
     getBlockInfo(blockId: string) {
@@ -33,6 +37,18 @@ export class ToolboxController {
         }
 
         this.workspace.updateToolbox(this.toolboxXML);
+    }
+
+    isKnownBlock(blockType: string) {
+        if (!blockType.startsWith('services.')) {
+            // We probably only have doubts on service blocks
+            //  as they can "dissapear".
+            return true;
+        }
+
+        // It it's a service block, check if we have info
+        //  about it.
+        return this.getBlockInfo(blockType) !== undefined;
     }
 
     getStringVariables(): string[] {

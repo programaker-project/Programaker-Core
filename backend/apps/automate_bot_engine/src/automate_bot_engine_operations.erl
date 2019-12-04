@@ -399,6 +399,20 @@ run_instruction(#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
             {ran_this_tick, finish_thread(Thread)}
     end;
 
+run_instruction(#{ ?TYPE := ?COMMAND_CUSTOM_SIGNAL
+                      , ?ARGUMENTS := [ SignalIdVal
+                                      , SignalDataVal
+                                      ]
+                      }, Thread=#program_thread{ program_id=_ProgramId },
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, ChannelId } = automate_bot_engine_variables:resolve_argument(SignalIdVal, Thread),
+    {ok, SignalData } = automate_bot_engine_variables:resolve_argument(SignalDataVal, Thread),
+
+    ok = automate_channel_engine:send_to_channel(ChannelId, SignalData),
+
+    {ran_this_tick, increment_position(Thread)};
+
 run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
     io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
     {did_not_run, waiting};
@@ -457,7 +471,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_JOIN
 
     case [FirstResult, SecondResult] of
         [{ok, FirstValue}, {ok, SecondValue}] ->
-            automate_bot_engine_values:add(FirstValue, SecondValue);
+            automate_bot_engine_values:join(FirstValue, SecondValue);
         _ ->
             {error, not_found}
     end;

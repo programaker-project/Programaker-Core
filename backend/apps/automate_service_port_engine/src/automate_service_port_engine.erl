@@ -21,6 +21,8 @@
         , delete_bridge/2
         , callback_bridge/3
         , get_channel_origin_bridge/1
+
+        , listen_bridge/2
         ]).
 
 -include("records.hrl").
@@ -28,6 +30,7 @@
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
 -define(ROUTER, automate_service_port_engine_router).
 -define(LOGGING, automate_logging).
+-include("router_error_cases.hrl").
 
 %%====================================================================
 %% API
@@ -41,7 +44,7 @@ create_service_port(UserId, ServicePortName) ->
 register_service_port(ServicePortId) ->
     ?ROUTER:connect_bridge(ServicePortId).
 
--spec call_service_port(binary(), binary(), binary(), binary(), map()) -> {ok, any()}.
+-spec call_service_port(binary(), binary(), any(), binary(), map()) -> {ok, map()} | {error, ?ROUTER_ERROR_CLASSES}.
 call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
     ?LOGGING:log_call_to_bridge(ServicePortId,FunctionName,Arguments,UserId,ExtraData),
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
@@ -72,6 +75,14 @@ send_oauth_return(Qs, ServicePortId) ->
                                         , <<"value">> => #{ <<"query_string">> => Qs }
                                         }).
 
+-spec listen_bridge(binary(), binary()) -> ok | {error, term()}.
+listen_bridge(BridgeId, UserId) ->
+    case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
+        { ok, ChannelId } ->
+            automate_channel_engine:listen_channel(ChannelId);
+        {error, _X, Description} ->
+            {error, Description}
+    end.
 
 -spec from_service_port(binary(), binary(), binary()) -> ok.
 from_service_port(ServicePortId, UserId, Msg) ->

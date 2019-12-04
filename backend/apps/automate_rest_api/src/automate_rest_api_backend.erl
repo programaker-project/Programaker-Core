@@ -28,6 +28,10 @@
         , list_bridges/1
         , delete_bridge/2
         , callback_bridge/3
+        , bridge_function_call/4
+
+        , create_custom_signal/2
+        , list_custom_signals_from_user_id/1
 
         , create_template/3
         , list_templates_from_user_id/1
@@ -276,7 +280,20 @@ delete_bridge(UserId, BridgeId) ->
 callback_bridge(UserId, BridgeId, Callback) ->
     automate_service_port_engine:callback_bridge(UserId, BridgeId, Callback).
 
+-spec bridge_function_call(binary(), binary(), binary(), any()) -> {ok, map()} |{ error, term()}.
+bridge_function_call(UserId, BridgeId, FunctionName, Arguments) ->
+    automate_service_port_engine:call_service_port(BridgeId, FunctionName, Arguments, UserId, #{}).
 
+%% Custom signals
+-spec create_custom_signal(binary(), binary()) -> {ok, binary()}.
+create_custom_signal(UserId, SignalName) ->
+    automate_storage:create_custom_signal(UserId, SignalName).
+
+-spec list_custom_signals_from_user_id(binary()) -> {ok, [#custom_signal_entry{}]}.
+list_custom_signals_from_user_id(UserId) ->
+    automate_storage:list_custom_signals_from_user_id(UserId).
+
+%% Templates
 -spec create_template(binary(), binary(), [any()]) -> {ok, binary()}.
 create_template(UserId, TemplateName, TemplateContent) ->
     automate_template_engine:create_template(UserId, TemplateName, TemplateContent).
@@ -351,7 +368,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                                             , program_type=ProgramType
                                             , program_parsed=ProgramParsed
                                             , program_orig=ProgramOrig
-                                            , enabled=Enabled
+                                            , enabled=_Enabled
                                             }) ->
     #user_program{ id=Id
                  , user_id=UserId

@@ -1,11 +1,9 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { Location } from '@angular/common';
-import { ProgramMetadata, ProgramContent, ScratchProgram } from './program';
+import {  ProgramContent, ScratchProgram } from './program';
 import { ProgramService } from './program.service';
 import 'rxjs/add/operator/switchMap';
 import { Toolbox } from './blocks/Toolbox';
-import { ContentType } from './content-type';
 import * as progbar from './ui/progbar';
 /// <reference path="./blocks/blockly-core.d.ts" />
 import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
@@ -17,14 +15,16 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
+import { SetProgramTagsDialogComponent } from './program_tags/SetProgramTagsDialogComponent';
 import { ToolboxController } from './blocks/ToolboxController';
 import { TemplateService } from './templates/template.service';
 import { ServiceService } from './service.service';
+import { CustomSignalService } from './custom_signals/custom_signal.service';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [CustomBlockService, MonitorService, ProgramService, TemplateService, ServiceService],
+    providers: [CustomBlockService, CustomSignalService, MonitorService, ProgramService, TemplateService, ServiceService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
@@ -35,7 +35,7 @@ export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
     currentFillingInput: string;
     workspace: Blockly.Workspace;
-    programUserId: string;
+    programUserName: string;
     programId: string;
 
     toolboxController: ToolboxController;
@@ -44,8 +44,8 @@ export class ProgramDetailComponent implements OnInit {
         private monitorService: MonitorService,
         private programService: ProgramService,
         private customBlockService: CustomBlockService,
+        private customSignalService: CustomSignalService,
         private route: ActivatedRoute,
-        private location: Location,
         private router: Router,
         public dialog: MatDialog,
         private templateService: TemplateService,
@@ -55,8 +55,8 @@ export class ProgramDetailComponent implements OnInit {
         this.monitorService = monitorService;
         this.programService = programService;
         this.customBlockService = customBlockService;
+        this.customSignalService = customSignalService;
         this.route = route;
-        this.location = location;
         this.router = router;
         this.serviceService = serviceService;
     }
@@ -65,7 +65,7 @@ export class ProgramDetailComponent implements OnInit {
         progbar.track(new Promise((resolve) => {
             this.route.params
                 .switchMap((params: Params) => {
-                    this.programUserId = params['user_id'];
+                    this.programUserName = params['user_id'];
                     this.programId = params['program_id'];
                     return this.programService.getProgram(params['user_id'], params['program_id']).catch(err => {
                         console.error("Error:", err);
@@ -74,9 +74,9 @@ export class ProgramDetailComponent implements OnInit {
                     });
                 })
                 .subscribe(program => {
-                    this.prepareWorkspace().then(() => {
+                    this.prepareWorkspace().then((controller: ToolboxController) => {
                         this.program = program;
-                        this.load_program(program);
+                        this.load_program(controller, program);
                         resolve();
                     }).catch(err => {
                         console.error("Error:", err);
@@ -87,22 +87,83 @@ export class ProgramDetailComponent implements OnInit {
         this.currentFillingInput = '';
     }
 
-    load_program(program: ProgramContent) {
-        const xml = Blockly.Xml.textToDom(program.orig);
-        Blockly.Xml.domToWorkspace(xml, this.workspace);
+    /**
+     * Check if an DOM element is a Scratch block object.
+     */
+    is_block(blockCandidate: Element) {
+        if (blockCandidate.tagName === undefined) {
+            return false;
+        }
+        return blockCandidate.tagName.toUpperCase() === 'BLOCK';
     }
 
-    prepareWorkspace(): Promise<void> {
+    /**
+     * Clean a program in DOM format in-place.
+     *
+     * The resulting program doesn't contain any block that is not present
+     *  on the Scratch Toolbox.
+     *
+     */
+    removeNonExistingBlocks(dom: Element, controller: ToolboxController)  {
+        const children = dom.childNodes;
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i] as Element;
+            if (child.tagName !== 'block') {
+                continue;
+            }
+
+            // Clean the contents of the block
+            const next = child.getElementsByTagName('next')[0];
+            let next_blocks = [];
+            if (next !== undefined) {
+                this.removeNonExistingBlocks(next, controller);
+
+                next_blocks = (Array.from(next.childNodes)
+                               .filter((x: Element) => this.is_block(x)));
+
+                if (next_blocks.length == 0) {
+                    child.removeChild(next);
+                }
+            }
+
+            const _type = child.getAttribute('type');
+            // Check if the current block
+            if (!controller.isKnownBlock(_type)) {
+                // If it's not known, pull the next into the top level "function"
+                if (next !== undefined) {
+                    next.removeChild(next_blocks[0]);
+                    dom.insertBefore(next_blocks[0], child);
+                    child.removeChild(next);
+                    this.removeNonExistingBlocks(next, controller);
+                }
+
+                // Remove top level
+                dom.removeChild(child);
+                console.debug("To replace:", child, 'with', next);
+            }
+        }
+    }
+
+    load_program(controller: ToolboxController, program: ProgramContent) {
+        const xml = Blockly.Xml.textToDom(program.orig);
+        this.removeNonExistingBlocks(xml, controller);
+        (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
+    }
+
+    prepareWorkspace(): Promise<ToolboxController> {
         return new Toolbox(
             this.monitorService,
             this.customBlockService,
             this.dialog,
             this.templateService,
             this.serviceService,
+            this.customSignalService,
         )
             .inject()
             .then(([toolbox, registrations, controller]) => {
                 this.injectWorkspace(toolbox, registrations, controller);
+
+                return controller;
             });
     }
 
@@ -125,8 +186,9 @@ export class ProgramDetailComponent implements OnInit {
             comments: false,
             disable: false,
             collapse: true,
-            media: '../media/',
+            media: '../assets/scratch-media/',
             readOnly: false,
+            trashcan: true,
             rtl: rtl,
             scrollbars: true,
             toolbox: toolbox,
@@ -155,7 +217,7 @@ export class ProgramDetailComponent implements OnInit {
         controller.setWorkspace(this.workspace);
         controller.update();
 
-        // HACK#1
+        // HACK:
         // Defer a hide action, this is to compsensate for (what feels like)
         // scratch deferring re-setting the visibility of the sidebar
         // after the creation.
@@ -226,6 +288,10 @@ export class ProgramDetailComponent implements OnInit {
 
     show_workspace(workspace: HTMLElement) {
         workspace.style.visibility = 'visible';
+
+        // Elements might have moved around.
+        // We trigger a resize to notify SVG elements.
+        window.dispatchEvent(new Event('resize'));
     }
 
     hide_workspace(workspace: HTMLElement) {
@@ -245,7 +311,7 @@ export class ProgramDetailComponent implements OnInit {
         const program = new ScratchProgram(this.program,
             serialized.parsed,
             serialized.orig);
-        this.programService.updateProgram(this.programUserId, program);
+        this.programService.updateProgram(this.programUserName, program);
     }
 
     renameProgram() {
@@ -261,7 +327,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const rename = (this.programService.renameProgram(this.programUserId, this.program, programData.name)
+            const rename = (this.programService.renameProgram(this.programUserName, this.program, programData.name)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {
@@ -276,6 +342,44 @@ export class ProgramDetailComponent implements OnInit {
                     console.log("Changing name to", this.program);
                 }));
             progbar.track(rename);
+        });
+    }
+
+    setProgramTags() {
+        const data = {
+            program: this.program,
+            user_id: this.program.owner,
+            tags: [], // Initially empty, to be updated by dialog
+        };
+
+        const dialogRef = this.dialog.open(SetProgramTagsDialogComponent, {
+            data: data
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            const update = (this.programService.updateProgramTags(this.program.owner, this.program.id, data.tags)
+                            .then((success) => {
+                                if (!success) {
+                                    return;
+                                }
+
+                                this.notification.open('Tags updated', 'ok', {
+                                    duration: 5000
+                                });
+                            })
+                            .catch((error) => {
+                                console.error(error);
+
+                                this.notification.open('Error updating tags', 'ok', {
+                                    duration: 5000
+                                });
+                            }));
+            progbar.track(update);
         });
     }
 
@@ -318,7 +422,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const deletion = (this.programService.deleteProgram(this.programUserId, this.program)
+            const deletion = (this.programService.deleteProgram(this.programUserName, this.program)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {

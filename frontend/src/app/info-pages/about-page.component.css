@@ -1,0 +1,98 @@
+/* Headings */
+#project-name {
+    text-align: center;
+    padding: 1ex;
+
+    font-weight: 800;
+    font-size: 80px;
+
+    color: #444;
+    text-shadow: 0px 0px 1px #000;
+}
+
+#project-offer {
+    text-align: center;
+    padding: 2ex;
+    color: #444;
+}
+
+#project-claim {
+    text-align: center;
+    padding: 2em;
+    font-size: larger;
+}
+
+/* Call to action */
+.call-to-action-button-container {
+    text-align: center;
+}
+
+.call-to-action-button-container > button {
+    width: 30ex;
+    height: 5ex;
+    border-radius: 5px;
+    color: white;
+    font-weight: 800;
+    background-color: orange;
+}
+
+/* Separators */
+.project-name-offer-separator, .before-blocks-example-separator, .before-inspirations {
+    margin: 0 auto;
+    width: 20ex;
+    border-bottom: 0.25ex solid #444;
+}
+
+.before-blocks-example-separator {
+    padding-top: 4em;
+}
+
+/* Program showcase */
+#scratch-showcases {
+    background: repeating-linear-gradient( 45deg, #fff, #fff 10px,
+                                           #eee 10px, #eee 20px );
+}
+
+.showcase {
+    text-align: center;
+    margin: 0 auto;
+}
+
+.showcase > h2 {
+    font-weight: 800;
+    color: #444;
+    padding: 1em 1em 0 1em;
+}
+
+.showcase > img {
+    max-width: 100%;
+}
+
+/* References */
+.reference-window {
+    margin: 0 auto;
+
+    /* Improve readability */
+    max-width: 50em;
+    font-size: large;
+}
+
+.reference-window > h2 {
+    padding: 2ex;
+    text-align: center;
+    color: #444;
+}
+
+.reference-window > ul {
+    padding: 2ex;
+    color: #000;
+}
+
+.reference-window > ul > li {
+    list-style: initial;
+    text-align: justify;
+}
+
+.project-name {
+    font-weight: bold;
+}

@@ -40,6 +40,9 @@
         , set_program_variable/3
         , get_program_variable/2
 
+        , create_custom_signal/2
+        , list_custom_signals_from_user_id/1
+
         , add_mnesia_node/1
         , register_table/2
         ]).
@@ -556,6 +559,49 @@ get_userid_from_username(Username) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+
+%% Custom signals
+-spec create_custom_signal(binary(), binary()) -> {ok, binary()}.
+create_custom_signal(UserId, SignalName) ->
+    {ok, Id} = automate_channel_engine:create_channel(),
+    Entry = #custom_signal_entry{ id=Id
+                                , name=SignalName
+                                , owner=UserId
+                                },
+
+    Transaction = fun() ->
+                          ok = mnesia:write(?CUSTOM_SIGNALS_TABLE, Entry, write),
+                          {ok, Id}
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
+-spec list_custom_signals_from_user_id(binary()) -> {ok, [#custom_signal_entry{}]}.
+list_custom_signals_from_user_id(UserId) ->
+    Transaction = fun() ->
+                          %% Find userid with that name
+                          MatchHead = #custom_signal_entry{ id='_'
+                                                          , name='_'
+                                                          , owner='$1'
+                                                          },
+                          Guard = {'==', '$1', UserId},
+                          ResultColumn = '$_',
+                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+                          {ok, mnesia:select(?CUSTOM_SIGNALS_TABLE, Matcher)}
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 %% Exposed startup entrypoint
 start_link() ->
     start_coordinator().
@@ -567,7 +613,7 @@ add_mnesia_node(Node) ->
     ok.
 
 -spec register_table(term(), term()) -> ok.
-register_table(TableName, RecordDef) ->
+register_table(_TableName, _RecordDef) ->
     erlang:error(not_implemented).
 
 %%====================================================================

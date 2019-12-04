@@ -248,7 +248,7 @@ delete_bridge(UserId, BridgeId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec get_or_create_monitor_id(binary(), binary()) -> {ok, binary()}.
+-spec get_or_create_monitor_id(binary(), binary()) -> {ok, binary()} | {error, term(), binary()}.
 get_or_create_monitor_id(UserId, ServicePortId) ->
     Id = {UserId, ServicePortId},
     case mnesia:dirty_read(?SERVICE_PORT_CHANNEL_TABLE, Id) of

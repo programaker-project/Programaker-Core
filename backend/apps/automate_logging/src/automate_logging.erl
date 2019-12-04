@@ -48,7 +48,7 @@ log_event(Channel, Message) ->
                 none -> ok
             end;
         {error, not_found} ->
-            io:fwrite("No bridge found for ~p~n", [Channel]),
+            io:fwrite("[DEBUG][logging] No bridge found for ~p~n", [Channel]),
             ok
     end.
 

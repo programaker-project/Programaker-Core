@@ -29,6 +29,8 @@ start_link() ->
                         , {"/api/v0/users", automate_rest_api_users_root, []}
                         , {"/api/v0/users/:user_id", automate_rest_api_users_specific, []}
 
+                        , {"/api/v0/users/id/:user_id/custom_signals/", automate_rest_api_custom_signals_root, []}
+
                         , {"/api/v0/users/id/:user_id/templates/", automate_rest_api_templates_root, []}
                         , {"/api/v0/users/id/:user_id/templates/id/:template_id", automate_rest_api_templates_specific, []}
                         , {"/api/v0/users/:user_id/custom-blocks/", automate_rest_api_custom_blocks_root, []}
@@ -37,9 +39,12 @@ start_link() ->
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/tags", automate_rest_api_program_tags, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/stop-threads", automate_rest_api_program_stop, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/status", automate_rest_api_program_status, []}
+
                         , {"/api/v0/users/:user_id/bridges/", automate_rest_api_service_ports_root, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/callback/:callback", automate_rest_api_bridge_callback, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/functions/:function", automate_rest_api_bridge_function_specific, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/signals", automate_rest_api_bridge_signal_root, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/communication"
                           , automate_rest_api_service_ports_specific_communication, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/oauth_return"

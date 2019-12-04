@@ -99,7 +99,7 @@ export class TemplateController {
         this.toolboxController.update();
     }
 
-    injectTemplateBlocks(): Function[] {
+    injectBlocks(): Function[] {
         try {
             Blockly.Extensions.register('colours_templates',
                 function () {
@@ -150,7 +150,7 @@ export class TemplateController {
         });
     }
 
-    genTemplatesCategory(): Promise<HTMLElement> {
+    genCategory(): Promise<HTMLElement> {
         if (this.templatesCategory) {
             return Promise.resolve(this.templatesCategory);
         }

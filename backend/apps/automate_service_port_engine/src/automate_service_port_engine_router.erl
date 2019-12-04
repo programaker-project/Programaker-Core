@@ -8,7 +8,6 @@
         , answer_message/2
         ]).
 
--define(ERROR_CLASSES, no_response | no_connection | not_found | unauthorized).
 -define(SERVER, ?MODULE).
 -ifdef(TEST).
 -define(MAX_WAIT_TIME_SECONDS, 1).
@@ -19,6 +18,7 @@
 -define(CONNECTED_BRIDGES_TABLE, automate_service_port_connected_bridges_table).
 -define(ON_FLIGHT_MESSAGES_TABLE, automate_service_port_bridge_on_flight_messages_table).
 -include("records.hrl").
+-include("router_error_cases.hrl").
 
 %%%===================================================================
 %%% API
@@ -56,7 +56,7 @@ connect_bridge(BridgeId) ->
 %% @spec call_bridge(BridgeId, Msg) -> {ok, Value} | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
--spec call_bridge(binary(), map()) -> {ok, map()} | {error, ?ERROR_CLASSES}.
+-spec call_bridge(binary(), map()) -> {ok, map()} | {error, ?ROUTER_ERROR_CLASSES}.
 call_bridge(BridgeId, Msg) ->
     automate_stats:log_observation(counter,
                                    automate_bridge_engine_messages_to_bridge,
@@ -162,7 +162,7 @@ start_link() ->
 call_bridge_to_connection(#bridge_connection_entry{pid=Pid}, Msg, From, FromNode) ->
     MessageId = generate_id(),
     Transaction = fun() ->
-                          ok = mnesia:write(?ON_FLIGHT_MESSAGES_TABLE, 
+                          ok = mnesia:write(?ON_FLIGHT_MESSAGES_TABLE,
                                             #on_flight_message_entry{ message_id=MessageId
                                                                     , pid=From
                                                                     , node=FromNode
@@ -239,7 +239,7 @@ check_alive_connections(Connections) ->
                     Connections).
 
 
--spec wait_bridge_response() -> {ok, map()} | {error, ?ERROR_CLASSES}.
+-spec wait_bridge_response() -> {ok, map()} | {error, ?ROUTER_ERROR_CLASSES}.
 wait_bridge_response() ->
     receive
         {?SERVER, Response} ->
