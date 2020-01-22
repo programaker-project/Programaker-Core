@@ -35,6 +35,7 @@
                                      | #service_port_block_dynamic_argument{}.
 
 -type block_save_to() :: null | #{ binary() => any()}.
+-type block_subkey() :: null | #{ binary() => any()}.
 
 -record(service_port_block, { block_id :: binary()
                             , function_name :: binary()
@@ -55,6 +56,7 @@
                                     , save_to :: block_save_to()
                                     , expected_value :: service_port_trigger_expected_value()
                                     , key :: binary()
+                                    , subkey :: block_subkey()
                                     }).
 
 -record(service_port_configuration, { id :: binary() | ?MNESIA_SELECTOR %% Service port Id

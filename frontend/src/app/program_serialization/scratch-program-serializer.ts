@@ -154,6 +154,18 @@ export default class ScratchProgramSerializer {
         if (blockInfo.key) {
             args.key = blockInfo.key;
         }
+        if (blockInfo.subkey) {
+            if (blockInfo.subkey.type === 'argument') {
+                args.subkey = {
+                    'type': 'constant',
+                    'value': element.args[blockInfo.subkey.index].value,
+                };
+            }
+            else {
+                args.subkey = blockInfo.subkey;
+            }
+        }
+
 
         element.args = args;
         return element;

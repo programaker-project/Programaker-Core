@@ -105,6 +105,7 @@ encode_block(#service_port_trigger_block{ block_id=BlockId
                                         , save_to=SaveTo
                                         , expected_value=ExpectedValue
                                         , key=Key
+                                        , subkey=SubKey
                                         }) ->
     #{ <<"block_id">> => BlockId
      , <<"function_name">> => FunctionName
@@ -114,6 +115,29 @@ encode_block(#service_port_trigger_block{ block_id=BlockId
      , <<"save_to">> => SaveTo
      , <<"expected_value">> => ExpectedValue
      , <<"key">> => Key
+     , <<"subkey">> => SubKey
+     };
+
+%% TODO: Add DB migration to avoid the need of this compatibility
+encode_block({service_port_trigger_block
+             , BlockId
+             , FunctionName
+             , Message
+             , Arguments
+             , BlockType
+             , SaveTo
+             , ExpectedValue
+             , Key
+             }) ->
+    #{ <<"block_id">> => BlockId
+     , <<"function_name">> => FunctionName
+     , <<"message">> => Message
+     , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
+     , <<"block_type">> => BlockType
+     , <<"save_to">> => SaveTo
+     , <<"expected_value">> => ExpectedValue
+     , <<"key">> => Key
+     , <<"subkey">> => undefined
      }.
 
 encode_argument(#service_port_block_static_argument{ type=Type

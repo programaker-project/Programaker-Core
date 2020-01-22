@@ -91,6 +91,10 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                    automate_bridge_engine_messages_from_bridge,
                                    [ServicePortId]),
     case Unpacked of
+        AdviceMsg = #{ <<"type">> := <<"ADVICE">>, <<"message_id">> := MessageId } ->
+            AdviceTaken = apply_advice(AdviceMsg, ServicePortId),
+            answer_advice_taken(AdviceTaken, MessageId, self());
+
         #{ <<"message_id">> := MessageId } ->
             %% io:fwrite("[~p] Answer: ~p~n", [MessageId, Unpacked]),
             ?ROUTER:answer_message(MessageId, Unpacked);
@@ -242,15 +246,15 @@ parse_block(Block=#{ <<"arguments">> := Arguments
                        , save_to=get_block_save_to(Block)
                        };
 
-parse_block(#{ <<"arguments">> := Arguments
-             , <<"function_name">> := FunctionName
-             , <<"message">> := Message
-             , <<"id">> := BlockId
-             , <<"block_type">> := BlockType
-             , <<"save_to">> := SaveToConfiguration
-             , <<"expected_value">> := ExpectedValue
-             , <<"key">> := Key
-             }) ->
+parse_block(Block=#{ <<"arguments">> := Arguments
+                             , <<"function_name">> := FunctionName
+                             , <<"message">> := Message
+                             , <<"id">> := BlockId
+                             , <<"block_type">> := BlockType
+                             , <<"save_to">> := SaveToConfiguration
+                             , <<"expected_value">> := ExpectedValue
+                             , <<"key">> := Key
+                             }) ->
     #service_port_trigger_block{ block_id=BlockId
                                , function_name=FunctionName
                                , message=Message
@@ -259,11 +263,19 @@ parse_block(#{ <<"arguments">> := Arguments
                                , save_to=SaveToConfiguration
                                , expected_value=ExpectedValue
                                , key=Key
+                               , subkey=get_block_subkey(Block)
                                }.
 
 get_block_save_to(#{ <<"save_to">> := SaveTo }) ->
     SaveTo;
 get_block_save_to(_) ->
+    undefined.
+
+
+get_block_subkey(#{ <<"subkey">> := SubKey }) ->
+    io:fwrite("\033[7mFound subkey: ~p\033[0m~n", [SubKey]),
+    SubKey;
+get_block_subkey(_) ->
     undefined.
 
 
@@ -297,3 +309,34 @@ parse_argument(#{ <<"type">> := Type
     #service_port_block_dynamic_argument{ callback=Callback
                                         , type=Type
                                         }.
+
+answer_advice_taken(AdviceTaken, MessageId, Pid) ->
+    Pid ! {{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken }.
+
+apply_advice(#{ <<"type">> := <<"ADVICE">>
+              , <<"value">> := Value
+              }, BridgeId) ->
+    lists:filtermap(fun ({Advice, Content}) ->
+                            case apply_advice(Advice, Content, BridgeId) of
+                                true ->
+                                    {true, Advice};
+                                false ->
+                                    false
+                            end
+                    end, maps:to_list(Value)).
+
+apply_advice(<<"NOTIFY_SIGNAL_LISTENERS">>, Content, BridgeId) ->
+    ?BACKEND:set_notify_signal_listeners(Content, BridgeId),
+    {ok, Listeners} = ?BACKEND:get_signal_listeners(Content, BridgeId),
+    io:fwrite("\033[7mCurrent listeners: ~p\033[0m~n", [Listeners]),
+    report_current_listeners(self(), Listeners),
+    true;
+
+apply_advice(Advice, _Content, _BridgeId) ->
+    io:format("[~p] Unknown advice: ~p~n", [self(), Advice]),
+    false.
+
+report_current_listeners(Reported, Listeners) ->
+    lists:foreach(fun ({ Pid, Key, SubKey }) ->
+                          Reported ! { automate_channel_engine, add_listener, { Pid, Key, SubKey } }
+                  end, Listeners).

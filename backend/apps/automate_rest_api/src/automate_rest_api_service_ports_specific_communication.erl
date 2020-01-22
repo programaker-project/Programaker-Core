@@ -10,6 +10,7 @@
 
 -record(state, { user_id         :: binary()
                , service_port_id :: binary()
+               , user_channels   :: #{ binary() := any() }
                }).
 
 init(Req, _Opts) ->
@@ -18,6 +19,7 @@ init(Req, _Opts) ->
 
     {cowboy_websocket, Req, #state{ service_port_id=ServicePortId
                                   , user_id=UserId
+                                  , user_channels=#{}
                                   }}.
 
 websocket_init(State=#state{ service_port_id=ServicePortId
@@ -37,7 +39,7 @@ websocket_handle({binary, Msg}, State=#state{ service_port_id=ServicePortId
     automate_service_port_engine:from_service_port(ServicePortId, UserId, Msg),
     {ok, State};
 
-websocket_handle(Message, State) ->
+websocket_handle(_Message, State) ->
     {ok, State}.
 
 websocket_info({automate_service_port_engine_router, _From, { data, MessageId, Message }}, State) ->
@@ -45,6 +47,63 @@ websocket_info({automate_service_port_engine_router, _From, { data, MessageId, M
     Serialized = jiffy:encode(Message#{ <<"message_id">> => MessageId }),
     {reply, {binary, Serialized}, State};
 
+websocket_info({{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken}, State) ->
+    io:fwrite("[~p] Advice taken: ~p~n", [MessageId, AdviceTaken]),
+    Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_RESPONSE">>
+                               , <<"message_id">> => MessageId
+                               , <<"value">> => AdviceTaken
+                               }),
+    {reply, {binary, Serialized}, State};
+
+websocket_info({ automate_channel_engine, add_listener, Msg={ Pid, Key, SubKey}}, State) ->
+    io:fwrite("Add listener: ~p~n", [Msg]),
+    case automate_bot_engine:get_user_from_pid(Pid) of
+        {ok, UserId} ->
+            {UserChannels, NewState} = add_to_user_channels(UserId, {Key, SubKey}, State),
+            Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE">>
+                                       , <<"value">> =>
+                                             #{ <<"SIGNAL_LISTENERS">> =>
+                                                    #{
+                                                       UserId => fmt_user_data(UserChannels)
+                                                     }
+                                              }
+                                       }),
+            {reply, {binary, Serialized}, NewState};
+        {error, not_found} ->
+            {no_reply, State}
+    end;
+
 websocket_info(Message, State) ->
     io:fwrite("Got ~p~n", [Message]),
     {reply, {binary, Message}, State}.
+
+
+%% State maintenance
+merge_user_data(UserData, ChannelData) ->
+    sets:add_element(ChannelData, UserData).
+
+create_user_data(ChannelData) ->
+    sets:add_element(ChannelData, sets:new()).
+
+fmt_user_data(UserData) ->
+    [ fmt_channel_data(ChannelData) || ChannelData <- sets:to_list(UserData) ].
+
+fmt_channel_data({ undefined, _ }) ->
+    <<"__all__">>;
+fmt_channel_data({ Key, undefined }) ->
+    #{ <<"key">> => Key };
+fmt_channel_data({ Key, SubKey }) ->
+    #{ <<"key">> => Key
+     , <<"subkey">> => SubKey
+     }.
+
+add_to_user_channels(UserId, ChannelData, State=#state{user_channels=UserChannels}) ->
+    case UserChannels of
+        #{ UserId := UserData } ->
+            NewUserData = merge_user_data(UserData, ChannelData),
+            { NewUserData, State#state{ user_channels=UserChannels#{ UserId => NewUserData } } };
+        _ ->
+            NewUserData = create_user_data(ChannelData),
+            { NewUserData, State#state{ user_channels=UserChannels#{ UserId => NewUserData } } }
+    end.
+

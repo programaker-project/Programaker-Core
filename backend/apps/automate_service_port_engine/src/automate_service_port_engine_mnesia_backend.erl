@@ -8,6 +8,8 @@
 -export([ start_link/0
         , create_service_port/2
         , set_service_port_configuration/3
+        , set_notify_signal_listeners/2
+        , get_signal_listeners/2
 
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
@@ -126,6 +128,32 @@ set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
+
+-spec set_notify_signal_listeners([string()], binary()) -> ok.
+set_notify_signal_listeners(Content, BridgeId) ->
+    {ok, Channels} = list_bridge_channels(BridgeId),
+    Pid = self(),
+    Node = node(),
+    io:fwrite("\033[7mSetting signal listener: ~p\033[0m~n", [{Content, BridgeId}]),
+    case Content of
+        <<"__all__">> ->
+            [ automate_channel_engine:monitor_listeners(Channel, Pid, Node) || Channel <- Channels ];
+        Keys when is_list(Keys) ->
+            %% [ automate_channel_engine:monitor_keys_listeners(Channel, Keys, Pid) || Channel <- Channels ]
+            [ automate_channel_engine:monitor_listeners(Channel, Pid, Node) || Channel <- Channels ]
+            %% @TODO @NOMERGE fix line above (replace with commented)
+    end,
+    %% @TODO @NOMERGE listen for the creation of more monitor_id's
+    %% @TODO @NOMERGE Report current monitors
+    ok.
+
+-spec get_signal_listeners([string()], binary()) -> {ok, [{ pid(), binary() | undefined, binary() | undefined}]}.
+get_signal_listeners(_Content, BridgeId) ->
+    {ok, Channels} = list_bridge_channels(BridgeId),
+    {ok, lists:flatmap(fun(Channel) ->
+                               {ok, Listeners} = automate_channel_engine:get_listeners_on_channel(Channel),
+                               Listeners
+                       end, Channels )}.
 
 -spec list_custom_blocks(binary()) -> {ok, map()}.
 list_custom_blocks(UserId) ->

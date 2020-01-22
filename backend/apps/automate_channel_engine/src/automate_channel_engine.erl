@@ -6,7 +6,13 @@
 -module(automate_channel_engine).
 
 %% Public API
--export([create_channel/0, listen_channel/1, send_to_channel/2]).
+-export([ create_channel/0
+        , listen_channel/1
+        , listen_channel/2
+        , send_to_channel/2
+        , monitor_listeners/3
+        , get_listeners_on_channel/1
+        ]).
 -include("records.hrl").
 -define(LOGGING, automate_logging).
 
@@ -25,10 +31,18 @@ create_channel() ->
 
 -spec listen_channel(binary()) -> ok | {error, channel_not_found}.
 listen_channel(ChannelId) ->
-    automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, self(), node()).
+    automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, self(), node(), undefined, undefined).
+
+-spec listen_channel(binary(), {binary()} | {binary(), binary()}) -> ok | {error, channel_not_found}.
+listen_channel(ChannelId, {Key, SubKey}) ->
+    automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, self(), node(), Key, SubKey);
+
+listen_channel(ChannelId, {Key}) ->
+    automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, self(), node(), Key, undefined).
 
 -spec send_to_channel(binary(), any()) -> ok.
 send_to_channel(ChannelId, Message) ->
+    %% TODO: Use the key/subkey information to better route calls
     spawn(fun () ->
                   automate_stats:log_observation(counter,
                                                  automate_channel_engine_messages_in,
@@ -51,6 +65,20 @@ send_to_channel(ChannelId, Message) ->
         X ->
             X
     end.
+
+-spec monitor_listeners(binary(), pid(), node()) -> ok | {error, channel_not_found}.
+monitor_listeners(ChannelId, Pid, Node) ->
+    automate_channel_engine_mnesia_backend:add_listener_monitor(ChannelId, Pid, Node).
+
+-spec get_listeners_on_channel(binary()) -> {ok, [{ pid(), binary() | undefined, binary() | undefined}]} | {error, channel_not_found}.
+get_listeners_on_channel(ChannelId) ->
+    case automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId) of
+        { ok, Listeners } ->
+            {ok, [ { Pid, Key, SubKey } || #listeners_table_entry{pid=Pid, key=Key, subkey=SubKey} <- Listeners ]};
+        Error ->
+            Error
+    end.
+
 
 %%====================================================================
 %% Internal functions

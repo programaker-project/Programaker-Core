@@ -39,18 +39,25 @@ get_expected_signals_from_triggers(Triggers, Permissions) ->
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                                                              , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId }
                                                              }}, _Permissions) ->
-
     automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
-                                                             , ?ARGUMENTS := _Arguments
+                                                             , ?ARGUMENTS := Arguments
                                                              }},
                                  #program_permissions{owner_user_id=UserId}) ->
     [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-    automate_channel_engine:listen_channel(MonitorId),
+
+    case get_block_key_subkey(Arguments) of
+        { key_and_subkey, Key, SubKey } ->
+            automate_channel_engine:listen_channel(MonitorId, { Key, SubKey });
+        { key, Key } ->
+            automate_channel_engine:listen_channel(MonitorId, { Key });
+        { not_found } ->
+            automate_channel_engine:listen_channel(MonitorId)
+    end,
     ?TRIGGERED_BY_MONITOR;
 
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
@@ -68,6 +75,20 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?SIGNAL_
 get_expected_action_from_trigger(Trigger, _Permissions) ->
     io:fwrite("[WARN][Bot/Triggers] Unknown trigger: ~p~n", [Trigger]),
     ?SIGNAL_PROGRAM_TICK.
+
+get_block_key_subkey(#{ <<"key">> := Key
+                      , <<"subkey">> := #{ <<"type">> := <<"constant">>
+                                         , <<"value">> := SubKey
+                                         }
+                      }) ->
+    { key_and_subkey, Key, SubKey };
+get_block_key_subkey(#{ <<"key">> := Key }) ->
+    {key, Key};
+get_block_key_subkey(_) ->
+    { not_found }.
+
+
+
 
 %%%% Thread creation
 %%% Monitors
