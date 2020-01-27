@@ -173,7 +173,7 @@ export function get_block_toolbox_arguments(block: ResolvedCustomBlock) {
             if ((arg as StaticBlockArgument).class === 'list') {
                 return {
                     "type": "field_variable",
-                    "name": "LIST",
+                    "name": "LIST" + index,
                     "variableTypes": ["list"],  // actually, Blockly.LIST_VARIABLE_TYPE
                 };
             }
