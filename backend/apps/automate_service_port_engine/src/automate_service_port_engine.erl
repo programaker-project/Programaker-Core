@@ -273,7 +273,6 @@ get_block_save_to(_) ->
 
 
 get_block_subkey(#{ <<"subkey">> := SubKey }) ->
-    io:fwrite("\033[7mFound subkey: ~p\033[0m~n", [SubKey]),
     SubKey;
 get_block_subkey(_) ->
     undefined.
@@ -328,12 +327,11 @@ apply_advice(#{ <<"type">> := <<"ADVICE_SET">>
 apply_advice(<<"NOTIFY_SIGNAL_LISTENERS">>, Content, BridgeId) ->
     ?BACKEND:set_notify_signal_listeners(Content, BridgeId),
     {ok, Listeners} = ?BACKEND:get_signal_listeners(Content, BridgeId),
-    io:fwrite("\033[7mCurrent listeners: ~p\033[0m~n", [Listeners]),
     report_current_listeners(self(), Listeners),
     true;
 
 apply_advice(Advice, _Content, _BridgeId) ->
-    io:format("[~p] Unknown advice: ~p~n", [self(), Advice]),
+    io:fwrite("[~p] Unknown advice: ~p~n", [self(), Advice]),
     false.
 
 report_current_listeners(Reported, Listeners) ->

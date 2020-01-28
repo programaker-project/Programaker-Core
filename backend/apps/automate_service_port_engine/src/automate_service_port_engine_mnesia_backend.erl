@@ -148,7 +148,6 @@ set_notify_signal_listeners(Content, BridgeId) ->
     {ok, Channels} = list_bridge_channels(BridgeId),
     Pid = self(),
     Node = node(),
-    io:fwrite("\033[7mSetting signal listener: ~p\033[0m~n", [{Content, BridgeId}]),
     case Content of
         <<"__all__">> ->
             [ automate_channel_engine:monitor_listeners(Channel, Pid, Node) || Channel <- Channels ];
