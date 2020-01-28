@@ -47,6 +47,11 @@ resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
 resolve_argument(#{ ?TYPE := ?VARIABLE_VARIABLE
                   , ?VALUE := VariableName
                   }, Thread) ->
+    get_program_variable(Thread, VariableName);
+
+resolve_argument(#{ ?TYPE := ?VARIABLE_LIST
+                  , ?VALUE := VariableName
+                  }, Thread) ->
     get_program_variable(Thread, VariableName).
 
 
