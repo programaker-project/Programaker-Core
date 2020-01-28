@@ -55,16 +55,17 @@ websocket_info({{ automate_service_port_engine, advice_taken}, MessageId, Advice
                                }),
     {reply, {binary, Serialized}, State};
 
-websocket_info({ automate_channel_engine, add_listener, Msg={ Pid, Key, SubKey}}, State) ->
+websocket_info({ automate_channel_engine, add_listener, Msg={ Pid, Key, SubKey}}, State=#state{service_port_id=ServicePortId}) ->
     io:fwrite("Add listener: ~p~n", [Msg]),
     case automate_bot_engine:get_user_from_pid(Pid) of
         {ok, UserId} ->
+            {ok, ServicePortUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
             {UserChannels, NewState} = add_to_user_channels(UserId, {Key, SubKey}, State),
             Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE">>
                                        , <<"value">> =>
                                              #{ <<"SIGNAL_LISTENERS">> =>
                                                     #{
-                                                       UserId => fmt_user_data(UserChannels)
+                                                      ServicePortUserId => fmt_user_data(UserChannels)
                                                      }
                                               }
                                        }),
