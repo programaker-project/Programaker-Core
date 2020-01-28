@@ -23,6 +23,7 @@
 
         , get_program_owner/1
         , get_program_pid/1
+        , get_user_from_pid/1
         , register_program_runner/2
         , get_program_from_id/1
         , register_program_tags/2
@@ -295,6 +296,54 @@ get_program_pid(ProgramId) ->
         [] ->
             {error, not_running};
         {error, Reason} ->
+            {error, Reason}
+    end.
+
+
+-spec get_user_from_pid(pid()) -> { ok, binary() } | {error, not_found}.
+get_user_from_pid(Pid) ->
+    %% Look for it as a program (not running thread)
+    ProgMatchHead = #running_program_entry{ program_id = '$1'
+                                          , runner_pid = '$2'
+                                          , variables = '_'
+                                          , stats = '_'
+                                          },
+    ProgGuard = {'==', '$2', Pid},
+    ProgResultColumn = '$1',
+    ProgMatcher = [{ProgMatchHead, [ProgGuard], [ProgResultColumn]}],
+
+    %% Then look for it as a thread
+    ThreadMatchHead = #running_program_thread_entry{ thread_id = '_'
+                                                   , runner_pid = '$2'
+                                                   , parent_program_id = '$1'
+                                                   , instructions = '_'
+                                                   , memory = '_'
+                                                   , instruction_memory = '_'
+                                                   , position = '_'
+                                                   , stats = '_'
+                                                   },
+    ThreadGuard = {'==', '$2', Pid},
+    ThreadResultColumn = '$1',
+    ThreadMatcher = [{ThreadMatchHead, [ThreadGuard], [ThreadResultColumn]}],
+    Transaction = fun() ->
+                          case mnesia:select(?RUNNING_PROGRAMS_TABLE, ProgMatcher) of
+                              [ProgramId] ->
+                                  [#user_program_entry{ user_id=UserId }] = mnesia:read(?USER_PROGRAMS_TABLE, ProgramId),
+                                  { ok, UserId};
+                              [] ->
+                                  case mnesia:select(?RUNNING_THREADS_TABLE, ThreadMatcher) of
+                                      [ ParentProgramId ] ->
+                                          [#user_program_entry{ user_id=UserId }] = mnesia:read(?USER_PROGRAMS_TABLE, ParentProgramId),
+                                          { ok, UserId};
+                                      [] ->
+                                          {error, not_found}
+                                  end
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
             {error, Reason}
     end.
 

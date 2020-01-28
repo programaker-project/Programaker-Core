@@ -8,6 +8,7 @@
 %% Application callbacks
 -export([ stop_program_threads/2
         , change_program_status/3
+        , get_user_from_pid/1
         ]).
 
 -spec stop_program_threads(binary(),binary()) -> ok | {error, any()}.
@@ -31,3 +32,8 @@ change_program_status(Username, ProgramId, Status) ->
         { error, Reason } ->
             { error, Reason }
     end.
+
+-spec get_user_from_pid(pid()) -> { ok, binary() } | {error, not_found}.
+get_user_from_pid(Pid) ->
+    automate_storage:get_user_from_pid(Pid).
+

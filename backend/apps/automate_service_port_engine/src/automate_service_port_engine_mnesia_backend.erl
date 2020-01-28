@@ -8,6 +8,8 @@
 -export([ start_link/0
         , create_service_port/2
         , set_service_port_configuration/3
+        , set_notify_signal_listeners/2
+        , get_signal_listeners/2
 
         , list_custom_blocks/1
         , internal_user_id_to_service_port_user_id/2
@@ -34,6 +36,20 @@ start_link() ->
 
     ok = automate_storage_versioning:apply_versioning(automate_service_port_engine_configuration:get_versioning(Nodes),
                                                       Nodes, ?MODULE),
+
+    %% These are run on RAM, so they are created manually
+    ok = case mnesia:create_table(?SERVICE_PORT_CHANNEL_MONITORS_TABLE,
+                                  [ { attributes, record_info(fields, channel_monitor_table_entry)}
+                                  , { ram_copies, Nodes }
+                                  , { record_name, channel_monitor_table_entry }
+                                  , { type, bag }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
     ignore.
 
 
@@ -126,6 +142,42 @@ set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
+
+-spec set_notify_signal_listeners([string()], binary()) -> ok.
+set_notify_signal_listeners(Content, BridgeId) ->
+    {ok, Channels} = list_bridge_channels(BridgeId),
+    Pid = self(),
+    Node = node(),
+    case Content of
+        <<"__all__">> ->
+            [ automate_channel_engine:monitor_listeners(Channel, Pid, Node) || Channel <- Channels ];
+        Keys when is_list(Keys) ->
+            %% [ automate_channel_engine:monitor_keys_listeners(Channel, Keys, Pid) || Channel <- Channels ]
+            [ automate_channel_engine:monitor_listeners(Channel, Pid, Node) || Channel <- Channels ]
+            %% @TODO just listen on specific contant (replace with commented)
+    end,
+    Entry = #channel_monitor_table_entry{ bridge_id=BridgeId
+                                        , pid=Pid
+                                        , node=Node
+                                        },
+    %% Monitor for creation of new channels on bridge
+    Transaction = fun() ->
+                          ok = mnesia:write(?SERVICE_PORT_CHANNEL_MONITORS_TABLE, Entry, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+-spec get_signal_listeners([string()], binary()) -> {ok, [{ pid(), binary() | undefined, binary() | undefined}]}.
+get_signal_listeners(_Content, BridgeId) ->
+    {ok, Channels} = list_bridge_channels(BridgeId),
+    {ok, lists:flatmap(fun(Channel) ->
+                               {ok, Listeners} = automate_channel_engine:get_listeners_on_channel(Channel),
+                               Listeners
+                       end, Channels )}.
 
 -spec list_custom_blocks(binary()) -> {ok, map()}.
 list_custom_blocks(UserId) ->
@@ -261,9 +313,17 @@ get_or_create_monitor_id(UserId, ServicePortId) ->
                                                     #service_port_monitor_channel_entry{ id=Id
                                                                                        , channel_id=ChannelId},
                                                     write),
-                                  {ok, ChannelId}
+
+                                  ChannelMonitors = mnesia:read(?SERVICE_PORT_CHANNEL_MONITORS_TABLE, ServicePortId),
+                                  {ok, ChannelId, ChannelMonitors}
                           end,
             case mnesia:transaction(Transaction) of
+                {atomic, {ok, ChannelId, ChannelMonitors}} ->
+                    lists:foreach(fun(#channel_monitor_table_entry{pid=Pid}) ->
+                                          Pid ! {automate_service_port_engine, new_channel, {ServicePortId, ChannelId} }
+                                  end,
+                                  ChannelMonitors),
+                    {ok, ChannelId};
                 {atomic, Result} ->
                     Result;
                 {aborted, Reason} ->

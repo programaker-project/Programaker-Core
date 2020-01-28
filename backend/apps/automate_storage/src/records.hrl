@@ -43,10 +43,10 @@
 -type thread_id() :: binary().
 -type running_program_pid() :: pid().
 
--record(running_program_entry, { program_id :: program_id()
-                               , runner_pid :: running_program_pid()
-                               , variables
-                               , stats
+-record(running_program_entry, { program_id :: program_id()          | ?MNESIA_SELECTOR
+                               , runner_pid :: running_program_pid() | ?MNESIA_SELECTOR
+                               , variables  :: any()                 | ?MNESIA_SELECTOR
+                               , stats      :: any()                 | ?MNESIA_SELECTOR
                                }).
 
 -record(running_program_thread_entry, { thread_id :: thread_id()        | ?MNESIA_SELECTOR
