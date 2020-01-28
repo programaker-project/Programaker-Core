@@ -36,6 +36,20 @@ start_link() ->
 
     ok = automate_storage_versioning:apply_versioning(automate_service_port_engine_configuration:get_versioning(Nodes),
                                                       Nodes, ?MODULE),
+
+    %% These are run on RAM, so they are created manually
+    ok = case mnesia:create_table(?SERVICE_PORT_CHANNEL_MONITORS_TABLE,
+                                  [ { attributes, record_info(fields, channel_monitor_table_entry)}
+                                  , { ram_copies, Nodes }
+                                  , { record_name, channel_monitor_table_entry }
+                                  , { type, bag }
+                                  ]) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
     ignore.
 
 
@@ -141,11 +155,22 @@ set_notify_signal_listeners(Content, BridgeId) ->
         Keys when is_list(Keys) ->
             %% [ automate_channel_engine:monitor_keys_listeners(Channel, Keys, Pid) || Channel <- Channels ]
             [ automate_channel_engine:monitor_listeners(Channel, Pid, Node) || Channel <- Channels ]
-            %% @TODO @NOMERGE fix line above (replace with commented)
+            %% @TODO just listen on specific contant (replace with commented)
     end,
-    %% @TODO @NOMERGE listen for the creation of more monitor_id's
-    %% @TODO @NOMERGE Report current monitors
-    ok.
+    Entry = #channel_monitor_table_entry{ bridge_id=BridgeId
+                                        , pid=Pid
+                                        , node=Node
+                                        },
+    %% Monitor for creation of new channels on bridge
+    Transaction = fun() ->
+                          ok = mnesia:write(?SERVICE_PORT_CHANNEL_MONITORS_TABLE, Entry, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 -spec get_signal_listeners([string()], binary()) -> {ok, [{ pid(), binary() | undefined, binary() | undefined}]}.
 get_signal_listeners(_Content, BridgeId) ->
@@ -289,9 +314,17 @@ get_or_create_monitor_id(UserId, ServicePortId) ->
                                                     #service_port_monitor_channel_entry{ id=Id
                                                                                        , channel_id=ChannelId},
                                                     write),
-                                  {ok, ChannelId}
+
+                                  ChannelMonitors = mnesia:read(?SERVICE_PORT_CHANNEL_MONITORS_TABLE, ServicePortId),
+                                  {ok, ChannelId, ChannelMonitors}
                           end,
             case mnesia:transaction(Transaction) of
+                {atomic, {ok, ChannelId, ChannelMonitors}} ->
+                    lists:foreach(fun(#channel_monitor_table_entry{pid=Pid}) ->
+                                          Pid ! {automate_service_port_engine, new_channel, {ServicePortId, ChannelId} }
+                                  end,
+                                  ChannelMonitors),
+                    {ok, ChannelId};
                 {atomic, Result} ->
                     Result;
                 {aborted, Reason} ->

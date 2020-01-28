@@ -89,3 +89,9 @@
                                  , pid :: pid() %% Asker pid. Process that asked the bridge.
                                  , node :: atom() %% node() %% Node where the "asker" pid lives
                                  }).
+
+
+-record(channel_monitor_table_entry, { bridge_id :: binary() | ?MNESIA_SELECTOR
+                                     , pid :: pid()          | ?MNESIA_SELECTOR
+                                     , node :: node()        | ?MNESIA_SELECTOR
+                                     }).
