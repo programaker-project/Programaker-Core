@@ -66,7 +66,7 @@ websocket_info({ automate_channel_engine, add_listener, Msg={Pid, Key, SubKey}},
         {ok, UserId} ->
             {ok, ServicePortUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
             {UserChannels, NewState} = add_to_user_channels(UserId, {Key, SubKey}, State),
-            Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE">>
+            Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_NOTIFICATION">>
                                        , <<"value">> =>
                                              #{ <<"SIGNAL_LISTENERS">> =>
                                                     #{

@@ -91,7 +91,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                    automate_bridge_engine_messages_from_bridge,
                                    [ServicePortId]),
     case Unpacked of
-        AdviceMsg = #{ <<"type">> := <<"ADVICE">>, <<"message_id">> := MessageId } ->
+        AdviceMsg = #{ <<"type">> := <<"ADVICE_SET">>, <<"message_id">> := MessageId } ->
             AdviceTaken = apply_advice(AdviceMsg, ServicePortId),
             answer_advice_taken(AdviceTaken, MessageId, self());
 
@@ -313,7 +313,7 @@ parse_argument(#{ <<"type">> := Type
 answer_advice_taken(AdviceTaken, MessageId, Pid) ->
     Pid ! {{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken }.
 
-apply_advice(#{ <<"type">> := <<"ADVICE">>
+apply_advice(#{ <<"type">> := <<"ADVICE_SET">>
               , <<"value">> := Value
               }, BridgeId) ->
     lists:filtermap(fun ({Advice, Content}) ->
