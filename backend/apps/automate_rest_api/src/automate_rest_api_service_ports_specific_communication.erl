@@ -55,7 +55,7 @@ websocket_info({{ automate_service_port_engine, advice_taken}, MessageId, Advice
                                }),
     {reply, {binary, Serialized}, State};
 
-websocket_info({ automate_channel_engine, add_listener, Msg={ Pid, Key, SubKey}}, State=#state{service_port_id=ServicePortId}) ->
+websocket_info({ automate_channel_engine, add_listener, Msg={Pid, Key, SubKey}}, State=#state{service_port_id=ServicePortId}) ->
     io:fwrite("Add listener: ~p~n", [Msg]),
     case automate_bot_engine:get_user_from_pid(Pid) of
         {ok, UserId} ->

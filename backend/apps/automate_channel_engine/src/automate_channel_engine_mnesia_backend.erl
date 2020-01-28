@@ -92,7 +92,8 @@ add_listener_to_channel(ChannelId, Pid, Node, Key, SubKey) ->
             case get_monitors_on_channel(ChannelId) of
                 {ok, Monitors} ->
                     [ MonPid ! { automate_channel_engine, add_listener, { Pid, Key, SubKey } }
-                      || #monitors_table_entry{pid=MonPid} <- Monitors ]
+                      || #monitors_table_entry{pid=MonPid} <- Monitors ],
+                    ok
             end;
         _ ->
             Result

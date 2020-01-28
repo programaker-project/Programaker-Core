@@ -300,14 +300,14 @@ get_program_pid(ProgramId) ->
     end.
 
 
--spec get_user_from_pid(pid()) -> { ok, pid() } | {error, not_found}.
+-spec get_user_from_pid(pid()) -> { ok, binary() } | {error, not_found}.
 get_user_from_pid(Pid) ->
     %% Look for it as a program (not running thread)
     ProgMatchHead = #running_program_entry{ program_id = '$1'
-                                      , runner_pid = '$2'
-                                      , variables = '_'
-                                      , stats = '_'
-                                      },
+                                          , runner_pid = '$2'
+                                          , variables = '_'
+                                          , stats = '_'
+                                          },
     ProgGuard = {'==', '$2', Pid},
     ProgResultColumn = '$1',
     ProgMatcher = [{ProgMatchHead, [ProgGuard], [ProgResultColumn]}],
