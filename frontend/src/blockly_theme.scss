@@ -8,3 +8,18 @@
     height: max-content;
     overflow-x: auto;
  }
+
+.blocklyFlyout {
+    border-top: #AAA 1px solid;
+}
+
+.blocklyFlyout > .blocklyFlyoutBackground {
+    fill: #D9D9D9;
+    fill-opacity: .8;
+    // fill: #000;
+    // fill-opacity: .3;
+}
+
+.blocklyFlyoutLabel > .blocklyFlyoutLabelText {
+    fill: #16181E;
+}
