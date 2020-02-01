@@ -1,5 +1,10 @@
 // Fix blockly bottom drawer on small tallscreens
 .injectionDiv > .blocklyToolboxDiv {
-    width: max-content !important;
-    overflow: auto;
+    height: max-content;
 }
+
+.injectionDiv > .blocklyToolboxDiv > .scratchCategoryMenuHorizontal {
+    width: max-content !important;
+    height: max-content;
+    overflow-x: auto;
+ }
