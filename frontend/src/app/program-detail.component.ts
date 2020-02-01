@@ -249,6 +249,7 @@ export class ProgramDetailComponent implements OnInit {
 
             this.hide_block_menu();
             this.set_drawer_show_hide_flow();
+            this.reset_zoom();
         }, 0);
 
         this.patch_blockly();
@@ -292,6 +293,15 @@ export class ProgramDetailComponent implements OnInit {
         const window_height = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
         workspace.style.height = (window_height - header_end) + 'px';
+    }
+
+    reset_zoom() {
+        // Procedure taken from Scratch's ZoomReset button
+        // https://github.com/LLK/scratch-blocks/blob/4062a436c7111faf58385a0e16e30e3d7a5e6297/core/zoom_controls.js#L293
+        (this.workspace as any).markFocused();
+        (this.workspace as any).setScale((this.workspace as any).options.zoomOptions.startScale);
+        (this.workspace as any).scrollCenter();
+        Blockly.Touch.clearTouchIdentifier();  // Don't block future drags.
     }
 
     get_position(element: any): { x: number, y: number } {
@@ -351,7 +361,6 @@ export class ProgramDetailComponent implements OnInit {
     show_block_menu() {
         (this.workspace as any).getFlyout().setVisible(true);
     }
-
 
     show_workspace(workspace: HTMLElement) {
         workspace.style.visibility = 'visible';
