@@ -263,10 +263,10 @@ export class ProgramDetailComponent implements OnInit {
         // This blocks are not used (as of now) as the frontend does
         // not run the program and there's no point in showing
         // that in the background.
-        (Blockly as any).DataCategory.addShowVariable = (_1, _2) => { };
-        (Blockly as any).DataCategory.addHideVariable = (_1, _2) => { };
-        (Blockly as any).DataCategory.addShowList = (_1, _2) => { };
-        (Blockly as any).DataCategory.addHideList = (_1, _2) => { };
+        (Blockly as any).DataCategory.addShowVariable = (_1: any, _2: any) => { };
+        (Blockly as any).DataCategory.addHideVariable = (_1: any, _2: any) => { };
+        (Blockly as any).DataCategory.addShowList = (_1: any, _2: any) => { };
+        (Blockly as any).DataCategory.addHideList = (_1: any, _2: any) => { };
 
         // Patch blockly.hideChaff to ignore events where
         // resize is produced by a soft-keyboard element
