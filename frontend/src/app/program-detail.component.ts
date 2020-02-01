@@ -150,6 +150,20 @@ export class ProgramDetailComponent implements OnInit {
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
     }
 
+    patch_flyover_area_deletion() {
+        const orig = (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_;
+        (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_ = () => {
+            orig.bind(this.workspace)();
+
+            // Disable toolbox delete area use trashcan for deletion
+            const tbDelArea = (this.workspace as any).deleteAreaToolbox_;
+            tbDelArea.left = -100;
+            tbDelArea.top = -100;
+            tbDelArea.width = 0;
+            tbDelArea.height = 0;
+        }
+    }
+
     prepareWorkspace(): Promise<ToolboxController> {
         // For consistency and because it affects the positioning of the bottom drawer.
         this.reset_header_scroll();
@@ -233,11 +247,12 @@ export class ProgramDetailComponent implements OnInit {
         setTimeout(() => {
             this.show_workspace(workspaceElement);
 
-            this.add_show_hide_block_menu();
             this.hide_block_menu();
+            this.set_drawer_show_hide_flow();
         }, 0);
 
         this.patch_blockly();
+        this.patch_flyover_area_deletion();
     }
 
     /**
@@ -295,8 +310,8 @@ export class ProgramDetailComponent implements OnInit {
     reset_header_scroll() {
         document.getElementById('program-header').scrollTo(0, 0);
     }
-    add_show_hide_block_menu(): void {
 
+    set_drawer_show_hide_flow(): void {
         const component = this;
 
         // Add autoshow
@@ -323,32 +338,18 @@ export class ProgramDetailComponent implements OnInit {
         }
 
         this.workspace.addChangeListener((event) => {
-            if (event.type == Blockly.Events.BLOCK_CREATE) {
+            if (event.type === Blockly.Events.BLOCK_CREATE) {
                 component.hide_block_menu();
             }
         });
     }
 
     hide_block_menu() {
-        Array.from(document.getElementsByClassName('blocklyFlyout'))
-            .forEach(e => {
-                (e as HTMLElement).style.display = 'none';
-            });
-        Array.from(document.getElementsByClassName('blocklyFlyoutScrollbar'))
-            .forEach(e => {
-                (e as HTMLElement).style.display = 'none';
-            });
+        (this.workspace as any).getFlyout().setVisible(false);
     }
 
     show_block_menu() {
-        Array.from(document.getElementsByClassName('blocklyFlyout'))
-            .forEach(e => {
-                (e as HTMLElement).style.display = 'block';
-            });
-        Array.from(document.getElementsByClassName('blocklyFlyoutScrollbar'))
-            .forEach(e => {
-                (e as HTMLElement).style.display = 'block';
-            });
+        (this.workspace as any).getFlyout().setVisible(true);
     }
 
 
