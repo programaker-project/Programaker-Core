@@ -8,6 +8,8 @@
 
 #program-header {
     border-bottom: 1px solid #AAA;
+    overflow: auto;
+    height: 3em;
 }
 
 button#program-rename-button,

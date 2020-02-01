@@ -6,16 +6,16 @@
             <span class="program-title" *ngIf="program === undefined">Loading program...</span>
         </h1>
         <!-- Basic functions -->
-        <button id="program-rename-button" color="secondary"
-                *ngIf="program !== undefined"
-                (click)="renameProgram()" mat-button>
-            <mat-icon>edit</mat-icon> Rename
-        </button>
         <button id="program-start-button" color="primary"
                 *ngIf="program !== undefined"
                 (click)="sendProgram()" mat-button>
             <mat-icon class="action-icon">play_arrow</mat-icon>
             Start
+        </button>
+        <button id="program-rename-button" color="secondary"
+            *ngIf="program !== undefined"
+            (click)="renameProgram()" mat-button>
+            <mat-icon>edit</mat-icon> Rename
         </button>
         <button id="program-stop-button" color="warn"
                 *ngIf="program !== undefined"

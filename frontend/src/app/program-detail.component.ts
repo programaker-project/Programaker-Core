@@ -192,8 +192,8 @@ export class ProgramDetailComponent implements OnInit {
             rtl: rtl,
             scrollbars: true,
             toolbox: toolbox,
-            toolboxPosition: 'start',
-            horizontalLayout: false,
+            toolboxPosition: 'end',
+            horizontalLayout: true,
             sounds: soundsEnabled,
             zoom: {
                 controls: true,
@@ -229,6 +229,9 @@ export class ProgramDetailComponent implements OnInit {
         //  of the workspace to 'hidden' until the process has finished.
         setTimeout(() => {
             this.show_workspace(workspaceElement);
+
+            this.add_show_hide_block_menu();
+            this.hide_block_menu();
         }, 0);
 
         this.patch_blockly();
@@ -285,6 +288,63 @@ export class ProgramDetailComponent implements OnInit {
 
         return { x: xPosition, y: yPosition };
     }
+
+    add_show_hide_block_menu(): void {
+
+        const component = this;
+
+        // Add autoshow
+        const categories = document.getElementsByClassName('scratchCategoryMenuItem');
+        for (let i = 0; i < categories.length; i++) {
+            const category = categories.item(i);
+
+            const focus_category = (category as any).eventListeners()[0];
+
+            const move_and_show = (() => {
+                component.show_block_menu();
+
+                try {
+                    focus_category();
+                } catch(ex) {
+                    console.warn(ex);
+                }
+
+                return false;
+            });
+
+            (category as any).onclick = move_and_show;
+            (category as any).ontouchend = move_and_show;
+        }
+
+        this.workspace.addChangeListener((event) => {
+            if (event.type == Blockly.Events.BLOCK_CREATE) {
+                component.hide_block_menu();
+            }
+        });
+    }
+
+    hide_block_menu() {
+        Array.from(document.getElementsByClassName('blocklyFlyout'))
+            .forEach(e => {
+                (e as HTMLElement).style.display = 'none';
+            });
+        Array.from(document.getElementsByClassName('blocklyFlyoutScrollbar'))
+            .forEach(e => {
+                (e as HTMLElement).style.display = 'none';
+            });
+    }
+
+    show_block_menu() {
+        Array.from(document.getElementsByClassName('blocklyFlyout'))
+            .forEach(e => {
+                (e as HTMLElement).style.display = 'block';
+            });
+        Array.from(document.getElementsByClassName('blocklyFlyoutScrollbar'))
+            .forEach(e => {
+                (e as HTMLElement).style.display = 'block';
+            });
+    }
+
 
     show_workspace(workspace: HTMLElement) {
         workspace.style.visibility = 'visible';
