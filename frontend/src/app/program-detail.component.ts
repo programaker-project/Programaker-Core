@@ -151,6 +151,9 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     prepareWorkspace(): Promise<ToolboxController> {
+        // For consistency and because it affects the positioning of the bottom drawer.
+        this.reset_header_scroll();
+
         return new Toolbox(
             this.monitorService,
             this.customBlockService,
@@ -289,6 +292,9 @@ export class ProgramDetailComponent implements OnInit {
         return { x: xPosition, y: yPosition };
     }
 
+    reset_header_scroll() {
+        document.getElementById('program-header').scrollTo(0, 0);
+    }
     add_show_hide_block_menu(): void {
 
         const component = this;
