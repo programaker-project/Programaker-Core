@@ -1,7 +1,5 @@
 .program-name {
-    border: 1px solid #fc3100;
-    padding: 1ex;
-    border-radius: 5px;
+    border-bottom: 2px solid #fc3100;
     font-weight: bold;
 }
 

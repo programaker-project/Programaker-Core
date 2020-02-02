@@ -1,21 +1,21 @@
 <div class="program-pad">
     <div id="program-header">
-        <h1 class="program-name">
+        <h2 class="program-name">
             <a href (click)="goBack()"><mat-icon class="back-arrow">arrow_back_ios</mat-icon></a>
             <span class="program-title" *ngIf="program !== undefined">{{program.name}}</span>
             <span class="program-title" *ngIf="program === undefined">Loading program...</span>
-        </h1>
+        </h2>
         <!-- Basic functions -->
-        <button id="program-rename-button" color="secondary"
-                *ngIf="program !== undefined"
-                (click)="renameProgram()" mat-button>
-            <mat-icon>edit</mat-icon> Rename
-        </button>
         <button id="program-start-button" color="primary"
                 *ngIf="program !== undefined"
                 (click)="sendProgram()" mat-button>
             <mat-icon class="action-icon">play_arrow</mat-icon>
             Start
+        </button>
+        <button id="program-rename-button" color="secondary"
+            *ngIf="program !== undefined"
+            (click)="renameProgram()" mat-button>
+            <mat-icon>edit</mat-icon> Rename
         </button>
         <button id="program-stop-button" color="warn"
                 *ngIf="program !== undefined"

@@ -39,6 +39,7 @@ export class ProgramDetailComponent implements OnInit {
     programId: string;
 
     toolboxController: ToolboxController;
+    portraitMode: boolean;
 
     constructor(
         private monitorService: MonitorService,
@@ -62,6 +63,12 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        if (window && (window.innerWidth < window.innerHeight)) {
+            this.portraitMode = true;
+        } else {
+            this.portraitMode = false;
+        }
+
         progbar.track(new Promise((resolve) => {
             this.route.params
                 .switchMap((params: Params) => {
@@ -150,7 +157,24 @@ export class ProgramDetailComponent implements OnInit {
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
     }
 
+    patch_flyover_area_deletion() {
+        const orig = (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_;
+        (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_ = () => {
+            orig.bind(this.workspace)();
+
+            // Disable toolbox delete area use trashcan for deletion
+            const tbDelArea = (this.workspace as any).deleteAreaToolbox_;
+            tbDelArea.left = -100;
+            tbDelArea.top = -100;
+            tbDelArea.width = 0;
+            tbDelArea.height = 0;
+        }
+    }
+
     prepareWorkspace(): Promise<ToolboxController> {
+        // For consistency and because it affects the positioning of the bottom drawer.
+        this.reset_header_scroll();
+
         return new Toolbox(
             this.monitorService,
             this.customBlockService,
@@ -179,8 +203,11 @@ export class ProgramDetailComponent implements OnInit {
         window.onresize = () => this.calculate_size(workspaceElement);
         this.calculate_size(workspaceElement);
         const rtl = false;
-        const side = 'bottom';
         const soundsEnabled = false;
+        let toolbarLayout = { horizontal: false, position: 'start' };
+        if (this.portraitMode) {
+            toolbarLayout = { horizontal: true, position: 'end'};
+        }
 
         this.workspace = Blockly.inject('workspace', {
             comments: false,
@@ -192,8 +219,8 @@ export class ProgramDetailComponent implements OnInit {
             rtl: rtl,
             scrollbars: true,
             toolbox: toolbox,
-            toolboxPosition: 'start',
-            horizontalLayout: false,
+            toolboxPosition: toolbarLayout.position,
+            horizontalLayout: toolbarLayout.horizontal,
             sounds: soundsEnabled,
             zoom: {
                 controls: true,
@@ -229,9 +256,20 @@ export class ProgramDetailComponent implements OnInit {
         //  of the workspace to 'hidden' until the process has finished.
         setTimeout(() => {
             this.show_workspace(workspaceElement);
+
+            if (this.portraitMode){
+                this.hide_block_menu();
+                this.set_drawer_show_hide_flow();
+            }
+
+            this.reset_zoom();
         }, 0);
 
         this.patch_blockly();
+
+        if (this.portraitMode) {
+            this.patch_flyover_area_deletion();
+        }
     }
 
     /**
@@ -242,10 +280,10 @@ export class ProgramDetailComponent implements OnInit {
         // This blocks are not used (as of now) as the frontend does
         // not run the program and there's no point in showing
         // that in the background.
-        (Blockly as any).DataCategory.addShowVariable = (_1, _2) => { };
-        (Blockly as any).DataCategory.addHideVariable = (_1, _2) => { };
-        (Blockly as any).DataCategory.addShowList = (_1, _2) => { };
-        (Blockly as any).DataCategory.addHideList = (_1, _2) => { };
+        (Blockly as any).DataCategory.addShowVariable = (_1: any, _2: any) => { };
+        (Blockly as any).DataCategory.addHideVariable = (_1: any, _2: any) => { };
+        (Blockly as any).DataCategory.addShowList = (_1: any, _2: any) => { };
+        (Blockly as any).DataCategory.addHideList = (_1: any, _2: any) => { };
 
         // Patch blockly.hideChaff to ignore events where
         // resize is produced by a soft-keyboard element
@@ -273,6 +311,15 @@ export class ProgramDetailComponent implements OnInit {
         workspace.style.height = (window_height - header_end) + 'px';
     }
 
+    reset_zoom() {
+        // Procedure taken from Scratch's ZoomReset button
+        // https://github.com/LLK/scratch-blocks/blob/4062a436c7111faf58385a0e16e30e3d7a5e6297/core/zoom_controls.js#L293
+        (this.workspace as any).markFocused();
+        (this.workspace as any).setScale((this.workspace as any).options.zoomOptions.startScale);
+        (this.workspace as any).scrollCenter();
+        Blockly.Touch.clearTouchIdentifier();  // Don't block future drags.
+    }
+
     get_position(element: any): { x: number, y: number } {
         let xPosition = 0;
         let yPosition = 0;
@@ -284,6 +331,51 @@ export class ProgramDetailComponent implements OnInit {
         }
 
         return { x: xPosition, y: yPosition };
+    }
+
+    reset_header_scroll() {
+        document.getElementById('program-header').scrollTo(0, 0);
+    }
+
+    set_drawer_show_hide_flow(): void {
+        const component = this;
+
+        // Add autoshow
+        const categories = document.getElementsByClassName('scratchCategoryMenuItem');
+        for (let i = 0; i < categories.length; i++) {
+            const category = categories.item(i);
+
+            const focus_category = (category as any).eventListeners()[0];
+
+            const move_and_show = (() => {
+                component.show_block_menu();
+
+                try {
+                    focus_category();
+                } catch(ex) {
+                    console.warn(ex);
+                }
+
+                return false;
+            });
+
+            (category as any).onclick = move_and_show;
+            (category as any).ontouchend = move_and_show;
+        }
+
+        this.workspace.addChangeListener((event) => {
+            if (event.type === Blockly.Events.BLOCK_CREATE) {
+                component.hide_block_menu();
+            }
+        });
+    }
+
+    hide_block_menu() {
+        (this.workspace as any).getFlyout().setVisible(false);
+    }
+
+    show_block_menu() {
+        (this.workspace as any).getFlyout().setVisible(true);
     }
 
     show_workspace(workspace: HTMLElement) {

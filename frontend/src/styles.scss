@@ -1,5 +1,6 @@
 /* You can add global styles to this file, and also import other style files */
 @import 'material_theme';
+@import 'blockly_theme';
 
 html, body, my-app, mat-sidenav-container, .app-content {
   margin: 0;
@@ -9,6 +10,7 @@ html, body, my-app, mat-sidenav-container, .app-content {
 
 body {
     background-color: #fafafa;
+    overflow: hidden;
 }
 
 .app-content {
