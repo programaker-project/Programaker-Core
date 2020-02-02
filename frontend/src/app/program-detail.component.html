@@ -1,10 +1,10 @@
 <div class="program-pad">
     <div id="program-header">
-        <h1 class="program-name">
+        <h2 class="program-name">
             <a href (click)="goBack()"><mat-icon class="back-arrow">arrow_back_ios</mat-icon></a>
             <span class="program-title" *ngIf="program !== undefined">{{program.name}}</span>
             <span class="program-title" *ngIf="program === undefined">Loading program...</span>
-        </h1>
+        </h2>
         <!-- Basic functions -->
         <button id="program-start-button" color="primary"
                 *ngIf="program !== undefined"
