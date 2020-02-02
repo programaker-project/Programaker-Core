@@ -40,6 +40,7 @@ export class ProgramDetailComponent implements OnInit {
 
     toolboxController: ToolboxController;
     portraitMode: boolean;
+    smallScreen: boolean;
 
     constructor(
         private monitorService: MonitorService,
@@ -68,6 +69,7 @@ export class ProgramDetailComponent implements OnInit {
         } else {
             this.portraitMode = false;
         }
+        this.smallScreen = window.innerWidth < 750;
 
         progbar.track(new Promise((resolve) => {
             this.route.params
@@ -257,7 +259,7 @@ export class ProgramDetailComponent implements OnInit {
         setTimeout(() => {
             this.show_workspace(workspaceElement);
 
-            if (this.portraitMode){
+            if (this.portraitMode || this.smallScreen){
                 this.hide_block_menu();
                 this.set_drawer_show_hide_flow();
             }
@@ -267,7 +269,7 @@ export class ProgramDetailComponent implements OnInit {
 
         this.patch_blockly();
 
-        if (this.portraitMode) {
+        if (this.portraitMode || this.smallScreen) {
             this.patch_flyover_area_deletion();
         }
     }
