@@ -39,6 +39,7 @@ export class ProgramDetailComponent implements OnInit {
     programId: string;
 
     toolboxController: ToolboxController;
+    portraitMode: boolean;
 
     constructor(
         private monitorService: MonitorService,
@@ -62,6 +63,12 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        if (window && (window.innerWidth < window.innerHeight)) {
+            this.portraitMode = true;
+        } else {
+            this.portraitMode = false;
+        }
+
         progbar.track(new Promise((resolve) => {
             this.route.params
                 .switchMap((params: Params) => {
@@ -196,8 +203,11 @@ export class ProgramDetailComponent implements OnInit {
         window.onresize = () => this.calculate_size(workspaceElement);
         this.calculate_size(workspaceElement);
         const rtl = false;
-        const side = 'bottom';
         const soundsEnabled = false;
+        let toolbarLayout = { horizontal: false, position: 'start' };
+        if (this.portraitMode) {
+            toolbarLayout = { horizontal: true, position: 'end'};
+        }
 
         this.workspace = Blockly.inject('workspace', {
             comments: false,
@@ -209,8 +219,8 @@ export class ProgramDetailComponent implements OnInit {
             rtl: rtl,
             scrollbars: true,
             toolbox: toolbox,
-            toolboxPosition: 'end',
-            horizontalLayout: true,
+            toolboxPosition: toolbarLayout.position,
+            horizontalLayout: toolbarLayout.horizontal,
             sounds: soundsEnabled,
             zoom: {
                 controls: true,
@@ -247,13 +257,19 @@ export class ProgramDetailComponent implements OnInit {
         setTimeout(() => {
             this.show_workspace(workspaceElement);
 
-            this.hide_block_menu();
-            this.set_drawer_show_hide_flow();
+            if (this.portraitMode){
+                this.hide_block_menu();
+                this.set_drawer_show_hide_flow();
+            }
+
             this.reset_zoom();
         }, 0);
 
         this.patch_blockly();
-        this.patch_flyover_area_deletion();
+
+        if (this.portraitMode) {
+            this.patch_flyover_area_deletion();
+        }
     }
 
     /**
