@@ -16,10 +16,12 @@
 .blocklyFlyout > .blocklyFlyoutBackground {
     fill: #D9D9D9;
     fill-opacity: .8;
-    // fill: #000;
-    // fill-opacity: .3;
 }
 
 .blocklyFlyoutLabel > .blocklyFlyoutLabelText {
     fill: #16181E;
+}
+
+.blocklyWorkspace > .blocklyMainBackground {
+    fill: #f9f9f9 !important;  // Needed for Safari to have a non-black background
 }
