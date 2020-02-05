@@ -19,7 +19,7 @@ export class AppComponent {
     sessionSubscription: Subscription;
     username: string;
     loggedIn: boolean;
-    title = 'Plaza';
+    title = 'PrograMaker';
 
     constructor(
         private router: Router,
