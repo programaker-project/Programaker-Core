@@ -1,7 +1,12 @@
 FROM plazaproject/ci-base-frontend:f11105a784435cb05241da6ee0b3c410bc39870c as builder
+
+# Prepare dependencies
 ADD . /app
 RUN npm install . && make
-RUN npm run build-prod
+
+# Build application
+ARG BUILD_COMMAND=build-prod
+RUN npm run ${BUILD_COMMAND}
 
 # Copy final app to runner
 FROM nginx:alpine as runner
