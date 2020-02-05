@@ -35,7 +35,6 @@ import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogCompo
 import { SetProgramTagsDialogComponent } from './program_tags/SetProgramTagsDialogComponent';
 
 // Services
-import { AddServicesComponent } from './add-services.component';
 import { ServicesComponent } from './services.component';
 import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
 
@@ -70,7 +69,6 @@ import 'hammerjs';
         DashboardComponent,
         ProgramsComponent,
         ProgramDetailComponent,
-        AddServicesComponent,
         BridgeIndexComponent,
         BridgeAddComponent,
         ServicesComponent,
@@ -123,7 +121,6 @@ import 'hammerjs';
         AppRoutingModule,
     ],
     exports: [
-        AddServicesComponent,
         BridgeAddComponent,
     ],
     entryComponents: [

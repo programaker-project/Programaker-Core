@@ -22,6 +22,23 @@
     font-size: larger;
 }
 
+#contact-mail-call {
+    text-align: center;
+    margin-top: 4em;
+    margin-bottom: 4em;
+    word-break: keep-all;
+}
+
+#contact-mail-call > .contact-mail {
+    border-bottom: #ffa500 2px solid;
+    font-weight: bold;
+    color: #0000ee;
+}
+
+#contact-mail-call > .contact-mail:hover {
+    text-decoration: none;
+}
+
 /* Call to action */
 .call-to-action-button-container {
     text-align: center;
@@ -37,7 +54,7 @@
 }
 
 /* Separators */
-.project-name-offer-separator, .before-blocks-example-separator, .before-inspirations {
+.project-name-offer-separator, .before-blocks-example-separator, .before-inspirations, .before-mail-call {
     margin: 0 auto;
     width: 20ex;
     border-bottom: 0.25ex solid #444;

@@ -61,6 +61,52 @@ tag-frontend-branch:
     - develop
     - master
 
+## Frontend
+build-programaker-frontend:
+  stage: build
+  before_script:
+    - mkdir -p tmp_docker_images/ || true
+    - cd frontend
+  artifacts:
+    paths:
+      - tmp_docker_images/
+    expire_in: 24h # No need to keep it around
+  script:
+    - docker build --build-arg BUILD_COMMAND=build-programaker -t $DOCKER_IMAGE_FRONTEND  -f scripts/ci-partial.dockerfile .
+    - docker save $DOCKER_IMAGE_FRONTEND -o ../tmp_docker_images/programaker-frontend.tar
+
+# On frontend there's NO NEED for optimizing the image
+# as it's minified by default (while there are no tests)
+push-programaker-frontend:
+  stage: push-commit
+  dependencies:
+    - build-programaker-frontend
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/programaker-frontend.tar
+    - cd frontend
+  script:
+    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/"$CI_PROJECT_PATH"/programaker-frontend:$CI_COMMIT_SHA
+    - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/programaker-frontend:$CI_COMMIT_SHA
+  only:
+    - develop
+    - master
+
+tag-programaker-frontend-branch:
+  stage: push-branch
+  dependencies:
+    - build-frontend
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/programaker-frontend.tar
+    - cd frontend
+  script:
+    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/"$CI_PROJECT_PATH"/programaker-frontend:$CI_COMMIT_REF_NAME
+    - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/programaker-frontend:$CI_COMMIT_REF_NAME
+  only:
+    - develop
+    - master
+
 ## Backend
 build-backend:
   stage: build

@@ -4,6 +4,7 @@
 // The list of which env maps to which file can be found in `.angular-cli.json`.
 
 export const environment = {
+    contact_mail: 'configure-this@on-environment.com',
     production: false,
     ApiHost: 'http://localhost:8888',
   };
