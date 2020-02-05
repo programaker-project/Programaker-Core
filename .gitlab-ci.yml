@@ -95,7 +95,7 @@ push-programaker-frontend:
 tag-programaker-frontend-branch:
   stage: push-branch
   dependencies:
-    - build-frontend
+    - build-programaker-frontend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images/programaker-frontend.tar
