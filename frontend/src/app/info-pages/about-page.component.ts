@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { SessionService } from '../session.service';
+import { environment } from '../../environments/environment';
 import 'rxjs/add/operator/switchMap';
 
 @Component({
@@ -15,6 +16,8 @@ import 'rxjs/add/operator/switchMap';
 })
 
 export class AboutPageComponent implements OnInit {
+    environment: { [key: string]: any };
+
     constructor (
         private router: Router,
     ) {
@@ -22,6 +25,7 @@ export class AboutPageComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        this.environment = environment;
     }
 
     followCallToAction() {

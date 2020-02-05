@@ -36,6 +36,12 @@
     </div>
 </div>
 
+<div class="before-mail-call" *ngIf="environment.contact_mail"></div>
+
+<div id="contact-mail-call" *ngIf="environment.contact_mail">
+    Got any doubt? Ideas? Proposals?
+    Contact us on <a class="contact-mail" href="mailto:{{environment.contact_mail}}">{{environment.contact_mail}}</a>
+</div>
 
 <div class="before-inspirations"></div>
 
