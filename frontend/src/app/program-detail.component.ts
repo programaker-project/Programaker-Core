@@ -132,6 +132,7 @@ export class ProgramDetailComponent implements OnInit {
 
                 if (next_blocks.length == 0) {
                     child.removeChild(next);
+                    continue;
                 }
             }
 
