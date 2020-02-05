@@ -2,7 +2,6 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { BridgeIndexComponent } from './bridges/index.component';
-import { AddServicesComponent } from './add-services.component';
 import { ServicesComponent } from './services.component';
 
 import { BridgeAddComponent } from './bridges/add.component';
@@ -34,7 +33,6 @@ const routes: Routes = [
 
     // Services
     { path: 'services', component: ServicesComponent },
-    { path: 'services/add', component: AddServicesComponent },
 
     // Bridges
     { path: 'bridges', component: BridgeIndexComponent },
