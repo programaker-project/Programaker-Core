@@ -3,6 +3,14 @@
                           %% Commenting the following line removes the authentication on /metrics
                         , { metrics_secret, <<"@INSERT HERE RANDOM SECRET FOR METRICS@">> }
                         ]}
+
+   %% To support mail, replace 'none' with the endpoint of your mail gateway API
+   %% Eg: "http://plaza-mail-gateway:80/mail/send"
+,  { automate_mail, [ { mail_gateway, none }
+                    %% %% Below, options that can be used if a 'mail_gateway' is configured.
+                    %% , { registration_check_sender, <<"PrograMaker Team<contact@programaker.com>">> }
+                    %% , { platform_name, <<"PrograMaker">> }
+                    ] }
 %% If you uncomment this you can add elastic search logs and exclude some channels.
 %%,  { automate_logging, [ { endpoint, [ #{ "type" => elasticsearch
 %%                                        , "url" => "@INSERT HERE YOUR ES SERVER URL" 
