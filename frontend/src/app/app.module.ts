@@ -57,6 +57,8 @@ import { AboutPageComponent } from './info-pages/about-page.component';
 
 import { AppRoutingModule } from './app-routing.module';
 import { LoginFormComponent } from './login-form/login-form.component';
+import { ResetPasswordStartComponent } from './login-form/reset-password-start.component';
+import { ResetPasswordUpdatePasswordComponent } from './login-form/reset-password-update-password.component';
 import { RegisterFormComponent } from './login-form/register-form.component';
 import { WaitForMailVerificationComponent } from './login-form/register-wait-for-mail-verification.component';
 import { VerifyCodeComponent } from './login-form/verify-code.component';
@@ -75,6 +77,8 @@ import 'hammerjs';
         BridgeAddComponent,
         ServicesComponent,
         LoginFormComponent,
+        ResetPasswordStartComponent,
+        ResetPasswordUpdatePasswordComponent,
         RegisterFormComponent,
         WaitForMailVerificationComponent,
         VerifyCodeComponent,

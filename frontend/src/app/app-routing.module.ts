@@ -12,6 +12,8 @@ import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
 
 import { LoginFormComponent } from './login-form/login-form.component';
+import { ResetPasswordStartComponent } from './login-form/reset-password-start.component';
+import { ResetPasswordUpdatePasswordComponent } from './login-form/reset-password-update-password.component';
 import { RegisterFormComponent } from './login-form/register-form.component';
 import { WaitForMailVerificationComponent } from './login-form/register-wait-for-mail-verification.component';
 import { VerifyCodeComponent } from './login-form/verify-code.component';
@@ -24,6 +26,8 @@ const routes: Routes = [
     { path: 'about', component: AboutPageComponent },
 
     { path: 'login', component: LoginFormComponent },
+    { path: 'login/reset', component: ResetPasswordStartComponent },
+    { path: 'login/reset/verify/:reset_verification_code', component: ResetPasswordUpdatePasswordComponent },
     { path: 'register', component: RegisterFormComponent },
     { path: 'register/wait_for_mail_verification', component: WaitForMailVerificationComponent },
     { path: 'register/verify/:verification_code', component: VerifyCodeComponent },

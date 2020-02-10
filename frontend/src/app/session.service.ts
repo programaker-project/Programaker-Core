@@ -16,6 +16,9 @@ export class SessionService {
     loginUrl = API.ApiRoot + '/sessions/login';
     registerUrl = API.ApiRoot + '/sessions/register';
     registerValidateUrl = API.ApiRoot + '/sessions/register/verify';
+    resetPasswordUrl = API.ApiRoot + '/sessions/login/reset';
+    validatePasswordUpdateUrl = API.ApiRoot + '/sessions/login/reset/validate';
+    passwordUpdateUrl = API.ApiRoot + '/sessions/login/reset/update';
 
     constructor(
         private http: HttpClient,
@@ -174,6 +177,55 @@ export class SessionService {
                                                              (response as any).session.user_id);
                                  SessionService.EstablishedSession = session;
                                  return session;
+                             })
+                             .toPromise());
+    }
+
+    requestResetPassword(email: string): Promise<void> {
+        const headers = this.addJsonContentType(new HttpHeaders());
+
+        return progbar.track(this.http
+                             .post(
+                                 this.resetPasswordUrl,
+                                 JSON.stringify({
+                                     email: email
+                                 }),
+                                 { headers })
+                             .map(_response => {
+                                 return;
+                             })
+                             .toPromise());
+    }
+
+    validatePasswordUpdateCode(verificationCode: string): Promise<void> {
+        const headers = this.addJsonContentType(new HttpHeaders());
+
+        return progbar.track(this.http
+                             .post(
+                                 this.validatePasswordUpdateUrl,
+                                 JSON.stringify({
+                                     verification_code: verificationCode
+                                 }),
+                                 { headers })
+                             .map(_response => {
+                                 return;
+                             })
+                             .toPromise());
+    }
+
+    resetPasswordUpdate(verificationCode: string, password: string): Promise<void> {
+        const headers = this.addJsonContentType(new HttpHeaders());
+
+        return progbar.track(this.http
+                             .post(
+                                 this.passwordUpdateUrl,
+                                 JSON.stringify({
+                                     verification_code: verificationCode,
+                                     password: password,
+                                 }),
+                                 { headers })
+                             .map(_response => {
+                                 return;
                              })
                              .toPromise());
     }

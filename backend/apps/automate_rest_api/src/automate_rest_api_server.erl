@@ -24,6 +24,9 @@ start_link() ->
                         , {"/api/v0/sessions/register/verify", automate_rest_api_sessions_register_verify, []}
                         , {"/api/v0/sessions/check", automate_rest_api_sessions_check, []}
                         , {"/api/v0/sessions/login", automate_rest_api_sessions_login, []}
+                        , {"/api/v0/sessions/login/reset", automate_rest_api_sessions_reset_password, []}
+                        , {"/api/v0/sessions/login/reset/validate", automate_rest_api_sessions_reset_password_validate, []}
+                        , {"/api/v0/sessions/login/reset/update", automate_rest_api_sessions_reset_password_update, []}
 
                         , {"/api/v0/ping", automate_rest_api_ping, []}
 

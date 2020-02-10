@@ -10,6 +10,8 @@
                     %% %% Below, options that can be used if a 'mail_gateway' is configured.
                     %% , { registration_verification_url_pattern, "https://programaker.com/register/verify/~s" }
                     %% , { registration_verification_sender, <<"PrograMaker Team<contact@programaker.com>">> }
+                    %% , { password_reset_verification_url_pattern, "https://programaker.com/login/reset/verify/~s" }
+                    %% , { password_reset_verification_sender, <<"PrograMaker Team<contact@programaker.com>">> }
                     %% , { platform_name, <<"PrograMaker">> }
                     ] }
 %% If you uncomment this you can add elastic search logs and exclude some channels.
