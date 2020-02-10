@@ -12,3 +12,5 @@
 
 -define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
 -define(CUSTOM_SIGNALS_TABLE, automate_custom_signals_table).
+
+-define(USER_VERIFICATION_TABLE, automate_user_verification_table).

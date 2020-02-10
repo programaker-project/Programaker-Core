@@ -21,7 +21,7 @@ export class LoginFormComponent implements OnInit {
         this.sessionService.getSession()
             .then(session => {
                 this.session = session;
-                if (session.active) {
+                if (session !== null && session.active) {
                     this.router.navigate(['/']);
                 }
             });
@@ -58,7 +58,20 @@ export class LoginFormComponent implements OnInit {
         })
         .catch(reason => {
             this.errorMessage = 'Login error';
-            if (reason.status === 400) {
+
+            if (reason.error && reason.error.error) {
+                if (reason.error.error.type === "user_not_ready") {
+                    if (reason.error.error.subtype === "mail_not_verified") {
+                        this.errorMessage += ": User not ready, please check the verification mail";
+                    }
+                    else {
+                        this.errorMessage += ": User not available";
+                    }
+                }
+                else {
+                    this.errorMessage += '. Error type: ' + reason.error.error.type;
+                }
+            } else if (reason.status === 400) {
                 this.errorMessage += ': Invalid user/password'
             }
             console.log('Error on login:', reason);

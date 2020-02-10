@@ -198,7 +198,7 @@ create_random_user() ->
     Password = undefined,
     Email = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
 
-    {ok, UserId} = automate_storage:create_user(Username, Password, Email),
+    {ok, UserId} = automate_storage:create_user(Username, Password, Email, ready),
     {Username, UserId}.
 
 wait_for_program_alive(Pid, 0, SleepTime) ->

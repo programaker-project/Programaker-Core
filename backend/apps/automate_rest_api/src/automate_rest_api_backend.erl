@@ -2,7 +2,11 @@
 
 %% API exports
 -export([ register_user/1
+        , verify_registration_with_code/1
+
         , login_user/1
+        , get_user/1
+        , generate_token_for_user/1
         , is_valid_token/1
         , is_valid_token_uid/1
         , create_monitor/2
@@ -50,19 +54,19 @@
 %%====================================================================
 %% API functions
 %%====================================================================
-register_user(#registration_rec{ email=Email
-                               , password=Password
-                               , username=Username
-                               }) ->
-    case automate_storage:create_user(Username, Password, Email) of
-        { ok, UserId } ->
-            Url = generate_url_from_userid(UserId),
-            io:format("Url: ~p~n", [Url]),
-            { ok, Url };
-        { error, Reason } ->
-            { error, Reason }
+-spec register_user(#registration_rec{}) -> {ok, continue | wait_for_mail_verification } | {error, _}.
+register_user(Reg) ->
+    case automate_mail:is_enabled() of
+        false ->
+            register_user_instantly(Reg);
+        true ->
+            register_user_require_validation(Reg)
     end.
 
+verify_registration_with_code(RegistrationCode) ->
+    automate_storage:verify_registration_with_code(RegistrationCode).
+
+-spec login_user(#login_rec{}) -> {ok, {binary(), binary()}} | {error, {_, _} | atom() | binary()}.
 login_user(#login_rec{ password=Password
                      , username=Username
                      }) ->
@@ -72,6 +76,12 @@ login_user(#login_rec{ password=Password
         { error, Reason } ->
             { error, Reason }
     end.
+
+get_user(UserId) ->
+    automate_storage:get_user(UserId).
+
+generate_token_for_user(UserId) ->
+    automate_storage:generate_token_for_user(UserId).
 
 is_valid_token(Token) when is_binary(Token) ->
     case automate_storage:get_session_username(Token) of
@@ -317,6 +327,41 @@ get_template(UserId, TemplateId) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+register_user_instantly(#registration_rec{ email=Email
+                                         , password=Password
+                                         , username=Username
+                                         }) ->
+    case automate_storage:create_user(Username, Password, Email, ready) of
+        { ok, _UserId } ->
+            { ok, continue };
+        { error, Reason } ->
+            { error, Reason }
+    end.
+
+register_user_require_validation(#registration_rec{ email=Email
+                                                  , password=Password
+                                                  , username=Username
+                                                  }) ->
+    case automate_storage:create_user(Username, Password, Email, mail_not_verified) of
+        { ok, UserId } ->
+            case automate_storage:create_mail_verification_entry(UserId) of
+                {ok, MailVerificationCode} ->
+                     case automate_mail:send_registration_verification(Username, Email, MailVerificationCode) of
+                         { ok, Url } ->
+                             io:format("Url: ~p~n", [Url]),
+                             { ok, wait_for_mail_verification };
+                         {error, Reason} ->
+                             automate_storage:delete_user(UserId),
+                             {error, Reason}
+                     end;
+                {error, Reason} ->
+                    automate_storage:delete_user(UserId),
+                    {error, Reason}
+            end;
+        { error, Reason } ->
+            { error, Reason }
+    end.
+
 get_services_metadata(Services, Username) ->
     lists:filter(fun (V) ->
                          V =/= none
@@ -344,9 +389,6 @@ get_service_metadata(Id
 
 generate_url_for_service_id(Username, ServiceId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/id/~s", [Username, ServiceId]))).
-
-generate_url_from_userid(UserId) ->
-    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s", [UserId]))).
 
 %% *TODO* generate more interesting names.
 generate_program_name() ->

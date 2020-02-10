@@ -1,10 +1,19 @@
 -include("../../automate_common_types/src/types.hrl").
 
+-type user_status() :: ready | mail_not_verified.
+
 -record(registered_user_entry, { id
                                , username
                                , password
                                , email
+                               , status :: user_status() | ?MNESIA_SELECTOR
                                }).
+
+-type verification_type() :: registration_mail_verification.
+-record(user_verification_entry, { verification_id :: binary() | ?MNESIA_SELECTOR
+                                 , user_id :: binary() | ?MNESIA_SELECTOR
+                                 , verification_type :: verification_type() | ?MNESIA_SELECTOR
+                                 }).
 
 -record(user_session_entry, { session_id
                             , user_id

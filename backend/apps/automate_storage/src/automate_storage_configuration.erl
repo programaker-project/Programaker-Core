@@ -138,5 +138,45 @@ get_versioning(Nodes) ->
                                                             automate_configuration:get_table_wait_time())
                         end
                 }
+
+                %% Add *status* to user table.
+                %%
+                %% If a user "comes" from an earlier version the status is 'ready'.
+              , #database_version_transformation
+                { id=4
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  ?REGISTERED_USERS_TABLE,
+                                  fun({registered_user_entry, Id, Username, Password, Email }) ->
+                                          %% Replicate the entry. Set status to ready.
+                                          {registered_user_entry, Id, Username, Password, Email,
+                                           ready }
+                                  end,
+                                  [ id, username, password, email, status ],
+                                  registered_user_entry
+                                 )
+                        end
+                }
+
+                %% Add *status* to user table.
+                %%
+                %% If a user "comes" from an earlier version the status is 'ready'.
+              , #database_version_transformation
+                { id=5
+                , apply=fun() ->
+                                automate_storage_versioning:create_database(
+                                  #database_version_data
+                                  { database_name=?USER_VERIFICATION_TABLE
+                                  , records=[ id
+                                            , user_id
+                                            , verification_type
+                                            ]
+                                  , record_name=user_verification_entry
+                                  }, Nodes),
+
+                                ok = mnesia:wait_for_tables([ ?USER_VERIFICATION_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
+                        end
+                }
               ]
         }.

@@ -79,8 +79,9 @@ mat-card.module {
     text-align: center;
 }
 
-app-my-login-form, app-my-register-form, bridge-add-component {
-    padding: 1ex;
+app-my-login-form, app-my-register-form, bridge-add-component,
+app-my-register-wait-for-mail-verification, app-my-verify-code {
+    margin: 1ex;
 }
 
 a[role="button"], a[role="button"]:not([href]), a[role="button"]:not([href]):hover, a[role="button"]:hover {
@@ -91,6 +92,12 @@ a[role="button"], a[role="button"]:not([href]), a[role="button"]:not([href]):hov
 .login-form {
     margin-top: 2em;
     max-width: 40em;
+}
+
+.waiting-message-block, .verify-code-block {
+    margin-top: 2em;
+    max-width: 40em;
+    text-align: center;
 }
 
 .center-block {

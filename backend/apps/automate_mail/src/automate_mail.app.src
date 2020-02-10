@@ -1,0 +1,18 @@
+{application, automate_mail,
+ [ {description, "Auto-mate mail dispatcher."}
+ , {vsn, "0.0.0"}
+ , {registered, []}
+ , {mod, { automate_mail_app, [] }}
+ , {applications, [ kernel
+                  , stdlib
+                  , inets
+                  , jiffy
+                  ]}
+
+ , {env, [ {mail_gateway, none} ]}
+ , {modules, []}
+
+ , {maintaniners, []}
+ , {licenses, ["Apache 2.0"]}
+ , {links, []}
+ ]}.

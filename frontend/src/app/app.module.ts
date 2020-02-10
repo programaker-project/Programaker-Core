@@ -18,6 +18,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBarModule } from '@angular/material/snack-bar'
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -57,7 +58,8 @@ import { AboutPageComponent } from './info-pages/about-page.component';
 import { AppRoutingModule } from './app-routing.module';
 import { LoginFormComponent } from './login-form/login-form.component';
 import { RegisterFormComponent } from './login-form/register-form.component';
-
+import { WaitForMailVerificationComponent } from './login-form/register-wait-for-mail-verification.component';
+import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
@@ -74,6 +76,8 @@ import 'hammerjs';
         ServicesComponent,
         LoginFormComponent,
         RegisterFormComponent,
+        WaitForMailVerificationComponent,
+        VerifyCodeComponent,
 
         // Info pages
         HomeRedirectComponent,
@@ -109,6 +113,7 @@ import 'hammerjs';
         MatTabsModule,
         MatChipsModule,
         MatSnackBarModule,
+        MatProgressSpinnerModule,
 
         BrowserAnimationsModule,
 
