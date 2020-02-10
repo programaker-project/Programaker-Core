@@ -16,6 +16,10 @@
 
         , create_mail_verification_entry/1
         , verify_registration_with_code/1
+        , create_recovery_verification/1
+        , get_user_from_mail_address/1
+        , check_password_reset_verification_code/1
+        , reset_password/2
 
         , create_program/2
         , get_program/2
@@ -252,6 +256,68 @@ verify_registration_with_code(RegistrationCode) ->
         { atomic, {error, {status_mismatch, StatusFound}} } ->
             io:fwrite("[Storage] Status mismatch. Expected ~p, found: ~p~n",
                       [mail_not_verified, StatusFound]),
+            {error, status_mismatch};
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, Reason}
+    end.
+
+create_recovery_verification(UserId) ->
+    create_verification_entry(UserId, password_reset_verification).
+
+get_user_from_mail_address(Email) ->
+    MatchHead = #registered_user_entry{ id='_'
+                                      , username='_'
+                                      , password='_'
+                                      , email='$1'
+                                      , status='_'
+                                      },
+    Guard = {'==', '$1', Email},
+    ResultColumn = '$_',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    Transaction = fun() ->
+                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
+                              [User] ->
+                                  {ok, User};
+                              [] ->
+                                  {error, no_user_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason}
+    end.
+
+-spec reset_password(binary(), binary()) -> ok | {error, _}.
+reset_password(VerificationCode, Password) ->
+    HashedPassword = cipher_password(Password),
+    Transaction = fun() ->
+                          case mnesia:read(?USER_VERIFICATION_TABLE, VerificationCode) of
+                              [] ->
+                                  {error, not_found};
+                              [#user_verification_entry{ user_id=UserId, verification_type=password_reset_verification }] ->
+                                  case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
+                                      [] ->
+                                          {error, user_not_found};
+                                      [User] ->
+                                          ok = mnesia:write(?REGISTERED_USERS_TABLE,
+                                                            User#registered_user_entry{ password=HashedPassword },
+                                                            write),
+                                          ok = mnesia:delete({?USER_VERIFICATION_TABLE, VerificationCode})
+                                  end;
+                              [#user_verification_entry{ verification_type=OtherVerificationType }] ->
+                                  {error, {invalid_verification_type, OtherVerificationType}}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, {error, {invalid_verification_type, OtherVerificationType}} } ->
+            io:fwrite("[Storage] Expected type ~p on verification, found: ~p~n",
+                      [password_reset_verification, OtherVerificationType]),
             {error, invalid_verification_type};
         { atomic, Result } ->
             Result;
@@ -259,6 +325,10 @@ verify_registration_with_code(RegistrationCode) ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, Reason}
     end.
+
+-spec check_password_reset_verification_code(binary()) -> ok | {error, _}.
+check_password_reset_verification_code(VerificationCode) ->
+    check_verification_code(VerificationCode, password_reset_verification).
 
 create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
@@ -821,6 +891,29 @@ create_verification_entry(UserId, VerificationType) ->
     case mnesia:transaction(Transaction) of
         { atomic, ok } ->
             {ok, VerificationId};
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, Reason}
+    end.
+
+check_verification_code(VerificationCode, VerificationType) ->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_VERIFICATION_TABLE, VerificationCode) of
+                              [] ->
+                                  {error, not_found};
+                              [#user_verification_entry{ verification_type=VerificationType }] ->
+                                  ok;
+                              [#user_verification_entry{ verification_type=OtherVerificationType }] ->
+                                  {error, {invalid_verification_type, OtherVerificationType}}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, {error, {invalid_verification_type, OtherVerificationType}} } ->
+            io:fwrite("[Storage] Expected type ~p on verification, found: ~p~n",
+                      [VerificationType, OtherVerificationType]),
+            {error, invalid_verification_type};
+        { atomic, Result } ->
+            Result;
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, Reason}

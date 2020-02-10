@@ -50,6 +50,10 @@ export class LoginFormComponent implements OnInit {
         this.router.navigate(['/register']);
     }
 
+    goResetPassword(): void {
+        this.router.navigate(['/login/reset']);
+    }
+
     doLogIn(): void {
         this.sessionService.login(this.username, this.password).then(success => {
             if (success) {

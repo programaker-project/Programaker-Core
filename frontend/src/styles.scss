@@ -80,7 +80,8 @@ mat-card.module {
 }
 
 app-my-login-form, app-my-register-form, bridge-add-component,
-app-my-register-wait-for-mail-verification, app-my-verify-code {
+app-my-register-wait-for-mail-verification, app-my-verify-code,
+app-my-reset-password-start, app-my-reset-password-update-password {
     margin: 1ex;
 }
 

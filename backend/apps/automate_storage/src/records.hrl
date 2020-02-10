@@ -9,7 +9,7 @@
                                , status :: user_status() | ?MNESIA_SELECTOR
                                }).
 
--type verification_type() :: registration_mail_verification.
+-type verification_type() :: registration_mail_verification | password_reset_verification.
 -record(user_verification_entry, { verification_id :: binary() | ?MNESIA_SELECTOR
                                  , user_id :: binary() | ?MNESIA_SELECTOR
                                  , verification_type :: verification_type() | ?MNESIA_SELECTOR

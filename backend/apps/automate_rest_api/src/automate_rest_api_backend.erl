@@ -3,6 +3,9 @@
 %% API exports
 -export([ register_user/1
         , verify_registration_with_code/1
+        , send_recovery_mail/1
+        , check_password_reset_verification_code/1
+        , reset_password/2
 
         , login_user/1
         , get_user/1
@@ -66,6 +69,26 @@ register_user(Reg) ->
 verify_registration_with_code(RegistrationCode) ->
     automate_storage:verify_registration_with_code(RegistrationCode).
 
+-spec send_recovery_mail(binary()) -> ok | {error, _}.
+send_recovery_mail(Email) ->
+    case automate_mail:is_enabled() of
+        false ->
+            {error, mail_recovery_not_supported};
+        true ->
+            case automate_storage:get_user_from_mail_address(Email) of
+                {ok, #registered_user_entry{ id=UserId, username=Username }} ->
+                    case automate_storage:create_recovery_verification(UserId) of
+                        {ok, Code} ->
+                            {ok, _Url} = automate_mail:send_password_recovery_verification(Username, Email, Code),
+                            ok;
+                        {error, Reason} ->
+                            {error, Reason}
+                    end;
+                {error, Reason} ->
+                    {error, Reason}
+            end
+    end.
+
 -spec login_user(#login_rec{}) -> {ok, {binary(), binary()}} | {error, {_, _} | atom() | binary()}.
 login_user(#login_rec{ password=Password
                      , username=Username
@@ -76,6 +99,13 @@ login_user(#login_rec{ password=Password
         { error, Reason } ->
             { error, Reason }
     end.
+
+check_password_reset_verification_code(VerificationCode) ->
+    automate_storage:check_password_reset_verification_code(VerificationCode).
+
+-spec reset_password(binary(), binary()) -> ok | {error, _}.
+reset_password(VerificationCode, Password) ->
+    automate_storage:reset_password(VerificationCode, Password).
 
 get_user(UserId) ->
     automate_storage:get_user(UserId).

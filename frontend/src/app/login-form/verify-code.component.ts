@@ -17,7 +17,6 @@ export class VerifyCodeComponent implements OnInit {
     errorMessage: string = '';
 
     ngOnInit(): void {
-
         this.route.params
             .switchMap((params: Params) => {
                 this.verificationCode = params['verification_code'];
