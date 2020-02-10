@@ -50,10 +50,30 @@
 %%====================================================================
 %% API functions
 %%====================================================================
-register_user(#registration_rec{ email=Email
-                               , password=Password
-                               , username=Username
-                               }) ->
+register_user(Reg) ->
+    case automate_mail:is_enabled() of
+        false ->
+            register_user_instantly(Reg);
+        true ->
+            register_user_require_check(Reg)
+    end.
+
+register_user_instantly(#registration_rec{ email=Email
+                                         , password=Password
+                                         , username=Username
+                                         }) ->
+    case automate_storage:create_user(Username, Password, Email) of
+        { ok, UserId } ->
+            Url = generate_url_from_userid(UserId),
+            { ok, Url };
+        { error, Reason } ->
+            { error, Reason }
+    end.
+
+register_user_require_check(#registration_rec{ email=Email
+                                         , password=Password
+                                         , username=Username
+                                         }) ->
     case automate_storage:create_user(Username, Password, Email) of
         { ok, UserId } ->
             Url = generate_url_from_userid(UserId),
@@ -62,6 +82,7 @@ register_user(#registration_rec{ email=Email
         { error, Reason } ->
             { error, Reason }
     end.
+
 
 login_user(#login_rec{ password=Password
                      , username=Username

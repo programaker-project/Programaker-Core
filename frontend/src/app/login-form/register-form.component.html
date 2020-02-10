@@ -7,50 +7,70 @@
         <div class="col-sm-12">
             <mat-form-field class="full-size col-sm-12">
                 <input matInput  class="col-sm-12"
-                       [(ngModel)]="username"
-                       placeholder="User name"
-                       name="username" />
+                    id="registerUsername"
+                    [(ngModel)]="username"
+                    (focusout)="validateUsername()"
+                    placeholder="User name"
+                    name="username" />
             </mat-form-field>
+            <mat-error *ngIf="userErrorMessage">
+		        {{ userErrorMessage }}
+	        </mat-error>
         </div>
 
         <div class="col-sm-12">
             <mat-form-field class="full-size col-sm-12">
                 <input matInput  class="col-sm-12"
-                       [(ngModel)]="email"
-                       placeholder="Email address"
-                       type="email"
-                       name="email" />
+                    id="registerEmail"
+                    [(ngModel)]="email"
+                    (focusout)="validateEmail()"
+                    placeholder="Email address"
+                    type="email"
+                    name="email" />
             </mat-form-field>
+            <mat-error *ngIf="emailErrorMessage">
+		        {{ emailErrorMessage }}
+	        </mat-error>
         </div>
 
         <div class="col-sm-12">
             <mat-form-field class="full-size col-sm-12">
                 <input matInput  class="col-sm-12"
-                       [(ngModel)]="password"
-                       placeholder="Password"
-                       type="password"
-                       name="password" />
+                    id="registerPassword"
+                    [(ngModel)]="password"
+                    placeholder="Password"
+                    (focusout)="validatePassword()"
+                    type="password"
+                    name="password" />
             </mat-form-field>
+            <mat-error *ngIf="passwordErrorMessage">
+		        {{ passwordErrorMessage }}
+	        </mat-error>
         </div>
 
         <div  class="col-sm-12">
             <mat-form-field class="full-size col-sm-12">
                 <input matInput  class="col-sm-12"
-                       [(ngModel)]="repeatPassword"
-                       placeholder="Repeat password"
-                       type="password"
-                       name="repeatPassword" />
+                    id="registerRepeatedPassword"
+                    [(ngModel)]="repeatedPassword"
+                    placeholder="Repeat password"
+                    (focusout)="validateRepeatedPassword()"
+                    type="password"
+                    name="repeatedPassword" />
             </mat-form-field>
+            <mat-error *ngIf="repeatedPasswordErrorMessage">
+		        {{ repeatedPasswordErrorMessage }}
+	        </mat-error>
         </div>
 
         <br />
         <div class="col-sm-12 accept-cancel">
             <button color="primary"
                     (click)="doSignUp()"
-                    [disabled]="(username.length == 0)
-                                || (isSignUpMode && (email.length == 0))
-                                || (password.length == 0)
-                                || (isSignUpMode && (password != repeatPassword))"
+                    [disabled]="(!validUsername)
+                                || (!validEmail)
+                                || (!validPassword)
+                                || (password != repeatedPassword)"
                     mat-button mat-raised-button>
                 Sign Up
             </button>

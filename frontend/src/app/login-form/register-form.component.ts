@@ -8,16 +8,28 @@ import 'rxjs/add/operator/switchMap';
 @Component({
     selector: 'app-my-register-form',
     templateUrl: './register-form.component.html',
-    providers: [SessionService]
+    providers: [SessionService],
+    styleUrls: [
+        'register-form.component.css',
+    ],
 })
 
 export class RegisterFormComponent implements OnInit {
     username: string;
     email: string;
     password: string;
-    repeatPassword: string;
-    isLogInMode: boolean;
-    isSignUpMode: boolean;
+    repeatedPassword: string;
+
+    validUsername: boolean = false;
+    validEmail: boolean = false;
+    validPassword: boolean = false;
+    validRepeatedPassword: boolean = false;
+
+    userErrorMessage: string;
+    emailErrorMessage: string;
+    passwordErrorMessage: string;
+    repeatedPasswordErrorMessage: string;
+
     session: Session = null;
     errorMessage = '';
 
@@ -25,7 +37,7 @@ export class RegisterFormComponent implements OnInit {
         this.sessionService.getSession()
             .then(session => {
                 this.session = session;
-                if (session.active) {
+                if (session !== null && session.active) {
                     this.router.navigate(['/']);
                 }
             });
@@ -49,11 +61,47 @@ export class RegisterFormComponent implements OnInit {
         this.username = '';
         this.email = '';
         this.password = '';
-        this.repeatPassword = '';
+        this.repeatedPassword = '';
     }
 
     goLogInMode(): void {
         this.router.navigate(['/login']);
+    }
+
+    validateUsername() {
+        this.validUsername = true;
+        this.userErrorMessage = "";
+
+        if (this.username.length < 4) {
+            this.userErrorMessage = "User name should have at least 4 characters.";
+            this.validUsername = false;
+        }
+    }
+
+    validateEmail() {
+        const element = (document.getElementById("registerEmail") as HTMLInputElement);
+        this.validEmail = element.validity.valid;
+        this.emailErrorMessage = element.validationMessage;
+    }
+
+    validatePassword() {
+        this.validPassword = true;
+        this.passwordErrorMessage = "";
+
+        if (this.password.length < 4) {
+            this.passwordErrorMessage = "Password should have at least 4 characters.";
+            this.validPassword = false;
+        }
+    }
+
+    validateRepeatedPassword() {
+        this.validRepeatedPassword = true;
+        this.repeatedPasswordErrorMessage = "";
+
+        if (this.repeatedPassword != this.password) {
+            this.repeatedPasswordErrorMessage = "Password and \"Repeat password\" do not match.";
+            this.validRepeatedPassword = false;
+        }
     }
 
     doSignUp(): void {
@@ -70,11 +118,13 @@ export class RegisterFormComponent implements OnInit {
                 })
                 .catch(reason => {
                     console.log('Error on login:', reason);
+                    this.errorMessage = "Sign up OK, error on login";
                   })
             }
         })
         .catch(e => {
             console.log('Exception signing up', e);
+            this.errorMessage = "Error signing up";
         })
     }
 }
