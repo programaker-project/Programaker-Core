@@ -59,7 +59,7 @@ accept_json_modify_collection(Req, Session) ->
                             io:format("Error logging in: ~p~n", [Reason]),
                             { false, Res1, Session}
                     end;
-                { error, _Reason } ->
+                _ ->
                     { false, Req2, Session }
             end;
         false ->

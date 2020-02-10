@@ -80,7 +80,7 @@ send_registration_verification(ReceiverName, ReceiverMail, Code) ->
             { error, Reason }
     end.
 
--spec send_password_recovery_verification(binary(), binary(), binary()) -> ok.
+-spec send_password_recovery_verification(binary(), binary(), binary()) -> {ok, binary()}.
 send_password_recovery_verification(ReceiverName, ReceiverMail, Code) ->
     {ok, Sender} = application:get_env(?APPLICATION, password_reset_verification_sender),
     PlatformName = application:get_env(?APPLICATION, platform_name, ?DEFAULT_PLATFORM_NAME),
