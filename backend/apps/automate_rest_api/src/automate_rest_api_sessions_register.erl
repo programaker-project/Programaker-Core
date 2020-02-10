@@ -60,7 +60,7 @@ accept_json_modify_collection(Req, Session) ->
                         { ok, NextStatus } ->
 
                             Output = case NextStatus of
-                                         ready ->
+                                         continue ->
                                              jiffy:encode(#{ success => true, ready => true });
                                          wait_for_mail_check ->
                                              jiffy:encode(#{ success => true, ready => false })

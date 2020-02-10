@@ -82,7 +82,7 @@ reason_to_json({Type, Subtype}) ->
     #{ type => Type
      , subtype => Subtype
      };
-reason_to_json({Type}) ->
+reason_to_json(Type) ->
     #{ type => Type
      }.
 

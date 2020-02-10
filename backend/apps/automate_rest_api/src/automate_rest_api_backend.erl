@@ -94,7 +94,7 @@ register_user_require_check(#registration_rec{ email=Email
             { error, Reason }
     end.
 
-
+-spec login_user(#login_rec{}) -> {ok, {binary(), binary()}} | {error, {_, _} | atom() | binary()}.
 login_user(#login_rec{ password=Password
                      , username=Username
                      }) ->
