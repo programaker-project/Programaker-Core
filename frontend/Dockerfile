@@ -1,5 +1,5 @@
 FROM node:alpine as ci-base
-RUN apk add make
+RUN apk add --no-cache make python2 g++
 RUN mkdir /app
 WORKDIR /app
 
