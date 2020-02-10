@@ -108,8 +108,8 @@ export class RegisterFormComponent implements OnInit {
         const username = this.username;
         const email = this.email;
         const password = this.password;
-        this.sessionService.register(username, email, password).then(success => {
-            if (success) {
+        this.sessionService.register(username, email, password).then(result => {
+            if (result.continue_to_login) {
                 this.sessionService.login(username, password)
                 .then(loginSuccess => {
                     if (loginSuccess) {
@@ -120,6 +120,9 @@ export class RegisterFormComponent implements OnInit {
                     console.log('Error on login:', reason);
                     this.errorMessage = "Sign up OK, error on login";
                   })
+            }
+            else {
+                this.router.navigate(['/register/wait_for_mail_check']);
             }
         })
         .catch(e => {

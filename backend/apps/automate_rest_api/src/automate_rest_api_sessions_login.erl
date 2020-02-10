@@ -65,8 +65,11 @@ accept_json_modify_collection(Req, Session) ->
                                             login_data=LoginData} };
 
                         {error, Reason} ->
-                            io:format("Error registering: ~p~n", [Reason]),
-                            { false, Req2, Session}
+                            Res1 = cowboy_req:set_resp_body(jiffy:encode(#{ success => false
+                                                                          , error => reason_to_json(Reason)
+                                                                          }), Req2),
+                            io:format("Error logging in: ~p~n", [Reason]),
+                            { false, Res1, Session}
                     end;
                 { error, _Reason } ->
                     { false, Req2, Session }
@@ -74,6 +77,15 @@ accept_json_modify_collection(Req, Session) ->
         false ->
             {false, Req, Session }
     end.
+
+reason_to_json({Type, Subtype}) ->
+    #{ type => Type
+     , subtype => Subtype
+     };
+reason_to_json({Type}) ->
+    #{ type => Type
+     }.
+
 
 to_register_data([#{ <<"password">> := Password
                    , <<"username">> := Username

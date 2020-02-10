@@ -25,11 +25,15 @@ is_enabled() ->
             true
     end.
 
--spec send_registration_check(binary(), binary(), binary()) -> ok | {error, any()}.
-send_registration_check(ReceiverName, ReceiverMail, Url) ->
+-spec send_registration_check(binary(), binary(), binary()) -> {ok, binary()} | {error, any()}.
+send_registration_check(ReceiverName, ReceiverMail, Code) ->
     {ok, Sender} = application:get_env(?APPLICATION, registration_check_sender),
     PlatformName = application:get_env(?APPLICATION, platform_name, ?DEFAULT_PLATFORM_NAME),
     {ok, MailGateway} = application:get_env(?APPLICATION, mail_gateway),
+    {ok, UrlPattern} = application:get_env(?APPLICATION, registration_check_verification_url),
+    Url = binary:list_to_bin(
+            lists:flatten(io_lib:format(UrlPattern, [Code]))),
+
     Subject = binary:list_to_bin(
                 lists:flatten(
                   io_lib:format(
@@ -65,7 +69,7 @@ send_registration_check(ReceiverName, ReceiverMail, Url) ->
             Response = jiffy:decode(Body, [return_maps]),
             case Response of
                 #{ <<"success">> := true} ->
-                    ok;
+                    {ok, Url};
                 #{ <<"message">> := Msg } ->
                     {error, Msg };
                 _ ->

@@ -1,8 +1,9 @@
 -module(automate_storage).
 
 %% API exports
--export([ create_user/3
+-export([ create_user/4
         , login_user/2
+        , delete_user/1
         , get_session_username/1
         , get_session_userid/1
         , create_monitor/2
@@ -10,6 +11,8 @@
         , dirty_list_monitors/0
         , lists_monitors_from_username/1
         , get_userid_from_username/1
+
+        , create_mail_verification_check/1
 
         , create_program/2
         , get_program/2
@@ -59,7 +62,7 @@
 %%====================================================================
 %% API functions
 %%====================================================================
-create_user(Username, Password, Email) ->
+create_user(Username, Password, Email, Status) ->
     UserId = generate_id(),
     CipheredPassword = case Password of
                            undefined -> undefined;
@@ -69,6 +72,7 @@ create_user(Username, Password, Email) ->
                                                , username=Username
                                                , password=CipheredPassword
                                                , email=Email
+                                               , status=Status
                                                },
     case save_unique_user(RegisteredUserData) of
         ok ->
@@ -77,21 +81,35 @@ create_user(Username, Password, Email) ->
             { error, Reason }
     end.
 
+-spec delete_user(binary()) -> ok.
+delete_user(UserId) ->
+    Transaction = fun() ->
+                          mnesia:delete({?REGISTERED_USERS_TABLE, UserId})
+                  end,
+    {atomic, Result} = mnesia:transaction(Transaction),
+    Result.
+
 login_user(Username, Password) ->
     case get_userid_and_password_from_username(Username) of
         {ok, #registered_user_entry{ id=UserId
                                    , password=StoredPassword
+                                   , status=Status
                                    }} ->
             case libsodium_crypto_pwhash:str_verify(StoredPassword, Password) =:= 0 of
                 true ->
-                    SessionToken = generate_id(),
-                    ok = add_token_to_user(UserId, SessionToken),
-                    { ok, {SessionToken, UserId} };
+                    case Status of
+                        ready ->
+                            SessionToken = generate_id(),
+                            ok = add_token_to_user(UserId, SessionToken),
+                            { ok, {SessionToken, UserId} };
+                        _ ->
+                            {error, {user_not_ready, Status}}
+                    end;
                 _ ->
                     {error, invalid_user_password}
             end;
         {error, no_user_found} ->
-            {error, invalid_user_password};
+            {error, no_user_found};
 
         {error, Reason} ->
             { error, Reason }
@@ -167,6 +185,29 @@ lists_monitors_from_username(Username) ->
         X ->
             X
     end.
+
+-spec create_mail_verification_check(binary()) -> {ok, binary()} | {error, _}.
+create_mail_verification_check(UserId) ->
+    create_verification_check(UserId, registration_mail_verification).
+
+-spec create_verification_check(binary(), verification_type()) -> {ok, binary()} | {error, _}.
+create_verification_check(UserId, VerificationType) ->
+    VerificationId = generate_id(),
+    Transaction = fun() ->
+                          ok = mnesia:write(?USER_VERIFICATION_TABLE,
+                                            #user_verification_entry{ verification_id=VerificationId
+                                                                    , user_id=UserId
+                                                                    , verification_type=VerificationType
+                                                                    }, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, ok } ->
+            {ok, VerificationId};
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, Reason}
+    end.
+
 
 
 create_program(Username, ProgramName) ->
@@ -590,6 +631,7 @@ get_userid_from_username(Username) ->
                                       , username='$2'
                                       , password='_'
                                       , email='_'
+                                      , status='_'
                                       },
     %% Check that neither the id, username or email matches another
     Guard = {'==', '$2', Username},
@@ -693,6 +735,7 @@ get_userid_and_password_from_username(Username) ->
                                       , username='$2'
                                       , password='$3'
                                       , email='_'
+                                      , status='_'
                                       },
     Guard = {'==', '$2', Username},
     ResultColumn = '$1',
@@ -731,6 +774,7 @@ retrieve_monitors_list_from_username(Username) ->
                                                                 , username='$2'
                                                                 , password='_'
                                                                 , email='_'
+                                                                , status='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -790,6 +834,7 @@ retrieve_program(Username, ProgramName) ->
                                                                 , username='$2'
                                                                 , password='_'
                                                                 , email='_'
+                                                                , status='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -840,6 +885,7 @@ retrieve_program_list_from_username(Username) ->
                                                                 , username='$2'
                                                                 , password='_'
                                                                 , email='_'
+                                                                , status='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -915,6 +961,7 @@ store_new_program_content(Username, ProgramName,
                                                                 , username='$2'
                                                                 , password='_'
                                                                 , email='_'
+                                                                , status='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -976,6 +1023,7 @@ save_unique_user(UserData) ->
                                       , username='$2'
                                       , password='_'
                                       , email='$3'
+                                      , status='_'
                                       },
 
     %% Check that neither the id, username or email matches another

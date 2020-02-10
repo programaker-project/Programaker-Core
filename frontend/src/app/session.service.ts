@@ -127,22 +127,25 @@ export class SessionService {
     }
 
 
-    register(username: string, email: string, password: string): Promise<boolean> {
+    register(username: string, email: string, password: string): Promise<{ success: boolean, continue_to_login: boolean}> {
         const headers = this.addJsonContentType(new HttpHeaders());
 
         return progbar.track(this.http
-            .post(
-                this.registerUrl,
-                JSON.stringify({
-                    username: username
-                    , password: password
-                    , email: email
-                }),
-                { headers })
-            .map(response => {
-                return true;
-            })
-            .toPromise());
+                             .post(
+                                 this.registerUrl,
+                                 JSON.stringify({
+                                     username: username
+                                     , password: password
+                                     , email: email
+                                 }),
+                                 { headers })
+                             .map(response => {
+                                 return {
+                                     success: (response as any).success,
+                                     continue_to_login: (response as any).ready
+                                 };
+                             })
+                             .toPromise());
     }
 
 

@@ -13,6 +13,7 @@ import { ProgramDetailComponent } from './program-detail.component';
 
 import { LoginFormComponent } from './login-form/login-form.component';
 import { RegisterFormComponent } from './login-form/register-form.component';
+import { WaitForMailCheck } from './login-form/register-wait-for-mail-check.component';
 
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { AboutPageComponent } from './info-pages/about-page.component';
@@ -23,6 +24,7 @@ const routes: Routes = [
 
     { path: 'login', component: LoginFormComponent },
     { path: 'register', component: RegisterFormComponent },
+    { path: 'register/wait_for_mail_check', component: WaitForMailCheck },
 
     // General
     { path: 'dashboard', component: DashboardComponent },

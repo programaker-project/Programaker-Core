@@ -50,6 +50,7 @@
 %%====================================================================
 %% API functions
 %%====================================================================
+-spec register_user(#registration_rec{}) -> {ok, continue | wait_for_mail_check} | {error, _}.
 register_user(Reg) ->
     case automate_mail:is_enabled() of
         false ->
@@ -62,23 +63,33 @@ register_user_instantly(#registration_rec{ email=Email
                                          , password=Password
                                          , username=Username
                                          }) ->
-    case automate_storage:create_user(Username, Password, Email) of
+    case automate_storage:create_user(Username, Password, Email, ready) of
         { ok, UserId } ->
-            Url = generate_url_from_userid(UserId),
-            { ok, Url };
+            { ok, continue };
         { error, Reason } ->
             { error, Reason }
     end.
 
 register_user_require_check(#registration_rec{ email=Email
-                                         , password=Password
-                                         , username=Username
-                                         }) ->
-    case automate_storage:create_user(Username, Password, Email) of
+                                             , password=Password
+                                             , username=Username
+                                             }) ->
+    case automate_storage:create_user(Username, Password, Email, mail_not_verified) of
         { ok, UserId } ->
-            Url = generate_url_from_userid(UserId),
-            io:format("Url: ~p~n", [Url]),
-            { ok, Url };
+            case automate_storage:create_mail_verification_check(UserId) of
+                {ok, MailVerificationCode} ->
+                     case automate_mail:send_registration_check(Username, Email, MailVerificationCode) of
+                         { ok, Url } ->
+                             io:format("Url: ~p~n", [Url]),
+                             { ok, wait_for_mail_check };
+                         {error, Reason} ->
+                             automate_storage:delete_user(UserId),
+                             {error, Reason}
+                     end;
+                {error, Reason} ->
+                    automate_storage:delete_user(UserId),
+                    {error, Reason}
+            end;
         { error, Reason } ->
             { error, Reason }
     end.
@@ -365,9 +376,6 @@ get_service_metadata(Id
 
 generate_url_for_service_id(Username, ServiceId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/id/~s", [Username, ServiceId]))).
-
-generate_url_from_userid(UserId) ->
-    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s", [UserId]))).
 
 %% *TODO* generate more interesting names.
 generate_program_name() ->
