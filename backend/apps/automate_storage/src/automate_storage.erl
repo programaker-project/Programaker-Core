@@ -3,6 +3,8 @@
 %% API exports
 -export([ create_user/4
         , login_user/2
+        , get_user/1
+        , generate_token_for_user/1
         , delete_user/1
         , get_session_username/1
         , get_session_userid/1
@@ -13,6 +15,7 @@
         , get_userid_from_username/1
 
         , create_mail_verification_check/1
+        , validate_registration_with_code/1
 
         , create_program/2
         , get_program/2
@@ -115,6 +118,34 @@ login_user(Username, Password) ->
             { error, Reason }
     end.
 
+get_user(UserId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
+                              [User] ->
+                                  {ok, User};
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+generate_token_for_user(UserId) ->
+    case get_user(UserId) of
+        {ok, #registered_user_entry{ status=ready }} ->
+            SessionToken = generate_id(),
+            ok = add_token_to_user(UserId, SessionToken),
+            { ok, SessionToken };
+        {ok, _} ->
+            {error, user_not_ready};
+        {error, Reason } ->
+            {error, Reason}
+    end.
+
 get_session_username(SessionId) when is_binary(SessionId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
@@ -190,25 +221,44 @@ lists_monitors_from_username(Username) ->
 create_mail_verification_check(UserId) ->
     create_verification_check(UserId, registration_mail_verification).
 
--spec create_verification_check(binary(), verification_type()) -> {ok, binary()} | {error, _}.
-create_verification_check(UserId, VerificationType) ->
-    VerificationId = generate_id(),
+-spec validate_registration_with_code(binary()) -> {ok, binary()} | {error, _}.
+validate_registration_with_code(RegistrationCode) ->
     Transaction = fun() ->
-                          ok = mnesia:write(?USER_VERIFICATION_TABLE,
-                                            #user_verification_entry{ verification_id=VerificationId
-                                                                    , user_id=UserId
-                                                                    , verification_type=VerificationType
-                                                                    }, write)
+                          case mnesia:read(?USER_VERIFICATION_TABLE, RegistrationCode) of
+                              [] ->
+                                  {error, not_found};
+                              [#user_verification_entry{ user_id=UserId
+                                                       , verification_type=registration_mail_verification
+                                                       }] ->
+                                  case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
+                                      [] ->
+                                          {error, user_not_found};
+                                      [User=#registered_user_entry{status=mail_not_verified}] ->
+                                          ok = mnesia:write(?REGISTERED_USERS_TABLE, User#registered_user_entry{ status=ready }, write),
+                                          ok = mnesia:delete({?USER_VERIFICATION_TABLE, RegistrationCode}),
+                                          {ok, UserId};
+                                      [#registered_user_entry{status=Status}] ->
+                                          {error, {status_mismatch, Status}}
+                                  end;
+                              [#user_verification_entry{ verification_type=VerificationType }] ->
+                                  {error, {invalid_verification_type, VerificationType}}
+                          end
                   end,
     case mnesia:transaction(Transaction) of
-        { atomic, ok } ->
-            {ok, VerificationId};
+        { atomic, {error, {invalid_verification_type, VerificationType}} } ->
+            io:fwrite("[Storage] Expected type ~p on verification, found: ~p~n",
+                      [registration_mail_verification, VerificationType]),
+            {error, invalid_verification_type};
+        { atomic, {error, {status_mismatch, StatusFound}} } ->
+            io:fwrite("[Storage] Status mismatch. Expected ~p, found: ~p~n",
+                      [mail_not_verified, StatusFound]),
+            {error, invalid_verification_type};
+        { atomic, Result } ->
+            Result;
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, Reason}
     end.
-
-
 
 create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
@@ -756,6 +806,24 @@ get_userid_and_password_from_username(Username) ->
             {error, no_user_found};
         { aborted, Reason } ->
             {error, mnesia:error_description(Reason)}
+    end.
+
+-spec create_verification_check(binary(), verification_type()) -> {ok, binary()} | {error, _}.
+create_verification_check(UserId, VerificationType) ->
+    VerificationId = generate_id(),
+    Transaction = fun() ->
+                          ok = mnesia:write(?USER_VERIFICATION_TABLE,
+                                            #user_verification_entry{ verification_id=VerificationId
+                                                                    , user_id=UserId
+                                                                    , verification_type=VerificationType
+                                                                    }, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, ok } ->
+            {ok, VerificationId};
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, Reason}
     end.
 
 store_new_monitor(Monitor) ->

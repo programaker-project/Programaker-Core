@@ -1,0 +1,15 @@
+<mat-card class="verify-code-block center-block">
+    <mat-card-content>
+        <div class="verifying" *ngIf="status == 'loading'">
+            <div>Verifying mail code</div>
+            <mat-spinner
+                class="center-block"
+                [color]="accent">
+            </mat-spinner>
+        </div>
+        <div class="errorMsg" *ngIf="errorMessage">
+            <span class="error-prologue">Verification error:</span>
+            <span class="error-message">{{ errorMessage }}</span>
+        </div>
+    </mat-card-content>
+</mat-card>

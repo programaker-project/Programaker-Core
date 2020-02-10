@@ -15,6 +15,7 @@ export class SessionService {
     checkSessionUrl = API.ApiRoot + '/sessions/check';
     loginUrl = API.ApiRoot + '/sessions/login';
     registerUrl = API.ApiRoot + '/sessions/register';
+    registerValidateUrl = API.ApiRoot + '/sessions/register/verify';
 
     constructor(
         private http: HttpClient,
@@ -113,6 +114,7 @@ export class SessionService {
                     this.storeToken(data.token);
 
                     const newSession = new Session(true, username, data.user_id);
+                    SessionService.EstablishedSession = newSession;
 
                     return true;
                 }
@@ -149,4 +151,30 @@ export class SessionService {
     }
 
 
+    validateRegisterCode(checkId: string): Promise<Session> {
+        const headers = this.addJsonContentType(new HttpHeaders());
+
+        return progbar.track(this.http
+                             .post(
+                                 this.registerValidateUrl,
+                                 JSON.stringify({
+                                     validation_code: checkId
+                                 }),
+                                 { headers })
+                             .map(response => {
+                                 const success = (response as any).success;
+                                 if (!success) {
+                                     throw new Error(success.message);
+                                 }
+
+
+                                 this.storeToken((response as any).session.token);
+                                 const session = new Session(true,
+                                                             (response as any).session.username,
+                                                             (response as any).session.user_id);
+                                 SessionService.EstablishedSession = session;
+                                 return session;
+                             })
+                             .toPromise());
+    }
 }

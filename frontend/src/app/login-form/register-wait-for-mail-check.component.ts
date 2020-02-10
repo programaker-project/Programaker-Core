@@ -11,7 +11,7 @@ import 'rxjs/add/operator/switchMap';
     providers: [SessionService],
 })
 
-export class WaitForMailCheck implements OnInit {
+export class WaitForMailCheckComponent implements OnInit {
     session: Session = null;
 
     ngOnInit(): void {
