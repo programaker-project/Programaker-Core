@@ -151,14 +151,14 @@ export class SessionService {
     }
 
 
-    validateRegisterCode(checkId: string): Promise<Session> {
+    validateRegisterCode(verificationCode: string): Promise<Session> {
         const headers = this.addJsonContentType(new HttpHeaders());
 
         return progbar.track(this.http
                              .post(
                                  this.registerValidateUrl,
                                  JSON.stringify({
-                                     validation_code: checkId
+                                     verification_code: verificationCode
                                  }),
                                  { headers })
                              .map(response => {

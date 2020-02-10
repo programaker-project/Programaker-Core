@@ -47,8 +47,8 @@ accept_json_modify_collection(Req, Session) ->
             {ok, Body, Req2} = read_body(Req),
             Parsed = jiffy:decode(Body, [return_maps]),
             case Parsed of
-                #{ <<"validation_code">> := ValidationCode } ->
-                    case automate_rest_api_backend:validate_registration_with_code(ValidationCode) of
+                #{ <<"verification_code">> := VerificationCode } ->
+                    case automate_rest_api_backend:verify_registration_with_code(VerificationCode) of
                         { ok, UserId } ->
                             case automate_rest_api_backend:get_user(UserId) of
                                 {ok, #registered_user_entry{ username=Username

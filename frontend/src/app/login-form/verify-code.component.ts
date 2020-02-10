@@ -13,15 +13,15 @@ import 'rxjs/add/operator/switchMap';
 export class VerifyCodeComponent implements OnInit {
     session: Session = null;
     status: 'loading'| 'error' = 'loading';
-    checkId: string;
+    verificationCode: string;
     errorMessage: string = '';
 
     ngOnInit(): void {
 
         this.route.params
             .switchMap((params: Params) => {
-                this.checkId = params['check_id'];
-                return this.sessionService.validateRegisterCode(this.checkId).catch(err => {
+                this.verificationCode = params['verification_code'];
+                return this.sessionService.validateRegisterCode(this.verificationCode).catch(err => {
                     this.status = 'error';
                     this.errorMessage = err.message || 'Unknown error';
                     console.warn(err);

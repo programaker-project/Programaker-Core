@@ -2,7 +2,7 @@
 
 %% API exports
 -export([ register_user/1
-        , validate_registration_with_code/1
+        , verify_registration_with_code/1
 
         , login_user/1
         , get_user/1
@@ -54,17 +54,17 @@
 %%====================================================================
 %% API functions
 %%====================================================================
--spec register_user(#registration_rec{}) -> {ok, continue | wait_for_mail_check} | {error, _}.
+-spec register_user(#registration_rec{}) -> {ok, continue | wait_for_mail_verification } | {error, _}.
 register_user(Reg) ->
     case automate_mail:is_enabled() of
         false ->
             register_user_instantly(Reg);
         true ->
-            register_user_require_check(Reg)
+            register_user_require_validation(Reg)
     end.
 
-validate_registration_with_code(RegistrationCode) ->
-    automate_storage:validate_registration_with_code(RegistrationCode).
+verify_registration_with_code(RegistrationCode) ->
+    automate_storage:verify_registration_with_code(RegistrationCode).
 
 -spec login_user(#login_rec{}) -> {ok, {binary(), binary()}} | {error, {_, _} | atom() | binary()}.
 login_user(#login_rec{ password=Password
@@ -338,18 +338,18 @@ register_user_instantly(#registration_rec{ email=Email
             { error, Reason }
     end.
 
-register_user_require_check(#registration_rec{ email=Email
-                                             , password=Password
-                                             , username=Username
-                                             }) ->
+register_user_require_validation(#registration_rec{ email=Email
+                                                  , password=Password
+                                                  , username=Username
+                                                  }) ->
     case automate_storage:create_user(Username, Password, Email, mail_not_verified) of
         { ok, UserId } ->
-            case automate_storage:create_mail_verification_check(UserId) of
+            case automate_storage:create_mail_verification_entry(UserId) of
                 {ok, MailVerificationCode} ->
-                     case automate_mail:send_registration_check(Username, Email, MailVerificationCode) of
+                     case automate_mail:send_registration_verification(Username, Email, MailVerificationCode) of
                          { ok, Url } ->
                              io:format("Url: ~p~n", [Url]),
-                             { ok, wait_for_mail_check };
+                             { ok, wait_for_mail_verification };
                          {error, Reason} ->
                              automate_storage:delete_user(UserId),
                              {error, Reason}

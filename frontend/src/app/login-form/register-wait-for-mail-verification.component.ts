@@ -6,12 +6,12 @@ import { SessionService } from '../session.service';
 import 'rxjs/add/operator/switchMap';
 
 @Component({
-    selector: 'app-my-register-wait-for-mail-check',
-    templateUrl: './register-wait-for-mail-check.component.html',
+    selector: 'app-my-register-wait-for-mail-verification',
+    templateUrl: './register-wait-for-mail-verification.component.html',
     providers: [SessionService],
 })
 
-export class WaitForMailCheckComponent implements OnInit {
+export class WaitForMailVerificationComponent implements OnInit {
     session: Session = null;
 
     ngOnInit(): void {

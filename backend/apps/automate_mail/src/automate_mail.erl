@@ -6,7 +6,7 @@
 -module(automate_mail).
 
 -export([ is_enabled/0
-        , send_registration_check/3
+        , send_registration_verification/3
         ]).
 
 -define(APPLICATION, automate_mail).
@@ -25,12 +25,12 @@ is_enabled() ->
             true
     end.
 
--spec send_registration_check(binary(), binary(), binary()) -> {ok, binary()} | {error, any()}.
-send_registration_check(ReceiverName, ReceiverMail, Code) ->
-    {ok, Sender} = application:get_env(?APPLICATION, registration_check_sender),
+-spec send_registration_verification(binary(), binary(), binary()) -> {ok, binary()} | {error, any()}.
+send_registration_verification(ReceiverName, ReceiverMail, Code) ->
+    {ok, Sender} = application:get_env(?APPLICATION, registration_verification_sender),
     PlatformName = application:get_env(?APPLICATION, platform_name, ?DEFAULT_PLATFORM_NAME),
     {ok, MailGateway} = application:get_env(?APPLICATION, mail_gateway),
-    {ok, UrlPattern} = application:get_env(?APPLICATION, registration_check_verification_url),
+    {ok, UrlPattern} = application:get_env(?APPLICATION, registration_verification_url_pattern),
     Url = binary:list_to_bin(
             lists:flatten(io_lib:format(UrlPattern, [Code]))),
 

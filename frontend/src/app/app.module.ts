@@ -58,7 +58,7 @@ import { AboutPageComponent } from './info-pages/about-page.component';
 import { AppRoutingModule } from './app-routing.module';
 import { LoginFormComponent } from './login-form/login-form.component';
 import { RegisterFormComponent } from './login-form/register-form.component';
-import { WaitForMailCheckComponent } from './login-form/register-wait-for-mail-check.component';
+import { WaitForMailVerificationComponent } from './login-form/register-wait-for-mail-verification.component';
 import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { SummarizeJSON } from './summarize_json.filter';
@@ -76,7 +76,7 @@ import 'hammerjs';
         ServicesComponent,
         LoginFormComponent,
         RegisterFormComponent,
-        WaitForMailCheckComponent,
+        WaitForMailVerificationComponent,
         VerifyCodeComponent,
 
         // Info pages

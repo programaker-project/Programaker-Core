@@ -14,8 +14,8 @@
         , lists_monitors_from_username/1
         , get_userid_from_username/1
 
-        , create_mail_verification_check/1
-        , validate_registration_with_code/1
+        , create_mail_verification_entry/1
+        , verify_registration_with_code/1
 
         , create_program/2
         , get_program/2
@@ -217,12 +217,12 @@ lists_monitors_from_username(Username) ->
             X
     end.
 
--spec create_mail_verification_check(binary()) -> {ok, binary()} | {error, _}.
-create_mail_verification_check(UserId) ->
-    create_verification_check(UserId, registration_mail_verification).
+-spec create_mail_verification_entry(binary()) -> {ok, binary()} | {error, _}.
+create_mail_verification_entry(UserId) ->
+    create_verification_entry(UserId, registration_mail_verification).
 
--spec validate_registration_with_code(binary()) -> {ok, binary()} | {error, _}.
-validate_registration_with_code(RegistrationCode) ->
+-spec verify_registration_with_code(binary()) -> {ok, binary()} | {error, _}.
+verify_registration_with_code(RegistrationCode) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_VERIFICATION_TABLE, RegistrationCode) of
                               [] ->
@@ -808,8 +808,8 @@ get_userid_and_password_from_username(Username) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec create_verification_check(binary(), verification_type()) -> {ok, binary()} | {error, _}.
-create_verification_check(UserId, VerificationType) ->
+-spec create_verification_entry(binary(), verification_type()) -> {ok, binary()} | {error, _}.
+create_verification_entry(UserId, VerificationType) ->
     VerificationId = generate_id(),
     Transaction = fun() ->
                           ok = mnesia:write(?USER_VERIFICATION_TABLE,

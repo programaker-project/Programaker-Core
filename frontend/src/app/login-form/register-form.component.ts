@@ -122,7 +122,7 @@ export class RegisterFormComponent implements OnInit {
                   })
             }
             else {
-                this.router.navigate(['/register/wait_for_mail_check']);
+                this.router.navigate(['/register/wait_for_mail_verification']);
             }
         })
         .catch(e => {

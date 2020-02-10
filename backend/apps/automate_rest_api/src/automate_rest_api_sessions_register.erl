@@ -62,7 +62,7 @@ accept_json_modify_collection(Req, Session) ->
                             Output = case NextStatus of
                                          continue ->
                                              jiffy:encode(#{ success => true, ready => true });
-                                         wait_for_mail_check ->
+                                         wait_for_mail_verification ->
                                              jiffy:encode(#{ success => true, ready => false })
                                      end,
                             Res1 = cowboy_req:set_resp_body(Output, Req2),

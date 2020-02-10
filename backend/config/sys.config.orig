@@ -8,8 +8,8 @@
    %% Eg: "http://plaza-mail-gateway:80/mail/send"
 ,  { automate_mail, [ { mail_gateway, none }
                     %% %% Below, options that can be used if a 'mail_gateway' is configured.
-                    %% , { registration_check_verification_url, "https://programaker.com/register/verify/~s" }
-                    %% , { registration_check_sender, <<"PrograMaker Team<contact@programaker.com>">> }
+                    %% , { registration_verification_url_pattern, "https://programaker.com/register/verify/~s" }
+                    %% , { registration_verification_sender, <<"PrograMaker Team<contact@programaker.com>">> }
                     %% , { platform_name, <<"PrograMaker">> }
                     ] }
 %% If you uncomment this you can add elastic search logs and exclude some channels.
