@@ -1,7 +1,9 @@
+
+import {map} from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/toPromise';
+
+
 import * as API from './api-config';
 import { ContentType } from './content-type';
 import { MonitorMetadata } from './monitor';
@@ -34,10 +36,10 @@ export class MonitorService {
 
     public getMonitors(): Promise<MonitorMetadata[]> {
         return this.getListMonitorsUrl().then((url) =>
-          this.http.get(url, {headers: this.sessionService.getAuthHeader()})
-                  .map((response) => {
+          this.http.get(url, {headers: this.sessionService.getAuthHeader()}).pipe(
+                  map((response) => {
                       return response as MonitorMetadata[]
-                  })
+                  }))
                   .toPromise());
     }
 }

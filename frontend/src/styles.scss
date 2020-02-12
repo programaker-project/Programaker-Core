@@ -57,6 +57,11 @@ mat-input-container.full-size {
     width: 100%;
 }
 
+
+mat-card.mat-card {
+    padding: 24px 16px;
+}
+
 mat-card[mat-ink-ripple] {
     position: relative;
 }

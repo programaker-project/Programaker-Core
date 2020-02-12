@@ -1,8 +1,10 @@
+
+import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { Service, AvailableService, ServiceEnableHowTo } from './service';
 import * as API from './api-config';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/operator/map';
+
+
 import { SessionService } from './session.service';
 import { HttpClient } from '@angular/common/http';
 import { ContentType } from './content-type';
@@ -36,17 +38,17 @@ export class ServiceService {
 
     getAvailableServices(): Promise<AvailableService[]> {
         return this.getListAvailableServicesUrl().then(
-            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
-                .map(response => response as AvailableService[])
+            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() }).pipe(
+                map(response => response as AvailableService[]))
                 .toPromise());
     }
 
     getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {
         return this.getServiceEnableHowToUrl(service).then(
-            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
-                .map(response => {
+            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() }).pipe(
+                map(response => {
                     return response as ServiceEnableHowTo;
-                })
+                }))
                 .toPromise());
     }
 
@@ -58,10 +60,10 @@ export class ServiceService {
                     headers: this.sessionService.addContentType(
                         this.sessionService.getAuthHeader(),
                         ContentType.Json),
-                })
-                .map(response => {
+                }).pipe(
+                map(response => {
                     return (response as any).success;
-                })
+                }))
                 .toPromise());
     }
 }

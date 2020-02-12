@@ -1,4 +1,4 @@
-FROM plazaproject/ci-base-frontend:f11105a784435cb05241da6ee0b3c410bc39870c as builder
+FROM plazaproject/ci-base-frontend:2813f6cb68f09389d78d537155793e844c2128b9 as builder
 
 # Prepare dependencies
 ADD . /app

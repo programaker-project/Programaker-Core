@@ -1,4 +1,4 @@
-FROM node:alpine as ci-base
+FROM node:lts-alpine as ci-base
 RUN apk add --no-cache make python2 g++
 RUN mkdir /app
 WORKDIR /app
@@ -6,7 +6,7 @@ WORKDIR /app
 # Build dependencies
 ADD package.json /app
 ADD package-lock.json /app
-RUN npm install .
+RUN npm install --unsafe-perm
 
 # Build final app
 FROM ci-base as builder

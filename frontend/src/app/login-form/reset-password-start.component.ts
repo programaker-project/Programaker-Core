@@ -3,7 +3,7 @@ import { Router, ActivatedRoute, Params } from '@angular/router';
 import { Location } from '@angular/common';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
-import 'rxjs/add/operator/switchMap';
+
 
 @Component({
     selector: 'app-my-reset-password-start',

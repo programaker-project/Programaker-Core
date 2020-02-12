@@ -27,7 +27,7 @@ export class HowToEnableServiceDialogComponent {
     ) {
         this.service = data;
 
-        dialogRef.afterOpen().subscribe(() => {
+        dialogRef.afterOpened().subscribe(() => {
             this.renderingZone = (document
                 .getElementById(dialogRef.id)
                 .getElementsByClassName("rendering-zone")[0]) as HTMLDivElement;

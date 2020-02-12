@@ -35,7 +35,7 @@ export class TemplateCreateDialogComponent {
         this.usedOutputs = {};
         this.checkAllOutputsUsed();
 
-        dialogRef.afterOpen().subscribe(() => {
+        dialogRef.afterOpened().subscribe(() => {
             const dialogElement = document.getElementById(this.dialogRef.id);
             const editor = dialogElement.querySelector("[name='template-content']");
             (editor as HTMLDivElement).onblur = () => this.onTemplateChange();

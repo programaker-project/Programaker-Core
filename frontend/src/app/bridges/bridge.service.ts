@@ -1,8 +1,10 @@
+
+import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { BridgeMetadata, BridgeIndexData } from './bridge';
 import * as API from '../api-config';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/operator/map';
+
+
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from '../session.service';
 import { ContentType } from '../content-type';
@@ -34,10 +36,10 @@ export class BridgeService {
                 {
                     headers: this.sessionService.addJsonContentType(
                         this.sessionService.getAuthHeader())
-                })
-                .map(response => {
+                }).pipe(
+                map(response => {
                     return response as BridgeMetadata;
-                })
+                }))
                 .toPromise());
     }
 
@@ -46,10 +48,10 @@ export class BridgeService {
             this.http.get(url,
                 {
                     headers: this.sessionService.getAuthHeader()
-                })
-                .map(response => {
+                }).pipe(
+                map(response => {
                     return response as BridgeIndexData[];
-                })
+                }))
                 .toPromise());
     }
 
@@ -58,10 +60,10 @@ export class BridgeService {
             this.http.delete(url,
                 {
                     headers: this.sessionService.getAuthHeader()
-                })
-                .map(response => {
+                }).pipe(
+                map(response => {
                     return (response as { success: boolean }).success;
-                })
+                }))
                 .toPromise());
     }
 

@@ -1,9 +1,11 @@
+
+import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { Location } from '@angular/common';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
-import 'rxjs/add/operator/switchMap';
+
 
 @Component({
     selector: 'app-my-reset-password-update-password',
@@ -30,15 +32,15 @@ export class ResetPasswordUpdatePasswordComponent implements OnInit {
     repeatedPasswordErrorMessage: string;
 
     ngOnInit(): void {
-        this.route.params
-            .switchMap((params: Params) => {
+        this.route.params.pipe(
+            switchMap((params: Params) => {
                 this.verificationCode = params['reset_verification_code'];
                 return this.sessionService.validatePasswordUpdateCode(this.verificationCode).catch(err => {
                     this.status = 'error';
                     this.errorMessage = err.message || 'Unknown error';
                     console.warn(err);
                 });
-            })
+            }))
             .subscribe(() => {
                 this.status = 'validatedToken';
             });

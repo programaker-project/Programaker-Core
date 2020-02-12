@@ -1,11 +1,11 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { HttpModule } from '@angular/http';
 import { HttpClientModule } from '@angular/common/http';
 
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { MatButtonModule, MatCheckboxModule } from '@angular/material';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -13,7 +13,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatFormFieldModule } from '@angular/material';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
@@ -65,7 +65,6 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
-import 'hammerjs';
 
 @NgModule({
     declarations: [
@@ -124,23 +123,12 @@ import 'hammerjs';
         BrowserModule,
         FormsModule,
         ReactiveFormsModule,
-        HttpModule,
         HttpClientModule,
         AlertModule.forRoot(),
         AppRoutingModule,
     ],
     exports: [
         BridgeAddComponent,
-    ],
-    entryComponents: [
-        BridgeDeleteDialogComponent,
-        HowToEnableServiceDialogComponent,
-        RenameProgramDialogComponent,
-        DeleteProgramDialogComponent,
-        CustomSignalCreateDialogComponent,
-        TemplateCreateDialogComponent,
-        StopThreadProgramDialogComponent,
-        SetProgramTagsDialogComponent,
     ],
     providers: [],
     bootstrap: [AppComponent],
