@@ -130,16 +130,6 @@ import { SelectFromJSON } from './select_from_json.filter';
     exports: [
         BridgeAddComponent,
     ],
-    entryComponents: [
-        BridgeDeleteDialogComponent,
-        HowToEnableServiceDialogComponent,
-        RenameProgramDialogComponent,
-        DeleteProgramDialogComponent,
-        CustomSignalCreateDialogComponent,
-        TemplateCreateDialogComponent,
-        StopThreadProgramDialogComponent,
-        SetProgramTagsDialogComponent,
-    ],
     providers: [],
     bootstrap: [AppComponent],
 })
