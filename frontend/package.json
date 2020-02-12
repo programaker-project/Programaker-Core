@@ -5,6 +5,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "postinstall": "ngcc --properties es2015 browser module main --first-only --create-ivy-entry-points",
     "build": "ng build",
     "build-prod": "ng build --prod",
     "build-programaker": "ng build --prod -c programaker",
