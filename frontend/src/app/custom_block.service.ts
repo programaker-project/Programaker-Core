@@ -1,7 +1,9 @@
+
+import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import * as API from './api-config';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/operator/map';
+
+
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
@@ -40,8 +42,8 @@ export class CustomBlockService {
                 {
                     headers: this.sessionService.addJsonContentType(
                         this.sessionService.getAuthHeader())
-                })
-                .map(response => {
+                }).pipe(
+                map(response => {
                     const blocks: CustomBlock[] = [];
                     for (const service_port_id of Object.keys(response)) {
                         for (const block of response[service_port_id]) {
@@ -54,7 +56,7 @@ export class CustomBlockService {
 
                     console.debug("Blocks:", blocks);
                     return blocks;
-                })
+                }))
                 .toPromise());
 
         const resolvedBlocks = await Promise.all(blocks.map(async (block): Promise<ResolvedCustomBlock> => {
@@ -211,8 +213,8 @@ export class CustomBlockService {
             return this.onFlightCallbackQueries[url];
         }
 
-        const query = this.http.get(url, { headers: this.sessionService.getAuthHeader() })
-            .map((response: { result: CallbackResult } ) => {
+        const query = this.http.get(url, { headers: this.sessionService.getAuthHeader() }).pipe(
+            map((response: { result: CallbackResult } ) => {
 
                 if (response.result.constructor == Object) {
                     // Data from callback as dictionary
@@ -237,7 +239,7 @@ export class CustomBlockService {
 
                     return options;
                 }
-            })
+            }))
             .toPromise();
 
         this.onFlightCallbackQueries[url] = query;

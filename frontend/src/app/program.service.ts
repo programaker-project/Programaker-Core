@@ -1,8 +1,10 @@
+
+import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { ProgramMetadata, ProgramContent, ProgramType } from './program';
 import * as API from './api-config';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/operator/map';
+
+
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
@@ -57,22 +59,22 @@ export class ProgramService {
 
     getPrograms(): Promise<ProgramMetadata[]> {
         return this.getListProgramsUrl().then(url =>
-          this.http.get(url, {headers: this.sessionService.getAuthHeader()})
-                  .map(response => response as ProgramMetadata[])
+          this.http.get(url, {headers: this.sessionService.getAuthHeader()}).pipe(
+                  map(response => response as ProgramMetadata[]))
                   .toPromise());
     }
 
     getProgram(user_id: string, program_id: string): Promise<ProgramContent> {
         return this.getRetrieveProgramUrl(user_id, program_id).then(url =>
-            this.http.get(url, {headers: this.sessionService.getAuthHeader()})
-                .map(response => response as ProgramContent)
+            this.http.get(url, {headers: this.sessionService.getAuthHeader()}).pipe(
+                map(response => response as ProgramContent))
                 .toPromise());
     }
 
     getProgramTags(user_id: string, program_id: string): Promise<string[]> {
         return this.getProgramTagsUrl(user_id, program_id).then(url =>
-            this.http.get(url, {headers: this.sessionService.getAuthHeader()})
-                .map(response => response as string[])
+            this.http.get(url, {headers: this.sessionService.getAuthHeader()}).pipe(
+                map(response => response as string[]))
                 .toPromise());
     }
 
@@ -81,10 +83,10 @@ export class ProgramService {
             this.http
                 .post(url, JSON.stringify({}),
                       {headers: this.sessionService.addJsonContentType(
-                          this.sessionService.getAuthHeader())})
-                .map(response => {
+                          this.sessionService.getAuthHeader())}).pipe(
+                map(response => {
                     return response as ProgramMetadata;
-                })
+                }))
                 .toPromise());
     }
 
@@ -95,10 +97,10 @@ export class ProgramService {
                 .put(url, JSON.stringify({type: program.type, orig: program.orig, parsed: program.parsed}),
                      {headers: this.sessionService.addContentType(
                                   this.sessionService.getAuthHeader(),
-                                     ContentType.Json)})
-                .map(response => {
+                                     ContentType.Json)}).pipe(
+                map(response => {
                     return true;
-                })
+                }))
                 .toPromise()
                 .catch(_ => false)
         );
@@ -110,10 +112,10 @@ export class ProgramService {
                 .post(url, JSON.stringify({tags: programTags}),
                      {headers: this.sessionService.addContentType(
                                   this.sessionService.getAuthHeader(),
-                                     ContentType.Json)})
-                .map(response => {
+                                     ContentType.Json)}).pipe(
+                map(response => {
                     return true;
-                })
+                }))
                 .toPromise()
                 .catch(_ => false)
         );
@@ -125,11 +127,11 @@ export class ProgramService {
                     .patch(url,
                            JSON.stringify({name: new_name}),
                            {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
-                                                                      ContentType.Json)})
-                    .map(response => {
+                                                                      ContentType.Json)}).pipe(
+                    map(response => {
                         console.log("R:", response);
                         return true;
-                    })
+                    }))
                     .toPromise()));
     }
 
@@ -138,11 +140,11 @@ export class ProgramService {
             url => (this.http
                     .post(url,"",
                            {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
-                                                                      ContentType.Json)})
-                    .map(response => {
+                                                                      ContentType.Json)}).pipe(
+                    map(response => {
                         console.log("R:", response);
                         return true;
-                    })
+                    }))
                     .toPromise()));
     }
 
@@ -152,11 +154,11 @@ export class ProgramService {
                     .post(url,
                            status,
                            {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
-                                                                      ContentType.Json)})
-                    .map(response => {
+                                                                      ContentType.Json)}).pipe(
+                    map(response => {
                         console.log("R:", response);
                         return true;
-                    })
+                    }))
                     .toPromise()));
     }
 
@@ -165,11 +167,11 @@ export class ProgramService {
             url => (this.http
                     .delete(url,
                             {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
-                                                                         ContentType.Json)})
-                    .map(response => {
+                                                                         ContentType.Json)}).pipe(
+                    map(response => {
                         console.log("R:", response);
                         return true;
-                    })
+                    }))
                     .toPromise()));
     }
 }

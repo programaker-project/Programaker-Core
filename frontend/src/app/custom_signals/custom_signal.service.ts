@@ -1,7 +1,9 @@
+
+import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { CustomSignal, CustomSignalCreationResponse } from './custom_signal';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/operator/map';
+
+
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from '../session.service';
 
@@ -30,10 +32,10 @@ export class CustomSignalService {
                 {
                     headers: this.sessionService.addJsonContentType(
                         this.sessionService.getAuthHeader())
-                })
-            .map(response => {
+                }).pipe(
+            map(response => {
                 return response as CustomSignalCreationResponse;
-            })
+            }))
             .toPromise();
     }
 
@@ -43,10 +45,10 @@ export class CustomSignalService {
         return this.http
             .get(indexUrl, {
                 headers: this.sessionService.getAuthHeader()
-            })
-            .map(response => {
+            }).pipe(
+            map(response => {
                 return response as CustomSignal[];
-            })
+            }))
             .toPromise();
     }
 

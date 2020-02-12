@@ -1,11 +1,13 @@
+
+import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Session } from './session';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/operator/map';
+
+
 import * as progbar from './ui/progbar';
 import * as API from './api-config';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 import { ApiRoot } from './api-config';
 import { ContentType } from './content-type';
 
@@ -93,8 +95,8 @@ export class SessionService {
         }
 
         return (this.http
-            .get(this.checkSessionUrl, { headers: this.getAuthHeader() })
-            .map((response) => {
+            .get(this.checkSessionUrl, { headers: this.getAuthHeader() }).pipe(
+            map((response) => {
                 const check = response as any;
                 const session = new Session(check.success,
                     check.username,
@@ -102,7 +104,7 @@ export class SessionService {
                 SessionService.EstablishedSession = session;
 
                 return session;
-            })
+            }))
             .toPromise());
     }
 
@@ -110,8 +112,8 @@ export class SessionService {
         return progbar.track(this.http
             .post(this.loginUrl,
                 JSON.stringify({ username: username, password: password }),
-                { headers: this.addJsonContentType(this.getAuthHeader()) })
-            .map(response => {
+                { headers: this.addJsonContentType(this.getAuthHeader()) }).pipe(
+            map(response => {
                 const data = response as any;
                 if (data.success) {
                     this.storeToken(data.token);
@@ -122,7 +124,7 @@ export class SessionService {
                     return true;
                 }
                 return false;
-            })
+            }))
             .toPromise());
     }
 
@@ -143,13 +145,13 @@ export class SessionService {
                                      , password: password
                                      , email: email
                                  }),
-                                 { headers })
-                             .map(response => {
+                                 { headers }).pipe(
+                             map(response => {
                                  return {
                                      success: (response as any).success,
                                      continue_to_login: (response as any).ready
                                  };
-                             })
+                             }))
                              .toPromise());
     }
 
@@ -163,8 +165,8 @@ export class SessionService {
                                  JSON.stringify({
                                      verification_code: verificationCode
                                  }),
-                                 { headers })
-                             .map(response => {
+                                 { headers }).pipe(
+                             map(response => {
                                  const success = (response as any).success;
                                  if (!success) {
                                      throw new Error(success.message);
@@ -177,7 +179,7 @@ export class SessionService {
                                                              (response as any).session.user_id);
                                  SessionService.EstablishedSession = session;
                                  return session;
-                             })
+                             }))
                              .toPromise());
     }
 
@@ -190,10 +192,10 @@ export class SessionService {
                                  JSON.stringify({
                                      email: email
                                  }),
-                                 { headers })
-                             .map(_response => {
+                                 { headers }).pipe(
+                             map(_response => {
                                  return;
-                             })
+                             }))
                              .toPromise());
     }
 
@@ -206,10 +208,10 @@ export class SessionService {
                                  JSON.stringify({
                                      verification_code: verificationCode
                                  }),
-                                 { headers })
-                             .map(_response => {
+                                 { headers }).pipe(
+                             map(_response => {
                                  return;
-                             })
+                             }))
                              .toPromise());
     }
 
@@ -223,10 +225,10 @@ export class SessionService {
                                      verification_code: verificationCode,
                                      password: password,
                                  }),
-                                 { headers })
-                             .map(_response => {
+                                 { headers }).pipe(
+                             map(_response => {
                                  return;
-                             })
+                             }))
                              .toPromise());
     }
 }

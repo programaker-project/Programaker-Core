@@ -1,12 +1,8 @@
 import * as progbar from '../ui/progbar';
 
-import { Component, OnInit } from '@angular/core';
-import { Service, RequestInput, Request } from '../service';
+import { Component } from '@angular/core';
 import { ServiceService } from '../service.service';
-import { Location } from '@angular/common';
-import { Http } from '@angular/http';
-import { GetTypeOfJson, JSONType } from '../json';
-import { MatSnackBar, MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 
 import { Session } from '../session';

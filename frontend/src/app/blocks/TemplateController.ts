@@ -1,6 +1,6 @@
 import { TemplateCreateDialogComponent } from '../templates/create-dialog.component';
 import { alreadyRegisteredException, createDom } from './utils';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { ToolboxController } from './ToolboxController';
 import { TemplateService } from '../templates/template.service';
 import { Template } from '../templates/template';

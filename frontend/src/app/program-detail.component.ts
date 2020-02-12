@@ -1,8 +1,10 @@
+
+import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import {  ProgramContent, ScratchProgram } from './program';
 import { ProgramService } from './program.service';
-import 'rxjs/add/operator/switchMap';
+
 import { Toolbox } from './blocks/Toolbox';
 import * as progbar from './ui/progbar';
 /// <reference path="./blocks/blockly-core.d.ts" />
@@ -72,8 +74,8 @@ export class ProgramDetailComponent implements OnInit {
         this.smallScreen = window.innerWidth < 750;
 
         progbar.track(new Promise((resolve) => {
-            this.route.params
-                .switchMap((params: Params) => {
+            this.route.params.pipe(
+                switchMap((params: Params) => {
                     this.programUserName = params['user_id'];
                     this.programId = params['program_id'];
                     return this.programService.getProgram(params['user_id'], params['program_id']).catch(err => {
@@ -81,7 +83,7 @@ export class ProgramDetailComponent implements OnInit {
                         this.goBack();
                         throw Error("Error loading");
                     });
-                })
+                }))
                 .subscribe(program => {
                     this.prepareWorkspace().then((controller: ToolboxController) => {
                         this.program = program;

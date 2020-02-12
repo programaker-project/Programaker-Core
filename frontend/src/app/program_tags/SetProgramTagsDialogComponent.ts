@@ -36,7 +36,7 @@ export class SetProgramTagsDialogComponent {
     tagCtrl = new FormControl();
     tags: string[] = [];
 
-    @ViewChild('tagInput') tagInput: ElementRef<HTMLInputElement>;
+    @ViewChild('tagInput', { static: true }) tagInput: ElementRef<HTMLInputElement>;
 
     constructor(public dialogRef: MatDialogRef<SetProgramTagsDialogComponent>,
                 private programService: ProgramService,
