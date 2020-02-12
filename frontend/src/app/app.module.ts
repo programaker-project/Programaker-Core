@@ -65,7 +65,6 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
-import 'hammerjs';
 
 @NgModule({
     declarations: [
