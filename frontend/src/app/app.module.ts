@@ -19,6 +19,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBarModule } from '@angular/material/snack-bar'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatBadgeModule } from '@angular/material/badge';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -117,6 +118,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         MatChipsModule,
         MatSnackBarModule,
         MatProgressSpinnerModule,
+        MatBadgeModule,
 
         BrowserAnimationsModule,
 

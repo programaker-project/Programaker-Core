@@ -1,6 +1,6 @@
 <div class="app-content">
     <mat-toolbar id="main-toolbar" color="primary">
-        <!-- <span  id="main-menu-opener" role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span> -->
+        <span  id="main-menu-opener" role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span>
         <a (click)="goHome()" id="main-title"> <img class="logo" src="/assets/logo.png" alt=""> {{title}} </a>
         <span class="floating-elements">
             <span class="login-indicator">
@@ -14,22 +14,37 @@
         </span>
     </mat-toolbar>
     <mat-sidenav-container>
-        <mat-sidenav #sidenav mode="side" opened="false">
-            <mat-toolbar class="mat-medium-tall">
-                <button mat-button (click)="gotoDashboard()">
-                    Bots
-                </button>
-            </mat-toolbar>
-            <mat-toolbar class="mat-medium-tall">
-                <button mat-button (click)="gotoPrograms()">
-                    Programs
-                </button>
-            </mat-toolbar>
-            <mat-toolbar class="mat-medium-tall">
-                <button mat-button (click)="gotoServices()">
-                    Services
-                </button>
-            </mat-toolbar>
+        <mat-sidenav #sidenav mode="side" opened="true">
+            <ul>
+                <li>
+                    <button mat-button (click)="gotoDashboard()">
+                        <span>
+                            My profile
+                        </span>
+                    </button>
+                </li>
+                <li>
+                    <button mat-button (click)="gotoDashboard()">
+                        <span matBadge="4" matBadgePosition="after" matBadgeColor="accent">
+                            Programs
+                        </span>
+                    </button>
+                </li>
+                <li>
+                    <button mat-button (click)="gotoPrograms()">
+                        <span matBadge="7" matBadgePosition="after" matBadgeColor="accent">
+                            Connections
+                        </span>
+                    </button>
+                </li>
+                <li>
+                    <button mat-button (click)="gotoServices()">
+                        <span matBadge="1" matBadgePosition="after" matBadgeColor="accent">
+                            Bridges
+                        </span>
+                    </button>
+                </li>
+            </ul>
         </mat-sidenav>
 
         <div class="viewer">

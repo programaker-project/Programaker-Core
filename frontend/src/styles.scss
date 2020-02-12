@@ -16,12 +16,30 @@ body {
     height: auto;
 }
 
+.mat-drawer-inner-container {
+    padding-top: 1em;
+}
+
+.mat-drawer-inner-container > ul {
+    padding-left: 0.5ex;
+    padding-right: 1ex; // Compensate badges (not accounted for when laying-out)
+}
+
+.mat-drawer-inner-container > ul > li > button {
+    width: 100%;
+    font-size: 150%;
+    padding-top: 1ex;
+    padding-bottom: 1ex;
+    text-align: right;
+}
+
 mat-sidenav, .full-height {
     height: 100%;
 }
 
 mat-sidenav.mat-sidenav {
-    background-color: #F5F5F5;
+    background-color: #FFFFFF;
+    box-shadow: 2px 0px 3px 0px rgba(0,0,0,0.3);
 }
 
 mat-toolbar-row {
