@@ -23,19 +23,21 @@
             <div *ngIf="!session">@.....</div>
         </div>
 
-        <div class="user-programs col col-sm-4">
+        <div class="user-programs col col-sm-8">
             <h1>Programs</h1>
-            <div>
-                <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
-                    <h4>Create new program</h4>
-                </mat-card>
-            </div>
-            <div *ngFor="let program of programs">
-                <mat-card class="module program"
-                    [ngStyle]="{'background-color':program.enabled ? 'white' : 'lightgrey' }"
-                    role="button" (click)="openProgram(program)">
-                    <h4>{{program.name}}</h4>
-                </mat-card>
+            <div class="row">
+                <div class="col-sm-6">
+                    <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
+                        <h4>Create new program</h4>
+                    </mat-card>
+                </div>
+                <div class="col-sm-6" *ngFor="let program of programs">
+                    <mat-card class="module program"
+                        [ngStyle]="{'background-color':program.enabled ? 'white' : 'lightgrey' }"
+                        role="button" (click)="openProgram(program)">
+                        <h4>{{program.name}}</h4>
+                    </mat-card>
+                </div>
             </div>
         </div>
     </div>
