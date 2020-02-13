@@ -38,32 +38,25 @@ export class ServiceService {
 
     getAvailableServices(): Promise<AvailableService[]> {
         return this.getListAvailableServicesUrl().then(
-            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() }).pipe(
-                map(response => response as AvailableService[]))
+            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+                .pipe(map(response => response as AvailableService[]))
                 .toPromise());
     }
 
     getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {
         return this.getServiceEnableHowToUrl(service).then(
-            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() }).pipe(
-                map(response => {
-                    return response as ServiceEnableHowTo;
-                }))
-                .toPromise());
+            url => (this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+                    .toPromise()) as Promise<ServiceEnableHowTo>);
     }
 
-    registerService(service_id: string, data: { [key: string]: string }): Promise<boolean> {
+    registerService(service_id: string, data: { [key: string]: string }): Promise<{success: boolean}> {
         return this.getServiceRegistryUrl(service_id).then(
-            url => this.http.post(
+            url => (this.http.post(
                 url, JSON.stringify(data),
                 {
                     headers: this.sessionService.addContentType(
                         this.sessionService.getAuthHeader(),
                         ContentType.Json),
-                }).pipe(
-                map(response => {
-                    return (response as any).success;
-                }))
-                .toPromise());
+                }).toPromise()) as Promise<{success: boolean}>);
     }
 }

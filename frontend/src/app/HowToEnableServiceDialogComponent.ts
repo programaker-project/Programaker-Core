@@ -141,8 +141,8 @@ export class HowToEnableServiceDialogComponent {
 
     send_form(): void {
         this.serviceService.registerService(this.data.metadata.service_id, this.form)
-            .then((success) => {
-                if (success) {
+            .then((result) => {
+                if (result.success) {
                     this.dialogRef.close();
                 }
             });

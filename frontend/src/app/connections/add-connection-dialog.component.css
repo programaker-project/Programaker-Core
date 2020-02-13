@@ -15,3 +15,7 @@ mat-card.reading {
     background-color: #ddd;
     color: #fff;
 }
+
+mat-card.error {
+    background-color: #fbb0b0;
+}

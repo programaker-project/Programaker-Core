@@ -7,9 +7,10 @@ import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogCo
 import { AvailableService, ServiceEnableHowTo } from '../service';
 
 
+import { MatDialog } from '@angular/material/dialog';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
-type BridgeData = {bridge: AvailableService, state: 'waiting' | 'reading' | 'selected', index: number};
+type BridgeData = {bridge: AvailableService, state: 'waiting' | 'reading' | 'selected' | 'error', index: number};
 
 @Component({
     selector: 'app-add-connection-dialog',
@@ -27,6 +28,8 @@ export class AddConnectionDialogComponent {
                 public sessionService: SessionService,
                 public serviceService: ServiceService,
                 public connectionService: ConnectionService,
+                public dialog: MatDialog,
+
                 @Inject(MAT_DIALOG_DATA)
                 public data: {  }) {
         this.connectionService.getAvailableBridges().then((bridges: AvailableService[]) => {
@@ -62,6 +65,9 @@ export class AddConnectionDialogComponent {
                     }
 
                     this.showHowToEnable(service, howToEnable)
+                }).catch(err => {
+                    service.state = 'error';
+                    console.error(err);
                 });
         }
     }
@@ -75,6 +81,9 @@ export class AddConnectionDialogComponent {
         }
 
         console.log(howTo);
+        const dialogRef = this.dialog.open(HowToEnableServiceDialogComponent, {
+            data: howTo
+        });
     }
 
 }

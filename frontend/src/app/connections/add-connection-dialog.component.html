@@ -5,7 +5,13 @@
         <div class="grid grid-pad">
             <div class="row">
                 <div *ngFor="let bridge of availableBridges" class="col-sm-4">
-                    <mat-card [ngClass]="{'module': true, 'bridge': true, 'selected': bridge.state === 'selected', 'reading': bridge.state === 'reading' }"
+                    <mat-card [ngClass]="{
+                        'module': true,
+                        'bridge': true,
+                        'selected': bridge.state === 'selected',
+                        'reading': bridge.state === 'reading',
+                        'error': bridge.state === 'error'
+                        }"
                         role="button"
                         (click)="enableService(bridge)">
                         <h4>{{ bridge.bridge.name }}</h4>
