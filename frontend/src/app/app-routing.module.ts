@@ -7,6 +7,7 @@ import { ServicesComponent } from './services.component';
 import { BridgeAddComponent } from './bridges/add.component';
 
 import { DashboardComponent } from './dashboard.component';
+import { ProfileComponent } from './profile/profile.component';
 
 import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
@@ -34,6 +35,7 @@ const routes: Routes = [
 
     // General
     { path: 'dashboard', component: DashboardComponent },
+    { path: 'profile', component: ProfileComponent },
 
     // Programs
     { path: 'users/:user_id/programs/', component: ProgramsComponent },

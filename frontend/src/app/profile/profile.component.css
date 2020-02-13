@@ -1,0 +1,88 @@
+.profile-section {
+    width: 100%;
+}
+
+mat-card.not-enabled {
+    background: repeating-linear-gradient(
+        45deg,
+        #444,
+        #444 10px,
+        #222 10px,
+        #222 20px
+    );
+    color: white;
+}
+
+mat-card.enabled {
+    background-color: #227e00;
+    color: #fff;
+}
+
+
+div.letter-call-to-action {
+    background-color: darkorange;
+    font-size: small;
+    padding: 1ex;
+    border-radius: 2px;
+    margin-top: 1ex;
+}
+
+mat-card.module > h4 {
+    overflow: hidden;
+    font-size: 1.15rem;
+    cursor: pointer;
+}
+
+/* Public section */
+.public-section {
+    width: 100%;
+    padding: 1em;
+}
+
+.col > h1 {
+    text-align: center;
+}
+
+.user-data > .username {
+    color: #444;
+    font-size: 200%;
+}
+
+.user-data > .avatar {
+    box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.3);
+    border-radius: 5px;
+}
+
+/* Private section. Mostly, connections upper "bar" */
+.private-section {
+    border-bottom: 1px solid black;
+    padding: 1em;
+    background: repeating-linear-gradient(45deg,#fafafa,#fafafa 10px,#f3f3f3 10px, #f3f3f3 20px);
+    box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.3);
+    overflow-x: auto;
+}
+
+.user-connections {
+    margin: 0 auto;
+    width: max-content;
+}
+
+.user-connections > h1 {
+    display: inline;
+    font-size: 150%;
+    margin-right: 1ex;
+}
+
+.user-connections > div {
+    display: inline;
+    margin-right: 1ex;
+}
+
+.user-connections > div > mat-card {
+    display: inline-block;
+    padding: 1ex;
+}
+
+.user-connections > div > mat-card > mat-icon {
+    vertical-align: bottom;
+}

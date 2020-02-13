@@ -31,6 +31,7 @@ body {
     padding-top: 1ex;
     padding-bottom: 1ex;
     text-align: right;
+    text-decoration: underline solid currentColor 1px;
 }
 
 mat-sidenav, .full-height {
@@ -110,6 +111,10 @@ app-my-reset-password-start, app-my-reset-password-update-password {
 
 a[role="button"], a[role="button"]:not([href]), a[role="button"]:not([href]):hover, a[role="button"]:hover {
     text-decoration: underline;
+    cursor: pointer;
+}
+
+mat-card[role="button"], .mat-card[role="button"] {
     cursor: pointer;
 }
 
