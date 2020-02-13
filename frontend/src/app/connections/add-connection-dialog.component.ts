@@ -8,6 +8,9 @@ import { AvailableService, ServiceEnableHowTo } from '../service';
 
 
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+
+type BridgeData = {bridge: AvailableService, state: 'waiting' | 'reading' | 'selected', index: number};
+
 @Component({
     selector: 'app-add-connection-dialog',
     templateUrl: 'add-connection-dialog.component.html',
@@ -16,9 +19,9 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
     ],
     providers: [SessionService, ServiceService, ConnectionService],
 })
-
 export class AddConnectionDialogComponent {
-    availableBridges: AvailableService[] = [];
+    availableBridges: BridgeData[] = [];
+    selectedIndex = null;
 
     constructor(public dialogRef: MatDialogRef<AddConnectionDialogComponent>,
                 public sessionService: SessionService,
@@ -28,7 +31,9 @@ export class AddConnectionDialogComponent {
                 public data: {  }) {
         this.connectionService.getAvailableBridges().then((bridges: AvailableService[]) => {
             console.log("Bridges:", bridges);
-            this.availableBridges = bridges;
+            for (let i = 0 ; i < bridges.length; i++){
+                this.availableBridges.push({ bridge: bridges[i], state: 'waiting', index: i });
+            }
         });
     }
 
@@ -36,15 +41,39 @@ export class AddConnectionDialogComponent {
         this.dialogRef.close();
     }
 
-    enableService(service: AvailableService): void {
-        this.serviceService.getHowToEnable(service)
-            .then(howToEnable => this.showHowToEnable(howToEnable));
-    }
-
-    showHowToEnable(howTo: ServiceEnableHowTo): void {
-        if ((howTo as any).success === false) {
+    enableService(service: BridgeData): void {
+        if (this.selectedIndex === service.index) {
             return;
         }
+
+        if (this.selectedIndex !== null) {
+            if (this.availableBridges[this.selectedIndex].state === 'selected') {
+                this.availableBridges[this.selectedIndex].state = 'waiting';
+            }
+        }
+
+        this.selectedIndex = service.index;
+        if (service.state !== 'reading') {
+            service.state = 'reading';
+            this.serviceService.getHowToEnable(service.bridge)
+                .then(howToEnable => {
+                    if (this.selectedIndex === service.index) {
+                        service.state = 'selected';
+                    }
+
+                    this.showHowToEnable(service, howToEnable)
+                });
+        }
+    }
+
+    showHowToEnable(service: BridgeData, howTo: ServiceEnableHowTo): void {
+        service.state = 'selected';
+
+        if (howTo === null) {
+            // No configuration, just accept
+            return;
+        }
+
         console.log(howTo);
     }
 

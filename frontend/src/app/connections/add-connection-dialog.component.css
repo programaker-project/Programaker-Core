@@ -5,3 +5,13 @@
 button {
     right: 0;
 }
+
+mat-card.selected {
+    background-color: #227e00;
+    color: #fff;
+}
+
+mat-card.reading {
+    background-color: #ddd;
+    color: #fff;
+}
