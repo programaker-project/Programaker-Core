@@ -37,6 +37,18 @@ export class AppComponent {
                 }
             }
         });
+
+        window.onresize = this.updateVerticalSpaces;
+        window.onload = this.updateVerticalSpaces;
+    }
+
+    updateVerticalSpaces(): void {
+        const height = window.innerHeight;
+        const higherPart = document.getElementById('main-toolbar') as HTMLElement;
+        const lowerPart = document.getElementsByClassName('mat-drawer-container')[0] as HTMLElement;
+
+        lowerPart.style['min-height'] = (height - higherPart.clientHeight) + 'px';
+        console.log(`${height} - ${higherPart.clientHeight} + 'px' = ${lowerPart.style.height}`);
     }
 
     gotoLogin(): void {
