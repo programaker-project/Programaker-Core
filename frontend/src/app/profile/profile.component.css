@@ -86,3 +86,11 @@ mat-card.module > h4 {
 .user-connections > div > mat-card > mat-icon {
     vertical-align: bottom;
 }
+
+/* Call-to-actions */
+.user-connections .integrated-call-to-action {
+    display: inline-block;
+    font-size: 200%;
+    color: #ff4500;
+    font-weight: bold;
+}

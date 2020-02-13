@@ -48,7 +48,6 @@ export class AppComponent {
         const lowerPart = document.getElementsByClassName('mat-drawer-container')[0] as HTMLElement;
 
         lowerPart.style['min-height'] = (height - higherPart.clientHeight) + 'px';
-        console.log(`${height} - ${higherPart.clientHeight} + 'px' = ${lowerPart.style.height}`);
     }
 
     gotoLogin(): void {

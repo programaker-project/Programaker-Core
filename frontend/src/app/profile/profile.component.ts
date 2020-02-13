@@ -1,6 +1,7 @@
 import * as progbar from '../ui/progbar';
 
 import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
+import { AddConnectionDialogComponent } from '../connections/add-connection-dialog.component';
 
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
@@ -67,6 +68,8 @@ export class ProfileComponent {
 
                     this.serviceService.getAvailableServices()
                         .then(services => this.services = services);
+
+                    setTimeout(this.addConnection.bind(this), 1000);
                 }
             })
             .catch(e => {
@@ -79,6 +82,12 @@ export class ProfileComponent {
         this.programService.createProgram().then(program => {
             this.openProgram(program);
         });
+    }
+
+    addConnection(): void {
+        const dialogRef = this.dialog.open(AddConnectionDialogComponent, { width: '90%' });
+
+        dialogRef.afterClosed().subscribe(result => { });
     }
 
     openProgram(program: ProgramMetadata): void {

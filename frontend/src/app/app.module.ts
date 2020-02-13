@@ -46,6 +46,9 @@ import { BridgeIndexComponent } from './bridges/index.component';
 import { BridgeAddComponent } from './bridges/add.component';
 import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
 
+// Connections
+import { AddConnectionDialogComponent } from './connections/add-connection-dialog.component';
+
 // Custom signals
 import { CustomSignalCreateDialogComponent } from './custom_signals/create-dialog.component';
 
@@ -98,6 +101,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         TemplateCreateDialogComponent,
         StopThreadProgramDialogComponent,
         SetProgramTagsDialogComponent,
+        AddConnectionDialogComponent,
 
         // Pipes
         SummarizeJSON,

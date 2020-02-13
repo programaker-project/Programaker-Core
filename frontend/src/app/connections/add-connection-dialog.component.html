@@ -1,0 +1,19 @@
+<h2 mat-dialog-title>Select a bridge to connect to</h2>
+
+<mat-dialog-content>
+    <div class="collection-grid">
+        <div class="grid grid-pad">
+            <div class="row">
+                <div *ngFor="let bridge of availableBridges" class="col-sm-4">
+                    <mat-card class="module bridge"
+                        (click)="enableService(bridge)">
+                        <h4>{{ bridge.name }}</h4>
+                    </mat-card>
+                </div>
+            </div>
+        </div>
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
+</mat-dialog-actions>

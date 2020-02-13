@@ -1,0 +1,7 @@
+.mat-dialog-actions > button.cancellation {
+    margin-left: auto;
+}
+
+button {
+    right: 0;
+}
