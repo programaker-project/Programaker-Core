@@ -75,7 +75,7 @@ export class AddConnectionDialogComponent {
     showHowToEnable(service: BridgeData, howTo: ServiceEnableHowTo): void {
         service.state = 'selected';
 
-        if (howTo === null) {
+        if ((howTo === null) || (howTo === undefined)) {
             // No configuration, just accept
             return;
         }
