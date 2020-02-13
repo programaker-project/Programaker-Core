@@ -268,6 +268,9 @@ export class ProgramDetailComponent implements OnInit {
             }
 
             this.reset_zoom();
+
+            const dragContainer = document.querySelector('.blocklyBlockDragSurface>g');
+            dragContainer.setAttribute('filter', 'drop-shadow(0 0 5px rgba(0,0,0,0.5))');
         }, 0);
 
         this.patch_blockly();
