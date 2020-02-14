@@ -19,7 +19,8 @@
 
 -record(user_session_entry, { session_id
                             , user_id
-                            , session_start_time
+                            , session_start_time :: time_in_seconds() | ?MNESIA_SELECTOR
+                            , session_last_used_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             }).
 
 -record(user_program_entry, { id :: binary()            | ?MNESIA_SELECTOR

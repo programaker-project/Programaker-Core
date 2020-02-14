@@ -198,5 +198,25 @@ get_versioning(Nodes) ->
                                  )
                         end
                 }
+
+                %% - Add *session_last_used_time* to sessions table.
+                %%
+                %% Previous records are set to `0`.
+                %% This is to avoid a fake spike on the migration date.
+              , #database_version_transformation
+                { id=7
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  ?USER_SESSIONS_TABLE,
+                                  fun({user_session_entry, SessionId, UserId, SessionStartTime }) ->
+                                          %% Replicate the entry. Set status to ready.
+                                          {user_session_entry, SessionId, UserId, SessionStartTime,
+                                           0 }
+                                  end,
+                                  [ session_id, user_id, session_start_time, session_last_used_time ],
+                                  user_session_entry
+                                 )
+                        end
+                }
               ]
         }.

@@ -6,8 +6,8 @@
         , get_user/1
         , generate_token_for_user/1
         , delete_user/1
-        , get_session_username/1
-        , get_session_userid/1
+        , get_session_username/2
+        , get_session_userid/2
         , create_monitor/2
         , get_monitor_from_id/1
         , dirty_list_monitors/0
@@ -152,17 +152,26 @@ generate_token_for_user(UserId) ->
             {error, Reason}
     end.
 
-get_session_username(SessionId) when is_binary(SessionId) ->
+get_session_username(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
                               [] ->
                                   { error, session_not_found };
-                              [#user_session_entry{ user_id=UserId } | _] ->
+                              [Session=#user_session_entry{ user_id=UserId } | _] ->
                                   case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
                                       [] ->
                                           %% TODO log event, this shouldn't happen
                                           { error, session_not_found };
                                       [#registered_user_entry{username=Username} | _] ->
+                                          ok = case RefreshUsedTime of
+                                                   true ->
+                                                       mnesia:write(
+                                                         ?USER_SESSIONS_TABLE
+                                                        , Session#user_session_entry{session_last_used_time=erlang:system_time(second)}
+                                                        , write);
+                                                   false ->
+                                                       ok
+                                               end,
                                           {ok, Username}
                                   end
                           end
@@ -171,12 +180,21 @@ get_session_username(SessionId) when is_binary(SessionId) ->
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
 
-get_session_userid(SessionId) when is_binary(SessionId) ->
+get_session_userid(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
                               [] ->
                                   { error, session_not_found };
-                              [#user_session_entry{ user_id=UserId } | _] ->
+                              [Session=#user_session_entry{ user_id=UserId } | _] ->
+                                  ok = case RefreshUsedTime of
+                                           true ->
+                                               mnesia:write(
+                                                 ?USER_SESSIONS_TABLE
+                                                , Session#user_session_entry{session_last_used_time=erlang:system_time(second)}
+                                                , write);
+                                           false ->
+                                               ok
+                                       end,
                                   {ok, UserId}
                           end
                   end,
@@ -848,6 +866,7 @@ add_token_to_user(UserId, SessionToken) ->
                                       , #user_session_entry{ session_id=SessionToken
                                                            , user_id=UserId
                                                            , session_start_time=StartTime
+                                                           , session_last_used_time=0
                                                            }
                                       , write)
                   end,
