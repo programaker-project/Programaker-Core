@@ -114,7 +114,7 @@ generate_token_for_user(UserId) ->
     automate_storage:generate_token_for_user(UserId).
 
 is_valid_token(Token) when is_binary(Token) ->
-    case automate_storage:get_session_username(Token) of
+    case automate_storage:get_session_username(Token, true) of
         { ok, Username } ->
             {true, Username};
         { error, session_not_found } ->
@@ -125,7 +125,7 @@ is_valid_token(Token) when is_binary(Token) ->
     end.
 
 is_valid_token_uid(Token) when is_binary(Token) ->
-    case automate_storage:get_session_userid(Token) of
+    case automate_storage:get_session_userid(Token, true) of
         { ok, UserId } ->
             {true, UserId};
         { error, session_not_found } ->
