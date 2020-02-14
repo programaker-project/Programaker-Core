@@ -1,4 +1,4 @@
-image: docker:latest
+image: docker:19.03.5-dind
 
 stages:
   - build
@@ -12,7 +12,7 @@ variables:
   DOCKER_IMAGE_BACKEND_OPTIMIZED: plaza-core-backend-optimized
 
 services:
-  - docker:dind
+  - docker:19.03.5-dind
 
 ## Frontend
 build-frontend:
