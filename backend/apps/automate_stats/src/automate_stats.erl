@@ -138,13 +138,13 @@ update_internal_metrics() ->
 
     %% Users
     { ok
-    , UserCount, DailyRegisteredUsers, WeeklyRegisteredUsers, MonthlyRegisteredUsers
+    , UserCount, RegisteredUsersLastDay, RegisteredUsersLastWeek, RegisteredUsersLastMonth
     , LoggedUsersLastHour, LoggedUsersLastDay, LoggedUsersLastWeek, LoggedUsersLastMonth
     } = automate_storage_stats:get_user_metrics(),
     set_metric(gauge, automate_user_count, UserCount, [registered]),
-    set_metric(gauge, automate_daily_registered_user, DailyRegisteredUsers, [registered]),
-    set_metric(gauge, automate_weekly_registered_user, WeeklyRegisteredUsers, [registered]),
-    set_metric(gauge, automate_monthly_registered_user, MonthlyRegisteredUsers, [registered]),
+    set_metric(gauge, automate_registered_users_last_day, RegisteredUsersLastDay, [registered]),
+    set_metric(gauge, automate_registered_users_last_week, RegisteredUsersLastWeek, [registered]),
+    set_metric(gauge, automate_registered_users_last_month, RegisteredUsersLastMonth, [registered]),
 
     set_metric(gauge, automate_logged_users_last_hour, LoggedUsersLastHour, [registered]),
     set_metric(gauge, automate_logged_users_last_day, LoggedUsersLastDay, [registered]),
@@ -165,9 +165,9 @@ prepare() ->
     add_metric(gauge, automate_service_count, <<"Automate's services.">>, [visibility]),
 
     add_metric(gauge, automate_user_count, <<"Automate's user.">>, [state]),
-    add_metric(gauge, automate_daily_registered_user, <<"Users registered in the last 24 hours.">>, [state]),
-    add_metric(gauge, automate_weekly_registered_user, <<"Users registered in the last 7 days.">>, [state]),
-    add_metric(gauge, automate_monthly_registered_user, <<"Users registered in the last 28 days.">>, [state]),
+    add_metric(gauge, automate_registered_users_last_day, <<"Users registered in the last 24 hours.">>, [state]),
+    add_metric(gauge, automate_registered_users_last_week, <<"Users registered in the last 7 days.">>, [state]),
+    add_metric(gauge, automate_registered_users_last_month, <<"Users registered in the last 28 days.">>, [state]),
 
     add_metric(gauge, automate_logged_users_last_hour, <<"Users logged in the last hour.">>, [state]),
     add_metric(gauge, automate_logged_users_last_day, <<"Users logged in the last 24 hours.">>, [state]),

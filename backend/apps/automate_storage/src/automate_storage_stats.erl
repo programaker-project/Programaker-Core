@@ -35,13 +35,13 @@ get_user_metrics() ->
                                           },
     UserResultColumn = '$1',
 
-    DailyRegisteredUsersMatcher = [{ UserMatchHead
+    RegisteredUsersLastDayMatcher = [{ UserMatchHead
                                    , [{ '>', '$2', CurrentTime - ?SECONDS_IN_DAY }]
                                    , [UserResultColumn]}],
-    WeeklyRegisteredUsersMatcher = [{ UserMatchHead
+    RegisteredUsersLastWeekMatcher = [{ UserMatchHead
                                     , [{ '>', '$2', CurrentTime - ?SECONDS_IN_7DAY_WEEK }]
                                     , [UserResultColumn]}],
-    MonthlyRegisteredUsersMatcher = [{ UserMatchHead
+    RegisteredUsersLastMonthMatcher = [{ UserMatchHead
                                      , [{ '>', '$2', CurrentTime - ?SECONDS_IN_28DAY_MONTH }]
                                      , [UserResultColumn]}],
 
@@ -71,9 +71,9 @@ get_user_metrics() ->
 
     Transaction = fun () ->
                           UserCount = mnesia:table_info(?REGISTERED_USERS_TABLE, size),
-                          DailyRegisteredUsers = select_length(?REGISTERED_USERS_TABLE, DailyRegisteredUsersMatcher),
-                          WeeklyRegisteredUsers = select_length(?REGISTERED_USERS_TABLE, WeeklyRegisteredUsersMatcher),
-                          MonthlyRegisteredUsers = select_length(?REGISTERED_USERS_TABLE, MonthlyRegisteredUsersMatcher),
+                          RegisteredUsersLastDay = select_length(?REGISTERED_USERS_TABLE, RegisteredUsersLastDayMatcher),
+                          RegisteredUsersLastWeek = select_length(?REGISTERED_USERS_TABLE, RegisteredUsersLastWeekMatcher),
+                          RegisteredUsersLastMonth = select_length(?REGISTERED_USERS_TABLE, RegisteredUsersLastMonthMatcher),
 
                           LoggedUsersLastHour = select_unique_length(?USER_SESSIONS_TABLE, HourlyActiveSessionMatcher),
                           LoggedUsersLastDay = select_unique_length(?USER_SESSIONS_TABLE, DailyActiveSessionMatcher),
@@ -81,7 +81,7 @@ get_user_metrics() ->
                           LoggedUsersLastMonth = select_unique_length(?USER_SESSIONS_TABLE, MonthlyActiveSessionMatcher),
 
                           { ok
-                          , UserCount, DailyRegisteredUsers, WeeklyRegisteredUsers, MonthlyRegisteredUsers
+                          , UserCount, RegisteredUsersLastDay, RegisteredUsersLastWeek, RegisteredUsersLastMonth
                           , LoggedUsersLastHour, LoggedUsersLastDay, LoggedUsersLastWeek, LoggedUsersLastMonth
                           }
                   end,
