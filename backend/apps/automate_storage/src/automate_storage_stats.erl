@@ -7,6 +7,7 @@
 
 -define(SECONDS_IN_HOUR, (60 * 60)).
 -define(SECONDS_IN_DAY, (?SECONDS_IN_HOUR * 24)).
+-define(SECONDS_IN_7DAY_WEEK, (?SECONDS_IN_DAY * 7)).
 -define(SECONDS_IN_28DAY_MONTH, (?SECONDS_IN_DAY * 28)).
 
 -include("./databases.hrl").
@@ -16,8 +17,8 @@
 %% API functions
 %%====================================================================
 -spec get_user_metrics() -> { ok
-                            , pos_integer(), pos_integer(), pos_integer()
-                            , pos_integer(), pos_integer(), pos_integer()
+                            , pos_integer(), pos_integer(), pos_integer(), pos_integer()
+                            , pos_integer(), pos_integer(), pos_integer(), pos_integer()
                             }.
 get_user_metrics() ->
     %% This is done in a dirty way for the sake of performance.
@@ -37,6 +38,9 @@ get_user_metrics() ->
     DailyRegisteredUsersMatcher = [{ UserMatchHead
                                    , [{ '>', '$2', CurrentTime - ?SECONDS_IN_DAY }]
                                    , [UserResultColumn]}],
+    WeeklyRegisteredUsersMatcher = [{ UserMatchHead
+                                    , [{ '>', '$2', CurrentTime - ?SECONDS_IN_7DAY_WEEK }]
+                                    , [UserResultColumn]}],
     MonthlyRegisteredUsersMatcher = [{ UserMatchHead
                                      , [{ '>', '$2', CurrentTime - ?SECONDS_IN_28DAY_MONTH }]
                                      , [UserResultColumn]}],
@@ -53,26 +57,32 @@ get_user_metrics() ->
                                   , [SessionResultColumn]
                                   }],
     DailyActiveSessionMatcher = [{ SessionMatchHead
-                                  , [{ '>', '$2', CurrentTime - ?SECONDS_IN_DAY }]
+                                 , [{ '>', '$2', CurrentTime - ?SECONDS_IN_DAY }]
+                                 , [SessionResultColumn]
+                                 }],
+    WeeklyActiveSessionMatcher = [{ SessionMatchHead
+                                  , [{ '>', '$2', CurrentTime - ?SECONDS_IN_7DAY_WEEK }]
                                   , [SessionResultColumn]
                                   }],
     MonthlyActiveSessionMatcher = [{ SessionMatchHead
-                                  , [{ '>', '$2', CurrentTime - ?SECONDS_IN_28DAY_MONTH }]
-                                  , [SessionResultColumn]
-                                  }],
+                                   , [{ '>', '$2', CurrentTime - ?SECONDS_IN_28DAY_MONTH }]
+                                   , [SessionResultColumn]
+                                   }],
 
     Transaction = fun () ->
                           UserCount = mnesia:table_info(?REGISTERED_USERS_TABLE, size),
                           DailyRegisteredUsers = select_length(?REGISTERED_USERS_TABLE, DailyRegisteredUsersMatcher),
+                          WeeklyRegisteredUsers = select_length(?REGISTERED_USERS_TABLE, WeeklyRegisteredUsersMatcher),
                           MonthlyRegisteredUsers = select_length(?REGISTERED_USERS_TABLE, MonthlyRegisteredUsersMatcher),
 
                           LoggedUsersLastHour = select_unique_length(?USER_SESSIONS_TABLE, HourlyActiveSessionMatcher),
                           LoggedUsersLastDay = select_unique_length(?USER_SESSIONS_TABLE, DailyActiveSessionMatcher),
+                          LoggedUsersLastWeek = select_unique_length(?USER_SESSIONS_TABLE, WeeklyActiveSessionMatcher),
                           LoggedUsersLastMonth = select_unique_length(?USER_SESSIONS_TABLE, MonthlyActiveSessionMatcher),
 
                           { ok
-                          , UserCount, DailyRegisteredUsers, MonthlyRegisteredUsers
-                          , LoggedUsersLastHour, LoggedUsersLastDay, LoggedUsersLastMonth
+                          , UserCount, DailyRegisteredUsers, WeeklyRegisteredUsers, MonthlyRegisteredUsers
+                          , LoggedUsersLastHour, LoggedUsersLastDay, LoggedUsersLastWeek, LoggedUsersLastMonth
                           }
                   end,
     mnesia:async_dirty(Transaction).

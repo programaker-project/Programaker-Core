@@ -138,15 +138,17 @@ update_internal_metrics() ->
 
     %% Users
     { ok
-    , UserCount, DailyRegisteredUsers, MonthlyRegisteredUsers
-    , LoggedUsersLastHour, LoggedUsersLastDay, LoggedUsersLastMonth
+    , UserCount, DailyRegisteredUsers, WeeklyRegisteredUsers, MonthlyRegisteredUsers
+    , LoggedUsersLastHour, LoggedUsersLastDay, LoggedUsersLastWeek, LoggedUsersLastMonth
     } = automate_storage_stats:get_user_metrics(),
     set_metric(gauge, automate_user_count, UserCount, [registered]),
     set_metric(gauge, automate_daily_registered_user, DailyRegisteredUsers, [registered]),
+    set_metric(gauge, automate_weekly_registered_user, WeeklyRegisteredUsers, [registered]),
     set_metric(gauge, automate_monthly_registered_user, MonthlyRegisteredUsers, [registered]),
 
     set_metric(gauge, automate_logged_users_last_hour, LoggedUsersLastHour, [registered]),
     set_metric(gauge, automate_logged_users_last_day, LoggedUsersLastDay, [registered]),
+    set_metric(gauge, automate_logged_users_last_week, LoggedUsersLastWeek, [registered]),
     set_metric(gauge, automate_logged_users_last_month, LoggedUsersLastMonth, [registered]),
     ok.
 
@@ -164,10 +166,12 @@ prepare() ->
 
     add_metric(gauge, automate_user_count, <<"Automate's user.">>, [state]),
     add_metric(gauge, automate_daily_registered_user, <<"Users registered in the last 24 hours.">>, [state]),
+    add_metric(gauge, automate_weekly_registered_user, <<"Users registered in the last 7 days.">>, [state]),
     add_metric(gauge, automate_monthly_registered_user, <<"Users registered in the last 28 days.">>, [state]),
 
     add_metric(gauge, automate_logged_users_last_hour, <<"Users logged in the last hour.">>, [state]),
     add_metric(gauge, automate_logged_users_last_day, <<"Users logged in the last 24 hours.">>, [state]),
+    add_metric(gauge, automate_logged_users_last_week, <<"Users logged in the last 7 days.">>, [state]),
     add_metric(gauge, automate_logged_users_last_month, <<"Users logged in the last 28 days.">>, [state]),
     ok.
 
