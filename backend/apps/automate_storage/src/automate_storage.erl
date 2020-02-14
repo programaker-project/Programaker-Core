@@ -71,6 +71,7 @@
 %%====================================================================
 create_user(Username, Password, Email, Status) ->
     UserId = generate_id(),
+    CurrentTime = erlang:system_time(second),
     CipheredPassword = case Password of
                            undefined -> undefined;
                            _ -> cipher_password(Password)
@@ -79,6 +80,7 @@ create_user(Username, Password, Email, Status) ->
                                                , username=Username
                                                , password=CipheredPassword
                                                , email=Email
+                                               , registration_time=CurrentTime
                                                , status=Status
                                                },
     case save_unique_user(RegisteredUserData) of
@@ -273,6 +275,7 @@ get_user_from_mail_address(Email) ->
                                       , password='_'
                                       , email='$1'
                                       , status='_'
+                                      , registration_time='_'
                                       },
     Guard = {'==', '$1', Email},
     ResultColumn = '$_',
@@ -752,6 +755,7 @@ get_userid_from_username(Username) ->
                                       , password='_'
                                       , email='_'
                                       , status='_'
+                                      , registration_time='_'
                                       },
     %% Check that neither the id, username or email matches another
     Guard = {'==', '$2', Username},
@@ -856,6 +860,7 @@ get_userid_and_password_from_username(Username) ->
                                       , password='$3'
                                       , email='_'
                                       , status='_'
+                                      , registration_time='_'
                                       },
     Guard = {'==', '$2', Username},
     ResultColumn = '$1',
@@ -936,6 +941,7 @@ retrieve_monitors_list_from_username(Username) ->
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
+                                                                , registration_time='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -996,6 +1002,7 @@ retrieve_program(Username, ProgramName) ->
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
+                                                                , registration_time='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1047,6 +1054,7 @@ retrieve_program_list_from_username(Username) ->
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
+                                                                , registration_time='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1123,6 +1131,7 @@ store_new_program_content(Username, ProgramName,
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
+                                                                , registration_time='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1185,6 +1194,7 @@ save_unique_user(UserData) ->
                                       , password='_'
                                       , email='$3'
                                       , status='_'
+                                      , registration_time='_'
                                       },
 
     %% Check that neither the id, username or email matches another

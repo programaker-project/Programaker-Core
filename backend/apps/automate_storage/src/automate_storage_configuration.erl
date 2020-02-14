@@ -178,5 +178,25 @@ get_versioning(Nodes) ->
                                                             automate_configuration:get_table_wait_time())
                         end
                 }
+
+                %% - Add *registration_time* to user table.
+                %%
+                %% Previous records are set to `0`.
+                %% This is to avoid a fake spike on registered users on the migration date.
+              , #database_version_transformation
+                { id=6
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  ?REGISTERED_USERS_TABLE,
+                                  fun({registered_user_entry, Id, Username, Password, Email, Status }) ->
+                                          %% Replicate the entry. Set status to ready.
+                                          {registered_user_entry, Id, Username, Password, Email,
+                                           Status, 0 }
+                                  end,
+                                  [ id, username, password, email, status, registration_time ],
+                                  registered_user_entry
+                                 )
+                        end
+                }
               ]
         }.

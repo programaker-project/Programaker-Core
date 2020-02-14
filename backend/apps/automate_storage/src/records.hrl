@@ -1,12 +1,14 @@
 -include("../../automate_common_types/src/types.hrl").
 
 -type user_status() :: ready | mail_not_verified.
+-type time_in_seconds() :: integer().
 
 -record(registered_user_entry, { id
                                , username
                                , password
                                , email
                                , status :: user_status() | ?MNESIA_SELECTOR
+                               , registration_time :: time_in_seconds() | ?MNESIA_SELECTOR
                                }).
 
 -type verification_type() :: registration_mail_verification | password_reset_verification.
