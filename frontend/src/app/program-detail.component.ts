@@ -43,6 +43,7 @@ export class ProgramDetailComponent implements OnInit {
     toolboxController: ToolboxController;
     portraitMode: boolean;
     smallScreen: boolean;
+    patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
 
     constructor(
         private monitorService: MonitorService,
@@ -163,9 +164,9 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     patch_flyover_area_deletion() {
-        const orig = (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_;
+        this.patchedFunctions.recordDeleteAreas = (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_;
         (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_ = () => {
-            orig.bind(this.workspace)();
+            this.patchedFunctions.recordDeleteAreas.bind(this.workspace)();
 
             // Disable toolbox delete area use trashcan for deletion
             const tbDelArea = (this.workspace as any).deleteAreaToolbox_;
@@ -271,13 +272,13 @@ export class ProgramDetailComponent implements OnInit {
 
             const dragContainer = document.querySelector('.blocklyBlockDragSurface>g');
             dragContainer.setAttribute('filter', 'drop-shadow(0 0 5px rgba(0,0,0,0.5))');
+
+            if (this.portraitMode || this.smallScreen) {
+                this.patch_flyover_area_deletion();
+            }
         }, 0);
 
         this.patch_blockly();
-
-        if (this.portraitMode || this.smallScreen) {
-            this.patch_flyover_area_deletion();
-        }
     }
 
     /**
@@ -399,8 +400,27 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     goBack(): boolean {
+        this.dispose();
         this.router.navigate(['/dashboard'])
         return false;
+    }
+
+    dispose() {
+        try {
+            this.workspace.dispose();
+        } catch(error) {
+            console.error("Error disposing workspace:", error);
+        }
+
+        // Restore the patched function, to cleaup the state.
+        try {
+            if (this.patchedFunctions.recordDeleteAreas) {
+                (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_ = this.patchedFunctions.recordDeleteAreas;
+                this.patchedFunctions.recordDeleteAreas = null;
+            }
+        } catch (error) {
+            console.error("Error restoring recordDeleteAreas:", error);
+        }
     }
 
     sendProgram() {
@@ -438,6 +458,7 @@ export class ProgramDetailComponent implements OnInit {
                     const path = document.location.pathname.split("/");
                     path[path.length - 1] = encodeURIComponent(this.program.name);
 
+                    this.dispose();
                     this.router.navigate([path.join("/")]);
                     console.log("Changing name to", this.program);
                 }));
