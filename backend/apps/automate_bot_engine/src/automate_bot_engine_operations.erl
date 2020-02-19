@@ -77,7 +77,7 @@ resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
                 -> {stopped, thread_finished} | {did_not_run, waiting}
                        | {did_not_run, {new_state, #program_thread{}}}
                        | {ran_this_tick, #program_thread{}}.
-run_thread(Thread, Message) ->
+run_thread(Thread=#program_thread{program_id=ProgramId, thread_id=ThreadId}, Message) ->
     case get_instruction(Thread) of
         {ok, Instruction} ->
             try
@@ -86,7 +86,37 @@ run_thread(Thread, Message) ->
                 Result ->
                     Result
             catch ErrorNS:Error:StackTrace ->
-                    io:fwrite("[Thread] Critical error: ~p~n~p~n", [{ErrorNS, Error}, StackTrace]),
+                    io:fwrite("[ERROR][Thread][ProgId=~p,ThreadId=~p] Critical error: ~p~n~p~n",
+                              [ProgramId, ThreadId, {ErrorNS, Error}, StackTrace]),
+
+                    UserId = case automate_storage:get_program_owner(ProgramId) of
+                                 {ok, OwnerId} ->
+                                     OwnerId;
+                                 {error, Reason} ->
+                                     io:fwrite("[Double ERROR][ThreadId=~p] Now owner found: ~p~n",
+                                               [ThreadId, Reason]),
+                                     none
+                             end,
+
+                    {EventData, EventMessage} =
+                        case Error of
+                            { program_error, {variable_not_set, VariableName}} ->
+                                {Error, binary:list_to_bin(
+                                          lists:flatten(io_lib:format("Variable '~s' not set", [VariableName])))
+                                };
+                            _ ->
+                                {Error, <<"Unknown error">>}
+                        end,
+
+                    automate_storage:log_program_error(#user_program_log_entry{ program_id=ProgramId
+                                                                              , thread_id=ThreadId
+                                                                              , user_id=UserId
+                                                                              , event_data=EventData
+                                                                              , event_time=erlang:system_time(millisecond)
+                                                                              , event_message=EventMessage
+                                                                              , severity=error
+                                                                              , exception_data={ErrorNS,Error,StackTrace}
+                                                         }),
                     {stopped, {ErrorNS, Error}}  %% Critical errors trigger a stop
             end;
         {error, element_not_found} ->

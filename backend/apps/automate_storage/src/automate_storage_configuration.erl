@@ -158,9 +158,7 @@ get_versioning(Nodes) ->
                         end
                 }
 
-                %% Add *status* to user table.
-                %%
-                %% If a user "comes" from an earlier version the status is 'ready'.
+                %% Create user verification table.
               , #database_version_transformation
                 { id=5
                 , apply=fun() ->
@@ -218,5 +216,31 @@ get_versioning(Nodes) ->
                                  )
                         end
                 }
+
+                %% Add user program logs table.
+              , #database_version_transformation
+                { id=8
+                , apply=fun() ->
+                                automate_storage_versioning:create_database(
+                                  #database_version_data
+                                  { database_name=?USER_PROGRAM_LOGS_TABLE
+                                  , records=[ program_id
+                                            , thread_id
+                                            , user_id
+                                            , event_data
+                                            , event_message
+                                            , event_time
+                                            , severity
+                                            , exception_data
+                                            ]
+                                  , record_name=user_program_log_entry
+                                  , type=bag
+                                  }, Nodes),
+
+                                ok = mnesia:wait_for_tables([ ?USER_PROGRAM_LOGS_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
+                        end
+                }
+
               ]
         }.

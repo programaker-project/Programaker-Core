@@ -18,12 +18,14 @@ parse_program_thread(#running_program_thread_entry{ position=Position
                                                   , memory=Memory
                                                   , instruction_memory=InstructionMemory
                                                   , parent_program_id=ParentProgramId
+                                                  , thread_id=ThreadId
                                                   }) ->
     #program_thread{ position=Position
                    , program=Instructions
                    , global_memory=Memory
                    , instruction_memory=InstructionMemory
                    , program_id=ParentProgramId
+                   , thread_id=ThreadId
                    }.
 
 -spec merge_thread_structures(#running_program_thread_entry{}, #program_thread{}) -> #running_program_thread_entry{}.

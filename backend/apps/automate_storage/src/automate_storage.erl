@@ -51,6 +51,8 @@
         , set_program_variable/3
         , get_program_variable/2
 
+        , log_program_error/1
+
         , create_custom_signal/2
         , list_custom_signals_from_user_id/1
 
@@ -62,10 +64,12 @@
 
 -include("./databases.hrl").
 -include("./records.hrl").
--include("../automate_bot_engine/src/program_records.hrl").
+-include("../../automate_bot_engine/src/program_records.hrl").
 
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
 -define(WAIT_READY_LOOP_TIME, 1000).
+
+
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -758,6 +762,19 @@ get_program_variable(ProgramId, Key) ->
             {ok, Value};
         { atomic, [] } ->
             {error, not_found};
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec log_program_error(#user_program_log_entry{}) -> ok.
+log_program_error(LogEntry) when is_record(LogEntry, user_program_log_entry) ->
+    Transaction = fun() ->
+                          ok = mnesia:write(?USER_PROGRAM_LOGS_TABLE, LogEntry, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            {error, Result };
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}

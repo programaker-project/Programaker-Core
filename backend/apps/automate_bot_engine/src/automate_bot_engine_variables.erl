@@ -82,7 +82,12 @@ set_program_variable(Thread = #program_thread{ program_id=ProgramId }, Key, Valu
 
 -spec get_program_variable(#program_thread{}, atom()) -> {ok, any()} | {error, not_found}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
-    automate_storage:get_program_variable(ProgramId, Key).
+    case automate_storage:get_program_variable(ProgramId, Key) of
+        {ok, Value} ->
+            {ok, Value};
+        {error, not_found} ->
+            throw({program_error, {variable_not_set, Key}})
+    end.
 
 -spec set_last_monitor_value(#program_thread{}, binary(), any()) -> {ok, #program_thread{}}.
 set_last_monitor_value(Thread, MonitorId, Value) ->

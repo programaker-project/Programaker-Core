@@ -15,8 +15,8 @@
 %%% API
 %%%===================================================================
 -spec get_expected_signals(#program_state{}) -> {ok, [atom()]}.
-get_expected_signals(#program_state{triggers=Triggers, permissions=Permissions}) ->
-    {ok, get_expected_signals_from_triggers(Triggers, Permissions)}.
+get_expected_signals(#program_state{program_id=ProgramId, triggers=Triggers, permissions=Permissions}) ->
+    {ok, get_expected_signals_from_triggers(Triggers, Permissions, ProgramId)}.
 
 
 -spec get_triggered_threads(#program_state{}, {atom(), any()}) -> {ok, [#program_thread{}]}.
@@ -30,22 +30,22 @@ get_triggered_threads(Program=#program_state{triggers=Triggers}, Signal) ->
 %%%===================================================================
 
 %%%% Expected signals
--spec get_expected_signals_from_triggers([#program_trigger{}], #program_permissions{}) -> [atom()].
-get_expected_signals_from_triggers(Triggers, Permissions) ->
-    [get_expected_action_from_trigger(Trigger, Permissions) || Trigger <- Triggers ].
+-spec get_expected_signals_from_triggers([#program_trigger{}], #program_permissions{}, binary()) -> [atom()].
+get_expected_signals_from_triggers(Triggers, Permissions, ProgramId) ->
+    [get_expected_action_from_trigger(Trigger, Permissions, ProgramId) || Trigger <- Triggers ].
 
--spec get_expected_action_from_trigger(#program_trigger{}, #program_permissions{}) -> atom().
+-spec get_expected_action_from_trigger(#program_trigger{}, #program_permissions{}, binary()) -> atom().
 %% TODO: return a more specific monitor
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                                                              , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId }
-                                                             }}, _Permissions) ->
+                                                             }}, _Permissions, _ProgramId) ->
     automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
                                                              , ?ARGUMENTS := Arguments
                                                              }},
-                                 #program_permissions{owner_user_id=UserId}) ->
+                                 #program_permissions{owner_user_id=UserId}, _ProgramId) ->
     [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
@@ -66,14 +66,14 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?SIGNAL_
                                                                                 }
                                                                              , _SaveToVal
                                                                              ]
-                                                             }}, #program_permissions{}) ->
+                                                             }}, #program_permissions{}, _ProgramId) ->
 
     automate_channel_engine:listen_channel(ChannelId),
     ?TRIGGERED_BY_MONITOR;
 
 %% By default let's suppose no special data is needed to keep the program running
-get_expected_action_from_trigger(Trigger, _Permissions) ->
-    io:fwrite("[WARN][Bot/Triggers] Unknown trigger: ~p~n", [Trigger]),
+get_expected_action_from_trigger(Trigger, _Permissions, ProgramId) ->
+    io:fwrite("[WARN][Bot/Triggers][ProgId=~p] Unknown trigger: ~p~n",  [ProgramId, Trigger]),
     ?SIGNAL_PROGRAM_TICK.
 
 get_block_key_subkey(#{ <<"key">> := Key
