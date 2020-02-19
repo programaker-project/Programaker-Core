@@ -605,7 +605,6 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     renderLogLine(line: ProgramLogEntry): HTMLElement {
-        console.log('->', line);
         const element = document.createElement('div');
         element.classList.add('log-entry');
 
@@ -617,7 +616,7 @@ export class ProgramDetailComponent implements OnInit {
 
         if (line.block_id) {
             const mark_button = document.createElement('button');
-            mark_button.classList.add('log-marker');
+            mark_button.classList.value = 'log-marker mat-button mat-raised-button mat-button-base mat-primary';
 
             mark_button.innerText = 'Mark block';
             mark_button.onclick = () => {

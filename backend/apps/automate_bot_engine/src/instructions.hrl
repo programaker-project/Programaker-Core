@@ -57,6 +57,7 @@
 -define(COMMAND_ITEMNUM_OF_LIST, <<"data_itemnumoflist">>).
 -define(COMMAND_LENGTH_OF_LIST, <<"data_lengthoflist">>).
 -define(COMMAND_LIST_CONTAINS_ITEM, <<"data_listcontainsitem">>).
+-define(COMMAND_LIST_GET_CONTENTS, <<"data_listcontents">>).
 
 %%%% Variables
 -define(VARIABLE_BLOCK, <<"block">>).

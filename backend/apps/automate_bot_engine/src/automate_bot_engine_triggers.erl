@@ -102,7 +102,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                , subprogram=Program
                                },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }} },
-               ProgramState=#program_state{program_id=ProgramId}) ->
+               #program_state{program_id=ProgramId}) ->
 
 
     Thread = #program_thread{ position=[1]
@@ -126,15 +126,15 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
     {true, NewThread};
 
 %% With matching value
-trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
-                                            , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
-                                                                         , ?MONITOR_EXPECTED_VALUE := Argument
-                                                                         }
-                                            }
+trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                               , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
+                                                                            , ?MONITOR_EXPECTED_VALUE := Argument
+                                                                            }
+                                               }
                                , subprogram=Program
                                },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }} },
-               ProgramState=#program_state{program_id=ProgramId}) ->
+               #program_state{program_id=ProgramId}) ->
 
     Thread = #program_thread{ position=[1]
                             , program=Program
@@ -150,26 +150,26 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                          {ok, Thread}
                                  end,
 
-    case automate_bot_engine_variables:resolve_argument(Argument, ThreadWithSavedValue) of
+    case automate_bot_engine_variables:resolve_argument(Argument, ThreadWithSavedValue, Op) of
         {ok, MessageContent} ->
             {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
                                 ThreadWithSavedValue, MonitorId, FullMessage),
             {true, NewThread};
-        {ok, Found} ->
+        {ok, _Found} ->
             %% io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
             false
     end;
 
 %% Bridge channel
-trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
-                                            , ?ARGUMENTS := MonitorArgs
-                                            }
+trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", MonitorPath/binary>>
+                                               , ?ARGUMENTS := MonitorArgs
+                                               }
                                , subprogram=Program
                                },
                { ?TRIGGERED_BY_MONITOR, { TriggeredMonitorId
                                         , FullMessage=#{ <<"key">> := TriggeredKey }
                                         } },
-               ProgramState=#program_state{ program_id=ProgramId
+               #program_state{ program_id=ProgramId
                                           , permissions=#program_permissions{owner_user_id=UserId}}) ->
 
     Thread = #program_thread{ position=[1]
@@ -191,7 +191,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.", MonitorPat
     MatchingContent = case MonitorArgs of
                           #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->
                               {ok, ResolvedExpectedValue} = automate_bot_engine_variables:resolve_argument(
-                                                              ExpectedValue, Thread),
+                                                              ExpectedValue, Thread, Op),
                               ActualValue = maps:get(?CHANNEL_MESSAGE_CONTENT, FullMessage, none),
                               ResolvedExpectedValue == ActualValue;
                           _ ->

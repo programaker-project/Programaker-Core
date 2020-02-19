@@ -1,7 +1,7 @@
 -module(automate_bot_engine_variables).
 
 %% API
--export([ resolve_argument/2
+-export([ resolve_argument/3
 
         , set_thread_value/3
         , get_program_variable/2
@@ -34,38 +34,48 @@
 %%                   }) ->
 %%     automate_monitor_engine:get_last_monitor_result(MonitorId).
 
--spec resolve_argument(map(), #program_thread{}) -> {ok, any()} | {error, not_found}.
+-spec resolve_argument(map(), #program_thread{}, map()) -> {ok, any()} | {error, not_found}.
 resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
                   , ?VALUE := Value
-                  }, _Thread) ->
+                  }, _Thread, _ParentBlock) ->
     {ok, Value};
 
 resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
                   , ?VALUE := [Operator]
-                  }, Thread) ->
+                  }, Thread, _ParentBlock) ->
     automate_bot_engine_operations:get_result(Operator, Thread);
 
 resolve_argument(Op=#{ ?TYPE := ?VARIABLE_VARIABLE
                      , ?VALUE := VariableName
-                     }, Thread) ->
+                     }, Thread, ParentBlock) ->
     case get_program_variable(Thread, VariableName) of
         {ok, Value} ->
             {ok, Value};
         {error, not_found} ->
+            BlockId = case {?UTILS:get_block_id(Op), ?UTILS:get_block_id(ParentBlock)} of
+                          { none, Value } -> Value;
+                          { Value, _ } -> Value
+                          end,
+
             throw(#program_error{ error=#variable_not_set{ variable_name=VariableName }
-                                , block_id=?UTILS:get_block_id(Op)
+                                , block_id=BlockId
                                 })
     end;
 
 resolve_argument(Op=#{ ?TYPE := ?VARIABLE_LIST
                      , ?VALUE := VariableName
-                     }, Thread) ->
+                     }, Thread, ParentBlock) ->
     case get_program_variable(Thread, VariableName) of
         {ok, Value} ->
             {ok, Value};
         {error, not_found} ->
+            BlockId = case {?UTILS:get_block_id(Op), ?UTILS:get_block_id(ParentBlock)} of
+                          { none, Value } -> Value;
+                          { Value, _ } -> Value
+                      end,
+
             throw(#program_error{ error=#list_not_set{ list_name=VariableName }
-                                , block_id=?UTILS:get_block_id(Op)
+                                , block_id=BlockId
                                 })
     end.
 

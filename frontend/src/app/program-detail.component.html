@@ -55,6 +55,12 @@
 
     <mat-sidenav-container>
         <mat-sidenav #logs_drawer mode="side" position="end">
+            <div class="closer">
+                <button (click)="closeLogsPanel()">
+                    <mat-icon >close</mat-icon>
+                </button>
+            </div>
+
             <div id="logs_panel_container">Loading logs...</div>
         </mat-sidenav>
 

@@ -34,8 +34,11 @@
 -record(variable_not_set, { variable_name :: binary()
                           }).
 
+-record(unknown_operation, { }).
+
 -type program_error_type() :: #index_not_in_list{} | #invalid_list_index_type{}
-                            | #list_not_set{} | #variable_not_set{}.
+                            | #list_not_set{} | #variable_not_set{}
+                            | #unknown_operation{} .
 
 -record(program_error, { error :: program_error_type()
                        , block_id :: binary() | undefined

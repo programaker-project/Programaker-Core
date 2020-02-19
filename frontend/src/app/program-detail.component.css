@@ -12,6 +12,15 @@
     height: 3em;
 }
 
+#logs_panel_container {
+    padding: 1em;
+    max-width: 30em;
+}
+
+.closer > button {
+    border: none;
+}
+
 button#program-rename-button,
 button#program-start-button,
 button#program-delete-button,
