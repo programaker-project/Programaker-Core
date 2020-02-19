@@ -17,20 +17,28 @@
             (click)="renameProgram()" mat-button>
             <mat-icon>edit</mat-icon> Rename
         </button>
+        <button id="program-logs-button" color="secondary"
+            *ngIf="program !== undefined"
+            (click)="toggleLogsPanel()" mat-button>
+            <mat-icon>error_outline</mat-icon>
+            <span *ngIf="logs_drawer.opened">Hide</span>
+            <span *ngIf="!logs_drawer.opened">Show</span>
+            logs
+        </button>
         <button id="program-stop-button" color="warn"
-                *ngIf="program !== undefined"
-                (click)="stopThreadsProgram()" mat-button>
+            *ngIf="program !== undefined"
+            (click)="stopThreadsProgram()" mat-button>
             <mat-icon>stop</mat-icon> Stop all
         </button>
         <!-- Advanced functions, on a menu -->
         <button id="advancedProgramControls" color="secondary"
-                [matMenuTriggerFor]="advancedProgramControls"
-                *ngIf="program !== undefined" mat-button>
+            [matMenuTriggerFor]="advancedProgramControls"
+            *ngIf="program !== undefined" mat-button>
             <mat-icon>more_vert</mat-icon> Advanced
         </button>
         <mat-menu #advancedProgramControls="matMenu">
             <button mat-menu-item
-                    (click)="setProgramTags()">
+                (click)="setProgramTags()">
                 <mat-icon class="example-tab-icon">label</mat-icon>
                 Tags
             </button>
@@ -39,10 +47,18 @@
 
         <!-- Dangerous stuff, by itself -->
         <button id="program-delete-button" color="warn"
-                *ngIf="program !== undefined"
-                (click)="deleteProgram()" mat-button>
+            *ngIf="program !== undefined"
+            (click)="deleteProgram()" mat-button>
             <mat-icon>delete_forever</mat-icon> Delete program
         </button>
     </div>
 
-    <div id="workspace"></div>
+    <mat-sidenav-container>
+        <mat-sidenav #logs_drawer mode="side" position="end">
+            <div id="logs_panel_container">Loading logs...</div>
+        </mat-sidenav>
+
+        <div class="viewer">
+            <div id="workspace"></div>
+        </div>
+    </mat-sidenav-container>

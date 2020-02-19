@@ -9,6 +9,17 @@ import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
 
+interface ProgramLogEntry {
+    program_id: string,
+    thread_id: string | 'none',
+    user_id: string | 'none',
+    block_id: string | undefined,
+    severity: 'error' | 'debug' | 'warning',
+    event_data: any,
+    event_message: string,
+    event_time: number,
+};
+
 @Injectable()
 export class ProgramService {
     private getExamplesForProgramRootUrl = '/api/programs/examples/';
@@ -47,6 +58,11 @@ export class ProgramService {
         return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/tags';
     }
 
+    private async getProgramLogsUrl(programUserId: string, program_id: string) {
+        const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
+        return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/logs';
+    }
+
     async getProgramStopThreadsUrl(programUserId: string, program_id: string) {
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
         return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/stop-threads';
@@ -76,6 +92,13 @@ export class ProgramService {
             this.http.get(url, {headers: this.sessionService.getAuthHeader()}).pipe(
                 map(response => response as string[]))
                 .toPromise());
+    }
+
+    getProgramLogs(user_id: string, program_id: string): Promise<string[]> {
+        return (this.getProgramLogsUrl(user_id, program_id)
+                .then(url =>
+                      this.http.get(url, {headers: this.sessionService.getAuthHeader()})
+                      .toPromise()) as Promise<ProgramLogEntry[]>);
     }
 
     createProgram(): Promise<ProgramMetadata> {

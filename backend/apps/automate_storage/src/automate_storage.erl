@@ -38,6 +38,7 @@
         , get_program_from_id/1
         , register_program_tags/2
         , get_tags_program_from_id/1
+        , get_logs_from_program_id/1
         , dirty_list_running_programs/0
 
         , create_thread/2
@@ -622,6 +623,18 @@ get_tags_program_from_id(ProgramId) ->
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
+    end.
+
+-spec get_logs_from_program_id(binary()) -> {ok, [#user_program_log_entry{}]} | {error, atom()}.
+get_logs_from_program_id(ProgramId) ->
+    Transaction = fun() ->
+                          {ok, mnesia:read(?USER_PROGRAM_LOGS_TABLE, ProgramId)}
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason}
     end.
 
 dirty_list_running_programs() ->

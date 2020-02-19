@@ -1,9 +1,9 @@
 
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import {  ProgramContent, ScratchProgram } from './program';
-import { ProgramService } from './program.service';
+import { ProgramService, ProgramLogEntry } from './program.service';
 
 import { Toolbox } from './blocks/Toolbox';
 import * as progbar from './ui/progbar';
@@ -13,6 +13,8 @@ import { MonitorService } from './monitor.service';
 import { CustomBlockService } from './custom_block.service';
 
 import { MatDialog } from '@angular/material/dialog';
+import { MatDrawer } from '@angular/material/sidenav';
+
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
@@ -39,6 +41,10 @@ export class ProgramDetailComponent implements OnInit {
     workspace: Blockly.Workspace;
     programUserName: string;
     programId: string;
+    @ViewChild('logs_drawer') logs_drawer: MatDrawer;
+
+    logs_panel_active: boolean = false;
+    commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
 
     toolboxController: ToolboxController;
     portraitMode: boolean;
@@ -63,7 +69,7 @@ export class ProgramDetailComponent implements OnInit {
         this.customSignalService = customSignalService;
         this.route = route;
         this.router = router;
-        this.serviceService = serviceService;
+        this.serviceService = serviceService
     }
 
     ngOnInit(): void {
@@ -554,5 +560,93 @@ export class ProgramDetailComponent implements OnInit {
                 }));
             progbar.track(deletion);
         });
+    }
+
+    toggleLogsPanel() {
+        if (this.logs_drawer.opened) {
+            this.closeLogsPanel();
+        }
+        else {
+            this.openLogsPanel();
+        }
+    }
+
+    notifyResize() {
+        window.dispatchEvent(new Event('resize'));
+    }
+
+    closeLogsPanel() {
+        this.logs_drawer.close().then(() => {
+            // Notify Scratch containers
+            this.notifyResize();
+        });
+    }
+
+    openLogsPanel() {
+        this.logs_drawer.open().then(() => {
+            // Notify Scratch containers
+            this.notifyResize();
+        });
+
+        (this.programService.getProgramLogs(this.program.owner, this.program.id)
+         .then(lines => {
+             this.updateLogsDrawer(lines);
+             this.notifyResize();
+         }));
+    }
+
+    updateLogsDrawer(lines: ProgramLogEntry[]) {
+        const container = document.getElementById('logs_panel_container');
+        container.innerHTML = ''; // Clear container
+
+        for (const line of lines) {
+            container.appendChild(this.renderLogLine(line));
+        }
+    }
+
+    renderLogLine(line: ProgramLogEntry): HTMLElement {
+        console.log('->', line);
+        const element = document.createElement('div');
+        element.classList.add('log-entry');
+
+        const message = document.createElement('span');
+        message.classList.add('message');
+        message.innerText = line.event_message;
+
+        element.appendChild(message);
+
+        if (line.block_id) {
+            const mark_button = document.createElement('button');
+            mark_button.classList.add('log-marker');
+
+            mark_button.innerText = 'Mark block';
+            mark_button.onclick = () => {
+                this.toggleMark(mark_button, line);
+            }
+
+            element.appendChild(mark_button);
+        }
+
+        return element;
+    }
+
+    toggleMark(button: HTMLButtonElement, log_line: ProgramLogEntry) {
+        const entry = this.commented_blocks[log_line.block_id];
+        const marked = (entry !== undefined) && (entry[0] == log_line.event_time);
+
+        if (marked) { // Unmark
+            button.innerText = 'Mark block';
+            this.commented_blocks[log_line.block_id] = undefined;
+            this.workspace.getBlockById(log_line.block_id).setCommentText(null);
+        }
+        else { // Mark block
+            button.innerText = 'Unmark block';
+            if (entry !== undefined) {
+                entry[1].innerText = 'Mark block';
+            }
+
+            this.commented_blocks[log_line.block_id] = [log_line.event_time, button];
+            this.workspace.getBlockById(log_line.block_id).setCommentText(log_line.event_message);
+        }
     }
 }

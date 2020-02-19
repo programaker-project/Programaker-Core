@@ -16,6 +16,7 @@ button#program-rename-button,
 button#program-start-button,
 button#program-delete-button,
 button#program-stop-button,
+button#program-logs-button,
 button#advancedProgramControls {
     vertical-align: top;
     padding: 1ex;
