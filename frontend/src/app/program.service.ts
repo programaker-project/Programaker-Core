@@ -9,7 +9,7 @@ import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
 
-interface ProgramLogEntry {
+export interface ProgramLogEntry {
     program_id: string,
     thread_id: string | 'none',
     user_id: string | 'none',
@@ -94,7 +94,7 @@ export class ProgramService {
                 .toPromise());
     }
 
-    getProgramLogs(user_id: string, program_id: string): Promise<string[]> {
+    getProgramLogs(user_id: string, program_id: string): Promise<ProgramLogEntry[]> {
         return (this.getProgramLogsUrl(user_id, program_id)
                 .then(url =>
                       this.http.get(url, {headers: this.sessionService.getAuthHeader()})
