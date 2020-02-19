@@ -37,6 +37,7 @@
 -record(user_program_log_entry, { program_id :: binary()               | ?MNESIA_SELECTOR
                                 , thread_id :: binary() | none         | ?MNESIA_SELECTOR
                                 , user_id :: binary() | none           | ?MNESIA_SELECTOR
+                                , block_id :: binary() | undefined     | ?MNESIA_SELECTOR
                                 , event_data :: _                      | ?MNESIA_SELECTOR
                                 , event_message :: binary()            | ?MNESIA_SELECTOR
                                 , event_time :: time_in_milliseconds() | ?MNESIA_SELECTOR

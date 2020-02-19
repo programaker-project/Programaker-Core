@@ -227,6 +227,7 @@ get_versioning(Nodes) ->
                                   , records=[ program_id
                                             , thread_id
                                             , user_id
+                                            , block_id
                                             , event_data
                                             , event_message
                                             , event_time

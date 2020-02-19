@@ -20,19 +20,23 @@
                        }).
 
 %% Error types
--record(index_not_in_list, { variable_name :: binary()
+-record(index_not_in_list, { list_name :: binary()
                            , index :: non_neg_integer()
                            , max :: non_neg_integer()
                            }).
--record(invalid_list_index_type, { variable_name :: binary()
-                               , index :: any()
-                               }).
+-record(invalid_list_index_type, { list_name :: binary()
+                                 , index :: any()
+                                 }).
+
+-record(list_not_set, { list_name :: binary()
+                      }).
 
 -record(variable_not_set, { variable_name :: binary()
                           }).
 
 -type program_error_type() :: #index_not_in_list{} | #invalid_list_index_type{}
-                              | #variable_not_set{}.
+                            | #list_not_set{} | #variable_not_set{}.
 
 -record(program_error, { error :: program_error_type()
+                       , block_id :: binary() | undefined
                        }).

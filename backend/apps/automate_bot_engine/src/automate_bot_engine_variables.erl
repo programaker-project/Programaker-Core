@@ -22,6 +22,7 @@
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
 -include("instructions.hrl").
+-define(UTILS, automate_bot_engine_utils).
 
 %%%===================================================================
 %%% API
@@ -44,16 +45,29 @@ resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
                   }, Thread) ->
     automate_bot_engine_operations:get_result(Operator, Thread);
 
-resolve_argument(#{ ?TYPE := ?VARIABLE_VARIABLE
-                  , ?VALUE := VariableName
-                  }, Thread) ->
-    get_program_variable(Thread, VariableName);
+resolve_argument(Op=#{ ?TYPE := ?VARIABLE_VARIABLE
+                     , ?VALUE := VariableName
+                     }, Thread) ->
+    case get_program_variable(Thread, VariableName) of
+        {ok, Value} ->
+            {ok, Value};
+        {error, not_found} ->
+            throw(#program_error{ error=#variable_not_set{ variable_name=VariableName }
+                                , block_id=?UTILS:get_block_id(Op)
+                                })
+    end;
 
-resolve_argument(#{ ?TYPE := ?VARIABLE_LIST
-                  , ?VALUE := VariableName
-                  }, Thread) ->
-    get_program_variable(Thread, VariableName).
-
+resolve_argument(Op=#{ ?TYPE := ?VARIABLE_LIST
+                     , ?VALUE := VariableName
+                     }, Thread) ->
+    case get_program_variable(Thread, VariableName) of
+        {ok, Value} ->
+            {ok, Value};
+        {error, not_found} ->
+            throw(#program_error{ error=#list_not_set{ list_name=VariableName }
+                                , block_id=?UTILS:get_block_id(Op)
+                                })
+    end.
 
 -spec retrieve_thread_value(#program_thread{}, atom()) -> {ok, any()} | {error, any()}.
 retrieve_thread_value(#program_thread{ global_memory=Global }, Key) ->
@@ -80,13 +94,13 @@ set_program_variable(Thread = #program_thread{ program_id=ProgramId }, Key, Valu
     ok = automate_storage:set_program_variable(ProgramId, Key, Value),
     {ok, Thread}.
 
--spec get_program_variable(#program_thread{}, binary()) -> {ok, any()}.
+-spec get_program_variable(#program_thread{}, binary()) -> {ok, any()} | {error, not_found}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
     case automate_storage:get_program_variable(ProgramId, Key) of
         {ok, Value} ->
             {ok, Value};
         {error, not_found} ->
-            throw(#program_error{error=#variable_not_set{variable_name=Key}})
+            {error, not_found}
     end.
 
 -spec set_last_monitor_value(#program_thread{}, binary(), any()) -> {ok, #program_thread{}}.

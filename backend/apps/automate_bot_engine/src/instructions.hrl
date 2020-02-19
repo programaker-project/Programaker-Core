@@ -2,7 +2,7 @@
 -define(TYPE, <<"type">>).
 -define(ARGUMENTS, <<"args">>).
 -define(CONTENTS, <<"contents">>).
--define(ID, <<"id">>).
+-define(BLOCK_ID, <<"id">>).
 -define(VALUE, <<"value">>).
 -define(TEMPLATE_NAME_TYPE, <<"constant">>).
 
