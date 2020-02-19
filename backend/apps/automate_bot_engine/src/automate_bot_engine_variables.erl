@@ -68,25 +68,25 @@ retrieve_thread_value(#program_thread{ global_memory=Global }, Key) ->
 retrieve_thread_values(Thread, Keys) ->
     retrieve_thread_values(Thread, Keys, []).
 
--spec set_thread_value(#program_thread{}, atom() | [binary()], any()) -> {ok, #program_thread{}}.
+-spec set_thread_value(#program_thread{}, binary() | [binary()], any()) -> {ok, #program_thread{}}.
 set_thread_value(Thread = #program_thread{}, Key, Value) when is_list(Key) ->
     set_thread_nested_value(Thread, Key, Value);
 
 set_thread_value(Thread = #program_thread{ global_memory=Global }, Key, Value) ->
     {ok, Thread#program_thread{ global_memory=Global#{ Key => Value } } }.
 
--spec set_program_variable(#program_thread{}, atom(), any()) -> {ok, #program_thread{}}.
+-spec set_program_variable(#program_thread{}, binary(), any()) -> {ok, #program_thread{}}.
 set_program_variable(Thread = #program_thread{ program_id=ProgramId }, Key, Value) ->
     ok = automate_storage:set_program_variable(ProgramId, Key, Value),
     {ok, Thread}.
 
--spec get_program_variable(#program_thread{}, atom()) -> {ok, any()} | {error, not_found}.
+-spec get_program_variable(#program_thread{}, binary()) -> {ok, any()}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
     case automate_storage:get_program_variable(ProgramId, Key) of
         {ok, Value} ->
             {ok, Value};
         {error, not_found} ->
-            throw({program_error, {variable_not_set, Key}})
+            throw(#program_error{error=#variable_not_set{variable_name=Key}})
     end.
 
 -spec set_last_monitor_value(#program_thread{}, binary(), any()) -> {ok, #program_thread{}}.

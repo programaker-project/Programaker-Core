@@ -7,7 +7,6 @@
                         , global_memory :: map()   % Thread-specific values TODO: rename
                         , instruction_memory :: map() % Memory held for each individual instruction on the program
                         , program_id :: binary()      % ID of the program being run
-                        , thread_id :: binary()      % ID of the thread being run
                         }).
 
 -record(program_permissions, { owner_user_id :: binary()
@@ -18,4 +17,22 @@
                        , variables    :: [any()]
                        , triggers     :: [#program_trigger{}]
                        , enabled=true :: boolean()
+                       }).
+
+%% Error types
+-record(index_not_in_list, { variable_name :: binary()
+                           , index :: non_neg_integer()
+                           , max :: non_neg_integer()
+                           }).
+-record(invalid_list_index_type, { variable_name :: binary()
+                               , index :: any()
+                               }).
+
+-record(variable_not_set, { variable_name :: binary()
+                          }).
+
+-type program_error_type() :: #index_not_in_list{} | #invalid_list_index_type{}
+                              | #variable_not_set{}.
+
+-record(program_error, { error :: program_error_type()
                        }).

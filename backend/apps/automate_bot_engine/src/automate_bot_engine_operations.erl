@@ -2,7 +2,7 @@
 
 %% API
 -export([ get_expected_signals/1
-        , run_thread/2
+        , run_thread/3
         , get_result/2
         ]).
 
@@ -73,11 +73,11 @@ resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | _]) wh
 resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
     resolve_subblock_with_position(lists:nth(Position, Contents), T).
 
--spec run_thread(#program_thread{}, {atom(), any()})
+-spec run_thread(#program_thread{}, {atom(), any()}, binary())
                 -> {stopped, thread_finished} | {did_not_run, waiting}
                        | {did_not_run, {new_state, #program_thread{}}}
                        | {ran_this_tick, #program_thread{}}.
-run_thread(Thread=#program_thread{program_id=ProgramId, thread_id=ThreadId}, Message) ->
+run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
     case get_instruction(Thread) of
         {ok, Instruction} ->
             try
@@ -100,11 +100,28 @@ run_thread(Thread=#program_thread{program_id=ProgramId, thread_id=ThreadId}, Mes
 
                     {EventData, EventMessage} =
                         case Error of
-                            { program_error, {variable_not_set, VariableName}} ->
+                            #program_error{error=#variable_not_set{variable_name=VariableName}} ->
                                 {Error, binary:list_to_bin(
                                           lists:flatten(io_lib:format("Variable '~s' not set", [VariableName])))
                                 };
-                            _ ->
+                            #program_error{error=#index_not_in_list{ variable_name=VariableName
+                                                                   , index=Index
+                                                                   , max=MaxIndex
+                                                                   }} ->
+                                {Error, binary:list_to_bin(
+                                          lists:flatten(io_lib:format("Cannot access position ~s on list '~s'. Only ~s elements",
+                                                                      [VariableName, Index, MaxIndex])))
+                                };
+                            #program_error{error=#invalid_list_index_type{ variable_name=VariableName
+                                                                         , index=Index
+                                                                         }} ->
+                                {Error, binary:list_to_bin(
+                                          lists:flatten(io_lib:format("Trying to access non valid position list '~s'. Position must be a non-negative number. Found '~s'.",
+                                                                      [VariableName, Index])))
+                                };
+                            %% #program_error records are avoided below to try to trigger
+                            %%  dialyzer in case it's not handled.
+                            X when not is_record(X, program_error) ->
                                 {Error, <<"Unknown error">>}
                         end,
 
@@ -147,9 +164,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
     {ok, Change} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread),
     {ok, NewValue} = case automate_bot_engine_variables:get_program_variable(Thread, VariableName) of
                          {ok, PrevValue} ->
-                             automate_bot_engine_values:add(PrevValue, Change);
-                         {error, not_found} ->
-                             {ok, Change}
+                             automate_bot_engine_values:add(PrevValue, Change)
                      end,
     {ok, NewThreadState } = automate_bot_engine_variables:set_program_variable(Thread, VariableName, NewValue),
     {ran_this_tick, increment_position(NewThreadState)};
@@ -277,9 +292,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_ADD_TO_LIST
     {ok, NewValue} = automate_bot_engine_variables:resolve_argument(NewValueArg, Thread),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
                       {ok, Value} ->
-                          Value;
-                      {error, not_found} ->
-                          []
+                          Value
                   end,
 
     %% TODO (optimization) avoid using list++list
@@ -300,9 +313,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
     Index = to_int(IndexValue),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
                       {ok, Value} ->
-                          Value;
-                      {error, not_found} ->
-                          []
+                          Value
                   end,
 
     ValueAfter = automate_bot_engine_naive_lists:remove_nth(ValueBefore, Index),
@@ -324,9 +335,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
     {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
                       {ok, ListOnDB} ->
-                          ListOnDB;
-                      {error, not_found} ->
-                          []
+                          ListOnDB
                   end,
 
     ValueAfter = automate_bot_engine_naive_lists:insert_nth(ValueBefore, Index, Value),
@@ -348,9 +357,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
     {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
                       {ok, ListOnDB} ->
-                          ListOnDB;
-                      {error, not_found} ->
-                          []
+                          ListOnDB
                   end,
 
     ValueAfter = automate_bot_engine_naive_lists:replace_nth(ValueBefore, Index, Value),
@@ -710,9 +717,14 @@ get_block_result(#{ ?TYPE := ?COMMAND_ITEM_OF_LIST
     Index = to_int(IndexValue),
     case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
         {ok, List} ->
-            automate_bot_engine_naive_lists:get_nth(List, Index);
-        {error, not_found} ->
-            {error, not_found}
+            case automate_bot_engine_naive_lists:get_nth(List, Index) of
+                {ok, Value } ->
+                    {ok, Value};
+                {error, not_found} ->
+                    throw(#program_error{error=#index_not_in_list{variable_name=ListName, index=Index, max=length(List)}});
+                {error, invalid_list_index_type} ->
+                    throw(#program_error{error=#invalid_list_index_type{variable_name=ListName, index=Index}})
+            end
     end;
 
 get_block_result(#{ ?TYPE := ?COMMAND_ITEMNUM_OF_LIST
@@ -725,9 +737,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_ITEMNUM_OF_LIST
     {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
     case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
         {ok, List} ->
-            automate_bot_engine_naive_lists:get_item_num(List, Value);
-        {error, not_found} ->
-            {error, not_found}
+            automate_bot_engine_naive_lists:get_item_num(List, Value)
     end;
 
 get_block_result(#{ ?TYPE := ?COMMAND_LENGTH_OF_LIST
@@ -738,9 +748,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_LENGTH_OF_LIST
                   }, Thread) ->
     case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
         {ok, List} ->
-            automate_bot_engine_naive_lists:get_length(List);
-        {error, not_found} ->
-            []
+            automate_bot_engine_naive_lists:get_length(List)
     end;
 
 get_block_result(#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
@@ -753,9 +761,7 @@ get_block_result(#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
     {ok, Value} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread),
     case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
         {ok, List} ->
-            {ok, automate_bot_engine_naive_lists:contains(List, Value)};
-        {error, not_found} ->
-            {ok, false}
+            {ok, automate_bot_engine_naive_lists:contains(List, Value)}
     end;
 
 get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
@@ -763,9 +769,7 @@ get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
                   }, _Thread) ->
     case automate_monitor_engine:get_last_monitor_result(MonitorId) of
         {ok, Result} ->
-            {ok, Result};
-        {error, not_found} ->
-            {ok, false}
+            {ok, Result}
     end;
 
 get_block_result(#{ ?TYPE := <<"services.", ServiceCall/binary>>

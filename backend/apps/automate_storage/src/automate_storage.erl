@@ -752,7 +752,7 @@ get_thread_from_id(ThreadId) ->
 
 
 
--spec get_program_variable(binary(), atom()) -> {ok, any()} | {error, not_found}.
+-spec get_program_variable(binary(), binary()) -> {ok, any()} | {error, not_found}.
 get_program_variable(ProgramId, Key) ->
     Transaction = fun() ->
                           mnesia:read(?PROGRAM_VARIABLE_TABLE, {ProgramId, Key})
@@ -767,17 +767,17 @@ get_program_variable(ProgramId, Key) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec log_program_error(#user_program_log_entry{}) -> ok.
+-spec log_program_error(#user_program_log_entry{}) -> ok | {error, atom()}.
 log_program_error(LogEntry) when is_record(LogEntry, user_program_log_entry) ->
     Transaction = fun() ->
                           ok = mnesia:write(?USER_PROGRAM_LOGS_TABLE, LogEntry, write)
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
-            {error, Result };
+            Result;
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
-            {error, mnesia:error_description(Reason)}
+            {error, Reason}
     end.
 
 -spec get_userid_from_username(binary()) -> {ok, binary()} | {error, no_user_found}.
@@ -1267,7 +1267,7 @@ get_running_program_id(ProgramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec set_program_variable(binary(), atom(), any()) -> ok | {error, any()}.
+-spec set_program_variable(binary(), binary(), any()) -> ok | {error, any()}.
 set_program_variable(ProgramId, Key, Value) ->
     Transaction = fun() ->
                           mnesia:write(?PROGRAM_VARIABLE_TABLE, #program_variable_table_entry{ id={ProgramId, Key}
