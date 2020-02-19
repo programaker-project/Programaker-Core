@@ -19,6 +19,7 @@
         , update_program_tags/3
         , update_program_status/3
         , get_program_tags/2
+        , get_program_logs/1
         , stop_program_threads/2
         , lists_programs_from_username/1
         , update_program/3
@@ -195,6 +196,14 @@ get_program_tags(Username, ProgramId) ->
     case automate_storage:get_tags_program_from_id(ProgramId) of
         {ok, Tags} ->
             {ok, Tags};
+        X ->
+            X
+    end.
+
+get_program_logs(ProgramId) ->
+    case automate_storage:get_logs_from_program_id(ProgramId) of
+        {ok, Logs} ->
+            {ok, Logs};
         X ->
             X
     end.

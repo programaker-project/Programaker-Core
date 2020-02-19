@@ -18,6 +18,7 @@ parse_program_thread(#running_program_thread_entry{ position=Position
                                                   , memory=Memory
                                                   , instruction_memory=InstructionMemory
                                                   , parent_program_id=ParentProgramId
+                                                  , thread_id=_ThreadId
                                                   }) ->
     #program_thread{ position=Position
                    , program=Instructions

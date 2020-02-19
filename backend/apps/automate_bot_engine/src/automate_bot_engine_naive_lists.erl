@@ -26,14 +26,17 @@ insert_nth(List, Index, Value) when Index > 0 ->
 replace_nth(List, Index, Value) when Index > 0 ->
     naive_replace_nth_into_list([], List, Index, Value).
 
--spec get_nth([any()], pos_integer()) -> {ok, any()} | {error, not_found}.
+-spec get_nth([any()], pos_integer()) -> {ok, any()} | {error, not_found} | {error, invalid_list_index_type}.
 get_nth(List, Nth) when is_integer(Nth) and (Nth > 0) ->
     case Nth =< length(List) of
         true ->
             {ok, lists:nth(Nth, List)};
         false ->
             {error, not_found}
-    end.
+    end;
+get_nth(_List, _Nth) ->
+    {error, invalid_list_index_type}.
+
 
 -spec get_length([any()]) -> {ok, non_neg_integer()}.
 get_length(List) when is_list(List) ->
@@ -92,5 +95,3 @@ find_item([], _, _) ->
 
 find_item([_ | T ], Value, Index) ->
     find_item(T, Value, Index + 1).
-
-

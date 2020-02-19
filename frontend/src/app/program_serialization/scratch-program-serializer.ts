@@ -41,7 +41,10 @@ export default class ScratchProgramSerializer {
             id: block.id,
             type: ScratchProgramSerializer.cleanTypeName(block.getAttribute('type')),
             args: Array.from(block.childNodes)
-                .filter((x: HTMLElement) => x.tagName !== 'NEXT' && x.tagName !== 'STATEMENT')
+                .filter((x: HTMLElement) => (x.tagName !== 'NEXT'
+                                             && x.tagName !== 'STATEMENT'
+                                             && x.tagName !== 'COMMENT'
+                                           ))
                 .map(node => this.serializeArg(node as HTMLElement)),
             contents: [],
         };

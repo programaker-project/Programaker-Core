@@ -6,8 +6,11 @@
 -module(automate_logging).
 
 %% Application callbacks
--export([log_event/2, log_call_to_bridge/5]).
+-export([ log_event/2, log_call_to_bridge/5
+        , log_program_error/1
+        ]).
 
+-include("../../automate_storage/src/records.hrl").
 
 %%====================================================================
 %% Logging API
@@ -83,6 +86,10 @@ log_call_to_bridge(BridgeId, FunctionName, Arguments, UserId, ExtraData) ->
             ok;
         none -> ok
     end.
+
+-spec log_program_error(#user_program_log_entry{}) -> ok | {error, atom()}.
+log_program_error(LogEntry) ->
+    automate_storage:log_program_error(LogEntry).
 
 %%====================================================================
 %% Internal functions

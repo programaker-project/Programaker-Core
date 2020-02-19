@@ -92,7 +92,8 @@ constant_argument_resolution() ->
     Value = example,
     ?assertMatch({ok, Value}, automate_bot_engine_variables:resolve_argument(#{ ?TYPE => ?VARIABLE_CONSTANT
                                                                               , ?VALUE => Value
-                                                                              }, #program_thread{})).
+                                                                              }, #program_thread{},
+                                                                            undefined)).
 
 %% Threads
 trigger_thread_with_channel_signal() ->
@@ -148,10 +149,10 @@ run_thread_single_tick() ->
 
     %% Unexpected signal (for the thread already started), does not run
     #program_thread{ position=[1], program=[CallServiceInstruction] } = Thread,
-    {did_not_run, waiting} = automate_bot_engine_operations:run_thread(Thread, TriggerMonitorSignal),
+    {did_not_run, waiting} = automate_bot_engine_operations:run_thread(Thread, TriggerMonitorSignal, undefined),
 
     %% Expected signal, does run
-    {ran_this_tick, NewThreadState} = automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}),
+    {ran_this_tick, NewThreadState} = automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined),
     ?assertMatch(#program_thread{position=[]}, NewThreadState).
 
 

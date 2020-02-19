@@ -117,8 +117,9 @@ loop(State = #state{ check_next_action = CheckContinue
 
 -spec run_tick(#state{}, any()) -> #state{}.
 run_tick(State = #state{ thread=Thread }, Message) ->
+    #running_program_thread_entry{ thread_id=ThreadId } = Thread,
     RunnerState = ?UTILS:parse_program_thread(Thread),
-    {UpdateThread, NewRunnerState} = case automate_bot_engine_operations:run_thread(RunnerState, Message) of
+    {UpdateThread, NewRunnerState} = case automate_bot_engine_operations:run_thread(RunnerState, Message, ThreadId) of
                                          { stopped, _Reason } ->
                                              self() ! {stop, self()},
                                              {false, RunnerState}; %% Self-destroy

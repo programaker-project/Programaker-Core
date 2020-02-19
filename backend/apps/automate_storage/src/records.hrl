@@ -2,6 +2,7 @@
 
 -type user_status() :: ready | mail_not_verified.
 -type time_in_seconds() :: integer().
+-type time_in_milliseconds() :: integer().
 
 -record(registered_user_entry, { id
                                , username
@@ -31,6 +32,18 @@
                             , program_orig :: any()     | ?MNESIA_SELECTOR
                             , enabled=true :: boolean() | ?MNESIA_SELECTOR
                             }).
+
+-type log_entry_severity() :: debug | warning | error.
+-record(user_program_log_entry, { program_id :: binary()               | ?MNESIA_SELECTOR
+                                , thread_id :: binary() | none         | ?MNESIA_SELECTOR
+                                , user_id :: binary() | none           | ?MNESIA_SELECTOR
+                                , block_id :: binary() | undefined     | ?MNESIA_SELECTOR
+                                , event_data :: _                      | ?MNESIA_SELECTOR
+                                , event_message :: binary()            | ?MNESIA_SELECTOR
+                                , event_time :: time_in_milliseconds() | ?MNESIA_SELECTOR
+                                , severity :: log_entry_severity()     | ?MNESIA_SELECTOR
+                                , exception_data :: none | {_, _, _}   | ?MNESIA_SELECTOR
+                                }).
 
 -record(program_tags_entry, { program_id
                             , tags

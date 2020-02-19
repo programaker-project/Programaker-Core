@@ -241,3 +241,13 @@ mat-card.bridge.connected-false {
 .full-dialog-size {
     width: 80vw;
 }
+
+/* Logs panel */
+#logs_panel_container > .log-entry > button {
+    float: right;
+}
+
+#logs_panel_container > .log-entry {
+    border-bottom: 1px dashed rgba(0,0,0,0.3);
+    padding: 1ex 0px 1ex 0px;
+}
