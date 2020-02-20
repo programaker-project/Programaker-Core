@@ -464,7 +464,6 @@ export class ProgramDetailComponent implements OnInit {
                     const path = document.location.pathname.split("/");
                     path[path.length - 1] = encodeURIComponent(this.program.name);
 
-                    this.dispose();
                     this.router.navigate([path.join("/")]);
                     console.log("Changing name to", this.program);
                 }));
