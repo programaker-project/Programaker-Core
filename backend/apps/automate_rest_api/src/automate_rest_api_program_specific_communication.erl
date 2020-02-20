@@ -40,10 +40,9 @@ websocket_handle(Message, State) ->
     {ok, State}.
 
 websocket_info({channel_engine, _ProgramId, Message}, State) ->
-    io:fwrite("Got ~p~n", [Message]),
     case ?FORMATTING:format_message(Message) of
         {ok, Structured} ->
-            {reply, {binary, jiffy:encode(Structured)}, State};
+            {reply, {text, jiffy:encode(Structured)}, State};
         {error, Reason} ->
             io:fwrite("[WS/Program]Error formatting: ~p~n~p~n", [Reason, Message]),
             {ok, State}
