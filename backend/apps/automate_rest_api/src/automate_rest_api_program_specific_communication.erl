@@ -15,28 +15,55 @@
 
 -record(state, { user_id    :: binary()
                , program_id :: binary()
-               , program_channel :: binary()
+               , error :: none | binary()
                }).
 
 
 init(Req, _Opts) ->
     UserId = cowboy_req:binding(user_id, Req),
     ProgramId = cowboy_req:binding(program_id, Req),
-    {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
 
+
+    Qs = cowboy_req:parse_qs(Req),
+    Error = case proplists:get_value(<<"token">>, Qs, undefined) of
+        undefined ->
+                     <<"Authorization header not found">>;
+        X ->
+            case automate_rest_api_backend:is_valid_token_uid(X) of
+                {true, UserId} ->
+                    none;
+                {true, TokenUserId} -> %% Non matching user_id
+                    io:fwrite("[WS/Program] Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId]),
+                    <<"Unauthorized to use this resource">>;
+                false ->
+                    <<"Authorization not correct">>
+            end
+    end,
     {cowboy_websocket, Req, #state{ program_id=ProgramId
                                   , user_id=UserId
-                                  , program_channel=ChannelId
+                                  , error=Error
                                   }}.
 
 websocket_init(State=#state{ program_id=ProgramId
-                           , program_channel=ChannelId
+                           , error=none
                            }) ->
+
+    {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
+
     io:fwrite("[WS/Program] Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId]),
     ok = automate_channel_engine:listen_channel(ChannelId),
     timer:send_after(?PING_INTERVAL_MILLISECONDS, ping_interval),
 
-    {ok, State}.
+    {ok, State};
+
+websocket_init(State=#state{error=Error}) ->
+    io:fwrite("[WS/Program] Closing with error: ~p~n", [Error]),
+    { reply
+    , { close, binary:list_to_bin(
+                 lists:flatten(io_lib:format("Error: ~s", [Error]))) }
+    , State
+    }.
+
 
 websocket_handle(pong, State) ->
     {ok, State};

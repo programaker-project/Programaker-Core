@@ -21,8 +21,17 @@ export class ProgramService {
         this.sessionService = sessionService;
     }
 
-    private toWebsocketUrl(url: string) {
+    private toWebsocketUrl(url: string): string {
         return url.replace(/^http/, 'ws');
+    }
+
+    private addTokenQueryString(url: string, token: string): string {
+        if (url.indexOf('?') === -1) {
+            return url + '?token=' + token;
+        }
+        else {
+            return url + '&token=' + token;
+        }
     }
 
     async getListProgramsUrl() {
@@ -56,8 +65,11 @@ export class ProgramService {
     }
 
     private async getProgramStreamingLogsUrl(programUserId: string, program_id: string) {
+        const token = this.sessionService.getToken();
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
-        return this.toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/communication');
+        return this.addTokenQueryString(this.toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/communication'),
+                                  token,
+                                 );
     }
 
     async getProgramStopThreadsUrl(programUserId: string, program_id: string) {
