@@ -2,8 +2,8 @@
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import {  ProgramContent, ScratchProgram } from './program';
-import { ProgramService, ProgramLogEntry } from './program.service';
+import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate } from './program';
+import { ProgramService } from './program.service';
 
 import { Toolbox } from './blocks/Toolbox';
 import * as progbar from './ui/progbar';
@@ -44,6 +44,7 @@ export class ProgramDetailComponent implements OnInit {
     @ViewChild('logs_drawer') logs_drawer: MatDrawer;
 
     logs_panel_active: boolean = false;
+    logs_drawer_initialized: boolean = false;
     commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
 
     toolboxController: ToolboxController;
@@ -167,6 +168,27 @@ export class ProgramDetailComponent implements OnInit {
         const xml = Blockly.Xml.textToDom(program.orig);
         this.removeNonExistingBlocks(xml, controller);
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
+
+        this.initializeListeners();
+    }
+
+    initializeListeners() {
+        this.programService.watchProgramLogs(this.program.owner, this.program.id,
+                                             { request_previous_logs: true })
+            .subscribe(
+                {
+                    next: (update: ProgramInfoUpdate) => {
+                        if (update.type === 'program_log') {
+                            this.updateLogsDrawer(update.value);
+                        }
+                    },
+                    error: (error: any) => {
+                        console.error("Error reading logs:", error);
+                    },
+                    complete: () => {
+                        console.log("No more logs about program", this.programId)
+                    }
+                });
     }
 
     patch_flyover_area_deletion() {
@@ -587,21 +609,17 @@ export class ProgramDetailComponent implements OnInit {
             // Notify Scratch containers
             this.notifyResize();
         });
-
-        (this.programService.getProgramLogs(this.program.owner, this.program.id)
-         .then(lines => {
-             this.updateLogsDrawer(lines);
-             this.notifyResize();
-         }));
     }
 
-    updateLogsDrawer(lines: ProgramLogEntry[]) {
+    updateLogsDrawer(line: ProgramLogEntry) {
         const container = document.getElementById('logs_panel_container');
-        container.innerHTML = ''; // Clear container
+        if (!this.logs_drawer_initialized) {
+            container.innerHTML = ''; // Clear container
 
-        for (const line of lines) {
-            container.appendChild(this.renderLogLine(line));
+            this.logs_drawer_initialized = true;
         }
+
+        container.appendChild(this.renderLogLine(line));
     }
 
     renderLogLine(line: ProgramLogEntry): HTMLElement {
