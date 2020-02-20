@@ -452,13 +452,22 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     sendProgram() {
+        // Get workspace
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
 
+        // Remove comments
+        for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
+            comment.parentNode.removeChild(comment);
+        }
+
+        // Serialize resutl
         const serializer = new ScratchProgramSerializer(this.toolboxController);
         const serialized = serializer.ToJson(xml);
         const program = new ScratchProgram(this.program,
-            serialized.parsed,
-            serialized.orig);
+                                           serialized.parsed,
+                                           serialized.orig);
+
+        // Send update
         this.programService.updateProgram(this.programUserName, program);
     }
 
