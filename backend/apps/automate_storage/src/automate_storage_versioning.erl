@@ -114,6 +114,7 @@ check_updates_integrity(_, []) ->
     ok;
 check_updates_integrity(MinVersionLessOne, [ Update=#database_version_transformation{ id=Id
                                                                                     , apply=Fun
+                                                                                    , revert=_
                                                                                     }
                                              | T ]) when is_function(Fun) ->
     if Id < MinVersionLessOne ->

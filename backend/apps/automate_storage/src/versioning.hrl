@@ -7,6 +7,7 @@
 -type database_version_transformation_id() :: pos_integer().
 -record(database_version_transformation, { id :: database_version_transformation_id()
                                          , apply :: function()
+                                         , revert=undefined :: function() | undefined %% Used for debugging migrations
                                          }).
 
 -record(database_version_progression, { base :: [#database_version_data{}]

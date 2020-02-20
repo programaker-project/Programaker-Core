@@ -31,6 +31,7 @@
                             , program_parsed :: any()   | ?MNESIA_SELECTOR
                             , program_orig :: any()     | ?MNESIA_SELECTOR
                             , enabled=true :: boolean() | ?MNESIA_SELECTOR
+                            , program_channel :: binary() | ?MNESIA_SELECTOR
                             }).
 
 -type log_entry_severity() :: debug | warning | error.

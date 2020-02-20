@@ -243,5 +243,100 @@ get_versioning(Nodes) ->
                         end
                 }
 
+                %% Add `update_channel` entry to programs table.
+                %%
+                %% This is used to stream the changes happening on the programs.
+                %% The channel will be deleted when the program is.
+              , #database_version_transformation
+                { id=9
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                  fun({user_program_entry, Id, UserId, ProgramName,
+                                       ProgramType, ProgramParsed, ProgramOrig, Enabled }) ->
+                                          %% Replicate the entry. Just create an empty program channel.
+
+                                          { user_program_entry, Id, UserId, ProgramName,
+                                            ProgramType, ProgramParsed, ProgramOrig, Enabled,
+                                            undefined }
+                                  end,
+                                  [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled
+                                  , program_channel
+                                  ],
+                                  user_program_entry
+                                 ),
+
+                                %% After the table is updated, generate the new channels
+                                %% This apparently cannot be done inside the mnesia:transform_table.
+                                db_map(automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                       fun({user_program_entry, Id, UserId, ProgramName,
+                                            ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel }) ->
+                                               NewChannel = case ProgramChannel of
+                                                                undefined ->
+                                                                    {ok, CreatedChannel} = automate_channel_engine:create_channel(),
+                                                                    io:fwrite("Created channel: ~p~n", [CreatedChannel]),
+                                                                    CreatedChannel;
+                                                                _ ->
+                                                                    ProgramChannel
+                                                            end,
+                                               {user_program_entry, Id, UserId, ProgramName,
+                                                ProgramType, ProgramParsed, ProgramOrig, Enabled, NewChannel }
+                                       end)
+                        end
+                , revert=fun() ->
+                                %% After the table is updated, remove the old channels
+                                %% This apparently cannot be done inside the mnesia:transform_table.
+                                db_map(automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                       fun({user_program_entry, Id, UserId, ProgramName,
+                                            ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel }) ->
+                                               case ProgramChannel of
+                                                   undefined ->
+                                                       ok;
+                                                   _ ->
+                                                       %% Replicate the entry. Just create a program channel.
+
+                                                       Result = automate_channel_engine:delete_channel(ProgramChannel),
+                                                       io:fwrite("Deleting channel ~p: ~p~n", [ProgramChannel, Result])
+                                               end,
+                                               { user_program_entry, Id, UserId, ProgramName,
+                                                 ProgramType, ProgramParsed, ProgramOrig, Enabled }
+                                       end),
+
+                                 mnesia:transform_table(
+                                   automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                   fun({user_program_entry, Id, UserId, ProgramName
+                                       , ProgramType, ProgramParsed, ProgramOrig, Enabled
+                                       , _ProgramChannel }) ->
+                                           { user_program_entry, Id, UserId, ProgramName,
+                                             ProgramType, ProgramParsed, ProgramOrig, Enabled }
+                                   end,
+                                   [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled
+                                   ],
+                                   user_program_entry
+                                  )
+                         end
+                }
               ]
         }.
+
+db_map(Database, Function) ->
+    Transaction = fun() ->
+                          ok = mnesia:write_lock_table(Database),
+                          ok = db_map_iter(Database, Function, mnesia:first(Database))
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            io:fwrite("[Storage/Migration] Error on migration: ~p~n", [Reason]),
+            {error, Reason}
+    end.
+
+db_map_iter(_Database, _Function, '$end_of_table') ->
+    ok;
+db_map_iter(Database, Function, Key) ->
+    [Element] = mnesia:read(Database, Key),
+    NewElement = Function(Element),
+    %% Note that the old element is not removed. An update cannot change the ID.
+    ok = mnesia:write(Database, NewElement, write),
+    db_map_iter(Database, Function, mnesia:next(Database, Key)).

@@ -7,6 +7,7 @@
 
 %% Public API
 -export([ create_channel/0
+        , delete_channel/1
         , listen_channel/1
         , listen_channel/2
         , send_to_channel/2
@@ -28,6 +29,10 @@ create_channel() ->
         X ->
             X
     end.
+
+-spec delete_channel(binary()) -> ok | {error, atom()}.
+delete_channel(ChannelId) ->
+    automate_channel_engine_mnesia_backend:delete_channel(ChannelId).
 
 -spec listen_channel(binary()) -> ok | {error, channel_not_found}.
 listen_channel(ChannelId) ->
