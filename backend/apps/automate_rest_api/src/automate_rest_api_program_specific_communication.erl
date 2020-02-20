@@ -10,12 +10,14 @@
 
 
 -define(FORMATTING, automate_rest_api_utils_formatting).
+-define(PING_INTERVAL_MILLISECONDS, 15000).
 -include("../../automate_storage/src/records.hrl").
 
 -record(state, { user_id    :: binary()
                , program_id :: binary()
                , program_channel :: binary()
                }).
+
 
 init(Req, _Opts) ->
     UserId = cowboy_req:binding(user_id, Req),
@@ -32,12 +34,20 @@ websocket_init(State=#state{ program_id=ProgramId
                            }) ->
     io:fwrite("[WS/Program] Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId]),
     ok = automate_channel_engine:listen_channel(ChannelId),
+    timer:send_after(?PING_INTERVAL_MILLISECONDS, ping_interval),
 
     {ok, State}.
 
+websocket_handle(pong, State) ->
+    {ok, State};
 websocket_handle(Message, State) ->
     io:fwrite("[WS/Program] Unexpected message: ~p~n", [Message]),
     {ok, State}.
+
+
+websocket_info(ping_interval, State) ->
+    timer:send_after(?PING_INTERVAL_MILLISECONDS, ping_interval),
+    {reply, ping, State};
 
 websocket_info({channel_engine, _ProgramId, Message}, State) ->
     case ?FORMATTING:format_message(Message) of
