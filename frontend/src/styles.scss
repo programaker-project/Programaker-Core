@@ -247,6 +247,11 @@ mat-card.bridge.connected-false {
     float: right;
 }
 
+#logs_panel_container > .log-entry > .time {
+    font-size: small;
+    display: block;
+}
+
 #logs_panel_container > .log-entry {
     border-bottom: 1px dashed rgba(0,0,0,0.3);
     padding: 1ex 0px 1ex 0px;

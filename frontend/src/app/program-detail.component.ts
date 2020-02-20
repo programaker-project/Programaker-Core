@@ -631,9 +631,34 @@ export class ProgramDetailComponent implements OnInit {
         container.appendChild(this.renderLogLine(line));
     }
 
+    static unixMsToStr(ms_timestamp: number): string {
+        const date = new Date(ms_timestamp);
+
+        const left_pad = ((val: string | number, target_length: number, pad_character: string) => {
+            let str = val.toString();
+
+            while (str.length < target_length) {
+                str = pad_character + str;
+            }
+            return str;
+        });
+        const pad02 = (val: string|number) => {
+            return left_pad(val, 2, '0');
+        }
+
+        return (`${date.getFullYear()}/${pad02(date.getMonth() + 1)}/${pad02(date.getDate())} `
+            + ` - ${pad02(date.getHours())}:${pad02(date.getMinutes())}:${pad02(date.getSeconds())}.${date.getMilliseconds()}`);
+    }
+
     renderLogLine(line: ProgramLogEntry): HTMLElement {
         const element = document.createElement('div');
         element.classList.add('log-entry');
+
+        const line_time = document.createElement('span');
+        line_time.classList.add('time');
+        line_time.innerText = ProgramDetailComponent.unixMsToStr(line.event_time);
+
+        element.appendChild(line_time);
 
         const message = document.createElement('span');
         message.classList.add('message');
