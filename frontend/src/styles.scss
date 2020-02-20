@@ -252,7 +252,14 @@ mat-card.bridge.connected-false {
     display: block;
 }
 
+@keyframes glow-new-log-entry {
+    from {background-color: rgba(255, 100, 100, 1);}
+    to {background-color: rgba(255, 100, 100, 0);}
+}
+
 #logs_panel_container > .log-entry {
     border-bottom: 1px dashed rgba(0,0,0,0.3);
-    padding: 1ex 0px 1ex 0px;
+    padding: 1ex 1em 1ex 1em;
+    animation-name: glow-new-log-entry;
+    animation-duration: 2s;
 }

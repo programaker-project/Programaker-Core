@@ -43,7 +43,6 @@ export class ProgramDetailComponent implements OnInit {
     programId: string;
     @ViewChild('logs_drawer') logs_drawer: MatDrawer;
 
-    logs_panel_active: boolean = false;
     logs_drawer_initialized: boolean = false;
     commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
 
@@ -628,7 +627,12 @@ export class ProgramDetailComponent implements OnInit {
             this.logs_drawer_initialized = true;
         }
 
-        container.appendChild(this.renderLogLine(line));
+        const newLine = this.renderLogLine(line);
+        container.appendChild(newLine);
+
+        if (this.logs_drawer.opened) {
+            newLine.scrollIntoView();
+        }
     }
 
     static unixMsToStr(ms_timestamp: number): string {
