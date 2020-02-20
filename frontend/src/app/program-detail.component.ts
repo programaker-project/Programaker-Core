@@ -450,7 +450,7 @@ export class ProgramDetailComponent implements OnInit {
         }
     }
 
-    sendProgram() {
+    sendProgram(): Promise<boolean> {
         // Get workspace
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
 
@@ -459,7 +459,7 @@ export class ProgramDetailComponent implements OnInit {
             comment.parentNode.removeChild(comment);
         }
 
-        // Serialize resutl
+        // Serialize result
         const serializer = new ScratchProgramSerializer(this.toolboxController);
         const serialized = serializer.ToJson(xml);
         const program = new ScratchProgram(this.program,
@@ -467,7 +467,7 @@ export class ProgramDetailComponent implements OnInit {
                                            serialized.orig);
 
         // Send update
-        this.programService.updateProgram(this.programUserName, program);
+        return this.programService.updateProgram(this.programUserName, program);
     }
 
     renameProgram() {
@@ -477,12 +477,13 @@ export class ProgramDetailComponent implements OnInit {
             data: programData
         });
 
-        dialogRef.afterClosed().subscribe(result => {
+        dialogRef.afterClosed().subscribe(async (result) => {
             if (!result) {
                 console.log("Cancelled");
                 return;
             }
 
+            await this.sendProgram();
             const rename = (this.programService.renameProgram(this.programUserName, this.program, programData.name)
                 .catch(() => { return false; })
                 .then(success => {
@@ -494,7 +495,6 @@ export class ProgramDetailComponent implements OnInit {
                     const path = document.location.pathname.split("/");
                     path[path.length - 1] = encodeURIComponent(this.program.name);
 
-                    this.dispose();
                     this.router.navigate([path.join("/")]);
                     console.log("Changing name to", this.program);
                 }));
