@@ -1,24 +1,12 @@
 
 import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { ProgramMetadata, ProgramContent, ProgramType } from './program';
-import * as API from './api-config';
+import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry } from './program';
 
-
+import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
-
-export interface ProgramLogEntry {
-    program_id: string,
-    thread_id: string | 'none',
-    user_id: string | 'none',
-    block_id: string | undefined,
-    severity: 'error' | 'debug' | 'warning',
-    event_data: any,
-    event_message: string,
-    event_time: number,
-};
 
 @Injectable()
 export class ProgramService {
@@ -31,6 +19,19 @@ export class ProgramService {
     ) {
         this.http = http;
         this.sessionService = sessionService;
+    }
+
+    private toWebsocketUrl(url: string): string {
+        return url.replace(/^http/, 'ws');
+    }
+
+    private addTokenQueryString(url: string, token: string): string {
+        if (url.indexOf('?') === -1) {
+            return url + '?token=' + token;
+        }
+        else {
+            return url + '&token=' + token;
+        }
     }
 
     async getListProgramsUrl() {
@@ -49,7 +50,7 @@ export class ProgramService {
     }
 
     async getUpdateProgramUrl(programUserName: string, program_id: string) {
-        const userApiRoot = await this.sessionService.getApiRootForUser(programUserName);
+        const userApiRoot = this.sessionService.getApiRootForUser(programUserName);
         return userApiRoot + '/programs/' + encodeURIComponent(program_id);
     }
 
@@ -61,6 +62,14 @@ export class ProgramService {
     private async getProgramLogsUrl(programUserId: string, program_id: string) {
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
         return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/logs';
+    }
+
+    private async getProgramStreamingLogsUrl(programUserId: string, program_id: string) {
+        const token = this.sessionService.getToken();
+        const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
+        return this.addTokenQueryString(this.toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/communication'),
+                                  token,
+                                 );
     }
 
     async getProgramStopThreadsUrl(programUserId: string, program_id: string) {
@@ -197,4 +206,60 @@ export class ProgramService {
                     }))
                     .toPromise()));
     }
+
+    watchProgramLogs(user_id: string, program_id: string, options: { request_previous_logs?: boolean }): Observable<ProgramInfoUpdate> {
+        return new Observable((observer) => {
+
+            this.getProgramStreamingLogsUrl(user_id, program_id).then(streamingUrl => {
+
+                let buffer = [];
+                let state : 'none_ready' | 'ws_ready' | 'all_ready' = 'none_ready';
+
+                const websocket = new WebSocket(streamingUrl);
+                websocket.onopen = (() => {
+                    if (options.request_previous_logs) {
+                        state = 'ws_ready';
+
+                        this.getProgramLogs(user_id, program_id).then(entries => {
+                            for (const entry of entries) {
+                                observer.next({
+                                    type: 'program_log',
+                                    value: entry,
+                                });
+                            }
+
+                            for (const entry of buffer) {
+                                observer.next(entry);
+                            }
+
+                            buffer = []; // Empty buffer
+                            state = 'all_ready';
+                        });
+                    }
+                    else {
+                        state = 'all_ready';
+                    }
+                });
+
+                websocket.onmessage = ((ev) => {
+                    if (state === 'ws_ready') {
+                        buffer.push(JSON.parse(ev.data));
+                    }
+                    else {
+                        observer.next(JSON.parse(ev.data));
+                    }
+                });
+
+                websocket.onclose = (() => {
+                    observer.complete();
+                });
+
+                websocket.onerror = ((ev) => {
+                    observer.error(ev);
+                    observer.complete();
+                });
+            });
+        });
+    }
+
 }

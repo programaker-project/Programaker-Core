@@ -359,6 +359,7 @@ check_password_reset_verification_code(VerificationCode) ->
 create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
     ProgramId = generate_id(),
+    {ok, ProgramChannel} = automate_channel_engine:create_channel(),
     UserProgram = #user_program_entry{ id=ProgramId
                                      , user_id=UserId
                                      , program_name=ProgramName
@@ -366,6 +367,7 @@ create_program(Username, ProgramName) ->
                                      , program_parsed=undefined
                                      , program_orig=undefined
                                      , enabled=true
+                                     , program_channel=ProgramChannel
                                      },
     case store_new_program(UserProgram) of
         ok ->
@@ -444,7 +446,10 @@ update_program_metadata(Username, ProgramName, #editable_user_program_metadata{p
 -spec delete_program(binary(), binary()) -> { 'ok', binary() } | { 'error', any() }.
 delete_program(Username, ProgramName)->
     case retrieve_program(Username, ProgramName) of
-        {ok, ProgramEntry=#user_program_entry{id=ProgramId}} ->
+        {ok, ProgramEntry=#user_program_entry{ id=ProgramId
+                                             , program_channel=Channel
+                                             }} ->
+            ok = automate_channel_engine:delete_channel(Channel),
             Transaction = fun() ->
                                   ok = mnesia:delete_object(?USER_PROGRAMS_TABLE,
                                                             ProgramEntry, write)
@@ -1070,6 +1075,7 @@ retrieve_program(Username, ProgramName) ->
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
                                                                         , enabled='_'
+                                                                        , program_channel='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -1122,6 +1128,7 @@ retrieve_program_list_from_username(Username) ->
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
                                                                         , enabled='_'
+                                                                        , program_channel='_'
                                                                         },
                                   ProgramGuard = {'==', '$2', UserId},
                                   ProgramResultsColumn = '$1',
@@ -1150,6 +1157,7 @@ retrieve_program_list_from_userid(UserId) ->
                                                                 , program_parsed='_'
                                                                 , program_orig='_'
                                                                 , enabled='_'
+                                                                , program_channel='_'
                                                                 },
                           ProgramGuard = {'==', '$2', UserId},
                           ProgramResultsColumn = '$1',
@@ -1199,6 +1207,7 @@ store_new_program_content(Username, ProgramName,
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
                                                                         , enabled='_'
+                                                                        , program_channel='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}

@@ -7,6 +7,7 @@
 
 -export([ start_link/0
         , register_channel/1
+        , delete_channel/1
         , add_listener_to_channel/5
         , get_listeners_on_channel/1
         , add_listener_monitor/3
@@ -67,6 +68,19 @@ register_channel(ChannelId) ->
             Result;
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+-spec delete_channel(binary()) -> ok | {error, term(), string()}.
+delete_channel(ChannelId) ->
+    Transaction = fun() ->
+                          ok = mnesia:delete(?LIVE_CHANNELS_TABLE, ChannelId, write)
+                  end,
+
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
     end.
 
 -spec add_listener_to_channel(binary(), pid(), node(), binary() | undefined, binary() | undefined) -> ok | {error, channel_not_found}.
