@@ -429,7 +429,7 @@ export class ProgramDetailComponent implements OnInit {
         }
     }
 
-    sendProgram() {
+    sendProgram(): Promise<boolean> {
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
 
         const serializer = new ScratchProgramSerializer(this.toolboxController);
@@ -437,7 +437,7 @@ export class ProgramDetailComponent implements OnInit {
         const program = new ScratchProgram(this.program,
             serialized.parsed,
             serialized.orig);
-        this.programService.updateProgram(this.programUserName, program);
+        return this.programService.updateProgram(this.programUserName, program);
     }
 
     renameProgram() {
@@ -447,12 +447,13 @@ export class ProgramDetailComponent implements OnInit {
             data: programData
         });
 
-        dialogRef.afterClosed().subscribe(result => {
+        dialogRef.afterClosed().subscribe(async (result) => {
             if (!result) {
                 console.log("Cancelled");
                 return;
             }
 
+            await this.sendProgram();
             const rename = (this.programService.renameProgram(this.programUserName, this.program, programData.name)
                 .catch(() => { return false; })
                 .then(success => {
