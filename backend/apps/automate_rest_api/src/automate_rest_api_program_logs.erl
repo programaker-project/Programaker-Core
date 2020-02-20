@@ -14,9 +14,9 @@
 -export([ to_json/2
         ]).
 
+-define(FORMATTING, automate_rest_api_utils_formatting).
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
--include("../../automate_bot_engine/src/program_records.hrl").
 
 -record(state, { user_id, program_id }).
 
@@ -82,79 +82,9 @@ to_json(Req, State) ->
     #state{ program_id=ProgramId} = State,
     case automate_rest_api_backend:get_program_logs(ProgramId) of
         { ok, Logs } ->
-            Output = serialize_logs(Logs),
+            Output = jiffy:encode(?FORMATTING:serialize_logs(Logs)),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
             { Output, Res2, State }
     end.
-
-
-serialize_logs(Logs) ->
-    jiffy:encode(lists:map(fun (Entry) -> serialize_log_entry(Entry) end, Logs)).
-
-serialize_log_entry(#user_program_log_entry{ program_id=ProgramId
-                                           , thread_id=ThreadId
-                                           , user_id=UserId
-                                           , block_id=BlockId
-                                           , event_data=EventData
-                                           , event_message=EventMessage
-                                           , event_time=EventTime
-                                           , severity=Severity
-                                           , exception_data=_ExceptionData
-                                           }) ->
-    #{ program_id => ProgramId
-     , thread_id => serialize_string_or_none(ThreadId)
-     , user_id => serialize_string_or_none(UserId)
-     , block_id => serialize_string_or_none(BlockId)
-     , event_data => serialize_event_error(EventData)
-     , event_message => EventMessage
-     , event_time => EventTime
-     , severity => Severity
-     }.
-
-serialize_string_or_none(none) ->
-    null;
-serialize_string_or_none(String) ->
-    String.
-
-serialize_event_error(#program_error{ error=Error
-                                    , block_id=BlockId
-                                    }) ->
-    #{ error => serialize_error_subtype(Error)
-     , block_id => BlockId
-     };
-serialize_event_error(_) ->
-    unknown_error.
-
-serialize_error_subtype(#variable_not_set{variable_name=VariableName}) ->
-    #{ type => variable_not_set
-     , variable_name => VariableName
-     };
-
-serialize_error_subtype(#list_not_set{list_name=ListName}) ->
-    #{ type => list_not_set
-     , list_name => ListName
-     };
-
-serialize_error_subtype(#index_not_in_list{ list_name=ListName
-                                          , index=Index
-                                          , max=MaxIndex
-                                          }) ->
-    #{ type => index_not_in_list
-     , list_name => ListName
-     , index => Index
-     , length => MaxIndex
-     };
-
-serialize_error_subtype(#invalid_list_index_type{ list_name=ListName
-                                                , index=Index
-                                                }) ->
-    #{ type => invalid_list_index_type
-     , list_name => ListName
-     , index => Index
-     };
-
-serialize_error_subtype(#unknown_operation{}) ->
-    #{ type => unknown_operation
-     }.

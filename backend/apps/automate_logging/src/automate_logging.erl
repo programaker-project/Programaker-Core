@@ -88,7 +88,10 @@ log_call_to_bridge(BridgeId, FunctionName, Arguments, UserId, ExtraData) ->
     end.
 
 -spec log_program_error(#user_program_log_entry{}) -> ok | {error, atom()}.
-log_program_error(LogEntry) ->
+log_program_error(LogEntry=#user_program_log_entry{ program_id=ProgramId }) ->
+    {ok, #user_program_entry{ program_channel=Channel }} = automate_storage:get_program_from_id(ProgramId),
+    automate_channel_engine:send_to_channel(Channel, LogEntry),
+
     automate_storage:log_program_error(LogEntry).
 
 %%====================================================================
