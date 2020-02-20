@@ -284,7 +284,7 @@ get_versioning(Nodes) ->
                                        end)
                         end
                 , revert=fun() ->
-                                %% After the table is updated, remove the old channels
+                                %% Before the table is updated, remove the old channels
                                 %% This apparently cannot be done inside the mnesia:transform_table.
                                 db_map(automate_user_programs, %% ?USER_PROGRAMS_TABLE
                                        fun({user_program_entry, Id, UserId, ProgramName,
