@@ -44,7 +44,6 @@ export class SessionService {
     }
 
     async getUserApiRoot(): Promise<string> {
-        // tslint:disable-next-line:no-debugger
         let session = SessionService.EstablishedSession;
         if (session === undefined) {
             session = await this.getSession();
