@@ -13,20 +13,59 @@
             <style>
                 body {
                     background-color: #009688;
+                    color: #fff;
                 }
 
                 .parent {
                     position: relative;
                 }
 
-                .centerer > img {
+                .centerer > .centered {
                     position: absolute;
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
+                    text-align: center;
+                }
+                #humor {
+                    padding-top: 3em;
+                    font-weight: 600;
                 }
             </style>
-            <div class="centerer"><img src="/assets/logo.png" /></div>
+            <div id="loading-page" class="centerer">
+                <div class="centered">
+                    <img src="/assets/logo.png" />
+                    <h1 class="load-explanation">Loading PrograMaker...</h1>
+
+                    <div id="humor"></div>
+                    <noscript>
+                        <div id="no-load-alert">
+                            <p>Sorry, PrograMaker won't work without Javascript.</p>
+                            <p>Please consider enabling Javascript.</p>
+                        </div>
+                    </noscript>
+                    <script>
+                        (function() {
+                            var phrases = ['Engaging bridges...', 'Supercharging Websockets...', 'Embedding IOTs...', 'Running out of meaningless texts...', 'This is unexpected...', 'Still there?', 'Considering reload...', 'Welp, hopefully this will finish...', 'Oficially ran out of phrases ¯\\_(ツ)_/¯'];
+                            var element = document.getElementById('humor');
+                            var currentIndex = -1;
+                            var updateHumor = (function() {
+                                if ((currentIndex + 1) < phrases.length){
+                                    currentIndex = currentIndex + 1;
+                                }
+                                element.innerText = phrases[currentIndex];
+
+                                setTimer();
+                            });
+                            var setTimer = (function() {
+                                setTimeout(updateHumor, 2000);
+                            });
+                            updateHumor();
+                        })();
+                    </script>
+                </div>
+            </div>
+
         </app-my-app>
     </body>
 </html>
