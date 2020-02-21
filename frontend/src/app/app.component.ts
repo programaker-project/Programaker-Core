@@ -68,15 +68,7 @@ export class AppComponent {
         this.router.navigate(['/dashboard']);
     }
 
-    gotoProfile(): void {
-        this.router.navigate(['/profile']);
-    }
-
-    gotoPrograms(): void {
-        this.router.navigate(['/programs']);
-    }
-
-    gotoServices(): void {
+    gotoBridges(): void {
         this.router.navigate(['/services']);
     }
 }
