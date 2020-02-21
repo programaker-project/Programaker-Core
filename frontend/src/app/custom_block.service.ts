@@ -222,7 +222,7 @@ export class CustomBlockService {
                     const result = response.result as { [key: string]: { name: string } };
 
                     for (const key of Object.keys(result)) {
-                        options.push([result[key].name, key]);
+                        options.push([result[key].name || key, key]);
                     }
 
                     return options;

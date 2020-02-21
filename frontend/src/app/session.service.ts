@@ -7,8 +7,6 @@ import { Session } from './session';
 
 import * as progbar from './ui/progbar';
 import * as API from './api-config';
-import { Observable } from 'rxjs';
-import { ApiRoot } from './api-config';
 import { ContentType } from './content-type';
 
 @Injectable()
@@ -46,7 +44,6 @@ export class SessionService {
     }
 
     async getUserApiRoot(): Promise<string> {
-        // tslint:disable-next-line:no-debugger
         let session = SessionService.EstablishedSession;
         if (session === undefined) {
             session = await this.getSession();

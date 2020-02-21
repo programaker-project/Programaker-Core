@@ -40,6 +40,8 @@ start_link() ->
                         , {"/api/v0/users/:user_id/custom-blocks/", automate_rest_api_custom_blocks_root, []}
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
                         , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/communication", automate_rest_api_program_specific_communication, []}
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs", automate_rest_api_program_logs, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/tags", automate_rest_api_program_tags, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/stop-threads", automate_rest_api_program_stop, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/status", automate_rest_api_program_status, []}

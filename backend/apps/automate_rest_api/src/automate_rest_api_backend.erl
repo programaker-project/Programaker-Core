@@ -19,6 +19,7 @@
         , update_program_tags/3
         , update_program_status/3
         , get_program_tags/2
+        , get_program_logs/1
         , stop_program_threads/2
         , lists_programs_from_username/1
         , update_program/3
@@ -114,7 +115,7 @@ generate_token_for_user(UserId) ->
     automate_storage:generate_token_for_user(UserId).
 
 is_valid_token(Token) when is_binary(Token) ->
-    case automate_storage:get_session_username(Token) of
+    case automate_storage:get_session_username(Token, true) of
         { ok, Username } ->
             {true, Username};
         { error, session_not_found } ->
@@ -125,7 +126,7 @@ is_valid_token(Token) when is_binary(Token) ->
     end.
 
 is_valid_token_uid(Token) when is_binary(Token) ->
-    case automate_storage:get_session_userid(Token) of
+    case automate_storage:get_session_userid(Token, true) of
         { ok, UserId } ->
             {true, UserId};
         { error, session_not_found } ->
@@ -195,6 +196,14 @@ get_program_tags(Username, ProgramId) ->
     case automate_storage:get_tags_program_from_id(ProgramId) of
         {ok, Tags} ->
             {ok, Tags};
+        X ->
+            X
+    end.
+
+get_program_logs(ProgramId) ->
+    case automate_storage:get_logs_from_program_id(ProgramId) of
+        {ok, Logs} ->
+            {ok, Logs};
         X ->
             X
     end.

@@ -1,8 +1,8 @@
 
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import {  ProgramContent, ScratchProgram } from './program';
+import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate } from './program';
 import { ProgramService } from './program.service';
 
 import { Toolbox } from './blocks/Toolbox';
@@ -13,6 +13,8 @@ import { MonitorService } from './monitor.service';
 import { CustomBlockService } from './custom_block.service';
 
 import { MatDialog } from '@angular/material/dialog';
+import { MatDrawer } from '@angular/material/sidenav';
+
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
@@ -39,10 +41,15 @@ export class ProgramDetailComponent implements OnInit {
     workspace: Blockly.Workspace;
     programUserName: string;
     programId: string;
+    @ViewChild('logs_drawer') logs_drawer: MatDrawer;
+
+    logs_drawer_initialized: boolean = false;
+    commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
 
     toolboxController: ToolboxController;
     portraitMode: boolean;
     smallScreen: boolean;
+    patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
 
     constructor(
         private monitorService: MonitorService,
@@ -62,7 +69,7 @@ export class ProgramDetailComponent implements OnInit {
         this.customSignalService = customSignalService;
         this.route = route;
         this.router = router;
-        this.serviceService = serviceService;
+        this.serviceService = serviceService
     }
 
     ngOnInit(): void {
@@ -160,12 +167,33 @@ export class ProgramDetailComponent implements OnInit {
         const xml = Blockly.Xml.textToDom(program.orig);
         this.removeNonExistingBlocks(xml, controller);
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
+
+        this.initializeListeners();
+    }
+
+    initializeListeners() {
+        this.programService.watchProgramLogs(this.program.owner, this.program.id,
+                                             { request_previous_logs: true })
+            .subscribe(
+                {
+                    next: (update: ProgramInfoUpdate) => {
+                        if (update.type === 'program_log') {
+                            this.updateLogsDrawer(update.value);
+                        }
+                    },
+                    error: (error: any) => {
+                        console.error("Error reading logs:", error);
+                    },
+                    complete: () => {
+                        console.log("No more logs about program", this.programId)
+                    }
+                });
     }
 
     patch_flyover_area_deletion() {
-        const orig = (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_;
+        this.patchedFunctions.recordDeleteAreas = (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_;
         (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_ = () => {
-            orig.bind(this.workspace)();
+            this.patchedFunctions.recordDeleteAreas.bind(this.workspace)();
 
             // Disable toolbox delete area use trashcan for deletion
             const tbDelArea = (this.workspace as any).deleteAreaToolbox_;
@@ -268,13 +296,16 @@ export class ProgramDetailComponent implements OnInit {
             }
 
             this.reset_zoom();
+
+            const dragContainer = document.querySelector('.blocklyBlockDragSurface>g');
+            dragContainer.setAttribute('filter', 'drop-shadow(0 0 5px rgba(0,0,0,0.5))');
+
+            if (this.portraitMode || this.smallScreen) {
+                this.patch_flyover_area_deletion();
+            }
         }, 0);
 
         this.patch_blockly();
-
-        if (this.portraitMode || this.smallScreen) {
-            this.patch_flyover_area_deletion();
-        }
     }
 
     /**
@@ -396,19 +427,47 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     goBack(): boolean {
+        this.dispose();
         this.router.navigate(['/dashboard'])
         return false;
     }
 
-    sendProgram() {
+    dispose() {
+        try {
+            this.workspace.dispose();
+        } catch(error) {
+            console.error("Error disposing workspace:", error);
+        }
+
+        // Restore the patched function, to cleaup the state.
+        try {
+            if (this.patchedFunctions.recordDeleteAreas) {
+                (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_ = this.patchedFunctions.recordDeleteAreas;
+                this.patchedFunctions.recordDeleteAreas = null;
+            }
+        } catch (error) {
+            console.error("Error restoring recordDeleteAreas:", error);
+        }
+    }
+
+    sendProgram(): Promise<boolean> {
+        // Get workspace
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
 
+        // Remove comments
+        for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
+            comment.parentNode.removeChild(comment);
+        }
+
+        // Serialize result
         const serializer = new ScratchProgramSerializer(this.toolboxController);
         const serialized = serializer.ToJson(xml);
         const program = new ScratchProgram(this.program,
-            serialized.parsed,
-            serialized.orig);
-        this.programService.updateProgram(this.programUserName, program);
+                                           serialized.parsed,
+                                           serialized.orig);
+
+        // Send update
+        return this.programService.updateProgram(this.programUserName, program);
     }
 
     renameProgram() {
@@ -418,12 +477,13 @@ export class ProgramDetailComponent implements OnInit {
             data: programData
         });
 
-        dialogRef.afterClosed().subscribe(result => {
+        dialogRef.afterClosed().subscribe(async (result) => {
             if (!result) {
                 console.log("Cancelled");
                 return;
             }
 
+            await this.sendProgram();
             const rename = (this.programService.renameProgram(this.programUserName, this.program, programData.name)
                 .catch(() => { return false; })
                 .then(success => {
@@ -530,5 +590,118 @@ export class ProgramDetailComponent implements OnInit {
                 }));
             progbar.track(deletion);
         });
+    }
+
+    toggleLogsPanel() {
+        if (this.logs_drawer.opened) {
+            this.closeLogsPanel();
+        }
+        else {
+            this.openLogsPanel();
+        }
+    }
+
+    notifyResize() {
+        window.dispatchEvent(new Event('resize'));
+    }
+
+    closeLogsPanel() {
+        this.logs_drawer.close().then(() => {
+            // Notify Scratch containers
+            this.notifyResize();
+        });
+    }
+
+    openLogsPanel() {
+        this.logs_drawer.open().then(() => {
+            // Notify Scratch containers
+            this.notifyResize();
+        });
+    }
+
+    updateLogsDrawer(line: ProgramLogEntry) {
+        const container = document.getElementById('logs_panel_container');
+        if (!this.logs_drawer_initialized) {
+            container.innerHTML = ''; // Clear container
+
+            this.logs_drawer_initialized = true;
+        }
+
+        const newLine = this.renderLogLine(line);
+        container.appendChild(newLine);
+
+        if (this.logs_drawer.opened) {
+            newLine.scrollIntoView();
+        }
+    }
+
+    static unixMsToStr(ms_timestamp: number): string {
+        const date = new Date(ms_timestamp);
+
+        const left_pad = ((val: string | number, target_length: number, pad_character: string) => {
+            let str = val.toString();
+
+            while (str.length < target_length) {
+                str = pad_character + str;
+            }
+            return str;
+        });
+        const pad02 = (val: string|number) => {
+            return left_pad(val, 2, '0');
+        }
+
+        return (`${date.getFullYear()}/${pad02(date.getMonth() + 1)}/${pad02(date.getDate())} `
+            + ` - ${pad02(date.getHours())}:${pad02(date.getMinutes())}:${pad02(date.getSeconds())}.${date.getMilliseconds()}`);
+    }
+
+    renderLogLine(line: ProgramLogEntry): HTMLElement {
+        const element = document.createElement('div');
+        element.classList.add('log-entry');
+
+        const line_time = document.createElement('span');
+        line_time.classList.add('time');
+        line_time.innerText = ProgramDetailComponent.unixMsToStr(line.event_time);
+
+        element.appendChild(line_time);
+
+        const message = document.createElement('span');
+        message.classList.add('message');
+        message.innerText = line.event_message;
+
+        element.appendChild(message);
+
+        if (line.block_id) {
+            const mark_button = document.createElement('button');
+            mark_button.classList.value = 'log-marker mat-button mat-raised-button mat-button-base mat-primary';
+
+            mark_button.innerText = 'Mark block';
+            mark_button.onclick = () => {
+                this.toggleMark(mark_button, line);
+            }
+
+            element.appendChild(mark_button);
+        }
+
+        return element;
+    }
+
+    toggleMark(button: HTMLButtonElement, log_line: ProgramLogEntry) {
+        const entry = this.commented_blocks[log_line.block_id];
+        const marked = (entry !== undefined) && (entry[0] == log_line.event_time);
+
+        if (marked) { // Unmark
+            button.innerText = 'Mark block';
+            this.commented_blocks[log_line.block_id] = undefined;
+            this.workspace.getBlockById(log_line.block_id).setCommentText(null);
+        }
+        else { // Mark block
+            button.innerText = 'Unmark block';
+            if (entry !== undefined) {
+                entry[1].innerText = 'Mark block';
+            }
+
+            this.commented_blocks[log_line.block_id] = [log_line.event_time, button];
+            this.workspace.getBlockById(log_line.block_id).setCommentText(log_line.event_message);
+        }
     }
 }

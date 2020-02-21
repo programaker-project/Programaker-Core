@@ -158,9 +158,7 @@ get_versioning(Nodes) ->
                         end
                 }
 
-                %% Add *status* to user table.
-                %%
-                %% If a user "comes" from an earlier version the status is 'ready'.
+                %% Create user verification table.
               , #database_version_transformation
                 { id=5
                 , apply=fun() ->
@@ -178,5 +176,167 @@ get_versioning(Nodes) ->
                                                             automate_configuration:get_table_wait_time())
                         end
                 }
+
+                %% - Add *registration_time* to user table.
+                %%
+                %% Previous records are set to `0`.
+                %% This is to avoid a fake spike on registered users on the migration date.
+              , #database_version_transformation
+                { id=6
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  ?REGISTERED_USERS_TABLE,
+                                  fun({registered_user_entry, Id, Username, Password, Email, Status }) ->
+                                          %% Replicate the entry. Set status to ready.
+                                          {registered_user_entry, Id, Username, Password, Email,
+                                           Status, 0 }
+                                  end,
+                                  [ id, username, password, email, status, registration_time ],
+                                  registered_user_entry
+                                 )
+                        end
+                }
+
+                %% - Add *session_last_used_time* to sessions table.
+                %%
+                %% Previous records are set to `0`.
+                %% This is to avoid a fake spike on the migration date.
+              , #database_version_transformation
+                { id=7
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  ?USER_SESSIONS_TABLE,
+                                  fun({user_session_entry, SessionId, UserId, SessionStartTime }) ->
+                                          %% Replicate the entry. Set status to ready.
+                                          {user_session_entry, SessionId, UserId, SessionStartTime,
+                                           0 }
+                                  end,
+                                  [ session_id, user_id, session_start_time, session_last_used_time ],
+                                  user_session_entry
+                                 )
+                        end
+                }
+
+                %% Add user program logs table.
+              , #database_version_transformation
+                { id=8
+                , apply=fun() ->
+                                automate_storage_versioning:create_database(
+                                  #database_version_data
+                                  { database_name=?USER_PROGRAM_LOGS_TABLE
+                                  , records=[ program_id
+                                            , thread_id
+                                            , user_id
+                                            , block_id
+                                            , event_data
+                                            , event_message
+                                            , event_time
+                                            , severity
+                                            , exception_data
+                                            ]
+                                  , record_name=user_program_log_entry
+                                  , type=bag
+                                  }, Nodes),
+
+                                ok = mnesia:wait_for_tables([ ?USER_PROGRAM_LOGS_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
+                        end
+                }
+
+                %% Add `update_channel` entry to programs table.
+                %%
+                %% This is used to stream the changes happening on the programs.
+                %% The channel will be deleted when the program is.
+              , #database_version_transformation
+                { id=9
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                  fun({user_program_entry, Id, UserId, ProgramName,
+                                       ProgramType, ProgramParsed, ProgramOrig, Enabled }) ->
+                                          %% Replicate the entry. Just create an empty program channel.
+
+                                          { user_program_entry, Id, UserId, ProgramName,
+                                            ProgramType, ProgramParsed, ProgramOrig, Enabled,
+                                            undefined }
+                                  end,
+                                  [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled
+                                  , program_channel
+                                  ],
+                                  user_program_entry
+                                 ),
+
+                                %% After the table is updated, generate the new channels
+                                %% This apparently cannot be done inside the mnesia:transform_table.
+                                db_map(automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                       fun({user_program_entry, Id, UserId, ProgramName,
+                                            ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel }) ->
+                                               NewChannel = case ProgramChannel of
+                                                                undefined ->
+                                                                    {ok, CreatedChannel} = automate_channel_engine:create_channel(),
+                                                                    io:fwrite("Created channel: ~p~n", [CreatedChannel]),
+                                                                    CreatedChannel;
+                                                                _ ->
+                                                                    ProgramChannel
+                                                            end,
+                                               {user_program_entry, Id, UserId, ProgramName,
+                                                ProgramType, ProgramParsed, ProgramOrig, Enabled, NewChannel }
+                                       end)
+                        end
+                , revert=fun() ->
+                                %% Before the table is updated, remove the old channels
+                                %% This apparently cannot be done inside the mnesia:transform_table.
+                                db_map(automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                       fun({user_program_entry, Id, UserId, ProgramName,
+                                            ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel }) ->
+                                               case ProgramChannel of
+                                                   undefined ->
+                                                       ok;
+                                                   _ ->
+                                                       %% Replicate the entry. Just create a program channel.
+
+                                                       Result = automate_channel_engine:delete_channel(ProgramChannel),
+                                                       io:fwrite("Deleting channel ~p: ~p~n", [ProgramChannel, Result])
+                                               end,
+                                               { user_program_entry, Id, UserId, ProgramName,
+                                                 ProgramType, ProgramParsed, ProgramOrig, Enabled }
+                                       end),
+
+                                 mnesia:transform_table(
+                                   automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                   fun({user_program_entry, Id, UserId, ProgramName
+                                       , ProgramType, ProgramParsed, ProgramOrig, Enabled
+                                       , _ProgramChannel }) ->
+                                           { user_program_entry, Id, UserId, ProgramName,
+                                             ProgramType, ProgramParsed, ProgramOrig, Enabled }
+                                   end,
+                                   [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled
+                                   ],
+                                   user_program_entry
+                                  )
+                         end
+                }
               ]
         }.
+
+db_map(Database, Function) ->
+    Transaction = fun() ->
+                          ok = mnesia:write_lock_table(Database),
+                          ok = db_map_iter(Database, Function, mnesia:first(Database))
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            io:fwrite("[Storage/Migration] Error on migration: ~p~n", [Reason]),
+            {error, Reason}
+    end.
+
+db_map_iter(_Database, _Function, '$end_of_table') ->
+    ok;
+db_map_iter(Database, Function, Key) ->
+    [Element] = mnesia:read(Database, Key),
+    NewElement = Function(Element),
+    %% Note that the old element is not removed. An update cannot change the ID.
+    ok = mnesia:write(Database, NewElement, write),
+    db_map_iter(Database, Function, mnesia:next(Database, Key)).

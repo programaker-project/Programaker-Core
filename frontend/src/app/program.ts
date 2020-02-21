@@ -31,3 +31,16 @@ export class ScratchProgram extends ProgramContent {
        super(metadata, parsed, orig, 'scratch_program');
     }
 }
+
+export interface ProgramLogEntry {
+    program_id: string,
+    thread_id: string | 'none',
+    user_id: string | 'none',
+    block_id: string | undefined,
+    severity: 'error' | 'debug' | 'warning',
+    event_data: any,
+    event_message: string,
+    event_time: number,
+};
+
+export type ProgramInfoUpdate = { type: "program_log", value: ProgramLogEntry };

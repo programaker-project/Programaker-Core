@@ -6,8 +6,8 @@
         , get_user/1
         , generate_token_for_user/1
         , delete_user/1
-        , get_session_username/1
-        , get_session_userid/1
+        , get_session_username/2
+        , get_session_userid/2
         , create_monitor/2
         , get_monitor_from_id/1
         , dirty_list_monitors/0
@@ -38,6 +38,7 @@
         , get_program_from_id/1
         , register_program_tags/2
         , get_tags_program_from_id/1
+        , get_logs_from_program_id/1
         , dirty_list_running_programs/0
 
         , create_thread/2
@@ -51,6 +52,8 @@
         , set_program_variable/3
         , get_program_variable/2
 
+        , log_program_error/1
+
         , create_custom_signal/2
         , list_custom_signals_from_user_id/1
 
@@ -62,15 +65,18 @@
 
 -include("./databases.hrl").
 -include("./records.hrl").
--include("../automate_bot_engine/src/program_records.hrl").
+-include("../../automate_bot_engine/src/program_records.hrl").
 
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
 -define(WAIT_READY_LOOP_TIME, 1000).
+
+
 %%====================================================================
 %% API functions
 %%====================================================================
 create_user(Username, Password, Email, Status) ->
     UserId = generate_id(),
+    CurrentTime = erlang:system_time(second),
     CipheredPassword = case Password of
                            undefined -> undefined;
                            _ -> cipher_password(Password)
@@ -79,6 +85,7 @@ create_user(Username, Password, Email, Status) ->
                                                , username=Username
                                                , password=CipheredPassword
                                                , email=Email
+                                               , registration_time=CurrentTime
                                                , status=Status
                                                },
     case save_unique_user(RegisteredUserData) of
@@ -150,17 +157,26 @@ generate_token_for_user(UserId) ->
             {error, Reason}
     end.
 
-get_session_username(SessionId) when is_binary(SessionId) ->
+get_session_username(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
                               [] ->
                                   { error, session_not_found };
-                              [#user_session_entry{ user_id=UserId } | _] ->
+                              [Session=#user_session_entry{ user_id=UserId } | _] ->
                                   case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
                                       [] ->
                                           %% TODO log event, this shouldn't happen
                                           { error, session_not_found };
                                       [#registered_user_entry{username=Username} | _] ->
+                                          ok = case RefreshUsedTime of
+                                                   true ->
+                                                       mnesia:write(
+                                                         ?USER_SESSIONS_TABLE
+                                                        , Session#user_session_entry{session_last_used_time=erlang:system_time(second)}
+                                                        , write);
+                                                   false ->
+                                                       ok
+                                               end,
                                           {ok, Username}
                                   end
                           end
@@ -169,12 +185,21 @@ get_session_username(SessionId) when is_binary(SessionId) ->
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
 
-get_session_userid(SessionId) when is_binary(SessionId) ->
+get_session_userid(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
                               [] ->
                                   { error, session_not_found };
-                              [#user_session_entry{ user_id=UserId } | _] ->
+                              [Session=#user_session_entry{ user_id=UserId } | _] ->
+                                  ok = case RefreshUsedTime of
+                                           true ->
+                                               mnesia:write(
+                                                 ?USER_SESSIONS_TABLE
+                                                , Session#user_session_entry{session_last_used_time=erlang:system_time(second)}
+                                                , write);
+                                           false ->
+                                               ok
+                                       end,
                                   {ok, UserId}
                           end
                   end,
@@ -273,6 +298,7 @@ get_user_from_mail_address(Email) ->
                                       , password='_'
                                       , email='$1'
                                       , status='_'
+                                      , registration_time='_'
                                       },
     Guard = {'==', '$1', Email},
     ResultColumn = '$_',
@@ -333,6 +359,7 @@ check_password_reset_verification_code(VerificationCode) ->
 create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
     ProgramId = generate_id(),
+    {ok, ProgramChannel} = automate_channel_engine:create_channel(),
     UserProgram = #user_program_entry{ id=ProgramId
                                      , user_id=UserId
                                      , program_name=ProgramName
@@ -340,6 +367,7 @@ create_program(Username, ProgramName) ->
                                      , program_parsed=undefined
                                      , program_orig=undefined
                                      , enabled=true
+                                     , program_channel=ProgramChannel
                                      },
     case store_new_program(UserProgram) of
         ok ->
@@ -418,7 +446,10 @@ update_program_metadata(Username, ProgramName, #editable_user_program_metadata{p
 -spec delete_program(binary(), binary()) -> { 'ok', binary() } | { 'error', any() }.
 delete_program(Username, ProgramName)->
     case retrieve_program(Username, ProgramName) of
-        {ok, ProgramEntry=#user_program_entry{id=ProgramId}} ->
+        {ok, ProgramEntry=#user_program_entry{ id=ProgramId
+                                             , program_channel=Channel
+                                             }} ->
+            ok = automate_channel_engine:delete_channel(Channel),
             Transaction = fun() ->
                                   ok = mnesia:delete_object(?USER_PROGRAMS_TABLE,
                                                             ProgramEntry, write)
@@ -599,6 +630,18 @@ get_tags_program_from_id(ProgramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec get_logs_from_program_id(binary()) -> {ok, [#user_program_log_entry{}]} | {error, atom()}.
+get_logs_from_program_id(ProgramId) ->
+    Transaction = fun() ->
+                          {ok, mnesia:read(?USER_PROGRAM_LOGS_TABLE, ProgramId)}
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason}
+    end.
+
 dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
 
@@ -727,7 +770,7 @@ get_thread_from_id(ThreadId) ->
 
 
 
--spec get_program_variable(binary(), atom()) -> {ok, any()} | {error, not_found}.
+-spec get_program_variable(binary(), binary()) -> {ok, any()} | {error, not_found}.
 get_program_variable(ProgramId, Key) ->
     Transaction = fun() ->
                           mnesia:read(?PROGRAM_VARIABLE_TABLE, {ProgramId, Key})
@@ -742,6 +785,19 @@ get_program_variable(ProgramId, Key) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec log_program_error(#user_program_log_entry{}) -> ok | {error, atom()}.
+log_program_error(LogEntry) when is_record(LogEntry, user_program_log_entry) ->
+    Transaction = fun() ->
+                          ok = mnesia:write(?USER_PROGRAM_LOGS_TABLE, LogEntry, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, Reason}
+    end.
+
 -spec get_userid_from_username(binary()) -> {ok, binary()} | {error, no_user_found}.
 get_userid_from_username(undefined) ->
     {ok, undefined};
@@ -752,6 +808,7 @@ get_userid_from_username(Username) ->
                                       , password='_'
                                       , email='_'
                                       , status='_'
+                                      , registration_time='_'
                                       },
     %% Check that neither the id, username or email matches another
     Guard = {'==', '$2', Username},
@@ -844,6 +901,7 @@ add_token_to_user(UserId, SessionToken) ->
                                       , #user_session_entry{ session_id=SessionToken
                                                            , user_id=UserId
                                                            , session_start_time=StartTime
+                                                           , session_last_used_time=0
                                                            }
                                       , write)
                   end,
@@ -856,6 +914,7 @@ get_userid_and_password_from_username(Username) ->
                                       , password='$3'
                                       , email='_'
                                       , status='_'
+                                      , registration_time='_'
                                       },
     Guard = {'==', '$2', Username},
     ResultColumn = '$1',
@@ -936,6 +995,7 @@ retrieve_monitors_list_from_username(Username) ->
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
+                                                                , registration_time='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -996,6 +1056,7 @@ retrieve_program(Username, ProgramName) ->
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
+                                                                , registration_time='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1014,6 +1075,7 @@ retrieve_program(Username, ProgramName) ->
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
                                                                         , enabled='_'
+                                                                        , program_channel='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -1047,6 +1109,7 @@ retrieve_program_list_from_username(Username) ->
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
+                                                                , registration_time='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1065,6 +1128,7 @@ retrieve_program_list_from_username(Username) ->
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
                                                                         , enabled='_'
+                                                                        , program_channel='_'
                                                                         },
                                   ProgramGuard = {'==', '$2', UserId},
                                   ProgramResultsColumn = '$1',
@@ -1093,6 +1157,7 @@ retrieve_program_list_from_userid(UserId) ->
                                                                 , program_parsed='_'
                                                                 , program_orig='_'
                                                                 , enabled='_'
+                                                                , program_channel='_'
                                                                 },
                           ProgramGuard = {'==', '$2', UserId},
                           ProgramResultsColumn = '$1',
@@ -1123,6 +1188,7 @@ store_new_program_content(Username, ProgramName,
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
+                                                                , registration_time='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1141,6 +1207,7 @@ store_new_program_content(Username, ProgramName,
                                                                         , program_parsed='_'
                                                                         , program_orig='_'
                                                                         , enabled='_'
+                                                                        , program_channel='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -1185,6 +1252,7 @@ save_unique_user(UserData) ->
                                       , password='_'
                                       , email='$3'
                                       , status='_'
+                                      , registration_time='_'
                                       },
 
     %% Check that neither the id, username or email matches another
@@ -1221,7 +1289,7 @@ get_running_program_id(ProgramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec set_program_variable(binary(), atom(), any()) -> ok | {error, any()}.
+-spec set_program_variable(binary(), binary(), any()) -> ok | {error, any()}.
 set_program_variable(ProgramId, Key, Value) ->
     Transaction = fun() ->
                           mnesia:write(?PROGRAM_VARIABLE_TABLE, #program_variable_table_entry{ id={ProgramId, Key}

@@ -35,12 +35,13 @@ apply_versioning(#database_version_progression{base=Base, updates=Updates}, Node
 create_database(#database_version_data{ database_name=DBName
                                       , records=Fields
                                       , record_name=RecordName
+                                      , type=Type
                                       }, Nodes) ->
     case mnesia:create_table(DBName,
                              [ {attributes, Fields}
                              , { disc_copies, Nodes }
                              , { record_name, RecordName }
-                             , { type, set }
+                             , { type, Type }
                              ]) of
         { atomic, ok } ->
             ok;
@@ -113,6 +114,7 @@ check_updates_integrity(_, []) ->
     ok;
 check_updates_integrity(MinVersionLessOne, [ Update=#database_version_transformation{ id=Id
                                                                                     , apply=Fun
+                                                                                    , revert=_
                                                                                     }
                                              | T ]) when is_function(Fun) ->
     if Id < MinVersionLessOne ->

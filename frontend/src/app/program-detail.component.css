@@ -12,10 +12,19 @@
     height: 3em;
 }
 
+#logs_panel_container {
+    max-width: 30em;
+}
+
+.closer > button {
+    border: none;
+}
+
 button#program-rename-button,
 button#program-start-button,
 button#program-delete-button,
 button#program-stop-button,
+button#program-logs-button,
 button#advancedProgramControls {
     vertical-align: top;
     padding: 1ex;

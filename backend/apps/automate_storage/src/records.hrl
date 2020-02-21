@@ -1,12 +1,15 @@
 -include("../../automate_common_types/src/types.hrl").
 
 -type user_status() :: ready | mail_not_verified.
+-type time_in_seconds() :: integer().
+-type time_in_milliseconds() :: integer().
 
 -record(registered_user_entry, { id
                                , username
                                , password
                                , email
                                , status :: user_status() | ?MNESIA_SELECTOR
+                               , registration_time :: time_in_seconds() | ?MNESIA_SELECTOR
                                }).
 
 -type verification_type() :: registration_mail_verification | password_reset_verification.
@@ -17,7 +20,8 @@
 
 -record(user_session_entry, { session_id
                             , user_id
-                            , session_start_time
+                            , session_start_time :: time_in_seconds() | ?MNESIA_SELECTOR
+                            , session_last_used_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             }).
 
 -record(user_program_entry, { id :: binary()            | ?MNESIA_SELECTOR
@@ -27,7 +31,20 @@
                             , program_parsed :: any()   | ?MNESIA_SELECTOR
                             , program_orig :: any()     | ?MNESIA_SELECTOR
                             , enabled=true :: boolean() | ?MNESIA_SELECTOR
+                            , program_channel :: binary() | ?MNESIA_SELECTOR
                             }).
+
+-type log_entry_severity() :: debug | warning | error.
+-record(user_program_log_entry, { program_id :: binary()               | ?MNESIA_SELECTOR
+                                , thread_id :: binary() | none         | ?MNESIA_SELECTOR
+                                , user_id :: binary() | none           | ?MNESIA_SELECTOR
+                                , block_id :: binary() | undefined     | ?MNESIA_SELECTOR
+                                , event_data :: _                      | ?MNESIA_SELECTOR
+                                , event_message :: binary()            | ?MNESIA_SELECTOR
+                                , event_time :: time_in_milliseconds() | ?MNESIA_SELECTOR
+                                , severity :: log_entry_severity()     | ?MNESIA_SELECTOR
+                                , exception_data :: none | {_, _, _}   | ?MNESIA_SELECTOR
+                                }).
 
 -record(program_tags_entry, { program_id
                             , tags
