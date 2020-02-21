@@ -39,7 +39,9 @@ mat-card.program {
 }
 
 mat-card.program > .connection-icon-list {
-    background-color: rgba(0, 150, 136,0.1);
+    background-color: rgba(0, 48, 150,0.05);
+    border-top: 1px solid rgba(0, 48, 150,0.25);
+
     text-align: left;
     padding: 1ex;
 }
@@ -53,6 +55,10 @@ mat-card.program > h4 {
 mat-card.call-to-action > h4{
     color: #fff;
     padding: 2em 1em 2em 1em;
+}
+
+.user-programs {
+    padding-bottom: 3em;
 }
 
 /* Public section */
@@ -146,6 +152,7 @@ mat-card.example > .description {
     padding: 1ex;
 }
 .connection-icon-list {
+    border-radius: 0 0 4px 4px;
     background-color: rgba(255,255,255,0.95);
     text-align: left;
     padding: 1ex;
