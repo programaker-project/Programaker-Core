@@ -1,110 +1,161 @@
 digraph g {
-    rankdir=LR
-    node[shape=record];
-        style=dashed;
+  rankdir=LR
+  node[shape=record];
+  style=dashed;
 
-    subgraph cluster_core {
-        label="Core";
+  subgraph cluster_legend {
+    label="Legend"
 
-        subgraph cluster_core_storage {
-            label="Storage";
+    storage;
+    channels[style=filled,fillcolor="#bbffff"];
+    coordination[style=filled,fillcolor="#ffbbbb"]
+    bridge_engine[style=filled,fillcolor="#bbbbff"];
+    service_registry[style=filled,fillcolor="#bbffbb"]
+    user_registration[style=filled,fillcolor="#ffffbb"]
+    templates[style=filled,fillcolor="#ffbbff"]
+  }
 
-            // REGISTERED_USERS_TABLE | automate_registered_users
-            registered_user_entry[label="*Registered user* | <pk> id | username | password | email"];
 
-            // USER_SESSIONS_TABLE | automate_user_sessions
-            user_session_entry[label="*User session* | <pk> session_id | <f0> user_id | session_start_time"];
+  subgraph group_core_channels {
+    label="Channels";
+    node[style=filled,fillcolor="#bbffff"];
 
-            user_session_entry:f0 -> registered_user_entry:pk;
 
-            // USER_MONITORS_TABLE | automate_user_monitors
-            monitor_entry[label="*Monitor entry* | <pk> id | <f0> user_id | type | name | value"];
+    // LIVE_CHANNELS_TABLE | automate_channel_engine_live_channels_table
+    live_channels_table_entry[label="*Channel* | <pk> id | stats"];
 
-            monitor_entry:f0 -> registered_user_entry:pk;
+    // LISTENERS_TABLE | automate_channel_engine_listeners_table
+    listeners_table_entry[label="*Listener*| <f0> channel_id | pid | key | subkey"];
+    listeners_table_entry -> live_channels_table_entry:pk;
 
-            // USER_PROGRAMS_TABLE | automate_user_programs
-            user_program_entry[label="*Program* | <pk> id | <f0> user_id | program_name | program_type | program_parsed | program_orig"];
-            user_program_entry:f0 -> registered_user_entry:pk;
+    // MONITORS_TABLE | automate_channel_engine_monitors_table
+    monitors_table_entry[label="*Monitor* | <f0> live_channel_id | pid | node"];
+    monitors_table_entry:f0 -> live_channels_table_entry:pk;
+  }
 
-            // RUNNING_PROGRAMS_TABLE | automate_running_programs
-            running_program_entry[label="*Running program*| <f0> program_id | runner_pid | variables | stats"];
-            running_program_entry:f0 -> user_program_entry:pk;
+  subgraph group_core_storage {
+    label="Storage";
 
-            // REGISTERED_SERVICES_TABLE | automate_registered_services
-            registered_service_entry[label="*Service registration* | <pk> registration_id | <f0> service |  <f1> user_id | enabled"];
-            registered_service_entry:f1 -> registered_user_entry:pk;
+    // REGISTERED_USERS_TABLE | automate_registered_users
+    registered_user_entry[label="*Registered user* | <pk> id | username | password | email | status | registration_time"];
 
-            // PROGRAM_VARIABLE_TABLE | automate_program_variable_table
-            program_variable_table_entry[label="*Program variable* | <f0> program_id + var_name | value"];
-            program_variable_table_entry:f0 -> user_program_entry:pk;  // Not sure if user program or running program
-        }
+    // USER_SESSIONS_TABLE | automate_user_sessions
+    user_session_entry[label="*User session* | <pk> session_id | <f0> user_id | session_start_time | session_last_used_time"];
+    user_session_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
 
-        subgraph cluster_core_channels {
-            label="Channels";
+    // // USER_MONITORS_TABLE | automate_user_monitors
+    // monitor_entry[label="*Monitor entry* | <pk> id | <f0> user_id | type | name | value"];
 
-            // LIVE_CHANNELS_TABLE | automate_channel_engine_live_channels_table
-            live_channels_table_entry[label="*Channel* | <pk> id | stats"];
+    // monitor_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
 
-            // LISTENERS_TABLE | automate_channel_engine_listeners_table
-            listeners_table_entry[label="*Listener*| <f0> channel_id | pid"];
-            listeners_table_entry -> live_channels_table_entry:pk;
-        }
+    // USER_PROGRAMS_TABLE | automate_user_programs
+    user_program_entry[label="*Program* | <pk> id | <f0> user_id | program_name | program_type | program_parsed | program_orig | enabled | <f1> program_channel"];
+    user_program_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+    user_program_entry:f1 -> live_channels_table_entry:pk;
 
-        subgraph cluster_core_chats {
-            label="Chats";
+    // USER_PROGRAMS_LOGS_TABLE | automate_user_program_logs
+    user_program_logs_entry[label="*Log line* | <f0> program_id | <f1> thread_id | <f2> user_id | block_id | event_data | event_message | event_time | severity | exception_dat"];
+    user_program_logs_entry:f0 -> user_program_entry:pk;
+    user_program_logs_entry:f2 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
 
-            // CHAT_HANDLER_MODULE_TABLE | automate_chat_handler_module_table
-            chat_handler_module_entry[label="*Chat* | <pk> prefix_id | handler_module"];
-        }
+    // PROGRAM_TAGS_TABLE | automate_program_tags
+    program_tags_entry[label="*Program tags* | <f0> program_id | tags"];
+    program_tags_entry:f0 -> user_program_entry:pk;
 
-        subgraph cluster_core_services {
-            label="Services";
+    // RUNNING_PROGRAMS_TABLE | automate_running_programs
+    running_program_entry[label="*Running program*| <f0> program_id | runner_pid | variables | stats"];
+    running_program_entry:f0 -> user_program_entry:pk;
 
-            // SERVICE_REGISTRY_TABLE | automate_service_registry_services_table
-            services_table_entry[label="*Service* | <pk> id | public? | name | description | module"];
+    // RUNNING_THREADS_TABLE | automate_running_program_threads
+    running_program_thread_entry[label="*Program thread* | <pk> thread_id | runner_pid | <f0> parent_program_id | instructions | memory | instruction_memory | position | stats"];
+    user_program_logs_entry:f1 -> running_program_thread_entry:pk;
+    running_program_thread_entry:f0 -> user_program_entry:pk;
 
-            // USER_SERVICE_ALLOWANCE_TABLE | automate_service_registry_user_service_allowance_table
-            user_service_allowance_entry[label="*Allowed service*| <f0> service_id | <f1> user_id"];
-            user_service_allowance_entry:f0 -> services_table_entry:pk;
-            user_service_allowance_entry:f1 -> registered_user_entry:pk;
+    // REGISTERED_SERVICES_TABLE | automate_registered_services
+    registered_service_entry[label="*Service registration* | <pk> registration_id | <f0> service |  <f1> user_id | enabled"];
+    registered_service_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
 
-            // SERVICE_CONFIGURATION_TABLE | automate_service_registry_service_configuration_table
-            service_configuration_entry[label="*Service configuration* | <pk> service_id + key | value "];
-            service_configuration_entry:pk -> services_table_entry:pk;
-        }
+    // PROGRAM_VARIABLE_TABLE | automate_program_variable_table
+    program_variable_table_entry[label="*Program variable* | <f0> program_id + var_name | value"];
+    program_variable_table_entry:f0 -> user_program_entry:pk;  // Not sure if user program or running program
 
-        subgraph cluster_core_user_service_registration {
-            label="User registration in service";
+    // CUSTOM_SIGNALS_TABLE | automate_custom_signals_table
+    custom_signal_entry[label="*Custom signal* | <pk> id | name | <f0> owner"];
+    custom_signal_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+  }
 
-            // SERVICE_REGISTRATION_TOKEN_TABLE | automate_service_registration_token_table
-            service_registration_token[label="*Registration session* | <pk> token | <f0> service_id | <f1> user_id"];
-            service_registration_token:f0 -> services_table_entry:pk;
-            service_registration_token:f1 -> registered_user_entry:pk;
-        }
-    }
+  subgraph group_coordination {
+    label="Coordination";
+    node[style=filled,fillcolor="#ffbbbb"];
 
-    subgraph cluster_services {
-        label="Services";
+    // RUN_ONCE_TASKS_TABLE | automate_coordination_run_once_tasks
+    run_once_tasks_table_entry[label="*Run once tasks* | <pk> task_id | node | pid"]
+  }
 
-        subgraph cluster_services_telegram {
-            label="Telegram";
+  subgraph group_bridges {
+    label="Bridge engine";
 
-            // TELEGRAM_SERVICE_REGISTRATION_TABLE | automate_telegram_service_registration_table
-            telegram_service_registration_entry[label="*Telegram users* | <pk> telegram user id | <f0> internal user id"];
-            telegram_service_registration_entry:f0 -> registered_user_entry:pk;
-           
-            // TELEGRAM_SERVICE_CHATS_KNOWN_TABLE | automate_telegram_service_chats_known_table
-            telegram_service_known_chat_entry[label="*Telegram chats*| <pk> chat_id | chat_name"];
+    node[style=filled,fillcolor="#bbbbff"]
 
-            // TELEGRAM_SERVICE_USER_CHANNEL_TABLE | automate_telegram_service_user_channel_table
-            telegram_service_user_channel_entry[label="*Users in channel*| <f0> internal user id| <f1> channel id"];
-            telegram_service_user_channel_entry:f0 -> registered_user_entry:pk;
-            telegram_service_user_channel_entry:f1 -> live_channels_table_entry:pk;
+    // SERVICE_PORT_TABLE | automate_service_port_table
+    service_port_entry[label="*Bridge* | <pk> id | name | <f0> owner | <f1> service_id"]
+    service_port_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+    service_port_entry:f1 -> services_table_entry:pk;
 
-            // TELEGRAM_SERVICE_CHATS_MEMBERS_TABLE | automate_telegram_service_chats_members_table
-            telegram_service_chat_member_entry[label="*Users in channel*| <f0> internal user id| <f1> chat id"];
-            telegram_service_chat_member_entry:f0 -> registered_user_entry:pk;
-            telegram_service_chat_member_entry:f1 -> telegram_service_known_chat_entry:pk;
-       }
-   }
+    // SERVICE_PORT_CONFIGURATION_TABLE | automate_service_port_configuration_table
+    service_port_configuration[label="*Bridge config* | <pk> id | service_name | <f0> service_id | is_public | blocks"]
+    service_port_configuration:pk -> service_port_entry:pk;
+    service_port_configuration:f0 -> services_table_entry:pk
+
+
+    // SERVICE_PORT_USERID_OBFUSCATION_TABLE | automate_service_port_userid_obfuscation_table
+    service_port_user_obfusction_entry[label="*Obfuscation table* | <pk> id | <f0> obfuscated_id"]
+    service_port_user_obfusction_entry:pk -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+
+    // SERVICE_PORT_CHANNEL_TABLE | automate_service_port_channel_table
+    service_port_monitor_channel_entry[label="*Bridge channel* | <pk> id | <f0> channel_id"]
+    service_port_monitor_channel_entry:pk -> service_port_entry:pk;
+    service_port_monitor_channel_entry:f0 -> live_channels_table_entry:pk;
+
+    // SERVICE_PORT_CHANNEL_MONITORS_TABLE | automate_service_port_channel_monitors_table
+    channel_monitor_table_entry[label="*Monitor table* | {<f0> user_id|<f1> bridge_id} | pid | node"]
+    channel_monitor_table_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+    channel_monitor_table_entry:f1 -> service_port_entry:pk
+  }
+
+  subgraph group_core_services {
+    label="Service registry";
+    node[style=filled,fillcolor="#bbffbb"]
+
+    // SERVICE_REGISTRY_TABLE | automate_service_registry_services_table
+    services_table_entry[label="*Service* | <pk> id | public? | name | description | module"];
+
+    // USER_SERVICE_ALLOWANCE_TABLE | automate_service_registry_user_service_allowance_table
+    user_service_allowance_entry[label="*Allowed service*| <f0> service_id | <f1> user_id"];
+    user_service_allowance_entry:f0 -> services_table_entry:pk;
+    user_service_allowance_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+
+    // SERVICE_CONFIGURATION_TABLE | automate_service_registry_service_configuration_table
+    service_configuration_entry[label="*Service configuration* | <pk> service_id + key | value "];
+    service_configuration_entry:pk -> services_table_entry:pk;
+  }
+
+  subgraph group_core_user_service_registration {
+    label="User registration in service";
+    node[style=filled,fillcolor="#ffffbb"]
+
+    // SERVICE_REGISTRATION_TOKEN_TABLE | automate_service_registration_token_table
+    service_registration_token[label="*Registration session* | <pk> token | <f0> service_id | <f1> user_id"];
+    service_registration_token:f0 -> services_table_entry:pk;
+    service_registration_token:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+  }
+
+  subgraph group_core_template_engine {
+    label="Template engine"
+    node[style=filled,fillcolor="#ffbbff"]
+
+    // TEMPLATE_TABLE | automate_template_engine_templates_table
+    template_entry[label="*Template* | <pk> id | name | <f0> owner | content"]
+    template_entry:pk -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+  }
 }
