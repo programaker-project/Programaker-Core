@@ -26,20 +26,23 @@ import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component'
 
 @Component({
     // moduleId: module.id,
-    selector: 'app-my-profile',
-    templateUrl: './profile.component.html',
+    selector: 'app-my-dashboard',
+    templateUrl: './dashboard.component.html',
     providers: [BridgeService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
-        'profile.component.css',
+        'dashboard.component.css',
         '../libs/css/material-icons.css',
         '../libs/css/bootstrap.min.css',
     ],
 })
 
-export class ProfileComponent {
+export class NewDashboardComponent {
     programs: ProgramMetadata[] = [];
     services: AvailableService[] = [];
-    connections: { name: string }[] = [ { name: 'Telegram' }, { name: 'Twitter' } ];
+    connections: { name: string, icon_url?: string }[] = [
+        { name: 'Telegram', icon_url: "/assets/icons/telegram_logo.png" },
+        { name: 'Twitter', icon_url: "/assets/icons/twitter_logo.png"  },
+    ];
     session: Session = null;
 
     constructor(
@@ -68,8 +71,6 @@ export class ProfileComponent {
 
                     this.serviceService.getAvailableServices()
                         .then(services => this.services = services);
-
-                    setTimeout(this.addConnection.bind(this), 1000);
                 }
             })
             .catch(e => {

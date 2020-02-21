@@ -1,0 +1,81 @@
+<div class="profile-section">
+    <div class="private-section">
+        <div class="user-connections">
+            <h1>My connections </h1>
+            <div class="connection-list">
+                <div>
+                    <mat-card role="button" (click)="addConnection()" class="module connection call-to-action">
+                        <mat-icon class="action-icon">add</mat-icon>
+                    </mat-card>
+                </div>
+                <div *ngIf="connections.length == 0">
+                    <div class="integrated-call-to-action call-to-left">
+                        <mat-icon class="action-icon">arrow_back</mat-icon>
+                        To start, connect a service.
+                    </div>
+                </div>
+                <div *ngFor="let connection of connections">
+                    <mat-card class="module connection"
+                        role="button" (click)="openConnection(connection)">
+                        <img class="icon" *ngIf="connection.icon_url" src="{{ connection.icon_url }}" alt="{{ connection.name }}" />
+
+                        <span *ngIf="!connection.icon_url" class="connection-name">
+                            {{connection.name}}
+                        </span>
+                    </mat-card>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row public-section">
+        <div class="user-programs col col-sm-8">
+            <h1>My Programs</h1>
+            <div class="section-explanation">
+                Create a new program or edit the ones you already have.
+            </div>
+            <div class="row">
+                <div class="col-sm-6">
+                    <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
+                        <h4>Create new program</h4>
+                    </mat-card>
+                </div>
+                <div class="col-sm-6" *ngFor="let program of programs">
+                    <mat-card class="module program"
+                        [ngStyle]="{'background-color':program.enabled ? 'white' : 'lightgrey' }"
+                        role="button" (click)="openProgram(program)">
+                        <h4>{{program.name}}</h4>
+                        <div class="connection-icon-list">
+                            <img src="/assets/icons/telegram_logo.png" />
+                        </div>
+                    </mat-card>
+                </div>
+            </div>
+        </div>
+        <div class="user-examples col col-sm-4">
+            <h1>Some ideas</h1>
+            <div class="section-explanation">
+                Click one to start build guide.
+            </div>
+            <mat-card role="button" class="module example">
+                <div class="description">Get weather prediction on the morning</div>
+                <div class="connection-icon-list">
+                    <img src="/assets/icons/telegram_logo.png" />
+                </div>
+            </mat-card>
+            <mat-card role="button" class="module example">
+                <div class="description">Greet when followed</div>
+                <div class="connection-icon-list">
+                    <img src="/assets/icons/instagram_logo.png" />
+                </div>
+            </mat-card>
+            <mat-card role="button" class="module example">
+                <div class="description">Add saved messages to Google Sheets</div>
+                <div class="connection-icon-list">
+                    <img src="/assets/icons/twitter_logo.png" />
+                    <img src="/assets/icons/google_sheets_logo.svg" />
+                </div>
+            </mat-card>
+        </div>
+    </div>
+</div>

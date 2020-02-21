@@ -33,6 +33,28 @@ mat-card.module > h4 {
     cursor: pointer;
 }
 
+/* Program styling */
+mat-card.program {
+    padding: 0;
+}
+
+mat-card.program > .connection-icon-list {
+    background-color: rgba(0, 150, 136,0.1);
+    text-align: left;
+    padding: 1ex;
+}
+
+mat-card.program > h4 {
+    padding: 1em;
+    font-weight: 600;
+    color: #444;
+}
+
+mat-card.call-to-action > h4{
+    color: #fff;
+    padding: 2em 1em 2em 1em;
+}
+
 /* Public section */
 .public-section {
     width: 100%;
@@ -41,6 +63,11 @@ mat-card.module > h4 {
 
 .col > h1 {
     text-align: center;
+}
+
+.section-explanation {
+    padding: 1ex;
+    font-style: italic;
 }
 
 .user-data > .username {
@@ -73,18 +100,23 @@ mat-card.module > h4 {
     margin-right: 1ex;
 }
 
-.user-connections > div {
+.user-connections > .connection-list > div {
     display: inline;
     margin-right: 1ex;
 }
 
-.user-connections > div > mat-card {
+.user-connections > .connection-list > div > mat-card {
     display: inline-block;
     padding: 1ex;
 }
 
-.user-connections > div > mat-card > mat-icon {
+.user-connections > .connection-list > div > mat-card > mat-icon {
     vertical-align: bottom;
+}
+
+.connection > img.icon {
+    height: 3ex;
+    max-width: 5ex;
 }
 
 /* Call-to-actions */
@@ -93,4 +125,28 @@ mat-card.module > h4 {
     font-size: 200%;
     color: #ff4500;
     font-weight: bold;
+}
+
+/* Examples */
+mat-card.example {
+    background-color: #3798e2;
+    color: #fff;
+    font-weight: 600;
+
+    padding: 0; /* Moved into child elements */
+}
+
+mat-card.example > .description {
+    padding: 1ex;
+}
+.connection-icon-list {
+    background-color: rgba(255,255,255,0.95);
+    text-align: left;
+    padding: 1ex;
+}
+
+.connection-icon-list > img {
+    max-height: 4ex;
+    width: 4ex;
+    margin-left: 1ex;
 }
