@@ -29,7 +29,7 @@ user <-- oauth : Redirect with token
 
 user -> pm : Register with token
 pm -> bridge : Token
-pm <-- bridge : Success=true
+pm <-- bridge : Success=true, name=X
 
 note over pm
     - Create connection in DB

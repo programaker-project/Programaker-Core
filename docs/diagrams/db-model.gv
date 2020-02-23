@@ -126,7 +126,7 @@ digraph g {
 
 
     connection_entry[style=filled,fillcolor="#cccccc",color=white,
-                     label="*Connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | <f3> connection_data"]
+                     label="*Connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | name"]
     connection_entry:f0 -> service_port_entry:pk
     connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
     connection_entry:f2 -> live_channels_table_entry:pk

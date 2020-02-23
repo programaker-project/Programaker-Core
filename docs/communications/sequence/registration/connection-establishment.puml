@@ -25,7 +25,7 @@ user <-- pm : Shows registration form
 
 user -> pm : Answer
 pm -> bridge : Answer
-pm <-- bridge : Success=true
+pm <-- bridge : Success=true, name=X
 
 note over pm
     - Create connection in DB
