@@ -34,6 +34,7 @@
         , register_service/3
         , send_oauth_return/2
         , list_bridges/1
+        , list_available_connections/1
         , delete_bridge/2
         , callback_bridge/3
         , bridge_function_call/4
@@ -320,6 +321,10 @@ send_oauth_return(ServicePortId, Qs) ->
 -spec list_bridges(binary()) -> {ok, [#service_port_entry_extra{}]}.
 list_bridges(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
+
+-spec list_available_connections(binary()) -> {ok, [#service_port_entry_extra{}]}.
+list_available_connections(UserId) ->
     {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
