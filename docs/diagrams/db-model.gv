@@ -12,6 +12,9 @@ digraph g {
     bridge_engine[style=filled,fillcolor="#bbbbff"];
     service_registry[style=filled,fillcolor="#bbffbb"]
     templates[style=filled,fillcolor="#ffbbff"]
+
+    new_table[style=filled,fillcolor="#cccccc",color=white]
+    // modified_table[shape=octagon] // Not used
   }
 
 
@@ -120,7 +123,20 @@ digraph g {
     channel_monitor_table_entry[label="*Monitor table* | {<f0> user_id|<f1> bridge_id} | pid | node"]
     channel_monitor_table_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
     channel_monitor_table_entry:f1 -> service_port_entry:pk
-  }
+
+
+    connection_entry[style=filled,fillcolor="#cccccc",color=white,
+                     label="*Connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | <f3> connection_data"]
+    connection_entry:f0 -> service_port_entry:pk
+    connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+    connection_entry:f2 -> live_channels_table_entry:pk
+    // Connection data might store data from the bridges
+
+    connection_establishment_entry[style=filled,fillcolor="#cccccc",color=white,
+                                   label="*Connection establishment* | <pk> id | <f0> bridge_id | <f1> user_id | message_id | is_established | started_time | established_time"]
+    connection_establishment_entry:f0 -> service_port_entry:pk
+    connection_establishment_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+}
 
   subgraph group_core_services {
     label="Service registry";
