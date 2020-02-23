@@ -11,7 +11,6 @@ digraph g {
     coordination[style=filled,fillcolor="#ffbbbb"]
     bridge_engine[style=filled,fillcolor="#bbbbff"];
     service_registry[style=filled,fillcolor="#bbffbb"]
-    user_registration[style=filled,fillcolor="#ffffbb"]
     templates[style=filled,fillcolor="#ffbbff"]
   }
 
@@ -138,16 +137,6 @@ digraph g {
     // SERVICE_CONFIGURATION_TABLE | automate_service_registry_service_configuration_table
     service_configuration_entry[label="*Service configuration* | <pk> service_id + key | value "];
     service_configuration_entry:pk -> services_table_entry:pk;
-  }
-
-  subgraph group_core_user_service_registration {
-    label="User registration in service";
-    node[style=filled,fillcolor="#ffffbb"]
-
-    // SERVICE_REGISTRATION_TOKEN_TABLE | automate_service_registration_token_table
-    service_registration_token[label="*Registration session* | <pk> token | <f0> service_id | <f1> user_id"];
-    service_registration_token:f0 -> services_table_entry:pk;
-    service_registration_token:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
   }
 
   subgraph group_core_template_engine {
