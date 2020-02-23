@@ -69,6 +69,6 @@ export class AppComponent {
     }
 
     gotoBridges(): void {
-        this.router.navigate(['/services']);
+        this.router.navigate(['/bridges']);
     }
 }
