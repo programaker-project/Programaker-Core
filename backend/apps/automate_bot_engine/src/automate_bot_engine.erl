@@ -9,7 +9,10 @@
 -export([ stop_program_threads/2
         , change_program_status/3
         , get_user_from_pid/1
+        , get_bridges_on_program/1
         ]).
+
+-include("../../automate_storage/src/records.hrl").
 
 -spec stop_program_threads(binary(),binary()) -> ok | {error, any()}.
 stop_program_threads(_UserId, ProgramId) ->
@@ -37,3 +40,6 @@ change_program_status(Username, ProgramId, Status) ->
 get_user_from_pid(Pid) ->
     automate_storage:get_user_from_pid(Pid).
 
+-spec get_bridges_on_program(#user_program_entry{}) -> { ok, [binary()] }.
+get_bridges_on_program(Program) ->
+    automate_bot_engine_program_decoder:get_bridges_on_program(Program).

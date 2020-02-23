@@ -23,7 +23,7 @@
 
 -type service_entry() :: #{ name := binary()
                           , description := binary()
-                          , module := module()
+                          , module := module() | {module(), [_]}
                           }.
 -type service_info_map() :: #{ binary() := service_entry() }.
 
