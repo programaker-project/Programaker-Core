@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { SessionService } from './session.service';
 import { Session } from './session';
 import { Subscription } from 'rxjs';
+import { BridgeService } from './bridges/bridge.service';
 
 @Component({
     selector: 'app-my-app',
@@ -12,7 +13,7 @@ import { Subscription } from 'rxjs';
         'libs/css/material-icons.css',
         'libs/css/bootstrap.min.css',
     ],
-    providers: [SessionService]
+    providers: [BridgeService, SessionService]
 })
 
 export class AppComponent {
@@ -20,10 +21,12 @@ export class AppComponent {
     username: string;
     loggedIn: boolean;
     title = 'PrograMaker';
+    bridgeCount = 0;
 
     constructor(
         private router: Router,
-        private session: SessionService
+        private session: SessionService,
+        private bridgeService: BridgeService,
     ) {
         this.router = router;
         this.session = session;
@@ -36,6 +39,10 @@ export class AppComponent {
                     this.username = newSession.username;
                 }
             }
+        });
+
+        this.bridgeService.listUserBridges().then(bridges => {
+            this.bridgeCount = bridges.length;
         });
 
         window.onresize = this.updateVerticalSpaces;
