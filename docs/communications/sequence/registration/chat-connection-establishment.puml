@@ -1,0 +1,48 @@
+@startuml sideloaded-connection-establishment
+actor user
+participant PrograMaker as pm
+participant bridge
+participant ChatService as chat
+
+autonumber
+
+... User goes to "New Connections" panel ...
+user -> pm : Get possible connections
+
+note over pm 
+    Looks at possible connections on bridges DB.
+end note
+
+user <-- pm : Possible connection list
+
+... User selects a bridge they want to connect to ...
+
+user -> pm : Prepare to start connection to <bridge>
+pm -> bridge : User wants to establish connection
+pm <-- bridge : Here is the *registration* form
+user <-- pm : Shows registration form
+
+... User gets registration string ...
+
+user -> chat : Send registration string
+chat -> bridge : Message propagation
+bridge -> pm : Registration with <message id> completed
+
+note over pm
+    - Create connection in DB
+    - Save returned data
+end note
+
+user <- pm : Connection established
+
+note right of user
+    How is this data sent?
+      Polling? Websocket?
+      - For this each "connection attempt" needs an ID
+end note
+
+bridge <-- pm : OK
+chat <-- bridge : Send message "Connection established"
+user <-- chat : Message "Connection established"
+
+@enduml
