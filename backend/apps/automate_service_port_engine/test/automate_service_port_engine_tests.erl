@@ -251,6 +251,7 @@ route_notification_targeted_to_owner() ->
                                                                               TargetUserId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = establish_connection(ServicePortId, TargetUserId),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
@@ -286,6 +287,7 @@ route_notification_targeted_to_owner_on_public() ->
                                                                               TargetUserId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = establish_connection(ServicePortId, TargetUserId),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
@@ -320,6 +322,7 @@ route_notification_targeted_to_non_owner_on_public() ->
                                                                               TargetUserId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = establish_connection(ServicePortId, TargetUserId),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
@@ -382,6 +385,10 @@ route_notification_targeted_to_all_users_on_public() ->
 %%====================================================================
 %% Notification routing tests - Internal functions
 %%====================================================================
+establish_connection(BridgeId, UserId) ->
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(BridgeId, UserId),
+    ok = ?BACKEND:establish_connection(BridgeId, UserId, ConnectionId, <<"test connection">>).
+
 emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
     Key = binary:list_to_bin(atom_to_list(?MODULE)),
     Value = Content, %% For simplicity
