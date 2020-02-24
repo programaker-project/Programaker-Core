@@ -62,13 +62,15 @@ websocket_info({ automate_service_port_engine, new_channel, {_ServicePortId, Cha
 websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, State=#state{service_port_id=ServicePortId}) ->
     case automate_bot_engine:get_user_from_pid(Pid) of
         {ok, UserId} ->
-            {ok, ServicePortUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
+            %% TODO: In this instance is probably OK to use a single connection.
+            %%   But it can be disambiguated by passing more "properties" on the 'add_listener' message.
+            {ok, ConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId),
             {UserChannels, NewState} = add_to_user_channels(UserId, {Key, SubKey}, State),
             Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_NOTIFICATION">>
                                        , <<"value">> =>
                                              #{ <<"SIGNAL_LISTENERS">> =>
                                                     #{
-                                                      ServicePortUserId => fmt_user_data(UserChannels)
+                                                      ConnectionId => fmt_user_data(UserChannels)
                                                      }
                                               }
                                        }),
@@ -110,4 +112,3 @@ add_to_user_channels(UserId, ChannelData, State=#state{user_channels=UserChannel
             NewUserData = create_user_data(ChannelData),
             { NewUserData, State#state{ user_channels=UserChannels#{ UserId => NewUserData } } }
     end.
-

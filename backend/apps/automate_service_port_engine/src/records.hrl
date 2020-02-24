@@ -67,13 +67,6 @@
                                     }).
 
 
--record(service_port_user_obfuscation_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% internal id
-                                                     , binary() | ?MNESIA_SELECTOR  %% bridge id
-                                                     }
-                                             , obfuscated_id :: binary() | ?MNESIA_SELECTOR
-                                             }).
-
-
 -record(service_port_monitor_channel_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% user id
                                                     , binary() | ?MNESIA_SELECTOR  %% bridge id
                                                     } | ?MNESIA_SELECTOR
@@ -95,3 +88,17 @@
                                      , pid :: pid()          | ?MNESIA_SELECTOR
                                      , node :: node()        | ?MNESIA_SELECTOR
                                      }).
+
+-record(user_to_bridge_connection_entry, { id :: binary() | ?MNESIA_SELECTOR
+                                         , bridge_id :: binary() | ?MNESIA_SELECTOR
+                                         , user_id :: binary() | ?MNESIA_SELECTOR
+                                         , channel_id :: binary() | ?MNESIA_SELECTOR
+                                         , name :: binary() | undefined | ?MNESIA_SELECTOR
+                                         , creation_time :: non_neg_integer() | ?MNESIA_SELECTOR
+                                         }).
+
+-record(user_to_bridge_pending_connection_entry, { id :: binary() | ?MNESIA_SELECTOR
+                                                 , bridge_id :: binary() | ?MNESIA_SELECTOR
+                                                 , user_id :: binary() | ?MNESIA_SELECTOR
+                                                 , creation_time :: non_neg_integer() | ?MNESIA_SELECTOR
+                                                 }).

@@ -16,13 +16,15 @@
         , send_oauth_return/2
 
         , list_custom_blocks/1
-        , internal_user_id_to_service_port_user_id/2
+        , internal_user_id_to_connection_id/2
         , get_user_service_ports/1
         , delete_bridge/2
         , callback_bridge/3
         , get_channel_origin_bridge/1
+        , get_bridge_info/1
 
         , listen_bridge/2
+        , list_established_connections/1
         ]).
 
 -include("records.hrl").
@@ -136,13 +138,13 @@ from_service_port(ServicePortId, UserId, Msg) ->
                     %% messages had been sent
                     ok;
                 _ ->
-                    {ok, ToUserInternalId} = ?BACKEND:service_port_user_id_to_internal_user_id(
+                    {ok, ToUserInternalId} = ?BACKEND:connection_id_to_internal_user_id(
                                                 ToUser, ServicePortId),
                     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
                                                     ServicePortId, ToUserInternalId),
 
                     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
-                                         Module,  ToUserInternalId),
+                                         Module, ToUserInternalId),
                     ok = automate_channel_engine:send_to_channel(MonitorId,
                                                                  #{ <<"key">> => Key
                                                                   , <<"value">> => Value
@@ -155,9 +157,9 @@ from_service_port(ServicePortId, UserId, Msg) ->
 list_custom_blocks(UserId) ->
     ?BACKEND:list_custom_blocks(UserId).
 
--spec internal_user_id_to_service_port_user_id(binary(), binary()) -> {ok, binary()}.
-internal_user_id_to_service_port_user_id(UserId, ServicePortId) ->
-    ?BACKEND:internal_user_id_to_service_port_user_id(UserId, ServicePortId).
+-spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()}.
+internal_user_id_to_connection_id(UserId, ServicePortId) ->
+    ?BACKEND:internal_user_id_to_connection_id(UserId, ServicePortId).
 
 
 -spec get_user_service_ports(binary()) -> {ok, [#service_port_entry_extra{}]}.
@@ -178,7 +180,7 @@ delete_bridge(UserId, BridgeId) ->
 
 -spec callback_bridge(binary(), binary(), binary()) -> {ok, map()} | {error, term()}.
 callback_bridge(UserId, BridgeId, Callback) ->
-    {ok, BridgeUserId} = internal_user_id_to_service_port_user_id(UserId, BridgeId),
+    {ok, BridgeUserId} = internal_user_id_to_connection_id(UserId, BridgeId),
     ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
                                    , <<"user_id">> => BridgeUserId
                                    , <<"value">> => #{ <<"callback">> => Callback
@@ -194,6 +196,14 @@ get_channel_origin_bridge(ChannelId) ->
         _ ->
             ?BACKEND:get_channel_origin_bridge(ChannelId)
     end.
+
+-spec get_bridge_info(binary()) -> {ok, #service_port_entry{}}.
+get_bridge_info(BridgeId) ->
+    ?BACKEND:get_bridge_info(BridgeId).
+
+-spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+list_established_connections(UserId) ->
+    {ok, _Connections} = ?BACKEND:list_established_connections(UserId).
 
 %%====================================================================
 %% Internal functions

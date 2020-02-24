@@ -12,7 +12,7 @@
 -include("../../automate_storage/src/versioning.hrl").
 
 -spec get_versioning([node()]) -> #database_version_progression{}.
-get_versioning(_Nodes) ->
+get_versioning(Nodes) ->
     %% Service port identity table
     Version_1 = [ #database_version_data{ database_name=?SERVICE_PORT_TABLE
                                         , records=[ id, name, owner, service_id ]
@@ -26,7 +26,7 @@ get_versioning(_Nodes) ->
                                         }
 
                   %% Service port userId obfuscation
-                , #database_version_data{ database_name=?SERVICE_PORT_USERID_OBFUSCATION_TABLE
+                , #database_version_data{ database_name=automate_service_port_userid_obfuscation_table
                                         , records=[ id, obfuscated_id ]
                                         , record_name=service_port_user_obfuscation_entry
                                         }
@@ -40,5 +40,52 @@ get_versioning(_Nodes) ->
 
     #database_version_progression
         { base=Version_1
-        , updates=[]
+        , updates=[ #database_version_transformation
+                    %% 1. Add *User -> Bridge connection* table
+                    %%
+                    %%    Keeps track of the bridges a user has authenticated himself into.
+                    %%
+                    %% 2. Delete the UserId-obfuscation table.
+                    %%
+                    %%    This is now managed in the connections table.
+                    %%
+                    %% 3. Create a temporary "connection establishment" table
+                    %%
+                    %%    This helps keep track of the ongoing registrations, for
+                    %%    processes that use side-channels, like chats.
+                    { id=1
+                    , apply=fun() ->
+                                    automate_storage_versioning:create_database(
+                                      #database_version_data
+                                      { database_name=?USER_TO_BRIDGE_CONNECTION_TABLE
+                                      , records=[ id
+                                                , bridge_id
+                                                , user_id
+                                                , channel_id
+                                                , name
+                                                , creation_time
+                                                ]
+                                      , record_name=user_to_bridge_connection_entry
+                                      }, Nodes),
+
+                                    automate_storage_versioning:create_database(
+                                      #database_version_data
+                                      { database_name=?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE
+                                      , records=[ id
+                                                , bridge_id
+                                                , user_id
+                                                , name
+                                                ]
+                                      , record_name=user_to_bridge_pending_connection_entry
+                                      }, Nodes),
+
+                                    {atomic, ok} = mnesia:delete_table(automate_service_port_userid_obfuscation_table),
+
+                                    ok = mnesia:wait_for_tables([ ?USER_TO_BRIDGE_CONNECTION_TABLE
+                                                                , ?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE
+                                                                ],
+                                                                automate_configuration:get_table_wait_time())
+                            end
+                    }
+                  ]
         }.

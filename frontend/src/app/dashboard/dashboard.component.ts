@@ -20,6 +20,7 @@ import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 import { MonitorMetadata } from '../monitor';
 import { MonitorService } from '../monitor.service';
+import { ConnectionService } from '../connection.service';
 import { BridgeService } from '../bridges/bridge.service';
 import { BridgeIndexData } from '../bridges/bridge';
 import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component';
@@ -28,7 +29,7 @@ import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component'
     // moduleId: module.id,
     selector: 'app-my-dashboard',
     templateUrl: './dashboard.component.html',
-    providers: [BridgeService, MonitorService, ProgramService, SessionService, ServiceService],
+    providers: [BridgeService, ConnectionService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'dashboard.component.css',
         '../libs/css/material-icons.css',
@@ -38,23 +39,21 @@ import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component'
 
 export class NewDashboardComponent {
     programs: ProgramMetadata[] = [];
-    services: AvailableService[] = [];
-    connections: { name: string, icon_url?: string }[] = [
-        { name: 'Telegram', icon_url: "/assets/icons/telegram_logo.png" },
-        { name: 'Twitter', icon_url: "/assets/icons/twitter_logo.png"  },
-    ];
+    connections: { name: string, icon_url?: string }[] = [];
     session: Session = null;
 
     constructor(
         private programService: ProgramService,
-        private serviceService: ServiceService,
         private sessionService: SessionService,
+        private serviceService: ServiceService,
+        private connectionService: ConnectionService,
         private router: Router,
         public dialog: MatDialog,
     ) {
         this.programService = programService;
-        this.serviceService = serviceService;
         this.sessionService = sessionService;
+        this.serviceService = serviceService;
+        this.connectionService = connectionService;
         this.router = router;
     }
 
@@ -69,8 +68,8 @@ export class NewDashboardComponent {
                     this.programService.getPrograms()
                         .then(programs => this.programs = programs);
 
-                    this.serviceService.getAvailableServices()
-                        .then(services => this.services = services);
+                    this.connectionService.getConnections()
+                        .then(connections => this.connections = connections);
                 }
             })
             .catch(e => {
@@ -111,13 +110,5 @@ export class NewDashboardComponent {
         });
 
         dialogRef.afterClosed().subscribe(result => { });
-    }
-
-    onChange(ob: MatSlideToggleChange, program: ProgramMetadata) {
-        program.enabled = ob.checked;
-        console.log(ob.checked);
-      this.sessionService.getSession().then(session =>
-          this.programService.setProgramStatus(JSON.stringify({"enable":ob.checked}), program.id, session.user_id));
-      let matSlideToggle: MatSlideToggle = ob.source;
     }
 }

@@ -31,10 +31,11 @@
 
         , create_service_port/2
         , list_custom_blocks_from_username/1
-        , register_service/3
+        , register_service/4
         , send_oauth_return/2
         , list_bridges/1
         , list_available_connections/1
+        , list_established_connections/1
         , delete_bridge/2
         , callback_bridge/3
         , bridge_function_call/4
@@ -303,11 +304,12 @@ list_custom_blocks_from_username(Username) ->
     automate_service_port_engine:list_custom_blocks(UserId).
 
 
--spec register_service(binary(), binary(), map()) -> {ok, any} | {error, binary()}.
-register_service(Username, ServiceId, RegistrationData) ->
+-spec register_service(binary(), binary(), map(), binary()) -> {ok, any} | {error, binary()}.
+register_service(Username, ServiceId, RegistrationData, ConnectionId) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, _} = automate_service_registry_query:send_registration_data(Module, UserId, RegistrationData).
+    {ok, _Result} = automate_service_registry_query:send_registration_data(Module, UserId, RegistrationData,
+                                                                           #{<<"connection_id">> => ConnectionId}).
 
 -spec send_oauth_return(binary(), binary()) -> ok | {error, term()}.
 send_oauth_return(ServicePortId, Qs) ->
@@ -326,6 +328,10 @@ list_bridges(Username) ->
 -spec list_available_connections(binary()) -> {ok, [#service_port_entry_extra{}]}.
 list_available_connections(UserId) ->
     {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
+
+-spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+list_established_connections(UserId) ->
+    {ok, _Connections} = automate_service_port_engine:list_established_connections(UserId).
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->

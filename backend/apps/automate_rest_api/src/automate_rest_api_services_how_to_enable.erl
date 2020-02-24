@@ -85,9 +85,15 @@ to_json(Req, State) ->
               Res2, State }
     end.
 
+extend_how_to(HowTo=#{ <<"type">> := <<"form">>
+                     , <<"connection_id">> := ConnectionId }, ServiceId) ->
+    Restructured = HowTo#{ <<"metadata">> => #{ <<"service_id">> => ServiceId
+                                              , <<"connection_id">> => ConnectionId
+                                              } },
+    maps:remove(<<"connection_id">>, Restructured);
+
 extend_how_to(HowTo=#{ <<"type">> := <<"form">> }, ServiceId) ->
     HowTo#{ <<"metadata">> => #{ <<"service_id">> => ServiceId } };
 
 extend_how_to(HowTo, _ServiceId) ->
     HowTo.
-

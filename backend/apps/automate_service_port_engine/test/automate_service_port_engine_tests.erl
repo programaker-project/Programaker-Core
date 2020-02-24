@@ -390,8 +390,8 @@ emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
                    null -> null;
                    _ ->
                        {ok, ObfuscatedUserId} =
-                           ?APPLICATION:internal_user_id_to_service_port_user_id(TargetUserId,
-                                                                                 ServicePortId),
+                           ?APPLICATION:internal_user_id_to_connection_id(TargetUserId,
+                                                                          ServicePortId),
                        ObfuscatedUserId
                end,
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,

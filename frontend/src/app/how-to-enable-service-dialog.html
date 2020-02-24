@@ -3,9 +3,9 @@
     <div class="rendering-zone"></div>
 </mat-dialog-content>
 <mat-dialog-actions *ngIf="this.type == 'message'">
-    <button class="confirmation" mat-button mat-dialog-close>OK</button>
+    <button class="rejection" mat-button mat-dialog-close>Cancel</button>
 </mat-dialog-actions>
 <mat-dialog-actions *ngIf="this.type == 'form'" class="form-buttons">
     <button class="rejection" mat-button mat-dialog-close>Cancel</button>
-    <button class="confirmation" mat-button mat-raised-button  (click)="this.send_form()" color="primary">Submit</button>
+    <button class="confirmation" mat-button mat-raised-button (click)="this.send_form()" color="primary">Submit</button>
 </mat-dialog-actions>

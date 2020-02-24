@@ -150,4 +150,3 @@ route_two_to_zero() ->
     Message = #{ value => sample },
     {error, no_connection} = ?ROUTER:call_bridge(BridgeId, Message),
     {error, no_connection} = ?ROUTER:call_bridge(BridgeId, Message).
-

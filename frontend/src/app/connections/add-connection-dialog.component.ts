@@ -2,6 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { SessionService } from '../session.service';
 import { ConnectionService } from '../connection.service';
 import { ServiceService } from '../service.service';
+import { BridgeService } from '../bridges/bridge.service';
 
 import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
 import { AvailableService, ServiceEnableHowTo } from '../service';
@@ -9,8 +10,9 @@ import { AvailableService, ServiceEnableHowTo } from '../service';
 
 import { MatDialog } from '@angular/material/dialog';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { BridgeIndexData } from '../bridges/bridge';
 
-type BridgeData = {bridge: AvailableService, state: 'waiting' | 'reading' | 'selected' | 'error', index: number};
+type BridgeData = {bridge: BridgeIndexData, state: 'waiting' | 'reading' | 'selected' | 'error', index: number};
 
 @Component({
     selector: 'app-add-connection-dialog',
@@ -18,7 +20,7 @@ type BridgeData = {bridge: AvailableService, state: 'waiting' | 'reading' | 'sel
     styleUrls: [
         'add-connection-dialog.component.css',
     ],
-    providers: [SessionService, ServiceService, ConnectionService],
+    providers: [BridgeService, SessionService, ServiceService, ConnectionService],
 })
 export class AddConnectionDialogComponent {
     availableBridges: BridgeData[] = [];
@@ -32,7 +34,7 @@ export class AddConnectionDialogComponent {
 
                 @Inject(MAT_DIALOG_DATA)
                 public data: {  }) {
-        this.connectionService.getAvailableBridges().then((bridges: AvailableService[]) => {
+        this.connectionService.getAvailableBridgesForNewConnection().then((bridges: BridgeIndexData[]) => {
             console.log("Bridges:", bridges);
             for (let i = 0 ; i < bridges.length; i++){
                 this.availableBridges.push({ bridge: bridges[i], state: 'waiting', index: i });
@@ -45,7 +47,8 @@ export class AddConnectionDialogComponent {
     }
 
     enableService(service: BridgeData): void {
-        if (this.selectedIndex === service.index) {
+        if ((this.selectedIndex === service.index)
+            && (this.availableBridges[this.selectedIndex].state !== 'error')) {
             return;
         }
 
@@ -58,7 +61,7 @@ export class AddConnectionDialogComponent {
         this.selectedIndex = service.index;
         if (service.state !== 'reading') {
             service.state = 'reading';
-            this.serviceService.getHowToEnable(service.bridge)
+            this.serviceService.getHowToEnable(this.connectionService.toAvailableService(service.bridge))
                 .then(howToEnable => {
                     if (this.selectedIndex === service.index) {
                         service.state = 'selected';
@@ -83,6 +86,11 @@ export class AddConnectionDialogComponent {
         console.log(howTo);
         const dialogRef = this.dialog.open(HowToEnableServiceDialogComponent, {
             data: howTo
+        }).afterClosed().subscribe({
+            next: () => {
+                this.availableBridges[this.selectedIndex].state = 'waiting';
+                this.selectedIndex = null;
+            }
         });
     }
 

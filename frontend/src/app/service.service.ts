@@ -49,7 +49,14 @@ export class ServiceService {
                     .toPromise()) as Promise<ServiceEnableHowTo>);
     }
 
-    registerService(service_id: string, data: { [key: string]: string }): Promise<{success: boolean}> {
+    registerService(data: { [key: string]: string }, service_id: string, connection_id: string): Promise<{success: boolean}> {
+        console.log("data:", data);
+        if (connection_id) {
+            if (data.metadata === undefined) {
+                (data as any).metadata = {};
+            }
+            (data as any).metadata.connection_id = connection_id;
+        }
         return this.getServiceRegistryUrl(service_id).then(
             url => (this.http.post(
                 url, JSON.stringify(data),
