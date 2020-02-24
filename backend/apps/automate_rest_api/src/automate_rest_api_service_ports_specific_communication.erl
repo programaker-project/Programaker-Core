@@ -55,6 +55,12 @@ websocket_info({{ automate_service_port_engine, advice_taken}, MessageId, Advice
                                }),
     {reply, {binary, Serialized}, State};
 
+websocket_info({{ automate_service_port_engine, request_icon}}, State=#state{ service_port_id=ServicePortId }) ->
+    io:fwrite("[~p] Requesting icon...~n", [ServicePortId]),
+    Serialized = jiffy:encode(#{ <<"type">> => <<"ICON_REQUEST">>
+                               }),
+    {reply, {binary, Serialized}, State};
+
 websocket_info({ automate_service_port_engine, new_channel, {_ServicePortId, ChannelId}}, State) ->
     ok = automate_channel_engine:monitor_listeners(ChannelId, self(), node()),
     {ok, State};

@@ -7,5 +7,5 @@ export interface BridgeIndexData {
     name: string;
     id: string;
     service_id: string;
-    is_connetcted: boolean;
+    is_connected: boolean;
 }

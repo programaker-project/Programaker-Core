@@ -21,10 +21,13 @@ import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { MonitorMetadata } from '../monitor';
 import { MonitorService } from '../monitor.service';
 import { ConnectionService } from '../connection.service';
-import { BridgeConnection } from '../connection';
+import { BridgeConnection, HashedIcon } from '../connection';
 import { BridgeService } from '../bridges/bridge.service';
 import { BridgeIndexData } from '../bridges/bridge';
 import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component';
+import { ApiHost } from '../api-config';
+
+type BridgeConnectionWithIconUrl = { conn: BridgeConnection, extra: { icon_url?: string}};
 
 @Component({
     // moduleId: module.id,
@@ -37,10 +40,9 @@ import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component'
         '../libs/css/bootstrap.min.css',
     ],
 })
-
 export class NewDashboardComponent {
     programs: ProgramMetadata[] = [];
-    connections: BridgeConnection[] = [];
+    connections: BridgeConnectionWithIconUrl[] = [];
     session: Session = null;
 
     constructor(
@@ -70,7 +72,19 @@ export class NewDashboardComponent {
                         .then(programs => this.programs = programs);
 
                     this.connectionService.getConnections()
-                        .then(connections => this.connections = connections);
+                        .then(connections => this.connections = connections.map((v, _i, _a) => {
+                            let icon_url = undefined;
+                            if (v.icon) {
+                                if ((v.icon as {url: string}).url) {
+                                    icon_url = (v.icon as {url: string});
+                                }
+                                else if ((v.icon as HashedIcon).sha256) {
+                                    icon_url = ApiHost + '/assets/icons/' + v.bridge_id;
+                                }
+                            }
+
+                            return { conn: v, extra: {icon_url: icon_url }};
+                        }));
                 }
             })
             .catch(e => {

@@ -16,12 +16,11 @@
                 </div>
                 <div *ngFor="let connection of connections">
                     <mat-card class="module connection"
-                        role="button" (click)="openConnection(connection)">
-                        <img class="icon" *ngIf="connection.icon.url" src="{{ connection.icon.url }}" alt="{{ connection.name }}@{{ connection.bridge_name }}" />
-                        <!-- img class="icon" *ngIf="connection.icon.hash" src="{{ connection.icon_url }}" alt="{{ connection.name }}@{{ connection.bridge_name }}" / -->
+                        role="button" (click)="openConnection(connection.conn)">
+                        <img class="icon" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.name }}@{{ connection.conn.bridge_name }}" />
 
-                        <span *ngIf="!connection.icon" class="connection-name">
-                            {{ connection.name }}@{{connection.bridge_name}}
+                        <span *ngIf="!connection.extra.icon_url" class="connection-name">
+                            {{ connection.conn.name }}@{{connection.conn.bridge_name}}
                         </span>
                     </mat-card>
                 </div>

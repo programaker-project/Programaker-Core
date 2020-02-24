@@ -104,8 +104,23 @@ from_service_port(ServicePortId, UserId, Msg) ->
         #{ <<"type">> := <<"CONFIGURATION">>
          , <<"value">> := Configuration
          } ->
-            set_service_port_configuration(ServicePortId, Configuration, UserId);
+            {ok, Todo} = set_service_port_configuration(ServicePortId, Configuration, UserId),
+            %% TODO: Check that it really exists, don't trust the DB
+            case lists:member(request_icon, Todo) of
+                false -> ok;
+                true ->
+                    %% Request icon
+                    request_icon(self())
+            end;
 
+        #{ <<"type">> := <<"ICON_UPLOAD">>
+         , <<"value">> := IconData
+         } ->
+            case IconData of
+                #{ <<"content">> := B64Content } ->
+                    Data = base64:decode(B64Content),
+                    ok = write_icon(Data, ServicePortId)
+                end;
         #{ <<"type">> := <<"NOTIFICATION">>
          , <<"key">> := Key
          , <<"to_user">> := ToUser
@@ -225,8 +240,7 @@ add_service_port_extra(#service_port_entry{ id=Id
 
 set_service_port_configuration(ServicePortId, Configuration, UserId) ->
     SPConfiguration = parse_configuration_map(ServicePortId, Configuration),
-    ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, UserId),
-    ok.
+    ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, UserId).
 
 parse_configuration_map(ServicePortId,
                         Config=#{ <<"blocks">> := Blocks
@@ -335,6 +349,20 @@ parse_argument(#{ <<"type">> := Type
 
 answer_advice_taken(AdviceTaken, MessageId, Pid) ->
     Pid ! {{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken }.
+
+request_icon(Pid) ->
+    Pid ! {{ automate_service_port_engine, request_icon} }.
+
+get_icon_path(ServicePortId) ->
+    %% Finished on .jpg so that the browser will detect it as an image.
+    %% It doesn't really have to be .jpg
+    binary:list_to_bin(
+      lists:flatten(io_lib:format("~s/assets/icons/~s", [code:lib_dir(automate_rest_api, priv)
+                                                        , ServicePortId
+                                                        ]))).
+
+write_icon(Data, ServicePortId) ->
+    file:write_file(get_icon_path(ServicePortId), Data).
 
 apply_advice(#{ <<"type">> := <<"ADVICE_SET">>
               , <<"value">> := Value

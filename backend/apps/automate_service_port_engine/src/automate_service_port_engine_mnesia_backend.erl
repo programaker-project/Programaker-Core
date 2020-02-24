@@ -200,7 +200,8 @@ as_module(#service_port_configuration{ id=Id
      , module => {automate_service_port_engine_service, [Id]}
      }.
 
-set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
+-spec set_service_port_configuration(binary(), #service_port_configuration{}, binary()) -> {ok, [ request_icon ]}.
+set_service_port_configuration(ServicePortId, Configuration=#service_port_configuration{ icon=NewIcon }, OwnerId) ->
     io:fwrite("Setting configuration: ~p~n", [Configuration]),
 
     ServiceId = case get_service_id_for_port(ServicePortId) of
@@ -215,14 +216,27 @@ set_service_port_configuration(ServicePortId, Configuration, OwnerId) ->
                 end,
 
     Transaction = fun() ->
-                          mnesia:write(?SERVICE_PORT_CONFIGURATION_TABLE
-                                      , Configuration#service_port_configuration{ service_id=ServiceId }
-                                      , write
-                                      )
+                          Previous = mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, ServicePortId),
+                          ok = mnesia:write(?SERVICE_PORT_CONFIGURATION_TABLE
+                                           , Configuration#service_port_configuration{ service_id=ServiceId }
+                                           , write
+                                           ),
+                          Previous
                   end,
     case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            Result;
+        {atomic, Previous} ->
+            Todo = case {NewIcon, Previous} of
+                       {{ hash, HashType, Hash }, [#service_port_configuration{icon={hash, HashType, Hash}}]} ->
+                           %% If it's the same hash, nothing to do
+                           [];
+                       {{ hash, _HashType, _Hash }, _} ->
+                           %% If new is hash, and it's not the same as the old. Request an update
+                           [ request_icon ];
+                       {_, _} ->
+                           %% If neither new nor old are hash, nothing to do
+                           []
+                   end,
+            {ok, Todo};
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.

@@ -19,6 +19,9 @@ start_link() ->
                  [{'_', [ %% Metrics
                           {"/metrics", automate_rest_api_metrics, []}
 
+                          %% Assets
+                        , {"/assets/icons/[...]", cowboy_static, {priv_dir, automate_rest_api, "assets/icons"}}
+
                           %% API
                         , {"/api/v0/sessions/register", automate_rest_api_sessions_register, []}
                         , {"/api/v0/sessions/register/verify", automate_rest_api_sessions_register_verify, []}

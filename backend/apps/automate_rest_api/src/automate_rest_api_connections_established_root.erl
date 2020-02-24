@@ -96,7 +96,7 @@ to_map(#user_to_bridge_connection_entry{ id=Id
                                        }) ->
     {ok, #service_port_metadata{ name=BridgeName, icon=Icon }} = automate_service_port_engine:get_bridge_info(BridgeId),
     #{ <<"connection_id">> => Id
-     , <<"name">> => Name
+     , <<"name">> => serialize_string_or_undefined(Name)
      , <<"bridge_id">> => BridgeId
      , <<"bridge_name">> => BridgeName
      , <<"icon">> => serialize_icon(Icon)
@@ -108,3 +108,8 @@ serialize_icon({url, Url}) ->
     #{ <<"url">> => Url };
 serialize_icon({hash, HashType, HashResult}) ->
     #{ HashType => HashResult }.
+
+serialize_string_or_undefined(undefined) ->
+    null;
+serialize_string_or_undefined(String) ->
+    String.
