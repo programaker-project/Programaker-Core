@@ -21,6 +21,7 @@ import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { MonitorMetadata } from '../monitor';
 import { MonitorService } from '../monitor.service';
 import { ConnectionService } from '../connection.service';
+import { BridgeConnection } from '../connection';
 import { BridgeService } from '../bridges/bridge.service';
 import { BridgeIndexData } from '../bridges/bridge';
 import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component';
@@ -39,7 +40,7 @@ import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component'
 
 export class NewDashboardComponent {
     programs: ProgramMetadata[] = [];
-    connections: { name: string, icon_url?: string }[] = [];
+    connections: BridgeConnection[] = [];
     session: Session = null;
 
     constructor(

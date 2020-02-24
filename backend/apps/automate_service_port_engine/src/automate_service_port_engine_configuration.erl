@@ -87,5 +87,23 @@ get_versioning(Nodes) ->
                                                                 automate_configuration:get_table_wait_time())
                             end
                     }
+
+                    #database_version_transformation
+                    %% Add *icons* to service_configuration
+                    { id=2
+                    , apply=fun() ->
+                                    mnesia:transform_table(
+                                      ?SERVICE_PORT_CONFIGURATION_TABLE,
+                                      fun({service_port_configuration, Id, ServiceName, ServiceId,
+                                           IsPublic, Blocks }) ->
+                                              %% Replicate the entry. Just set 'icon' to undefined.
+                                              {service_port_configuration, Id, ServiceName, ServiceId,
+                                               IsPublic, Blocks, undefined }
+                                      end,
+                                      [ id, service_name, service_id, is_public, blocks, icon ],
+                                      service_port_configuration
+                                     )
+                            end
+                    }
                   ]
         }.

@@ -151,14 +151,27 @@ get_service_id_for_port(ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_bridge_info(binary()) -> {ok, #service_port_entry{}}.
+-spec get_bridge_info(binary()) -> {ok, #service_port_metadata{}}.
 get_bridge_info(BridgeId) ->
     Transaction = fun() ->
                           case mnesia:read(?SERVICE_PORT_TABLE, BridgeId) of
                               [] ->
                                   {error, not_found};
-                              [Entry=#service_port_entry{}] ->
-                                  {ok, Entry}
+                              [#service_port_entry{name=Name, owner=Owner}] ->
+                                  case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId) of
+                                      [] ->
+                                          { ok, #service_port_metadata{ id=BridgeId
+                                                                      , name=Name
+                                                                      , owner=Owner
+                                                                      , icon=undefined
+                                                                      } };
+                                      [#service_port_configuration{ icon=Icon }] ->
+                                          { ok, #service_port_metadata{ id=BridgeId
+                                                                      , name=Name
+                                                                      , owner=Owner
+                                                                      , icon=Icon
+                                                                      } }
+                                  end
                           end
                   end,
     case mnesia:transaction(Transaction) of
@@ -483,6 +496,7 @@ list_public_ports() ->
                                            , service_id='_'
                                            , is_public='$2'
                                            , blocks='_'
+                                           , icon='_'
                                            },
     Guard = {'==', '$2', true},
     ResultColumn = '$1',

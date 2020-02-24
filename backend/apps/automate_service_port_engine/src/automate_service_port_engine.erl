@@ -197,7 +197,7 @@ get_channel_origin_bridge(ChannelId) ->
             ?BACKEND:get_channel_origin_bridge(ChannelId)
     end.
 
--spec get_bridge_info(binary()) -> {ok, #service_port_entry{}}.
+-spec get_bridge_info(binary()) -> {ok, #service_port_metadata{}}.
 get_bridge_info(BridgeId) ->
     ?BACKEND:get_bridge_info(BridgeId).
 
@@ -229,16 +229,30 @@ set_service_port_configuration(ServicePortId, Configuration, UserId) ->
     ok.
 
 parse_configuration_map(ServicePortId,
-                        #{ <<"blocks">> := Blocks
-                         , <<"is_public">> := IsPublic
-                         , <<"service_name">> := ServiceName
-                         }) ->
+                        Config=#{ <<"blocks">> := Blocks
+                                , <<"is_public">> := IsPublic
+                                , <<"service_name">> := ServiceName
+                                }) ->
     #service_port_configuration{ id=ServicePortId
                                , is_public=IsPublic
                                , service_id=undefined
                                , service_name=ServiceName
                                , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
+                               , icon=get_icon_from_config(Config)
                                }.
+
+
+-spec get_icon_from_config(map()) -> undefined | supported_icon_type().
+get_icon_from_config(#{ <<"icon">> := #{ <<"url">> := Url } }) ->
+    { url, Url };
+get_icon_from_config(#{ <<"icon">> := #{ <<"sha256">> := Hash } }) ->
+    Id={ hash, sha256, Hash },
+    %% TODO: Check that ID exists, or request to bridge
+    Id;
+get_icon_from_config(_) ->
+    undefined.
+
+
 
 parse_block(Block=#{ <<"arguments">> := Arguments
                    , <<"function_name">> := FunctionName

@@ -8,6 +8,7 @@
 %%% Check the service_port_configuration record.
                             }).
 
+
 -record(service_port_entry_extra, { id    :: binary()
                                   , name  :: binary()
                                   , owner :: binary() %% User id
@@ -59,13 +60,26 @@
                                     , subkey :: block_subkey()
                                     }).
 
+-type supported_icon_hashes() :: 'sha256'.
+
+-type supported_icon_type() :: {url, binary()}
+                             | {hash, supported_icon_hashes(), binary() }.
+
 -record(service_port_configuration, { id :: binary() | ?MNESIA_SELECTOR %% Service port Id
                                     , service_name :: binary() | ?MNESIA_SELECTOR
                                     , service_id :: binary() | 'undefined' | ?MNESIA_SELECTOR
                                     , is_public :: boolean() | ?MNESIA_SELECTOR
                                     , blocks :: [#service_port_block{}] | ?MNESIA_SELECTOR
+                                    , icon :: undefined | supported_icon_type() | ?MNESIA_SELECTOR
                                     }).
 
+
+
+-record(service_port_metadata, { id    :: binary() | ?MNESIA_SELECTOR
+                               , name  :: binary() | ?MNESIA_SELECTOR
+                               , owner :: binary() | ?MNESIA_SELECTOR %% User id
+                               , icon :: undefined | supported_icon_type() | ?MNESIA_SELECTOR
+                               }).
 
 -record(service_port_monitor_channel_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% user id
                                                     , binary() | ?MNESIA_SELECTOR  %% bridge id
