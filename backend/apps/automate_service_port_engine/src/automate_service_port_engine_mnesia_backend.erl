@@ -20,6 +20,7 @@
 
         , gen_pending_connection/2
         , establish_connection/4
+        , establish_connection/3
 
         , get_service_id_for_port/1
         , get_bridge_info/1
@@ -105,8 +106,40 @@ gen_pending_connection(BridgeId, UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec establish_connection(binary(), binary(), binary(), binary()) -> ok.
+%% Establish connection confirming Bridge and User id
+-spec establish_connection(binary(), binary(), binary(), binary()) -> ok | {error, not_found}.
 establish_connection(BridgeId, UserId, ConnectionId, Name) ->
+    CurrentTime = erlang:system_time(second),
+    Transaction = fun() ->
+                          case mnesia:read(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId) of
+                              [] ->
+                                  {error, not_found};
+                              [ #user_to_bridge_pending_connection_entry{ bridge_id=BridgeId
+                                                                        , user_id=UserId
+                                                                        } ] ->
+                                  ok = mnesia:delete(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId, write),
+                                  {ok, ChannelId} = automate_channel_engine:create_channel(),
+
+                                  Entry = #user_to_bridge_connection_entry{ id=ConnectionId
+                                                                          , bridge_id=BridgeId
+                                                                          , user_id=UserId
+                                                                          , channel_id=ChannelId
+                                                                          , name=Name
+                                                                          , creation_time=CurrentTime
+                                                                          },
+                                  ok = mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE, Entry, write)
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+%% Establish connection confirming Bridge id and recovering user.
+-spec establish_connection(binary(), binary(), binary()) -> ok | {error, not_found}.
+establish_connection(BridgeId, ConnectionId, Name) ->
     CurrentTime = erlang:system_time(second),
     Transaction = fun() ->
                           case mnesia:read(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId) of
@@ -331,7 +364,7 @@ get_all_connections(UserId, BridgeId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec connection_id_to_internal_user_id(binary(), binary()) -> {ok, binary()}.
+-spec connection_id_to_internal_user_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
 connection_id_to_internal_user_id(ConnectionId, ServicePortId) ->
     Transaction = fun() ->
                           MatchHead = #user_to_bridge_connection_entry{ id='$1'

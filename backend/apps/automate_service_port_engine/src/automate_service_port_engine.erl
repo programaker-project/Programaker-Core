@@ -93,6 +93,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                    automate_bridge_engine_messages_from_bridge,
                                    [ServicePortId]),
     case Unpacked of
+        %% This has to be first because of the use of MessageId here
         AdviceMsg = #{ <<"type">> := <<"ADVICE_SET">>, <<"message_id">> := MessageId } ->
             AdviceTaken = apply_advice(AdviceMsg, ServicePortId),
             answer_advice_taken(AdviceTaken, MessageId, self());
@@ -120,7 +121,20 @@ from_service_port(ServicePortId, UserId, Msg) ->
                 #{ <<"content">> := B64Content } ->
                     Data = base64:decode(B64Content),
                     ok = write_icon(Data, ServicePortId)
-                end;
+            end;
+
+        #{ <<"type">> := <<"ESTABLISH_CONNECTION">>
+         , <<"value">> := #{ <<"connection_id">> := ConnectionId
+                           , <<"name">> := Name
+                           }
+         } ->
+            case ?BACKEND:establish_connection(ServicePortId, ConnectionId, Name) of
+                ok ->
+                    io:fwrite("[~p] Established connection: ~p~n", [ServicePortId, ConnectionId]);
+                {error, Reason} ->
+                    io:fwrite("[~p] Tried to establish connection but failed: ~p~n", [ServicePortId, Reason])
+            end;
+
         #{ <<"type">> := <<"NOTIFICATION">>
          , <<"key">> := Key
          , <<"to_user">> := ToUser
@@ -153,18 +167,22 @@ from_service_port(ServicePortId, UserId, Msg) ->
                     %% messages had been sent
                     ok;
                 _ ->
-                    {ok, ToUserInternalId} = ?BACKEND:connection_id_to_internal_user_id(
-                                                ToUser, ServicePortId),
-                    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                                    ServicePortId, ToUserInternalId),
+                    case ?BACKEND:connection_id_to_internal_user_id(
+                                                ToUser, ServicePortId) of
+                        {ok, ToUserInternalId} ->
+                            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
+                                                            ServicePortId, ToUserInternalId),
 
-                    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
-                                         Module, ToUserInternalId),
-                    ok = automate_channel_engine:send_to_channel(MonitorId,
-                                                                 #{ <<"key">> => Key
-                                                                  , <<"value">> => Value
-                                                                  , <<"content">> => Content
-                                                                  })
+                            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
+                                                 Module, ToUserInternalId),
+                            ok = automate_channel_engine:send_to_channel(MonitorId,
+                                                                         #{ <<"key">> => Key
+                                                                          , <<"value">> => Value
+                                                                          , <<"content">> => Content
+                                                                          });
+                        {error, Reason} ->
+                            io:fwrite("[~p] Error propagating notification: ~p~n", [ServicePortId, Reason])
+                    end
             end
     end.
 
