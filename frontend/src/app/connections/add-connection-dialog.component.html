@@ -4,7 +4,7 @@
     <div class="collection-grid">
         <div class="grid grid-pad">
             <div class="row">
-                <div *ngFor="let bridge of availableBridges" class="col-sm-4">
+                <div *ngFor="let bridge of availableBridges" class="col-sm-6">
                     <mat-card [ngClass]="{
                         'module': true,
                         'bridge': true,
@@ -28,7 +28,7 @@
         color="primary"
         mat-button
         [disabled]="selectedIndex === null"
-        [mat-dialog-close]="true"
+        (click)="this.establishConnection()"
         mat-raised-button>Add connection</button>
 
 </mat-dialog-actions>

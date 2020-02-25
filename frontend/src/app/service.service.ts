@@ -66,4 +66,17 @@ export class ServiceService {
                         ContentType.Json),
                 }).toPromise()) as Promise<{success: boolean}>);
     }
+
+    async directRegisterService(bridge_id: string): Promise<{success: boolean}> {
+        const data = {};
+
+        const url = await this.getServiceRegistryUrl(bridge_id)
+        return (this.http.post(
+            url, JSON.stringify(data),
+            {
+                headers: this.sessionService.addContentType(
+                    this.sessionService.getAuthHeader(),
+                    ContentType.Json),
+            }).toPromise()) as Promise<{success: boolean}>;
+    }
 }

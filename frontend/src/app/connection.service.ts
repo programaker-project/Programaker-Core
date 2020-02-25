@@ -60,7 +60,7 @@ export class ConnectionService {
         // But it works for the __link__ part, which is what we need now.
         return {
             id: data.id,
-            enabled: data.is_connetcted,
+            enabled: data.is_connected,
             link: `/api/v0/users/test/services/id/${data.id}`,
             name: data.name,
         }

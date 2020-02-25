@@ -35,16 +35,30 @@ interface ServiceEnableTextEntry {
 type ServiceEnableEntry = ServiceEnableTextEntry | ServiceEnableTagEntry;
 type ServiceEnableType = 'message' | 'form';
 
-interface ServiceEnableMessage {
+interface TwoStepEnableMetadata {
+    service_id: string,
+    connection_id: string,
+}
+
+export interface ServiceEnableMessage {
     type: ServiceEnableType;
     value: {
         form: ServiceEnableEntry[]
     },
-    metadata?: any,
+    metadata?: TwoStepEnableMetadata,
+}
+
+interface DirectServiceEnableMetadata {
+    service_id: string,
+}
+
+type DirectEnable = {
+    type: 'direct',
+    metadata: DirectServiceEnableMetadata,
 }
 
 
-type ServiceEnableHowTo = ServiceEnableMessage;
+type ServiceEnableHowTo = ServiceEnableMessage | DirectEnable;
 
 export {
     Service,

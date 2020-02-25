@@ -95,5 +95,8 @@ extend_how_to(HowTo=#{ <<"type">> := <<"form">>
 extend_how_to(HowTo=#{ <<"type">> := <<"form">> }, ServiceId) ->
     HowTo#{ <<"metadata">> => #{ <<"service_id">> => ServiceId } };
 
+extend_how_to(HowTo=#{ <<"type">> := <<"direct">> }, ServiceId) ->
+    HowTo#{ <<"metadata">> => #{ <<"service_id">> => ServiceId } };
+
 extend_how_to(HowTo, _ServiceId) ->
     HowTo.

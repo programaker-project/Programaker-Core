@@ -42,7 +42,7 @@ type BridgeConnectionWithIconUrl = { conn: BridgeConnection, extra: { icon_url?:
 })
 export class NewDashboardComponent {
     programs: ProgramMetadata[] = [];
-    connections: BridgeConnectionWithIconUrl[] = [];
+    connections: BridgeConnectionWithIconUrl[] = null;
     session: Session = null;
 
     constructor(

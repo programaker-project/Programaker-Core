@@ -5,7 +5,7 @@ import { ServiceService } from '../service.service';
 import { BridgeService } from '../bridges/bridge.service';
 
 import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
-import { AvailableService, ServiceEnableHowTo } from '../service';
+import { AvailableService, ServiceEnableHowTo, ServiceEnableMessage } from '../service';
 
 
 import { MatDialog } from '@angular/material/dialog';
@@ -67,13 +67,39 @@ export class AddConnectionDialogComponent {
                         service.state = 'selected';
                     }
 
-                    this.showHowToEnable(service, howToEnable)
+                    if (howToEnable.type === 'direct') {
+                        return;
+                    }
+
+                    this.showHowToEnable(service, howToEnable as ServiceEnableMessage);
                 }).catch(err => {
                     service.state = 'error';
                     console.error(err);
                 });
         }
     }
+
+    establishConnection(): void {
+        if (this.selectedIndex === null) {
+            return;
+        }
+
+        if (this.availableBridges[this.selectedIndex].state !== 'selected') {
+            return;
+        }
+
+        console.log("Connecting to:", this.availableBridges[this.selectedIndex]);
+        this.serviceService.directRegisterService(this.availableBridges[this.selectedIndex].bridge.id)
+            .then((result) => {
+                console.log("Result:", result);
+                if (result.success) {
+                    this.dialogRef.close();
+                }
+            }).catch((error) => {
+                console.error("Error registering", error);
+            });
+    }
+
 
     showHowToEnable(service: BridgeData, howTo: ServiceEnableHowTo): void {
         service.state = 'selected';

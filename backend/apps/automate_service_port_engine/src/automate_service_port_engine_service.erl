@@ -57,24 +57,41 @@ is_enabled_for_user(_Username, _Params) ->
 get_how_to_enable(#{ user_id := UserId }, [ServicePortId]) ->
     {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, UserId),
     {ok, #{ <<"result">> := Result }} = automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId),
-    {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }}.
+    case Result of
+        null ->
+            {ok, #{ <<"type">> => <<"direct">> } };
+        _ ->
+            {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }}
+    end.
 
 send_registration_data(UserId, RegistrationData, [ServicePortId], Properties) ->
     ConnectionId = case Properties of
-                       #{ <<"connection_id">> := ConnId } -> ConnId;
+                       #{ <<"connection_id">> := ConnId } when is_binary(ConnId) -> ConnId;
                        _ ->
-                           {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(UserId, ServicePortId),
+                           {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, UserId),
                            TemporaryConnectionId
                    end,
+
     {ok, Result} = automate_service_port_engine:send_registration_data(ServicePortId, RegistrationData, ConnectionId),
-    ok = case Result of
-             #{ <<"success">> := true } ->
-                 Name = get_name_from_result(Result),
-                 ok = ?BACKEND:establish_connection(ServicePortId, UserId, ConnectionId, Name);
-             _ ->
-                 ok
+    PassedResult = case Result of
+                       #{ <<"success">> := true } ->
+                           Name = get_name_from_result(Result),
+                           ok = ?BACKEND:establish_connection(ServicePortId, UserId, ConnectionId, Name),
+                           Result;
+
+                       #{ <<"success">> := false, <<"error">> := <<"No registerer available">> } ->
+                           %% For compatibility with plaza/programaker-bridge library before connections
+                           %% where introduced.
+                           Name = get_name_from_result(Result),
+                           ok = ?BACKEND:establish_connection(ServicePortId, UserId, ConnectionId, Name),
+                           Result#{ <<"success">> => true
+                                  , <<"error">> => null
+                                  };
+
+                       _ ->
+                           Result
          end,
-    {ok, Result}.
+    {ok, PassedResult}.
 
 get_name_from_result(#{ <<"data">> := #{ <<"name">> := Name } }) ->
     Name;

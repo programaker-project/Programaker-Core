@@ -8,7 +8,7 @@
                         <mat-icon class="action-icon">add</mat-icon>
                     </mat-card>
                 </div>
-                <div *ngIf="connections.length == 0">
+                <div *ngIf="(connections !== null) && (connections.length == 0)">
                     <div class="integrated-call-to-action call-to-left">
                         <mat-icon class="action-icon">arrow_back</mat-icon>
                         To start, connect a service.
@@ -17,10 +17,10 @@
                 <div *ngFor="let connection of connections">
                     <mat-card class="module connection"
                         role="button" (click)="openConnection(connection.conn)">
-                        <img class="icon" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.name }}@{{ connection.conn.bridge_name }}" />
+                        <img class="icon" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
 
                         <span *ngIf="!connection.extra.icon_url" class="connection-name">
-                            {{ connection.conn.name }}@{{connection.conn.bridge_name}}
+                            {{ connection.conn.bridge_name }}
                         </span>
                     </mat-card>
                 </div>
