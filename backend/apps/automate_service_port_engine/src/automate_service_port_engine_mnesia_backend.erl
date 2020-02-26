@@ -346,7 +346,12 @@ list_custom_blocks(UserId) ->
                           , maps:from_list(
                               lists:filter(fun (X) -> X =/= none end,
                                            lists:map(fun (PortId) ->
-                                                             list_blocks_for_port(PortId)
+                                                             case is_user_connected_to_bridge(UserId, PortId) of
+                                                                 {ok, false} ->
+                                                                     none;
+                                                                 _ ->
+                                                                     list_blocks_for_port(PortId)
+                                                             end
                                                      end,
                                                      Services)))}
                   end,
