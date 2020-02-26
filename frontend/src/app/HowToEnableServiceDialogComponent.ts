@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { ServiceEnableHowTo, ServiceEnableMessage, ServiceEnableEntry, ServiceEnableType } from './service';
+import { ServiceEnableMessage, ServiceEnableEntry, ServiceEnableType } from './service';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SessionService } from './session.service';
 import { ServiceService } from './service.service';
@@ -15,7 +15,7 @@ import { ServiceService } from './service.service';
 
 export class HowToEnableServiceDialogComponent {
     form = {};
-    service: ServiceEnableHowTo;
+    service: ServiceEnableMessage;
     renderingZone: HTMLDivElement;
     type: ServiceEnableType;
 
@@ -23,7 +23,7 @@ export class HowToEnableServiceDialogComponent {
         public dialogRef: MatDialogRef<HowToEnableServiceDialogComponent>,
         public serviceService: ServiceService,
         @Inject(MAT_DIALOG_DATA)
-        public data: ServiceEnableHowTo
+        public data: ServiceEnableMessage
     ) {
         this.service = data;
 
@@ -36,7 +36,7 @@ export class HowToEnableServiceDialogComponent {
         });
     }
 
-    render(data: ServiceEnableHowTo): HTMLElement {
+    render(data: ServiceEnableMessage): HTMLElement {
         this.type = data.type;
 
         if (data.type === 'message') {

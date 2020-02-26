@@ -40,7 +40,7 @@ interface TwoStepEnableMetadata {
     connection_id: string,
 }
 
-export interface ServiceEnableMessage {
+interface ServiceEnableMessage {
     type: ServiceEnableType;
     value: {
         form: ServiceEnableEntry[]
