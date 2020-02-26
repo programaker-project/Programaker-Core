@@ -54,28 +54,15 @@
                 </div>
             </div>
         </div>
-        <div class="user-examples col col-sm-4">
+        <div *ngIf="tutorials && tutorials.length > 0" class="user-examples col col-sm-4">
             <h1>Program ideas</h1>
             <div class="section-explanation">
                 Click one to open a build guide.
             </div>
-            <mat-card role="button" class="module example">
-                <div class="description">Get weather prediction on the morning</div>
+            <mat-card *ngFor="let tutorial of tutorials" role="button" class="module example">
+                <div class="description">{{ tutorial.description }}</div>
                 <div class="connection-icon-list">
-                    <img src="/assets/icons/telegram_logo.png" />
-                </div>
-            </mat-card>
-            <mat-card role="button" class="module example">
-                <div class="description">Greet when followed</div>
-                <div class="connection-icon-list">
-                    <img src="/assets/icons/instagram_logo.png" />
-                </div>
-            </mat-card>
-            <mat-card role="button" class="module example">
-                <div class="description">Add saved messages to Google Sheets</div>
-                <div class="connection-icon-list">
-                    <img src="/assets/icons/twitter_logo.png" />
-                    <img src="/assets/icons/google_sheets_logo.svg" />
+                    <img *ngFor="let icon of tutorial.icons" src="{{ icon }}" />
                 </div>
             </mat-card>
         </div>

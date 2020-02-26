@@ -46,6 +46,24 @@ export class NewDashboardComponent {
     connections: BridgeConnectionWithIconUrl[] = null;
     bridgeIcons: { [key:string]: string} = {};
     session: Session = null;
+    tutorials: { description: string, icons: string[] }[] = [
+        // // Example data
+        // {
+        //     description: "Get weather prediction on the morning",
+        //     icons: [ "/assets/icons/telegram_logo.png" ],
+        // },
+        // {
+        //     description: "Greet when followed",
+        //     icons: [ "/assets/icons/instagram_logo.png" ],
+        // },
+        // {
+        //     description: "Add saved messages to Google Sheets",
+        //     icons: [
+        //         "/assets/icons/twitter_logo.png",
+        //         "/assets/icons/google_sheets_logo.svg",
+        //     ],
+        // },
+    ];
 
     constructor(
         private programService: ProgramService,
