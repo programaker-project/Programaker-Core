@@ -114,5 +114,6 @@
 -record(user_to_bridge_pending_connection_entry, { id :: binary() | ?MNESIA_SELECTOR
                                                  , bridge_id :: binary() | ?MNESIA_SELECTOR
                                                  , user_id :: binary() | ?MNESIA_SELECTOR
+                                                 , channel_id :: binary() | ?MNESIA_SELECTOR
                                                  , creation_time :: non_neg_integer() | ?MNESIA_SELECTOR
                                                  }).

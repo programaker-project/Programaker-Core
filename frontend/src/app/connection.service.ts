@@ -1,31 +1,21 @@
-import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { Service, AvailableService, ServiceEnableHowTo } from './service';
-import { BridgeService } from './bridges/bridge.service';
+import { AvailableService } from './service';
 import { BridgeIndexData } from './bridges/bridge';
-import * as API from './api-config';
 
 import { BridgeConnection } from './connection';
 
 import { SessionService } from './session.service';
-import { ServiceService } from './service.service';
 import { HttpClient } from '@angular/common/http';
-import { ContentType } from './content-type';
+import { toWebsocketUrl } from './utils';
 
-/**
- * This is a Mock to experiment with connection-management flows.
- *
- */
 
 @Injectable()
 export class ConnectionService {
     constructor(
         private http: HttpClient,
-        private bridgeService: BridgeService,
         private sessionService: SessionService
     ) {
         this.http = http;
-        this.bridgeService = bridgeService;
         this.sessionService = sessionService;
     }
 
@@ -41,6 +31,13 @@ export class ConnectionService {
         return root + '/connections/established';
     }
 
+    async getWaitForConnectionUrl(connection_id: string): Promise<string> {
+        const root = await this.sessionService.getApiRootForUserId();
+
+        const url = root + '/connections/pending/' + connection_id + '/wait';
+        return toWebsocketUrl(url);
+    }
+
     async getAvailableBridgesForNewConnection(): Promise<BridgeIndexData[]> {
         const url = await this.getAvailableConnectionsUrl()
         return (this.http.get(url,
@@ -53,6 +50,45 @@ export class ConnectionService {
         return (this.http.get(url,
                               { headers: this.sessionService.getAuthHeader() }
                              ).toPromise() as Promise<BridgeConnection[]>);
+    }
+
+    async waitForPendingConnectionEstablished(connection_id: string): Promise<boolean> {
+        const url = await this.getWaitForConnectionUrl(connection_id);
+
+        return new Promise((resolve, reject) => {
+            const websocket = new WebSocket(url);
+            let completed = false;
+
+            websocket.onopen = (() => {});
+
+            websocket.onmessage = ((ev) => {
+                const data = JSON.parse(ev.data);
+                if (data.type === 'connection_established') {
+                    try {
+                        websocket.close();
+
+                    }
+                    catch(ex) {
+                        console.warn("Error closing pending connection wait websocket", ex);
+                    }
+
+                    completed = true;
+                    resolve(data.success);
+                }
+            });
+
+            websocket.onclose = (() => {
+                if (!completed) {
+                    reject("closed before completion");
+                }
+            });
+
+            websocket.onerror = ((ev) => {
+                if (!completed) {
+                    reject(ev);
+                }
+            });
+        })
     }
 
     toAvailableService(data: BridgeIndexData): AvailableService {

@@ -110,10 +110,14 @@ export class AddConnectionDialogComponent {
         }
 
         console.log(howTo);
+        const backchannel = {howTo, success: false};
         const dialogRef = this.dialog.open(HowToEnableServiceDialogComponent, {
-            data: howTo
+            data: backchannel
         }).afterClosed().subscribe({
             next: () => {
+                if (backchannel.success) {
+                    this.dialogRef.close();
+                }
                 this.availableBridges[this.selectedIndex].state = 'waiting';
                 this.selectedIndex = null;
             }

@@ -7,6 +7,7 @@ import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
+import { toWebsocketUrl } from './utils';
 
 @Injectable()
 export class ProgramService {
@@ -19,13 +20,6 @@ export class ProgramService {
     ) {
         this.http = http;
         this.sessionService = sessionService;
-    }
-
-    private toWebsocketUrl(url: string): string {
-        if (url.startsWith('/')) { // We need an absolute address for this
-            url = document.location.protocol + '//' + document.location.host + url;
-        }
-        return url.replace(/^http/, 'ws');
     }
 
     private addTokenQueryString(url: string, token: string): string {
@@ -70,7 +64,7 @@ export class ProgramService {
     private async getProgramStreamingLogsUrl(programUserId: string, program_id: string) {
         const token = this.sessionService.getToken();
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
-        return this.addTokenQueryString(this.toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/communication'),
+        return this.addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/communication'),
                                   token,
                                  );
     }

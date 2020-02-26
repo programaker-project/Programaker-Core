@@ -25,6 +25,7 @@
 
         , listen_bridge/2
         , list_established_connections/1
+        , get_pending_connection_info/1
         ]).
 
 -include("records.hrl").
@@ -237,6 +238,10 @@ get_bridge_info(BridgeId) ->
 -spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
 list_established_connections(UserId) ->
     {ok, _Connections} = ?BACKEND:list_established_connections(UserId).
+
+-spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
+get_pending_connection_info(ConnectionId) ->
+    ?BACKEND:get_pending_connection_info(ConnectionId).
 
 %%====================================================================
 %% Internal functions

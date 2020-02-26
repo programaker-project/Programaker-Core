@@ -51,6 +51,8 @@ start_link() ->
 
                         , {"/api/v0/users/id/:user_id/connections/available", automate_rest_api_connections_available_root, []}
                         , {"/api/v0/users/id/:user_id/connections/established", automate_rest_api_connections_established_root, []}
+                        , {"/api/v0/users/id/:user_id/connections/pending/:connection_id/wait", automate_rest_api_connections_pending_wait, []}
+
                         , {"/api/v0/users/:user_id/bridges/", automate_rest_api_service_ports_root, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/callback/:callback", automate_rest_api_bridge_callback, []}

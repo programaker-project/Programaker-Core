@@ -17,6 +17,7 @@
         , get_user_service_ports/1
         , list_bridge_channels/1
         , list_established_connections/1
+        , get_pending_connection_info/1
 
         , gen_pending_connection/2
         , establish_connection/4
@@ -90,12 +91,15 @@ create_service_port(UserId, ServicePortName) ->
 gen_pending_connection(BridgeId, UserId) ->
     ConnectionId = generate_id(),
     CurrentTime = erlang:system_time(second),
-    Entry = #user_to_bridge_pending_connection_entry{ id=ConnectionId
-                                                    , bridge_id=BridgeId
-                                                    , user_id=UserId
-                                                    , creation_time=CurrentTime
-                                                    },
+
     Transaction = fun() ->
+                          {ok, ChannelId} = automate_channel_engine:create_channel(),
+                          Entry = #user_to_bridge_pending_connection_entry{ id=ConnectionId
+                                                                          , bridge_id=BridgeId
+                                                                          , user_id=UserId
+                                                                          , channel_id=ChannelId
+                                                                          , creation_time=CurrentTime
+                                                                          },
                           ok = mnesia:write(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, Entry, write),
                           {ok, ConnectionId}
                   end,
@@ -116,9 +120,9 @@ establish_connection(BridgeId, UserId, ConnectionId, Name) ->
                                   {error, not_found};
                               [ #user_to_bridge_pending_connection_entry{ bridge_id=BridgeId
                                                                         , user_id=UserId
+                                                                        , channel_id=ChannelId
                                                                         } ] ->
                                   ok = mnesia:delete(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId, write),
-                                  {ok, ChannelId} = automate_channel_engine:create_channel(),
 
                                   Entry = #user_to_bridge_connection_entry{ id=ConnectionId
                                                                           , bridge_id=BridgeId
@@ -127,10 +131,14 @@ establish_connection(BridgeId, UserId, ConnectionId, Name) ->
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
                                                                           },
-                                  ok = mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE, Entry, write)
+                                  ok = mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE, Entry, write),
+                                  {ok, ChannelId}
                           end
                   end,
     case mnesia:transaction(Transaction) of
+        {atomic, {ok, ChannelId}} ->
+            ok = automate_channel_engine:send_to_channel(ChannelId, connection_established),
+            ok;
         {atomic, Result} ->
             Result;
         {aborted, Reason} ->
@@ -147,9 +155,9 @@ establish_connection(BridgeId, ConnectionId, Name) ->
                                   {error, not_found};
                               [ #user_to_bridge_pending_connection_entry{ bridge_id=BridgeId
                                                                         , user_id=UserId
+                                                                        , channel_id=ChannelId
                                                                         } ] ->
                                   ok = mnesia:delete(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId, write),
-                                  {ok, ChannelId} = automate_channel_engine:create_channel(),
 
                                   Entry = #user_to_bridge_connection_entry{ id=ConnectionId
                                                                           , bridge_id=BridgeId
@@ -158,10 +166,14 @@ establish_connection(BridgeId, ConnectionId, Name) ->
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
                                                                           },
-                                  ok = mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE, Entry, write)
+                                  ok = mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE, Entry, write),
+                                  {ok, ChannelId}
                           end
                   end,
     case mnesia:transaction(Transaction) of
+        {atomic, {ok, ChannelId}} ->
+            ok = automate_channel_engine:send_to_channel(ChannelId, connection_established),
+            ok;
         {atomic, Result} ->
             Result;
         {aborted, Reason} ->
@@ -454,6 +466,24 @@ list_established_connections(UserId) ->
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
+
+-spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
+get_pending_connection_info(ConnectionId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId) of
+                              [] ->
+                                  {error, not_found};
+                              [ Connection ] ->
+                                  {ok, Connection}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
 delete_bridge(UserId, BridgeId) ->

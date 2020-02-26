@@ -3,6 +3,7 @@ import { ServiceEnableMessage, ServiceEnableEntry, ServiceEnableType } from './s
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SessionService } from './session.service';
 import { ServiceService } from './service.service';
+import { ConnectionService } from './connection.service';
 
 @Component({
     selector: 'app-how-to-enable-service-dialog',
@@ -10,7 +11,7 @@ import { ServiceService } from './service.service';
     styleUrls: [
         'how-to-enable-service-dialog.css',
     ],
-    providers: [SessionService, ServiceService],
+    providers: [ConnectionService, SessionService, ServiceService],
 })
 
 export class HowToEnableServiceDialogComponent {
@@ -18,21 +19,33 @@ export class HowToEnableServiceDialogComponent {
     service: ServiceEnableMessage;
     renderingZone: HTMLDivElement;
     type: ServiceEnableType;
+    backchannel: {success: boolean};
 
     constructor(
         public dialogRef: MatDialogRef<HowToEnableServiceDialogComponent>,
         public serviceService: ServiceService,
+        public connectionService: ConnectionService,
         @Inject(MAT_DIALOG_DATA)
-        public data: ServiceEnableMessage
+        public data: {howTo: ServiceEnableMessage, success: boolean}
     ) {
-        this.service = data;
+        this.backchannel = data;
+        this.service = data.howTo;
 
         dialogRef.afterOpened().subscribe(() => {
             this.renderingZone = (document
                 .getElementById(dialogRef.id)
                 .getElementsByClassName("rendering-zone")[0]) as HTMLDivElement;
 
-            this.renderingZone.appendChild(this.render(data));
+            this.renderingZone.appendChild(this.render(data.howTo));
+
+            if (data.howTo.type === 'message') {
+                // Open websocket to monitor for side-channel connection
+                (this.connectionService.waitForPendingConnectionEstablished(data.howTo.metadata.connection_id)
+                 .then(success => {
+                     this.backchannel.success = success;
+                     this.dialogRef.close();
+                 }))
+            }
         });
     }
 
@@ -74,7 +87,7 @@ export class HowToEnableServiceDialogComponent {
             return element;
         }
         else if (entry.type === 'tag') {
-            let element;
+            let element: HTMLElement;
             if (entry.tag === 'u') {
                 element = document.createElement('u');
             }
@@ -115,7 +128,7 @@ export class HowToEnableServiceDialogComponent {
                     }
 
                     if (entry.properties.name) {
-                        this.input_controls_field(element, entry.properties.name);
+                        this.input_controls_field(element as HTMLInputElement, entry.properties.name);
                     }
                 }
             }
@@ -141,10 +154,11 @@ export class HowToEnableServiceDialogComponent {
 
     send_form(): void {
         this.serviceService.registerService(this.form,
-                                            this.data.metadata.service_id,
-                                            this.data.metadata.connection_id)
+                                            this.service.metadata.service_id,
+                                            this.service.metadata.connection_id)
             .then((result) => {
                 if (result.success) {
+                    this.backchannel.success = true;
                     this.dialogRef.close();
                 }
             }).catch((error) => {
@@ -153,6 +167,7 @@ export class HowToEnableServiceDialogComponent {
     }
 
     onNoClick(): void {
+        this.backchannel.success = false;
         this.dialogRef.close();
     }
 }

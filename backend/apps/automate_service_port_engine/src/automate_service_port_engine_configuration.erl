@@ -74,7 +74,8 @@ get_versioning(Nodes) ->
                                       , records=[ id
                                                 , bridge_id
                                                 , user_id
-                                                , name
+                                                , channel_id
+                                                , creation_time
                                                 ]
                                       , record_name=user_to_bridge_pending_connection_entry
                                       }, Nodes),
