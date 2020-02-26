@@ -39,7 +39,7 @@ digraph g {
     label="Storage";
 
     // REGISTERED_USERS_TABLE | automate_registered_users
-    registered_user_entry[label="*Registered user* | <pk> id | username | password | email | status | registration_time"];
+    registered_user_entry[label="*Registered user* | <pk> id | username | password | email | status | registration_time | is_admin | is_advanced"];
 
     // USER_SESSIONS_TABLE | automate_user_sessions
     user_session_entry[label="*User session* | <pk> session_id | <f0> user_id | session_start_time | session_last_used_time"];
@@ -134,8 +134,10 @@ digraph g {
     pending_connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
     pending_connection_entry:f2 -> live_channels_table_entry:pk
 
-    bridge_icon_entry[color=red,
-                      label="*Bridge icon* | <pk> id | num_references | creation_time"]
+    tutorials[color=red,
+              label="*Tutorials | <pk> id | link | <f0> bridges_required | is_public"]
+    tutorials:f0 -> service_port_entry:pk
+
   }
 
   subgraph group_core_services {
