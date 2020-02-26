@@ -89,7 +89,7 @@ get_versioning(Nodes) ->
                             end
                     }
 
-                    #database_version_transformation
+                  , #database_version_transformation
                     %% Add *icons* to service_configuration
                     { id=2
                     , apply=fun() ->
