@@ -93,6 +93,10 @@ owned_private_blocks_appear() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, OwnerUserId),
+    ok = ?BACKEND:establish_connection(ServicePortId, OwnerUserId, ConnectionId, undefined),
+
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
 
     check_test_block(CustomBlock).
@@ -112,6 +116,15 @@ non_owned_private_blocks_dont_appear() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    case ?BACKEND:gen_pending_connection(ServicePortId, RequesterUserId) of
+        {ok, ConnectionId} ->
+            %% TODO This connection should *not* be possible
+            ?BACKEND:establish_connection(ServicePortId, RequesterUserId, ConnectionId, undefined);
+        _ ->
+            ok
+    end,
+
     {ok, Results} = ?APPLICATION:list_custom_blocks(RequesterUserId),
     ?assertEqual(#{}, Results).
 
@@ -129,6 +142,10 @@ owned_public_blocks_appear() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, OwnerUserId),
+    ok = ?BACKEND:establish_connection(ServicePortId, OwnerUserId, ConnectionId, undefined),
+
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
 
     check_test_block(CustomBlock).
@@ -147,6 +164,10 @@ non_owned_public_blocks_appear() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, RequesterUserId),
+    ok = ?BACKEND:establish_connection(ServicePortId, RequesterUserId, ConnectionId, undefined),
+
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(RequesterUserId),
 
     check_test_block(CustomBlock).
@@ -164,6 +185,10 @@ owned_delete_bridge_blocks() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(BridgeId, OwnerUserId),
+    ok = ?BACKEND:establish_connection(BridgeId, OwnerUserId, ConnectionId, undefined),
+
     {ok, #{ BridgeId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
     %% Blocks are created
     check_test_block(CustomBlock),
