@@ -17,6 +17,7 @@
 
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
+-define(FORMATTING, automate_rest_api_utils_formatting).
 
 -record(state, { user_id }).
 
@@ -99,15 +100,8 @@ to_map(#user_to_bridge_connection_entry{ id=Id
      , <<"name">> => serialize_string_or_undefined(Name)
      , <<"bridge_id">> => BridgeId
      , <<"bridge_name">> => BridgeName
-     , <<"icon">> => serialize_icon(Icon)
+     , <<"icon">> => ?FORMATTING:serialize_icon(Icon)
      }.
-
-serialize_icon(undefined) ->
-    null;
-serialize_icon({url, Url}) ->
-    #{ <<"url">> => Url };
-serialize_icon({hash, HashType, HashResult}) ->
-    #{ HashType => HashResult }.
 
 serialize_string_or_undefined(undefined) ->
     null;

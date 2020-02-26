@@ -3,6 +3,7 @@
 -export([ format_message/1
         , serialize_logs/1
         , serialize_log_entry/1
+        , serialize_icon/1
         ]).
 
 -include("./records.hrl").
@@ -85,3 +86,11 @@ serialize_error_subtype(#invalid_list_index_type{ list_name=ListName
 serialize_error_subtype(#unknown_operation{}) ->
     #{ type => unknown_operation
      }.
+
+
+serialize_icon(undefined) ->
+    null;
+serialize_icon({url, Url}) ->
+    #{ <<"url">> => Url };
+serialize_icon({hash, HashType, HashResult}) ->
+    #{ HashType => HashResult }.

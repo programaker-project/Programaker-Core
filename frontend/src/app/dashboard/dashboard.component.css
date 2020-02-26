@@ -163,3 +163,9 @@ mat-card.example > .description {
     width: 4ex;
     margin-left: 1ex;
 }
+
+.connection-icon-list > span > img {
+    max-height: 4ex;
+    width: 4ex;
+    margin-left: 1ex;
+}

@@ -26,6 +26,7 @@ import { BridgeService } from '../bridges/bridge.service';
 import { BridgeIndexData } from '../bridges/bridge';
 import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component';
 import { ApiHost } from '../api-config';
+import { iconDataToUrl } from '../utils';
 
 type BridgeConnectionWithIconUrl = { conn: BridgeConnection, extra: { icon_url?: string}};
 
@@ -43,6 +44,7 @@ type BridgeConnectionWithIconUrl = { conn: BridgeConnection, extra: { icon_url?:
 export class NewDashboardComponent {
     programs: ProgramMetadata[] = [];
     connections: BridgeConnectionWithIconUrl[] = null;
+    bridgeIcons: { [key:string]: string} = {};
     session: Session = null;
 
     constructor(
@@ -52,6 +54,7 @@ export class NewDashboardComponent {
         private connectionService: ConnectionService,
         private router: Router,
         public dialog: MatDialog,
+        public bridgeService: BridgeService,
     ) {
         this.programService = programService;
         this.sessionService = sessionService;
@@ -73,18 +76,17 @@ export class NewDashboardComponent {
 
                     this.connectionService.getConnections()
                         .then(connections => this.connections = connections.map((v, _i, _a) => {
-                            let icon_url = undefined;
-                            if (v.icon) {
-                                if ((v.icon as {url: string}).url) {
-                                    icon_url = (v.icon as {url: string});
-                                }
-                                else if ((v.icon as HashedIcon).sha256) {
-                                    icon_url = ApiHost + '/assets/icons/' + v.bridge_id;
-                                }
-                            }
+                            const icon_url = iconDataToUrl(v.icon, v.bridge_id);
+
 
                             return { conn: v, extra: {icon_url: icon_url }};
                         }));
+
+                    this.bridgeService.listUserBridges().then(bridgeData => {
+                        for (const bridge of bridgeData){
+                            this.bridgeIcons[bridge.id] = iconDataToUrl(bridge.icon, bridge.id);
+                        }
+                    });
                 }
             })
             .catch(e => {

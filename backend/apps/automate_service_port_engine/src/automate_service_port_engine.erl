@@ -270,18 +270,24 @@ is_module_connectable_bridge(_, _) ->
 %% Internal functions
 %%====================================================================
 
--spec add_service_port_extra(#service_port_entry{}) -> #service_port_entry_extra{}.
-add_service_port_extra(#service_port_entry{ id=Id
-                                          , name=Name
-                                          , owner=Owner
-                                          , service_id=ServiceId
-                                          }) ->
+-spec add_service_port_extra({#service_port_entry{}, #service_port_configuration{}}) -> #service_port_entry_extra{}.
+add_service_port_extra({#service_port_entry{ id=Id
+                                           , name=Name
+                                           , owner=Owner
+                                           , service_id=ServiceId
+                                           }, Config}) ->
     {ok, IsConnected} = ?ROUTER:is_bridge_connected(Id),
+
+    BridgeIcon = case Config of
+                     undefined -> undefined;
+                     #service_port_configuration{ icon=Icon } -> Icon
+                 end,
     #service_port_entry_extra{ id=Id
                              , name=Name
                              , owner=Owner
                              , service_id=ServiceId
                              , is_connected=IsConnected
+                             , icon=BridgeIcon
                              }.
 
 set_service_port_configuration(ServicePortId, Configuration, UserId) ->

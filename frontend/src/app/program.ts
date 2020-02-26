@@ -3,6 +3,7 @@ export class ProgramMetadata {
     name: string;
     link: string;
     enabled: boolean;
+    bridges_in_use: string[];
 }
 
 export type ProgramType = 'scratch_program';

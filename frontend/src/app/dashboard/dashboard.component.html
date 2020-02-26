@@ -46,7 +46,9 @@
                         role="button" (click)="openProgram(program)">
                         <h4>{{program.name}}</h4>
                         <div class="connection-icon-list">
-                            <img src="/assets/icons/telegram_logo.png" />
+                            <span *ngFor="let bridge of program.bridges_in_use">
+                                <img class="icon" *ngIf="bridgeIcons[bridge]" src="{{ bridgeIcons[bridge] }}" />
+                            </span>
                         </div>
                     </mat-card>
                 </div>

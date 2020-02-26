@@ -431,7 +431,7 @@ connection_id_to_internal_user_id(ConnectionId, ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_user_service_ports(binary()) -> {ok, [map()]}.
+-spec get_user_service_ports(binary()) -> {ok, [{#service_port_entry{}, #service_port_configuration{}}]}.
 get_user_service_ports(UserId) ->
     Transaction = fun() ->
                           MatchHead = #service_port_entry{ id='_'
@@ -443,7 +443,15 @@ get_user_service_ports(UserId) ->
                           ResultColumn = '$_',
                           Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
-                          {ok, mnesia:select(?SERVICE_PORT_TABLE, Matcher)}
+
+
+                          {ok, lists:map(fun(Entry=#service_port_entry{ id=Id }) ->
+                                                 Configuration = case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, Id) of
+                                                     [] -> undefined;
+                                                     [Config] -> Config
+                                                 end,
+                                                 {Entry, Configuration}
+                                            end, mnesia:select(?SERVICE_PORT_TABLE, Matcher)) }
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->

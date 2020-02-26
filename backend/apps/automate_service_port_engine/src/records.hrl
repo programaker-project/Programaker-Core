@@ -9,14 +9,6 @@
                             }).
 
 
--record(service_port_entry_extra, { id    :: binary()
-                                  , name  :: binary()
-                                  , owner :: binary() %% User id
-                                  , service_id :: binary() | 'undefined'
-                                                % ↓ Extra data
-                                  , is_connected :: boolean()
-                                  }).
-
 -type service_port_block_argument_type() :: binary(). %% <<"string">>
                                           %% | <<"integer">>
                                           %% | <<"float">>
@@ -73,6 +65,15 @@
                                     , icon :: undefined | supported_icon_type() | ?MNESIA_SELECTOR
                                     , allow_multiple_connections :: boolean() | ?MNESIA_SELECTOR
                                     }).
+
+-record(service_port_entry_extra, { id    :: binary()
+                                  , name  :: binary()
+                                  , owner :: binary() %% User id
+                                  , service_id :: binary() | 'undefined'
+                                                % ↓ Extra data
+                                  , is_connected :: boolean()
+                                  , icon :: supported_icon_type()
+                                  }).
 
 
 

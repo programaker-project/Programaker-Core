@@ -20,6 +20,7 @@
 
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
+-define(FORMATTING, automate_rest_api_utils_formatting).
 
 -record(state, {username}).
 
@@ -97,12 +98,14 @@ to_map(#service_port_entry_extra{ id=Id
                                 , owner=Owner
                                 , service_id=ServiceId
                                 , is_connected=IsConnected
+                                , icon=Icon
                                 }) ->
     #{ <<"id">> => Id
      , <<"name">> => Name
      , <<"owner">> => Owner
      , <<"service_id">> => ServiceId
      , <<"is_connected">> => IsConnected
+     , <<"icon">> => ?FORMATTING:serialize_icon(Icon)
      }.
 
 %% POST handler
