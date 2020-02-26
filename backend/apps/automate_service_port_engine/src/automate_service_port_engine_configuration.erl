@@ -80,6 +80,7 @@ get_versioning(Nodes) ->
                                       , record_name=user_to_bridge_pending_connection_entry
                                       }, Nodes),
 
+                                    %% TODO: Test this migration
                                     {atomic, ok} = mnesia:delete_table(automate_service_port_userid_obfuscation_table),
 
                                     ok = mnesia:wait_for_tables([ ?USER_TO_BRIDGE_CONNECTION_TABLE
@@ -102,6 +103,24 @@ get_versioning(Nodes) ->
                                                IsPublic, Blocks, undefined }
                                       end,
                                       [ id, service_name, service_id, is_public, blocks, icon ],
+                                      service_port_configuration
+                                     )
+                            end
+                    }
+
+                  , #database_version_transformation
+                    %% Add *allow_multiple_connection* to service_configuration table
+                    { id=3
+                    , apply=fun() ->
+                                    mnesia:transform_table(
+                                      ?SERVICE_PORT_CONFIGURATION_TABLE,
+                                      fun({service_port_configuration, Id, ServiceName, ServiceId,
+                                           IsPublic, Blocks, Icon }) ->
+                                              %% Replicate the entry. Just set 'allow_multiple_connections' to false.
+                                              {service_port_configuration, Id, ServiceName, ServiceId,
+                                               IsPublic, Blocks, Icon, false }
+                                      end,
+                                      [ id, service_name, service_id, is_public, blocks, icon, allow_multiple_connections ],
                                       service_port_configuration
                                      )
                             end

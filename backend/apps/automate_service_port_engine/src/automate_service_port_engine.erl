@@ -26,6 +26,7 @@
         , listen_bridge/2
         , list_established_connections/1
         , get_pending_connection_info/1
+        , is_module_connectable_bridge/2
         ]).
 
 -include("records.hrl").
@@ -243,6 +244,28 @@ list_established_connections(UserId) ->
 get_pending_connection_info(ConnectionId) ->
     ?BACKEND:get_pending_connection_info(ConnectionId).
 
+
+-spec is_module_connectable_bridge(binary(), module() | {module(), any()}) ->
+          false | {boolean(), {#service_port_entry{}, #service_port_configuration{}}}.
+is_module_connectable_bridge(UserId, {automate_service_port_engine_service, [ BridgeId | _ ]}) ->
+    %% It *is* a bridge. Only remains to check if a new connection can be established.
+    {ok, BridgeInfo, BridgeConfiguration} = ?BACKEND:get_all_bridge_info(BridgeId),
+    IsConnectable = case BridgeConfiguration of
+                        undefined -> false;
+                        #service_port_configuration{ allow_multiple_connections=true } ->
+                            true;
+                        #service_port_configuration{ allow_multiple_connections=false } ->
+                            {ok, Connected} = ?BACKEND:is_user_connected_to_bridge(UserId, BridgeId),
+                            not Connected
+                    end,
+    {IsConnectable, {BridgeInfo, BridgeConfiguration}};
+
+is_module_connectable_bridge(_, _) ->
+    %% Is not a bridge
+    false.
+
+
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -276,6 +299,7 @@ parse_configuration_map(ServicePortId,
                                , service_name=ServiceName
                                , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
                                , icon=get_icon_from_config(Config)
+                               , allow_multiple_connections=get_allow_multiple_connections_from_config(Config)
                                }.
 
 
@@ -288,6 +312,13 @@ get_icon_from_config(#{ <<"icon">> := #{ <<"sha256">> := Hash } }) ->
     Id;
 get_icon_from_config(_) ->
     undefined.
+
+-spec get_allow_multiple_connections_from_config(map()) -> boolean().
+get_allow_multiple_connections_from_config(#{ <<"allow_multiple_connections">> := AllowMultipleConnections })
+  when is_boolean(AllowMultipleConnections) ->
+    AllowMultipleConnections;
+get_allow_multiple_connections_from_config(_) ->
+    false.
 
 
 

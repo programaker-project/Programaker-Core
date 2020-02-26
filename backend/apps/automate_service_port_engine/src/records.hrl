@@ -71,6 +71,7 @@
                                     , is_public :: boolean() | ?MNESIA_SELECTOR
                                     , blocks :: [#service_port_block{}] | ?MNESIA_SELECTOR
                                     , icon :: undefined | supported_icon_type() | ?MNESIA_SELECTOR
+                                    , allow_multiple_connections :: boolean() | ?MNESIA_SELECTOR
                                     }).
 
 

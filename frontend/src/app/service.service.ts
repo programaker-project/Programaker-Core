@@ -27,7 +27,7 @@ export class ServiceService {
     }
 
     async getServiceEnableHowToUrl(service: AvailableService) {
-        return API.ApiHost + service.link + '/how-to-enable';
+        return service.link + '/how-to-enable';
     }
 
     async getServiceRegistryUrl(service_id: string) {
@@ -43,10 +43,10 @@ export class ServiceService {
                 .toPromise());
     }
 
-    getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {
-        return this.getServiceEnableHowToUrl(service).then(
-            url => (this.http.get(url, { headers: this.sessionService.getAuthHeader() })
-                    .toPromise()) as Promise<ServiceEnableHowTo>);
+    async getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {
+        const url = await this.getServiceEnableHowToUrl(service);
+        return (this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+                .toPromise() as Promise<ServiceEnableHowTo>);
     }
 
     registerService(data: { [key: string]: string }, service_id: string, connection_id: string): Promise<{success: boolean}> {

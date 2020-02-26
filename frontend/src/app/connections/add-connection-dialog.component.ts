@@ -46,7 +46,7 @@ export class AddConnectionDialogComponent {
         this.dialogRef.close();
     }
 
-    enableService(service: BridgeData): void {
+    async enableService(service: BridgeData): Promise<void> {
         if ((this.selectedIndex === service.index)
             && (this.availableBridges[this.selectedIndex].state !== 'error')) {
             return;
@@ -61,7 +61,8 @@ export class AddConnectionDialogComponent {
         this.selectedIndex = service.index;
         if (service.state !== 'reading') {
             service.state = 'reading';
-            this.serviceService.getHowToEnable(this.connectionService.toAvailableService(service.bridge))
+            const as_service = await this.connectionService.toAvailableService(service.bridge);
+            this.serviceService.getHowToEnable(as_service)
                 .then(howToEnable => {
                     if (this.selectedIndex === service.index) {
                         service.state = 'selected';

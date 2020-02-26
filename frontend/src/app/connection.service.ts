@@ -91,13 +91,15 @@ export class ConnectionService {
         })
     }
 
-    toAvailableService(data: BridgeIndexData): AvailableService {
+    async toAvailableService(data: BridgeIndexData): Promise<AvailableService> {
         // TODO: Note this is not totally correct.
         // But it works for the __link__ part, which is what we need now.
+        const root = await this.sessionService.getUserApiRoot();
+
         return {
             id: data.id,
             enabled: data.is_connected,
-            link: `/api/v0/users/test/services/id/${data.id}`,
+            link: `${root}/services/id/${data.id}`,
             name: data.name,
         }
     }

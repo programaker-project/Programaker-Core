@@ -105,7 +105,7 @@ digraph g {
     service_port_entry:f1 -> services_table_entry:pk;
 
     // SERVICE_PORT_CONFIGURATION_TABLE | automate_service_port_configuration_table
-    service_port_configuration[label="*Bridge config* | <pk> id | service_name | <f0> service_id | is_public | blocks"]
+    service_port_configuration[label="*Bridge config* | <pk> id | service_name | <f0> service_id | is_public | blocks | icon | allow_multiple_connections"]
     service_port_configuration:pk -> service_port_entry:pk;
     service_port_configuration:f0 -> services_table_entry:pk
 

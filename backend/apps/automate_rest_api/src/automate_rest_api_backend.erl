@@ -178,7 +178,7 @@ get_program(Username, ProgramName) ->
             X
     end.
 
-update_program_tags(Username, ProgramName, Tags) ->
+update_program_tags(_Username, ProgramName, Tags) ->
     case automate_storage:register_program_tags(ProgramName, Tags) of
         ok ->
             ok;
@@ -194,7 +194,7 @@ update_program_status(Username, ProgramName, Status) ->
             { error , Reason }
     end.
 
-get_program_tags(Username, ProgramId) ->
+get_program_tags(_Username, ProgramId) ->
     case automate_storage:get_tags_program_from_id(ProgramId) of
         {ok, Tags} ->
             {ok, Tags};
@@ -325,9 +325,23 @@ list_bridges(Username) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
     {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
 
--spec list_available_connections(binary()) -> {ok, [#service_port_entry_extra{}]}.
+-spec list_available_connections(binary()) -> {ok, [{#service_port_entry{}, #service_port_configuration{}}]}.
 list_available_connections(UserId) ->
-    {ok, _ServicePorts} = automate_service_port_engine:get_user_service_ports(UserId).
+    case automate_service_registry:get_all_services_for_user(UserId) of
+        {ok, Services} ->
+            EnabledServices = lists:filtermap(fun({ _ServiceId, #{ module := Module } }) ->
+                                                      case automate_service_port_engine:is_module_connectable_bridge(UserId, Module) of
+                                                          false -> false;
+                                                          {false, _BridgeData} ->
+                                                              false;
+                                                          {true, BridgeData} ->
+                                                              { true, BridgeData }
+                                                      end
+                            end, maps:to_list(Services)),
+            {ok, EnabledServices};
+        E = {error, _, _} ->
+            E
+    end.
 
 -spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
 list_established_connections(UserId) ->

@@ -87,15 +87,15 @@ to_json(Req, State) ->
             { Output, Res2, State }
     end.
 
-to_map(#service_port_entry_extra{ id=Id
-                                , name=Name
-                                , owner=Owner
-                                , service_id=ServiceId
-                                , is_connected=IsConnected
-                                }) ->
+to_map({#service_port_entry{ id=Id
+                           , name=Name
+                           , owner=Owner
+                           , service_id=ServiceId
+                           }
+       , #service_port_configuration{}
+       }) ->
     #{ <<"id">> => Id
      , <<"name">> => Name
      , <<"owner">> => Owner
      , <<"service_id">> => ServiceId
-     , <<"is_connected">> => IsConnected
      }.

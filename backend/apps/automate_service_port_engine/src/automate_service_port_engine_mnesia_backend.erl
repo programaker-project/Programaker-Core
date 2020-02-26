@@ -13,6 +13,7 @@
 
         , list_custom_blocks/1
         , internal_user_id_to_connection_id/2
+        , is_user_connected_to_bridge/2
         , connection_id_to_internal_user_id/2
         , get_user_service_ports/1
         , list_bridge_channels/1
@@ -25,6 +26,7 @@
 
         , get_service_id_for_port/1
         , get_bridge_info/1
+        , get_all_bridge_info/1
         , delete_bridge/2
 
         , get_or_create_monitor_id/2
@@ -196,26 +198,38 @@ get_service_id_for_port(ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
+
 -spec get_bridge_info(binary()) -> {ok, #service_port_metadata{}}.
 get_bridge_info(BridgeId) ->
+    case get_all_bridge_info(BridgeId) of
+        { ok, #service_port_entry{name=Name, owner=Owner} , undefined} ->
+            {ok, #service_port_metadata{ id=BridgeId
+                                       , name=Name
+                                       , owner=Owner
+                                       , icon=undefined
+                                       }};
+        { ok, #service_port_entry{name=Name, owner=Owner} , #service_port_configuration{ icon=Icon }} ->
+            { ok, #service_port_metadata{ id=BridgeId
+                                        , name=Name
+                                        , owner=Owner
+                                        , icon=Icon
+                                        } } ;
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+-spec get_all_bridge_info(binary()) -> {ok, #service_port_entry{}, undefined | #service_port_configuration{}} | {error, _}.
+get_all_bridge_info(BridgeId) ->
     Transaction = fun() ->
                           case mnesia:read(?SERVICE_PORT_TABLE, BridgeId) of
                               [] ->
                                   {error, not_found};
-                              [#service_port_entry{name=Name, owner=Owner}] ->
+                              [Entry] ->
                                   case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId) of
                                       [] ->
-                                          { ok, #service_port_metadata{ id=BridgeId
-                                                                      , name=Name
-                                                                      , owner=Owner
-                                                                      , icon=undefined
-                                                                      } };
-                                      [#service_port_configuration{ icon=Icon }] ->
-                                          { ok, #service_port_metadata{ id=BridgeId
-                                                                      , name=Name
-                                                                      , owner=Owner
-                                                                      , icon=Icon
-                                                                      } }
+                                          { ok, Entry, undefined };
+                                      [Config] ->
+                                          { ok, Entry, Config }
                                   end
                           end
                   end,
@@ -223,8 +237,10 @@ get_bridge_info(BridgeId) ->
         {atomic, Result} ->
             Result;
         {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+            {error, Reason}
     end.
+
+
 
 create_service_for_port(Configuration, OwnerId) ->
     case Configuration of
@@ -374,6 +390,17 @@ get_all_connections(UserId, BridgeId) ->
             Result;
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
+    end.
+
+-spec is_user_connected_to_bridge(binary(), binary()) -> {ok, boolean()} | {error, not_found}.
+is_user_connected_to_bridge(UserId, BridgeId) ->
+    case get_all_connections(UserId, BridgeId) of
+        {ok, []} ->
+            {ok, false};
+        {ok, List} when is_list(List) ->
+            {ok, true};
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 -spec connection_id_to_internal_user_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
@@ -574,6 +601,7 @@ list_public_ports() ->
                                            , is_public='$2'
                                            , blocks='_'
                                            , icon='_'
+                                           , allow_multiple_connections='_'
                                            },
     Guard = {'==', '$2', true},
     ResultColumn = '$1',
