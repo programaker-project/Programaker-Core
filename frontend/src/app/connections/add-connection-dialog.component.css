@@ -6,14 +6,16 @@ button {
     right: 0;
 }
 
+mat-card > h4 {
+    word-break: break-all;
+}
+
 mat-card.selected {
-    background-color: #227e00;
-    color: #fff;
+    border: 2px solid #227e00;
 }
 
 mat-card.reading {
-    background-color: #ddd;
-    color: #fff;
+    border: 2px solid #ddd;
 }
 
 mat-card.error {
