@@ -76,6 +76,8 @@ a.action-link {
 }
 
 #main-toolbar {
+    background-color: #27212e;
+    color: white;
     padding-left: 0px;
 }
 
@@ -91,7 +93,7 @@ a.action-link {
 }
 
 #main-menu-opener:hover {
-    background-color: rgba(0,0,0, 0.3);
+    background-color: rgba(255,255,255, 0.3);
 }
 #main-menu-opener {
     padding: 1em;
