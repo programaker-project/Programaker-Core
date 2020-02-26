@@ -283,7 +283,7 @@ set_service_port_configuration(ServicePortId, Configuration=#service_port_config
                    end,
             {ok, Todo};
         {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+            {error, Reason}
     end.
 
 -spec set_notify_signal_listeners([string()], binary()) -> ok.
