@@ -110,10 +110,6 @@ digraph g {
     service_port_configuration:f0 -> services_table_entry:pk
 
 
-    // SERVICE_PORT_USERID_OBFUSCATION_TABLE | automate_service_port_userid_obfuscation_table
-    service_port_user_obfusction_entry[label="*Obfuscation table* | <pk> id | <f0> obfuscated_id"]
-    service_port_user_obfusction_entry:pk -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
-
     // SERVICE_PORT_CHANNEL_TABLE | automate_service_port_channel_table
     service_port_monitor_channel_entry[label="*Bridge channel* | <pk> id | <f0> channel_id"]
     service_port_monitor_channel_entry:pk -> service_port_entry:pk;
@@ -125,18 +121,22 @@ digraph g {
     channel_monitor_table_entry:f1 -> service_port_entry:pk
 
 
-    connection_entry[style=filled,fillcolor="#cccccc",color=white,
-                     label="*Connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | name"]
+    connection_entry[color=red,
+                     label="*Connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | name | creation_time"]
     connection_entry:f0 -> service_port_entry:pk
     connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
     connection_entry:f2 -> live_channels_table_entry:pk
     // Connection data might store data from the bridges
 
-    connection_establishment_entry[style=filled,fillcolor="#cccccc",color=white,
-                                   label="*Connection establishment* | <pk> id | <f0> bridge_id | <f1> user_id | message_id | is_established | started_time | established_time"]
-    connection_establishment_entry:f0 -> service_port_entry:pk
-    connection_establishment_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
-}
+    pending_connection_entry[color=red,
+                                   label="*Connection establishment* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | creation_time"]
+    pending_connection_entry:f0 -> service_port_entry:pk
+    pending_connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+    pending_connection_entry:f2 -> live_channels_table_entry:pk
+
+    bridge_icon_entry[color=red,
+                      label="*Bridge icon* | <pk> id | num_references | creation_time"]
+  }
 
   subgraph group_core_services {
     label="Service registry";
