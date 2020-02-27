@@ -10,6 +10,7 @@
 %%%%  Operations
 %% Call service
 -define(COMMAND_CALL_SERVICE, <<"command_call_service">>).
+-define(CONTEXT_SELECT_CONNECTION, <<"operator_select_connection">>).
 
 %% General control
 -define(COMMAND_WAIT, <<"control_wait">>).

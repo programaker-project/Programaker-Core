@@ -57,7 +57,6 @@ export default class ScratchProgramSerializer {
 
         const contents = Array.from(block.childNodes).filter((x: HTMLElement) => x.tagName === 'STATEMENT');
         if (contents.length == 1) {
-            console.log("Contents:", contents);
             cleanedElement.contents = this.serializeBlock(contents[0].firstChild as HTMLElement);
         }
         else if (contents.length > 0) {

@@ -506,6 +506,30 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CUSTOM_SIGNAL
 
     {ran_this_tick, increment_position(Thread)};
 
+run_instruction(Op=#{ ?TYPE := ?CONTEXT_SELECT_CONNECTION
+                    , ?ARGUMENTS := [ BridgeIdVal
+                                    , ConnectionIdVal
+                                    ]
+                    }, Thread=#program_thread{ position=Position },
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, BridgeId } = automate_bot_engine_variables:resolve_argument(BridgeIdVal, Thread, Op),
+    {ok, ConnectionId } = automate_bot_engine_variables:resolve_argument(ConnectionIdVal, Thread, Op),
+
+    io:fwrite("OP: Select connection: Bridge: ~p | Conn: ~p~n", [BridgeId, ConnectionId]),
+    case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+        {ok, _} ->
+            %% Already here, exit the context
+            NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            io:fwrite("Exit connection select~n"),
+            {ran_this_tick, increment_position(NextIteration)};
+        {error, not_found} ->
+            io:fwrite("Going INTO context~n"),
+            NextIteration = automate_bot_engine_variables:set_instruction_memory(
+                              Thread, {already_run, true}),
+            {ran_this_tick, NextIteration#program_thread{ position=Position ++ [1] }}
+    end;
+
 run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
     io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
     {did_not_run, waiting};

@@ -24,12 +24,13 @@ import { ToolboxController } from './blocks/ToolboxController';
 import { TemplateService } from './templates/template.service';
 import { ServiceService } from './service.service';
 import { CustomSignalService } from './custom_signals/custom_signal.service';
+import { ConnectionService } from './connection.service';
 import { environment } from '../environments/environment';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [CustomBlockService, CustomSignalService, MonitorService, ProgramService, TemplateService, ServiceService],
+    providers: [ConnectionService,CustomBlockService, CustomSignalService, MonitorService, ProgramService, TemplateService, ServiceService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
@@ -65,6 +66,8 @@ export class ProgramDetailComponent implements OnInit {
         private templateService: TemplateService,
         private serviceService: ServiceService,
         private notification: MatSnackBar,
+        public connectionService: ConnectionService,
+
     ) {
         this.monitorService = monitorService;
         this.programService = programService;
@@ -227,6 +230,7 @@ export class ProgramDetailComponent implements OnInit {
             this.templateService,
             this.serviceService,
             this.customSignalService,
+            this.connectionService,
         )
             .inject()
             .then(([toolbox, registrations, controller]) => {
