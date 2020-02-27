@@ -291,3 +291,32 @@ mat-card.bridge.connected-false {
     animation-name: glow-new-log-entry;
     animation-duration: 2s;
 }
+
+/* Program detail upload button animation */
+@keyframes button-load-started {
+    from {width: 100%;}
+    to {width: 50%;}
+}
+@keyframes button-load-completed {
+    from {width: 50%;}
+    to {width: 0%;}
+}
+
+button#program-start-button > .mat-button-wrapper > .load-bg {
+    background-color: #27212e;
+    height: 100%;
+    position: absolute;
+    z-index: -1;
+    right: 0px;
+    top: 0;
+}
+
+button#program-start-button.started > span > .load-bg {
+    animation-name: button-load-started;
+    animation-duration: 0.2s;
+}
+
+button#program-start-button.completed > span > .load-bg {
+    animation-name: button-load-completed;
+    animation-duration: 0.5s;
+}

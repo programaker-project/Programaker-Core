@@ -450,7 +450,7 @@ export class ProgramDetailComponent implements OnInit {
         }
     }
 
-    sendProgram(): Promise<boolean> {
+    async sendProgram(): Promise<boolean> {
         // Get workspace
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
 
@@ -467,7 +467,20 @@ export class ProgramDetailComponent implements OnInit {
                                            serialized.orig);
 
         // Send update
-        return this.programService.updateProgram(this.programUserName, program);
+        const button = document.getElementById('program-start-button');
+        if (button){
+            button.classList.add('started');
+            button.classList.remove('completed');
+        }
+
+        const result = await this.programService.updateProgram(this.programUserName, program);
+
+        if (button){
+            button.classList.remove('started');
+            button.classList.add('completed');
+        }
+
+        return result;
     }
 
     renameProgram() {

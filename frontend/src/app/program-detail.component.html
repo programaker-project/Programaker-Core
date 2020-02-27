@@ -6,11 +6,14 @@
             <span class="program-title" *ngIf="program === undefined">Loading program...</span>
         </h2>
         <!-- Basic functions -->
-        <button id="program-start-button" color="primary"
-                *ngIf="program !== undefined"
-                (click)="sendProgram()" mat-button>
-            <mat-icon class="action-icon">play_arrow</mat-icon>
-            Start
+        <button mat-button mat-raised-button
+            id="program-start-button" color="primary"
+            *ngIf="program !== undefined"
+            (click)="sendProgram()">
+
+            <span class="load-bg"></span>
+            <mat-icon class="action-icon">cloud_upload</mat-icon>
+            Upload
         </button>
         <button id="program-rename-button" color="secondary"
             *ngIf="program !== undefined"
