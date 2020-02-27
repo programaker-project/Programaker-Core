@@ -18,6 +18,7 @@
 
 .closer > button {
     border: none;
+    background-color: inherit;
 }
 
 button#program-rename-button,

@@ -24,6 +24,7 @@ import { ToolboxController } from './blocks/ToolboxController';
 import { TemplateService } from './templates/template.service';
 import { ServiceService } from './service.service';
 import { CustomSignalService } from './custom_signals/custom_signal.service';
+import { environment } from '../environments/environment';
 
 @Component({
     selector: 'app-my-program-detail',
@@ -41,6 +42,8 @@ export class ProgramDetailComponent implements OnInit {
     workspace: Blockly.Workspace;
     programUserName: string;
     programId: string;
+    environment: { [key: string]: any };
+
     @ViewChild('logs_drawer') logs_drawer: MatDrawer;
 
     logs_drawer_initialized: boolean = false;
@@ -73,6 +76,8 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        this.environment = environment;
+
         if (window && (window.innerWidth < window.innerHeight)) {
             this.portraitMode = true;
         } else {

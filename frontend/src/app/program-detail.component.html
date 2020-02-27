@@ -64,7 +64,13 @@
                 </button>
             </div>
 
-            <div id="logs_panel_container">No logs here...</div>
+            <div id="logs_panel_container">
+                Error logs are empty.
+                <span id="contact-mail-call" *ngIf="environment.contact_mail">
+                    If you have any problem, contact us on <a class="contact-mail" href="mailto:{{environment.contact_mail}}">{{environment.contact_mail}}</a>
+                </span>
+
+            </div>
         </mat-sidenav>
 
         <div class="viewer">
