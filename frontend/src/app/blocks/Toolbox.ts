@@ -321,6 +321,9 @@ export class Toolbox {
                             'name': 'SUBSTACK3'
                         },
                     ],
+                    lastDummyAlign2: "RIGHT",
+                    message2: "when done, restore the previous connection",
+                    args2: [],
                     'category': Blockly.Categories.control,
                     'previousStatement': null,
                     'nextStatement': null,
