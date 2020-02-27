@@ -183,7 +183,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                                                           , <<"content">> => Content
                                                                           });
                         {error, Reason} ->
-                            io:fwrite("[~p] Error propagating notification: ~p~n", [ServicePortId, Reason])
+                            io:fwrite("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason])
                     end
             end
     end.

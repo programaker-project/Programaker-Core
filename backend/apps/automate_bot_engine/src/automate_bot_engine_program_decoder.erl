@@ -62,7 +62,7 @@ update_program(State,
                          }}.
 
 -spec get_bridges_on_program(#user_program_entry{}) -> { ok, [binary()] } | {error, not_found}.
-get_bridges_on_program(Program=#user_program_entry{ user_id=OwnerUserId, program_parsed=Parsed}) ->
+get_bridges_on_program(#user_program_entry{ user_id=OwnerUserId, program_parsed=Parsed}) ->
     {ok , #{ <<"blocks">> := Columns } } = automate_program_linker:link_program(Parsed, OwnerUserId),
     {ok, get_bridges_on_columns(Columns, OwnerUserId)}.
 
@@ -91,13 +91,31 @@ get_bridges_on_column(Column, OwnerUserId) ->
                   end, Column).
 
 get_bridges_on_block(Block, OwnerUserId) ->
+    io:fwrite("Block: ~p~n", [Block]),
     SubBlockBridges = get_subblock_bridges(Block, OwnerUserId),
+    ArgBridges = get_argument_bridges(Block, OwnerUserId),
+    ValueBridges = get_value_bridges(Block, OwnerUserId),
     case get_bridge_on_block_call(Block, OwnerUserId) of
         {ok, BridgeId} ->
-            [BridgeId | SubBlockBridges];
+            [BridgeId | SubBlockBridges] ++ ArgBridges ++ ValueBridges;
         {error, not_found} ->
-            SubBlockBridges
+            SubBlockBridges ++ ArgBridges ++ ValueBridges
     end.
+
+
+get_argument_bridges(#{ ?ARGUMENTS := Arguments } , OwnerUserId) when is_list(Arguments) ->
+    lists:flatmap(fun(Arg) -> get_bridges_on_block(Arg, OwnerUserId) end, Arguments);
+get_argument_bridges(#{ ?ARGUMENTS := Arguments } , OwnerUserId) when is_map(Arguments) ->
+    lists:flatmap(fun({_K, Arg}) -> get_bridges_on_block(Arg, OwnerUserId) end, maps:to_list(Arguments));
+get_argument_bridges(_Block, _OwnerUserId) ->
+    [].
+
+get_value_bridges(#{ ?VALUE := Values } , OwnerUserId) when is_list(Values) ->
+    lists:flatmap(fun(Val) -> get_bridges_on_block(Val, OwnerUserId) end, Values);
+get_value_bridges(#{ ?VALUE := Values } , OwnerUserId) when is_map(Values) ->
+    lists:flatmap(fun({_K, Val}) -> get_bridges_on_block(Val, OwnerUserId) end, maps:to_list(Values));
+get_value_bridges(_Block, _OwnerUserId) ->
+    [].
 
 
 get_subblock_bridges(#{<<"contents">> := Contents}, OwnerUserId) ->
