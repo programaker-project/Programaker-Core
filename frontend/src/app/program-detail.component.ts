@@ -191,17 +191,24 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     patch_flyover_area_deletion() {
+        if ((Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_.orig) {
+            return;
+        }
+
         this.patchedFunctions.recordDeleteAreas = (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_;
         (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_ = () => {
             this.patchedFunctions.recordDeleteAreas.bind(this.workspace)();
 
             // Disable toolbox delete area use trashcan for deletion
             const tbDelArea = (this.workspace as any).deleteAreaToolbox_;
-            tbDelArea.left = -100;
-            tbDelArea.top = -100;
-            tbDelArea.width = 0;
-            tbDelArea.height = 0;
+            if (tbDelArea) {
+                tbDelArea.left = -100;
+                tbDelArea.top = -100;
+                tbDelArea.width = 0;
+                tbDelArea.height = 0;
+            }
         }
+        (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_.orig = this.patchedFunctions.recordDeleteAreas;
     }
 
     prepareWorkspace(): Promise<ToolboxController> {
