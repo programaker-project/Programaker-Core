@@ -521,12 +521,10 @@ run_instruction(Op=#{ ?TYPE := ?CONTEXT_SELECT_CONNECTION
         {ok, _} ->
             %% Already here, exit the context
             NextIteration = automate_bot_engine_variables:unset_instruction_memory(Thread),
-            io:fwrite("Exit connection select~n"),
             {ran_this_tick, increment_position(NextIteration)};
         {error, not_found} ->
-            io:fwrite("Going INTO context~n"),
             NextIteration = automate_bot_engine_variables:set_instruction_memory(
-                              Thread, {already_run, true}),
+                              Thread, [{already_run, true}, { context_group, bridge_connection, {BridgeId, ConnectionId} }]),
             {ran_this_tick, NextIteration#program_thread{ position=Position ++ [1] }}
     end;
 

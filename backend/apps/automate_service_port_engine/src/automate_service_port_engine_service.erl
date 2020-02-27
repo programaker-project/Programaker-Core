@@ -40,7 +40,14 @@ call(FunctionName, Values, Thread, UserId, [ServicePortId]) ->
                            {error, not_found} -> null
                        end,
 
-    {ok, ConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId),
+    ConnectionId = case automate_bot_engine_variables:get_thread_context(Thread) of
+                       { ok, #{ bridge_connection := #{ ServicePortId := ContextConnectionId } } } ->
+                           ContextConnectionId;
+                       _ ->
+                           {ok, DefaultConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId),
+                           DefaultConnectionId
+                   end,
+
     {ok, #{ <<"result">> := Result }} = automate_service_port_engine:call_service_port(
                                           ServicePortId,
                                           FunctionName,
