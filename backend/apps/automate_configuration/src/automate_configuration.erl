@@ -59,7 +59,7 @@ is_node_primary(Node) ->
     end.
 
 
--spec asset_directory(string() | binary()) -> binary.
+-spec asset_directory(string() | binary()) -> binary().
 asset_directory(SubDir) ->
     BaseDirectory = case application:get_env(?APPLICATION, asset_directory) of
                          undefined ->
