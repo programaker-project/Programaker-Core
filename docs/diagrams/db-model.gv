@@ -12,9 +12,6 @@ digraph g {
     bridge_engine[style=filled,fillcolor="#bbbbff"];
     service_registry[style=filled,fillcolor="#bbffbb"]
     templates[style=filled,fillcolor="#ffbbff"]
-
-    new_table[style=filled,fillcolor="#cccccc",color=white]
-    // modified_table[shape=octagon] // Not used
   }
 
 
@@ -121,15 +118,14 @@ digraph g {
     channel_monitor_table_entry:f1 -> service_port_entry:pk
 
 
-    connection_entry[color=red,
+    connection_entry[
                      label="*Connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | name | creation_time"]
     connection_entry:f0 -> service_port_entry:pk
     connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
     connection_entry:f2 -> live_channels_table_entry:pk
     // Connection data might store data from the bridges
 
-    pending_connection_entry[color=red,
-                                   label="*Connection establishment* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | creation_time"]
+    pending_connection_entry[label="*Connection establishment* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | creation_time"]
     pending_connection_entry:f0 -> service_port_entry:pk
     pending_connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
     pending_connection_entry:f2 -> live_channels_table_entry:pk
