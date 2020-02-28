@@ -1,5 +1,5 @@
 import { IconReference, HashedIcon } from './connection';
-import { ApiHost } from './api-config';
+import { ApiRoot } from './api-config';
 
 function toWebsocketUrl(url: string): string {
     if (url.startsWith('/')) { // We need an absolute address for this
@@ -14,7 +14,7 @@ function iconDataToUrl(icon: IconReference, bridge_id: string): string | undefin
         return (icon as {url: string}).url;
     }
     else if ((icon as HashedIcon).sha256) {
-        return ApiHost + '/assets/icons/' + bridge_id;
+        return ApiRoot + '/assets/icons/' + bridge_id;
     }
 }
 

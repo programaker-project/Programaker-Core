@@ -21,7 +21,7 @@ start_link() ->
                         , {"/api/v0/ping", automate_rest_api_ping, []}
 
                           %% Assets
-                        , {"/assets/icons/[...]", cowboy_static, {dir, automate_configuration:asset_directory("public/icons")}}
+                        , {"/api/v0/assets/icons/[...]", cowboy_static, {dir, automate_configuration:asset_directory("public/icons")}}
 
                           %% Registration
                         , {"/api/v0/sessions/register", automate_rest_api_sessions_register, []}
