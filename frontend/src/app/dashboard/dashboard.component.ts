@@ -146,4 +146,12 @@ export class NewDashboardComponent {
 
         dialogRef.afterClosed().subscribe(result => { });
     }
+
+    async enableProgram(program: ProgramMetadata) {
+        const session = await this.sessionService.getSession();
+        await this.programService.setProgramStatus(JSON.stringify({"enable": true}),
+                                             program.id,
+                                             session.user_id);
+        program.enabled = true;
+    }
 }

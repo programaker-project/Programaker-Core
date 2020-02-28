@@ -3,19 +3,8 @@
 }
 
 mat-card.not-enabled {
-    background: repeating-linear-gradient(
-        45deg,
-        #444,
-        #444 10px,
-        #222 10px,
-        #222 20px
-    );
+    background-color: grey;
     color: white;
-}
-
-mat-card.enabled {
-    background-color: #227e00;
-    color: #fff;
 }
 
 
@@ -38,7 +27,7 @@ mat-card.program {
     padding: 0;
 }
 
-mat-card.program > .connection-icon-list {
+mat-card.program > .program-data > .connection-icon-list {
     background-color: rgba(0, 48, 150,0.05);
     border-top: 1px solid rgba(0, 48, 150,0.25);
 
@@ -46,15 +35,27 @@ mat-card.program > .connection-icon-list {
     padding: 1ex;
 }
 
-mat-card.program > h4 {
+mat-card.program > .program-data > .card-title {
     padding: 1em;
     font-weight: 600;
-    color: #444;
 }
 
-mat-card.call-to-action > h4{
+mat-card.call-to-action > .program-data > .card-title {
     color: #fff;
     padding: 2em 1em 2em 1em;
+}
+
+mat-card.program > .program-operation {
+    float: right;
+    margin-top: -1.5ex;
+    margin-bottom: 1ex;
+    margin-right: -1ex;
+}
+
+mat-card.program > .program-operation > .enable-program {
+    border-radius: 999ex; /* Inifinity, round shape */
+    color: white;
+    z-index: 1;
 }
 
 /* Public section */

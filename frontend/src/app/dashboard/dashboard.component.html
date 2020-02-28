@@ -37,18 +37,36 @@
             <div class="row">
                 <div class="col-sm-6">
                     <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
-                        <h4>Create new program</h4>
+                        <div class="program-data">
+                            <div class="card-title">Create new program</div>
+                        </div>
                     </mat-card>
                 </div>
                 <div class="col-sm-6" *ngFor="let program of programs">
-                    <mat-card class="module program"
-                        [ngStyle]="{'background-color':program.enabled ? 'white' : 'lightgrey' }"
-                        role="button" (click)="openProgram(program)">
-                        <h4>{{program.name}}</h4>
-                        <div class="connection-icon-list">
-                            <span *ngFor="let bridge of program.bridges_in_use">
-                                <img class="icon" *ngIf="bridgeIcons[bridge]" src="{{ bridgeIcons[bridge] }}" />
-                            </span>
+                    <mat-card
+                        [ngClass]="{
+                        'module': true,
+                        'program': true,
+                        'enabled': program.enabled,
+                        'not-enabled': !program.enabled
+                        }"
+                        role="button">
+                        <div class="program-data" (click)="openProgram(program)">
+                            <div class="card-title">{{program.name}}</div>
+                            <div class="connection-icon-list">
+                                <span *ngFor="let bridge of program.bridges_in_use">
+                                    <img class="icon" *ngIf="bridgeIcons[bridge]" src="{{ bridgeIcons[bridge] }}" />
+                                </span>
+                            </div>
+                        </div>
+
+                        <div *ngIf="!program.enabled" class="program-operation">
+                            <button mat-mini-fab
+                                (click)="enableProgram(program)"
+                                color="accent"
+                                class="enable-program">
+                                <mat-icon>play_arrow</mat-icon>
+                            </button>
                         </div>
                     </mat-card>
                 </div>
