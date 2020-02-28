@@ -87,8 +87,7 @@ websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, Sta
 
 websocket_info(Message, State) ->
     io:fwrite("[Bridge/Comm] Unexpected message ~p~n", [Message]),
-    {reply, {binary, Message}, State}.
-
+    {ok, State}.
 
 %% State maintenance
 merge_user_data(UserData, ChannelData) ->
