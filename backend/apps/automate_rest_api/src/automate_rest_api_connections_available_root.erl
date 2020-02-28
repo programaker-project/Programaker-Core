@@ -42,7 +42,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -61,7 +60,7 @@ is_authorized(Req, State) ->
                         {true, UserId} ->
                             { true, Req1, State };
                         {true, _} -> %% Non matching user_id
-                            { { false, <<"Unauthorized to create a program here">>}, Req1, State };
+                            { { false, <<"Unauthorized here">>}, Req1, State };
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end

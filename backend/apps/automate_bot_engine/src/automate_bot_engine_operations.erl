@@ -516,7 +516,6 @@ run_instruction(Op=#{ ?TYPE := ?CONTEXT_SELECT_CONNECTION
     {ok, BridgeId } = automate_bot_engine_variables:resolve_argument(BridgeIdVal, Thread, Op),
     {ok, ConnectionId } = automate_bot_engine_variables:resolve_argument(ConnectionIdVal, Thread, Op),
 
-    io:fwrite("OP: Select connection: Bridge: ~p | Conn: ~p~n", [BridgeId, ConnectionId]),
     case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
         {ok, _} ->
             %% Already here, exit the context
