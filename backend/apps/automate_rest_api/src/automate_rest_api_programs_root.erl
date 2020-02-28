@@ -129,7 +129,12 @@ encode_program_list([H | T], Acc) ->
                     , <<"name">> => Name
                     , <<"link">> =>  Link
                     , <<"enabled">> => Enabled
-                    , <<"bridges_in_use">> => get_bridges_on_program_id(Id)
+                    , <<"bridges_in_use">> => try get_bridges_on_program_id(Id) of
+                                                  Bridges -> Bridges
+                                              catch ErrNS:Error:StackTrace ->
+                                                      automate_logging:log_platform(error, ErrNS, Error, StackTrace),
+                                                      []
+                                              end
                     },
     encode_program_list(T, [AsDictionary | Acc]).
 

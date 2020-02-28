@@ -62,8 +62,10 @@ update_program(State,
                          }}.
 
 -spec get_bridges_on_program(#user_program_entry{}) -> { ok, [binary()] } | {error, not_found}.
+get_bridges_on_program(#user_program_entry{ program_parsed=undefined}) ->
+    {ok, []};
 get_bridges_on_program(#user_program_entry{ user_id=OwnerUserId, program_parsed=Parsed}) ->
-    {ok , #{ <<"blocks">> := Columns } } = automate_program_linker:link_program(Parsed, OwnerUserId),
+    {ok, #{ <<"blocks">> := Columns } } = automate_program_linker:link_program(Parsed, OwnerUserId),
     {ok, get_bridges_on_columns(Columns, OwnerUserId)}.
 
 %%%===================================================================

@@ -8,6 +8,7 @@
 %% Application callbacks
 -export([ log_event/2, log_call_to_bridge/5
         , log_program_error/1
+        , log_platform/4
         ]).
 
 -include("../../automate_storage/src/records.hrl").
@@ -93,6 +94,10 @@ log_program_error(LogEntry=#user_program_log_entry{ program_id=ProgramId }) ->
     automate_channel_engine:send_to_channel(Channel, LogEntry),
 
     automate_storage:log_program_error(LogEntry).
+
+-spec log_platform(atom(), _, _, _) -> ok.
+log_platform(Severity, ErrorNS, Error, StackTrace) ->
+    io:fwrite("[~p] ~p:~p || ~p~n", [Severity, ErrorNS, Error, StackTrace]).
 
 %%====================================================================
 %% Internal functions
