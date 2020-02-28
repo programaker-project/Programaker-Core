@@ -199,7 +199,7 @@ get_service_id_for_port(ServicePortId) ->
     end.
 
 
--spec get_bridge_info(binary()) -> {ok, #service_port_metadata{}}.
+-spec get_bridge_info(binary()) -> {ok, #service_port_metadata{}} | {error, not_found}.
 get_bridge_info(BridgeId) ->
     case get_all_bridge_info(BridgeId) of
         { ok, #service_port_entry{name=Name, owner=Owner} , undefined} ->

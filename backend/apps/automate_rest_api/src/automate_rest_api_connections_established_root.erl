@@ -81,7 +81,7 @@ to_json(Req, State) ->
     case automate_rest_api_backend:list_established_connections(UserId) of
         { ok, Connections } ->
 
-            Output = jiffy:encode(lists:map(fun to_map/1, Connections)),
+            Output = jiffy:encode(lists:filtermap(fun to_map/1, Connections)),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
@@ -95,13 +95,17 @@ to_map(#user_to_bridge_connection_entry{ id=Id
                                        , name=Name
                                        , creation_time=_CreationTime
                                        }) ->
-    {ok, #service_port_metadata{ name=BridgeName, icon=Icon }} = automate_service_port_engine:get_bridge_info(BridgeId),
-    #{ <<"connection_id">> => Id
-     , <<"name">> => serialize_string_or_undefined(Name)
-     , <<"bridge_id">> => BridgeId
-     , <<"bridge_name">> => BridgeName
-     , <<"icon">> => ?FORMATTING:serialize_icon(Icon)
-     }.
+    case automate_service_port_engine:get_bridge_info(BridgeId) of
+        {ok, #service_port_metadata{ name=BridgeName, icon=Icon }} ->
+            {true, #{ <<"connection_id">> => Id
+                    , <<"name">> => serialize_string_or_undefined(Name)
+                    , <<"bridge_id">> => BridgeId
+                    , <<"bridge_name">> => serialize_string_or_undefined(BridgeName)
+                    , <<"icon">> => ?FORMATTING:serialize_icon(Icon)
+                    } };
+        {error, _Reason} ->
+            false
+    end.
 
 serialize_string_or_undefined(undefined) ->
     null;

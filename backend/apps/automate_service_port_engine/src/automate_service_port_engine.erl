@@ -232,7 +232,7 @@ get_channel_origin_bridge(ChannelId) ->
             ?BACKEND:get_channel_origin_bridge(ChannelId)
     end.
 
--spec get_bridge_info(binary()) -> {ok, #service_port_metadata{}}.
+-spec get_bridge_info(binary()) -> {ok, #service_port_metadata{}} | {error, not_found}.
 get_bridge_info(BridgeId) ->
     ?BACKEND:get_bridge_info(BridgeId).
 

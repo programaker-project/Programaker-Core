@@ -80,13 +80,32 @@ get_versioning(Nodes) ->
                                       , record_name=user_to_bridge_pending_connection_entry
                                       }, Nodes),
 
-                                    %% TODO: Test this migration
-                                    {atomic, ok} = mnesia:delete_table(automate_service_port_userid_obfuscation_table),
-
                                     ok = mnesia:wait_for_tables([ ?USER_TO_BRIDGE_CONNECTION_TABLE
                                                                 , ?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE
                                                                 ],
-                                                                automate_configuration:get_table_wait_time())
+                                                                automate_configuration:get_table_wait_time()),
+
+                                    MigrateConnections =
+                                        fun() ->
+                                                Conversion =
+                                                    fun({service_port_user_obfuscation_entry, {UserId, BridgeId}, ObfuscatedId}) ->
+                                                            {ok, ChannelId} = automate_channel_engine:create_channel(),
+                                                            { user_to_bridge_connection_entry
+                                                            , ObfuscatedId
+                                                            , BridgeId
+                                                            , UserId
+                                                            , ChannelId
+                                                            , undefined
+                                                            , 0
+                                                            }
+                                                    end,
+                                                db_map_table_to_table(automate_service_port_userid_obfuscation_table,
+                                                                      ?USER_TO_BRIDGE_CONNECTION_TABLE,
+                                                                      Conversion)
+                                        end,
+                                    {atomic, ok} = mnesia:transaction(MigrateConnections),
+
+                                    {atomic, ok} = mnesia:delete_table(automate_service_port_userid_obfuscation_table)
                             end
                     }
 
@@ -127,3 +146,26 @@ get_versioning(Nodes) ->
                     }
                   ]
         }.
+
+
+db_map_table_to_table(FromTable, ToTable, Function) ->
+    Transaction = fun() ->
+                          ok = mnesia:write_lock_table(FromTable),
+                          ok = db_map_iter_transfer(FromTable, ToTable, Function, mnesia:first(FromTable))
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            io:fwrite("[Storage/Migration] Error on migration: ~p~n", [Reason]),
+            {error, Reason}
+    end.
+
+db_map_iter_transfer(_FromTable, _ToTable, _Function, '$end_of_table') ->
+    ok;
+db_map_iter_transfer(FromTable, ToTable, Function, Key) ->
+    [Element] = mnesia:read(FromTable, Key),
+    NewElement = Function(Element),
+
+    ok = mnesia:write(ToTable, NewElement, write),
+    db_map_iter_transfer(FromTable, ToTable, Function, mnesia:next(FromTable, Key)).

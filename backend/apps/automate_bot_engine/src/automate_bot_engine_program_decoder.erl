@@ -91,7 +91,6 @@ get_bridges_on_column(Column, OwnerUserId) ->
                   end, Column).
 
 get_bridges_on_block(Block, OwnerUserId) ->
-    io:fwrite("Block: ~p~n", [Block]),
     SubBlockBridges = get_subblock_bridges(Block, OwnerUserId),
     ArgBridges = get_argument_bridges(Block, OwnerUserId),
     ValueBridges = get_value_bridges(Block, OwnerUserId),
