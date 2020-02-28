@@ -9,6 +9,7 @@
         , get_sync_peers/0
         , get_sync_primary/0
         , is_node_primary/1
+        , asset_directory/1
         ]).
 
 -define(APPLICATION, automate).
@@ -19,7 +20,7 @@
 -define(SYNC_PEERS_SPLIT_TOKEN, ",").
 
 %%====================================================================
-%% Utils functions 
+%% Utils functions
 %%====================================================================
 -spec get_table_wait_time() -> non_neg_integer().
 get_table_wait_time() ->
@@ -58,3 +59,13 @@ is_node_primary(Node) ->
     end.
 
 
+-spec asset_directory(string() | binary()) -> binary.
+asset_directory(SubDir) ->
+    BaseDirectory = case application:get_env(?APPLICATION, asset_directory) of
+                         undefined ->
+                             code:lib_dir(automate_configuration, priv) ++ "/assets";
+                         {ok, Value} ->
+                             Value
+                     end,
+    binary:list_to_bin(
+      lists:flatten(io_lib:format("~s/~s", [BaseDirectory, SubDir]))).

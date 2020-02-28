@@ -1,4 +1,6 @@
-[  { automate, [ { table_wait_time, 10000 } ] }
+[  { automate, [ { table_wait_time, 10000 }
+               %% , { asset_directory, "/path/to/asset/directory" }
+               ] }
 ,  { automate_rest_api, [ { port, 8888}
                           %% Commenting the following line removes the authentication on /metrics
                         , { metrics_secret, <<"@INSERT HERE RANDOM SECRET FOR METRICS@">> }

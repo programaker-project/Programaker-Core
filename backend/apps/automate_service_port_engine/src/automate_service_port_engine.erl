@@ -414,12 +414,10 @@ request_icon(Pid) ->
     Pid ! {{ automate_service_port_engine, request_icon} }.
 
 get_icon_path(ServicePortId) ->
-    %% Finished on .jpg so that the browser will detect it as an image.
-    %% It doesn't really have to be .jpg
     binary:list_to_bin(
-      lists:flatten(io_lib:format("~s/assets/icons/~s", [code:lib_dir(automate_rest_api, priv)
-                                                        , ServicePortId
-                                                        ]))).
+      lists:flatten(io_lib:format("~s/~s", [automate_configuration:asset_directory("public/icons")
+                                           , ServicePortId
+                                           ]))).
 
 write_icon(Data, ServicePortId) ->
     file:write_file(get_icon_path(ServicePortId), Data).
