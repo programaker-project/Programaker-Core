@@ -43,15 +43,20 @@ websocket_handle(_Message, State) ->
     {ok, State}.
 
 websocket_info({automate_service_port_engine_router, _From, { data, MessageId, Message }}, State) ->
-    io:fwrite("[~p] New message: ~p~n", [MessageId, Message]),
     Serialized = jiffy:encode(Message#{ <<"message_id">> => MessageId }),
     {reply, {binary, Serialized}, State};
 
 websocket_info({{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken}, State) ->
-    io:fwrite("[~p] Advice taken: ~p~n", [MessageId, AdviceTaken]),
+    io:fwrite("[Bridge/Comm#~p] Advice taken: ~p~n", [MessageId, AdviceTaken]),
     Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_RESPONSE">>
                                , <<"message_id">> => MessageId
                                , <<"value">> => AdviceTaken
+                               }),
+    {reply, {binary, Serialized}, State};
+
+websocket_info({{ automate_service_port_engine, request_icon}}, State=#state{ service_port_id=ServicePortId }) ->
+    io:fwrite("[Bridge/Comm] Requesting icon to ~p...~n", [ServicePortId]),
+    Serialized = jiffy:encode(#{ <<"type">> => <<"ICON_REQUEST">>
                                }),
     {reply, {binary, Serialized}, State};
 
@@ -62,13 +67,16 @@ websocket_info({ automate_service_port_engine, new_channel, {_ServicePortId, Cha
 websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, State=#state{service_port_id=ServicePortId}) ->
     case automate_bot_engine:get_user_from_pid(Pid) of
         {ok, UserId} ->
-            {ok, ServicePortUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
+            %% TODO: In this instance is probably OK to use a single connection
+            %%       as the focus are the values, not the keys of SIGNAL_LISTENERS.
+            %% But it can be disambiguated by passing more "properties" on the 'add_listener' message.
+            {ok, ConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId),
             {UserChannels, NewState} = add_to_user_channels(UserId, {Key, SubKey}, State),
             Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_NOTIFICATION">>
                                        , <<"value">> =>
                                              #{ <<"SIGNAL_LISTENERS">> =>
                                                     #{
-                                                      ServicePortUserId => fmt_user_data(UserChannels)
+                                                      ConnectionId => fmt_user_data(UserChannels)
                                                      }
                                               }
                                        }),
@@ -78,9 +86,8 @@ websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, Sta
     end;
 
 websocket_info(Message, State) ->
-    io:fwrite("Got ~p~n", [Message]),
-    {reply, {binary, Message}, State}.
-
+    io:fwrite("[Bridge/Comm] Unexpected message ~p~n", [Message]),
+    {ok, State}.
 
 %% State maintenance
 merge_user_data(UserData, ChannelData) ->
@@ -110,4 +117,3 @@ add_to_user_channels(UserId, ChannelData, State=#state{user_channels=UserChannel
             NewUserData = create_user_data(ChannelData),
             { NewUserData, State#state{ user_channels=UserChannels#{ UserId => NewUserData } } }
     end.
-

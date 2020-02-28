@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { SessionService } from './session.service';
 import { Session } from './session';
 import { Subscription } from 'rxjs';
+import { BridgeService } from './bridges/bridge.service';
 
 @Component({
     selector: 'app-my-app',
@@ -12,7 +13,7 @@ import { Subscription } from 'rxjs';
         'libs/css/material-icons.css',
         'libs/css/bootstrap.min.css',
     ],
-    providers: [SessionService]
+    providers: [BridgeService, SessionService]
 })
 
 export class AppComponent {
@@ -20,10 +21,12 @@ export class AppComponent {
     username: string;
     loggedIn: boolean;
     title = 'PrograMaker';
+    bridgeCount = 0;
 
     constructor(
         private router: Router,
-        private session: SessionService
+        private session: SessionService,
+        private bridgeService: BridgeService,
     ) {
         this.router = router;
         this.session = session;
@@ -37,6 +40,21 @@ export class AppComponent {
                 }
             }
         });
+
+        this.bridgeService.listUserBridges().then(bridges => {
+            this.bridgeCount = bridges.length;
+        });
+
+        window.onresize = this.updateVerticalSpaces;
+        window.onload = this.updateVerticalSpaces;
+    }
+
+    updateVerticalSpaces(): void {
+        const height = window.innerHeight;
+        const higherPart = document.getElementById('main-toolbar') as HTMLElement;
+        const lowerPart = document.getElementsByClassName('mat-drawer-container')[0] as HTMLElement;
+
+        lowerPart.style['min-height'] = (height - higherPart.clientHeight) + 'px';
     }
 
     gotoLogin(): void {
@@ -50,18 +68,14 @@ export class AppComponent {
     }
 
     goHome(): void {
-        this.gotoDashboard();
+        this.router.navigate(['/']);
     }
 
     gotoDashboard(): void {
         this.router.navigate(['/dashboard']);
     }
 
-    gotoPrograms(): void {
-        this.router.navigate(['/programs']);
-    }
-
-    gotoServices(): void {
-        this.router.navigate(['/services']);
+    gotoBridges(): void {
+        this.router.navigate(['/bridges']);
     }
 }

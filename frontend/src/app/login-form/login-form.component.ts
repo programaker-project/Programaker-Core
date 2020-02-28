@@ -22,7 +22,7 @@ export class LoginFormComponent implements OnInit {
             .then(session => {
                 this.session = session;
                 if (session !== null && session.active) {
-                    this.router.navigate(['/']);
+                    this.router.navigate(['/'], {replaceUrl:true});
                 }
             });
     }

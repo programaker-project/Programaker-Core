@@ -4,10 +4,12 @@
 %% Exposed functions
 -export([ initialize_program/2
         , update_program/2
+        , get_bridges_on_program/1
         ]).
 
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
+-include("instructions.hrl").
 
 %%%===================================================================
 %%% API
@@ -59,6 +61,10 @@ update_program(State,
                          , enabled=Enabled
                          }}.
 
+-spec get_bridges_on_program(#user_program_entry{}) -> { ok, [binary()] } | {error, not_found}.
+get_bridges_on_program(#user_program_entry{ user_id=OwnerUserId, program_parsed=Parsed}) ->
+    {ok , #{ <<"blocks">> := Columns } } = automate_program_linker:link_program(Parsed, OwnerUserId),
+    {ok, get_bridges_on_columns(Columns, OwnerUserId)}.
 
 %%%===================================================================
 %%% Internal functions
@@ -72,3 +78,71 @@ get_trigger([Trigger | Program]) ->
     #program_trigger{ condition=Trigger
                     , subprogram=Program
                     }.
+
+get_bridges_on_columns(Columns, OwnerUserId) ->
+    Set = sets:from_list(lists:flatmap(fun(Column) ->
+                                               get_bridges_on_column(Column, OwnerUserId)
+                                       end, Columns)),
+    sets:to_list(Set).
+
+get_bridges_on_column(Column, OwnerUserId) ->
+    lists:flatmap(fun(Block) ->
+                          get_bridges_on_block(Block, OwnerUserId)
+                  end, Column).
+
+get_bridges_on_block(Block, OwnerUserId) ->
+    SubBlockBridges = get_subblock_bridges(Block, OwnerUserId),
+    ArgBridges = get_argument_bridges(Block, OwnerUserId),
+    ValueBridges = get_value_bridges(Block, OwnerUserId),
+    case get_bridge_on_block_call(Block, OwnerUserId) of
+        {ok, BridgeId} ->
+            [BridgeId | SubBlockBridges] ++ ArgBridges ++ ValueBridges;
+        {error, not_found} ->
+            SubBlockBridges ++ ArgBridges ++ ValueBridges
+    end.
+
+
+get_argument_bridges(#{ ?ARGUMENTS := Arguments } , OwnerUserId) when is_list(Arguments) ->
+    lists:flatmap(fun(Arg) -> get_bridges_on_block(Arg, OwnerUserId) end, Arguments);
+get_argument_bridges(#{ ?ARGUMENTS := Arguments } , OwnerUserId) when is_map(Arguments) ->
+    lists:flatmap(fun({_K, Arg}) -> get_bridges_on_block(Arg, OwnerUserId) end, maps:to_list(Arguments));
+get_argument_bridges(_Block, _OwnerUserId) ->
+    [].
+
+get_value_bridges(#{ ?VALUE := Values } , OwnerUserId) when is_list(Values) ->
+    lists:flatmap(fun(Val) -> get_bridges_on_block(Val, OwnerUserId) end, Values);
+get_value_bridges(#{ ?VALUE := Values } , OwnerUserId) when is_map(Values) ->
+    lists:flatmap(fun({_K, Val}) -> get_bridges_on_block(Val, OwnerUserId) end, maps:to_list(Values));
+get_value_bridges(_Block, _OwnerUserId) ->
+    [].
+
+
+get_subblock_bridges(#{<<"contents">> := Contents}, OwnerUserId) ->
+    lists:flatmap(fun (SubBlock) ->
+                          get_bridges_on_block(SubBlock, OwnerUserId)
+                  end, Contents);
+get_subblock_bridges(_, _) ->
+    [].
+
+
+get_bridge_on_block_call(#{ ?TYPE := ?COMMAND_CALL_SERVICE
+                          , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
+                                           }}, OwnerUserId) ->
+    service_id_to_bridge_id(ServiceId, OwnerUserId);
+
+get_bridge_on_block_call(#{ ?TYPE := <<"services.", ServiceCall/binary>>
+                          }, OwnerUserId) ->
+    [ServiceId, _Action] = binary:split(ServiceCall, <<".">>),
+   service_id_to_bridge_id(ServiceId, OwnerUserId);
+
+get_bridge_on_block_call(_, _) ->
+    {error, not_found}.
+
+service_id_to_bridge_id(ServiceId, OwnerUserId) ->
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, OwnerUserId),
+    case Module of
+        {automate_service_port_engine_service, [BridgeId]} ->
+            {ok, BridgeId};
+        _ ->
+            {error, not_found}
+    end.

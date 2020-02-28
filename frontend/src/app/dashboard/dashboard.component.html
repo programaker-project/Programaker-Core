@@ -1,0 +1,88 @@
+<div class="profile-section">
+    <div class="private-section">
+        <div class="user-connections">
+            <h1>My connections </h1>
+            <div class="connection-list">
+                <div>
+                    <mat-card role="button" (click)="addConnection()" class="module connection call-to-action">
+                        <mat-icon class="action-icon">add</mat-icon>
+                    </mat-card>
+                </div>
+                <div *ngIf="(connections !== null) && (connections.length == 0)">
+                    <div class="integrated-call-to-action call-to-left">
+                        <mat-icon class="action-icon">arrow_back</mat-icon>
+                        To start, connect a service.
+                    </div>
+                </div>
+                <div *ngFor="let connection of connections">
+                    <mat-card class="module connection"
+                        role="button" (click)="openConnection(connection.conn)">
+                        <img class="icon" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
+
+                        <span *ngIf="!connection.extra.icon_url" class="connection-name">
+                            {{ connection.conn.bridge_name }}
+                        </span>
+                    </mat-card>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row public-section">
+        <div class="user-programs col col-sm-8">
+            <h1>My Programs</h1>
+            <div class="section-explanation">
+                Create a new program or edit the ones you already have.
+            </div>
+            <div class="row">
+                <div class="col-sm-6">
+                    <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
+                        <div class="program-data">
+                            <div class="card-title">Create new program</div>
+                        </div>
+                    </mat-card>
+                </div>
+                <div class="col-sm-6" *ngFor="let program of programs">
+                    <mat-card
+                        [ngClass]="{
+                        'module': true,
+                        'program': true,
+                        'enabled': program.enabled,
+                        'not-enabled': !program.enabled
+                        }"
+                        role="button">
+                        <div class="program-data" (click)="openProgram(program)">
+                            <div class="card-title">{{program.name}}</div>
+                            <div class="connection-icon-list">
+                                <span *ngFor="let bridge of program.bridges_in_use">
+                                    <img class="icon" *ngIf="bridgeIcons[bridge]" src="{{ bridgeIcons[bridge] }}" />
+                                </span>
+                            </div>
+                        </div>
+
+                        <div *ngIf="!program.enabled" class="program-operation">
+                            <button mat-mini-fab
+                                (click)="enableProgram(program)"
+                                color="accent"
+                                class="enable-program">
+                                <mat-icon>play_arrow</mat-icon>
+                            </button>
+                        </div>
+                    </mat-card>
+                </div>
+            </div>
+        </div>
+        <div *ngIf="tutorials && tutorials.length > 0" class="user-examples col col-sm-4">
+            <h1>Program ideas</h1>
+            <div class="section-explanation">
+                Click one to open a build guide.
+            </div>
+            <mat-card *ngFor="let tutorial of tutorials" role="button" class="module example">
+                <div class="description">{{ tutorial.description }}</div>
+                <div class="connection-icon-list">
+                    <img *ngFor="let icon of tutorial.icons" src="{{ icon }}" />
+                </div>
+            </mat-card>
+        </div>
+    </div>
+</div>

@@ -10,7 +10,7 @@
         , get_how_to_enable/2
         , call/5
         , get_monitor_id/2
-        , send_registration_data/3
+        , send_registration_data/4
         ]).
 
 -define(SERVER, ?MODULE).
@@ -46,8 +46,8 @@ get_monitor_id({Module, Params}, UserId) ->
 get_monitor_id(Module, UserId) ->
     Module:get_monitor_id(UserId).
 
-send_registration_data({Module, Params}, UserId, RegistrationData) ->
-    Module:send_registration_data(UserId, RegistrationData, Params);
+send_registration_data({Module, Params}, UserId, RegistrationData, RegistrationProperties) ->
+    Module:send_registration_data(UserId, RegistrationData, Params, RegistrationProperties);
 
-send_registration_data(Module, UserId, RegistrationData) ->
-    Module:send_registration_data(UserId, RegistrationData).
+send_registration_data(Module, UserId, RegistrationData, RegistrationProperties) ->
+    Module:send_registration_data(UserId, RegistrationData, [], RegistrationProperties).

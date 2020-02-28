@@ -1,3 +1,5 @@
+import { IconReference } from '../connection';
+
 export interface BridgeMetadata {
     control_url: string;
 };
@@ -7,5 +9,6 @@ export interface BridgeIndexData {
     name: string;
     id: string;
     service_id: string;
-    is_connetcted: boolean;
+    is_connected: boolean;
+    icon: IconReference;
 }

@@ -76,7 +76,7 @@ websocket_info(ping_interval, State) ->
     timer:send_after(?PING_INTERVAL_MILLISECONDS, ping_interval),
     {reply, ping, State};
 
-websocket_info({channel_engine, _ProgramId, Message}, State) ->
+websocket_info({channel_engine, _ChannelId, Message}, State) ->
     case ?FORMATTING:format_message(Message) of
         {ok, Structured} ->
             {reply, {text, jiffy:encode(Structured)}, State};

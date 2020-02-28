@@ -11,7 +11,7 @@
         , get_how_to_enable/2
         , get_monitor_id/2
         , call/5
-        , send_registration_data/3
+        , send_registration_data/4
         ]).
 
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
@@ -40,12 +40,19 @@ call(FunctionName, Values, Thread, UserId, [ServicePortId]) ->
                            {error, not_found} -> null
                        end,
 
-    {ok, ObfuscatedUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
+    ConnectionId = case automate_bot_engine_variables:get_thread_context(Thread) of
+                       { ok, #{ bridge_connection := #{ ServicePortId := ContextConnectionId } } } ->
+                           ContextConnectionId;
+                       _ ->
+                           {ok, DefaultConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId),
+                           DefaultConnectionId
+                   end,
+
     {ok, #{ <<"result">> := Result }} = automate_service_port_engine:call_service_port(
                                           ServicePortId,
                                           FunctionName,
                                           Values,
-                                          ObfuscatedUserId,
+                                          ConnectionId,
                                           #{ <<"last_monitor_value">> => LastMonitorValue}),
     {ok, Thread, Result}.
 
@@ -55,11 +62,45 @@ is_enabled_for_user(_Username, _Params) ->
 
 %% No need to enable service
 get_how_to_enable(#{ user_id := UserId }, [ServicePortId]) ->
-    {ok, ObfuscatedUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
-    {ok, #{ <<"result">> := Result }} = automate_service_port_engine:get_how_to_enable(ServicePortId, ObfuscatedUserId),
-    {ok, Result}.
+    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, UserId),
+    {ok, #{ <<"result">> := Result }} = automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId),
+    case Result of
+        null ->
+            {ok, #{ <<"type">> => <<"direct">> } };
+        _ ->
+            {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }}
+    end.
 
-send_registration_data(UserId, RegistrationData, [ServicePortId]) ->
-    {ok, ObfuscatedUserId} = automate_service_port_engine:internal_user_id_to_service_port_user_id(UserId, ServicePortId),
-    {ok, Result} = automate_service_port_engine:send_registration_data(ServicePortId, RegistrationData, ObfuscatedUserId),
-    {ok, Result}.
+send_registration_data(UserId, RegistrationData, [ServicePortId], Properties) ->
+    ConnectionId = case Properties of
+                       #{ <<"connection_id">> := ConnId } when is_binary(ConnId) -> ConnId;
+                       _ ->
+                           {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, UserId),
+                           TemporaryConnectionId
+                   end,
+
+    {ok, Result} = automate_service_port_engine:send_registration_data(ServicePortId, RegistrationData, ConnectionId),
+    PassedResult = case Result of
+                       #{ <<"success">> := true } ->
+                           Name = get_name_from_result(Result),
+                           ok = ?BACKEND:establish_connection(ServicePortId, UserId, ConnectionId, Name),
+                           Result;
+
+                       #{ <<"success">> := false, <<"error">> := <<"No registerer available">> } ->
+                           %% For compatibility with plaza/programaker-bridge library before connections
+                           %% where introduced.
+                           Name = get_name_from_result(Result),
+                           ok = ?BACKEND:establish_connection(ServicePortId, UserId, ConnectionId, Name),
+                           Result#{ <<"success">> => true
+                                  , <<"error">> => null
+                                  };
+
+                       _ ->
+                           Result
+         end,
+    {ok, PassedResult}.
+
+get_name_from_result(#{ <<"data">> := #{ <<"name">> := Name } }) ->
+    Name;
+get_name_from_result(_) ->
+    undefined.

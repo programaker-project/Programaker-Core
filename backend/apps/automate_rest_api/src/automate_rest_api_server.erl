@@ -18,35 +18,50 @@ start_link() ->
     Dispatch = cowboy_router:compile(
                  [{'_', [ %% Metrics
                           {"/metrics", automate_rest_api_metrics, []}
+                        , {"/api/v0/ping", automate_rest_api_ping, []}
 
-                          %% API
+                          %% Assets
+                        , {"/assets/icons/[...]", cowboy_static, {dir, automate_configuration:asset_directory("public/icons")}}
+
+                          %% Registration
                         , {"/api/v0/sessions/register", automate_rest_api_sessions_register, []}
                         , {"/api/v0/sessions/register/verify", automate_rest_api_sessions_register_verify, []}
+
+                          %% Session management
                         , {"/api/v0/sessions/check", automate_rest_api_sessions_check, []}
                         , {"/api/v0/sessions/login", automate_rest_api_sessions_login, []}
                         , {"/api/v0/sessions/login/reset", automate_rest_api_sessions_reset_password, []}
                         , {"/api/v0/sessions/login/reset/validate", automate_rest_api_sessions_reset_password_validate, []}
                         , {"/api/v0/sessions/login/reset/update", automate_rest_api_sessions_reset_password_update, []}
 
-                        , {"/api/v0/ping", automate_rest_api_ping, []}
-
+                          %% Users
                         , {"/api/v0/users", automate_rest_api_users_root, []}
                         , {"/api/v0/users/:user_id", automate_rest_api_users_specific, []}
 
+                          %% Miscellaneous
                         , {"/api/v0/users/id/:user_id/custom_signals/", automate_rest_api_custom_signals_root, []}
 
                         , {"/api/v0/users/id/:user_id/templates/", automate_rest_api_templates_root, []}
                         , {"/api/v0/users/id/:user_id/templates/id/:template_id", automate_rest_api_templates_specific, []}
                         , {"/api/v0/users/:user_id/custom-blocks/", automate_rest_api_custom_blocks_root, []}
+
+                          %% Programs
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
                         , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/communication", automate_rest_api_program_specific_communication, []}
+                          %% Program operation
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs", automate_rest_api_program_logs, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/tags", automate_rest_api_program_tags, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/stop-threads", automate_rest_api_program_stop, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/status", automate_rest_api_program_status, []}
 
-                        , {"/api/v0/users/:user_id/bridges/", automate_rest_api_service_ports_root, []}
+                          %% Connection management
+                        , {"/api/v0/users/id/:user_id/connections/available", automate_rest_api_connections_available_root, []}
+                        , {"/api/v0/users/id/:user_id/connections/established", automate_rest_api_connections_established_root, []}
+                        , {"/api/v0/users/id/:user_id/connections/pending/:connection_id/wait", automate_rest_api_connections_pending_wait, []}
+
+                          %% Bridges
+                        , {"/api/v0/users/:user_id/bridges", automate_rest_api_service_ports_root, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/callback/:callback", automate_rest_api_bridge_callback, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/functions/:function", automate_rest_api_bridge_function_specific, []}
@@ -56,9 +71,12 @@ start_link() ->
                         , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/oauth_return"
                           , automate_rest_api_service_port_oauth_return, []}
 
+                          %% Services
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}
                         , {"/api/v0/users/:user_id/services/id/:service_id/how-to-enable", automate_rest_api_services_how_to_enable, []}
                         , {"/api/v0/users/:user_id/services/id/:service_id/register", automate_rest_api_services_register, []}
+
+                          %% Monitor
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}
                         ]}
                  ]),

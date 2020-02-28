@@ -47,7 +47,7 @@ export class BridgeIndexComponent {
             .then(session => {
                 this.session = session;
                 if (!session.active) {
-                    this.router.navigate(['/login']);
+                    this.router.navigate(['/login'], {replaceUrl:true});
                 }
                 else {
                     this.refresh_bridge_list();

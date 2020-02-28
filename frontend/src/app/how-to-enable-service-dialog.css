@@ -7,7 +7,7 @@ div.message-example {
     color: #eee;
 }
 
-button.confirmation {
+button.confirmation, button.rejection {
     right: 0;
     margin-left: auto;
 }

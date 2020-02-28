@@ -129,5 +129,11 @@ encode_program_list([H | T], Acc) ->
                     , <<"name">> => Name
                     , <<"link">> =>  Link
                     , <<"enabled">> => Enabled
+                    , <<"bridges_in_use">> => get_bridges_on_program_id(Id)
                     },
     encode_program_list(T, [AsDictionary | Acc]).
+
+get_bridges_on_program_id(ProgramId) ->
+    {ok, Program} = automate_storage:get_program_from_id(ProgramId),
+    {ok, Bridges} = automate_bot_engine:get_bridges_on_program(Program),
+    Bridges.

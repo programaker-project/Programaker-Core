@@ -22,13 +22,13 @@ export class HomeRedirectComponent implements OnInit {
         this.sessionService.getSession()
             .then(session => {
                 if (session.active) {
-                    this.router.navigate(['/dashboard']);
+                    this.router.navigate(['/dashboard'], {replaceUrl:true});
                 }
                 else {
-                    this.router.navigate(['/about']);
+                    this.router.navigate(['/about'], {replaceUrl:true});
                 }
             }).catch(_err => {
-                this.router.navigate(['/about']);
+                this.router.navigate(['/about'], {replaceUrl:true});
             });
     }
 }

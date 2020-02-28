@@ -24,11 +24,13 @@ import { ToolboxController } from './blocks/ToolboxController';
 import { TemplateService } from './templates/template.service';
 import { ServiceService } from './service.service';
 import { CustomSignalService } from './custom_signals/custom_signal.service';
+import { ConnectionService } from './connection.service';
+import { environment } from '../environments/environment';
 
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
-    providers: [CustomBlockService, CustomSignalService, MonitorService, ProgramService, TemplateService, ServiceService],
+    providers: [ConnectionService,CustomBlockService, CustomSignalService, MonitorService, ProgramService, TemplateService, ServiceService],
     styleUrls: [
         'program-detail.component.css',
         'libs/css/material-icons.css',
@@ -41,6 +43,8 @@ export class ProgramDetailComponent implements OnInit {
     workspace: Blockly.Workspace;
     programUserName: string;
     programId: string;
+    environment: { [key: string]: any };
+
     @ViewChild('logs_drawer') logs_drawer: MatDrawer;
 
     logs_drawer_initialized: boolean = false;
@@ -62,6 +66,8 @@ export class ProgramDetailComponent implements OnInit {
         private templateService: TemplateService,
         private serviceService: ServiceService,
         private notification: MatSnackBar,
+        public connectionService: ConnectionService,
+
     ) {
         this.monitorService = monitorService;
         this.programService = programService;
@@ -73,6 +79,8 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        this.environment = environment;
+
         if (window && (window.innerWidth < window.innerHeight)) {
             this.portraitMode = true;
         } else {
@@ -191,17 +199,24 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     patch_flyover_area_deletion() {
+        if ((Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_.orig) {
+            return;
+        }
+
         this.patchedFunctions.recordDeleteAreas = (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_;
         (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_ = () => {
             this.patchedFunctions.recordDeleteAreas.bind(this.workspace)();
 
             // Disable toolbox delete area use trashcan for deletion
             const tbDelArea = (this.workspace as any).deleteAreaToolbox_;
-            tbDelArea.left = -100;
-            tbDelArea.top = -100;
-            tbDelArea.width = 0;
-            tbDelArea.height = 0;
+            if (tbDelArea) {
+                tbDelArea.left = -100;
+                tbDelArea.top = -100;
+                tbDelArea.width = 0;
+                tbDelArea.height = 0;
+            }
         }
+        (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_.orig = this.patchedFunctions.recordDeleteAreas;
     }
 
     prepareWorkspace(): Promise<ToolboxController> {
@@ -215,6 +230,7 @@ export class ProgramDetailComponent implements OnInit {
             this.templateService,
             this.serviceService,
             this.customSignalService,
+            this.connectionService,
         )
             .inject()
             .then(([toolbox, registrations, controller]) => {
@@ -450,7 +466,7 @@ export class ProgramDetailComponent implements OnInit {
         }
     }
 
-    sendProgram(): Promise<boolean> {
+    async sendProgram(): Promise<boolean> {
         // Get workspace
         const xml = Blockly.Xml.workspaceToDom(this.workspace);
 
@@ -467,7 +483,20 @@ export class ProgramDetailComponent implements OnInit {
                                            serialized.orig);
 
         // Send update
-        return this.programService.updateProgram(this.programUserName, program);
+        const button = document.getElementById('program-start-button');
+        if (button){
+            button.classList.add('started');
+            button.classList.remove('completed');
+        }
+
+        const result = await this.programService.updateProgram(this.programUserName, program);
+
+        if (button){
+            button.classList.remove('started');
+            button.classList.add('completed');
+        }
+
+        return result;
     }
 
     renameProgram() {

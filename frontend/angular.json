@@ -37,6 +37,23 @@
             ]
           },
           "configurations": {
+            "pm-dev": {
+              "optimization": false,
+              "outputHashing": "all",
+              "sourceMap": true,
+              "extractCss": false,
+              "namedChunks": false,
+              "aot": false,
+              "extractLicenses": false,
+              "vendorChunk": false,
+              "buildOptimizer": false,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.programaker-dev.ts"
+                }
+              ]
+            },
             "programaker": {
               "optimization": true,
               "outputHashing": "all",
@@ -81,6 +98,9 @@
           "configurations": {
             "production": {
               "browserTarget": "plaza:build:production"
+            },
+            "pm-dev": {
+              "browserTarget": "plaza:build:pm-dev"
             }
           }
         },

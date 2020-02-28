@@ -1,0 +1,41 @@
+@startuml oauth-connection-establishment-internal
+actor user
+participant PrograMaker as pm
+participant bridge
+participant OAuthService as oauth
+
+autonumber
+
+... User goes to "New Connections" panel ...
+user -> pm : Get possible connections
+
+note over pm 
+    Looks at possible connections on bridges DB.
+end note
+
+user <-- pm : Possible connection list
+
+... User selects a bridge they want to connect to ...
+
+user -> pm : Prepare to start connection to <bridge>
+pm -> bridge : User wants to establish connection
+pm <-- bridge : Here is the *registration* form
+user <-- pm : Shows registration form
+
+... User gets registration URL ...
+
+user -> oauth : Access & Identify
+user <-- oauth : Redirect with token
+
+user -> pm : Register with token
+pm -> bridge : Token
+pm <-- bridge : Success=true, name=X
+
+note over pm
+    - Create connection in DB
+    - Save returned data
+end note
+
+user <-- pm : Connection established
+
+@enduml

@@ -19,6 +19,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBarModule } from '@angular/material/snack-bar'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatBadgeModule } from '@angular/material/badge';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -26,6 +27,7 @@ import { AlertModule } from 'ngx-bootstrap';
 
 import { AppComponent } from './app.component';
 import { DashboardComponent } from './dashboard.component';
+import { NewDashboardComponent } from './dashboard/dashboard.component';
 
 // Programs
 import { ProgramsComponent } from './programs.component';
@@ -43,6 +45,9 @@ import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogCom
 import { BridgeIndexComponent } from './bridges/index.component';
 import { BridgeAddComponent } from './bridges/add.component';
 import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
+
+// Connections
+import { AddConnectionDialogComponent } from './connections/add-connection-dialog.component';
 
 // Custom signals
 import { CustomSignalCreateDialogComponent } from './custom_signals/create-dialog.component';
@@ -70,6 +75,7 @@ import { SelectFromJSON } from './select_from_json.filter';
     declarations: [
         AppComponent,
         DashboardComponent,
+        NewDashboardComponent,
         ProgramsComponent,
         ProgramDetailComponent,
         BridgeIndexComponent,
@@ -95,6 +101,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         TemplateCreateDialogComponent,
         StopThreadProgramDialogComponent,
         SetProgramTagsDialogComponent,
+        AddConnectionDialogComponent,
 
         // Pipes
         SummarizeJSON,
@@ -117,6 +124,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         MatChipsModule,
         MatSnackBarModule,
         MatProgressSpinnerModule,
+        MatBadgeModule,
 
         BrowserAnimationsModule,
 

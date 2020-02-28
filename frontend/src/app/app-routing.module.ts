@@ -7,6 +7,7 @@ import { ServicesComponent } from './services.component';
 import { BridgeAddComponent } from './bridges/add.component';
 
 import { DashboardComponent } from './dashboard.component';
+import { NewDashboardComponent } from './dashboard/dashboard.component';
 
 import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
@@ -33,7 +34,8 @@ const routes: Routes = [
     { path: 'register/verify/:verification_code', component: VerifyCodeComponent },
 
     // General
-    { path: 'dashboard', component: DashboardComponent },
+    { path: 'full-dashboard', component: DashboardComponent },
+    { path: 'dashboard', component: NewDashboardComponent },
 
     // Programs
     { path: 'users/:user_id/programs/', component: ProgramsComponent },

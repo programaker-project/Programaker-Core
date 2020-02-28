@@ -12,21 +12,98 @@
         <app-my-app>
             <style>
                 body {
-                    background-color: #009688;
+                    background-color: #004f47;
+                    color: #fff;
                 }
 
                 .parent {
                     position: relative;
                 }
 
-                .centerer > img {
+                .centerer > .centered {
                     position: absolute;
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
+                    text-align: center;
+                }
+                @keyframes phase-in {
+                    from {opacity: 0.2;}
+                    to {opacity: 1;}
+                }
+                @keyframes phase-out {
+                    from {opacity: 1;}
+                    to {opacity: 0;}
+                }
+                .load-explanation {
+                    margin: 1ex;
+                }
+                #humor {
+                    padding-top: 3em;
+                    font-weight: 600;
+                    height: 2ex;
+                }
+                .ease-in {
+                    animation-name: phase-in;
+                    animation-duration: 2s;
+                }
+                .ease-out {
+                    animation-name: phase-out;
+                    animation-duration: 0.5s;
                 }
             </style>
-            <div class="centerer"><img src="/assets/logo.png" /></div>
+            <div id="loading-page" class="centerer">
+                <div class="centered">
+                    <img src="/assets/logo.png" />
+                    <h1 class="load-explanation">Loading PrograMaker...</h1>
+
+                    <div id="humor"></div>
+                    <noscript>
+                        <div id="no-load-alert">
+                            <p>Sorry, PrograMaker won't work without Javascript.</p>
+                            <p>Please consider enabling Javascript.</p>
+                        </div>
+                    </noscript>
+                    <script>
+                        (function() {
+                            var phrases = ['Engaging bridges...', 'Supercharging Websockets...', 'Embedding IOTs...', 'Running out of meaningless texts...', 'This is unexpected...', 'Still there?', 'Considering reload...', 'Welp, hopefully this will complete...', 'Oficially ran out of phrases ¯\\_(ツ)_/¯'];
+                            var element = document.getElementById('humor');
+                            var currentIndex = -1;
+                            var entering = true;
+                            var updateHumor = (function() {
+                                if (element.getBoundingClientRect().width < 1) {
+                                    // No longer being shown, stop updating
+                                    return;
+                                }
+
+                                if (entering){
+                                    if ((currentIndex + 1) < phrases.length){
+                                        currentIndex = currentIndex + 1;
+                                    }
+                                    else {
+                                        return;
+                                    }
+                                    element.innerText = phrases[currentIndex];
+                                    element.classList.value = 'ease-in';
+
+                                    entering = false;
+                                    setTimeout(updateHumor, 5000);
+                                }
+                                else {
+                                    if ((currentIndex + 1) >= phrases.length){
+                                        return; // No more updates
+                                    }
+                                    element.classList.value = 'ease-out';
+                                    entering = true;
+                                    setTimeout(updateHumor, 500);
+                                }
+                            });
+                            updateHumor();
+                        })();
+                    </script>
+                </div>
+            </div>
+
         </app-my-app>
     </body>
 </html>

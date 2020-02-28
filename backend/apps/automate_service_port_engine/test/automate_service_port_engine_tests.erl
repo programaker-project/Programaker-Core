@@ -93,6 +93,10 @@ owned_private_blocks_appear() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, OwnerUserId),
+    ok = ?BACKEND:establish_connection(ServicePortId, OwnerUserId, ConnectionId, undefined),
+
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
 
     check_test_block(CustomBlock).
@@ -112,6 +116,15 @@ non_owned_private_blocks_dont_appear() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    case ?BACKEND:gen_pending_connection(ServicePortId, RequesterUserId) of
+        {ok, ConnectionId} ->
+            %% TODO This connection should *not* be possible
+            ?BACKEND:establish_connection(ServicePortId, RequesterUserId, ConnectionId, undefined);
+        _ ->
+            ok
+    end,
+
     {ok, Results} = ?APPLICATION:list_custom_blocks(RequesterUserId),
     ?assertEqual(#{}, Results).
 
@@ -129,6 +142,10 @@ owned_public_blocks_appear() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, OwnerUserId),
+    ok = ?BACKEND:establish_connection(ServicePortId, OwnerUserId, ConnectionId, undefined),
+
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
 
     check_test_block(CustomBlock).
@@ -147,6 +164,10 @@ non_owned_public_blocks_appear() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, RequesterUserId),
+    ok = ?BACKEND:establish_connection(ServicePortId, RequesterUserId, ConnectionId, undefined),
+
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(RequesterUserId),
 
     check_test_block(CustomBlock).
@@ -164,6 +185,10 @@ owned_delete_bridge_blocks() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
+
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(BridgeId, OwnerUserId),
+    ok = ?BACKEND:establish_connection(BridgeId, OwnerUserId, ConnectionId, undefined),
+
     {ok, #{ BridgeId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
     %% Blocks are created
     check_test_block(CustomBlock),
@@ -251,6 +276,7 @@ route_notification_targeted_to_owner() ->
                                                                               TargetUserId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = establish_connection(ServicePortId, TargetUserId),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
@@ -286,6 +312,7 @@ route_notification_targeted_to_owner_on_public() ->
                                                                               TargetUserId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = establish_connection(ServicePortId, TargetUserId),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
@@ -320,6 +347,7 @@ route_notification_targeted_to_non_owner_on_public() ->
                                                                               TargetUserId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = establish_connection(ServicePortId, TargetUserId),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
@@ -382,6 +410,10 @@ route_notification_targeted_to_all_users_on_public() ->
 %%====================================================================
 %% Notification routing tests - Internal functions
 %%====================================================================
+establish_connection(BridgeId, UserId) ->
+    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(BridgeId, UserId),
+    ok = ?BACKEND:establish_connection(BridgeId, UserId, ConnectionId, <<"test connection">>).
+
 emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
     Key = binary:list_to_bin(atom_to_list(?MODULE)),
     Value = Content, %% For simplicity
@@ -390,8 +422,8 @@ emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
                    null -> null;
                    _ ->
                        {ok, ObfuscatedUserId} =
-                           ?APPLICATION:internal_user_id_to_service_port_user_id(TargetUserId,
-                                                                                 ServicePortId),
+                           ?APPLICATION:internal_user_id_to_connection_id(TargetUserId,
+                                                                          ServicePortId),
                        ObfuscatedUserId
                end,
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,

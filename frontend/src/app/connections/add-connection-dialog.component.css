@@ -1,0 +1,23 @@
+.mat-dialog-actions > button.cancellation {
+    margin-left: auto;
+}
+
+button {
+    right: 0;
+}
+
+mat-card > h4 {
+    word-break: break-all;
+}
+
+mat-card.selected {
+    border: 2px solid #227e00;
+}
+
+mat-card.reading {
+    border: 2px solid #ddd;
+}
+
+mat-card.error {
+    background-color: #fbb0b0;
+}

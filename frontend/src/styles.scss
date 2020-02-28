@@ -2,10 +2,15 @@
 @import 'material_theme';
 @import 'blockly_theme';
 
-html, body, my-app, mat-sidenav-container, .app-content {
+html, body, my-app, .app-content {
   margin: 0;
   width: 100%;
   height: 100%;
+}
+
+mat-sidenav-container {
+    margin: 0;
+    width: 100%;
 }
 
 body {
@@ -16,12 +21,31 @@ body {
     height: auto;
 }
 
+.mat-drawer-inner-container {
+    padding-top: 1em;
+}
+
+.mat-drawer-inner-container > ul {
+    padding-left: 0.5ex;
+    padding-right: 1ex; // Compensate badges (not accounted for when laying-out)
+}
+
+.mat-drawer-inner-container > ul > li > button {
+    width: 100%;
+    font-size: 150%;
+    padding-top: 1ex;
+    padding-bottom: 1ex;
+    text-align: right;
+    text-decoration: underline solid currentColor 1px;
+}
+
 mat-sidenav, .full-height {
     height: 100%;
 }
 
 mat-sidenav.mat-sidenav {
-    background-color: #F5F5F5;
+    background-color: #FFFFFF;
+    box-shadow: 2px 0px 3px 0px rgba(0,0,0,0.3);
 }
 
 mat-toolbar-row {
@@ -92,6 +116,10 @@ app-my-reset-password-start, app-my-reset-password-update-password {
 
 a[role="button"], a[role="button"]:not([href]), a[role="button"]:not([href]):hover, a[role="button"]:hover {
     text-decoration: underline;
+    cursor: pointer;
+}
+
+mat-card[role="button"], .mat-card[role="button"] {
     cursor: pointer;
 }
 
@@ -206,6 +234,7 @@ mat-card.call-to-action > h4 {
 /* How to enable services */
 div.console {
     padding: 1ex;
+
     background-color: #222;
     color: #eee;
     border-radius: 2px;
@@ -262,4 +291,33 @@ mat-card.bridge.connected-false {
     padding: 1ex 1em 1ex 1em;
     animation-name: glow-new-log-entry;
     animation-duration: 2s;
+}
+
+/* Program detail upload button animation */
+@keyframes button-load-started {
+    from {width: 100%;}
+    to {width: 50%;}
+}
+@keyframes button-load-completed {
+    from {width: 50%;}
+    to {width: 0%;}
+}
+
+button#program-start-button > .mat-button-wrapper > .load-bg {
+    background-color: #27212e;
+    height: 100%;
+    position: absolute;
+    z-index: -1;
+    right: 0px;
+    top: 0;
+}
+
+button#program-start-button.started > span > .load-bg {
+    animation-name: button-load-started;
+    animation-duration: 0.2s;
+}
+
+button#program-start-button.completed > span > .load-bg {
+    animation-name: button-load-completed;
+    animation-duration: 0.3s;
 }

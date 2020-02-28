@@ -72,9 +72,16 @@ content_types_accepted(Req, State) ->
 accept_json_register_service(Req, State) ->
     #state{username = Username, service_id = ServiceId} = State,
     {ok, Body, Req1} = read_body(Req),
-    RegistrationData = jiffy:decode(Body, [return_maps]),
-
-    case automate_rest_api_backend:register_service(Username, ServiceId, RegistrationData) of
+    FullRegistrationData = jiffy:decode(Body, [return_maps]),
+    { RegistrationData, ConnectionId } = case FullRegistrationData of
+                                             #{ <<"metadata">> := #{<<"connection_id">> := ConnId} } ->
+                                                 {maps:remove(<<"metadata">>, FullRegistrationData), ConnId};
+                                             #{ <<"metadata">> := #{} } ->
+                                                 {maps:remove(<<"metadata">>, FullRegistrationData), undefined};
+                                             _ ->
+                                                 {FullRegistrationData, undefined}
+                                         end,
+    case automate_rest_api_backend:register_service(Username, ServiceId, RegistrationData, ConnectionId) of
         {ok, Data} ->
             Output = jiffy:encode(Data),
             Res2 = cowboy_req:set_resp_body(Output, Req1),

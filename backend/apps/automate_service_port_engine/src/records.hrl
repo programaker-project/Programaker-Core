@@ -8,13 +8,6 @@
 %%% Check the service_port_configuration record.
                             }).
 
--record(service_port_entry_extra, { id    :: binary()
-                                  , name  :: binary()
-                                  , owner :: binary() %% User id
-                                  , service_id :: binary() | 'undefined'
-                                                % ↓ Extra data
-                                  , is_connected :: boolean()
-                                  }).
 
 -type service_port_block_argument_type() :: binary(). %% <<"string">>
                                           %% | <<"integer">>
@@ -59,20 +52,36 @@
                                     , subkey :: block_subkey()
                                     }).
 
+-type supported_icon_hashes() :: 'sha256'.
+
+-type supported_icon_type() :: {url, binary()}
+                             | {hash, supported_icon_hashes(), binary() }.
+
 -record(service_port_configuration, { id :: binary() | ?MNESIA_SELECTOR %% Service port Id
                                     , service_name :: binary() | ?MNESIA_SELECTOR
                                     , service_id :: binary() | 'undefined' | ?MNESIA_SELECTOR
                                     , is_public :: boolean() | ?MNESIA_SELECTOR
                                     , blocks :: [#service_port_block{}] | ?MNESIA_SELECTOR
+                                    , icon :: undefined | supported_icon_type() | ?MNESIA_SELECTOR
+                                    , allow_multiple_connections :: boolean() | ?MNESIA_SELECTOR
                                     }).
 
+-record(service_port_entry_extra, { id    :: binary()
+                                  , name  :: binary()
+                                  , owner :: binary() %% User id
+                                  , service_id :: binary() | 'undefined'
+                                                % ↓ Extra data
+                                  , is_connected :: boolean()
+                                  , icon :: supported_icon_type()
+                                  }).
 
--record(service_port_user_obfuscation_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% internal id
-                                                     , binary() | ?MNESIA_SELECTOR  %% bridge id
-                                                     }
-                                             , obfuscated_id :: binary() | ?MNESIA_SELECTOR
-                                             }).
 
+
+-record(service_port_metadata, { id    :: binary() | ?MNESIA_SELECTOR
+                               , name  :: binary() | ?MNESIA_SELECTOR
+                               , owner :: binary() | ?MNESIA_SELECTOR %% User id
+                               , icon :: undefined | supported_icon_type() | ?MNESIA_SELECTOR
+                               }).
 
 -record(service_port_monitor_channel_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% user id
                                                     , binary() | ?MNESIA_SELECTOR  %% bridge id
@@ -95,3 +104,18 @@
                                      , pid :: pid()          | ?MNESIA_SELECTOR
                                      , node :: node()        | ?MNESIA_SELECTOR
                                      }).
+
+-record(user_to_bridge_connection_entry, { id :: binary() | ?MNESIA_SELECTOR
+                                         , bridge_id :: binary() | ?MNESIA_SELECTOR
+                                         , user_id :: binary() | ?MNESIA_SELECTOR
+                                         , channel_id :: binary() | ?MNESIA_SELECTOR
+                                         , name :: binary() | undefined | ?MNESIA_SELECTOR
+                                         , creation_time :: non_neg_integer() | ?MNESIA_SELECTOR
+                                         }).
+
+-record(user_to_bridge_pending_connection_entry, { id :: binary() | ?MNESIA_SELECTOR
+                                                 , bridge_id :: binary() | ?MNESIA_SELECTOR
+                                                 , user_id :: binary() | ?MNESIA_SELECTOR
+                                                 , channel_id :: binary() | ?MNESIA_SELECTOR
+                                                 , creation_time :: non_neg_integer() | ?MNESIA_SELECTOR
+                                                 }).

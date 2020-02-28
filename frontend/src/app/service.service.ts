@@ -27,7 +27,7 @@ export class ServiceService {
     }
 
     async getServiceEnableHowToUrl(service: AvailableService) {
-        return API.ApiHost + service.link + '/how-to-enable';
+        return service.link + '/how-to-enable';
     }
 
     async getServiceRegistryUrl(service_id: string) {
@@ -38,32 +38,45 @@ export class ServiceService {
 
     getAvailableServices(): Promise<AvailableService[]> {
         return this.getListAvailableServicesUrl().then(
-            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() }).pipe(
-                map(response => response as AvailableService[]))
+            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+                .pipe(map(response => response as AvailableService[]))
                 .toPromise());
     }
 
-    getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {
-        return this.getServiceEnableHowToUrl(service).then(
-            url => this.http.get(url, { headers: this.sessionService.getAuthHeader() }).pipe(
-                map(response => {
-                    return response as ServiceEnableHowTo;
-                }))
-                .toPromise());
+    async getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {
+        const url = await this.getServiceEnableHowToUrl(service);
+        return (this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+                .toPromise() as Promise<ServiceEnableHowTo>);
     }
 
-    registerService(service_id: string, data: { [key: string]: string }): Promise<boolean> {
+    registerService(data: { [key: string]: string }, service_id: string, connection_id: string): Promise<{success: boolean}> {
+        console.log("data:", data);
+        if (connection_id) {
+            if (data.metadata === undefined) {
+                (data as any).metadata = {};
+            }
+            (data as any).metadata.connection_id = connection_id;
+        }
         return this.getServiceRegistryUrl(service_id).then(
-            url => this.http.post(
+            url => (this.http.post(
                 url, JSON.stringify(data),
                 {
                     headers: this.sessionService.addContentType(
                         this.sessionService.getAuthHeader(),
                         ContentType.Json),
-                }).pipe(
-                map(response => {
-                    return (response as any).success;
-                }))
-                .toPromise());
+                }).toPromise()) as Promise<{success: boolean}>);
+    }
+
+    async directRegisterService(bridge_id: string): Promise<{success: boolean}> {
+        const data = {};
+
+        const url = await this.getServiceRegistryUrl(bridge_id)
+        return (this.http.post(
+            url, JSON.stringify(data),
+            {
+                headers: this.sessionService.addContentType(
+                    this.sessionService.getAuthHeader(),
+                    ContentType.Json),
+            }).toPromise()) as Promise<{success: boolean}>;
     }
 }

@@ -16,6 +16,7 @@
         , retrieve_instruction_memory/1
         , set_instruction_memory/2
         , unset_instruction_memory/1
+        , get_thread_context/1
         ]).
 
 -define(SERVER, ?MODULE).
@@ -138,6 +139,10 @@ set_instruction_memory(Thread=#program_thread{ instruction_memory=Memory, positi
 unset_instruction_memory(Thread=#program_thread{ instruction_memory=Memory, position=Position }) ->
     Thread#program_thread{ instruction_memory=maps:remove(Position, Memory) }.
 
+-spec get_thread_context(#program_thread{}) -> {ok, map()}.
+get_thread_context(Thread=#program_thread{ instruction_memory=Memory, position=Position }) ->
+    get_context_from_memory(Memory, Position, #{}).
+
 %%%===================================================================
 %%% Internal values
 %%%===================================================================
@@ -188,3 +193,43 @@ get_memory([H | T], Mem) ->
         _ ->
             {error, not_found}
     end.
+
+get_context_from_memory(_Memory, [], Acc) ->
+    {ok, Acc};
+get_context_from_memory(Memory, Position, Acc) ->
+    InstructionMemory = case maps:find(Position, Memory) of
+                            {ok, Result} ->
+                                Result;
+                            error ->
+                                []
+                        end,
+    get_context_from_memory(Memory, lists:droplast(Position), add_to_context_acc(InstructionMemory, Acc)).
+
+add_to_context_acc([], Context) ->
+    Context;
+add_to_context_acc([{ context_group, Key, { SubKey, SubValue } } | T], Context) ->
+    PrevValue = case maps:is_key(Key, Context) of
+                    true -> maps:get(Key, Context);
+                    false -> #{}
+                end,
+    case maps:is_key(SubKey, PrevValue) of
+        true ->
+            %% Repeated key, as we're going bottom-up, we don't update
+            %% the context. This way we get the innermost values, which are
+            %% the ones to be used.
+            add_to_context_acc(T, Context);
+        false ->
+            add_to_context_acc(T, Context#{ Key => PrevValue#{ SubKey => SubValue } })
+    end;
+add_to_context_acc([{ context, Key, Value } | T], Context) ->
+    case maps:is_key(Key, Context) of
+        true ->
+            %% Repeated key, as we're going bottom-up, we don't update
+            %% the context. This way we get the innermost values, which are
+            %% the ones to be used.
+            add_to_context_acc(T, Context);
+        false ->
+            add_to_context_acc(T, Context#{ Key => Value })
+    end;
+add_to_context_acc([ _ | T ], Context) ->
+    add_to_context_acc(T, Context).

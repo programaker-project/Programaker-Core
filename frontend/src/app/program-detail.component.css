@@ -18,6 +18,7 @@
 
 .closer > button {
     border: none;
+    background-color: inherit;
 }
 
 button#program-rename-button,
@@ -28,6 +29,7 @@ button#program-logs-button,
 button#advancedProgramControls {
     vertical-align: top;
     padding: 1ex;
+    margin-top: 2px;
 }
 
 button#program-delete-button{

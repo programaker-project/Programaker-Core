@@ -17,6 +17,9 @@ import { ServiceService } from '../service.service';
 import { AvailableService } from '../service';
 
 import { alreadyRegisteredException, createDom } from './utils';
+import { ConnectionService } from '../connection.service';
+import { BridgeConnection } from '../connection';
+
 
 declare const Blockly;
 
@@ -45,6 +48,7 @@ export class Toolbox {
         templateService: TemplateService,
         serviceService: ServiceService,
         customSignalService: CustomSignalService,
+        public connectionService: ConnectionService,
     ) {
         this.monitorService = monitorService;
         this.customBlockService = customBlockService;
@@ -57,14 +61,19 @@ export class Toolbox {
     }
 
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
-        const monitors = await this.monitorService.getMonitors();
-        const custom_blocks = await this.customBlockService.getCustomBlocks();
-        const services = await this.serviceService.getAvailableServices();
+        const [monitors, custom_blocks, services, connections] = await Promise.all([
+            this.monitorService.getMonitors(),
+            this.customBlockService.getCustomBlocks(),
+            this.serviceService.getAvailableServices(),
+            this.connectionService.getConnections(),
+        ]) as [MonitorMetadata[], ResolvedCustomBlock[], AvailableService[], BridgeConnection[]];
+
         this.controller.addCustomBlocks(custom_blocks);
+
 
         const categorized_blocks =  this.categorize_blocks(custom_blocks,services);
 
-        const registrations = this.injectBlocks(monitors, categorized_blocks, services);
+        const registrations = this.injectBlocks(monitors, categorized_blocks, services, connections);
         const toolboxXML = await this.injectToolbox(monitors, categorized_blocks);
         this.controller.setToolbox(toolboxXML);
 
@@ -96,15 +105,21 @@ export class Toolbox {
         return categorized_blocks;
     }
 
-    injectBlocks(monitors: MonitorMetadata[], custom_blocks: CategorizedCustomBlock[], services: AvailableService[]): Function[] {
+    injectBlocks(monitors: MonitorMetadata[],
+                 custom_blocks: CategorizedCustomBlock[],
+                 services: AvailableService[],
+                 connections: BridgeConnection[],
+                ): Function[] {
         let registrations = [];
 
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
         this.injectJSONBlocks();
+        this.injectOperationBlocks(connections);
         registrations = registrations.concat(this.templateController.injectBlocks());
         registrations = registrations.concat(this.customSignalController.injectBlocks());
         this.injectCustomBlocks(custom_blocks);
+
 
         return registrations;
     }
@@ -238,6 +253,166 @@ export class Toolbox {
                 });
             }
         };
+    }
+
+    injectOperationBlocks(connections: BridgeConnection[]) {
+        const bridge_to_connection_map: { [ key: string ]: BridgeConnection[] } = {};
+        const bridge_dropdown: [ string, string ][] = [];
+        const full_connection_dropdown: [ string, string ][] = [];
+
+        for (const conn of connections) {
+            if (bridge_to_connection_map[conn.bridge_id] === undefined) {
+                bridge_to_connection_map[conn.bridge_id] = [];
+                bridge_dropdown.push([conn.bridge_name, conn.bridge_id]);
+            }
+            bridge_to_connection_map[conn.bridge_id].push(conn);
+
+            full_connection_dropdown.push([conn.name || 'default', conn.connection_id]);
+        }
+
+        Blockly.Blocks['operator_select_connection'] = {
+            init: function () {
+
+                let currentBridgeSelected = null;
+
+                this.jsonInit({
+                    'id': 'operator_select_connection',
+                    'message0': 'On bridge %1 use conection %2',
+                    'args0': [
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'BRIDGE1',
+                            'options': bridge_dropdown,
+
+
+                        },
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'CONNECTION2',
+                            'options': () => {
+                                if (!currentBridgeSelected) {
+                                    return full_connection_dropdown;
+                                }
+                                try {
+                                    const options = [];
+
+                                    let bridge = currentBridgeSelected;
+                                    if (!currentBridgeSelected) {
+                                        bridge = bridge_dropdown[0][0];
+                                    }
+
+                                    for (const conn of bridge_to_connection_map[bridge]) {
+                                        options.push([conn.name || "default", conn.connection_id]);
+                                    }
+
+                                    return options;
+                                }
+                                catch (err) {
+                                    console.error(err);
+                                    return [ [ "Bridge not found error", '__bridge_not_found_error' ] ];
+                                }
+                            },
+                        },
+                    ],
+                    message1: "%1",
+                    args1: [
+                        {
+                            'type': 'input_statement',
+                            'name': 'SUBSTACK3'
+                        },
+                    ],
+                    lastDummyAlign2: "RIGHT",
+                    message2: "when done, restore the previous connection",
+                    args2: [],
+                    'category': Blockly.Categories.control,
+                    'previousStatement': null,
+                    'nextStatement': null,
+                    'extensions': ['colours_advanced_operation', 'shape_statement'],
+                });
+
+                const inputs = this.inputList[0].fieldRow;
+
+                let bridgeDropdown = null;
+                let connectionDropdown = null;
+
+                for (const input of inputs) {
+                    if (input.name === 'BRIDGE1') {
+                        bridgeDropdown = input;
+                    }
+                    else if (input.name === 'CONNECTION2') {
+                        connectionDropdown = input;
+                    }
+                }
+
+                if (!bridgeDropdown) {
+                    return;
+                }
+
+                // Capture the BridgeDropdown selector.
+                const hideBridgeDropdown = bridgeDropdown.onHide;
+                bridgeDropdown.onHide = () => {
+                    hideBridgeDropdown.bind(bridgeDropdown)();
+                    currentBridgeSelected = bridgeDropdown.value_;
+
+                    // Refresh connection dropdown
+                    const oldValue = connectionDropdown.value_;
+                    const newOptions = connectionDropdown.getOptions();
+
+                    // If oldValue in newOptions, just pick the first
+                    let found = false;
+                    for (const option of newOptions) {
+                        if (option[1] === oldValue) {
+                            found = true;
+                        }
+                    }
+
+                    if ((!found) && (newOptions.length > 0)) {
+                        connectionDropdown.setValue(newOptions[0][1]);
+                    }
+                }
+
+                // HACK: Extract the current bridge selected *after* the initialization
+                //       "thread" is completed. Otherwise doing this here would mean that
+                //       the value would not be correct when blocks are loaded from XML.
+                setTimeout(() => {
+                    currentBridgeSelected = bridgeDropdown.value_;
+                }, 0);
+            }
+        };
+
+        try {
+            Blockly.Extensions.register('colours_advanced_operation',
+                                        function () {
+                                            this.setColourFromRawValues_("#009688",
+                                                                         "#007668",
+                                                                         "#007668");
+                                        });
+        } catch (e) {
+            // If the extension was registered before
+            // this would have thrown an inocous exception
+            if (!alreadyRegisteredException(e)) {
+                throw e;
+            }
+        }
+
+    }
+
+    genOperationCategory(): HTMLElement {
+
+        const category = createDom('category', {
+            name: 'Advanced operation',
+            colour: "#009688",
+            secondaryColour: "#007668",
+            id: "operation",
+        });
+
+        category.appendChild(createDom('block',
+                                       {
+            type: "operator_select_connection",
+            id: "operator_select_connection",
+        }));
+
+        return category;
     }
 
     injectMonitorBlocks(monitors: MonitorMetadata[]) {
@@ -667,6 +842,7 @@ export class Toolbox {
         toolboxXML.appendChild(await this.customSignalController.genCategory());
         toolboxXML.appendChild(variablesCategory);
         // toolboxXML.appendChild(proceduresCategory);
+        toolboxXML.appendChild(this.genOperationCategory());
 
         Blockly.Blocks.defaultToolbox = toolboxXML;
 

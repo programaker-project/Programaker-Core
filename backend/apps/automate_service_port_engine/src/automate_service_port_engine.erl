@@ -16,13 +16,17 @@
         , send_oauth_return/2
 
         , list_custom_blocks/1
-        , internal_user_id_to_service_port_user_id/2
+        , internal_user_id_to_connection_id/2
         , get_user_service_ports/1
         , delete_bridge/2
         , callback_bridge/3
         , get_channel_origin_bridge/1
+        , get_bridge_info/1
 
         , listen_bridge/2
+        , list_established_connections/1
+        , get_pending_connection_info/1
+        , is_module_connectable_bridge/2
         ]).
 
 -include("records.hrl").
@@ -91,6 +95,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                    automate_bridge_engine_messages_from_bridge,
                                    [ServicePortId]),
     case Unpacked of
+        %% This has to be first because of the use of MessageId here
         AdviceMsg = #{ <<"type">> := <<"ADVICE_SET">>, <<"message_id">> := MessageId } ->
             AdviceTaken = apply_advice(AdviceMsg, ServicePortId),
             answer_advice_taken(AdviceTaken, MessageId, self());
@@ -102,7 +107,35 @@ from_service_port(ServicePortId, UserId, Msg) ->
         #{ <<"type">> := <<"CONFIGURATION">>
          , <<"value">> := Configuration
          } ->
-            set_service_port_configuration(ServicePortId, Configuration, UserId);
+            {ok, Todo} = set_service_port_configuration(ServicePortId, Configuration, UserId),
+            %% TODO: Check that it really exists, don't trust the DB
+            case lists:member(request_icon, Todo) of
+                false -> ok;
+                true ->
+                    %% Request icon
+                    request_icon(self())
+            end;
+
+        #{ <<"type">> := <<"ICON_UPLOAD">>
+         , <<"value">> := IconData
+         } ->
+            case IconData of
+                #{ <<"content">> := B64Content } ->
+                    Data = base64:decode(B64Content),
+                    ok = write_icon(Data, ServicePortId)
+            end;
+
+        #{ <<"type">> := <<"ESTABLISH_CONNECTION">>
+         , <<"value">> := #{ <<"connection_id">> := ConnectionId
+                           , <<"name">> := Name
+                           }
+         } ->
+            case ?BACKEND:establish_connection(ServicePortId, ConnectionId, Name) of
+                ok ->
+                    io:fwrite("[~p] Established connection: ~p~n", [ServicePortId, ConnectionId]);
+                {error, Reason} ->
+                    io:fwrite("[~p] Tried to establish connection but failed: ~p~n", [ServicePortId, Reason])
+            end;
 
         #{ <<"type">> := <<"NOTIFICATION">>
          , <<"key">> := Key
@@ -136,18 +169,22 @@ from_service_port(ServicePortId, UserId, Msg) ->
                     %% messages had been sent
                     ok;
                 _ ->
-                    {ok, ToUserInternalId} = ?BACKEND:service_port_user_id_to_internal_user_id(
-                                                ToUser, ServicePortId),
-                    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                                    ServicePortId, ToUserInternalId),
+                    case ?BACKEND:connection_id_to_internal_user_id(
+                                                ToUser, ServicePortId) of
+                        {ok, ToUserInternalId} ->
+                            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
+                                                            ServicePortId, ToUserInternalId),
 
-                    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
-                                         Module,  ToUserInternalId),
-                    ok = automate_channel_engine:send_to_channel(MonitorId,
-                                                                 #{ <<"key">> => Key
-                                                                  , <<"value">> => Value
-                                                                  , <<"content">> => Content
-                                                                  })
+                            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
+                                                 Module, ToUserInternalId),
+                            ok = automate_channel_engine:send_to_channel(MonitorId,
+                                                                         #{ <<"key">> => Key
+                                                                          , <<"value">> => Value
+                                                                          , <<"content">> => Content
+                                                                          });
+                        {error, Reason} ->
+                            io:fwrite("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason])
+                    end
             end
     end.
 
@@ -155,9 +192,9 @@ from_service_port(ServicePortId, UserId, Msg) ->
 list_custom_blocks(UserId) ->
     ?BACKEND:list_custom_blocks(UserId).
 
--spec internal_user_id_to_service_port_user_id(binary(), binary()) -> {ok, binary()}.
-internal_user_id_to_service_port_user_id(UserId, ServicePortId) ->
-    ?BACKEND:internal_user_id_to_service_port_user_id(UserId, ServicePortId).
+-spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()}.
+internal_user_id_to_connection_id(UserId, ServicePortId) ->
+    ?BACKEND:internal_user_id_to_connection_id(UserId, ServicePortId).
 
 
 -spec get_user_service_ports(binary()) -> {ok, [#service_port_entry_extra{}]}.
@@ -178,7 +215,7 @@ delete_bridge(UserId, BridgeId) ->
 
 -spec callback_bridge(binary(), binary(), binary()) -> {ok, map()} | {error, term()}.
 callback_bridge(UserId, BridgeId, Callback) ->
-    {ok, BridgeUserId} = internal_user_id_to_service_port_user_id(UserId, BridgeId),
+    {ok, BridgeUserId} = internal_user_id_to_connection_id(UserId, BridgeId),
     ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
                                    , <<"user_id">> => BridgeUserId
                                    , <<"value">> => #{ <<"callback">> => Callback
@@ -195,40 +232,101 @@ get_channel_origin_bridge(ChannelId) ->
             ?BACKEND:get_channel_origin_bridge(ChannelId)
     end.
 
+-spec get_bridge_info(binary()) -> {ok, #service_port_metadata{}} | {error, not_found}.
+get_bridge_info(BridgeId) ->
+    ?BACKEND:get_bridge_info(BridgeId).
+
+-spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+list_established_connections(UserId) ->
+    {ok, _Connections} = ?BACKEND:list_established_connections(UserId).
+
+-spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
+get_pending_connection_info(ConnectionId) ->
+    ?BACKEND:get_pending_connection_info(ConnectionId).
+
+
+-spec is_module_connectable_bridge(binary(), module() | {module(), any()}) ->
+          false | {boolean(), {#service_port_entry{}, #service_port_configuration{}}}.
+is_module_connectable_bridge(UserId, {automate_service_port_engine_service, [ BridgeId | _ ]}) ->
+    %% It *is* a bridge. Only remains to check if a new connection can be established.
+    {ok, BridgeInfo, BridgeConfiguration} = ?BACKEND:get_all_bridge_info(BridgeId),
+    IsConnectable = case BridgeConfiguration of
+                        undefined -> false;
+                        #service_port_configuration{ allow_multiple_connections=true } ->
+                            true;
+                        #service_port_configuration{ allow_multiple_connections=false } ->
+                            {ok, Connected} = ?BACKEND:is_user_connected_to_bridge(UserId, BridgeId),
+                            not Connected
+                    end,
+    {IsConnectable, {BridgeInfo, BridgeConfiguration}};
+
+is_module_connectable_bridge(_, _) ->
+    %% Is not a bridge
+    false.
+
+
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
--spec add_service_port_extra(#service_port_entry{}) -> #service_port_entry_extra{}.
-add_service_port_extra(#service_port_entry{ id=Id
-                                          , name=Name
-                                          , owner=Owner
-                                          , service_id=ServiceId
-                                          }) ->
+-spec add_service_port_extra({#service_port_entry{}, #service_port_configuration{}}) -> #service_port_entry_extra{}.
+add_service_port_extra({#service_port_entry{ id=Id
+                                           , name=Name
+                                           , owner=Owner
+                                           , service_id=ServiceId
+                                           }, Config}) ->
     {ok, IsConnected} = ?ROUTER:is_bridge_connected(Id),
+
+    BridgeIcon = case Config of
+                     undefined -> undefined;
+                     #service_port_configuration{ icon=Icon } -> Icon
+                 end,
     #service_port_entry_extra{ id=Id
                              , name=Name
                              , owner=Owner
                              , service_id=ServiceId
                              , is_connected=IsConnected
+                             , icon=BridgeIcon
                              }.
 
 set_service_port_configuration(ServicePortId, Configuration, UserId) ->
     SPConfiguration = parse_configuration_map(ServicePortId, Configuration),
-    ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, UserId),
-    ok.
+    ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, UserId).
 
 parse_configuration_map(ServicePortId,
-                        #{ <<"blocks">> := Blocks
-                         , <<"is_public">> := IsPublic
-                         , <<"service_name">> := ServiceName
-                         }) ->
+                        Config=#{ <<"blocks">> := Blocks
+                                , <<"is_public">> := IsPublic
+                                , <<"service_name">> := ServiceName
+                                }) ->
     #service_port_configuration{ id=ServicePortId
                                , is_public=IsPublic
                                , service_id=undefined
                                , service_name=ServiceName
                                , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
+                               , icon=get_icon_from_config(Config)
+                               , allow_multiple_connections=get_allow_multiple_connections_from_config(Config)
                                }.
+
+
+-spec get_icon_from_config(map()) -> undefined | supported_icon_type().
+get_icon_from_config(#{ <<"icon">> := #{ <<"url">> := Url } }) ->
+    { url, Url };
+get_icon_from_config(#{ <<"icon">> := #{ <<"sha256">> := Hash } }) ->
+    Id={ hash, sha256, Hash },
+    %% TODO: Check that ID exists, or request to bridge
+    Id;
+get_icon_from_config(_) ->
+    undefined.
+
+-spec get_allow_multiple_connections_from_config(map()) -> boolean().
+get_allow_multiple_connections_from_config(#{ <<"allow_multiple_connections">> := AllowMultipleConnections })
+  when is_boolean(AllowMultipleConnections) ->
+    AllowMultipleConnections;
+get_allow_multiple_connections_from_config(_) ->
+    false.
+
+
 
 parse_block(Block=#{ <<"arguments">> := Arguments
                    , <<"function_name">> := FunctionName
@@ -311,6 +409,18 @@ parse_argument(#{ <<"type">> := Type
 
 answer_advice_taken(AdviceTaken, MessageId, Pid) ->
     Pid ! {{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken }.
+
+request_icon(Pid) ->
+    Pid ! {{ automate_service_port_engine, request_icon} }.
+
+get_icon_path(ServicePortId) ->
+    binary:list_to_bin(
+      lists:flatten(io_lib:format("~s/~s", [automate_configuration:asset_directory("public/icons")
+                                           , ServicePortId
+                                           ]))).
+
+write_icon(Data, ServicePortId) ->
+    file:write_file(get_icon_path(ServicePortId), Data).
 
 apply_advice(#{ <<"type">> := <<"ADVICE_SET">>
               , <<"value">> := Value

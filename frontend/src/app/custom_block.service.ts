@@ -111,6 +111,7 @@ export class CustomBlockService {
             console.error(err);
             return undefined;
         }
+
         return block;
     }
 
