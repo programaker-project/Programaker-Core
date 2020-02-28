@@ -31,7 +31,7 @@ export class VerifyCodeComponent implements OnInit {
             .subscribe(session => {
                 console.log("Session:", session);
                 if (session) {
-                    this.router.navigate(['/']);
+                    this.router.navigate(['/'], {replaceUrl:true});
                 }
             });
     }

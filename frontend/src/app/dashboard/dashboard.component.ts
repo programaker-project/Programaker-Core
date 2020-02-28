@@ -87,7 +87,7 @@ export class NewDashboardComponent {
             .then(session => {
                 this.session = session;
                 if (!session.active) {
-                    this.router.navigate(['/login']);
+                    this.router.navigate(['/login'], {replaceUrl:true});
                 } else {
                     this.programService.getPrograms()
                         .then(programs => this.programs = programs);
@@ -109,7 +109,7 @@ export class NewDashboardComponent {
             })
             .catch(e => {
                 console.log('Error getting session', e);
-                this.router.navigate(['/login']);
+                this.router.navigate(['/login'], {replaceUrl:true});
             })
     }
 
