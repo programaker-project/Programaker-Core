@@ -44,7 +44,7 @@ type BridgeConnectionWithIconUrl = { conn: BridgeConnection, extra: { icon_url?:
 export class NewDashboardComponent {
     programs: ProgramMetadata[] = [];
     connections: BridgeConnectionWithIconUrl[] = null;
-    bridgeIcons: { [key:string]: string} = {};
+    bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
     session: Session = null;
     tutorials: { description: string, icons: string[] }[] = [
         // // Example data
@@ -102,7 +102,10 @@ export class NewDashboardComponent {
 
                     this.bridgeService.listUserBridges().then(bridgeData => {
                         for (const bridge of bridgeData){
-                            this.bridgeIcons[bridge.id] = iconDataToUrl(bridge.icon, bridge.id);
+                            this.bridgeInfo[bridge.id] = {
+                                icon: iconDataToUrl(bridge.icon, bridge.id),
+                                name: bridge.name
+                            };
                         }
                     });
                 }

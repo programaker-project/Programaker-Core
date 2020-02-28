@@ -55,7 +55,10 @@
                             <div class="card-title">{{program.name}}</div>
                             <div class="connection-icon-list">
                                 <span *ngFor="let bridge of program.bridges_in_use">
-                                    <img class="icon" *ngIf="bridgeIcons[bridge]" src="{{ bridgeIcons[bridge] }}" />
+                                    <img class="icon" *ngIf="bridgeInfo[bridge] && bridgeInfo[bridge].icon" src="{{ bridgeInfo[bridge].icon }}" />
+                                    <span class="nametag" *ngIf="bridgeInfo[bridge] && (!bridgeInfo[bridge].icon) && bridgeInfo[bridge].name">
+                                        {{ bridgeInfo[bridge].name }}
+                                    </span>
                                 </span>
                             </div>
                         </div>

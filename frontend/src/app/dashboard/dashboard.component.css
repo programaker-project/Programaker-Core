@@ -162,3 +162,14 @@ mat-card.example > .description {
     max-width: 10ex;
     margin-left: 1ex;
 }
+
+
+.connection-icon-list > span > .nametag {
+    margin-left: 1ex;
+    padding: 0 1ex 0 1ex;
+    display: inline-block;
+    background-color: #fff;
+    box-shadow: 0px 1px 1px 0px rgba(0,0,0,0.3);
+    border-radius: 3px;
+    height: 3ex;
+}
