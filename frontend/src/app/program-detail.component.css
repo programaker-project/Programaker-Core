@@ -60,3 +60,7 @@ button#program-start-button .action-icon {
 .program-name .back-arrow {
     vertical-align: middle;
 }
+
+.viewer {
+    margin: 0;
+}
