@@ -93,21 +93,20 @@ export class NewDashboardComponent {
                         .then(programs => this.programs = programs);
 
                     this.connectionService.getConnections()
-                        .then(connections => this.connections = connections.map((v, _i, _a) => {
-                            const icon_url = iconDataToUrl(v.icon, v.bridge_id);
+                        .then(connections => {
+                            this.connections = connections.map((v, _i, _a) => {
+                                const icon_url = iconDataToUrl(v.icon, v.bridge_id);
 
+                                return { conn: v, extra: {icon_url: icon_url }};
+                            });
 
-                            return { conn: v, extra: {icon_url: icon_url }};
-                        }));
-
-                    this.bridgeService.listUserBridges().then(bridgeData => {
-                        for (const bridge of bridgeData){
-                            this.bridgeInfo[bridge.id] = {
-                                icon: iconDataToUrl(bridge.icon, bridge.id),
-                                name: bridge.name
-                            };
-                        }
-                    });
+                            for (const conn of connections){
+                                this.bridgeInfo[conn.bridge_id] = {
+                                    icon: iconDataToUrl(conn.icon, conn.bridge_id),
+                                    name: conn.bridge_name
+                                };
+                            }
+                        });
                 }
             })
             .catch(e => {
