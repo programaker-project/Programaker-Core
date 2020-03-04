@@ -38,9 +38,9 @@ get_bridge_metrics() ->
                           OnFlightMessages = mnesia:table_info(?ON_FLIGHT_MESSAGES_TABLE, size),
 
                           ConnectionMatchHead = #bridge_connection_entry{ id='$1'
-                                                                      , pid='_'
-                                                                      , node='_'
-                                                                      },
+                                                                        , pid='_'
+                                                                        , node='_'
+                                                                        },
                           ConnectionMatcher = [{ ConnectionMatchHead
                                             , []
                                             , ['$1']}],

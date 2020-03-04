@@ -89,9 +89,9 @@
                                             , channel_id :: binary() | ?MNESIA_SELECTOR
                                             }).
 
--record(bridge_connection_entry, { id :: binary() %% Bridge id
-                                 , pid :: pid() %% Connection pid
-                                 , node :: atom() %% node() %% Node where the connection pid lives
+-record(bridge_connection_entry, { id :: binary() | ?MNESIA_SELECTOR %% Bridge id
+                                 , pid :: pid()   | ?MNESIA_SELECTOR %% Connection pid
+                                 , node :: atom() | ?MNESIA_SELECTOR %% node() %% Node where the connection pid lives
                                  }).
 
 -record(on_flight_message_entry, { message_id :: binary()
