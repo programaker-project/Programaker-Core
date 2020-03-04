@@ -60,7 +60,6 @@ update_internal_metrics() ->
     %% Services
     Services = [ automate_storage_sup
 
-               , automate_channel_engine
                , automate_channel_engine_sup
 
                , automate_rest_api_sup
