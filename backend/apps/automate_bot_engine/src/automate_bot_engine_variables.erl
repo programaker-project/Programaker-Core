@@ -232,4 +232,6 @@ add_to_context_acc([{ context, Key, Value } | T], Context) ->
             add_to_context_acc(T, Context#{ Key => Value })
     end;
 add_to_context_acc([ _ | T ], Context) ->
-    add_to_context_acc(T, Context).
+    add_to_context_acc(T, Context);
+add_to_context_acc(_, Context) ->
+    Context.
