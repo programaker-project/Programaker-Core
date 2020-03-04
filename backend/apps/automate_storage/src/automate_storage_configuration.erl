@@ -316,6 +316,37 @@ get_versioning(Nodes) ->
                                   )
                          end
                 }
+
+                %% Add stability metrics to programs table.
+                %%
+                %% - creation_time : To put the rest in context
+                %% - last_upload_time : To know how "fresh" the program is
+                %% - last_successful_call_time : Relative to the next metric puts a number on the current health of the program
+                %% - last_failed_call_time : Relative to the previous metric puts a number on the current health of the program
+                %%
+              , #database_version_transformation
+                { id=10
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                  fun({user_program_entry, Id, UserId, ProgramName,
+                                       ProgramType, ProgramParsed, ProgramOrig,
+                                       Enabled, ProgramChannel }) ->
+                                          %% Replicate the entry. Fill unknown times with '0'
+
+                                          { user_program_entry, Id, UserId, ProgramName
+                                          , ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel
+                                          , 0, 0, 0, 0
+                                          }
+
+                                  end,
+                                  [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled, program_channel
+                                  , creation_time, last_upload_time, last_successful_call_time, last_failed_call_time
+                                  ],
+                                  user_program_entry
+                                 )
+                        end
+                }
               ]
         }.
 

@@ -53,6 +53,8 @@
         , get_program_variable/2
 
         , log_program_error/1
+        , mark_successful_call_to_bridge/2
+        , mark_failed_call_to_bridge/2
 
         , create_custom_signal/2
         , list_custom_signals_from_user_id/1
@@ -360,6 +362,7 @@ create_program(Username, ProgramName) ->
     {ok, UserId} = get_userid_from_username(Username),
     ProgramId = generate_id(),
     {ok, ProgramChannel} = automate_channel_engine:create_channel(),
+    CurrentTime = erlang:system_time(second),
     UserProgram = #user_program_entry{ id=ProgramId
                                      , user_id=UserId
                                      , program_name=ProgramName
@@ -368,6 +371,10 @@ create_program(Username, ProgramName) ->
                                      , program_orig=undefined
                                      , enabled=true
                                      , program_channel=ProgramChannel
+                                     , creation_time=CurrentTime
+                                     , last_upload_time=0
+                                     , last_successful_call_time=0
+                                     , last_failed_call_time=0
                                      },
     case store_new_program(UserProgram) of
         ok ->
@@ -798,6 +805,49 @@ log_program_error(LogEntry) when is_record(LogEntry, user_program_log_entry) ->
             {error, Reason}
     end.
 
+-spec mark_successful_call_to_bridge(binary(), binary()) -> ok.
+mark_successful_call_to_bridge(ProgramId, _BridgeId) ->
+    CurrentTime = erlang:system_time(second),
+    Transaction = fun() ->
+                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
+                              [Program=#user_program_entry{}] ->
+                                  ok = mnesia:write( ?USER_PROGRAMS_TABLE
+                                                   , Program#user_program_entry{ last_successful_call_time=CurrentTime }
+                                                   , write
+                                                   );
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec mark_failed_call_to_bridge(binary(), binary()) -> ok.
+mark_failed_call_to_bridge(ProgramId, _BridgeId) ->
+    CurrentTime = erlang:system_time(second),
+    Transaction = fun() ->
+                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
+                              [Program=#user_program_entry{}] ->
+                                  ok = mnesia:write( ?USER_PROGRAMS_TABLE
+                                                   , Program#user_program_entry{ last_failed_call_time=CurrentTime }
+                                                   , write
+                                                   );
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
 -spec get_userid_from_username(binary()) -> {ok, binary()} | {error, no_user_found}.
 get_userid_from_username(undefined) ->
     {ok, undefined};
@@ -1076,6 +1126,10 @@ retrieve_program(Username, ProgramName) ->
                                                                         , program_orig='_'
                                                                         , enabled='_'
                                                                         , program_channel='_'
+                                                                        , creation_time='_'
+                                                                        , last_upload_time='_'
+                                                                        , last_successful_call_time='_'
+                                                                        , last_failed_call_time='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -1129,6 +1183,10 @@ retrieve_program_list_from_username(Username) ->
                                                                         , program_orig='_'
                                                                         , enabled='_'
                                                                         , program_channel='_'
+                                                                        , creation_time='_'
+                                                                        , last_upload_time='_'
+                                                                        , last_successful_call_time='_'
+                                                                        , last_failed_call_time='_'
                                                                         },
                                   ProgramGuard = {'==', '$2', UserId},
                                   ProgramResultsColumn = '$1',
@@ -1158,6 +1216,10 @@ retrieve_program_list_from_userid(UserId) ->
                                                                 , program_orig='_'
                                                                 , enabled='_'
                                                                 , program_channel='_'
+                                                                , creation_time='_'
+                                                                , last_upload_time='_'
+                                                                , last_successful_call_time='_'
+                                                                , last_failed_call_time='_'
                                                                 },
                           ProgramGuard = {'==', '$2', UserId},
                           ProgramResultsColumn = '$1',
@@ -1181,6 +1243,7 @@ store_new_program_content(Username, ProgramName,
                                                  , parsed=ProgramParsed
                                                  , type=ProgramType
                                                  })->
+    CurrentTime = erlang:system_time(second),
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
@@ -1208,6 +1271,10 @@ store_new_program_content(Username, ProgramName,
                                                                         , program_orig='_'
                                                                         , enabled='_'
                                                                         , program_channel='_'
+                                                                        , creation_time='_'
+                                                                        , last_upload_time='_'
+                                                                        , last_successful_call_time='_'
+                                                                        , last_failed_call_time='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -1226,6 +1293,7 @@ store_new_program_content(Username, ProgramName,
                                                                                       , program_type=ProgramType
                                                                                       , program_parsed=ProgramParsed
                                                                                       , program_orig=ProgramOrig
+                                                                                      , last_upload_time=CurrentTime
                                                                                       }, write),
                                           { ok, Program#user_program_entry.id }
                                   end

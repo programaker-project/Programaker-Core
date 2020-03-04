@@ -32,6 +32,10 @@
                             , program_orig :: any()     | ?MNESIA_SELECTOR
                             , enabled=true :: boolean() | ?MNESIA_SELECTOR
                             , program_channel :: binary() | ?MNESIA_SELECTOR
+                            , creation_time :: time_in_seconds() | ?MNESIA_SELECTOR
+                            , last_upload_time :: time_in_seconds() | ?MNESIA_SELECTOR
+                            , last_successful_call_time :: time_in_seconds() | ?MNESIA_SELECTOR
+                            , last_failed_call_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             }).
 
 -type log_entry_severity() :: debug | warning | error.
