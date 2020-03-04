@@ -3,6 +3,7 @@
 -module(automate_storage_stats).
 
 -export([ get_user_metrics/0
+        , get_program_metrics/0
         ]).
 
 -define(SECONDS_IN_HOUR, (60 * 60)).
@@ -87,6 +88,19 @@ get_user_metrics() ->
                   end,
     mnesia:async_dirty(Transaction).
 
+-spec get_program_metrics() -> {ok, #{ program_id() => #{log_entry_severity() => non_neg_integer() }}}.
+get_program_metrics() ->
+    %% Get programs
+    Transaction = fun () ->
+                          { ok
+                          , cross_db_from_id_to_map(?USER_PROGRAMS_TABLE, ?USER_PROGRAM_LOGS_TABLE,
+                                                    fun (_ProgId, Logs) ->
+                                                            map_count_group_by(fun(#user_program_log_entry{ severity=Severity}) -> Severity end, Logs)
+                                                    end)
+                          }
+                  end,
+    mnesia:async_dirty(Transaction).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -102,3 +116,28 @@ select_unique_length(Tab, Matcher) ->
             Unique = sets:from_list(Records),
             sets:size(Unique)
     end.
+
+cross_db_from_id_to_map(Left, Right, FCross) ->
+    cross_db_from_id_to_map_iter(Left, Right, FCross, mnesia:first(Left), #{}).
+
+cross_db_from_id_to_map_iter(_Left, _Right, _FCross, '$end_of_table', Acc) ->
+    Acc;
+cross_db_from_id_to_map_iter(Left, Right, FCross, Key, Acc) ->
+    Elements = mnesia:read(Right, Key),
+    NewElements = FCross(Key, Elements),
+    cross_db_from_id_to_map_iter(Left, Right, FCross, mnesia:next(Left, Key), Acc#{ Key => NewElements }).
+
+map_count_group_by(FSelect, List) ->
+    map_count_group_by_iter(FSelect, List, #{}).
+
+map_count_group_by_iter(_FSelect, [], Acc) ->
+    Acc;
+map_count_group_by_iter(FSelect, [H | T], Acc) ->
+    Key = FSelect(H),
+    Values = case Acc of
+                 #{ Key := Prev } ->
+                     Prev + 1;
+                 _ ->
+                     1
+             end,
+    map_count_group_by_iter(FSelect, T, Acc#{ Key => Values }).

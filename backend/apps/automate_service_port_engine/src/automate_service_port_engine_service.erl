@@ -30,7 +30,7 @@ get_monitor_id(UserId, [ServicePortId]) ->
     ?BACKEND:get_or_create_monitor_id(UserId, ServicePortId).
 
 -spec call(binary(), any(), #program_thread{}, binary(), _) -> {ok, #program_thread{}, any()}.
-call(FunctionName, Values, Thread, UserId, [ServicePortId]) ->
+call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, UserId, [ServicePortId]) ->
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
                                                                               UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
@@ -48,13 +48,19 @@ call(FunctionName, Values, Thread, UserId, [ServicePortId]) ->
                            DefaultConnectionId
                    end,
 
-    {ok, #{ <<"result">> := Result }} = automate_service_port_engine:call_service_port(
-                                          ServicePortId,
-                                          FunctionName,
-                                          Values,
-                                          ConnectionId,
-                                          #{ <<"last_monitor_value">> => LastMonitorValue}),
-    {ok, Thread, Result}.
+    case automate_service_port_engine:call_service_port(
+           ServicePortId,
+           FunctionName,
+           Values,
+           ConnectionId,
+           #{ <<"last_monitor_value">> => LastMonitorValue}) of
+        {ok, #{ <<"result">> := Result }} ->
+            ok = automate_storage:mark_successful_call_to_bridge(ProgramId, ServicePortId),
+            {ok, Thread, Result};
+        {error, Reason} ->
+            ok = automate_storage:mark_failed_call_to_bridge(ProgramId, ServicePortId),
+            {error, Reason}
+    end.
 
 %% Is enabled for all users
 is_enabled_for_user(_Username, _Params) ->
