@@ -15,8 +15,7 @@
 -define(MAX_WAIT_TIME_SECONDS, 100).
 -endif.
 -define(MAX_WAIT_TIME, ?MAX_WAIT_TIME_SECONDS * 1000).
--define(CONNECTED_BRIDGES_TABLE, automate_service_port_connected_bridges_table).
--define(ON_FLIGHT_MESSAGES_TABLE, automate_service_port_bridge_on_flight_messages_table).
+-include("databases.hrl").
 -include("records.hrl").
 -include("router_error_cases.hrl").
 
