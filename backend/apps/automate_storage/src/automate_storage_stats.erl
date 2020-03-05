@@ -93,9 +93,47 @@ get_program_metrics() ->
     %% Get programs
     Transaction = fun () ->
                           { ok
-                          , cross_db_from_id_to_map(?USER_PROGRAMS_TABLE, ?USER_PROGRAM_LOGS_TABLE,
-                                                    fun (_ProgId, Logs) ->
-                                                            map_count_group_by(fun(#user_program_log_entry{ severity=Severity}) -> Severity end, Logs)
+                          , cross_db_from_id_to_map(
+                              ?USER_PROGRAMS_TABLE, ?USER_PROGRAM_LOGS_TABLE,
+                              fun (_ProgId, Logs) ->
+                                      map_count_group2_by(fun(#user_program_log_entry{ severity=Severity, event_data=Data }) ->
+                                                                  Type = case Data of
+                                                                             %% Bridge errors
+                                                                             { badmatch, {error, no_connection} } ->
+                                                                                 no_connection;
+
+                                                                             %% Program errors
+                                                                             { program_error, {variable_not_set, _}, _ } ->
+                                                                                 variable_not_set;
+                                                                             { program_error, {list_not_set, _}, _ } ->
+                                                                                 list_not_set;
+
+                                                                             %% Version errors
+                                                                             bad_operation ->
+                                                                                 bad_operation;
+
+                                                                             %% Platform errors
+                                                                             {badmatch, {error, _}} ->
+                                                                                 platform_error;
+                                                                             function_clause ->
+                                                                                 platform_error;
+                                                                             {program_error, {unknown_operation}, _} ->
+                                                                                 platform_error;
+
+                                                                             %% Unknown errorrs
+                                                                             undef ->
+                                                                                 undefined;
+                                                                             {EventType, _} ->
+                                                                                 binary:list_to_bin(
+                                                                                   lists:flatten(io_lib:fwrite("unknown_~p",
+                                                                                                               [EventType])));
+                                                                             _ ->
+                                                                                 binary:list_to_bin(
+                                                                                   lists:flatten(io_lib:fwrite("unknown_~p",
+                                                                                                               [Data])))
+                                                                         end,
+                                                                  {Severity, Type}
+                                                          end, Logs)
                                                     end)
                           }
                   end,
@@ -127,17 +165,19 @@ cross_db_from_id_to_map_iter(Left, Right, FCross, Key, Acc) ->
     NewElements = FCross(Key, Elements),
     cross_db_from_id_to_map_iter(Left, Right, FCross, mnesia:next(Left, Key), Acc#{ Key => NewElements }).
 
-map_count_group_by(FSelect, List) ->
-    map_count_group_by_iter(FSelect, List, #{}).
+map_count_group2_by(FSelect, List) ->
+    map_count_group2_by_iter(FSelect, List, #{}).
 
-map_count_group_by_iter(_FSelect, [], Acc) ->
+map_count_group2_by_iter(_FSelect, [], Acc) ->
     Acc;
-map_count_group_by_iter(FSelect, [H | T], Acc) ->
-    Key = FSelect(H),
+map_count_group2_by_iter(FSelect, [H | T], Acc) ->
+    {Key, SubKey} = FSelect(H),
     Values = case Acc of
+                 #{ Key := Prev=#{ SubKey := Value } } ->
+                     Prev#{ SubKey => Value + 1 };
                  #{ Key := Prev } ->
-                     Prev + 1;
+                     Prev#{ SubKey => 1 };
                  _ ->
-                     1
+                     #{ SubKey => 1 }
              end,
-    map_count_group_by_iter(FSelect, T, Acc#{ Key => Values }).
+    map_count_group2_by_iter(FSelect, T, Acc#{ Key => Values }).
