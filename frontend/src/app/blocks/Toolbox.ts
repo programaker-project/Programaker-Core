@@ -7,7 +7,8 @@ import { MonitorMetadata } from '../monitor';
 import { CustomSignalController } from './CustomSignalController';
 import { CustomSignalService } from '../custom_signals/custom_signal.service';
 import { CustomBlockService } from '../custom_block.service';
-import { CustomBlock, block_to_xml, get_block_category, get_block_toolbox_arguments, ResolvedCustomBlock, CategorizedCustomBlock, BridgeData } from '../custom_block';
+import { block_to_xml, get_block_category, get_block_toolbox_arguments,
+         ScratchBlockArgument, ResolvedCustomBlock, CategorizedCustomBlock, BridgeData } from '../custom_block';
 
 import { ToolboxController } from './ToolboxController';
 
@@ -19,6 +20,7 @@ import { AvailableService } from '../service';
 import { alreadyRegisteredException, createDom } from './utils';
 import { ConnectionService } from '../connection.service';
 import { BridgeConnection } from '../connection';
+import { iconDataToUrl } from '../utils';
 
 
 declare const Blockly;
@@ -118,7 +120,7 @@ export class Toolbox {
         this.injectOperationBlocks(connections);
         registrations = registrations.concat(this.templateController.injectBlocks());
         registrations = registrations.concat(this.customSignalController.injectBlocks());
-        this.injectCustomBlocks(custom_blocks);
+        this.injectCustomBlocks(custom_blocks, connections);
 
 
         return registrations;
@@ -468,21 +470,59 @@ export class Toolbox {
         return '#' + sec_color;
     }
 
-    injectCustomBlocks(categorized_custom_blocks: CategorizedCustomBlock[]) {
+    private static getConnectionForCategory(block_cat: CategorizedCustomBlock, connections: BridgeConnection[]): BridgeConnection {
+        for (const conn of connections) {
+            if (block_cat.bridge_data.bridge_id === conn.bridge_id) {
+                return conn;
+            }
+        }
+
+        return null;
+    }
+
+    private static getIconForBlocks(block_cat: CategorizedCustomBlock, connections: BridgeConnection[]): string{
+        const conn = Toolbox.getConnectionForCategory(block_cat, connections);
+        if (!conn) {
+            return null;
+        }
+
+        return iconDataToUrl(conn.icon, block_cat.bridge_data.bridge_id);
+    }
+
+    injectCustomBlocks(categorized_custom_blocks: CategorizedCustomBlock[], connections: BridgeConnection[]) {
       for (const blocks of categorized_custom_blocks){
         for (const block of blocks.resolved_custom_blocks) {
           Blockly.Blocks[block.id] = {
-                init: function () {
-                    this.jsonInit({
-                        'id': block.id,
-                        'message0': block.message,
-                        'category': Blockly.Categories.event,
-                        'extensions': ['colours_bridge_' + blocks.bridge_data.bridge_id,
-                                       get_block_category(block)],
-                        'args0': get_block_toolbox_arguments(block)
-                    });
-                }
-            };
+              init: function () {
+                  const block_args = get_block_toolbox_arguments(block);
+                  const icon = Toolbox.getIconForBlocks(blocks, connections);
+                  let msg_prefix = `%${block_args.length + 1} `;
+                  let label_arg: ScratchBlockArgument = {
+                      type: 'field_label',
+                      // The space after the label is duplicated (with the msg_prefix) for more clear separation
+                      text: `[${blocks.bridge_data.bridge_name}] `,
+                  };
+
+                  if (icon) {
+                      label_arg = {
+                          type: 'field_image',
+                          src: Toolbox.getIconForBlocks(blocks, connections),
+                          width: 48,
+                          height: 24,
+                          alt: blocks.bridge_data.bridge_name,
+                          flip_rtl: false,
+                      };
+                  }
+                  this.jsonInit({
+                      'id': block.id,
+                      'message0': msg_prefix + block.message,
+                      'category': Blockly.Categories.event,
+                      'extensions': ['colours_bridge_' + blocks.bridge_data.bridge_id,
+                                     get_block_category(block)],
+                      'args0': block_args.concat([ label_arg ])
+                  });
+              }
+          };
         }
 
           if (blocks.resolved_custom_blocks.length > 0) {

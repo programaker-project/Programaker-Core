@@ -13,6 +13,27 @@ export interface DynamicBlockArgument {
 
 export type BlockArgument = StaticBlockArgument | DynamicBlockArgument;
 
+interface ScratchSerializableArgument {
+    type: string,
+    name: string,
+    variableTypes?: string[]
+};
+
+interface ScratchImageArgument {
+    type: 'field_image',
+    src: string,
+    width: number,
+    height: number,
+    alt?: string,
+    flip_rtl?: boolean,
+};
+
+interface ScratchLabelArgument {
+    type: 'field_label',
+    text: string,
+}
+
+export type ScratchBlockArgument = ScratchSerializableArgument | ScratchImageArgument | ScratchLabelArgument;
 
 export interface ResolvedDynamicBlockArgument {
     type: string;
@@ -159,7 +180,7 @@ export function get_block_category(block: CustomBlock): string {
     }
 }
 
-export function get_block_toolbox_arguments(block: ResolvedCustomBlock) {
+export function get_block_toolbox_arguments(block: ResolvedCustomBlock): ScratchBlockArgument[] {
     return block.arguments.map((arg, index, _array) => {
         if ((arg as any).options) {  // Dynamic value
             const resolved_arg = arg as ResolvedDynamicBlockArgument;
