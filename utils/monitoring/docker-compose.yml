@@ -11,6 +11,8 @@ services:
       - blackbox-exporter
     ports:
       - 9090:9090
+    volumes:
+      - plaza-monitoring-prometheus:/prometheus
 
   grafana:
     build: grafana
@@ -18,3 +20,9 @@ services:
       - 3000:3000
     links:
       - prometheus
+    volumes:
+      - plaza-monitoring-grafana:/var/lib/grafana
+
+volumes:
+  plaza-monitoring-grafana:
+  plaza-monitoring-prometheus:
