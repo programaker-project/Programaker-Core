@@ -137,12 +137,12 @@ from_service_port(ServicePortId, UserId, Msg) ->
                     io:fwrite("[~p] Tried to establish connection but failed: ~p~n", [ServicePortId, Reason])
             end;
 
-        #{ <<"type">> := <<"NOTIFICATION">>
-         , <<"key">> := Key
-         , <<"to_user">> := ToUser
-         , <<"value">> := Value
-         , <<"content">> := Content
-         } ->
+        Notif=#{ <<"type">> := <<"NOTIFICATION">>
+               , <<"key">> := Key
+               , <<"to_user">> := ToUser
+               , <<"value">> := Value
+               , <<"content">> := Content
+               } ->
             case ToUser of
                 null ->
                     %% TODO: This looping be removed if the users also listened on
@@ -156,6 +156,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                                     #{ <<"key">> => Key
                                                      , <<"value">> => Value
                                                      , <<"content">> => Content
+                                                     , <<"subkey">> => get_subkey_from_notification(Notif)
                                                      })}
                                         end, Channels),
                     lists:foreach(
@@ -169,8 +170,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                     %% messages had been sent
                     ok;
                 _ ->
-                    case ?BACKEND:connection_id_to_internal_user_id(
-                                                ToUser, ServicePortId) of
+                    case ?BACKEND:connection_id_to_internal_user_id(ToUser, ServicePortId) of
                         {ok, ToUserInternalId} ->
                             {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
                                                             ServicePortId, ToUserInternalId),
@@ -181,6 +181,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                                                                          #{ <<"key">> => Key
                                                                           , <<"value">> => Value
                                                                           , <<"content">> => Content
+                                                                          , <<"subkey">> => get_subkey_from_notification(Notif)
                                                                           });
                         {error, Reason} ->
                             io:fwrite("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason])
@@ -373,6 +374,11 @@ get_block_save_to(_) ->
 get_block_subkey(#{ <<"subkey">> := SubKey }) ->
     SubKey;
 get_block_subkey(_) ->
+    undefined.
+
+get_subkey_from_notification(#{ <<"subkey">> := SubKey }) ->
+    SubKey;
+get_subkey_from_notification(_) ->
     undefined.
 
 

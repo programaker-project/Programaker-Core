@@ -87,7 +87,10 @@ get_block_key_subkey(#{ <<"key">> := Key }) ->
 get_block_key_subkey(_) ->
     { not_found }.
 
-
+get_subkey_value(#{ <<"subkey">> := SubKey }) ->
+    {ok, SubKey};
+get_subkey_value(_) ->
+    {error, not_found}.
 
 
 %%%% Thread creation
@@ -180,39 +183,52 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                             },
 
     [ServiceId, FunctionName] = binary:split(MonitorPath, <<".">>),
-    MonitorKey = case MonitorArgs of
-                     #{ <<"key">> := Key } ->
-                         Key;
-                     _ ->
-                         FunctionName
-                 end,
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-    MatchingContent = case MonitorArgs of
-                          #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->
-                              {ok, ResolvedExpectedValue} = automate_bot_engine_variables:resolve_argument(
-                                                              ExpectedValue, Thread, Op),
-                              ActualValue = maps:get(?CHANNEL_MESSAGE_CONTENT, FullMessage, none),
-                              ResolvedExpectedValue == ActualValue;
-                          _ ->
-                              true
-                      end,
-    case {MonitorId, MonitorKey, MatchingContent} of
-        {TriggeredMonitorId, TriggeredKey, true} ->
-            {ok, ThreadWithSavedValue} = case {MonitorArgs, FullMessage} of
-                                             { #{ ?MONITOR_SAVE_VALUE_TO := SaveTo }
-                                             , #{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }
-                                             } ->
-                                                 save_value(Thread, SaveTo, MessageContent);
-                                             _ ->
-                                                 {ok, Thread}
-                                         end,
 
-            {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
-                                ThreadWithSavedValue, MonitorId, FullMessage),
-            {true, NewThread};
-        _ ->
-            false
+    KeyMatch = case get_block_key_subkey(MonitorArgs) of
+                   { key_and_subkey, Key, SubKey } ->
+                       case get_subkey_value(FullMessage) of
+                           {ok, SubKey} ->
+                               Key == TriggeredKey;
+                           E ->
+                               false
+                       end;
+                   { key, Key } ->
+                       Key == TriggeredKey;
+                   { not_found } ->
+                       FunctionName == TriggeredKey
+               end,
+    case KeyMatch of
+        false ->
+            false;
+        true ->
+            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
+            MatchingContent = case MonitorArgs of
+                                  #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->
+                                      {ok, ResolvedExpectedValue} = automate_bot_engine_variables:resolve_argument(
+                                                                      ExpectedValue, Thread, Op),
+                                      ActualValue = maps:get(?CHANNEL_MESSAGE_CONTENT, FullMessage, none),
+                                      ResolvedExpectedValue == ActualValue;
+                                  _ ->
+                                      true
+                              end,
+            case {MonitorId, MatchingContent} of
+                {TriggeredMonitorId, true} ->
+                    {ok, ThreadWithSavedValue} = case {MonitorArgs, FullMessage} of
+                                                     { #{ ?MONITOR_SAVE_VALUE_TO := SaveTo }
+                                                     , #{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }
+                                                     } ->
+                                                         save_value(Thread, SaveTo, MessageContent);
+                                                     _ ->
+                                                         {ok, Thread}
+                                                 end,
+
+                    {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
+                                        ThreadWithSavedValue, MonitorId, FullMessage),
+                    {true, NewThread};
+                _ ->
+                    false
+            end
     end;
 
 %% Custom trigger
