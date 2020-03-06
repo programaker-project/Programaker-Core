@@ -187,8 +187,8 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
     KeyMatch = case get_block_key_subkey(MonitorArgs) of
                    { key_and_subkey, Key, SubKey } ->
                        case get_subkey_value(FullMessage) of
-                           {ok, SubKey} ->
-                               Key == TriggeredKey;
+                           {ok, TriggeredSubKey} ->
+                               (Key == TriggeredKey) and (string:lowercase(SubKey) == string:lowercase(TriggeredSubKey));
                            E ->
                                false
                        end;
