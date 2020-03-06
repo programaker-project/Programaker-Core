@@ -6,6 +6,7 @@
 -module(automate_configuration).
 
 -export([ get_table_wait_time/0
+        , get_frontend_root_url/0
         , get_sync_peers/0
         , get_sync_primary/0
         , is_node_primary/1
@@ -25,6 +26,10 @@
 -spec get_table_wait_time() -> non_neg_integer().
 get_table_wait_time() ->
     application:get_env(?APPLICATION, table_wait_time, ?DEFAULT_WAIT_TIME).
+
+-spec get_frontend_root_url() -> binary().
+get_frontend_root_url() ->
+    application:get_env(?APPLICATION, frontend_root_url, <<"/">>).
 
 -spec get_sync_peers() -> [node()].
 get_sync_peers() ->

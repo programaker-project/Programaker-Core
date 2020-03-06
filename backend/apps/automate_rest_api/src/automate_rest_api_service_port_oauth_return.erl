@@ -10,6 +10,7 @@
         ]).
 
 -export([ to_json/2
+        , to_html/2
         ]).
 
 -include("./records.hrl").
@@ -37,7 +38,9 @@ allowed_methods(Req, State) ->
 %% GET handler
 content_types_provided(Req, State) ->
     io:fwrite("User > service-port > oauth-return~n", []),
-    {[{{<<"application">>, <<"json">>, []}, to_json}],
+    {[ {{<<"application">>, <<"json">>, []}, to_json}
+     , {{<<"text">>, <<"html">>, []}, to_html}
+     ],
      Req, State}.
 
 -spec to_json(cowboy_req:req(), #state{})
@@ -67,3 +70,30 @@ to_json(Req, State) ->
                              Req)
     end.
 
+-spec to_html(cowboy_req:req(), #state{})
+             -> {binary(),cowboy_req:req(), #state{}}.
+to_html(Req, State) ->
+    #state{service_port_id=ServicePortId} = State,
+    Qs = cowboy_req:qs(Req),
+    case automate_rest_api_backend:send_oauth_return(ServicePortId, Qs) of
+        ok ->
+            {ok, NewReq} = cowboy_req:reply(
+                             307,
+                             #{ <<"Location">> => automate_configuration:get_frontend_root_url()},
+                             <<>>,
+                             Req),
+            {halt, NewReq, State};
+        {error, Reason} ->
+
+            Code = case Reason of
+                       not_found -> 404;
+                       unauthorized -> 403;
+                       _ -> 500
+                   end,
+
+            cowboy_req:reply(Code,
+                             #{ <<"content-type">> => <<"text/plain">> },
+                             binary:list_to_bin(
+                               lists:flatten(io_lib:format("Error performing authenticationL: '~s'", [Reason]))),
+                             Req)
+    end.

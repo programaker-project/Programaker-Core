@@ -1,5 +1,9 @@
 [  { automate, [ { table_wait_time, 10000 }
-               %% , { asset_directory, "/path/to/asset/directory" }
+                 %% , { asset_directory, "/path/to/asset/directory" }
+
+                 %% Uncomment the following configuration for development environments
+                 %%  where the frontend is on port 4200 and the REST API in port 8888 .
+                 %% , { frontend_root_url, <<"http://localhost:4200">> }
                ] }
 ,  { automate_rest_api, [ { port, 8888}
                           %% Commenting the following line removes the authentication on /metrics
