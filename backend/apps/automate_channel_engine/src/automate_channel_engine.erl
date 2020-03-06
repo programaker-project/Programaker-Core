@@ -55,17 +55,17 @@ send_to_channel(ChannelId, Message) ->
                   ?LOGGING:log_event(ChannelId, Message)
     end),
 
-    case automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId) of
-        {ok, Listeners} ->
+    case get_unique_listener_pids_on_channel(ChannelId) of
+        {ok, UniquePids} ->
             %% io:format("Forwarding ~p to ~p~n", [Message, Listeners]),
-            lists:foreach(fun(#listeners_table_entry{pid=Pid}) ->
+            lists:foreach(fun(Pid) ->
                                   Pid ! {channel_engine, ChannelId, Message},
                                   spawn(fun () ->
                                                 automate_stats:log_observation(counter,
                                                                                automate_channel_engine_messages_out,
                                                                                [ChannelId])
                                         end)
-                          end, Listeners),
+                          end, UniquePids),
             ok;
         X ->
             X
@@ -90,3 +90,13 @@ get_listeners_on_channel(ChannelId) ->
 %%====================================================================
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
+
+get_unique_listener_pids_on_channel(ChannelId) ->
+    case automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId) of
+        {error, Reason } ->
+            {error, Reason};
+        {ok, Listeners} ->
+            Uniques = sets:from_list(lists:map(fun(#listeners_table_entry{pid=Pid}) -> Pid end,
+                                               Listeners)),
+            {ok, sets:to_list(Uniques)}
+    end.
