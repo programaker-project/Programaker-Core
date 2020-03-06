@@ -436,4 +436,5 @@ emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
     {ok, #{ <<"content">> => Content
           , <<"key">> => Key
           , <<"value">> => Value
+          , <<"subkey">> => undefined
           }}.
