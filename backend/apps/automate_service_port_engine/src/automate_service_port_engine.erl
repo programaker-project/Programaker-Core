@@ -192,7 +192,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
 list_custom_blocks(UserId) ->
     ?BACKEND:list_custom_blocks(UserId).
 
--spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()}.
+-spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
 internal_user_id_to_connection_id(UserId, ServicePortId) ->
     ?BACKEND:internal_user_id_to_connection_id(UserId, ServicePortId).
 

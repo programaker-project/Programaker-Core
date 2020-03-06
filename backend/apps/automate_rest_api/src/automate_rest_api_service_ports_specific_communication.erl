@@ -70,17 +70,22 @@ websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, Sta
             %% TODO: In this instance is probably OK to use a single connection
             %%       as the focus are the values, not the keys of SIGNAL_LISTENERS.
             %% But it can be disambiguated by passing more "properties" on the 'add_listener' message.
-            {ok, ConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId),
-            {UserChannels, NewState} = add_to_user_channels(UserId, {Key, SubKey}, State),
-            Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_NOTIFICATION">>
-                                       , <<"value">> =>
-                                             #{ <<"SIGNAL_LISTENERS">> =>
-                                                    #{
-                                                      ConnectionId => fmt_user_data(UserChannels)
-                                                     }
-                                              }
-                                       }),
-            {reply, {binary, Serialized}, NewState};
+            case automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId) of
+                {ok, ConnectionId} ->
+                    {UserChannels, NewState} = add_to_user_channels(UserId, {Key, SubKey}, State),
+                    Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_NOTIFICATION">>
+                                               , <<"value">> =>
+                                                     #{ <<"SIGNAL_LISTENERS">> =>
+                                                            #{
+                                                              ConnectionId => fmt_user_data(UserChannels)
+                                                             }
+                                                      }
+                                               }),
+                    {reply, {binary, Serialized}, NewState};
+                {error, Reason} ->
+                    io:fwrite("[Bridge/Comm] Unexpected error: ~p~n", [Reason]),
+                    {ok, State}
+            end;
         {error, not_found} ->
             {ok, State}
     end;

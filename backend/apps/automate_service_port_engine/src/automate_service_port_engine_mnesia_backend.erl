@@ -362,7 +362,7 @@ list_custom_blocks(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()}.
+-spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
 internal_user_id_to_connection_id(UserId, ServicePortId) ->
     case get_all_connections(UserId, ServicePortId) of
         {ok, []} ->
