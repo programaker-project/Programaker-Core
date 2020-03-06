@@ -141,10 +141,14 @@ get_bridge_on_block_call(_, _) ->
     {error, not_found}.
 
 service_id_to_bridge_id(ServiceId, OwnerUserId) ->
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, OwnerUserId),
-    case Module of
-        {automate_service_port_engine_service, [BridgeId]} ->
-            {ok, BridgeId};
-        _ ->
+    case automate_service_registry:get_service_by_id(ServiceId, OwnerUserId) of
+        {ok, #{ module := Module }} ->
+            case Module of
+                {automate_service_port_engine_service, [BridgeId]} ->
+                    {ok, BridgeId};
+                _ ->
+                    {error, not_found}
+            end;
+        {error, not_found} ->
             {error, not_found}
     end.
