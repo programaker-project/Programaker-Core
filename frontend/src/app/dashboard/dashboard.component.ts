@@ -29,6 +29,7 @@ import { ApiHost } from '../api-config';
 import { iconDataToUrl } from '../utils';
 
 type BridgeConnectionWithIconUrl = { conn: BridgeConnection, extra: { icon_url?: string}};
+type TutorialData = { description: string, icons: string[], url: string };
 
 @Component({
     // moduleId: module.id,
@@ -46,15 +47,17 @@ export class NewDashboardComponent {
     connections: BridgeConnectionWithIconUrl[] = null;
     bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
     session: Session = null;
-    tutorials: { description: string, icons: string[] }[] = [
+    tutorials: TutorialData[] = [
+        {
+            description: "Create a weather chatbot",
+            icons: [ "/assets/icons/telegram_logo.png", "/assets/icons/aemet_logo.jpg" ],
+            url: "https://docs.programaker.com/tutorials/weather-bot.html",
+        },
         // // Example data
-        // {
-        //     description: "Get weather prediction on the morning",
-        //     icons: [ "/assets/icons/telegram_logo.png" ],
-        // },
         // {
         //     description: "Greet when followed",
         //     icons: [ "/assets/icons/instagram_logo.png" ],
+        //     url: "https://docs.programaker.com",
         // },
         // {
         //     description: "Add saved messages to Google Sheets",
@@ -62,6 +65,7 @@ export class NewDashboardComponent {
         //         "/assets/icons/twitter_logo.png",
         //         "/assets/icons/google_sheets_logo.svg",
         //     ],
+        //     url: "https://docs.programaker.com",
         // },
     ];
 
@@ -155,5 +159,10 @@ export class NewDashboardComponent {
                                              program.id,
                                              session.user_id);
         program.enabled = true;
+    }
+
+    openTutorial(tutorial: TutorialData) {
+        const win = window.open(tutorial.url, '_blank');
+        win.focus();
     }
 }

@@ -80,7 +80,7 @@
             <div class="section-explanation">
                 Click one to open a build guide.
             </div>
-            <mat-card *ngFor="let tutorial of tutorials" role="button" class="module example">
+            <mat-card *ngFor="let tutorial of tutorials" (click)="openTutorial(tutorial)" role="button" class="module example">
                 <div class="description">{{ tutorial.description }}</div>
                 <div class="connection-icon-list">
                     <img *ngFor="let icon of tutorial.icons" src="{{ icon }}" />
