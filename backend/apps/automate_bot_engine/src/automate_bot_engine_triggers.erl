@@ -87,9 +87,7 @@ get_block_key_subkey(#{ <<"key">> := Key }) ->
 get_block_key_subkey(_) ->
     { not_found }.
 
-get_subkey_value(#{ <<"subkey">> := undefined}) ->
-    {error, not_found};
-get_subkey_value(#{ <<"subkey">> := SubKey }) ->
+get_subkey_value(#{ <<"subkey">> := SubKey }) when is_binary(SubKey) ->
     {ok, SubKey};
 get_subkey_value(_) ->
     {error, not_found}.
