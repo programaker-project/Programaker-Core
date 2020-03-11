@@ -32,7 +32,15 @@ get_triggered_threads(Program=#program_state{triggers=Triggers}, Signal) ->
 %%%% Expected signals
 -spec get_expected_signals_from_triggers([#program_trigger{}], #program_permissions{}, binary()) -> [atom()].
 get_expected_signals_from_triggers(Triggers, Permissions, ProgramId) ->
-    [get_expected_action_from_trigger(Trigger, Permissions, ProgramId) || Trigger <- Triggers ].
+    lists:filtermap(fun(Trigger) ->
+                            try get_expected_action_from_trigger(Trigger, Permissions, ProgramId) of
+                                Result ->
+                                    {true, Result}
+                            catch ErrorNS:Error:StackTrace ->
+                                    automate_logging:log_platform(error_program, ErrorNS, Error, StackTrace),
+                                    false
+                            end
+                    end, Triggers).
 
 -spec get_expected_action_from_trigger(#program_trigger{}, #program_permissions{}, binary()) -> atom().
 %% TODO: return a more specific monitor
