@@ -19,11 +19,12 @@ type BridgeData = {bridge: BridgeIndexData, state: 'waiting' | 'reading' | 'sele
     templateUrl: 'add-connection-dialog.component.html',
     styleUrls: [
         'add-connection-dialog.component.css',
+        '../libs/css/material-icons.css',
     ],
     providers: [BridgeService, SessionService, ServiceService, ConnectionService],
 })
 export class AddConnectionDialogComponent {
-    availableBridges: BridgeData[] = [];
+    availableBridges: BridgeData[] = null;
     selectedIndex = null;
 
     constructor(public dialogRef: MatDialogRef<AddConnectionDialogComponent>,
@@ -35,6 +36,7 @@ export class AddConnectionDialogComponent {
                 @Inject(MAT_DIALOG_DATA)
                 public data: {  }) {
         this.connectionService.getAvailableBridgesForNewConnection().then((bridges: BridgeIndexData[]) => {
+            this.availableBridges = [];
             console.log("Bridges:", bridges);
             for (let i = 0 ; i < bridges.length; i++){
                 this.availableBridges.push({ bridge: bridges[i], state: 'waiting', index: i });
