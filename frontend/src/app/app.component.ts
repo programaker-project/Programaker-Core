@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { SessionService } from './session.service';
+import { SessionService, SessionInfoUpdate } from './session.service';
 import { Session } from './session';
 import { Subscription } from 'rxjs';
 import { BridgeService } from './bridges/bridge.service';
@@ -18,7 +18,6 @@ import { BridgeService } from './bridges/bridge.service';
 
 export class AppComponent {
     sessionSubscription: Subscription;
-    username: string;
     loggedIn: boolean;
     title = 'PrograMaker';
     bridgeCount = 0;
@@ -32,13 +31,21 @@ export class AppComponent {
         this.session = session;
         this.loggedIn = false;
 
-        this.session.getSession().then((newSession: Session) => {
-            if (newSession !== null) {
-                this.loggedIn = newSession.active;
-                if (newSession.active) {
-                    this.username = newSession.username;
-                }
+        this.session.getSessionMonitor().then((data) => {
+            if (data.session !== null) {
+                this.loggedIn = data.session.active;
             }
+            data.monitor.subscribe({
+                next: (update: SessionInfoUpdate) => {
+                    this.loggedIn = update.loggedIn;
+                },
+                error: (error: any) => {
+                    console.error("Error reading logs:", error);
+                },
+                complete: () => {
+                    console.error("Session info data stopped")
+                }
+            });
         });
 
         this.bridgeService.listUserBridges().then(bridges => {
