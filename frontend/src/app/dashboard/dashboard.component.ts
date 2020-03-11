@@ -96,21 +96,7 @@ export class NewDashboardComponent {
                     this.programService.getPrograms()
                         .then(programs => this.programs = programs);
 
-                    this.connectionService.getConnections()
-                        .then(connections => {
-                            this.connections = connections.map((v, _i, _a) => {
-                                const icon_url = iconDataToUrl(v.icon, v.bridge_id);
-
-                                return { conn: v, extra: {icon_url: icon_url }};
-                            });
-
-                            for (const conn of connections){
-                                this.bridgeInfo[conn.bridge_id] = {
-                                    icon: iconDataToUrl(conn.icon, conn.bridge_id),
-                                    name: conn.bridge_name
-                                };
-                            }
-                        });
+                    this.updateConnections();
                 }
             })
             .catch(e => {
@@ -128,7 +114,29 @@ export class NewDashboardComponent {
     addConnection(): void {
         const dialogRef = this.dialog.open(AddConnectionDialogComponent, { width: '90%' });
 
-        dialogRef.afterClosed().subscribe(result => { });
+        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+            if (result && result.success) {
+                this.updateConnections();
+            }
+        });
+    }
+
+    updateConnections(): void {
+        this.connectionService.getConnections()
+            .then(connections => {
+                this.connections = connections.map((v, _i, _a) => {
+                    const icon_url = iconDataToUrl(v.icon, v.bridge_id);
+
+                    return { conn: v, extra: {icon_url: icon_url }};
+                });
+
+                for (const conn of connections){
+                    this.bridgeInfo[conn.bridge_id] = {
+                        icon: iconDataToUrl(conn.icon, conn.bridge_id),
+                        name: conn.bridge_name
+                    };
+                }
+            });
     }
 
     openProgram(program: ProgramMetadata): void {
