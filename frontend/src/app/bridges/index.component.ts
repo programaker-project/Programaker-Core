@@ -56,8 +56,8 @@ export class BridgeIndexComponent {
     }
 
     refresh_bridge_list(): void {
-        this.bridgeService.listUserBridges().then((_bridges) => {
-            this.bridges = _bridges;
+        this.bridgeService.listUserBridges().then((data) => {
+            this.bridges = data.bridges;
         });
     }
 
