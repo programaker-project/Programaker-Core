@@ -1,24 +1,34 @@
-
-import {map} from 'rxjs/operators';
+import { Observable, Observer } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Session } from './session';
-
 
 import * as progbar from './ui/progbar';
 import * as API from './api-config';
 import { ContentType } from './content-type';
 
+export type SessionInfoUpdate = { loggedIn: boolean };
+
 @Injectable()
 export class SessionService {
-    static EstablishedSession: Session = undefined;
-    checkSessionUrl = API.ApiRoot + '/sessions/check';
-    loginUrl = API.ApiRoot + '/sessions/login';
-    registerUrl = API.ApiRoot + '/sessions/register';
-    registerValidateUrl = API.ApiRoot + '/sessions/register/verify';
-    resetPasswordUrl = API.ApiRoot + '/sessions/login/reset';
-    validatePasswordUpdateUrl = API.ApiRoot + '/sessions/login/reset/validate';
-    passwordUpdateUrl = API.ApiRoot + '/sessions/login/reset/update';
+
+    readonly checkSessionUrl = API.ApiRoot + '/sessions/check';
+    readonly loginUrl = API.ApiRoot + '/sessions/login';
+    readonly registerUrl = API.ApiRoot + '/sessions/register';
+    readonly registerValidateUrl = API.ApiRoot + '/sessions/register/verify';
+    readonly resetPasswordUrl = API.ApiRoot + '/sessions/login/reset';
+    readonly validatePasswordUpdateUrl = API.ApiRoot + '/sessions/login/reset/validate';
+    readonly passwordUpdateUrl = API.ApiRoot + '/sessions/login/reset/update';
+
+
+    // These static values help create a Singleton-like class.
+    // While not strtictly following the Singleton pattern, as class instances
+    //   are obtained through Dependency Injection, it allows for every instance
+    //   of the class to share the relevant state.
+    // The shared state is the established session, it's Observable and Observer.
+    static EstablishedSession: Session = null;
+    static sessionInfoObservable: Observable<SessionInfoUpdate> = null;
+    private static _sessionInfoObserver: Observer<SessionInfoUpdate> = null;
 
     constructor(
         private http: HttpClient,
@@ -45,7 +55,7 @@ export class SessionService {
 
     async getUserApiRoot(): Promise<string> {
         let session = SessionService.EstablishedSession;
-        if (session === undefined) {
+        if (session === null) {
             session = await this.getSession();
         }
 
@@ -86,70 +96,81 @@ export class SessionService {
         return headers.append('content-type', contentType);
     }
 
+    async getSessionMonitor(): Promise<{session: Session, monitor: Observable<SessionInfoUpdate>}> {
+        if (!SessionService.sessionInfoObservable) {
+            this._monitorSession();
+        }
+
+        return {
+            session: await this.getSession(),
+            monitor: SessionService.sessionInfoObservable,
+        };
+    }
+
     getSession(): Promise<Session> {
         if (this.getToken() === null) {
             return Promise.resolve(null);
         }
 
-        return (this.http
-            .get(this.checkSessionUrl, { headers: this.getAuthHeader() }).pipe(
-            map((response) => {
-                const check = response as any;
-                const session = new Session(check.success,
-                    check.username,
-                    check.user_id);
-                SessionService.EstablishedSession = session;
+        if (SessionService.EstablishedSession !== null) {
+            return Promise.resolve(SessionService.EstablishedSession);
+        }
 
-                return session;
-            }))
-            .toPromise());
+        return (this.http
+                .get(this.checkSessionUrl, { headers: this.getAuthHeader() }).toPromise()
+                .then((response) => {
+                    const check = response as any;
+                    const session = new Session(check.success,
+                                                check.username,
+                                                check.user_id);
+                    this._updateSession(session);
+
+                    return session;
+                }));
     }
 
     login(username: string, password: string): Promise<boolean> {
         return progbar.track(this.http
-            .post(this.loginUrl,
-                JSON.stringify({ username: username, password: password }),
-                { headers: this.addJsonContentType(this.getAuthHeader()) }).pipe(
-            map(response => {
-                const data = response as any;
-                if (data.success) {
-                    this.storeToken(data.token);
+                             .post(this.loginUrl,
+                                   JSON.stringify({ username: username, password: password }),
+                                   { headers: this.addJsonContentType(this.getAuthHeader()) }).toPromise()
+                             .then(response => {
+                                 const data = response as any;
+                                 if (data.success) {
+                                     this.storeToken(data.token);
 
-                    const newSession = new Session(true, username, data.user_id);
-                    SessionService.EstablishedSession = newSession;
+                                     const newSession = new Session(true, username, data.user_id);
+                                     this._updateSession(newSession);
 
-                    return true;
-                }
-                return false;
-            }))
-            .toPromise());
+                                     return true;
+                                 }
+                                 return false;
+                             }));
     }
 
     logout() {
         this.removeToken();
-        SessionService.EstablishedSession = undefined;
+        this._updateSession(null);
     }
-
 
     register(username: string, email: string, password: string): Promise<{ success: boolean, continue_to_login: boolean}> {
         const headers = this.addJsonContentType(new HttpHeaders());
 
-        return progbar.track(this.http
-                             .post(
-                                 this.registerUrl,
-                                 JSON.stringify({
-                                     username: username
-                                     , password: password
-                                     , email: email
-                                 }),
-                                 { headers }).pipe(
-                             map(response => {
-                                 return {
-                                     success: (response as any).success,
-                                     continue_to_login: (response as any).ready
-                                 };
-                             }))
-                             .toPromise());
+        return progbar.track(
+            this.http
+                .post(
+                    this.registerUrl,
+                    JSON.stringify({
+                        username: username
+                        , password: password
+                        , email: email
+                    }),
+                    { headers }).toPromise()
+                .then(response => {
+                    return {
+                        success: (response as any).success,
+                        continue_to_login: (response as any).ready
+                    }}));
     }
 
 
@@ -162,8 +183,8 @@ export class SessionService {
                                  JSON.stringify({
                                      verification_code: verificationCode
                                  }),
-                                 { headers }).pipe(
-                             map(response => {
+                                 { headers }).toPromise()
+                             .then(response => {
                                  const success = (response as any).success;
                                  if (!success) {
                                      throw new Error(success.message);
@@ -174,10 +195,9 @@ export class SessionService {
                                  const session = new Session(true,
                                                              (response as any).session.username,
                                                              (response as any).session.user_id);
-                                 SessionService.EstablishedSession = session;
+                                 this._updateSession(session);
                                  return session;
-                             }))
-                             .toPromise());
+                             }));
     }
 
     requestResetPassword(email: string): Promise<void> {
@@ -189,11 +209,10 @@ export class SessionService {
                                  JSON.stringify({
                                      email: email
                                  }),
-                                 { headers }).pipe(
-                             map(_response => {
+                                 { headers }).toPromise()
+                             .then(_response => {
                                  return;
-                             }))
-                             .toPromise());
+                             }));
     }
 
     validatePasswordUpdateCode(verificationCode: string): Promise<void> {
@@ -205,11 +224,10 @@ export class SessionService {
                                  JSON.stringify({
                                      verification_code: verificationCode
                                  }),
-                                 { headers }).pipe(
-                             map(_response => {
+                                 { headers }).toPromise()
+                             .then(_response => {
                                  return;
-                             }))
-                             .toPromise());
+                             }));
     }
 
     resetPasswordUpdate(verificationCode: string, password: string): Promise<void> {
@@ -222,10 +240,27 @@ export class SessionService {
                                      verification_code: verificationCode,
                                      password: password,
                                  }),
-                                 { headers }).pipe(
-                             map(_response => {
+                                 { headers }).toPromise()
+                             .then(_response => {
                                  return;
-                             }))
-                             .toPromise());
+                             }));
+    }
+
+    private _monitorSession() {
+        const service = this;
+
+        SessionService.sessionInfoObservable = new Observable((observer) => {
+            SessionService._sessionInfoObserver = observer;
+            // This will be operated from `_updateSession`
+        });
+    }
+
+    private _updateSession(session: Session) {
+        SessionService.EstablishedSession = session;
+        const loggedIn = session !== null;
+
+        if (SessionService._sessionInfoObserver) {
+            SessionService._sessionInfoObserver.next({ loggedIn: loggedIn });
+        }
     }
 }

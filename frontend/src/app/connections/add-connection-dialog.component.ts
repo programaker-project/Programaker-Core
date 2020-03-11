@@ -43,7 +43,7 @@ export class AddConnectionDialogComponent {
     }
 
     onNoClick(): void {
-        this.dialogRef.close();
+        this.dialogRef.close({success: false});
     }
 
     async enableService(service: BridgeData): Promise<void> {
@@ -94,7 +94,7 @@ export class AddConnectionDialogComponent {
             .then((result) => {
                 console.log("Result:", result);
                 if (result.success) {
-                    this.dialogRef.close();
+                    this.dialogRef.close({success: true});
                 }
             }).catch((error) => {
                 console.error("Error registering", error);
@@ -117,7 +117,7 @@ export class AddConnectionDialogComponent {
         }).afterClosed().subscribe({
             next: () => {
                 if (backchannel.success) {
-                    this.dialogRef.close();
+                    this.dialogRef.close({success: true});
                 }
                 this.availableBridges[this.selectedIndex].state = 'waiting';
                 this.selectedIndex = null;
