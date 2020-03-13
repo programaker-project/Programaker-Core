@@ -97,6 +97,8 @@ button#program-start-button .action-icon {
     display: inline-block;
     width: 15ex;
     max-width: 50vw;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     overflow: hidden;
 }
 

@@ -248,9 +248,13 @@ export class ProgramDetailComponent implements OnInit {
 
 
         const workspaceElement = document.getElementById('workspace');
+        const programHeaderElement = document.getElementById('program-header');
+
         this.hide_workspace(workspaceElement);
         window.onresize = () => this.calculate_size(workspaceElement);
+        window.onresize = () => this.calculate_program_header_size(programHeaderElement);
         this.calculate_size(workspaceElement);
+        this.calculate_program_header_size(programHeaderElement);
         const rtl = false;
         const soundsEnabled = false;
         let toolbarLayout = { horizontal: false, position: 'start' };
@@ -361,6 +365,16 @@ export class ProgramDetailComponent implements OnInit {
         const window_height = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
         workspace.style.height = (window_height - header_end) + 'px';
+    }
+
+    calculate_program_header_size(programHeader: HTMLElement) {
+        const isScrollable = programHeader.clientHeight < programHeader.scrollHeight;
+        if (!isScrollable) {
+            programHeader.classList.remove('is-scrollable');
+        }
+        else {
+            programHeader.classList.add('is-scrollable');
+        }
     }
 
     reset_zoom() {
