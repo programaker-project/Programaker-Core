@@ -89,6 +89,9 @@ create_user(Username, Password, Email, Status) ->
                                                , email=Email
                                                , registration_time=CurrentTime
                                                , status=Status
+                                               , is_admin=false
+                                               , is_advanced=false
+                                               , is_in_preview=false
                                                },
     case save_unique_user(RegisteredUserData) of
         ok ->
@@ -301,6 +304,9 @@ get_user_from_mail_address(Email) ->
                                       , email='$1'
                                       , status='_'
                                       , registration_time='_'
+                                      , is_admin='_'
+                                      , is_advanced='_'
+                                      , is_in_preview='_'
                                       },
     Guard = {'==', '$1', Email},
     ResultColumn = '$_',
@@ -859,6 +865,9 @@ get_userid_from_username(Username) ->
                                       , email='_'
                                       , status='_'
                                       , registration_time='_'
+                                      , is_admin='_'
+                                      , is_advanced='_'
+                                      , is_in_preview='_'
                                       },
     %% Check that neither the id, username or email matches another
     Guard = {'==', '$2', Username},
@@ -965,6 +974,9 @@ get_userid_and_password_from_username(Username) ->
                                       , email='_'
                                       , status='_'
                                       , registration_time='_'
+                                      , is_admin='_'
+                                      , is_advanced='_'
+                                      , is_in_preview='_'
                                       },
     Guard = {'==', '$2', Username},
     ResultColumn = '$1',
@@ -1046,6 +1058,9 @@ retrieve_monitors_list_from_username(Username) ->
                                                                 , email='_'
                                                                 , status='_'
                                                                 , registration_time='_'
+                                                                , is_admin='_'
+                                                                , is_advanced='_'
+                                                                , is_in_preview='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1107,6 +1122,9 @@ retrieve_program(Username, ProgramName) ->
                                                                 , email='_'
                                                                 , status='_'
                                                                 , registration_time='_'
+                                                                , is_admin='_'
+                                                                , is_advanced='_'
+                                                                , is_in_preview='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1164,6 +1182,9 @@ retrieve_program_list_from_username(Username) ->
                                                                 , email='_'
                                                                 , status='_'
                                                                 , registration_time='_'
+                                                                , is_admin='_'
+                                                                , is_advanced='_'
+                                                                , is_in_preview='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1252,6 +1273,9 @@ store_new_program_content(Username, ProgramName,
                                                                 , email='_'
                                                                 , status='_'
                                                                 , registration_time='_'
+                                                                , is_admin='_'
+                                                                , is_advanced='_'
+                                                                , is_in_preview='_'
                                                                 },
                           UserGuard = {'==', '$2', Username},
                           UserResultColumn = '$1',
@@ -1321,6 +1345,9 @@ save_unique_user(UserData) ->
                                       , email='$3'
                                       , status='_'
                                       , registration_time='_'
+                                      , is_admin='_'
+                                      , is_advanced='_'
+                                      , is_in_preview='_'
                                       },
 
     %% Check that neither the id, username or email matches another

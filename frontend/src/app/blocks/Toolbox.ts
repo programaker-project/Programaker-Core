@@ -16,6 +16,7 @@ import { TemplateController } from './TemplateController';
 import { TemplateService } from '../templates/template.service';
 import { ServiceService } from '../service.service';
 import { AvailableService } from '../service';
+import { SessionService } from '../session.service';
 
 import { alreadyRegisteredException, createDom } from './utils';
 import { ConnectionService } from '../connection.service';
@@ -51,6 +52,7 @@ export class Toolbox {
         serviceService: ServiceService,
         customSignalService: CustomSignalService,
         public connectionService: ConnectionService,
+        public sessionService: SessionService,
     ) {
         this.monitorService = monitorService;
         this.customBlockService = customBlockService;
@@ -121,7 +123,6 @@ export class Toolbox {
         registrations = registrations.concat(this.templateController.injectBlocks());
         registrations = registrations.concat(this.customSignalController.injectBlocks());
         this.injectCustomBlocks(custom_blocks, connections);
-
 
         return registrations;
     }
@@ -878,11 +879,14 @@ export class Toolbox {
             operatorsCategory,
         ].join('\n');
 
-        toolboxXML.appendChild(await this.templateController.genCategory());
-        toolboxXML.appendChild(await this.customSignalController.genCategory());
         toolboxXML.appendChild(variablesCategory);
         // toolboxXML.appendChild(proceduresCategory);
-        toolboxXML.appendChild(this.genOperationCategory());
+
+        if ((await this.sessionService.getSession()).tags.is_advanced) {
+            toolboxXML.appendChild(await this.templateController.genCategory());
+            toolboxXML.appendChild(await this.customSignalController.genCategory());
+            toolboxXML.appendChild(this.genOperationCategory());
+        }
 
         Blockly.Blocks.defaultToolbox = toolboxXML;
 

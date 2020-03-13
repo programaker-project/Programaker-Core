@@ -1,5 +1,5 @@
 %%% @doc
-%%% REST endpoint to manage knowledge collections.
+%%% REST endpoint to inspect user preferences.
 %%% @end
 
 -module(automate_rest_api_sessions_check).
@@ -12,13 +12,14 @@
 -export([to_json/2]).
 
 -include("./records.hrl").
+-include("../../automate_storage/src/records.hrl").
 
--record(check_seq, { username }).
+-record(check_seq, { userid }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     {cowboy_rest, Req
-    , #check_seq{ username=undefined }}.
+    , #check_seq{ userid=undefined }}.
 
 content_types_provided(Req, State) ->
     {[ {<<"application/json">>, to_json}
@@ -45,9 +46,9 @@ is_authorized(Req, State) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token(X) of
-                        {true, Username} ->
-                            { true, Req1, #check_seq{username=Username} };
+                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                        {true, UserId} ->
+                            { true, Req1, #check_seq{userid=UserId} };
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
@@ -56,15 +57,32 @@ is_authorized(Req, State) ->
 
 %% GET handler
 -spec to_json(cowboy_req:req(), #check_seq{}) -> {binary(),cowboy_req:req(),_}.
-to_json(Req, State) ->
-    #check_seq{username=Username} = State,
-    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+to_json(Req, State=#check_seq{userid=UserId}) ->
+    {ok, User} = automate_rest_api_backend:get_user(UserId),
 
-    Output = jiffy:encode(#{ <<"success">> => true
-                           , <<"username">> => Username
-                           , <<"user_id">> => UserId
-                           }),
+    Output = encode_user(User),
     Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
     Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
     { Output, Res2, State }.
+
+
+encode_user(#registered_user_entry{ id=UserId
+                                  , username=Username
+                                    %% , password
+                                    %% , email
+                                    %% , status
+                                    %% , registration_time
+
+                                  , is_admin=IsAdmin
+                                  , is_advanced=IsAdvanced
+                                  , is_in_preview=IsInPreview
+                                  }) ->
+    jiffy:encode(#{ success => true
+                  , username => Username
+                  , user_id => UserId
+                  , tags => #{ is_admin => IsAdmin
+                             , is_advanced => IsAdvanced
+                             , is_in_preview => IsInPreview
+                             }
+                  }).

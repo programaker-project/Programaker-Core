@@ -33,6 +33,9 @@ get_user_metrics() ->
                                           , email='_'
                                           , status='_'
                                           , registration_time='$2'
+                                          , is_admin='_'
+                                          , is_advanced='_'
+                                          , is_in_preview='_'
                                           },
     UserResultColumn = '$1',
 
