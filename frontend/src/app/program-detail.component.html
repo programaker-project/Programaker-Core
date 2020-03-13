@@ -1,10 +1,15 @@
 <div class="program-pad">
-    <div id="program-header">
+    <div id="program-header" class="is-scrollable">
         <h2 class="program-name">
             <a href (click)="goBack()"><mat-icon class="back-arrow">arrow_back_ios</mat-icon></a>
             <span class="program-title" *ngIf="program !== undefined">{{program.name}}</span>
             <span class="program-title" *ngIf="program === undefined">Loading program...</span>
         </h2>
+
+        <span class="hint hint-scrollable">
+            <mat-icon class="hint-icon " aria-label="Scrollable section" aria-hidden="true">expand_more</mat-icon>
+            <span class="hint-text">Scroll to find more buttons</span>
+        </span>
         <!-- Basic functions -->
         <button mat-button mat-raised-button
             id="program-start-button" color="primary"
@@ -48,7 +53,7 @@
         </mat-menu>
 
 
-        <!-- Dangerous stuff, by itself -->
+        <!-- Dangerous stuff, on its own -->
         <button id="program-delete-button" color="warn"
             *ngIf="program !== undefined"
             (click)="deleteProgram()" mat-button>
