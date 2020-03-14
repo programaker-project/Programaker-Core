@@ -321,3 +321,10 @@ button#program-start-button.completed > span > .load-bg {
     animation-name: button-load-completed;
     animation-duration: 0.3s;
 }
+
+/* Navigation bar login button */
+.login-indicator > .account-menu > .mat-button-wrapper > .mat-icon {
+    font-size: 2rem;
+    display: inline-block;
+    height: 2rem;
+}

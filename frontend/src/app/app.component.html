@@ -4,10 +4,13 @@
         <a (click)="goHome()" id="main-title"> <img class="logo" src="/assets/logo.png" alt=""> {{title}} </a>
         <span class="floating-elements">
             <span class="login-indicator">
-                <div class="username-display" *ngIf="loggedIn">
-                    <a class="action-link" (click)="logout()">Logout</a>
-                </div>
-                <div *ngIf="!loggedIn">
+                <button mat-mini-fab
+                    *ngIf="loggedIn"
+                    class="account-menu">
+                    <mat-icon>account_circle</mat-icon>
+                    <mat-icon class="hint-icon" aria-label="Expand user menu" aria-hidden="false">expand_more</mat-icon>
+                </button>
+                <div class="login-button" *ngIf="!loggedIn">
                     <a class="action-link" (click)="gotoLogin()">Login</a>
                 </div>
             </span>
