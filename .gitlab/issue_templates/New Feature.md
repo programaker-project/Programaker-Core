@@ -14,5 +14,5 @@
 
 
 
-/label ~type:new-functionality ~needs-investigation
+/label ~"type:new-functionality" ~"needs-investigation"
 /cc @kenkeiras
