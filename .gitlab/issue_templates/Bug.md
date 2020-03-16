@@ -23,5 +23,5 @@
 (Paste any relevant logs - please use code blocks (```) to format console output, logs, and code as it's very hard to read otherwise.)
 
 
-/label ~type:bug ~needs-investigation
+/label ~"type:bug" ~"needs-investigation"
 /cc @kenkeiras
