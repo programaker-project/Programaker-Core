@@ -79,8 +79,6 @@ content_types_accepted(Req, State) ->
 accept_thread_program_stop(Req, #program_stop_thread_opts{user_id=UserId
                                                          ,program_id=ProgramId
                                                          }) ->
-    {ok, _, _} = read_body(Req),
-
     case automate_rest_api_backend:stop_program_threads(UserId, ProgramId) of
         ok ->
 
@@ -107,13 +105,4 @@ accept_thread_program_stop(Req, #program_stop_thread_opts{user_id=UserId
                                                     , program_id=ProgramId
                                                     }
             }
-    end.
-
-read_body(Req0) ->
-    read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
-        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
     end.

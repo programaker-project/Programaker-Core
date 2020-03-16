@@ -13,6 +13,7 @@
 -export([ accept_json_register_service/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 
 -record(state, { username, service_id }).
@@ -71,7 +72,7 @@ content_types_accepted(Req, State) ->
                                    #state{}) -> {true, cowboy_req:req(), #state{}}.
 accept_json_register_service(Req, State) ->
     #state{username = Username, service_id = ServiceId} = State,
-    {ok, Body, Req1} = read_body(Req),
+    {ok, Body, Req1} = ?UTILS:read_body(Req),
     FullRegistrationData = jiffy:decode(Body, [return_maps]),
     { RegistrationData, ConnectionId } = case FullRegistrationData of
                                              #{ <<"metadata">> := #{<<"connection_id">> := ConnId} } ->
@@ -90,14 +91,4 @@ accept_json_register_service(Req, State) ->
             Res4 = cowboy_req:set_resp_header(<<"content-type">>,
                                               <<"application/json">>, Res3),
             {true, Res4, State}
-    end.
-
-read_body(Req0) -> read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} ->
-            {ok, <<Acc/binary, Data/binary>>, Req};
-        {more, Data, Req} ->
-            read_body(Req, <<Acc/binary, Data/binary>>)
     end.

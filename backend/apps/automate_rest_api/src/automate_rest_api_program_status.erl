@@ -15,6 +15,7 @@
 -export([ accept_status_update/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 
 -record(program_status_opts, { user_id, program_id }).
@@ -80,7 +81,7 @@ content_types_accepted(Req, State) ->
 accept_status_update(Req, #program_status_opts{user_id=UserId
                                               , program_id=ProgramId
                                               }) ->
-    {ok, Body, _} = read_body(Req),
+    {ok, Body, _} = ?UTILS:read_body(Req),
     #{<<"enable">> := Status } = jiffy:decode(Body, [return_maps]),
 
     case automate_rest_api_backend:update_program_status(UserId, ProgramId, Status) of
@@ -115,12 +116,3 @@ accept_status_update(Req, #program_status_opts{user_id=UserId
 content_types_provided(Req, State) ->
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
-
-read_body(Req0) ->
-    read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
-        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
-    end.

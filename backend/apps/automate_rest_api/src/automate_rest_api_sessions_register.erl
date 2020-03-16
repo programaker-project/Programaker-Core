@@ -11,6 +11,8 @@
 -export([resource_exists/2]).
 
 -export([accept_json_modify_collection/2]).
+
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 
 -record(registration_seq, { rest_session,
@@ -52,7 +54,7 @@ content_types_accepted(Req, State) ->
 accept_json_modify_collection(Req, Session) ->
     case cowboy_req:has_body(Req) of
         true ->
-            {ok, Body, Req2} = read_body(Req),
+            {ok, Body, Req2} = ?UTILS:read_body(Req),
             Parsed = [jiffy:decode(Body, [return_maps])],
             case to_register_data(Parsed) of
                 { ok, RegistrationData } ->
@@ -93,12 +95,3 @@ to_register_data([#{ <<"email">> := Email
 to_register_data(X) ->
     io:format("Found on register: ~p~n", [X]),
     { error, "Data structures not matching" }.
-
-read_body(Req0) ->
-    read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
-        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
-    end.

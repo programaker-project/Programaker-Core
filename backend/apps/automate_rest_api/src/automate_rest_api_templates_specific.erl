@@ -16,6 +16,7 @@
         , to_json/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 -include("../../automate_template_engine/src/records.hrl").
 
@@ -106,16 +107,16 @@ to_json(Req, State) ->
 update_template(Req, State) ->
     #state{template_id=TemplateId, user_id=UserId} = State,
 
-    {ok, Body, Req1} = read_body(Req),
+    {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = jiffy:decode(Body, [return_maps]),
     #{ <<"name">> := TemplateName, <<"content">> := TemplateContent } = Parsed,
 
     case automate_rest_api_backend:update_template(UserId, TemplateId, TemplateName, TemplateContent) of
         ok ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
             { true, Req2, State };
         { error, Reason } ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
             { false, Req2, State }
     end.
 
@@ -124,31 +125,12 @@ delete_resource(Req, State) ->
     #state{template_id=TemplateId, user_id=UserId} = State,
     case automate_rest_api_backend:delete_template(UserId, TemplateId) of
         ok ->
-            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
+            Req1 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
             { true, Req1, State };
         { error, Reason } ->
-            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req),
+            Req1 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req),
             { false, Req1, State }
     end.
-
-
-%%%% Utils
-read_body(Req0) ->
-    read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
-        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
-    end.
-
-
-send_json_output(Output, Req) ->
-    Res1 = cowboy_req:set_resp_body(Output, Req),
-    Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
-    cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2).
-
-
 
 template_to_json(#template_entry{ id=Id
                                 , name=Name

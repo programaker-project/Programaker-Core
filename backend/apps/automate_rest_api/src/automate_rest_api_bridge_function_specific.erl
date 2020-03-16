@@ -14,6 +14,7 @@
 -export([ accept_function_call/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
@@ -80,7 +81,7 @@ content_types_accepted(Req, State) ->
 
 accept_function_call(Req, State) ->
     #state{bridge_id=BridgeId, function_name=FunctionName, user_id=UserId} = State,
-    {ok, Body, _} = read_body(Req),
+    {ok, Body, _} = ?UTILS:read_body(Req),
     #{<<"arguments">> := Arguments } = jiffy:decode(Body, [return_maps]),
 
     case automate_rest_api_backend:bridge_function_call(UserId, BridgeId, FunctionName, Arguments) of
@@ -111,12 +112,3 @@ encode_result(#{ <<"success">> := true, <<"result">> := Result }) ->
 encode_result(Result) ->
     %% Not a positive result, just encode the returned data to help debugging.
     jiffy:encode(Result).
-
-read_body(Req0) ->
-    read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
-        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
-    end.

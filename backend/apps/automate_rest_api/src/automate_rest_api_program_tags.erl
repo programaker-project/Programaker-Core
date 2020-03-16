@@ -16,6 +16,7 @@
         , to_json/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 
 -record(program_tag_opts, { user_id, program_id }).
@@ -81,7 +82,7 @@ content_types_accepted(Req, State) ->
 accept_tags_update(Req, #program_tag_opts{user_id=UserId
                                          , program_id=ProgramId
                                          }) ->
-    {ok, Body, _} = read_body(Req),
+    {ok, Body, _} = ?UTILS:read_body(Req),
     #{<<"tags">> := Tags } = jiffy:decode(Body, [return_maps]),
 
     case automate_rest_api_backend:update_program_tags(UserId, ProgramId, Tags) of
@@ -128,14 +129,4 @@ to_json(Req, State) ->
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
             { Output, Res2, State }
-    end.
-
-
-read_body(Req0) ->
-    read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
-        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
     end.

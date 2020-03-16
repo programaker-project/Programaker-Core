@@ -11,6 +11,7 @@
 
 -define(FORMATTING, automate_rest_api_utils_formatting).
 -define(PING_INTERVAL_MILLISECONDS, 15000).
+
 -include("../../automate_storage/src/records.hrl").
 
 -record(state, { user_id    :: binary()
