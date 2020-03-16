@@ -62,6 +62,16 @@ export class SessionService {
         return this.getApiRootForUser(session.username);
     }
 
+    async updateUserSettings(user_settings_update : { is_advanced?: boolean }): Promise<boolean> {
+        const url = (await this.getApiRootForUserId()) + '/settings';
+        const response = await (this.http
+                                .post(url, JSON.stringify(user_settings_update),
+                                      { headers: this.addJsonContentType(this.getAuthHeader()) })
+                                .toPromise());
+
+        return (response as { success: boolean }).success;
+    }
+
     getApiRootForUser(username: string): string {
         return API.ApiRoot + '/users/' + username;
     }
@@ -116,17 +126,7 @@ export class SessionService {
             return Promise.resolve(SessionService.EstablishedSession);
         }
 
-        return (this.http
-                .get(this.checkSessionUrl, { headers: this.getAuthHeader() }).toPromise()
-                .then((response) => {
-                    const check = response as any;
-                    const session = new Session(check.success,
-                                                check.username,
-                                                check.user_id);
-                    this._updateSession(session);
-
-                    return session;
-                }));
+        return this.forceUpdateSession();
     }
 
     login(username: string, password: string): Promise<boolean> {
@@ -134,13 +134,12 @@ export class SessionService {
                              .post(this.loginUrl,
                                    JSON.stringify({ username: username, password: password }),
                                    { headers: this.addJsonContentType(this.getAuthHeader()) }).toPromise()
-                             .then(response => {
+                             .then(async response => {
                                  const data = response as any;
                                  if (data.success) {
-                                     this.storeToken(data.token);
 
-                                     const newSession = new Session(true, username, data.user_id);
-                                     this._updateSession(newSession);
+                                     this.storeToken(data.token);
+                                     await this.forceUpdateSession();
 
                                      return true;
                                  }
@@ -173,7 +172,6 @@ export class SessionService {
                     }}));
     }
 
-
     validateRegisterCode(verificationCode: string): Promise<Session> {
         const headers = this.addJsonContentType(new HttpHeaders());
 
@@ -190,13 +188,8 @@ export class SessionService {
                                      throw new Error(success.message);
                                  }
 
-
                                  this.storeToken((response as any).session.token);
-                                 const session = new Session(true,
-                                                             (response as any).session.username,
-                                                             (response as any).session.user_id);
-                                 this._updateSession(session);
-                                 return session;
+                                 return this.forceUpdateSession();
                              }));
     }
 
@@ -262,5 +255,23 @@ export class SessionService {
         if (SessionService._sessionInfoObserver) {
             SessionService._sessionInfoObserver.next({ loggedIn: loggedIn });
         }
+    }
+
+    public async forceUpdateSession(): Promise<Session> {
+        if (this.getToken() === null) {
+            return Promise.resolve(null);
+        }
+
+        const response = (await this.http
+                          .get(this.checkSessionUrl, { headers: this.getAuthHeader() }).toPromise());
+
+        const check = response as any;
+        const session = new Session(check.success,
+                                    check.username,
+                                    check.user_id,
+                                    check.tags);
+        this._updateSession(session);
+
+        return session;
     }
 }

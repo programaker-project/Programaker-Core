@@ -347,6 +347,29 @@ get_versioning(Nodes) ->
                                  )
                         end
                 }
+
+                %% - Add user tags `is_admin`, `is_advanced`, `is_in_preview` to user table.
+                %%
+                %% Previous records are set to `false`.
+              , #database_version_transformation
+                { id=11
+                , apply=fun() ->
+                                mnesia:transform_table(
+                                  ?REGISTERED_USERS_TABLE,
+                                  fun({registered_user_entry, Id, Username, Password, Email, Status, RegistrationTime }) ->
+                                          %% Replicate the entry. Set status to ready.
+                                          { registered_user_entry, Id, Username, Password, Email, Status, RegistrationTime
+                                          , false, false, false
+                                          }
+                                  end,
+                                  [ id, username, password, email, status, registration_time
+                                  , is_admin, is_advanced, is_in_preview
+                                  ],
+                                  registered_user_entry
+                                 )
+                        end
+                }
+
               ]
         }.
 

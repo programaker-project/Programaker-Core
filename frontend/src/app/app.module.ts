@@ -28,6 +28,7 @@ import { AlertModule } from 'ngx-bootstrap';
 import { AppComponent } from './app.component';
 import { DashboardComponent } from './dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
+import { SettingsComponent } from './settings/settings.component';
 
 // Programs
 import { ProgramsComponent } from './programs.component';
@@ -76,6 +77,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         AppComponent,
         DashboardComponent,
         NewDashboardComponent,
+        SettingsComponent,
         ProgramsComponent,
         ProgramDetailComponent,
         BridgeIndexComponent,

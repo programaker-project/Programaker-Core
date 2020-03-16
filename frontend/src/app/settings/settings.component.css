@@ -1,0 +1,57 @@
+.settings-section {
+    width: 100%;
+}
+
+.save-button {
+    padding: 1ex;
+    border-radius: 5px;
+
+    /* Right align */
+    margin: 1ex 0 auto auto;
+    display: block;
+}
+
+.settings-group {
+    background-color: #fff;
+    border: 1px solid #88a;
+    border-radius: 3px;
+    padding: 1ex;
+    margin-top: 1ex;
+}
+
+.settings-group > .title {
+    font-size: 1.5rem;
+    margin-bottom: 1ex;
+    border-bottom: 1px solid #aaa;
+}
+
+.value {
+    float: right;
+}
+
+.toggle-setting {
+    margin-bottom: 5ex;
+}
+
+.row {
+    margin: 0 !important;
+}
+
+/* Avatar */
+div.avatar {
+    padding-top: 1ex;
+}
+
+.avatar > img {
+    height: 7ex;
+    display: block;
+    margin: 0 auto;
+}
+
+.avatar-edit-section {
+    text-align: center;
+}
+
+.avatar-edit-section > mat-icon {
+    vertical-align: bottom;
+}

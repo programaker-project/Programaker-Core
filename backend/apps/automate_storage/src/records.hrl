@@ -10,6 +10,12 @@
                                , email
                                , status :: user_status() | ?MNESIA_SELECTOR
                                , registration_time :: time_in_seconds() | ?MNESIA_SELECTOR
+
+%%% The following entries could be abstracted in a `tags` set entry, but
+%%%  that would create a problem when trying to use it on mnesia:select/2 .
+                               , is_admin :: boolean() | ?MNESIA_SELECTOR % Platform administration
+                               , is_advanced :: boolean() | ?MNESIA_SELECTOR % Advanced features
+                               , is_in_preview :: boolean() | ?MNESIA_SELECTOR % Features in beta/preview
                                }).
 
 -type verification_type() :: registration_mail_verification | password_reset_verification.
