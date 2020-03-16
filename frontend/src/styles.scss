@@ -313,7 +313,7 @@ mat-card.bridge.connected-false {
     to {width: 0%;}
 }
 
-button#program-start-button > .mat-button-wrapper > .load-bg {
+button > .mat-button-wrapper > .load-bg {
     background-color: #27212e;
     height: 100%;
     position: absolute;
@@ -322,12 +322,12 @@ button#program-start-button > .mat-button-wrapper > .load-bg {
     top: 0;
 }
 
-button#program-start-button.started > span > .load-bg {
+button.started > span > .load-bg {
     animation-name: button-load-started;
     animation-duration: 0.2s;
 }
 
-button#program-start-button.completed > span > .load-bg {
+button.completed > span > .load-bg {
     animation-name: button-load-completed;
     animation-duration: 0.3s;
 }
@@ -337,4 +337,17 @@ button#program-start-button.completed > span > .load-bg {
     font-size: 2rem;
     display: inline-block;
     height: 2rem;
+    width: 2rem;
+}
+
+/* Settings */
+.toggle-setting > mat-slide-toggle > label {
+    position: relative;
+}
+
+.toggle-setting > mat-slide-toggle > label > .mat-slide-toggle-content {
+    position: absolute;
+    top: 100%;
+    left: -25%;
+    font-size: small;
 }

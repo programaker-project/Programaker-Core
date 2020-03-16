@@ -1,14 +1,14 @@
 <div class="app-content">
     <mat-toolbar id="main-toolbar">
-        <span  id="main-menu-opener" role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span>
+        <span id="main-menu-opener" role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span>
         <a (click)="goHome()" id="main-title"> <img class="logo" src="/assets/logo.png" alt=""> {{title}} </a>
         <span class="floating-elements">
             <span class="login-indicator">
                 <button mat-mini-fab
+                    (click)="gotoSettings()"
                     *ngIf="loggedIn"
                     class="account-menu">
                     <mat-icon>account_circle</mat-icon>
-                    <mat-icon class="hint-icon" aria-label="Expand user menu" aria-hidden="false">expand_more</mat-icon>
                 </button>
                 <div class="login-button" *ngIf="!loggedIn">
                     <a class="action-link" (click)="gotoLogin()">Login</a>
@@ -37,6 +37,13 @@
             </ul>
             <ul class="user-controls"
                 *ngIf="loggedIn">
+                <li>
+                    <button mat-button (click)="gotoSettings()">
+                        <span>
+                            Settings
+                        </span>
+                    </button>
+                </li>
                 <li>
                     <button mat-button (click)="logout()">
                         <span>

@@ -83,6 +83,11 @@ export class AppComponent {
         this.resetSidenavState();
     }
 
+    gotoSettings(): void {
+        this.router.navigate(['/settings']);
+        this.resetSidenavState();
+    }
+
     logout(): void {
         this.session.logout();
         this.loggedIn = false;

@@ -1,0 +1,42 @@
+<div class="settings-section row">
+    <div class="avatar-settings-col col-sm-4">
+        <div class="settings-group ">
+            <div class="avatar">
+                <img src="/assets/profile-not-set.png" />
+            </div>
+            <div class="avatar-edit-section">
+                <mat-icon>edit</mat-icon> Upload picture
+            </div>
+        </div>
+    </div>
+
+    <div class="general-settings col-sm-8">
+        <div class="user-settings settings-group">
+            <div class="title">User settings</div>
+
+            <div class="advanced-user toggle-setting">
+                <label for="advanced-user-toggle">Advanced controls</label>
+
+                <mat-slide-toggle
+                    class="value"
+                    [color]="primary"
+                    [checked]=is_advanced
+                    (change)="onChangeAdvancedSettings($event)">
+                    <span>{{ is_advanced ? 'Enabled' : 'Disabled' }}</span>
+                </mat-slide-toggle>
+            </div>
+
+            <div class="save-section">
+                <button mat-button mat-raised-button
+                    id="user-settings-save-button"
+                    class="save-button"
+                    color="primary"
+                    (click)="saveUserSettings()">
+                    <span class="load-bg"></span>
+                    <mat-icon class="action-icon">cloud_upload</mat-icon>
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

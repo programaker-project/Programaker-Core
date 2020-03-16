@@ -62,6 +62,16 @@ export class SessionService {
         return this.getApiRootForUser(session.username);
     }
 
+    async updateUserSettings(user_settings_update : { is_advanced?: boolean }): Promise<boolean> {
+        const url = (await this.getApiRootForUserId()) + '/settings';
+        const response = await (this.http
+                                .post(url, JSON.stringify(user_settings_update),
+                                      { headers: this.addJsonContentType(this.getAuthHeader()) })
+                                .toPromise());
+
+        return (response as { success: boolean }).success;
+    }
+
     getApiRootForUser(username: string): string {
         return API.ApiRoot + '/users/' + username;
     }
@@ -116,7 +126,7 @@ export class SessionService {
             return Promise.resolve(SessionService.EstablishedSession);
         }
 
-        return this._forceCheckSession();
+        return this.forceUpdateSession();
     }
 
     login(username: string, password: string): Promise<boolean> {
@@ -129,7 +139,7 @@ export class SessionService {
                                  if (data.success) {
 
                                      this.storeToken(data.token);
-                                     await this._forceCheckSession();
+                                     await this.forceUpdateSession();
 
                                      return true;
                                  }
@@ -179,7 +189,7 @@ export class SessionService {
                                  }
 
                                  this.storeToken((response as any).session.token);
-                                 return this._forceCheckSession();
+                                 return this.forceUpdateSession();
                              }));
     }
 
@@ -247,7 +257,7 @@ export class SessionService {
         }
     }
 
-    private async _forceCheckSession(): Promise<Session> {
+    public async forceUpdateSession(): Promise<Session> {
         if (this.getToken() === null) {
             return Promise.resolve(null);
         }
