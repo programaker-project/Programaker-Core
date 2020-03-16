@@ -13,6 +13,7 @@
         , dirty_list_monitors/0
         , lists_monitors_from_username/1
         , get_userid_from_username/1
+        , update_user_settings/3
 
         , create_mail_verification_entry/1
         , verify_registration_with_code/1
@@ -886,6 +887,28 @@ get_userid_from_username(Username) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec update_user_settings(binary(), map(), [atom()]) -> ok | {error, _}.
+update_user_settings(UserId, Settings, Permissions) ->
+    Transaction = fun() ->
+                          case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
+                              [User] ->
+                                  case apply_user_settings(User, Settings, Permissions) of
+                                      {ok, NewUser} ->
+                                          ok = mnesia:write(?REGISTERED_USERS_TABLE, NewUser, write);
+                                      {error, Reason} ->
+                                          {error, Reason}
+                                  end;
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason}
+    end.
+
 
 %% Custom signals
 -spec create_custom_signal(binary(), binary()) -> {ok, binary()}.
@@ -998,6 +1021,32 @@ get_userid_and_password_from_username(Username) ->
         { aborted, Reason } ->
             {error, mnesia:error_description(Reason)}
     end.
+
+apply_user_settings(User, Settings, Permissions) ->
+    apply_user_settings(User, Settings, Permissions, []).
+
+apply_user_settings(User, _Settings, [], []) ->
+    %% No more permissions to apply, no errors
+    {ok, User};
+apply_user_settings(_User, _Settings, [], ErrorAcc) ->
+    %% No more permissions to apply, errors found
+    {error, {data_error, ErrorAcc}};
+apply_user_settings(User, Settings, [ user_permissions | T ], ErrorAcc) ->
+    {NewUser, NewErrors} = apply_user_permissions(User, Settings),
+    apply_user_settings(NewUser, Settings, T, NewErrors ++ ErrorAcc).
+
+apply_user_permissions(User, Settings) ->
+    Errors = [],
+    {User1, Errors1} = case Settings of
+                           #{ <<"is_advanced">> := IsAdvanced } when is_boolean(IsAdvanced) ->
+                               { User#registered_user_entry{ is_advanced=IsAdvanced}, Errors };
+                           #{ <<"is_advanced">> := _IsAdvanced } ->
+                               %% Is advanced found, but it's not boolean
+                               { User, [ { bad_type, is_advanced } | Errors ] };
+                           #{} ->
+                               { User, Errors }
+                       end,
+    {User1, Errors1}.
 
 -spec create_verification_entry(binary(), verification_type()) -> {ok, binary()} | {error, _}.
 create_verification_entry(UserId, VerificationType) ->
