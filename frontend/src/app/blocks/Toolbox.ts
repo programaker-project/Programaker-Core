@@ -123,8 +123,36 @@ export class Toolbox {
         registrations = registrations.concat(this.templateController.injectBlocks());
         registrations = registrations.concat(this.customSignalController.injectBlocks());
         this.injectCustomBlocks(custom_blocks, connections);
+        this.patchBlocks();
 
         return registrations;
+    }
+
+    patchBlocks() {
+        // Original: https://github.com/LLK/scratch-blocks/blob/d9e7bb7c497d23f55cc06103837ad448d786714b/blocks_vertical/data.js#L80
+        Blockly.Blocks['data_changevariableby'] = {
+            /**
+             * Block to change variable by a certain value
+             * @this Blockly.Block
+             */
+            init: function() {
+                this.jsonInit({
+                    "message0": "increment %1 by %2",
+                    "args0": [
+                        {
+                            "type": "field_variable",
+                            "name": "VARIABLE"
+                        },
+                        {
+                            "type": "input_value",
+                            "name": "VALUE"
+                        }
+                    ],
+                    "category": Blockly.Categories.data,
+                    "extensions": ["colours_data", "shape_statement"]
+                });
+            }
+        };
     }
 
     injectTimeBlocks() {
