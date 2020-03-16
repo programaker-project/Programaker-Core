@@ -16,6 +16,7 @@
         , accept_json_program/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
@@ -121,7 +122,7 @@ accept_json_program(Req, State) ->
 update_program(Req, State) ->
     #get_program_seq{program_name=ProgramName, username=Username} = State,
 
-    {ok, Body, Req1} = read_body(Req),
+    {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = [jiffy:decode(Body, [return_maps])],
     Program = decode_program(Parsed),
     case automate_rest_api_backend:update_program(Username, ProgramName, Program) of
@@ -137,7 +138,7 @@ update_program(Req, State) ->
 update_program_metadata(Req, State) ->
     #get_program_seq{program_name=ProgramName, username=Username} = State,
 
-    {ok, Body, Req1} = read_body(Req),
+    {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = [jiffy:decode(Body, [return_maps])],
     Metadata = decode_program_metadata(Parsed),
     case automate_rest_api_backend:update_program_metadata(Username, ProgramName, Metadata) of
@@ -183,13 +184,3 @@ send_json_output(Output, Req) ->
     Res1 = cowboy_req:set_resp_body(Output, Req),
     Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
     cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2).
-
-
-read_body(Req0) ->
-    read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
-        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
-    end.

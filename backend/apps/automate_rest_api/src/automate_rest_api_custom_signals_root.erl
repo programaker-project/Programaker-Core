@@ -16,6 +16,7 @@
         , to_json/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
@@ -79,7 +80,7 @@ content_types_accepted(Req, State) ->
 accept_json_create_signal(Req, State) ->
     #state{user_id=UserId} = State,
 
-    {ok, Body, Req1} = read_body(Req),
+    {ok, Body, Req1} = ?UTILS:read_body(Req),
     Signal = jiffy:decode(Body, [return_maps]),
     #{ <<"name">> := SignalName } = Signal,
 
@@ -115,17 +116,6 @@ to_json(Req, State) ->
             { Output, Res2, State }
     end.
 
-
-read_body(Req0) ->
-    read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
-        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
-    end.
-
-
 signal_to_map(#custom_signal_entry{ id=Id
                                   , name=Name
                                   , owner=Owner
@@ -134,4 +124,3 @@ signal_to_map(#custom_signal_entry{ id=Id
      , name => Name
      , owner => Owner
      }.
-

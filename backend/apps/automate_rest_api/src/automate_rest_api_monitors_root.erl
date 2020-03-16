@@ -16,6 +16,7 @@
         , to_json/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 
 -record(state, { username }).
@@ -78,7 +79,7 @@ content_types_accepted(Req, State) ->
 accept_json_create_monitor(Req, State) ->
     #state{username=Username} = State,
 
-    {ok, Body, Req1} = read_body(Req),
+    {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = [jiffy:decode(Body, [return_maps])],
     Monitor = decode_monitor(Parsed),
 
@@ -104,16 +105,6 @@ decode_monitor([#{ <<"type">> := Type
                        , value=Value
                        , name=Name
                        }.
-
-read_body(Req0) ->
-    read_body(Req0, <<>>).
-
-read_body(Req0, Acc) ->
-    case cowboy_req:read_body(Req0) of
-        {ok, Data, Req} -> {ok, << Acc/binary, Data/binary >>, Req};
-        {more, Data, Req} -> read_body(Req, << Acc/binary, Data/binary >>)
-    end.
-
 
 
 %% GET handler
