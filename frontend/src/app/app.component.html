@@ -18,7 +18,8 @@
     </mat-toolbar>
     <mat-sidenav-container>
         <mat-sidenav #sidenav mode="over" opened="false">
-            <ul>
+            <ul class="panels"
+                *ngIf="loggedIn">
                 <li>
                     <button mat-button (click)="gotoDashboard()">
                         <span>
@@ -26,26 +27,30 @@
                         </span>
                     </button>
                 </li>
-                <!--
-                <li>
-                    <button mat-button (click)="gotoDashboard()">
-                        <span matBadge="3" matBadgePosition="after" matBadgeColor="accent">
-                            Programs
-                        </span>
-                    </button>
-                </li>
-                <li>
-                    <button mat-button (click)="gotoDashboard()">
-                        <span matBadge="2" matBadgePosition="after" matBadgeColor="accent">
-                            Connections
-                        </span>
-                    </button>
-                </li>
-                -->
                 <li>
                     <button mat-button (click)="gotoBridges()">
                         <span matBadge="{{ bridgeCount }}" matBadgePosition="after" matBadgeColor="accent">
                             Bridges
+                        </span>
+                    </button>
+                </li>
+            </ul>
+            <ul class="user-controls"
+                *ngIf="loggedIn">
+                <li>
+                    <button mat-button (click)="logout()">
+                        <span>
+                            Logout
+                        </span>
+                    </button>
+                </li>
+            </ul>
+            <ul class="user-controls"
+                *ngIf="!loggedIn">
+                <li>
+                    <button mat-button (click)="gotoLogin()">
+                        <span>
+                            Login
                         </span>
                     </button>
                 </li>

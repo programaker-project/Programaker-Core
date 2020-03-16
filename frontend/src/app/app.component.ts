@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { ElementRef, ViewChild, Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { SessionService, SessionInfoUpdate } from './session.service';
-import { Session } from './session';
 import { Subscription } from 'rxjs';
 import { BridgeService, BridgeInfoUpdate } from './bridges/bridge.service';
+import { MatSidenav } from '@angular/material/sidenav';
 
 @Component({
     selector: 'app-my-app',
@@ -20,6 +20,9 @@ export class AppComponent {
     loggedIn: boolean;
     title = 'PrograMaker';
     bridgeCount = 0;
+
+    @ViewChild('sidenav', { static: false })
+    private sidenav: ElementRef<MatSidenav>;
 
     constructor(
         private router: Router,
@@ -77,6 +80,7 @@ export class AppComponent {
 
     gotoLogin(): void {
         this.router.navigate(['/login']);
+        this.resetSidenavState();
     }
 
     logout(): void {
@@ -91,9 +95,15 @@ export class AppComponent {
 
     gotoDashboard(): void {
         this.router.navigate(['/dashboard']);
+        this.resetSidenavState();
     }
 
     gotoBridges(): void {
         this.router.navigate(['/bridges']);
+        this.resetSidenavState();
+    }
+
+    resetSidenavState(): void {
+        (this.sidenav as any as MatSidenav).close();
     }
 }

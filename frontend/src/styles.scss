@@ -48,6 +48,16 @@ mat-sidenav.mat-sidenav {
     box-shadow: 2px 0px 3px 0px rgba(0,0,0,0.3);
 }
 
+.mat-drawer-inner-container > ul {
+    border-bottom: 1px solid #888;
+    margin-bottom: 0;
+    padding-bottom: 1rem;
+}
+
+.mat-drawer-inner-container > ul:last-child {
+    border-bottom: none;
+}
+
 mat-toolbar-row {
     text-align: center;
     font-size: large;
