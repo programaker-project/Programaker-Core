@@ -72,8 +72,12 @@ export class RegisterFormComponent implements OnInit {
         this.validUsername = true;
         this.userErrorMessage = "";
 
-        if (this.username.length < 4) {
-            this.userErrorMessage = "User name should have at least 4 characters.";
+        if ((this.username.length < 4) || (this.username.length > 50)){
+            this.userErrorMessage = "User name should have at more than 3 and at most 50 characters.";
+            this.validUsername = false;
+        }
+        else if (!this.username.match(/^[_a-zA-Z0-9]*$/)) {
+            this.userErrorMessage = "User name can only contain letters (a-z), digits (0-9) and underscores (_).";
             this.validUsername = false;
         }
     }
