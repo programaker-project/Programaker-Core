@@ -370,6 +370,33 @@ get_versioning(Nodes) ->
                         end
                 }
 
+                %% - Add `canonical_username` to user table.
+                %%
+                %% Previous records are set to lowercased usernames, but they might not be correct usernames.
+              , #database_version_transformation
+                { id=12
+                , apply=fun() ->
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?REGISTERED_USERS_TABLE,
+                                                 fun({registered_user_entry, Id, Username, Password
+                                                     , Email, Status, RegistrationTime
+                                                     , IsAdmin, IsAdvanced, IsInPreview
+                                                     }) ->
+                                                         CanonicalUsername = automate_storage_utils:canonicalize(Username),
+
+                                                         %% Replicate the entry. Set status to ready.
+                                                         { registered_user_entry, Id, Username, CanonicalUsername, Password
+                                                         , Email, Status, RegistrationTime
+                                                         , IsAdmin, IsAdvanced, IsInPreview
+                                                         }
+                                                 end,
+                                                 [ id, username, canonical_username, password, email, status, registration_time
+                                                 , is_admin, is_advanced, is_in_preview
+                                                 ],
+                                                 registered_user_entry
+                                                )
+                        end
+                }
               ]
         }.
 

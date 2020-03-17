@@ -68,7 +68,7 @@ to_json(Req, State=#check_seq{userid=UserId}) ->
 
 
 encode_user(#registered_user_entry{ id=UserId
-                                  , username=Username
+                                  , canonical_username=Username
                                     %% , password
                                     %% , email
                                     %% , status

@@ -29,6 +29,7 @@ get_user_metrics() ->
     %% User registration queries
     UserMatchHead = #registered_user_entry{ id='$1'
                                           , username='_'
+                                          , canonical_username='_'
                                           , password='_'
                                           , email='_'
                                           , status='_'

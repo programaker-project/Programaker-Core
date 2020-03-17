@@ -25,7 +25,6 @@ validate_username(_) ->
     false.
 
 
-
 -spec canonicalize(binary()) -> binary().
 canonicalize(X) ->
     %% Lowercasing has to be applied to the non-binary form
