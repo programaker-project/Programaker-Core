@@ -100,7 +100,8 @@ accept_function_call(Req, State) ->
                        _ -> 500
                    end,
             Output = jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }),
-            cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req)
+            Res = cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req),
+            {stop, Res, State}
     end.
 
 %% Helper functions
