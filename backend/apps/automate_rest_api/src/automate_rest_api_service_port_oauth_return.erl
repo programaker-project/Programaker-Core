@@ -62,16 +62,17 @@ to_json(Req, State) ->
                        _ -> 500
                    end,
 
-            cowboy_req:reply(Code,
-                             #{ <<"content-type">> => <<"application/json">> },
-                             jiffy:encode(#{ <<"success">> => false
-                                           , <<"message">> => Reason
-                                           }),
-                             Req)
+            Res = cowboy_req:reply(Code,
+                                   #{ <<"content-type">> => <<"application/json">> },
+                                   jiffy:encode(#{ <<"success">> => false
+                                                 , <<"message">> => Reason
+                                                 }),
+                                   Req),
+            { stop, Res, State }
     end.
 
 -spec to_html(cowboy_req:req(), #state{})
-             -> {binary(),cowboy_req:req(), #state{}}.
+             -> {binary() | stop,cowboy_req:req(), #state{}}.
 to_html(Req, State) ->
     #state{service_port_id=ServicePortId} = State,
     Qs = cowboy_req:qs(Req),
@@ -82,7 +83,7 @@ to_html(Req, State) ->
                              #{ <<"Location">> => automate_configuration:get_frontend_root_url()},
                              <<>>,
                              Req),
-            {halt, NewReq, State};
+            {stop, NewReq, State};
         {error, Reason} ->
 
             Code = case Reason of
@@ -91,9 +92,10 @@ to_html(Req, State) ->
                        _ -> 500
                    end,
 
-            cowboy_req:reply(Code,
-                             #{ <<"content-type">> => <<"text/plain">> },
-                             binary:list_to_bin(
-                               lists:flatten(io_lib:format("Error performing authenticationL: '~s'", [Reason]))),
-                             Req)
+            Res = cowboy_req:reply(Code,
+                                   #{ <<"content-type">> => <<"text/plain">> },
+                                   binary:list_to_bin(
+                                     lists:flatten(io_lib:format("Error performing authentication: '~s'", [Reason]))),
+                                   Req),
+            {stop, Res, State }
     end.

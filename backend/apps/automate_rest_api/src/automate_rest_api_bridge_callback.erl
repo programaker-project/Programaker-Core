@@ -13,6 +13,7 @@
 -export([ to_json/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
@@ -75,18 +76,17 @@ to_json(Req, State) ->
     case automate_rest_api_backend:callback_bridge(UserId, BridgeId, Callback) of
         {ok, Result} ->
             Output = jiffy:encode(Result),
+            Res = ?UTILS:send_json_format(Req),
 
-            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
-            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
-
-            { Output, Res2, State };
+            { Output, Res, State };
         {error, Reason} ->
             Code = case Reason of
                        not_found -> 404;
                        unauthorized -> 403;
+                       no_connection -> 409; %% Conflict
                        _ -> 500
                    end,
             Output = jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }),
-            cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req)
+            Res = cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req),
+            { stop, Res, State }
     end.
-

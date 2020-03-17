@@ -250,16 +250,20 @@ get_pending_connection_info(ConnectionId) ->
           false | {boolean(), {#service_port_entry{}, #service_port_configuration{}}}.
 is_module_connectable_bridge(UserId, {automate_service_port_engine_service, [ BridgeId | _ ]}) ->
     %% It *is* a bridge. Only remains to check if a new connection can be established.
-    {ok, BridgeInfo, BridgeConfiguration} = ?BACKEND:get_all_bridge_info(BridgeId),
-    IsConnectable = case BridgeConfiguration of
-                        undefined -> false;
-                        #service_port_configuration{ allow_multiple_connections=true } ->
-                            true;
-                        #service_port_configuration{ allow_multiple_connections=false } ->
-                            {ok, Connected} = ?BACKEND:is_user_connected_to_bridge(UserId, BridgeId),
-                            not Connected
-                    end,
-    {IsConnectable, {BridgeInfo, BridgeConfiguration}};
+    case ?BACKEND:get_all_bridge_info(BridgeId) of
+        {error, _Reason} ->
+            false;
+        {ok, BridgeInfo, BridgeConfiguration} ->
+            IsConnectable = case BridgeConfiguration of
+                                undefined -> false;
+                                #service_port_configuration{ allow_multiple_connections=true } ->
+                                    true;
+                                #service_port_configuration{ allow_multiple_connections=false } ->
+                                    {ok, Connected} = ?BACKEND:is_user_connected_to_bridge(UserId, BridgeId),
+                                    not Connected
+                            end,
+            {IsConnectable, {BridgeInfo, BridgeConfiguration}}
+    end;
 
 is_module_connectable_bridge(_, _) ->
     %% Is not a bridge
