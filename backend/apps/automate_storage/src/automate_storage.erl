@@ -110,7 +110,13 @@ delete_user(UserId) ->
     Result.
 
 login_user(Username, Password) ->
-    case get_userid_and_password_from_username(Username) of
+    Result = case binary:match(Username, <<"@">>) of
+                 nomatch ->
+                     get_user_from_username(Username);
+                 _ ->
+                     get_user_from_email(Username)
+             end,
+    case Result of
         {ok, #registered_user_entry{ id=UserId
                                    , password=StoredPassword
                                    , status=Status
@@ -990,7 +996,7 @@ add_token_to_user(UserId, SessionToken) ->
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
 
-get_userid_and_password_from_username(Username) ->
+get_user_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'
                                       , username='$2'
                                       , password='$3'
@@ -1002,6 +1008,38 @@ get_userid_and_password_from_username(Username) ->
                                       , is_in_preview='_'
                                       },
     Guard = {'==', '$2', Username},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    Transaction = fun() ->
+                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
+                              [UserId] ->
+                                  mnesia:read(?REGISTERED_USERS_TABLE, UserId);
+                              [] ->
+                                  []
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [Result] } ->
+            {ok, Result};
+        { atomic, [] } ->
+            {error, no_user_found};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+get_user_from_email(Email) ->
+    MatchHead = #registered_user_entry{ id='$1'
+                                      , username='_'
+                                      , password='$3'
+                                      , email='$2'
+                                      , status='_'
+                                      , registration_time='_'
+                                      , is_admin='_'
+                                      , is_advanced='_'
+                                      , is_in_preview='_'
+                                      },
+    Guard = {'==', '$2', Email},
     ResultColumn = '$1',
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
