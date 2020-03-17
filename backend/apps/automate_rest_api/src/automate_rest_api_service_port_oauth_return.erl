@@ -72,7 +72,7 @@ to_json(Req, State) ->
     end.
 
 -spec to_html(cowboy_req:req(), #state{})
-             -> {binary(),cowboy_req:req(), #state{}}.
+             -> {binary() | stop,cowboy_req:req(), #state{}}.
 to_html(Req, State) ->
     #state{service_port_id=ServicePortId} = State,
     Qs = cowboy_req:qs(Req),

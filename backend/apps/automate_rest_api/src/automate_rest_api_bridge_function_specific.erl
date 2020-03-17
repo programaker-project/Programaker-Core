@@ -65,7 +65,7 @@ is_authorized(Req, State) ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
                             { true, Req1, State };
-                        {true, TokenUserId} -> %% Non matching user_id
+                        {true, _TokenUserId} -> %% Non matching user_id
                             { { false, <<"Unauthorized to create a program here">>}, Req1, State };
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
