@@ -4,10 +4,11 @@
 -type time_in_seconds() :: integer().
 -type time_in_milliseconds() :: integer().
 
--record(registered_user_entry, { id
-                               , username
-                               , password
-                               , email
+-record(registered_user_entry, { id :: binary() | ?MNESIA_SELECTOR
+                               , username :: binary() | ?MNESIA_SELECTOR
+                               , canonical_username :: binary() | ?MNESIA_SELECTOR
+                               , password :: binary() | ?MNESIA_SELECTOR
+                               , email :: binary() | ?MNESIA_SELECTOR
                                , status :: user_status() | ?MNESIA_SELECTOR
                                , registration_time :: time_in_seconds() | ?MNESIA_SELECTOR
 

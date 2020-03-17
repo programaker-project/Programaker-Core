@@ -12,6 +12,7 @@
 -export([accept_json_modify_collection/2]).
 
 -define(UTILS, automate_rest_api_utils).
+-define(FORMAT, automate_rest_api_utils_formatting).
 -include("../../automate_storage/src/records.hrl").
 -include("./records.hrl").
 
@@ -78,7 +79,7 @@ accept_json_modify_collection(Req, Session) ->
 
                         {error, Reason} ->
                             Res1 = cowboy_req:set_resp_body(jiffy:encode(#{ success => false
-                                                                          , error => reason_to_json(Reason)
+                                                                          , error => ?FORMAT:reason_to_json(Reason)
                                                                           }), Req2),
                             io:format("Error logging in: ~p~n", [Reason]),
                             { false, Res1, Session}
@@ -89,11 +90,3 @@ accept_json_modify_collection(Req, Session) ->
         false ->
             {false, Req, Session }
     end.
-
-reason_to_json({Type, Subtype}) ->
-    #{ type => Type
-     , subtype => Subtype
-     };
-reason_to_json(Type) ->
-    #{ type => Type
-     }.

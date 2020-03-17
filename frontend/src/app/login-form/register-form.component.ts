@@ -72,8 +72,12 @@ export class RegisterFormComponent implements OnInit {
         this.validUsername = true;
         this.userErrorMessage = "";
 
-        if (this.username.length < 4) {
-            this.userErrorMessage = "User name should have at least 4 characters.";
+        if ((this.username.length < 4) || (this.username.length > 50)){
+            this.userErrorMessage = "User name should have at more than 3 and at most 50 characters.";
+            this.validUsername = false;
+        }
+        else if (!this.username.match(/^[_a-zA-Z0-9]*$/)) {
+            this.userErrorMessage = "User name can only contain letters (a-z), digits (0-9) and underscores (_).";
             this.validUsername = false;
         }
     }
@@ -125,9 +129,31 @@ export class RegisterFormComponent implements OnInit {
                 this.router.navigate(['/register/wait_for_mail_verification']);
             }
         })
-        .catch(e => {
-            console.log('Exception signing up', e);
-            this.errorMessage = "Error signing up";
+        .catch(reason => {
+            this.errorMessage = 'Registration error';
+
+            if (reason.error && reason.error.error) {
+                if (reason.error.error.type === "invalid_username") {
+                    this.errorMessage += ": Invalid username";
+                }
+                else if (reason.error.error.type === "colliding_element") {
+                    if (reason.error.error.subtype === "username") {
+                        this.errorMessage += ": Repeated username";
+                    }
+                    else if (reason.error.error.subtype === "email") {
+                        this.errorMessage += ": Repeated email";
+                    }
+                    else {
+                        this.errorMessage += ": Repeated user data";
+                    }
+                }
+                else {
+                    this.errorMessage += '. Error type: ' + reason.error.error.type;
+                }
+            } else if (reason.status === 400) {
+                this.errorMessage += ': Invalid user/password'
+            }
+            console.log('Registration error:', reason);
         })
     }
 }

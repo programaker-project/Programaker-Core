@@ -84,8 +84,12 @@ create_user(Username, Password, Email, Status) ->
                            undefined -> undefined;
                            _ -> cipher_password(Password)
                        end,
+
+    CanonicalUsername = automate_storage_utils:canonicalize(Username),
+
     RegisteredUserData = #registered_user_entry{ id=UserId
                                                , username=Username
+                                               , canonical_username=CanonicalUsername
                                                , password=CipheredPassword
                                                , email=Email
                                                , registration_time=CurrentTime
@@ -110,7 +114,13 @@ delete_user(UserId) ->
     Result.
 
 login_user(Username, Password) ->
-    case get_userid_and_password_from_username(Username) of
+    Result = case binary:match(Username, <<"@">>) of
+                 nomatch ->
+                     get_user_from_username(Username);
+                 _ ->
+                     get_user_from_email(Username)
+             end,
+    case Result of
         {ok, #registered_user_entry{ id=UserId
                                    , password=StoredPassword
                                    , status=Status
@@ -173,7 +183,7 @@ get_session_username(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
                                       [] ->
                                           %% TODO log event, this shouldn't happen
                                           { error, session_not_found };
-                                      [#registered_user_entry{username=Username} | _] ->
+                                      [#registered_user_entry{canonical_username=Username} | _] ->
                                           ok = case RefreshUsedTime of
                                                    true ->
                                                        mnesia:write(
@@ -301,6 +311,7 @@ create_recovery_verification(UserId) ->
 get_user_from_mail_address(Email) ->
     MatchHead = #registered_user_entry{ id='_'
                                       , username='_'
+                                      , canonical_username='_'
                                       , password='_'
                                       , email='$1'
                                       , status='_'
@@ -861,7 +872,8 @@ get_userid_from_username(undefined) ->
 
 get_userid_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'
-                                      , username='$2'
+                                      , username='_'
+                                      , canonical_username='$2'
                                       , password='_'
                                       , email='_'
                                       , status='_'
@@ -871,7 +883,7 @@ get_userid_from_username(Username) ->
                                       , is_in_preview='_'
                                       },
     %% Check that neither the id, username or email matches another
-    Guard = {'==', '$2', Username},
+    Guard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
     ResultColumn = '$1',
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
@@ -990,9 +1002,10 @@ add_token_to_user(UserId, SessionToken) ->
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
 
-get_userid_and_password_from_username(Username) ->
+get_user_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'
-                                      , username='$2'
+                                      , username='_'
+                                      , canonical_username='$2'
                                       , password='$3'
                                       , email='_'
                                       , status='_'
@@ -1001,7 +1014,40 @@ get_userid_and_password_from_username(Username) ->
                                       , is_advanced='_'
                                       , is_in_preview='_'
                                       },
-    Guard = {'==', '$2', Username},
+    Guard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
+    ResultColumn = '$1',
+    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+
+    Transaction = fun() ->
+                          case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
+                              [UserId] ->
+                                  mnesia:read(?REGISTERED_USERS_TABLE, UserId);
+                              [] ->
+                                  []
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, [Result] } ->
+            {ok, Result};
+        { atomic, [] } ->
+            {error, no_user_found};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+get_user_from_email(Email) ->
+    MatchHead = #registered_user_entry{ id='$1'
+                                      , username='_'
+                                      , canonical_username='_'
+                                      , password='$3'
+                                      , email='$2'
+                                      , status='_'
+                                      , registration_time='_'
+                                      , is_admin='_'
+                                      , is_advanced='_'
+                                      , is_in_preview='_'
+                                      },
+    Guard = {'==', '$2', Email},
     ResultColumn = '$1',
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
@@ -1102,7 +1148,8 @@ retrieve_monitors_list_from_username(Username) ->
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
-                                                                , username='$2'
+                                                                , username='_'
+                                                                , canonical_username='$2'
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
@@ -1111,7 +1158,7 @@ retrieve_monitors_list_from_username(Username) ->
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
                                                                 },
-                          UserGuard = {'==', '$2', Username},
+                          UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
                           UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
 
@@ -1166,7 +1213,8 @@ retrieve_program(Username, ProgramName) ->
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
-                                                                , username='$2'
+                                                                , username='_'
+                                                                , canonical_username='$2'
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
@@ -1175,7 +1223,7 @@ retrieve_program(Username, ProgramName) ->
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
                                                                 },
-                          UserGuard = {'==', '$2', Username},
+                          UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
                           UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
 
@@ -1226,7 +1274,8 @@ retrieve_program_list_from_username(Username) ->
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
-                                                                , username='$2'
+                                                                , username='_'
+                                                                , canonical_username='$2'
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
@@ -1235,7 +1284,7 @@ retrieve_program_list_from_username(Username) ->
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
                                                                 },
-                          UserGuard = {'==', '$2', Username},
+                          UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
                           UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
 
@@ -1317,7 +1366,8 @@ store_new_program_content(Username, ProgramName,
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
-                                                                , username='$2'
+                                                                , username='_'
+                                                                , canonical_username='$2'
                                                                 , password='_'
                                                                 , email='_'
                                                                 , status='_'
@@ -1326,7 +1376,7 @@ store_new_program_content(Username, ProgramName,
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
                                                                 },
-                          UserGuard = {'==', '$2', Username},
+                          UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
                           UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
 
@@ -1384,12 +1434,13 @@ store_new_program_content(Username, ProgramName,
 
 save_unique_user(UserData) ->
     #registered_user_entry{ id=UserId
-                          , username=Username
+                          , canonical_username=CanonicalUsername
                           , email=Email
                           } = UserData,
 
     MatchHead = #registered_user_entry{ id='$1'
-                                      , username='$2'
+                                      , username='_'
+                                      , canonical_username='$2'
                                       , password='_'
                                       , email='$3'
                                       , status='_'
@@ -1401,18 +1452,20 @@ save_unique_user(UserData) ->
 
     %% Check that neither the id, username or email matches another
     GuardId = {'==', '$1', UserId},
-    GuardUsername = {'==', '$2', Username},
+    GuardUsername = {'==', '$2', CanonicalUsername},
     GuardEmail = {'==', '$3', Email},
     Guard = {'orelse', GuardId, GuardUsername, GuardEmail},
-    ResultColumn = '$1',
+    ResultColumn = '$2',
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
     Transaction = fun() ->
                           case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
                               [] ->
                                   mnesia:write(?REGISTERED_USERS_TABLE, UserData, write);
+                              [CanonicalUsername | _] ->
+                                  {error, {colliding_element, username} };
                               _ ->
-                                  {error, colliding_element }
+                                  {error, {colliding_element, email}}
                           end
                   end,
     case mnesia:transaction(Transaction) of
