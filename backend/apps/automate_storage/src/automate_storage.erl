@@ -1455,15 +1455,17 @@ save_unique_user(UserData) ->
     GuardUsername = {'==', '$2', CanonicalUsername},
     GuardEmail = {'==', '$3', Email},
     Guard = {'orelse', GuardId, GuardUsername, GuardEmail},
-    ResultColumn = '$1',
+    ResultColumn = '$2',
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
     Transaction = fun() ->
                           case mnesia:select(?REGISTERED_USERS_TABLE, Matcher) of
                               [] ->
                                   mnesia:write(?REGISTERED_USERS_TABLE, UserData, write);
+                              [CanonicalUsername | _] ->
+                                  {error, {colliding_element, username} };
                               _ ->
-                                  {error, colliding_element }
+                                  {error, {colliding_element, email}}
                           end
                   end,
     case mnesia:transaction(Transaction) of

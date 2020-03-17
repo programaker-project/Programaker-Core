@@ -61,12 +61,17 @@
 %% API functions
 %%====================================================================
 -spec register_user(#registration_rec{}) -> {ok, continue | wait_for_mail_verification } | {error, _}.
-register_user(Reg) ->
-    case automate_mail:is_enabled() of
+register_user(Reg=#registration_rec{ username=Username }) ->
+    case automate_storage_utils:validate_username(Username) of
         false ->
-            register_user_instantly(Reg);
+            {error, invalid_username};
         true ->
-            register_user_require_validation(Reg)
+            case automate_mail:is_enabled() of
+                false ->
+                    register_user_instantly(Reg);
+                true ->
+                    register_user_require_validation(Reg)
+            end
     end.
 
 verify_registration_with_code(RegistrationCode) ->

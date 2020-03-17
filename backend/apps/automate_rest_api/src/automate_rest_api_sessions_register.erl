@@ -13,6 +13,7 @@
 -export([accept_json_modify_collection/2]).
 
 -define(UTILS, automate_rest_api_utils).
+-define(FORMAT, automate_rest_api_utils_formatting).
 -include("./records.hrl").
 
 -record(registration_seq, { rest_session,
@@ -73,8 +74,11 @@ accept_json_modify_collection(Req, Session) ->
                             { true, Res3, Session#registration_seq{
                                             registration_data=RegistrationData} };
                         {error, Reason} ->
-                            io:format("Error registering: ~p~n", [Reason]),
-                            { false, Req2, Session}
+                            Res1 = ?UTILS:send_json_output(jiffy:encode(#{ success => false
+                                                                         , error => ?FORMAT:reason_to_json(Reason)
+                                                                         }), Req2),
+                            io:format("Error logging in: ~p~n", [Reason]),
+                            {false, Res1, Session}
                     end;
                 { error, _Reason } ->
                     { false, Req2, Session }

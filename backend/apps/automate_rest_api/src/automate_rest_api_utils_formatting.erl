@@ -4,6 +4,7 @@
         , serialize_logs/1
         , serialize_log_entry/1
         , serialize_icon/1
+        , reason_to_json/1
         ]).
 
 -include("./records.hrl").
@@ -94,3 +95,12 @@ serialize_icon({url, Url}) ->
     #{ <<"url">> => Url };
 serialize_icon({hash, HashType, HashResult}) ->
     #{ HashType => HashResult }.
+
+%% Reason
+reason_to_json({Type, Subtype}) ->
+    #{ type => Type
+     , subtype => Subtype
+     };
+reason_to_json(Type) ->
+    #{ type => Type
+     }.

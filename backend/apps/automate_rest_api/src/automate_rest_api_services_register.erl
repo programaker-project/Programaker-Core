@@ -85,10 +85,6 @@ accept_json_register_service(Req, State) ->
     case automate_rest_api_backend:register_service(Username, ServiceId, RegistrationData, ConnectionId) of
         {ok, Data} ->
             Output = jiffy:encode(Data),
-            Res2 = cowboy_req:set_resp_body(Output, Req1),
-            Res3 = cowboy_req:delete_resp_header(<<"content-type">>,
-                                                 Res2),
-            Res4 = cowboy_req:set_resp_header(<<"content-type">>,
-                                              <<"application/json">>, Res3),
-            {true, Res4, State}
+            Res2 = ?UTILS:send_json_output(Output, Req1),
+            {true, Res2, State}
     end.
