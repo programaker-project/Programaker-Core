@@ -73,7 +73,7 @@ export class SettingsComponent {
         });
 
         if (success) {
-            this.sessionService.forceUpdateSession();
+            this.session = await this.sessionService.forceUpdateSession();
         }
 
         if (button){

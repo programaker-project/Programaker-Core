@@ -40,5 +40,15 @@
                 </button>
             </div>
         </div>
+
+        <div class="debug-info settings-group"
+            *ngIf="session && session.tags.is_advanced">
+            <div class="title">Debug info</div>
+
+            <div class="user-id setting-view">
+                <label for="user-id">User ID: </label>
+                <span name="user-id" class="code value">{{session.user_id}}</span>
+            </div>
+        </div>
     </div>
 </div>

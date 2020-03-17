@@ -17,6 +17,7 @@
     border-radius: 3px;
     padding: 1ex;
     margin-top: 1ex;
+    overflow: auto;
 }
 
 .settings-group > .title {
@@ -25,8 +26,19 @@
     border-bottom: 1px solid #aaa;
 }
 
-.value {
+.value:not(.code) {
     float: right;
+}
+
+.value.code {
+    margin-left: 1ex;
+    word-break: keep-all;
+}
+
+.code {
+    padding: 1ex;
+    border-radius: 3px;
+    border: 1px solid #222;
 }
 
 .toggle-setting {
