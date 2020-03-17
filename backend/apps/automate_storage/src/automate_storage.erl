@@ -14,6 +14,7 @@
         , lists_monitors_from_username/1
         , get_userid_from_username/1
         , update_user_settings/3
+        , promote_user_to_admin/1
 
         , create_mail_verification_entry/1
         , verify_registration_with_code/1
@@ -150,6 +151,24 @@ get_user(UserId) ->
                           case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
                               [User] ->
                                   {ok, User};
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+promote_user_to_admin(UserId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
+                              [User] ->
+                                  ok = mnesia:write(?REGISTERED_USERS_TABLE
+                                                   , User#registered_user_entry{ is_admin=true }
+                                                   , write);
                               [] ->
                                   {error, not_found}
                           end
