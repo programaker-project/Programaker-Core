@@ -1,6 +1,7 @@
 import { ElementRef, ViewChild, Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { SessionService, SessionInfoUpdate } from './session.service';
+import { Session } from './session';
 import { Subscription } from 'rxjs';
 import { BridgeService, BridgeInfoUpdate } from './bridges/bridge.service';
 import { MatSidenav } from '@angular/material/sidenav';
@@ -17,29 +18,29 @@ import { MatSidenav } from '@angular/material/sidenav';
 })
 export class AppComponent {
     sessionSubscription: Subscription;
-    loggedIn: boolean;
     title = 'PrograMaker';
     bridgeCount = 0;
+    session: Session;
+
 
     @ViewChild('sidenav', { static: false })
     private sidenav: ElementRef<MatSidenav>;
 
     constructor(
         private router: Router,
-        private session: SessionService,
+        public sessionService: SessionService,
         private bridgeService: BridgeService,
     ) {
         this.router = router;
-        this.session = session;
-        this.loggedIn = false;
+        this.session = { active: false } as any;
 
-        this.session.getSessionMonitor().then((data) => {
+        this.sessionService.getSessionMonitor().then((data) => {
             if (data.session !== null) {
-                this.loggedIn = data.session.active;
+                this.session = data.session;
             }
             data.monitor.subscribe({
                 next: (update: SessionInfoUpdate) => {
-                    this.loggedIn = update.loggedIn;
+                    this.session = update.session;
                 },
                 error: (error: any) => {
                     console.error("Error reading logs:", error);
@@ -88,9 +89,14 @@ export class AppComponent {
         this.resetSidenavState();
     }
 
+    gotoAdminPanel(): void {
+        this.router.navigate(['/settings/admin']);
+        this.resetSidenavState();
+    }
+
     logout(): void {
-        this.session.logout();
-        this.loggedIn = false;
+        this.sessionService.logout();
+        this.session = { active: false } as any;
         this.gotoLogin();
     }
 

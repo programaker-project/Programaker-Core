@@ -7,7 +7,7 @@ import * as progbar from './ui/progbar';
 import * as API from './api-config';
 import { ContentType } from './content-type';
 
-export type SessionInfoUpdate = { loggedIn: boolean };
+export type SessionInfoUpdate = { session: Session };
 
 @Injectable()
 export class SessionService {
@@ -250,10 +250,8 @@ export class SessionService {
 
     private _updateSession(session: Session) {
         SessionService.EstablishedSession = session;
-        const loggedIn = session !== null;
-
         if (SessionService._sessionInfoObserver) {
-            SessionService._sessionInfoObserver.next({ loggedIn: loggedIn });
+            SessionService._sessionInfoObserver.next({ session: session });
         }
     }
 
