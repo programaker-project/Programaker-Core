@@ -1,0 +1,15 @@
+.settings-section {
+    width: 100%;
+}
+
+tbody tr:hover {
+    background-color: #eee;
+}
+
+.warning-icon {
+    color: #ffa500;
+}
+
+.error-icon {
+    color: #ff0000;
+}

@@ -13,6 +13,14 @@
     </div>
 
     <div class="general-settings col-sm-8">
+        <div *ngIf="session && session.tags.is_admin"
+            class="admin-settings settings-group">
+            <div class="title">
+                <a routerLink="/settings/admin">Admin panel</a>
+            </div>
+            <a routerLink="/settings/admin">Click here to open the panel</a>
+        </div>
+
         <div class="user-settings settings-group">
             <div class="title">User settings</div>
 

@@ -1,16 +1,15 @@
-export interface SessionTags {
-    is_admin: boolean;
-    is_advanced: boolean;
-    is_in_preview: boolean;
-}
+import {User, UserTags} from './user';
 
-export class Session {
+export class Session implements User {
+    // User interface
     username: string;
-    active: boolean;
     user_id: string;
-    tags: SessionTags;
+    tags: UserTags;
 
-    constructor(active: boolean, username: string, user_id: string, tags: SessionTags) {
+    // New elements
+    active: boolean;
+
+    constructor(active: boolean, username: string, user_id: string, tags: UserTags) {
         this.active = active;
         this.username = username;
         this.user_id = user_id;

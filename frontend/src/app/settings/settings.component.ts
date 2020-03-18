@@ -28,7 +28,7 @@ import { BridgeService } from '../bridges/bridge.service';
     ],
 })
 export class SettingsComponent {
-    private session: Session;
+    session: Session;
     is_advanced: boolean;
 
     constructor(

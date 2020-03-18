@@ -9,6 +9,7 @@ import { BridgeAddComponent } from './bridges/add.component';
 import { DashboardComponent } from './dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/settings.component';
+import { AdminSettingsComponent } from './settings/admin-settings.component';
 
 import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
@@ -51,6 +52,7 @@ const routes: Routes = [
 
     // Settings
     { path: 'settings', component: SettingsComponent },
+    { path: 'settings/admin', component: AdminSettingsComponent },
 ];
 
 @NgModule({

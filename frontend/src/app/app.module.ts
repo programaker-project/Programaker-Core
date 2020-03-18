@@ -20,6 +20,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBarModule } from '@angular/material/snack-bar'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -29,6 +30,7 @@ import { AppComponent } from './app.component';
 import { DashboardComponent } from './dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/settings.component';
+import { AdminSettingsComponent } from './settings/admin-settings.component';
 
 // Programs
 import { ProgramsComponent } from './programs.component';
@@ -78,6 +80,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         DashboardComponent,
         NewDashboardComponent,
         SettingsComponent,
+        AdminSettingsComponent,
         ProgramsComponent,
         ProgramDetailComponent,
         BridgeIndexComponent,
@@ -127,6 +130,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         MatSnackBarModule,
         MatProgressSpinnerModule,
         MatBadgeModule,
+        MatTooltipModule,
 
         BrowserAnimationsModule,
 
