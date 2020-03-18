@@ -14,6 +14,8 @@
         , lists_monitors_from_username/1
         , get_userid_from_username/1
         , update_user_settings/3
+        , promote_user_to_admin/1
+        , admin_list_users/0
 
         , create_mail_verification_entry/1
         , verify_registration_with_code/1
@@ -153,6 +155,50 @@ get_user(UserId) ->
                               [] ->
                                   {error, not_found}
                           end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+promote_user_to_admin(UserId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
+                              [User] ->
+                                  ok = mnesia:write(?REGISTERED_USERS_TABLE
+                                                   , User#registered_user_entry{ is_admin=true }
+                                                   , write);
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+admin_list_users() ->
+    Transaction = fun() ->
+                          Result = lists:map(fun(UserId) ->
+                                                     [V] = mnesia:read(?REGISTERED_USERS_TABLE, UserId),
+                                                     Sessions = get_userid_sessions(UserId),
+                                                     Last = case Sessions of
+                                                                [] -> undefined;
+                                                                _ ->
+                                                                    Times = lists:map(fun(#user_session_entry{
+                                                                                             session_last_used_time=LastTime }) ->
+                                                                                              LastTime
+                                                                                      end, Sessions),
+                                                                    lists:last(lists:sort(Times))
+                                                            end,
+                                                     {V, Last}
+                                             end,
+                                             mnesia:all_keys(?REGISTERED_USERS_TABLE)),
+                          { ok, Result }
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
@@ -1001,6 +1047,20 @@ add_token_to_user(UserId, SessionToken) ->
                   end,
     {atomic, Result} = mnesia:transaction(Transaction),
     Result.
+
+get_userid_sessions(UserId) ->
+    %% User session queries
+    SessionMatchHead = #user_session_entry{ session_id='_'
+                                          , user_id='$1'
+                                          , session_start_time='_'
+                                          , session_last_used_time='_'
+                                          },
+    SessionResultColumn = '$_',
+    SessionMatcher = [{ SessionMatchHead
+                      , [{ '==', '$1', UserId }]
+                      , [SessionResultColumn]
+                      }],
+    mnesia:select(?USER_SESSIONS_TABLE, SessionMatcher).
 
 get_user_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'

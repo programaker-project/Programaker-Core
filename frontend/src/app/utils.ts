@@ -18,7 +18,36 @@ function iconDataToUrl(icon: IconReference, bridge_id: string): string | undefin
     }
 }
 
+function unixMsToStr(ms_timestamp: number, options?: { ms_precision?: boolean }): string {
+    const date = new Date(ms_timestamp);
+
+    if (!options) {
+        options = {};
+    }
+
+    const left_pad = ((val: string | number, target_length: number, pad_character: string) => {
+        let str = val.toString();
+
+        while (str.length < target_length) {
+            str = pad_character + str;
+        }
+        return str;
+    });
+    const pad02 = (val: string|number) => {
+        return left_pad(val, 2, '0');
+    }
+
+    let result = (`${date.getFullYear()}/${pad02(date.getMonth() + 1)}/${pad02(date.getDate())} `
+                  + ` - ${pad02(date.getHours())}:${pad02(date.getMinutes())}:${pad02(date.getSeconds())}`);
+
+    if (options.ms_precision) {
+        result += `.${date.getMilliseconds()}`;
+    }
+    return result;
+}
+
 export {
     toWebsocketUrl,
     iconDataToUrl,
+    unixMsToStr,
 };

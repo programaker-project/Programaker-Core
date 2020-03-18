@@ -1,0 +1,41 @@
+<div class="settings-section">
+    <div class="user-list">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">UserId</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Message</th>
+                    <th scope="col">Tags</th>
+                    <th scope="col">Reg. time</th>
+                    <th scope="col">Last active</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let user of users">
+                    <th class="longid" scope="row">{{user.user_id.substring(0,9)}}&hellip;</th>
+                    <td>{{user.username}}</td>
+                    <td>
+                        <mat-icon *ngFor="let note of notes[user.user_id]"
+                            class="{{note.icon}}-icon"
+                            matTooltip="{{note.text}}"
+                            matTooltipPosition="below">{{note.icon}}</mat-icon>
+                    </td>
+                    <td>
+                        <mat-chip-list>
+                            <mat-chip *ngIf="user.tags.is_admin">admin</mat-chip>
+                            <mat-chip *ngIf="user.tags.is_advanced">advanced</mat-chip>
+                            <mat-chip *ngIf="user.tags.is_in_preview">in preview</mat-chip>
+                        </mat-chip-list>
+                    </td>
+                    <td>
+                        {{getLocalRegistrationTime(user)}}
+                    </td>
+                    <td>
+                        {{getLocalLastActiveTime(user)}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

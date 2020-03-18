@@ -28,7 +28,7 @@ import { BridgeService } from '../bridges/bridge.service';
     ],
 })
 export class SettingsComponent {
-    private session: Session;
+    session: Session;
     is_advanced: boolean;
 
     constructor(
@@ -73,7 +73,7 @@ export class SettingsComponent {
         });
 
         if (success) {
-            this.sessionService.forceUpdateSession();
+            this.session = await this.sessionService.forceUpdateSession();
         }
 
         if (button){

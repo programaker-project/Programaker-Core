@@ -13,6 +13,14 @@
     </div>
 
     <div class="general-settings col-sm-8">
+        <div *ngIf="session && session.tags.is_admin"
+            class="admin-settings settings-group">
+            <div class="title">
+                <a routerLink="/settings/admin">Admin panel</a>
+            </div>
+            <a routerLink="/settings/admin">Click here to open the panel</a>
+        </div>
+
         <div class="user-settings settings-group">
             <div class="title">User settings</div>
 
@@ -38,6 +46,16 @@
                     <mat-icon class="action-icon">cloud_upload</mat-icon>
                     Save
                 </button>
+            </div>
+        </div>
+
+        <div class="debug-info settings-group"
+            *ngIf="session && session.tags.is_advanced">
+            <div class="title">Debug info</div>
+
+            <div class="user-id setting-view">
+                <label for="user-id">User ID: </label>
+                <span name="user-id" class="code value">{{session.user_id}}</span>
             </div>
         </div>
     </div>
