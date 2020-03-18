@@ -6,11 +6,11 @@
             <span class="login-indicator">
                 <button mat-mini-fab
                     (click)="gotoSettings()"
-                    *ngIf="loggedIn"
+                    *ngIf="session.active"
                     class="account-menu">
                     <mat-icon>account_circle</mat-icon>
                 </button>
-                <div class="login-button" *ngIf="!loggedIn">
+                <div class="login-button" *ngIf="!session.active">
                     <a class="action-link" (click)="gotoLogin()">Login</a>
                 </div>
             </span>
@@ -19,7 +19,7 @@
     <mat-sidenav-container>
         <mat-sidenav #sidenav mode="over" opened="false">
             <ul class="panels"
-                *ngIf="loggedIn">
+                *ngIf="session.active">
                 <li>
                     <button mat-button (click)="gotoDashboard()">
                         <span>
@@ -36,11 +36,18 @@
                 </li>
             </ul>
             <ul class="user-controls"
-                *ngIf="loggedIn">
+                *ngIf="session.active">
                 <li>
                     <button mat-button (click)="gotoSettings()">
                         <span>
                             Settings
+                        </span>
+                    </button>
+                </li>
+                <li *ngIf="session.tags && session.tags.is_admin">
+                    <button mat-button (click)="gotoAdminPanel()">
+                        <span>
+                            Admin panel
                         </span>
                     </button>
                 </li>
@@ -53,7 +60,7 @@
                 </li>
             </ul>
             <ul class="user-controls"
-                *ngIf="!loggedIn">
+                *ngIf="!session.active">
                 <li>
                     <button mat-button (click)="gotoLogin()">
                         <span>

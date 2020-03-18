@@ -109,10 +109,17 @@ full_serialize_user({#registered_user_entry{ id=UserId
      , user_id => UserId
      , email => Email
      , status => Status
-     , registration_time => RegistrationTime
-     , last_active_time => LastActiveTime
+     , registration_time => number_or_undefined(RegistrationTime)
+     , last_active_time => number_or_undefined(LastActiveTime)
      , tags => #{ is_admin => IsAdmin
                 , is_advanced => IsAdvanced
                 , is_in_preview => IsInPreview
                 }
      }.
+
+number_or_undefined(undefined) ->
+    null;
+number_or_undefined(none) ->
+    null;
+number_or_undefined(Num) ->
+    Num.
