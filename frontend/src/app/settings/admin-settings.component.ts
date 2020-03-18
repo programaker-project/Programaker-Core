@@ -88,7 +88,7 @@ export class AdminSettingsComponent {
 
         if ((user.username.length < 4) || (user.username.length > 50)){
             notes.push({
-                icon: "error",
+                icon: "warning", // This is not allowed, but can be handled
                 text: "User name should have at more than 3 and at most 50 characters",
             });
         }

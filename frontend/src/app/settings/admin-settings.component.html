@@ -5,7 +5,8 @@
                 <tr>
                     <th scope="col">UserId</th>
                     <th scope="col">Username</th>
-                    <th scope="col">Message</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Warnings</th>
                     <th scope="col">Tags</th>
                     <th scope="col">Reg. time</th>
                     <th scope="col">Last active</th>
@@ -14,7 +15,12 @@
             <tbody>
                 <tr *ngFor="let user of users">
                     <th class="longid" scope="row">{{user.user_id.substring(0,9)}}&hellip;</th>
-                    <td>{{user.username}}</td>
+                    <td>
+                        {{user.username}}
+                    </td>
+                    <td>
+                        {{user.email}}
+                    </td>
                     <td>
                         <mat-icon *ngFor="let note of notes[user.user_id]"
                             class="{{note.icon}}-icon"
