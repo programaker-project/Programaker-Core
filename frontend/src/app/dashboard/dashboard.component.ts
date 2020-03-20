@@ -50,7 +50,7 @@ export class NewDashboardComponent {
     tutorials: TutorialData[] = [
         {
             description: "Create a weather chatbot",
-            icons: [ "/assets/icons/telegram_logo.png", "/assets/icons/aemet_logo.jpg" ],
+            icons: [ "/assets/icons/telegram_logo.png", "/assets/icons/aemet_logo.png" ],
             url: "https://docs.programaker.com/tutorials/weather-bot.html",
         },
         // // Example data
