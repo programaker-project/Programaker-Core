@@ -8,6 +8,8 @@
 -export([websocket_handle/2]).
 -export([websocket_info/2]).
 
+-define(PING_INTERVAL_MILLISECONDS, 15000).
+
 -record(state, { user_id    :: binary()
                , bridge_id  :: binary()
                , authorized :: boolean()
@@ -53,6 +55,7 @@ websocket_init(State=#state{ bridge_id=BridgeId
         true ->
             case automate_service_port_engine:listen_bridge(BridgeId, UserId) of
                 ok ->
+                    timer:send_after(?PING_INTERVAL_MILLISECONDS, ping_interval),
                     {ok, State};
                 {error, Error} ->
                     { reply, { close, io_lib:format("Error: ~p", [Error]) }, State }
@@ -62,6 +65,11 @@ websocket_init(State=#state{ bridge_id=BridgeId
 websocket_handle(_Message, State) ->
     %% Ignore everything
     {ok, State}.
+
+
+websocket_info(ping_interval, State) ->
+    timer:send_after(?PING_INTERVAL_MILLISECONDS, ping_interval),
+    {reply, ping, State};
 
 websocket_info({channel_engine, _From,  Data }, State) ->
     Serialized = jiffy:encode(Data),
