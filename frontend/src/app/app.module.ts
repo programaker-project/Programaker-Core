@@ -27,7 +27,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AlertModule } from 'ngx-bootstrap';
 
 import { AppComponent } from './app.component';
-import { DashboardComponent } from './dashboard.component';
+import { DashboardComponent } from './old-dashboard/dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings.component';

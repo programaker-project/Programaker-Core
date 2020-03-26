@@ -6,7 +6,7 @@ import { ServicesComponent } from './services.component';
 
 import { BridgeAddComponent } from './bridges/add.component';
 
-import { DashboardComponent } from './dashboard.component';
+import { DashboardComponent } from './old-dashboard/dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings.component';

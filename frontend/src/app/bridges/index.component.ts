@@ -19,7 +19,7 @@ import { BridgeDeleteDialogComponent } from './delete-dialog.component';
     templateUrl: './index.component.html',
     providers: [ServiceService, BridgeService],
     styleUrls: [
-        '../dashboard.component.css',
+        './index.component.css',
         '../libs/css/material-icons.css',
         '../libs/css/bootstrap.min.css',
     ],
