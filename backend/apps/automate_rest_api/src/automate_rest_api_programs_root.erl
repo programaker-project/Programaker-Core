@@ -103,7 +103,6 @@ to_json(Req, State) ->
     #create_program_seq{username=Username} = State,
     case automate_rest_api_backend:lists_programs_from_username(Username) of
         { ok, Programs } ->
-
             Output = jiffy:encode(encode_program_list(Programs)),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
@@ -113,30 +112,25 @@ to_json(Req, State) ->
 
 
 encode_program_list(Programs) ->
-    encode_program_list(Programs, []).
-
-
-encode_program_list([], Acc) ->
-    lists:reverse(Acc);
-
-encode_program_list([H | T], Acc) ->
-    #program_metadata{ id=Id
-                     , name=Name
-                     , link=Link
-                     , enabled=Enabled
-                     } = H,
-    AsDictionary = #{ <<"id">> => Id
-                    , <<"name">> => Name
-                    , <<"link">> =>  Link
-                    , <<"enabled">> => Enabled
-                    , <<"bridges_in_use">> => try get_bridges_on_program_id(Id) of
-                                                  Bridges -> Bridges
-                                              catch ErrNS:Error:StackTrace ->
-                                                      automate_logging:log_platform(error, ErrNS, Error, StackTrace),
-                                                      []
-                                              end
-                    },
-    encode_program_list(T, [AsDictionary | Acc]).
+    lists:map(fun(#program_metadata{ id=Id
+                                   , name=Name
+                                   , link=Link
+                                   , enabled=Enabled
+                                   , type=Type
+                                   }) ->
+                      #{ <<"id">> => Id
+                       , <<"name">> => Name
+                       , <<"link">> =>  Link
+                       , <<"enabled">> => Enabled
+                       , <<"type">> => Type
+                       , <<"bridges_in_use">> => try get_bridges_on_program_id(Id) of
+                                                     Bridges -> Bridges
+                                                 catch ErrNS:Error:StackTrace ->
+                                                         automate_logging:log_platform(error, ErrNS, Error, StackTrace),
+                                                         []
+                                                 end
+                       }
+              end, Programs).
 
 get_bridges_on_program_id(ProgramId) ->
     {ok, Program} = automate_storage:get_program_from_id(ProgramId),

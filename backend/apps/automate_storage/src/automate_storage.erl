@@ -29,10 +29,14 @@
         , lists_programs_from_username/1
         , list_programs_from_userid/1
         , update_program/3
+        , update_program_by_id/2
         , update_program_metadata/3
+        , update_program_metadata/2
         , delete_program/2
+        , delete_program/1
         , delete_running_process/1
         , update_program_status/3
+        , is_user_allowed/3
 
         , get_program_owner/1
         , get_program_pid/1
@@ -459,7 +463,12 @@ lists_programs_from_username(Username) ->
     case retrieve_program_list_from_username(Username) of
         {ok, Programs} ->
             { ok
-            , [{Id, Name, Enable} || [#user_program_entry{id=Id, program_name=Name, enabled=Enable}] <- Programs]};
+            , [{Id, Name, Enable, Type}
+               || [#user_program_entry{ id=Id
+                                      , program_name=Name
+                                      , program_type=Type
+                                      , enabled=Enable
+                                      }] <- Programs]};
         X ->
             X
     end.
@@ -491,9 +500,30 @@ update_program_status(Username, ProgramId, Status)->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec is_user_allowed(binary(), binary(), read_program|edit_program|delete_program) -> {ok, boolean()} | {error, any()}.
+is_user_allowed(UId, ProgramId, Action) ->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
+                              [#user_program_entry{user_id=OwnerId}] ->
+                                  {ok, UId == OwnerId};
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason}
+    end.
+
 -spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program(Username, ProgramName, Content)->
     store_new_program_content(Username, ProgramName, Content).
+
+-spec update_program_by_id(binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
+update_program_by_id(ProgramId, Content)->
+    store_new_program_content(ProgramId, Content).
 
 -spec update_program_metadata(binary(), binary(), #editable_user_program_metadata{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program_metadata(Username, ProgramName, #editable_user_program_metadata{program_name=NewProgramName})->
@@ -514,6 +544,27 @@ update_program_metadata(Username, ProgramName, #editable_user_program_metadata{p
             end;
         X ->
             X
+    end.
+
+-spec update_program_metadata(binary(), #editable_user_program_metadata{}) -> { 'ok', binary() } | { 'error', any() }.
+update_program_metadata(ProgramId, #editable_user_program_metadata{program_name=NewProgramName})->
+            Transaction = fun() ->
+                                  case get_program_from_id(ProgramId) of
+                                      {ok, ProgramEntry=#user_program_entry{id=ProgramId}} ->
+                                          ok = mnesia:write(?USER_PROGRAMS_TABLE,
+                                                            ProgramEntry#user_program_entry{program_name=NewProgramName}, write),
+                                          {ok, ProgramId};
+                                      X ->
+                                          X
+                                  end
+                          end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            io:format("Register result: ~p~n", [Result]),
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
     end.
 
 -spec delete_program(binary(), binary()) -> { 'ok', binary() } | { 'error', any() }.
@@ -538,6 +589,29 @@ delete_program(Username, ProgramName)->
             end;
         X ->
             X
+    end.
+
+-spec delete_program(binary()) -> ok | { 'error', any() }.
+delete_program(ProgramId)->
+    Transaction = fun() ->
+                          case get_program_from_id(ProgramId) of
+                              {ok, ProgramEntry=#user_program_entry{ id=ProgramId
+                                                                   , program_channel=Channel
+                                                                   }} ->
+                                  ok = automate_channel_engine:delete_channel(Channel),
+                                  ok = mnesia:delete_object(?USER_PROGRAMS_TABLE,
+                                                            ProgramEntry, write);
+
+                              X ->
+                                  X
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
     end.
 
 -spec delete_running_process(binary()) -> ok | {error, not_found}.
@@ -1499,6 +1573,38 @@ store_new_program_content(Username, ProgramName,
         { aborted, Reason } ->
             {error, mnesia:error_description(Reason)}
     end.
+
+
+-spec store_new_program_content(binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
+store_new_program_content(ProgramId,
+                          #stored_program_content{ orig=ProgramOrig
+                                                 , parsed=ProgramParsed
+                                                 , type=ProgramType
+                                                 })->
+    CurrentTime = erlang:system_time(second),
+    Transaction = fun() ->
+                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
+                              [] ->
+                                  [];
+
+                              [Program] ->
+                                  ok = mnesia:write(?USER_PROGRAMS_TABLE,
+                                                    Program#user_program_entry{ program_type=ProgramType
+                                                                              , program_parsed=ProgramParsed
+                                                                              , program_orig=ProgramOrig
+                                                                              , last_upload_time=CurrentTime
+                                                                              }, write),
+                                  { ok, Program#user_program_entry.id }
+                          end
+                  end,
+case mnesia:transaction(Transaction) of
+    { atomic, {ok, Result} } ->
+        {ok, Result};
+    { atomic, [] } ->
+        {error, not_found};
+    { aborted, Reason } ->
+        {error, mnesia:error_description(Reason)}
+end.
 
 
 save_unique_user(UserData) ->
