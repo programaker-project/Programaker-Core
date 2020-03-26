@@ -8,6 +8,7 @@ import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
 import { toWebsocketUrl } from './utils';
+import { ApiRoot } from './api-config';
 
 @Injectable()
 export class ProgramService {
@@ -41,9 +42,13 @@ export class ProgramService {
         return userApiRoot + '/programs/';
     }
 
-    async getRetrieveProgramUrl(_user_id: string, program_id: string) {
+    async getRetrieveProgramUrl(_user_id: string, program_name: string) {
         const userApiRoot = await this.sessionService.getUserApiRoot();
-        return userApiRoot + '/programs/' + program_id;
+        return userApiRoot + '/programs/' + program_name;
+    }
+
+    private getRetrieveProgramUrlById(program_id: string): string {
+        return ApiRoot + '/programs/id/' + program_id;
     }
 
     async getUpdateProgramUrl(programUserName: string, program_id: string) {
@@ -86,11 +91,17 @@ export class ProgramService {
                   .toPromise());
     }
 
-    getProgram(user_id: string, program_id: string): Promise<ProgramContent> {
-        return this.getRetrieveProgramUrl(user_id, program_id).then(url =>
+    getProgram(user_id: string, program_name: string): Promise<ProgramContent> {
+        return this.getRetrieveProgramUrl(user_id, program_name).then(url =>
             this.http.get(url, {headers: this.sessionService.getAuthHeader()}).pipe(
                 map(response => response as ProgramContent))
                 .toPromise());
+    }
+
+    async getProgramById(program_id: string): Promise<ProgramContent> {
+        const url = await this.getRetrieveProgramUrlById(program_id);
+        return (this.http.get(url, {headers: this.sessionService.getAuthHeader()})
+                .toPromise() as Promise<ProgramContent>);
     }
 
     getProgramTags(user_id: string, program_id: string): Promise<string[]> {
