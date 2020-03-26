@@ -123,8 +123,8 @@ export class FlowBlock {
             this.group.appendChild(in_group);
 
             const input_port_size = 50;
-            const input_port_real_size = 15;
-            const input_port_internal_size = 10;
+            const input_port_real_size = 10;
+            const input_port_internal_size = 5;
             const input_position_start = input_x_position;
             let input_position_end = input_x_position + input_port_size;
 
@@ -198,8 +198,8 @@ export class FlowBlock {
             this.group.appendChild(in_group);
 
             const output_port_size = 50;
-            const output_port_real_size = 15;
-            const output_port_internal_size = 10;
+            const output_port_real_size = 10;
+            const output_port_internal_size = 5;
             const output_position_start = output_x_position;
             let output_position_end = output_x_position + output_port_size;
 
