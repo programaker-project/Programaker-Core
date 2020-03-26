@@ -11,7 +11,6 @@ import { NewDashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings.component';
 
-import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
 
 import { LoginFormComponent } from './login-form/login-form.component';
@@ -40,7 +39,6 @@ const routes: Routes = [
     { path: 'dashboard', component: NewDashboardComponent },
 
     // Programs
-    { path: 'users/:user_id/programs/', component: ProgramsComponent },
     { path: 'users/:user_id/programs/:program_id', component: ProgramDetailComponent },
 
     // Services

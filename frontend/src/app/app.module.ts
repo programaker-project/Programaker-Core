@@ -33,7 +33,6 @@ import { SettingsComponent } from './settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings.component';
 
 // Programs
-import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
@@ -81,7 +80,6 @@ import { SelectFromJSON } from './select_from_json.filter';
         NewDashboardComponent,
         SettingsComponent,
         AdminSettingsComponent,
-        ProgramsComponent,
         ProgramDetailComponent,
         BridgeIndexComponent,
         BridgeAddComponent,
