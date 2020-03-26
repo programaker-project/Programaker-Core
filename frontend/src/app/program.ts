@@ -3,6 +3,7 @@ export class ProgramMetadata {
     name: string;
     link: string;
     enabled: boolean;
+    type: string;
     bridges_in_use: string[];
 }
 
