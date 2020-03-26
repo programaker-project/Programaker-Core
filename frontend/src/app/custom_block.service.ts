@@ -99,7 +99,7 @@ export class CustomBlockService {
 
             // Validate & fill arguments in message
             if (arguments_in_message < arguments_declared) {
-                console.error("(arguments_in_message < arguments_declared) on ", block);
+                console.error(`(${arguments_in_message} < ${arguments_declared}) arguments_in_message < arguments_declared on `, block);
             }
 
             while (arguments_in_message < arguments_declared) {

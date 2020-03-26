@@ -45,7 +45,6 @@ import { unixMsToStr } from './utils';
 })
 export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
-    currentFillingInput: string;
     workspace: Blockly.Workspace;
     programUserName: string;
     programId: string;
@@ -112,11 +111,11 @@ export class ProgramDetailComponent implements OnInit {
                         resolve();
                     }).catch(err => {
                         console.error("Error:", err);
+                        resolve();
                         this.goBack();
                     });
                 });
         }));
-        this.currentFillingInput = '';
     }
 
     /**

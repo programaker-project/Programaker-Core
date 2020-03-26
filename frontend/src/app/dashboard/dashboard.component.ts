@@ -139,10 +139,15 @@ export class NewDashboardComponent {
             });
     }
 
-    openProgram(program: ProgramMetadata): void {
-        this.sessionService.getSession().then(session =>
+    async openProgram(program: ProgramMetadata): Promise<void> {
+        if (program.type === 'flow') {
+            this.router.navigate(['/programs/' + program.id + '/flow']);
+        }
+        else if ((!program.type) || (program.type === 'scratch_program')) {
+            const session = await this.sessionService.getSession();
             this.router.navigate(['/users/' + session.username
-                + '/programs/' + encodeURIComponent(program.name)]));
+                                  + '/programs/' + encodeURIComponent(program.name)]);
+        }
     }
 
     enableService(service: AvailableService): void {

@@ -1,0 +1,111 @@
+.program-pad #workspace {
+    width: 100%;
+}
+
+.app-content {
+    overflow: hidden;
+}
+
+#program-header {
+    border-bottom: 1px solid #AAA;
+    overflow-y: auto;
+    height: 3em;
+}
+
+#program-header:not(.is-scrollable) > .hint-scrollable {
+    display: none;
+}
+
+#program-header.is-scrollable > .hint-scrollable {
+    position: absolute;
+    top: 1ex;
+    right: 1ex;
+    z-index: 10;
+}
+
+#program-header > .hint-scrollable > mat-icon {
+    background: rgba(255,255,255,0.8);
+    border-radius: 22px;
+}
+
+#program-header > .hint-scrollable > .hint-text {
+    display: none;
+
+    position: absolute;
+    z-index: 10;
+    margin-left: -25ex;
+    padding: 0.5ex;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    border-radius: 5px;
+    top: -0.5ex;
+    width: 25ex;
+    text-align: center;
+    pointer-events: none;
+}
+
+#program-header > .hint:hover > .hint-text {
+    display: block;
+}
+
+#logs_panel_container {
+    max-width: 30em;
+}
+
+.closer > button {
+    border: none;
+    background-color: inherit;
+}
+
+button#program-rename-button,
+button#program-start-button,
+button#program-delete-button,
+button#program-stop-button,
+button#program-logs-button,
+button#advancedProgramControls {
+    vertical-align: top;
+    padding: 1ex;
+    margin-top: 2px;
+}
+
+button#program-delete-button{
+    float: right;
+}
+
+button#program-start-button .action-icon {
+    vertical-align: top;
+}
+
+.program-name .program-title {
+    vertical-align: middle;
+}
+
+.program-title {
+    font-size: 1.15rem;
+}
+
+.program-name {
+    display: inline;
+    padding-right: 1ex;
+}
+
+.program-name > a {
+    padding-left: 1ex;
+}
+
+.program-name > .program-title {
+    display: inline-block;
+    width: 15ex;
+    max-width: 50vw;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.program-name .back-arrow {
+    vertical-align: middle;
+}
+
+.viewer {
+    margin: 0;
+}

@@ -12,6 +12,7 @@ import { SettingsComponent } from './settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings.component';
 
 import { ProgramDetailComponent } from './program-detail.component';
+import { FlowEditorComponent } from './flow-editor/flow-editor.component';
 
 import { LoginFormComponent } from './login-form/login-form.component';
 import { ResetPasswordStartComponent } from './login-form/reset-password-start.component';
@@ -40,6 +41,7 @@ const routes: Routes = [
 
     // Programs
     { path: 'users/:user_id/programs/:program_id', component: ProgramDetailComponent },
+    { path: 'programs/:program_id/flow', component: FlowEditorComponent },
 
     // Services
     { path: 'services', component: ServicesComponent },

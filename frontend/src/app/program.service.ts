@@ -56,6 +56,10 @@ export class ProgramService {
         return userApiRoot + '/programs/' + encodeURIComponent(program_id);
     }
 
+    async getUpdateProgramUrlById(program_id: string) {
+        return ApiRoot + '/programs/id/' + program_id;
+    }
+
     async getProgramTagsUrl(programUserId: string, program_id: string) {
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
         return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/tags';
@@ -175,6 +179,17 @@ export class ProgramService {
                     .toPromise()));
     }
 
+    async renameProgramById(program_id: string, new_name: string): Promise<boolean> {
+        const url = await this.getUpdateProgramUrlById(program_id);
+        const _response = await (this.http
+                                .patch(url,
+                                       JSON.stringify({name: new_name}),
+                                       {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                                    ContentType.Json)})
+                                .toPromise());
+        return true;
+    }
+
     stopThreadsProgram(user_id: string, program_id: string): Promise<boolean> {
         return this.getProgramStopThreadsUrl(user_id, program_id).then(
             url => (this.http
@@ -213,6 +228,16 @@ export class ProgramService {
                         return true;
                     }))
                     .toPromise()));
+    }
+
+    async deleteProgramById(program_id: string): Promise<boolean> {
+        const url = await this.getUpdateProgramUrlById(program_id);
+        const _response = await(this.http
+                                .delete(url,
+                                        {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                                     ContentType.Json)})
+                                .toPromise());
+        return true;
     }
 
     watchProgramLogs(user_id: string, program_id: string, options: { request_previous_logs?: boolean }): Observable<ProgramInfoUpdate> {

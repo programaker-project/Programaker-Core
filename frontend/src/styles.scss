@@ -1,6 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 @import 'material_theme';
 @import 'blockly_theme';
+@import './flow_editor';
 
 html, body, my-app, .app-content {
   margin: 0;

@@ -34,6 +34,7 @@ import { AdminSettingsComponent } from './settings/admin-settings.component';
 
 // Programs
 import { ProgramDetailComponent } from './program-detail.component';
+import { FlowEditorComponent } from './flow-editor/flow-editor.component';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
@@ -81,6 +82,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         SettingsComponent,
         AdminSettingsComponent,
         ProgramDetailComponent,
+        FlowEditorComponent,
         BridgeIndexComponent,
         BridgeAddComponent,
         ServicesComponent,

@@ -34,6 +34,12 @@ export class ScratchProgram extends ProgramContent {
     }
 }
 
+export class FlowProgram extends ProgramContent {
+    constructor(metadata: ProgramMetadata, parsed: any, orig: any) {
+        super(metadata, parsed, orig, 'scratch_program');
+    }
+}
+
 export interface ProgramLogEntry {
     program_id: string,
     thread_id: string | 'none',
