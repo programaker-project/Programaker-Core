@@ -24,6 +24,7 @@
         , get_bridge_info/1
 
         , listen_bridge/2
+        , listen_bridge/3
         , list_established_connections/1
         , get_pending_connection_info/1
         , is_module_connectable_bridge/2
@@ -84,6 +85,15 @@ listen_bridge(BridgeId, UserId) ->
     case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId);
+        {error, _X, Description} ->
+            {error, Description}
+    end.
+
+-spec listen_bridge(binary(), binary(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
+listen_bridge(BridgeId, UserId, Selector) ->
+    case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
+        { ok, ChannelId } ->
+            automate_channel_engine:listen_channel(ChannelId, Selector);
         {error, _X, Description} ->
             {error, Description}
     end.
