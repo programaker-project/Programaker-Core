@@ -67,6 +67,8 @@
         ]).
 -export([start_link/0]).
 -define(SERVER, ?MODULE).
+-define(MAX_LOG_RESULT_LENGTH, 100).
+%% -define(ABSOLUTE_MAX_LOG_RESULT_LENGTH, 10000).
 
 -include("./databases.hrl").
 -include("./records.hrl").
@@ -704,7 +706,13 @@ get_tags_program_from_id(ProgramId) ->
 -spec get_logs_from_program_id(binary()) -> {ok, [#user_program_log_entry{}]} | {error, atom()}.
 get_logs_from_program_id(ProgramId) ->
     Transaction = fun() ->
-                          {ok, mnesia:read(?USER_PROGRAM_LOGS_TABLE, ProgramId)}
+                          Results = mnesia:read(?USER_PROGRAM_LOGS_TABLE, ProgramId),
+                          case length(Results) > ?MAX_LOG_RESULT_LENGTH of
+                              false ->
+                                  {ok, Results};
+                              true ->
+                                  {ok, lists:sublist(Results, length(Results) - ?MAX_LOG_RESULT_LENGTH, length(Results))}
+                          end
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
@@ -859,6 +867,7 @@ get_program_variable(ProgramId, Key) ->
 -spec log_program_error(#user_program_log_entry{}) -> ok | {error, atom()}.
 log_program_error(LogEntry) when is_record(LogEntry, user_program_log_entry) ->
     Transaction = fun() ->
+                          %% TODO: Prune logs if ABSOLUTE_MAX_LOG_RESULT_LENGHT is surpassed
                           ok = mnesia:write(?USER_PROGRAM_LOGS_TABLE, LogEntry, write)
                   end,
     case mnesia:transaction(Transaction) of
