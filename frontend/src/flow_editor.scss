@@ -3,15 +3,41 @@
     height: 100%;
 }
 
-#workspace > svg g.flow_node rect {
-    fill: transparent;
-    stroke: #444;
-    stroke-width: 0.5px;
-}
-
 #workspace > svg g.flow_node > a {
     pointer-events: all;
     cursor: grab;
+}
+
+#workspace > svg g.flow_node rect.node_body {
+    fill: #47414e;
+    stroke-width: 2px;
+    stroke: #27212e;
+}
+
+
+#workspace > svg g.flow_node rect.port_plating {
+    fill: #87818e;
+}
+
+
+#workspace > svg g.flow_node circle.external_port.string_port {
+    fill: #44dd44;
+}
+
+#workspace > svg g.flow_node circle.external_port.integer_port {
+    fill: #dd4444;
+}
+
+#workspace > svg g.flow_node circle.external_port.unknown_type {
+    fill: #dd44dd;
+}
+
+#workspace > svg g.flow_node circle.internal_port {
+    fill: #000000;
+}
+
+#workspace > svg g.flow_node text {
+    fill: white;
 }
 
 #workspace > svg g.flow_node {
