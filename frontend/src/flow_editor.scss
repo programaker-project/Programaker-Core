@@ -13,6 +13,10 @@
     stroke-width: 5px;
 }
 
+#workspace > svg path.connection {
+    stroke-linecap: round;
+}
+
 #workspace > svg path.established {
     stroke-width: 2px;
 }

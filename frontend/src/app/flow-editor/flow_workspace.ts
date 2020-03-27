@@ -244,7 +244,7 @@ export class FlowWorkspace {
             }
 
             this.current_selecting_connector = document.createElementNS(SvgNS, 'path');
-            this.current_selecting_connector.setAttributeNS(null, 'class', 'building connector ' + type_class);
+            this.current_selecting_connector.setAttributeNS(null, 'class', 'building connection ' + type_class);
             this.canvas.appendChild(this.current_selecting_connector);
 
             let runway = 50;
