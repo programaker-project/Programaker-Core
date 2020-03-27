@@ -39,10 +39,9 @@
 
 #workspace > svg g.flow_node rect.node_body {
     fill: #47414e;
-    stroke-width: 2px;
+    stroke-width: 3px;
     stroke: #27212e;
-    // filter: drop-shadow(0 0 2px #47414e);
-    // pointer-events: none;
+    opacity: 0.8;
 }
 
 

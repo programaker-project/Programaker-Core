@@ -91,11 +91,11 @@ export class StreamingFlowBlock implements FlowBlock {
 
         const x_padding = 5; // px
         const y_padding = 5; // px
-        const input_initial_x_position = 5; // px
+        const input_initial_x_position = 10; // px
         const inputs_x_margin = 10; // px
         const input_plating_x_margin = 3; // px
 
-        const output_initial_x_position = 5; // px
+        const output_initial_x_position = 10; // px
         const outputs_x_margin = 10; // px
         const output_plating_x_margin = 3; // px
 
@@ -323,7 +323,7 @@ export class StreamingFlowBlock implements FlowBlock {
         this.rect.setAttributeNS(null, 'width', box_width + "");
         this.rect.setAttributeNS(null, 'height', box_height + "");
 
-        this.rect.setAttributeNS(null, 'rx', "5px"); // Like border-radius, in px
+        this.rect.setAttributeNS(null, 'rx', "10px"); // Like border-radius, in px
 
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 

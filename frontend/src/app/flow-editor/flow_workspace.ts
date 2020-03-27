@@ -204,6 +204,12 @@ export class FlowWorkspace {
             return false;
         }
 
+        if (node1.block === node2.block) {
+            // Let's not do this intentionally, as removing them might be difficult
+            // if this is needed, use an intermediate block.
+            return false;
+        }
+
         let source = node2;
         let sink = node1;
         if (node1.type === 'out') {
