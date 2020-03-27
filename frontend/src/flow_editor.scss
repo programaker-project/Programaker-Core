@@ -8,16 +8,38 @@
     cursor: grab;
 }
 
+#workspace > svg path.building {
+    pointer-events: none;
+    stroke-width: 5px;
+}
+
+#workspace > svg path.string_wire {
+    stroke: #44dd44;
+}
+
+#workspace > svg path.integer_wire {
+    stroke: #dd4444;
+}
+
+#workspace > svg path.any_wire {
+    stroke: #dd44dd;
+}
+
+#workspace > svg path.unknown_wire {
+    stroke: #7f7f7f;
+}
+
 #workspace > svg g.flow_node rect.node_body {
     fill: #47414e;
     stroke-width: 2px;
     stroke: #27212e;
-    filter: drop-shadow(0 0 2px #47414e);
+    // filter: drop-shadow(0 0 2px #47414e);
+    // pointer-events: none;
 }
 
 
 #workspace > svg g.flow_node rect.port_plating {
-    fill: #87818e;
+    fill: #27212e;
 }
 
 
@@ -43,6 +65,7 @@
 
 #workspace > svg g.flow_node text.argument_name {
     font-size: smaller;
+    fill: #eee;
 }
 
 #workspace > svg g.flow_node {

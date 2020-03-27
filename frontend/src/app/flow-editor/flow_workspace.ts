@@ -1,299 +1,16 @@
+import { FlowBlock, InputPortDefinition, OutputPortDefinition } from './flow_block';
+import { StreamingFlowBlock } from './streaming_flow_block';
+import { FlowConnection } from './flow_connection';
+import { uuidv4 } from './utils';
+
 const SvgNS = "http://www.w3.org/2000/svg";
 
-function uuidv4() {
-    // From https://stackoverflow.com/a/2117523
-    // Used to generate unique-in-svg IDs for blocks in workspace
-    // It just has to be reasonably unique, impredictability here is just overhead.
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
-
-type MessageType = 'integer' | 'string' | 'any';
-
-interface OutputPortDefinitions {
-    type?: MessageType;
-    name?: string;
-}
-
-interface InputPortDefinitions {
-    type?: MessageType;
-    name?: string;
-}
-
-interface FlowBlockOptions {
-    message: string;
-    outputs?: OutputPortDefinitions[];
-    inputs?: InputPortDefinitions[];
-}
-
-export class FlowBlock {
-    options: FlowBlockOptions;
-
-    constructor(options: FlowBlockOptions) {
-        if (!(options.message)) {
-            throw new Error("'message' property is required to create a block");
-        }
-
-        this.options = options;
-    }
-
-    public dispose() {
-        this.canvas.removeChild(this.group);
-    }
-
-    // Render elements
-    private group: SVGElement;
-    private node: SVGElement;
-    private rect: SVGElement;
-    private textBox: SVGElement;
-    private canvas: SVGElement;
-
-    private position: {x: number, y: number};
-    private textCorrection: {x: number, y: number};
-
-    public getBodyElement(): SVGElement {
-        if (!this.group) {
-            throw Error("Not rendered");
-        }
-
-        return this.node;
-    }
-
-    public moveBy(distance: {x: number, y: number}) {
-        if (!this.group) {
-            throw Error("Not rendered");
-        }
-
-        this.position.x += distance.x;
-        this.position.y += distance.y;
-        this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
-    }
-
-    public render(canvas: SVGElement, position: {x: number, y: number}): SVGElement {
-        this.canvas = canvas;
-        this.position = { x: position.x, y: position.y };
-
-        if (this.group) { return this.group }
-
-        const min_width = 100;
-        const min_height = 25;
-
-        const x_padding = 5; // px
-        const y_padding = 5; // px
-        const input_initial_x_position = 5; // px
-        const inputs_x_margin = 10; // px
-        const input_plating_x_margin = 3; // px
-
-        const output_initial_x_position = 5; // px
-        const outputs_x_margin = 10; // px
-        const output_plating_x_margin = 3; // px
-
-        this.group = document.createElementNS(SvgNS, 'g');
-        this.node = document.createElementNS(SvgNS, 'a');
-        this.rect = document.createElementNS(SvgNS, 'rect');
-        this.textBox = document.createElementNS(SvgNS, 'text');
-
-        this.group.setAttribute('class', 'flow_node');
-        this.textBox.setAttribute('class', 'node_name');
-        this.textBox.textContent = this.options.message;
-        this.textBox.setAttributeNS(null,'textlength', '100%');
-
-        this.textBox.setAttributeNS(null, 'x', "0");
-        this.textBox.setAttributeNS(null, 'y', "0");
-
-        this.node.appendChild(this.rect);
-        this.node.appendChild(this.textBox);
-        this.group.appendChild(this.node);
-        this.canvas.appendChild(this.group);
-
-        // Read text correction
-        this.textCorrection = {
-            x: -(this.textBox.getClientRects()[0].left - canvas.getClientRects()[0].left),
-            y: -(this.textBox.getClientRects()[0].top - canvas.getClientRects()[0].top)
-        };
-
-        const box_height = (this.textBox.getClientRects()[0].height * 4.5 + y_padding * 2);
-
-        // Add inputs
-        let input_x_position = input_initial_x_position + this.textCorrection.x;
-        for (const input of this.options.inputs || []) {
-            const in_group = document.createElementNS(SvgNS, 'g');
-            this.group.appendChild(in_group);
-
-            const input_port_size = 50;
-            const input_port_real_size = 10;
-            const input_port_internal_size = 5;
-            const input_position_start = input_x_position;
-            let input_position_end = input_x_position + input_port_size;
-
-
-            if (input.name) {
-                // Bind input name and port
-                const port_plating = document.createElementNS(SvgNS, 'rect');
-                in_group.appendChild(port_plating);
-
-                const text = document.createElementNS(SvgNS, 'text');
-                text.textContent = input.name;
-                text.setAttributeNS(null, 'class', 'argument_name input');
-                in_group.appendChild(text);
-
-                text.setAttributeNS(null, 'x', input_x_position + input_plating_x_margin + '');
-                text.setAttributeNS(null, 'y', (input_port_real_size + this.textCorrection.y) + '' );
-
-                input_position_end = Math.max(input_position_end, (input_x_position
-                                                                   + text.getClientRects()[0].width
-                                                                   + input_plating_x_margin * 2));
-                input_x_position = input_position_end + inputs_x_margin;
-
-                const input_height = Math.max(input_port_size / 2, (input_port_real_size
-                                                                    + text.getClientRects()[0].height));
-
-                // Configure port connector now that we know where the input will be positioned
-                port_plating.setAttributeNS(null, 'class', 'port_plating');
-                port_plating.setAttributeNS(null, 'x', input_position_start + '');
-                port_plating.setAttributeNS(null, 'y', '1'); // Node stroke-width /2
-                port_plating.setAttributeNS(null, 'width', (input_position_end - input_position_start) + '');
-                port_plating.setAttributeNS(null, 'height', input_height + '');
-
-            }
-
-            let type_class = 'unknown_type';
-            switch (input.type) {
-                case 'integer':
-                    type_class = 'integer_port';
-                    break;
-
-                case 'string':
-                    type_class = 'string_port';
-                    break;
-            }
-
-            // Draw the input port
-            const port_external = document.createElementNS(SvgNS, 'circle');
-            port_external.setAttributeNS(null, 'class', 'input external_port ' + type_class);
-            port_external.setAttributeNS(null, 'cx', (input_position_start + input_position_end) / 2 + '');
-            port_external.setAttributeNS(null, 'cy', '0');
-            port_external.setAttributeNS(null, 'r', input_port_real_size + '');
-
-            const port_internal = document.createElementNS(SvgNS, 'circle');
-            port_internal.setAttributeNS(null, 'class', 'input internal_port');
-            port_internal.setAttributeNS(null, 'cx', (input_position_start + input_position_end) / 2 + '');
-            port_internal.setAttributeNS(null, 'cy', '0');
-            port_internal.setAttributeNS(null, 'r', input_port_internal_size + '');
-
-            in_group.appendChild(port_external);
-            in_group.appendChild(port_internal);
-
-            if (input_x_position < input_x_position) {
-                input_x_position += input_port_real_size;
-            }
-        }
-
-        // Add outputs
-        let output_x_position = output_initial_x_position + this.textCorrection.x;
-        for (const output of this.options.outputs || []) {
-            const in_group = document.createElementNS(SvgNS, 'g');
-            this.group.appendChild(in_group);
-
-            const output_port_size = 50;
-            const output_port_real_size = 10;
-            const output_port_internal_size = 5;
-            const output_position_start = output_x_position;
-            let output_position_end = output_x_position + output_port_size;
-
-
-            if (output.name) {
-                // Bind output name and port
-                const port_plating = document.createElementNS(SvgNS, 'rect');
-                in_group.appendChild(port_plating);
-
-                const text = document.createElementNS(SvgNS, 'text');
-                text.textContent = output.name;
-                text.setAttributeNS(null, 'class', 'argument_name output');
-                in_group.appendChild(text);
-
-                text.setAttributeNS(null, 'x', output_x_position + output_plating_x_margin + '');
-                text.setAttributeNS(null, 'y', (this.textCorrection.y + box_height
-                                                - (output_port_real_size + text.getClientRects()[0].height)) + '' );
-
-                output_position_end = Math.max(output_position_end, (output_x_position
-                                                                     + text.getClientRects()[0].width
-                                                                     + output_plating_x_margin * 2));
-                output_x_position = output_position_end + outputs_x_margin;
-
-                const output_height = Math.max(output_port_size / 2, (output_port_real_size
-                                                                    + text.getClientRects()[0].height));
-
-                // Configure port connector now that we know where the output will be positioned
-                port_plating.setAttributeNS(null, 'class', 'port_plating');
-                port_plating.setAttributeNS(null, 'x', output_position_start + '');
-                port_plating.setAttributeNS(null, 'y', box_height - output_height - 1 + ''); // -1 for node stroke-width /2
-                port_plating.setAttributeNS(null, 'width', (output_position_end - output_position_start) + '');
-                port_plating.setAttributeNS(null, 'height', output_height + '');
-
-            }
-
-            let type_class = 'unknown_type';
-            switch (output.type) {
-                case 'integer':
-                    type_class = 'integer_port';
-                    break;
-
-                case 'string':
-                    type_class = 'string_port';
-                    break;
-            }
-
-            // Draw the output port
-            const port_external = document.createElementNS(SvgNS, 'circle');
-            port_external.setAttributeNS(null, 'class', 'output external_port ' + type_class);
-            port_external.setAttributeNS(null, 'cx', (output_position_start + output_position_end) / 2 + '');
-            port_external.setAttributeNS(null, 'cy', box_height + '');
-            port_external.setAttributeNS(null, 'r', output_port_real_size + '');
-
-            const port_internal = document.createElementNS(SvgNS, 'circle');
-            port_internal.setAttributeNS(null, 'class', 'output internal_port');
-            port_internal.setAttributeNS(null, 'cx', (output_position_start + output_position_end) / 2 + '');
-            port_internal.setAttributeNS(null, 'cy', box_height + '');
-            port_internal.setAttributeNS(null, 'r', output_port_internal_size + '');
-
-            in_group.appendChild(port_external);
-            in_group.appendChild(port_internal);
-
-            if (output_x_position < output_x_position) {
-                output_x_position += output_port_real_size;
-            }
-        }
-
-        let widest_section = min_width;
-        widest_section = Math.max(widest_section, this.textBox.getClientRects()[0].width + x_padding * 2);
-        widest_section = Math.max(widest_section, input_x_position);
-        widest_section = Math.max(widest_section, output_x_position);
-
-        const box_width = widest_section;
-
-        // Center text box
-        this.textBox.setAttributeNS(null, 'x', (this.textCorrection.x
-                                                + (box_width/2)
-                                                - (this.textBox.getClientRects()[0].width/2)) + "");
-        this.textBox.setAttributeNS(null, 'y', (this.textBox.getClientRects()[0].height*2 + this.textCorrection.y) + "");
-
-        this.rect.setAttributeNS(null, 'class', "node_body");
-        this.rect.setAttributeNS(null, 'x', "0");
-        this.rect.setAttributeNS(null, 'y', "0");
-        this.rect.setAttributeNS(null, 'width', box_width + "");
-        this.rect.setAttributeNS(null, 'height', box_height + "");
-
-        this.rect.setAttributeNS(null, 'rx', "5px"); // Like border-radius, in px
-
-        this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
-
-        return this.group;
-    }
-
-}
+type ConnectableNode = {
+    block: FlowBlock,
+    type: 'in'|'out',
+    index: number,
+    definition: InputPortDefinition | OutputPortDefinition,
+};
 
 export class FlowWorkspace {
     public static BuildOn(baseElement: HTMLElement): FlowWorkspace {
@@ -311,19 +28,28 @@ export class FlowWorkspace {
         return workspace;
     }
 
+    private connection_group: SVGElement;
     private baseElement: HTMLElement;
     private canvas: SVGElement;
     private blocks: {[key: string]: {
         block: FlowBlock,
     }};
+    private connections: {[key: string]: {
+        connection: FlowConnection,
+        element: SVGElement,
+    }};
 
     private constructor(baseElement: HTMLElement) {
         this.baseElement = baseElement;
         this.blocks = {};
+        this.connections = {};
     }
 
     private init() {
         this.canvas = document.createElementNS(SvgNS, "svg");
+        this.connection_group = document.createElementNS(SvgNS, "g");
+
+        this.canvas.appendChild(this.connection_group);
         this.baseElement.appendChild(this.canvas);
     }
 
@@ -334,6 +60,8 @@ export class FlowWorkspace {
     public draw(block: FlowBlock, position?: {x: number, y: number}) {
         block.render(this.canvas, position? position: {x: 10, y: 10});
         block.getBodyElement().onmousedown = ((ev: MouseEvent) => {
+            if (this.current_io_selected) { return; }
+
             let last = {x: ev.x, y: ev.y};
             this.canvas.onmousemove = ((ev: MouseEvent) => {
                 const distance = { x: ev.x - last.x, y: ev.y - last.y };
@@ -355,26 +83,245 @@ export class FlowWorkspace {
         info.block.dispose();
     }
 
+    private getBlockRel(block: FlowBlock, position: {x: number, y: number}): { x: number, y: number }{
+        const off = block.getOffset();
+        return { x: off.x + position.x, y: off.y + position.y };
+    }
+
+    private current_io_selected: {
+        block: FlowBlock,
+        type: 'in'|'out',
+        index: number,
+        definition: InputPortDefinition | OutputPortDefinition,
+        port_center: {x: number, y: number},
+        real_center: {x: number, y: number}
+    };
+    private current_selecting_connector: SVGElement;
+
+    private drawPath(path: SVGElement, from: {x: number, y: number}, to: {x: number, y: number}, runway: number) {
+        const curve = [
+            "M", from.x, ",", from.y,
+            " C", from.x, ",", from.y + runway,
+            " ", to.x, ",", to.y - runway,
+            " ", to.x, ",", to.y,
+        ].join("");
+
+        path.setAttributeNS(null, "d", curve);
+        path.setAttributeNS(null, 'fill', 'none');
+        path.setAttributeNS(null, 'stroke', 'black');
+        path.setAttributeNS(null, 'stroke-width', '1');
+
+    }
+
+    private isPositionDistoredByFilter(ev: MouseEvent): boolean {
+        // An ad-hoc heuristic to detect when a CSS filter might
+        // have distorted the ev.layer values.
+        // The `drop-shadow` filter does this.
+        //
+        // @TODO: Get a better measure
+        const target = ev.target as any;
+        if (target.tagName === "rect"){
+            const top_attr = target.getAttributeNS(null, 'y');
+            if (top_attr !== undefined) {
+                const top = parseInt(top_attr);
+
+                if ((ev as any).layerY < top) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // TODO: Remove this
+    // private getTranslation(element: SVGElement): {x: number, y: number} {
+    //     const translation = {x: 0, y: 0};
+    //     while ((element) && (element !== this.canvas)) {
+    //         if ((element as any).transform) {
+    //             const base = (element as any).transform.baseVal; // An SVGTransformList
+    //             for (const val of base) {
+    //                 if (val.type == SVGTransform.SVG_TRANSFORM_TRANSLATE){
+    //                     translation.x += val.matrix.e,
+    //                     translation.y += val.matrix.f;
+    //                 }
+    //             }
+    //         }
+
+    //         element = element.parentElement as any as SVGElement;
+    //     }
+
+    //     return translation;
+    // }
+
+    addConnection(conn: FlowConnection): boolean {
+        const element = this.prepareConnection(conn);
+
+        if (!element) {
+            return false;
+        }
+        this.connections[conn.id] = { connection: conn, element: element };
+
+        this.updateConnection(conn.getId());
+
+        return true;
+    }
+
+    prepareConnection(conn: FlowConnection): SVGElement {
+        const source = this.blocks[conn.getSource().block_id];
+        const source_output_type = source.block.getOutputType(conn.getSource().output_index);
+
+        let type_class = "unknown_wire";
+        if (source_output_type) {
+            type_class = source_output_type + '_wire';
+        }
+
+        const path = document.createElementNS(SvgNS, 'path');
+        path.setAttributeNS(null, 'class', 'established connection ' + type_class);
+        this.connection_group.appendChild(path);
+
+        return path;
+    }
+
+    updateConnection(connection_id: string) {
+        const conn = this.connections[connection_id];
+
+        const runway = 50;
+        const source = conn.connection.getSource();
+        const source_block = this.blocks[source.block_id].block;
+
+        const sink = conn.connection.getSink();
+        const sink_block = this.blocks[sink.block_id].block;
+
+        this.drawPath(conn.element,
+                      this.getBlockRel(source_block, source_block.getPositionOfOutput(source.output_index)),
+                      this.getBlockRel(sink_block, sink_block.getPositionOfInput(sink.input_index)),
+                      runway,
+                     );
+    }
+
+    getBlockId(block: FlowBlock): string {
+        for (const key of Object.keys(this.blocks)) {
+            if (this.blocks[key].block === block) {
+                return key;
+            }
+        }
+
+        return null;
+    }
+
+    establishConnection(node1: ConnectableNode, node2: ConnectableNode): boolean {
+        if ((node1.type === node2.type)) { // An input and an output is required
+            return false;
+        }
+
+        let source = node2;
+        let sink = node1;
+        if (node1.type === 'out') {
+            source = node1;
+            sink = node2;
+        }
+
+        const connection = new FlowConnection({block_id: this.getBlockId(source.block), output_index: source.index },
+                                              {block_id: this.getBlockId(sink.block), input_index: sink.index },
+                                             );
+        return this.addConnection(connection);
+    }
+
+    private disconnectIOSelected() {
+        this.canvas.removeChild(this.current_selecting_connector);
+        this.current_selecting_connector = null;
+        this.current_io_selected = null;
+
+        this.canvas.onmousemove = null;
+        this.canvas.onmousedown = null;
+    }
+
+    private onIoSelected(block: FlowBlock,
+                           type: 'in'|'out',
+                           index: number,
+                           definition: InputPortDefinition | OutputPortDefinition,
+                           port_center: {x: number, y: number},
+                        ): void {
+
+        if (!this.current_io_selected) {
+            const real_center = this.getBlockRel(block, port_center);
+            this.current_io_selected = { block, type, index, definition, port_center, real_center };
+
+
+            let type_class = "unknown_wire";
+            if (definition.type) {
+                type_class = definition.type + '_wire';
+            }
+
+            this.current_selecting_connector = document.createElementNS(SvgNS, 'path');
+            this.current_selecting_connector.setAttributeNS(null, 'class', 'building connector ' + type_class);
+            this.canvas.appendChild(this.current_selecting_connector);
+
+            let runway = 50;
+            if (type == 'in') {
+                runway = -runway;
+            }
+
+            this.canvas.onmousemove = ((ev: any) => {
+                if (!this.canvas.contains(ev.target) || this.isPositionDistoredByFilter(ev)) {
+                    return;
+                }
+
+                let correction = {x: 0, y: 0};
+                // This has to be applied, but only if the ev.target has a filter...
+                // if (ev.target.tagName.toLowerCase() === 'rect') {
+                //     const trans = this.getTranslation(ev.target);
+                //     correction = trans;
+                // }
+
+                this.drawPath(this.current_selecting_connector, real_center,
+                              {x: ev.layerX + correction.x, y: ev.layerY + correction.y},
+                              runway);
+            });
+
+            this.canvas.onmousedown = ((ev: any) => {
+                if (ev.target === this.canvas) {
+                    this.disconnectIOSelected();
+                }
+            });
+        }
+        else {
+            if (this.establishConnection(this.current_io_selected,
+                                          { block,
+                                            type,
+                                            index,
+                                            definition,
+                                          },
+                                         )){
+                this.disconnectIOSelected();
+            }
+
+        }
+    }
+
     public drawSample() {
         console.log("Drawing sample on", this);
 
-        const number1 = new FlowBlock({
+        const number1 = new StreamingFlowBlock({
             message: "Number",
             outputs: [{
                 type: "integer",
                 name: "number"
             }],
+            on_io_selected: this.onIoSelected.bind(this),
         });
 
-        const number2 = new FlowBlock({
+        const number2 = new StreamingFlowBlock({
             message: "Number",
             outputs: [{
                 type: "integer",
                 name: "number"
             }],
+            on_io_selected: this.onIoSelected.bind(this),
         });
 
-        const add = new FlowBlock({
+        const add = new StreamingFlowBlock({
             message: "Add",
             inputs: [
                 {
@@ -390,10 +337,11 @@ export class FlowWorkspace {
                     type: "integer",
                     name: "result",
                 }
-            ]
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
         });
 
-        const log = new FlowBlock({
+        const log = new StreamingFlowBlock({
             message: "Log",
             inputs: [
                 {
@@ -404,7 +352,8 @@ export class FlowWorkspace {
                 {
                     type: "any",
                 }
-            ]
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
         });
 
         this.draw(number1, {x:  30, y: 30});
