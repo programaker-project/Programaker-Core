@@ -134,26 +134,6 @@ export class FlowWorkspace {
         return false;
     }
 
-    // TODO: Remove this
-    // private getTranslation(element: SVGElement): {x: number, y: number} {
-    //     const translation = {x: 0, y: 0};
-    //     while ((element) && (element !== this.canvas)) {
-    //         if ((element as any).transform) {
-    //             const base = (element as any).transform.baseVal; // An SVGTransformList
-    //             for (const val of base) {
-    //                 if (val.type == SVGTransform.SVG_TRANSFORM_TRANSLATE){
-    //                     translation.x += val.matrix.e,
-    //                     translation.y += val.matrix.f;
-    //                 }
-    //             }
-    //         }
-
-    //         element = element.parentElement as any as SVGElement;
-    //     }
-
-    //     return translation;
-    // }
-
     addConnection(conn: FlowConnection): boolean {
         const element = this.prepareConnection(conn);
 
@@ -268,15 +248,8 @@ export class FlowWorkspace {
                     return;
                 }
 
-                let correction = {x: 0, y: 0};
-                // This has to be applied, but only if the ev.target has a filter...
-                // if (ev.target.tagName.toLowerCase() === 'rect') {
-                //     const trans = this.getTranslation(ev.target);
-                //     correction = trans;
-                // }
-
                 this.drawPath(this.current_selecting_connector, real_center,
-                              {x: ev.layerX + correction.x, y: ev.layerY + correction.y},
+                              {x: ev.layerX, y: ev.layerY},
                               runway);
             });
 
