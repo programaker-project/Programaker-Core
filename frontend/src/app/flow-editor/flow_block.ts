@@ -36,7 +36,7 @@ export interface FlowBlock {
     getOffset(): Position2D;
     moveBy(distance: Position2D): void;
 
-    getPositionOfInput(index: number): Position2D;
-    getPositionOfOutput(index: number): Position2D;
+    getPositionOfInput(index: number, edge?: boolean): Position2D;
+    getPositionOfOutput(index: number, edge?: boolean): Position2D;
     getOutputType(index: number): string;
 }

@@ -17,9 +17,9 @@ type ConnectableNode = {
 
 export class FlowWorkspace {
     public static BuildOn(baseElement: HTMLElement): FlowWorkspace {
-        const workspace = new FlowWorkspace(baseElement);
-
+        let workspace: FlowWorkspace;
         try {
+            workspace = new FlowWorkspace(baseElement);
             workspace.init();
         }
         catch(err) {
@@ -31,9 +31,10 @@ export class FlowWorkspace {
         return workspace;
     }
 
-    private connection_group: SVGElement;
     private baseElement: HTMLElement;
     private canvas: SVGElement;
+    private connection_group: SVGElement;
+
     private blocks: {[key: string]: {
         block: FlowBlock,
         connections: string[],
@@ -52,9 +53,22 @@ export class FlowWorkspace {
     private init() {
         this.canvas = document.createElementNS(SvgNS, "svg");
         this.connection_group = document.createElementNS(SvgNS, "g");
-
         this.canvas.appendChild(this.connection_group);
         this.baseElement.appendChild(this.canvas);
+
+        this.init_definitions();
+    }
+
+    private init_definitions() {
+        const pulse_head_color = "#ffcc00";
+        const definitions = document.createElementNS(SvgNS, 'defs');
+        definitions.innerHTML = `
+<marker id='pulse_head' orient='auto' markerWidth='2' markerHeight='4' refX='1' refY='2'>
+  <path d='M0,0 V4 L2,2 Z' fill='${pulse_head_color}' />
+</marker>
+`;
+
+        this.connection_group.appendChild(definitions);
     }
 
     public dispose() {
@@ -167,6 +181,9 @@ export class FlowWorkspace {
 
         const path = document.createElementNS(SvgNS, 'path');
         path.setAttributeNS(null, 'class', 'established connection ' + type_class);
+        if (source_output_type == 'pulse') {
+            path.setAttributeNS(null, 'marker-end', 'url(#pulse_head)');
+        }
         this.connection_group.appendChild(path);
 
         source.connections.push(conn.id);
@@ -177,19 +194,26 @@ export class FlowWorkspace {
 
     updateConnection(connection_id: string) {
         const conn = this.connections[connection_id];
-
         const runway = 50;
+
+        // Source
         const source = conn.connection.getSource();
         const source_block = this.blocks[source.block_id].block;
 
+        const source_position = this.getBlockRel(source_block, source_block.getPositionOfOutput(source.output_index));
+
+        // Sink
         const sink = conn.connection.getSink();
         const sink_block = this.blocks[sink.block_id].block;
 
-        this.drawPath(conn.element,
-                      this.getBlockRel(source_block, source_block.getPositionOfOutput(source.output_index)),
-                      this.getBlockRel(sink_block, sink_block.getPositionOfInput(sink.input_index)),
-                      runway,
-                     );
+        const connector_with_marker = !!conn.element.getAttributeNS(null, 'marker-end');
+        const y_sink_offset = connector_with_marker ? 2 : 0;
+
+        const sink_position = this.getBlockRel(sink_block, sink_block.getPositionOfInput(sink.input_index, connector_with_marker));
+        sink_position.y -= y_sink_offset;
+
+        // Draw
+        this.drawPath(conn.element, source_position, sink_position, runway);
     }
 
     getBlockId(block: FlowBlock): string {
@@ -347,6 +371,11 @@ export class FlowWorkspace {
             on_io_selected: this.onIoSelected.bind(this),
         });
 
+        this.draw(number1, {x:  30, y: 30});
+        this.draw(number2, {x: 230, y: 30});
+        this.draw(add, {x: 130, y: 230});
+        this.draw(log, {x: 130, y: 430});
+
         const on_message = new AtomicFlowBlock({
             title: "Receive message",
             type: "trigger",
@@ -411,14 +440,9 @@ export class FlowWorkspace {
             on_io_selected: this.onIoSelected.bind(this),
         });
 
-        this.draw(number1, {x:  30, y: 30});
-        this.draw(number2, {x: 230, y: 30});
-        this.draw(add, {x: 130, y: 230});
-        this.draw(log, {x: 130, y: 430});
-
-        this.draw(on_message, { x: 430, y: 130 });
-        this.draw(send_message, { x: 430, y: 330 });
-        this.draw(concat, { x: 530, y: 330 });
-        this.draw(atomic_log, { x: 530, y: 530 });
+        this.draw(on_message, { x: 430, y: 50 });
+        this.draw(atomic_log, { x: 330, y: 200 });
+        this.draw(concat, { x: 530, y: 200 });
+        this.draw(send_message, { x: 530, y: 400 });
     }
 }

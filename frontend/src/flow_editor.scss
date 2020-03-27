@@ -35,6 +35,7 @@
 
 #workspace > svg path.pulse_wire {
     stroke: #fc0;
+    stroke-width: 4px;
 }
 
 #workspace > svg path.unknown_wire {
@@ -42,9 +43,9 @@
 }
 
 #workspace > svg g.flow_node rect.node_body {
-    fill: #47414e;
+    fill: #eee;
     stroke-width: 3px;
-    stroke: #27212e;
+    stroke: #87818e;
     opacity: 0.8;
 }
 
@@ -78,7 +79,7 @@
 }
 
 #workspace > svg g.flow_node text {
-    fill: white;
+    fill: black;
 }
 
 #workspace > svg g.flow_node text.argument_name {

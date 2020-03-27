@@ -2,6 +2,9 @@ import { FlowBlock, FlowBlockOptions, Position2D } from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
+const INPUT_PORT_REAL_SIZE = 10;
+const OUTPUT_PORT_REAL_SIZE = 10;
+
 export class StreamingFlowBlock implements FlowBlock {
     options: FlowBlockOptions;
 
@@ -55,20 +58,33 @@ export class StreamingFlowBlock implements FlowBlock {
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
     }
 
-    public getPositionOfInput(index: number): Position2D {
+    public getPositionOfInput(index: number, edge?: boolean): Position2D {
         const group = this.input_groups[index];
         const circle = group.getElementsByTagName('circle')[0];
-        return { x: parseInt(circle.getAttributeNS(null, 'cx')),
-                 y: parseInt(circle.getAttributeNS(null, 'cy')),
-               };
+
+        const position = { x: parseInt(circle.getAttributeNS(null, 'cx')),
+                           y: parseInt(circle.getAttributeNS(null, 'cy')),
+                         };
+
+        if (edge) {
+            position.y -= INPUT_PORT_REAL_SIZE;
+        }
+
+        return position;
     }
 
-    public getPositionOfOutput(index: number): Position2D {
+    public getPositionOfOutput(index: number, edge?: boolean): Position2D {
         const group = this.output_groups[index];
         const circle = group.getElementsByTagName('circle')[0];
-        return { x: parseInt(circle.getAttributeNS(null, 'cx')),
-                 y: parseInt(circle.getAttributeNS(null, 'cy')),
-               };
+        const position = { x: parseInt(circle.getAttributeNS(null, 'cx')),
+                           y: parseInt(circle.getAttributeNS(null, 'cy')),
+                         };
+
+        if (edge) {
+            position.y += OUTPUT_PORT_REAL_SIZE;
+        }
+
+        return position;
     }
 
     public getOutputType(index: number): string {
@@ -136,7 +152,6 @@ export class StreamingFlowBlock implements FlowBlock {
             this.group.appendChild(in_group);
 
             const input_port_size = 50;
-            const input_port_real_size = 10;
             const input_port_internal_size = 5;
             const input_position_start = input_x_position;
             let input_position_end = input_x_position + input_port_size;
@@ -152,14 +167,14 @@ export class StreamingFlowBlock implements FlowBlock {
                 in_group.appendChild(text);
 
                 text.setAttributeNS(null, 'x', input_x_position + input_plating_x_margin + '');
-                text.setAttributeNS(null, 'y', (input_port_real_size + this.textCorrection.y) + '' );
+                text.setAttributeNS(null, 'y', (INPUT_PORT_REAL_SIZE + this.textCorrection.y) + '' );
 
                 input_position_end = Math.max(input_position_end, (input_x_position
                                                                    + text.getClientRects()[0].width
                                                                    + input_plating_x_margin * 2));
                 input_x_position = input_position_end + inputs_x_margin;
 
-                const input_height = Math.max(input_port_size / 2, (input_port_real_size
+                const input_height = Math.max(input_port_size / 2, (INPUT_PORT_REAL_SIZE
                                                                     + text.getClientRects()[0].height));
 
                 // Configure port connector now that we know where the input will be positioned
@@ -187,7 +202,7 @@ export class StreamingFlowBlock implements FlowBlock {
             port_external.setAttributeNS(null, 'class', 'input external_port ' + type_class);
             port_external.setAttributeNS(null, 'cx', port_x_center + '');
             port_external.setAttributeNS(null, 'cy', port_y_center + '');
-            port_external.setAttributeNS(null, 'r', input_port_real_size + '');
+            port_external.setAttributeNS(null, 'r', INPUT_PORT_REAL_SIZE + '');
 
             const port_internal = document.createElementNS(SvgNS, 'circle');
             port_internal.setAttributeNS(null, 'class', 'input internal_port');
@@ -218,7 +233,6 @@ export class StreamingFlowBlock implements FlowBlock {
             this.group.appendChild(out_group);
 
             const output_port_size = 50;
-            const output_port_real_size = 10;
             const output_port_internal_size = 5;
             const output_position_start = output_x_position;
             let output_position_end = output_x_position + output_port_size;
@@ -236,14 +250,14 @@ export class StreamingFlowBlock implements FlowBlock {
 
                 text.setAttributeNS(null, 'x', output_x_position + output_plating_x_margin + '');
                 text.setAttributeNS(null, 'y', (this.textCorrection.y + box_height
-                                                - (output_port_real_size + text.getClientRects()[0].height)) + '' );
+                                                - (OUTPUT_PORT_REAL_SIZE + text.getClientRects()[0].height)) + '' );
 
                 output_position_end = Math.max(output_position_end, (output_x_position
                                                                      + text.getClientRects()[0].width
                                                                      + output_plating_x_margin * 2));
                 output_x_position = output_position_end + outputs_x_margin;
 
-                const output_height = Math.max(output_port_size / 2, (output_port_real_size
+                const output_height = Math.max(output_port_size / 2, (OUTPUT_PORT_REAL_SIZE
                                                                       + text.getClientRects()[0].height));
 
                 // Configure port connector now that we know where the output will be positioned
@@ -271,7 +285,7 @@ export class StreamingFlowBlock implements FlowBlock {
             port_external.setAttributeNS(null, 'class', 'output external_port ' + type_class);
             port_external.setAttributeNS(null, 'cx', port_x_center + '');
             port_external.setAttributeNS(null, 'cy', port_y_center + '');
-            port_external.setAttributeNS(null, 'r', output_port_real_size + '');
+            port_external.setAttributeNS(null, 'r', OUTPUT_PORT_REAL_SIZE + '');
 
             const port_internal = document.createElementNS(SvgNS, 'circle');
             port_internal.setAttributeNS(null, 'class', 'output internal_port');
