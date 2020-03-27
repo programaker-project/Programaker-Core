@@ -1,18 +1,43 @@
-import { FlowBlock, FlowBlockOptions, Position2D } from './flow_block';
+import { FlowBlock, FlowBlockOptions,
+         Position2D,
+         InputPortDefinition, OutputPortDefinition,
+       } from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
-export class StreamingFlowBlock implements FlowBlock {
-    options: FlowBlockOptions;
+export interface AtomicFlowBlockOptions extends FlowBlockOptions {
+    type: 'operation' | 'getter' | 'trigger';
+}
 
-    constructor(options: FlowBlockOptions) {
+export class AtomicFlowBlock implements FlowBlock {
+    options: AtomicFlowBlockOptions;
+
+    constructor(options: AtomicFlowBlockOptions) {
         if (!(options.message)) {
             throw new Error("'message' property is required to create a block");
         }
 
-        this.options = options;
-        this.input_groups = [];
-        this.output_groups = [];
+        this.options = JSON.parse(JSON.stringify(options));
+        this.options.on_io_selected = options.on_io_selected;
+
+        this.input_groups = {};
+        this.output_groups = {};
+
+        // Update inputs
+        if (!this.options.inputs) {
+            this.options.inputs = [];
+        }
+
+        if (this.options.type !== 'trigger') {
+            this.options.inputs = ([ { type: "pulse" } ] as InputPortDefinition[]).concat(this.options.inputs);
+        }
+
+        // Update outputs
+        if (!this.options.outputs) {
+            this.options.outputs = [];
+        }
+
+        this.options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(this.options.outputs);
     }
 
     public dispose() {
@@ -30,8 +55,8 @@ export class StreamingFlowBlock implements FlowBlock {
     private textCorrection: {x: number, y: number};
 
     // I/O groups
-    private input_groups: SVGElement[];
-    private output_groups: SVGElement[];
+    private input_groups: {[key: number]: SVGElement};
+    private output_groups: {[key: number]: SVGElement};
 
     public getBodyElement(): SVGElement {
         if (!this.group) {
@@ -104,7 +129,7 @@ export class StreamingFlowBlock implements FlowBlock {
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.textBox = document.createElementNS(SvgNS, 'text');
 
-        this.group.setAttribute('class', 'flow_node streaming_node');
+        this.group.setAttribute('class', 'flow_node atomic_node');
         this.textBox.setAttribute('class', 'node_name');
         this.textBox.textContent = this.options.message;
         this.textBox.setAttributeNS(null,'textlength', '100%');
@@ -129,7 +154,7 @@ export class StreamingFlowBlock implements FlowBlock {
         let input_x_position = input_initial_x_position + this.textCorrection.x;
         let input_index = -1;
 
-        for (const input of this.options.inputs || []) {
+        for (const input of this.options.inputs) {
             input_index++;
 
             const in_group = document.createElementNS(SvgNS, 'g');
@@ -173,7 +198,6 @@ export class StreamingFlowBlock implements FlowBlock {
                 input_x_position += input_port_size;
             }
 
-
             let type_class = 'unknown_type';
             if (input.type) {
                 type_class = input.type + '_port';
@@ -198,7 +222,6 @@ export class StreamingFlowBlock implements FlowBlock {
             in_group.appendChild(port_external);
             in_group.appendChild(port_internal);
 
-            this.input_groups.push(in_group);
             if (this.options.on_io_selected) {
                 const element_index = input_index; // Capture for use in callback
                 in_group.onclick = ((_ev: MouseEvent) => {
@@ -206,12 +229,15 @@ export class StreamingFlowBlock implements FlowBlock {
                                                 { x: port_x_center, y: port_y_center });
                 });
             }
+
+            this.input_groups[input_index] = in_group;
         }
 
         // Add outputs
         let output_x_position = output_initial_x_position + this.textCorrection.x;
         let output_index = -1;
-        for (const output of this.options.outputs || []) {
+
+        for (const output of this.options.outputs) {
             output_index++;
 
             const out_group = document.createElementNS(SvgNS, 'g');
@@ -289,7 +315,7 @@ export class StreamingFlowBlock implements FlowBlock {
                                                 { x: port_x_center, y: port_y_center });
                 });
             }
-            this.output_groups.push(out_group);
+            this.output_groups[output_index] = out_group;
         }
 
         let widest_section = min_width;

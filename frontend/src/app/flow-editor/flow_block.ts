@@ -1,4 +1,4 @@
-export type MessageType = 'integer' | 'string' | 'any';
+export type MessageType = 'integer' | 'string' | 'any' | 'pulse';
 
 export interface Position2D { x: number; y: number };
 
@@ -21,6 +21,7 @@ export type OnIOSelected = ((block: FlowBlock,
 
 export interface FlowBlockOptions {
     message: string;
+    title?: string;
     outputs?: OutputPortDefinition[];
     inputs?: InputPortDefinition[];
     on_io_selected?: OnIOSelected;

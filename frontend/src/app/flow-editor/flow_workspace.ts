@@ -1,7 +1,10 @@
 import { FlowBlock, InputPortDefinition, OutputPortDefinition } from './flow_block';
-import { StreamingFlowBlock } from './streaming_flow_block';
 import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
+
+import { StreamingFlowBlock } from './streaming_flow_block';
+import { AtomicFlowBlock } from './atomic_flow_block';
+
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -344,9 +347,78 @@ export class FlowWorkspace {
             on_io_selected: this.onIoSelected.bind(this),
         });
 
+        const on_message = new AtomicFlowBlock({
+            title: "Receive message",
+            type: "trigger",
+            message: "On new message",
+            outputs: [
+                {
+                    name: "message",
+                    type: "string",
+                },
+                {
+                    name: "chat",
+                    type: "any"
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const send_message = new AtomicFlowBlock({
+            title: "Send message",
+            type: "operation",
+            message: "Send message to chat",
+            inputs: [
+                {
+                    name: "message",
+                    type: "string",
+                },
+                {
+                    name: "chat",
+                    type: "any",
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const concat = new AtomicFlowBlock({
+            message: "Concat",
+            type: 'operation',
+            inputs: [
+                {
+                    type: "string",
+                },
+                {
+                    type: "string",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'string',
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const atomic_log = new AtomicFlowBlock({
+            message: "Log",
+            type: 'operation',
+            inputs: [
+                {
+                    type: "any",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
         this.draw(number1, {x:  30, y: 30});
         this.draw(number2, {x: 230, y: 30});
         this.draw(add, {x: 130, y: 230});
         this.draw(log, {x: 130, y: 430});
+
+        this.draw(on_message, { x: 430, y: 130 });
+        this.draw(send_message, { x: 430, y: 330 });
+        this.draw(concat, { x: 530, y: 330 });
+        this.draw(atomic_log, { x: 530, y: 530 });
     }
 }
