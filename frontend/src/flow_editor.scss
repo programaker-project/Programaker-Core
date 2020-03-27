@@ -29,6 +29,10 @@
     stroke: #dd4444;
 }
 
+#workspace > svg path.boolean_wire {
+    stroke: #4444ff;
+}
+
 #workspace > svg path.any_wire {
     stroke: #dd44dd;
 }
@@ -61,6 +65,9 @@
 
 #workspace > svg g.flow_node circle.external_port.integer_port {
     fill: #dd4444;
+}
+#workspace > svg g.flow_node circle.external_port.boolean_port {
+    fill: #4444ff;
 }
 #workspace > svg g.flow_node circle.external_port.pulse_port {
     fill: #fc0;

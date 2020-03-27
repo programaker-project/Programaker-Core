@@ -12,7 +12,6 @@ type ConnectableNode = {
     block: FlowBlock,
     type: 'in'|'out',
     index: number,
-    definition: InputPortDefinition | OutputPortDefinition,
 };
 
 export class FlowWorkspace {
@@ -303,21 +302,13 @@ export class FlowWorkspace {
         }
         else {
             if (this.establishConnection(this.current_io_selected,
-                                          { block,
-                                            type,
-                                            index,
-                                            definition,
-                                          },
-                                         )){
+                                         { block, type, index })){
                 this.disconnectIOSelected();
             }
-
         }
     }
 
-    public drawSample() {
-        console.log("Drawing sample on", this);
-
+    private draw_addition_sample() {
         const number1 = new StreamingFlowBlock({
             message: "Number",
             outputs: [{
@@ -375,7 +366,9 @@ export class FlowWorkspace {
         this.draw(number2, {x: 230, y: 30});
         this.draw(add, {x: 130, y: 230});
         this.draw(log, {x: 130, y: 430});
+    }
 
+    private draw_message_sample() {
         const on_message = new AtomicFlowBlock({
             title: "Receive message",
             type: "trigger",
@@ -410,8 +403,8 @@ export class FlowWorkspace {
             on_io_selected: this.onIoSelected.bind(this),
         });
 
-        const concat = new AtomicFlowBlock({
-            message: "Concat",
+        const join = new AtomicFlowBlock({
+            message: "Join",
             type: 'operation',
             inputs: [
                 {
@@ -440,9 +433,136 @@ export class FlowWorkspace {
             on_io_selected: this.onIoSelected.bind(this),
         });
 
-        this.draw(on_message, { x: 430, y: 50 });
-        this.draw(atomic_log, { x: 330, y: 200 });
-        this.draw(concat, { x: 530, y: 200 });
-        this.draw(send_message, { x: 530, y: 400 });
+        this.draw(on_message, { x: 300, y: 10 });
+        this.draw(atomic_log, { x: 130, y: 200 });
+        this.draw(join, { x: 280, y: 200 });
+        this.draw(send_message, { x: 330, y: 400 });
+
+        this.establishConnection({ block: on_message, index: 0, type: 'out' },
+                                 { block: join, index: 0, type: 'in' });
+
+        this.establishConnection({ block: on_message, index: 1, type: 'out' },
+                                 { block: join, index: 1, type: 'in' });
+
+        this.establishConnection({ block: on_message, index: 1, type: 'out' },
+                                 { block: join, index: 2, type: 'in' });
+
+        this.establishConnection({ block: join, index: 0, type: 'out' },
+                                 { block: send_message, index: 0, type: 'in' });
+
+        this.establishConnection({ block: join, index: 1, type: 'out' },
+                                 { block: send_message, index: 1, type: 'in' });
+
+        this.establishConnection({ block: on_message, index: 2, type: 'out' },
+                                 { block: send_message, index: 2, type: 'in' });
+    }
+
+    private draw_automatic_door_sample() {
+        const webcam = new StreamingFlowBlock({
+            message: "Webcam",
+            outputs: [
+                {
+                    name: "Video",
+                    type: "any"
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const face_detection = new AtomicFlowBlock({
+            type: "trigger",
+            message: "Face detection",
+            inputs: [
+                {
+                    name: "video",
+                    type: "any",
+                },
+            ],
+            outputs: [
+                {
+                    name: 'person id',
+                    type: 'string',
+                },
+                {
+                    name: 'is enrolled',
+                    type: 'boolean',
+                },
+                {
+                    name: 'image',
+                    type: 'any',
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const _if_enrolled = new AtomicFlowBlock({
+            message: 'if',
+            type: 'operation',
+            inputs: [
+                {
+                    type: "boolean",
+                },
+            ],
+            outputs: [
+                {
+                    name: 'true',
+                    type: 'pulse',
+                },
+                {
+                    name: 'false',
+                    type: 'pulse',
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const auto_open = new AtomicFlowBlock({
+            message: "Open door",
+            type: 'operation',
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const atomic_log = new AtomicFlowBlock({
+            message: "Log",
+            type: 'operation',
+            inputs: [
+                {
+                    type: "any",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        this.draw(webcam, { x: 220, y: 5 });
+        this.draw(face_detection, { x: 220, y: 145 });
+        this.draw(_if_enrolled, { x: 220, y: 290 });
+        this.draw(auto_open, { x: 180, y: 450 });
+        this.draw(atomic_log, { x: 300, y: 450 });
+
+        this.establishConnection({ block: webcam, index: 0, type: 'out' },
+                                 { block: face_detection, index: 0, type: 'in' });
+
+        this.establishConnection({ block: face_detection, index: 0, type: 'out' },
+                                 { block: _if_enrolled, index: 0, type: 'in' });
+
+        this.establishConnection({ block: face_detection, index: 2, type: 'out' },
+                                 { block: _if_enrolled, index: 1, type: 'in' });
+
+        this.establishConnection({ block: _if_enrolled, index: 0, type: 'out' },
+                                 { block: auto_open, index: 0, type: 'in' });
+
+        this.establishConnection({ block: _if_enrolled, index: 1, type: 'out' },
+                                 { block: atomic_log, index: 0, type: 'in' });
+
+        this.establishConnection({ block: face_detection, index: 3, type: 'out' },
+                                 { block: atomic_log, index: 1, type: 'in' });
+    }
+
+    public drawSample() {
+        console.log("Drawing sample on", this);
+
+        // this.draw_addition_sample();
+        // this.draw_message_sample();
+        this.draw_automatic_door_sample();
     }
 }

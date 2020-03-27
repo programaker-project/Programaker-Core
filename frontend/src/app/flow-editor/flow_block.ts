@@ -1,4 +1,4 @@
-export type MessageType = 'integer' | 'string' | 'any' | 'pulse';
+export type MessageType = 'integer' | 'boolean' | 'string' | 'any' | 'pulse';
 
 export interface Position2D { x: number; y: number };
 

@@ -40,7 +40,17 @@ export class AtomicFlowBlock implements FlowBlock {
             this.options.outputs = [];
         }
 
-        this.options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(this.options.outputs);
+        let has_pulse_output = false;
+        for (const output of this.options.outputs) {
+            if (output.type === 'pulse') {
+                has_pulse_output = true;
+                break;
+            }
+        }
+
+        if (!has_pulse_output) {
+            this.options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(this.options.outputs);
+        }
     }
 
     public dispose() {
