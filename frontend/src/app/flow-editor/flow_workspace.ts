@@ -33,6 +33,7 @@ export class FlowWorkspace {
     private canvas: SVGElement;
     private blocks: {[key: string]: {
         block: FlowBlock,
+        connections: string[],
     }};
     private connections: {[key: string]: {
         connection: FlowConnection,
@@ -62,12 +63,17 @@ export class FlowWorkspace {
         block.getBodyElement().onmousedown = ((ev: MouseEvent) => {
             if (this.current_io_selected) { return; }
 
+            const block_id = this.getBlockId(block);
             let last = {x: ev.x, y: ev.y};
             this.canvas.onmousemove = ((ev: MouseEvent) => {
                 const distance = { x: ev.x - last.x, y: ev.y - last.y };
                 last = {x: ev.x, y: ev.y};
 
                 block.moveBy(distance);
+
+                for (const conn of this.blocks[block_id].connections) {
+                    this.updateConnection(conn);
+                }
             });
             this.canvas.onmouseup = ((_ev: MouseEvent) => {
                 this.canvas.onmousemove = null;
@@ -75,7 +81,7 @@ export class FlowWorkspace {
             });
         });
         const id = uuidv4();
-        this.blocks[id] = { block: block };
+        this.blocks[id] = { block: block, connections: [] };
     }
 
     public removeBlock(blockId: string) {
@@ -159,6 +165,9 @@ export class FlowWorkspace {
         const path = document.createElementNS(SvgNS, 'path');
         path.setAttributeNS(null, 'class', 'established connection ' + type_class);
         this.connection_group.appendChild(path);
+
+        source.connections.push(conn.id);
+        this.blocks[conn.getSink().block_id].connections.push(conn.id);
 
         return path;
     }

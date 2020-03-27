@@ -13,6 +13,10 @@
     stroke-width: 5px;
 }
 
+#workspace > svg path.established {
+    stroke-width: 2px;
+}
+
 #workspace > svg path.string_wire {
     stroke: #44dd44;
 }
