@@ -233,7 +233,7 @@ export class FlowWorkspace {
             // Another option: if a sink block was passed and the `from` point
             //  Y position is within the top and bottom of the sink, also use bezier.
             const area = sink_block.getBodyArea();
-            bezier_curve = (from.y > area.y) && (from.y < (area.y + area.height));
+            bezier_curve = (from.y < (area.y + area.height / 2));
         }
 
         if (bezier_curve) { // Just draw a bezier curve
@@ -367,7 +367,7 @@ export class FlowWorkspace {
 
     updateConnection(connection_id: string) {
         const conn = this.connections[connection_id];
-        const runway = 15;
+        const runway = 20;
 
         // Source
         const source = conn.connection.getSource();
@@ -453,7 +453,7 @@ export class FlowWorkspace {
             this.current_selecting_connector.setAttributeNS(null, 'class', 'building connection ' + type_class);
             this.canvas.appendChild(this.current_selecting_connector);
 
-            let runway = 15;
+            let runway = 20;
             if (type == 'in') {
                 runway = -runway;
             }
