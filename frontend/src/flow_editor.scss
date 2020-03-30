@@ -3,6 +3,10 @@
     height: 100%;
 }
 
+#workspace > svg.dragging {
+    cursor: grabbing;
+}
+
 #workspace > svg g.flow_node > a {
     pointer-events: all;
     cursor: grab;

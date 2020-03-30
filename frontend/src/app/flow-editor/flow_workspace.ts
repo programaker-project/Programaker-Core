@@ -37,9 +37,15 @@ export class FlowWorkspace {
         return workspace;
     }
 
+    public onResize() {
+        this.update_top_left();
+    }
+
     private baseElement: HTMLElement;
     private canvas: SVGElement;
     private connection_group: SVGElement;
+    private top_left = { x: 0, y: 0 };
+    private inv_zoom_level = 1;
 
     private blocks: {[key: string]: {
         block: FlowBlock,
@@ -63,6 +69,7 @@ export class FlowWorkspace {
         this.baseElement.appendChild(this.canvas);
 
         this.init_definitions();
+        this.set_events();
     }
 
     private init_definitions() {
@@ -77,6 +84,90 @@ export class FlowWorkspace {
         this.connection_group.appendChild(definitions);
     }
 
+    private set_events() {
+        this.canvas.onmousedown = ((ev: MouseEvent) => {
+            if (ev.target !== this.canvas) {
+                return;
+            }
+
+            let last = { x: ev.x, y: ev.y };
+
+            this.canvas.classList.add('dragging');
+
+            this.canvas.onmousemove = ((ev: MouseEvent) => {
+                this.top_left.x -= (ev.x - last.x) * this.inv_zoom_level;
+                this.top_left.y -= (ev.y - last.y) * this.inv_zoom_level;
+                last = { x: ev.x, y: ev.y };
+
+                this.update_top_left();
+            });
+
+            this.canvas.onmouseup = (() => {
+                this.canvas.classList.remove('dragging');
+                this.canvas.onmousemove = null;
+                this.canvas.onmouseup = null;
+            });
+        });
+
+        this.canvas.onwheel = ((ev) => {
+            if(!ev.deltaY){
+                return; // ???
+            }
+
+            ev.preventDefault();
+            if (ev.deltaY < 0) { // Scroll "up"
+                this.zoom_in();
+            }
+            else {
+                this.zoom_out();
+            }
+            this.update_top_left();
+        });
+    }
+
+    private update_top_left() {
+        const width = this.baseElement.clientWidth;
+        const height = this.baseElement.clientHeight;
+
+        this.canvas.setAttributeNS(null, 'viewBox',
+                                   `${this.top_left.x} ${this.top_left.y} ${width * this.inv_zoom_level} ${height * this.inv_zoom_level}`);
+    }
+
+    // Max zoom: 0.5
+    // Min zoom: 1/10
+    // It's easier to manage zoom level with inverses.
+    private zoom_in() {
+        if (this.inv_zoom_level <= 0.5) {
+            this.inv_zoom_level = 0.5;
+            return ;
+        }
+        else if (this.inv_zoom_level > 10) {
+            this.inv_zoom_level = 10;
+        }
+        else if (this.inv_zoom_level <= 1) {
+            this.inv_zoom_level -= 0.5;
+        }
+        else {
+            this.inv_zoom_level -= 1;
+        }
+    }
+
+    private zoom_out() {
+        if (this.inv_zoom_level >= 10) {
+            this.inv_zoom_level = 10;
+            return;
+        }
+        else if (this.inv_zoom_level < 0.5) {
+            this.inv_zoom_level = 0.5;
+        }
+        else if (this.inv_zoom_level < 1) {
+            this.inv_zoom_level += 0.5;
+        }
+        else {
+            this.inv_zoom_level += 1;
+        }
+    }
+
     public dispose() {
         this.baseElement.removeChild(this.canvas);
     }
@@ -89,7 +180,10 @@ export class FlowWorkspace {
             const block_id = this.getBlockId(block);
             let last = {x: ev.x, y: ev.y};
             this.canvas.onmousemove = ((ev: MouseEvent) => {
-                const distance = { x: ev.x - last.x, y: ev.y - last.y };
+                const distance = {
+                    x: (ev.x - last.x) * this.inv_zoom_level,
+                    y: (ev.y - last.y) * this.inv_zoom_level,
+                };
                 last = {x: ev.x, y: ev.y};
 
                 block.moveBy(distance);
@@ -335,7 +429,7 @@ export class FlowWorkspace {
         this.current_io_selected = null;
 
         this.canvas.onmousemove = null;
-        this.canvas.onmousedown = null;
+        this.canvas.onclick = null;
     }
 
     private onIoSelected(block: FlowBlock,
@@ -383,7 +477,7 @@ export class FlowWorkspace {
                 }
             });
 
-            this.canvas.onmousedown = ((ev: any) => {
+            this.canvas.onclick = ((ev: any) => {
                 if (ev.target === this.canvas) {
                     this.disconnectIOSelected();
                 }

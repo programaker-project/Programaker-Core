@@ -80,7 +80,7 @@ export class AtomicFlowBlock implements FlowBlock {
     }
 
     getBodyArea(): Area2D {
-        const rect = this.group.getClientRects()[0];
+        const rect = (this.group as any).getBBox();
         return {
             x: this.position.x,
             y: this.position.y,

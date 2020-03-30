@@ -229,6 +229,7 @@ export class FlowEditorComponent implements OnInit {
         window.onresize = (() => {
             this.calculate_size(workspaceElement);
             this.calculate_program_header_size(programHeaderElement);
+            this.workspace.onResize();
         });
         this.calculate_size(workspaceElement);
         this.calculate_program_header_size(programHeaderElement);
