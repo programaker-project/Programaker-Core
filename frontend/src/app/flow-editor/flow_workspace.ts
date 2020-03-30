@@ -53,6 +53,7 @@ export class FlowWorkspace {
     private connection_group: SVGElement;
     private top_left = { x: 0, y: 0 };
     private inv_zoom_level = 1;
+    private input_helper_section: SVGElement;
 
     private blocks: {[key: string]: {
         block: FlowBlock,
@@ -72,7 +73,10 @@ export class FlowWorkspace {
 
     private init() {
         this.canvas = document.createElementNS(SvgNS, "svg");
+        this.input_helper_section = document.createElementNS(SvgNS, "g");
         this.connection_group = document.createElementNS(SvgNS, "g");
+
+        this.canvas.appendChild(this.input_helper_section);
         this.canvas.appendChild(this.connection_group);
         this.baseElement.appendChild(this.canvas);
 
@@ -220,6 +224,7 @@ export class FlowWorkspace {
             index++;
 
             const inputGroup = document.createElementNS(SvgNS, 'g');
+            const input_position = this.getBlockRel(block, block.getPositionOfInput(index));
 
             let type_class = 'unknown_type';
             if (input.type) {
@@ -232,6 +237,7 @@ export class FlowWorkspace {
             const outerCircle = document.createElementNS(SvgNS, 'circle');
             const verticalBar = document.createElementNS(SvgNS, 'rect');
             const horizontalBar = document.createElementNS(SvgNS, 'rect');
+            const connectionLine = document.createElementNS(SvgNS, 'path');
 
             outerCircle.setAttributeNS(null, 'class', 'outer_circle');
             outerCircle.setAttributeNS(null, 'cx', HELPER_BASE_SIZE / 2 + '');
@@ -250,17 +256,28 @@ export class FlowWorkspace {
             horizontalBar.setAttributeNS(null, 'width', HELPER_BASE_SIZE / 2 + '' );
             horizontalBar.setAttributeNS(null, 'height', HELPER_BASE_SIZE / 5 + '' );
 
+            connectionLine.setAttributeNS(null, 'class', 'connection_line');
+            connectionLine.setAttributeNS(null, 'd',
+                                          `M${HELPER_BASE_SIZE / 2},${HELPER_BASE_SIZE / 2}`
+                                          + ` L${HELPER_BASE_SIZE/2},${HELPER_BASE_SIZE / 2 + HELPER_SEPARATION}`
+                                         );
+
+            inputGroup.appendChild(connectionLine);
             inputGroup.appendChild(outerCircle);
             inputGroup.appendChild(horizontalBar);
             inputGroup.appendChild(verticalBar);
 
-            const pos = this.getBlockRel(block, block.getPositionOfInput(index));
             inputGroup.setAttributeNS(null, 'transform',
-                                      `translate(${pos.x - HELPER_BASE_SIZE / 2},`
-                                      + ` ${pos.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+                                      `translate(${input_position.x - HELPER_BASE_SIZE / 2},`
+                                      + ` ${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+
+            const elementIndex = index; // Capture current index
+            inputGroup.onclick = () => {
+                console.log("TODO: Start helper on input", elementIndex, "of block", block);
+            };
         }
 
-        this.canvas.appendChild(inputHelperGroup);
+        this.input_helper_section.appendChild(inputHelperGroup);
         return inputHelperGroup;
     }
 
@@ -272,9 +289,9 @@ export class FlowWorkspace {
         for (const input of Array.from(block.input_group.children)) {
             index++;
 
-            const pos = this.getBlockRel(block.block, block.block.getPositionOfInput(index));
-            input.setAttributeNS(null, 'transform', `translate(${pos.x - HELPER_BASE_SIZE / 2},`
-                                 + `${pos.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+            const input_position = this.getBlockRel(block.block, block.block.getPositionOfInput(index));
+            input.setAttributeNS(null, 'transform', `translate(${input_position.x - HELPER_BASE_SIZE / 2},`
+                                 + `${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
         }
     }
 

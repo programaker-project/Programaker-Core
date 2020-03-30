@@ -115,15 +115,27 @@
 }
 
 // Input helpers
+#workspace > svg g.input_helper {
+    cursor: pointer;
+}
+
 #workspace > svg g.input_helper.hidden {
     display: none;
 }
+
 #workspace > svg g.input_helper .outer_circle {
-    fill: transparent;
+    fill: #fafafa; // Same as background
     stroke: #444;
     stroke-width: 3px;
 }
 
 #workspace > svg g.input_helper rect {
     fill: #444;
+}
+
+
+#workspace > svg g.input_helper path.connection_line {
+    stroke: #444;
+    stroke-width: 2px;
+    stroke-dasharray: 2px,2px;
 }
