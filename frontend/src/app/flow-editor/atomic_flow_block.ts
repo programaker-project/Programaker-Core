@@ -1,5 +1,5 @@
 import { FlowBlock, FlowBlockOptions,
-         Position2D,
+         Area2D, Position2D,
          InputPortDefinition, OutputPortDefinition,
        } from './flow_block';
 
@@ -77,6 +77,16 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         return this.node;
+    }
+
+    getBodyArea(): Area2D {
+        const rect = this.group.getClientRects()[0];
+        return {
+            x: this.position.x,
+            y: this.position.y,
+            width: rect.width,
+            height: rect.height,
+        }
     }
 
     public getOffset(): {x: number, y: number} {

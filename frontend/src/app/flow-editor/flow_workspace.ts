@@ -1,4 +1,8 @@
-import { FlowBlock, InputPortDefinition, OutputPortDefinition } from './flow_block';
+import {
+    FlowBlock,
+    InputPortDefinition, OutputPortDefinition,
+    Area2D, Position2D
+} from './flow_block';
 import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
 
@@ -7,6 +11,9 @@ import { AtomicFlowBlock } from './atomic_flow_block';
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
+
+const CUT_POINT_SEARCH_INCREASES = 10;
+const CUT_POINT_SEARCH_SPACING = CUT_POINT_SEARCH_INCREASES;
 
 type ConnectableNode = {
     block: FlowBlock,
@@ -120,19 +127,92 @@ export class FlowWorkspace {
     };
     private current_selecting_connector: SVGElement;
 
-    private drawPath(path: SVGElement, from: {x: number, y: number}, to: {x: number, y: number}, runway: number) {
-        const curve = [
-            "M", from.x, ",", from.y,
-            " C", from.x, ",", from.y + runway,
-            " ", to.x, ",", to.y - runway,
-            " ", to.x, ",", to.y,
-        ].join("");
+    private drawPath(path: SVGElement,
+                     from: {x: number, y: number},
+                     to: {x: number, y: number},
+                     runway: number,
+                     sink_block?: FlowBlock) {
+        let curve: string;
+
+        let bezier_curve = (from.y < to.y);
+        if (!bezier_curve && sink_block) {
+            // Another option: if a sink block was passed and the `from` point
+            //  Y position is within the top and bottom of the sink, also use bezier.
+            const area = sink_block.getBodyArea();
+            bezier_curve = (from.y > area.y) && (from.y < (area.y + area.height));
+        }
+
+        if (bezier_curve) { // Just draw a bezier curve
+            const bezier_runway = runway * 3; // Compensate smoothing of the runway
+            curve = [
+                "M", from.x, ",", from.y,
+                " C", from.x, ",", from.y + bezier_runway,
+                " ", to.x, ",", to.y - bezier_runway,
+                " ", to.x, ",", to.y,
+            ].join("");
+        }
+        else { // Draw a linear circuit
+
+            // We just try to find the X point (where the line goes "up").
+            // We don't try to find the Y point and instead just use fixed "runways".
+            // This makes finding the route simpler and is good enough for now.
+            const x_cut_point = this.find_x_cut_point({x: from.x, y: from.y + runway},
+                                                      {x: to.x, y: to.y - runway});
+
+            curve = [
+                "M", from.x, ",", from.y,
+                " L", from.x, ",", from.y + runway,
+                " L", x_cut_point, ",", from.y + runway,
+                " L", x_cut_point, ",", to.y - runway,
+                " L", to.x, ",", to.y - runway,
+                " L", to.x, ",", to.y,
+            ].join("");
+        }
 
         path.setAttributeNS(null, "d", curve);
         path.setAttributeNS(null, 'fill', 'none');
         path.setAttributeNS(null, 'stroke', 'black');
         path.setAttributeNS(null, 'stroke-width', '1');
+    }
 
+    private find_x_cut_point(from: Position2D, to: Position2D): number {
+        const occupied_sections: { left: number, right: number }[] = [];
+
+        let top = from, bottom = to;
+        if (from.y > to.y) {
+            top = to;
+            bottom = from;
+        }
+
+        for (const block_id of Object.keys(this.blocks)) {
+            const body = this.blocks[block_id].block.getBodyArea();
+            if (((body.y + body.height) > top.y) && ((body.y < bottom.y))) {
+                occupied_sections.push( { left: body.x, right: body.x + body.width } );
+            }
+        }
+
+        let cut_point = Math.min(from.x, to.x) + CUT_POINT_SEARCH_INCREASES;
+
+        while (true) {
+            let increase = CUT_POINT_SEARCH_INCREASES;
+
+            // Valid cut point?
+            let safe_point = true;
+            for (const section of occupied_sections) {
+                // X-axis position (with any Y-value) falls inside the block?
+                if ((cut_point > section.left) && (cut_point < section.right)) {
+                    increase = section.right - cut_point + CUT_POINT_SEARCH_SPACING;
+                    safe_point = false;
+                    break;
+                }
+            }
+
+            if (safe_point) {
+                return cut_point;
+            }
+
+            cut_point += increase;
+        }
     }
 
     private isPositionDistoredByFilter(ev: MouseEvent): boolean {
@@ -193,7 +273,7 @@ export class FlowWorkspace {
 
     updateConnection(connection_id: string) {
         const conn = this.connections[connection_id];
-        const runway = 50;
+        const runway = 15;
 
         // Source
         const source = conn.connection.getSource();
@@ -212,7 +292,7 @@ export class FlowWorkspace {
         sink_position.y -= y_sink_offset;
 
         // Draw
-        this.drawPath(conn.element, source_position, sink_position, runway);
+        this.drawPath(conn.element, source_position, sink_position, runway, sink_block);
     }
 
     getBlockId(block: FlowBlock): string {
@@ -279,7 +359,7 @@ export class FlowWorkspace {
             this.current_selecting_connector.setAttributeNS(null, 'class', 'building connection ' + type_class);
             this.canvas.appendChild(this.current_selecting_connector);
 
-            let runway = 50;
+            let runway = 15;
             if (type == 'in') {
                 runway = -runway;
             }
@@ -289,9 +369,18 @@ export class FlowWorkspace {
                     return;
                 }
 
-                this.drawPath(this.current_selecting_connector, real_center,
-                              {x: ev.layerX, y: ev.layerY},
-                              runway);
+                if (type == 'out') {
+                    this.drawPath(this.current_selecting_connector,
+                                  real_center,
+                                  {x: ev.layerX, y: ev.layerY},
+                                  runway);
+                }
+                else {
+                    this.drawPath(this.current_selecting_connector,
+                                  {x: ev.layerX, y: ev.layerY},
+                                  real_center,
+                                  runway, block);
+                }
             });
 
             this.canvas.onmousedown = ((ev: any) => {
@@ -820,7 +909,6 @@ export class FlowWorkspace {
                                  { block: and, index: 1, type: 'in' });
 
         // First message
-        // TODO: Non-bezier curve
         this.establishConnection({ block: and, index: 0, type: 'out' },
                                  { block: when_true, index: 0, type: 'in' });
 
@@ -840,7 +928,6 @@ export class FlowWorkspace {
                                  { block: set_response, index: 1, type: 'in' });
 
         // Second message
-        // TODO: Non-bezier curve
         this.establishConnection({ block: set_response, index: 0, type: 'out' },
                                  { block: send_message2, index: 0, type: 'in' });
 

@@ -1,4 +1,7 @@
-import { FlowBlock, FlowBlockOptions, Position2D } from './flow_block';
+import {
+    FlowBlock, FlowBlockOptions,
+    Area2D, Position2D
+} from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -42,6 +45,16 @@ export class StreamingFlowBlock implements FlowBlock {
         }
 
         return this.node;
+    }
+
+    getBodyArea(): Area2D {
+        const rect = this.group.getClientRects()[0];
+        return {
+            x: this.position.x,
+            y: this.position.y,
+            width: rect.width,
+            height: rect.height,
+        }
     }
 
     public getOffset(): {x: number, y: number} {

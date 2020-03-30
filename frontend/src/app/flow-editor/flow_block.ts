@@ -1,6 +1,7 @@
 export type MessageType = 'integer' | 'boolean' | 'string' | 'any' | 'pulse';
 
 export interface Position2D { x: number; y: number };
+export interface Area2D { x: number, y: number, width: number, height: number  };
 
 export interface OutputPortDefinition {
     type?: MessageType;
@@ -32,6 +33,7 @@ export interface FlowBlock {
     render(canvas: SVGElement, position?: Position2D): SVGElement;
 
     getBodyElement(): SVGElement;
+    getBodyArea(): Area2D;
 
     getOffset(): Position2D;
     moveBy(distance: Position2D): void;
