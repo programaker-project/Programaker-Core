@@ -257,8 +257,10 @@ export class ProgramDetailComponent implements OnInit {
         const programHeaderElement = document.getElementById('program-header');
 
         this.hide_workspace(workspaceElement);
-        window.onresize = () => this.calculate_size(workspaceElement);
-        window.onresize = () => this.calculate_program_header_size(programHeaderElement);
+        window.onresize = (() => {
+            this.calculate_size(workspaceElement);
+            this.calculate_program_header_size(programHeaderElement);
+        });
         this.calculate_size(workspaceElement);
         this.calculate_program_header_size(programHeaderElement);
         const rtl = false;
