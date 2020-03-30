@@ -558,11 +558,311 @@ export class FlowWorkspace {
                                  { block: atomic_log, index: 1, type: 'in' });
     }
 
+    private draw_standup_bot_sample() {
+        // Time parsing
+        const time = new StreamingFlowBlock({
+            message: "Time",
+            outputs: [
+                {
+                    name: "week day",
+                    type: "string"
+                },
+                {
+                    name: "hour",
+                    type: "integer"
+                },
+                {
+                    name: "minute",
+                    type: "integer"
+                },
+                {
+                    name: "second",
+                    type: "integer"
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const comp_hour = new StreamingFlowBlock({
+            message: "If equals",
+            inputs: [
+                {
+                    type: "any"
+                },
+                { // TODO: Accept text field
+                    type: "any"
+                },
+            ],
+            outputs: [
+                {
+                    type: "boolean",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        })
+
+        const comp_min_sec = new StreamingFlowBlock({
+            message: "If equals",
+            // TODO: Make variadic
+            inputs: [
+                {
+                    type: "any"
+                },
+                {
+                    type: "any"
+                },
+                { // TODO: Accept text field
+                    type: "any"
+                },
+            ],
+            outputs: [
+                {
+                    type: "boolean",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        })
+
+        const and = new StreamingFlowBlock({
+            message: "If all true",
+            inputs: [
+                {
+                    type: "boolean"
+                },
+                {
+                    type: "boolean"
+                },
+            ],
+            outputs: [
+                {
+                    type: "boolean",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        })
+
+        // Start point
+        const when_true = new AtomicFlowBlock({
+            message: 'when true',
+            type: 'trigger',
+            inputs: [
+                {
+                    type: "boolean",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'pulse',
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const send_message = new AtomicFlowBlock({
+            title: "Send message",
+            type: "operation",
+            message: "Send message to chat",
+            inputs: [
+                { // TODO: Text field
+                    name: "message",
+                    type: "string",
+                },
+                { // TODO: Dropdown field
+                    name: "chat",
+                    type: "any",
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const on_message = new AtomicFlowBlock({
+            title: "Receive message",
+            type: "trigger",
+            message: "On new message",
+            outputs: [
+                {
+                    name: "message",
+                    type: "string",
+                },
+                {
+                    name: "chat",
+                    type: "any"
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const wait_next_value = new AtomicFlowBlock({
+            type: "operation",
+            message: "Wait next value",
+            inputs: [
+                {
+                    type: "any",
+                },
+            ],
+            outputs: [
+                { // TODO: Dependant on input type
+                    type: "any",
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const set_response = new AtomicFlowBlock({
+            type: "operation",
+            message: "Set variable (var)", // TODO: Variable name dropdown
+            inputs: [
+                {
+                    name: 'value',
+                    type: "any",
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        // Second response
+        const send_message2 = new AtomicFlowBlock({
+            title: "Send message",
+            type: "operation",
+            message: "Send message to chat",
+            inputs: [
+                { // TODO: Text field
+                    name: "message",
+                    type: "string",
+                },
+                { // TODO: Dropdown field
+                    name: "chat",
+                    type: "any",
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const on_message2 = new AtomicFlowBlock({
+            title: "Receive message",
+            type: "trigger",
+            message: "On new message",
+            outputs: [
+                {
+                    name: "message",
+                    type: "string",
+                },
+                {
+                    name: "chat",
+                    type: "any"
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const wait_next_value2 = new AtomicFlowBlock({
+            type: "operation",
+            message: "Wait next value",
+            inputs: [
+                {
+                    type: "any",
+                },
+            ],
+            outputs: [
+                { // TODO: Dependant on input type
+                    type: "any",
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const set_response2 = new AtomicFlowBlock({
+            type: "operation",
+            message: "Set variable (var)", // TODO: Variable name dropdown
+            inputs: [
+                {
+                    name: 'value',
+                    type: "any",
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+
+        // Draws
+        this.draw(time, { x: 50, y: 5 });
+
+        this.draw(comp_hour, { x: 50, y: 200 });
+        this.draw(comp_min_sec, { x: 170, y: 200 });
+        this.draw(and, { x: 100, y: 400 });
+
+        this.draw(when_true, { x: 450, y: 50 });
+        this.draw(send_message, { x: 450, y: 200 });
+        this.draw(on_message, { x: 680, y: 200 });
+        this.draw(wait_next_value, { x: 600, y: 360 });
+        this.draw(set_response, { x: 600, y: 540 });
+
+        this.draw(send_message2, { x: 1000, y: 200 });
+        this.draw(on_message2, { x: 1280, y: 200 });
+        this.draw(wait_next_value2, { x: 1200, y: 360 });
+        this.draw(set_response2, { x: 1200, y: 540 });
+
+        // Time
+        this.establishConnection({ block: time, index: 1, type: 'out' },
+                                 { block: comp_hour, index: 0, type: 'in' });
+
+        this.establishConnection({ block: time, index: 2, type: 'out' },
+                                 { block: comp_min_sec, index: 0, type: 'in' });
+
+        this.establishConnection({ block: time, index: 3, type: 'out' },
+                                 { block: comp_min_sec, index: 1, type: 'in' });
+
+
+        this.establishConnection({ block: comp_hour, index: 0, type: 'out' },
+                                 { block: and, index: 0, type: 'in' });
+
+        this.establishConnection({ block: comp_min_sec, index: 0, type: 'out' },
+                                 { block: and, index: 1, type: 'in' });
+
+        // First message
+        // TODO: Non-bezier curve
+        this.establishConnection({ block: and, index: 0, type: 'out' },
+                                 { block: when_true, index: 0, type: 'in' });
+
+        this.establishConnection({ block: when_true, index: 0, type: 'out' },
+                                 { block: send_message, index: 0, type: 'in' });
+
+        this.establishConnection({ block: send_message, index: 0, type: 'out' },
+                                 { block: wait_next_value, index: 0, type: 'in' });
+
+        this.establishConnection({ block: on_message, index: 1, type: 'out' },
+                                 { block: wait_next_value, index: 1, type: 'in' });
+
+        this.establishConnection({ block: wait_next_value, index: 0, type: 'out' },
+                                 { block: set_response, index: 0, type: 'in' });
+
+        this.establishConnection({ block: wait_next_value, index: 1, type: 'out' },
+                                 { block: set_response, index: 1, type: 'in' });
+
+        // Second message
+        // TODO: Non-bezier curve
+        this.establishConnection({ block: set_response, index: 0, type: 'out' },
+                                 { block: send_message2, index: 0, type: 'in' });
+
+        this.establishConnection({ block: send_message2, index: 0, type: 'out' },
+                                 { block: wait_next_value2, index: 0, type: 'in' });
+
+        this.establishConnection({ block: on_message2, index: 1, type: 'out' },
+                                 { block: wait_next_value2, index: 1, type: 'in' });
+
+        this.establishConnection({ block: wait_next_value2, index: 0, type: 'out' },
+                                 { block: set_response2, index: 0, type: 'in' });
+
+        this.establishConnection({ block: wait_next_value2, index: 1, type: 'out' },
+                                 { block: set_response2, index: 1, type: 'in' });
+    }
+
     public drawSample() {
         console.log("Drawing sample on", this);
 
         // this.draw_addition_sample();
         // this.draw_message_sample();
-        this.draw_automatic_door_sample();
+        // this.draw_automatic_door_sample();
+        this.draw_standup_bot_sample();
     }
 }
