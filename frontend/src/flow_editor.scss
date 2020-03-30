@@ -113,3 +113,17 @@
     user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome, Opera and Firefox */
 }
+
+// Input helpers
+#workspace > svg g.input_helper.hidden {
+    display: none;
+}
+#workspace > svg g.input_helper .outer_circle {
+    fill: transparent;
+    stroke: #444;
+    stroke-width: 3px;
+}
+
+#workspace > svg g.input_helper rect {
+    fill: #444;
+}

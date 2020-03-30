@@ -12,8 +12,15 @@ import { AtomicFlowBlock } from './atomic_flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
+const INV_MAX_ZOOM_LEVEL = 5;
+
 const CUT_POINT_SEARCH_INCREASES = 10;
 const CUT_POINT_SEARCH_SPACING = CUT_POINT_SEARCH_INCREASES;
+
+// Draw helper
+const HELPER_BASE_SIZE = 25;
+const HELPER_SEPARATION = HELPER_BASE_SIZE * 1.5;
+
 
 type ConnectableNode = {
     block: FlowBlock,
@@ -50,6 +57,7 @@ export class FlowWorkspace {
     private blocks: {[key: string]: {
         block: FlowBlock,
         connections: string[],
+        input_group: SVGElement,
     }};
     private connections: {[key: string]: {
         connection: FlowConnection,
@@ -141,8 +149,8 @@ export class FlowWorkspace {
             this.inv_zoom_level = 0.5;
             return ;
         }
-        else if (this.inv_zoom_level > 10) {
-            this.inv_zoom_level = 10;
+        else if (this.inv_zoom_level > INV_MAX_ZOOM_LEVEL) {
+            this.inv_zoom_level = INV_MAX_ZOOM_LEVEL;
         }
         else if (this.inv_zoom_level <= 1) {
             this.inv_zoom_level -= 0.5;
@@ -153,8 +161,8 @@ export class FlowWorkspace {
     }
 
     private zoom_out() {
-        if (this.inv_zoom_level >= 10) {
-            this.inv_zoom_level = 10;
+        if (this.inv_zoom_level >= INV_MAX_ZOOM_LEVEL) {
+            this.inv_zoom_level = INV_MAX_ZOOM_LEVEL;
             return;
         }
         else if (this.inv_zoom_level < 0.5) {
@@ -191,6 +199,7 @@ export class FlowWorkspace {
                 for (const conn of this.blocks[block_id].connections) {
                     this.updateConnection(conn);
                 }
+                this.updateBlockInputHelpersPosition(block_id);
             });
             this.canvas.onmouseup = ((_ev: MouseEvent) => {
                 this.canvas.onmousemove = null;
@@ -198,7 +207,99 @@ export class FlowWorkspace {
             });
         });
         const id = uuidv4();
-        this.blocks[id] = { block: block, connections: [] };
+        const input_group = this.drawBlockInputHelpers(block);
+
+        this.blocks[id] = { block: block, connections: [], input_group: input_group };
+    }
+
+    private drawBlockInputHelpers(block: FlowBlock) {
+        const inputHelperGroup = document.createElementNS(SvgNS, 'g');
+
+        let index = -1;
+        for (const input of block.getInputs()) {
+            index++;
+
+            const inputGroup = document.createElementNS(SvgNS, 'g');
+
+            let type_class = 'unknown_type';
+            if (input.type) {
+                type_class = input.type + '_port';
+            }
+
+            inputGroup.setAttributeNS(null, 'class', 'input_helper ' + type_class);
+            inputHelperGroup.appendChild(inputGroup);
+
+            const outerCircle = document.createElementNS(SvgNS, 'circle');
+            const verticalBar = document.createElementNS(SvgNS, 'rect');
+            const horizontalBar = document.createElementNS(SvgNS, 'rect');
+
+            outerCircle.setAttributeNS(null, 'class', 'outer_circle');
+            outerCircle.setAttributeNS(null, 'cx', HELPER_BASE_SIZE / 2 + '');
+            outerCircle.setAttributeNS(null, 'cy', HELPER_BASE_SIZE / 2 + '');
+            outerCircle.setAttributeNS(null, 'r', HELPER_BASE_SIZE / 2 + '');
+
+            verticalBar.setAttributeNS(null, 'class', 'vertical_bar');
+            verticalBar.setAttributeNS(null, 'x', (HELPER_BASE_SIZE / 5) * 2 + '' );
+            verticalBar.setAttributeNS(null, 'y', HELPER_BASE_SIZE / 4 + '' );
+            verticalBar.setAttributeNS(null, 'width', HELPER_BASE_SIZE / 5 + '' );
+            verticalBar.setAttributeNS(null, 'height', HELPER_BASE_SIZE / 2 + '' );
+
+            horizontalBar.setAttributeNS(null, 'class', 'horizontal_bar');
+            horizontalBar.setAttributeNS(null, 'x', HELPER_BASE_SIZE / 4 + '' );
+            horizontalBar.setAttributeNS(null, 'y', (HELPER_BASE_SIZE / 5) * 2 + '' );
+            horizontalBar.setAttributeNS(null, 'width', HELPER_BASE_SIZE / 2 + '' );
+            horizontalBar.setAttributeNS(null, 'height', HELPER_BASE_SIZE / 5 + '' );
+
+            inputGroup.appendChild(outerCircle);
+            inputGroup.appendChild(horizontalBar);
+            inputGroup.appendChild(verticalBar);
+
+            const pos = this.getBlockRel(block, block.getPositionOfInput(index));
+            inputGroup.setAttributeNS(null, 'transform',
+                                      `translate(${pos.x - HELPER_BASE_SIZE / 2},`
+                                      + ` ${pos.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+        }
+
+        this.canvas.appendChild(inputHelperGroup);
+        return inputHelperGroup;
+    }
+
+    private updateBlockInputHelpersPosition(block_id: string) {
+        const block = this.blocks[block_id];
+
+        // Deactivate helpers for all inputs in use
+        let index = -1;
+        for (const input of Array.from(block.input_group.children)) {
+            index++;
+
+            const pos = this.getBlockRel(block.block, block.block.getPositionOfInput(index));
+            input.setAttributeNS(null, 'transform', `translate(${pos.x - HELPER_BASE_SIZE / 2},`
+                                 + `${pos.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+        }
+    }
+
+    private updateBlockInputHelpersVisibility(block_id: string) {
+        const block = this.blocks[block_id];
+
+        const inputs_in_use = {};
+        for (const conn_id of block.connections) {
+            const conn = this.connections[conn_id];
+
+            inputs_in_use[conn.connection.getSink().input_index] = true;
+        }
+
+        // Deactivate helpers for all inputs in use
+        let index = -1;
+        for (const input of Array.from(block.input_group.children)) {
+            index++;
+
+            if (inputs_in_use[index]) {
+                input.classList.add('hidden');
+            }
+            else {
+                input.classList.remove('hidden');
+            }
+        }
     }
 
     public removeBlock(blockId: string) {
@@ -336,7 +437,6 @@ export class FlowWorkspace {
         if (!element) {
             return false;
         }
-        this.connections[conn.id] = { connection: conn, element: element };
 
         this.updateConnection(conn.getId());
 
@@ -361,6 +461,9 @@ export class FlowWorkspace {
 
         source.connections.push(conn.id);
         this.blocks[conn.getSink().block_id].connections.push(conn.id);
+
+        this.connections[conn.id] = { connection: conn, element: path };
+        this.updateBlockInputHelpersVisibility(conn.getSink().block_id);
 
         return path;
     }

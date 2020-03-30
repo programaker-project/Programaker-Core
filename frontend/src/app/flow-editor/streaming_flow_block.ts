@@ -1,5 +1,6 @@
 import {
     FlowBlock, FlowBlockOptions,
+    InputPortDefinition,
     Area2D, Position2D
 } from './flow_block';
 
@@ -69,6 +70,12 @@ export class StreamingFlowBlock implements FlowBlock {
         this.position.x += distance.x;
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+    }
+
+    public getInputs(): InputPortDefinition[] {
+        if (!this.options.inputs) { return []; }
+
+        return JSON.parse(JSON.stringify(this.options.inputs));
     }
 
     public getPositionOfInput(index: number, edge?: boolean): Position2D {

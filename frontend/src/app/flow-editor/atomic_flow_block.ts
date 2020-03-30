@@ -131,6 +131,11 @@ export class AtomicFlowBlock implements FlowBlock {
         return position;
     }
 
+    public getInputs(): InputPortDefinition[] {
+        if (!this.options.inputs) { return []; }
+        return JSON.parse(JSON.stringify(this.options.inputs));
+    }
+
     public getOutputType(index: number): string {
         return this.options.outputs[index].type;
     }
