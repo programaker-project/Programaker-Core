@@ -453,25 +453,27 @@ export class FlowWorkspace {
             this.current_selecting_connector.setAttributeNS(null, 'class', 'building connection ' + type_class);
             this.canvas.appendChild(this.current_selecting_connector);
 
-            let runway = 20;
-            if (type == 'in') {
-                runway = -runway;
-            }
+            const runway = 20;
 
             this.canvas.onmousemove = ((ev: any) => {
                 if (!this.canvas.contains(ev.target) || this.isPositionDistoredByFilter(ev)) {
                     return;
                 }
 
+                const real_pointer = {
+                    x: ev.layerX * this.inv_zoom_level + this.top_left.x,
+                    y: ev.layerY * this.inv_zoom_level + this.top_left.y,
+                };
+
                 if (type == 'out') {
                     this.drawPath(this.current_selecting_connector,
                                   real_center,
-                                  {x: ev.layerX, y: ev.layerY},
+                                  real_pointer,
                                   runway);
                 }
                 else {
                     this.drawPath(this.current_selecting_connector,
-                                  {x: ev.layerX, y: ev.layerY},
+                                  real_pointer,
                                   real_center,
                                   runway, block);
                 }
