@@ -25,13 +25,19 @@ export type OnIOSelected = ((block: FlowBlock,
                              port_center: Position2D,
                             ) => void);
 
+export type OnInputsChanged = ((block: FlowBlock,
+                                new_number: number,
+                               ) => void);
+
 export interface FlowBlockOptions {
     message: string;
     title?: string;
     outputs?: OutputPortDefinition[];
     inputs?: InputPortDefinition[];
-    on_io_selected?: OnIOSelected;
     extra_inputs?: ExtraInputDefinition;
+
+    on_io_selected?: OnIOSelected;
+    on_inputs_changed?: OnInputsChanged;
 }
 
 export type Direction2D = 'up' | 'down' | 'left' | 'right';

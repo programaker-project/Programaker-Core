@@ -245,12 +245,23 @@ export class FlowWorkspace {
         return id;
     }
 
-    private drawBlockInputHelpers(block: FlowBlock) {
-        const inputHelperGroup = document.createElementNS(SvgNS, 'g');
+    private drawBlockInputHelpers(block: FlowBlock, inputHelperGroup?: SVGGElement) {
+        let existing_inputs = 0;
+
+        if (!inputHelperGroup) {
+            inputHelperGroup = document.createElementNS(SvgNS, 'g');
+        }
+        else{
+            existing_inputs = inputHelperGroup.children.length;
+        }
 
         let index = -1;
         for (const input of block.getInputs()) {
             index++;
+
+            if (index < existing_inputs) {
+                continue; // Don't re-draw existing inputs
+            }
 
             const inputGroup = document.createElementNS(SvgNS, 'g');
             const input_position = this.getBlockRel(block, block.getPositionOfInput(index));
@@ -717,6 +728,14 @@ export class FlowWorkspace {
         this.canvas.onclick = null;
     }
 
+    private onInputsChanged(block: FlowBlock,
+                            _input_num: number,
+                           ): void {
+
+        const block_id = this.getBlockId(block);
+        this.drawBlockInputHelpers(block, this.blocks[block_id].input_group);
+    }
+
     private onIoSelected(block: FlowBlock,
                            type: 'in'|'out',
                            index: number,
@@ -1076,6 +1095,7 @@ export class FlowWorkspace {
                 }
             ],
             on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
         })
 
         const comp_min_sec = new StreamingFlowBlock({
@@ -1099,6 +1119,7 @@ export class FlowWorkspace {
                 }
             ],
             on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
         })
 
         const and = new StreamingFlowBlock({
@@ -1118,6 +1139,7 @@ export class FlowWorkspace {
                 }
             ],
             on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
         })
 
         // Start point

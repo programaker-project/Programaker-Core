@@ -110,6 +110,10 @@ export class StreamingFlowBlock implements FlowBlock {
             this.addInput(input, input_index);
             this.options.inputs.push(input);
             this.updateBody();
+
+            if (this.options.on_inputs_changed) {
+                this.options.on_inputs_changed(this, input_index);
+            }
         }
     }
 
