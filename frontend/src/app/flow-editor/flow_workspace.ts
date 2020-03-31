@@ -1288,20 +1288,20 @@ export class FlowWorkspace {
         // Draws
         this.draw(time, { x: 50, y: 5 });
 
-        this.draw(comp_hour, { x: 50, y: 200 });
-        const comp_min_sec_id = this.draw(comp_min_sec, { x: 170, y: 200 });
-        this.draw(and, { x: 100, y: 400 });
+        const comp_hour_id = this.draw(comp_hour, { x: 50, y: 155 });
+        const comp_min_sec_id = this.draw(comp_min_sec, { x: 220, y: 155 });
+        this.draw(and, { x: 90, y: 275 });
+        this.draw(when_true, { x: 90, y: 385 });
 
-        this.draw(when_true, { x: 450, y: 50 });
-        this.draw(send_message, { x: 450, y: 200 });
-        this.draw(on_message, { x: 680, y: 200 });
-        this.draw(wait_next_value, { x: 600, y: 360 });
-        this.draw(set_response, { x: 600, y: 540 });
+        this.draw(send_message, { x: 483, y: 70 });
+        this.draw(on_message, { x: 680, y: 70 });
+        this.draw(wait_next_value, { x: 610, y: 190 });
+        this.draw(set_response, { x: 610, y: 320 });
 
-        this.draw(send_message2, { x: 1000, y: 200 });
-        this.draw(on_message2, { x: 1280, y: 200 });
-        this.draw(wait_next_value2, { x: 1200, y: 360 });
-        this.draw(set_response2, { x: 1200, y: 540 });
+        this.draw(send_message2, { x: 950, y: 70 });
+        this.draw(on_message2, { x: 1163, y: 70 });
+        this.draw(wait_next_value2, { x: 1105, y: 190 });
+        this.draw(set_response2, { x: 1105, y: 320 });
 
         // Time
         this.establishConnection({ block: time, index: 1, type: 'out' },
@@ -1313,8 +1313,10 @@ export class FlowWorkspace {
         this.establishConnection({ block: time, index: 3, type: 'out' },
                                  { block: comp_min_sec, index: 1, type: 'in' });
 
-
-        this.createDirectValue('any', comp_min_sec_id, 2, { position: { x: 310, y: 120 },
+        this.createDirectValue('any', comp_hour_id, 1, { position: { x: 160, y: 90 },
+                                                         value: '9',
+                                                       });
+        this.createDirectValue('any', comp_min_sec_id, 2, { position: { x: 385, y: 90 },
                                                             value: '0',
                                                           });
 
