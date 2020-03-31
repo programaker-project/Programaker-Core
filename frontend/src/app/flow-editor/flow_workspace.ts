@@ -306,7 +306,6 @@ export class FlowWorkspace {
                         position.y = parseInt(translate[2]) - 15;
                     }
 
-                    console.log("Starting direct input", element_index, "of", block);
                     this.createDirectValue(input.type, this.getBlockId(block), element_index, { position });
                 }
                 catch (err) {
@@ -476,7 +475,6 @@ export class FlowWorkspace {
         }
 
         let bezier_curve = (from.y < to.y);
-        console.log(DirectValue, source_block);
         if (source_block && (DirectValue === (source_block as any).__proto__.constructor)) {
             // Never use bezier curve if the target is DirectInput
             bezier_curve = true;
