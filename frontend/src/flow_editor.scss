@@ -57,7 +57,6 @@
     opacity: 0.8;
 }
 
-
 #workspace > svg g.flow_node rect.port_plating {
     fill: #27212e;
 }
@@ -123,6 +122,10 @@
     display: none;
 }
 
+#workspace > svg g.input_helper.pulse_port { // Pulse port input helpers are not yet implemented
+    display: none;
+}
+
 #workspace > svg g.input_helper .outer_circle {
     fill: #fafafa; // Same as background
     stroke: #444;
@@ -138,4 +141,36 @@
     stroke: #444;
     stroke-width: 2px;
     stroke-dasharray: 2px,2px;
+}
+
+// Direct value node
+#workspace > svg g.flow_node.direct_value_node rect.node_body {
+    fill: #fff;
+    stroke-width: 1px;
+    stroke: #000;
+    opacity: 1;
+}
+
+#workspace > svg g.flow_node.direct_value_node text.node_name {
+    font-family: helvetica;
+    cursor: text;
+}
+
+#workspace > svg g.flow_node.direct_value_node.editing rect.node_body {
+    stroke-width: 2px;
+    stroke: #009688;
+}
+
+// Inline editor
+#workspace > .inline_editor_container {
+    position: absolute;
+}
+
+#workspace > .inline_editor_container.hidden {
+    display: none;
+}
+
+#workspace > .inline_editor_container > input {
+    font-family: helvetica;
+    border: none;
 }

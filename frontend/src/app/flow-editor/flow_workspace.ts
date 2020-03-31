@@ -1,11 +1,12 @@
 import {
-    FlowBlock,
+    FlowBlock, MessageType,
     InputPortDefinition, OutputPortDefinition,
-    Area2D, Position2D
+    Area2D, Direction2D, Position2D,
 } from './flow_block';
 import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
 
+import { DirectValue } from './direct_value';
 import { StreamingFlowBlock } from './streaming_flow_block';
 import { AtomicFlowBlock } from './atomic_flow_block';
 
@@ -49,6 +50,8 @@ export class FlowWorkspace {
     }
 
     private baseElement: HTMLElement;
+    private inlineEditorContainer: HTMLDivElement;
+    private inlineEditor: HTMLInputElement;
     private canvas: SVGElement;
     private connection_group: SVGElement;
     private top_left = { x: 0, y: 0 };
@@ -67,11 +70,19 @@ export class FlowWorkspace {
 
     private constructor(baseElement: HTMLElement) {
         this.baseElement = baseElement;
+        this.inlineEditor = undefined;
         this.blocks = {};
         this.connections = {};
     }
 
     private init() {
+        this.inlineEditorContainer = document.createElement('div');
+        this.inlineEditorContainer.setAttribute('class', 'inline_editor_container hidden');
+        this.baseElement.appendChild(this.inlineEditorContainer);
+        this.inlineEditor = document.createElement('input');
+        this.inlineEditorContainer.appendChild(this.inlineEditor);
+
+
         this.canvas = document.createElementNS(SvgNS, "svg");
         this.input_helper_section = document.createElementNS(SvgNS, "g");
         this.connection_group = document.createElementNS(SvgNS, "g");
@@ -181,10 +192,16 @@ export class FlowWorkspace {
     }
 
     public dispose() {
-        this.baseElement.removeChild(this.canvas);
+        if (this.inlineEditorContainer) {
+            this.baseElement.removeChild(this.inlineEditorContainer);
+        }
+
+        if (this.canvas) {
+            this.baseElement.removeChild(this.canvas);
+        }
     }
 
-    public draw(block: FlowBlock, position?: {x: number, y: number}) {
+    public draw(block: FlowBlock, position?: {x: number, y: number}): string {
         block.render(this.canvas, position? position: {x: 10, y: 10});
         block.getBodyElement().onmousedown = ((ev: MouseEvent) => {
             if (this.current_io_selected) { return; }
@@ -214,6 +231,8 @@ export class FlowWorkspace {
         const input_group = this.drawBlockInputHelpers(block);
 
         this.blocks[id] = { block: block, connections: [], input_group: input_group };
+
+        return id;
     }
 
     private drawBlockInputHelpers(block: FlowBlock) {
@@ -271,14 +290,107 @@ export class FlowWorkspace {
                                       `translate(${input_position.x - HELPER_BASE_SIZE / 2},`
                                       + ` ${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
 
-            const elementIndex = index; // Capture current index
-            inputGroup.onclick = () => {
-                console.log("TODO: Start helper on input", elementIndex, "of block", block);
-            };
+            const element_index = index; // Capture current index
+            inputGroup.onclick = ((ev: MouseEvent) => {
+                try {
+                    const transform = inputGroup.getAttributeNS(null, 'transform');
+
+                    const position = { x: 0, y: 0 };
+
+                    let translate = transform.match(/translate\(\s*([^\s,]+)\s*,\s*([^\s\)]+)/);
+                    if (!translate) {
+                        console && console.warn && console.warn('Error getting translation from', inputGroup);
+                    }
+                    else {
+                        position.x = parseInt(translate[1]) + 15;
+                        position.y = parseInt(translate[2]) - 15;
+                    }
+
+                    console.log("Starting direct input", element_index, "of", block);
+                    this.createDirectValue(input.type, this.getBlockId(block), element_index, { position });
+                }
+                catch (err) {
+                    console.log("Error creating direct value:", err);
+                }
+            });
         }
 
         this.input_helper_section.appendChild(inputHelperGroup);
         return inputHelperGroup;
+    }
+
+    private createDirectValue(type: MessageType, block_id: string, input_index: number,
+                              options: { position: Position2D, value?: string }) {
+        const direct_input = new DirectValue({ type: type,
+                                               on_request_edit: this.onEditRequested.bind(this),
+                                               value: options.value,
+                                             });
+
+        const direct_input_id = this.draw(direct_input, options.position);
+        this.addConnection(new FlowConnection({ block_id: direct_input_id, output_index: 0 },
+                                              { block_id: block_id, input_index: input_index },
+                                             ));
+    }
+
+    private onEditRequested(block: DirectValue, type: MessageType, update: (value: string) => void): void {
+        this.editInline(block, type, update);
+    }
+
+    private static MessageTypeToInputType(type: MessageType): string {
+        if (!type) { type = 'any'; }
+
+        switch(type) {
+            case 'string':
+            case 'any':
+            case 'pulse':
+                return 'text';
+
+            case 'integer':
+                return 'number';
+
+            case 'boolean':
+                return 'checkbox';
+        }
+    }
+
+    private editInline(block: DirectValue, type: MessageType, update: (value: string) => void): void {
+        this.inlineEditor.value = block.value;
+        this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
+
+        const valueArea = this.getWorkspaceRelArea(block.getValueArea());
+
+        this.inlineEditorContainer.style.top = valueArea.y + 2 + 'px';
+        this.inlineEditorContainer.style.left = valueArea.x + 'px';
+        this.inlineEditor.style.width = valueArea.width + 'px';
+        this.inlineEditor.style.height = valueArea.height - 4 + 'px';
+        this.inlineEditor.style.fontSize = (1 / this.inv_zoom_level) * 100 + '%';
+
+        this.inlineEditorContainer.classList.remove('hidden');
+
+        const finishEdition = () => {
+            this.inlineEditor.onblur = null;
+            this.inlineEditor.onkeypress = null;
+            this.inlineEditorContainer.classList.add('hidden');
+
+            if (type === 'boolean') {
+                update(this.inlineEditor.checked ? 'true' : 'false');
+            }
+            else {
+                update(this.inlineEditor.value);
+            }
+        }
+
+        this.inlineEditor.onblur = () => {
+            finishEdition();
+        };
+
+        this.inlineEditor.onkeypress = (ev:KeyboardEvent) => {
+            if (ev.key === 'Enter') {
+                finishEdition();
+            }
+        };
+
+        this.inlineEditor.focus();
     }
 
     private updateBlockInputHelpersPosition(block_id: string) {
@@ -302,7 +414,9 @@ export class FlowWorkspace {
         for (const conn_id of block.connections) {
             const conn = this.connections[conn_id];
 
-            inputs_in_use[conn.connection.getSink().input_index] = true;
+            if (conn.connection.getSink().block_id == block_id) {
+                inputs_in_use[conn.connection.getSink().input_index] = true;
+            }
         }
 
         // Deactivate helpers for all inputs in use
@@ -329,6 +443,15 @@ export class FlowWorkspace {
         return { x: off.x + position.x, y: off.y + position.y };
     }
 
+    private getWorkspaceRelArea(area: Area2D): Area2D {
+        return {
+            x: (area.x - this.top_left.x) / this.inv_zoom_level,
+            y: (area.y - this.top_left.y) / this.inv_zoom_level,
+            width: area.width / this.inv_zoom_level,
+            height: area.height / this.inv_zoom_level,
+        };
+    }
+
     private current_io_selected: {
         block: FlowBlock,
         type: 'in'|'out',
@@ -343,23 +466,39 @@ export class FlowWorkspace {
                      from: {x: number, y: number},
                      to: {x: number, y: number},
                      runway: number,
+                     source_block?: FlowBlock,
                      sink_block?: FlowBlock) {
         let curve: string;
 
+        let source_runway_direction: Direction2D = 'down';
+        if (source_block) {
+            source_runway_direction = source_block.getOutputRunwayDirection();
+        }
+
         let bezier_curve = (from.y < to.y);
-        if (!bezier_curve && sink_block) {
+        console.log(DirectValue, source_block);
+        if (source_block && (DirectValue === (source_block as any).__proto__.constructor)) {
+            // Never use bezier curve if the target is DirectInput
+            bezier_curve = true;
+        }
+        else if (!bezier_curve && sink_block) {
             // Another option: if a sink block was passed and the `from` point
-            //  Y position is within the top and bottom of the sink, also use bezier.
+            //  Y position is within the top and bottom of the sink, use bezier even if the position does not match.
             const area = sink_block.getBodyArea();
             bezier_curve = (from.y < (area.y + area.height / 2));
         }
 
+
         if (bezier_curve) { // Just draw a bezier curve
-            const bezier_runway = runway * 3; // Compensate smoothing of the runway
+            const bezier_runway = runway * 2; // Compensate smoothing of the runway
+
+            const from_runway = FlowWorkspace.addRunway(from, source_runway_direction, bezier_runway);
+            const to_runway = FlowWorkspace.addRunway(to, 'up', bezier_runway);
+
             curve = [
                 "M", from.x, ",", from.y,
-                " C", from.x, ",", from.y + bezier_runway,
-                " ", to.x, ",", to.y - bezier_runway,
+                " C", from_runway.x, ",", from_runway.y,
+                " ", to_runway.x, ",", to_runway.y,
                 " ", to.x, ",", to.y,
             ].join("");
         }
@@ -368,15 +507,18 @@ export class FlowWorkspace {
             // We just try to find the X point (where the line goes "up").
             // We don't try to find the Y point and instead just use fixed "runways".
             // This makes finding the route simpler and is good enough for now.
-            const x_cut_point = this.find_x_cut_point({x: from.x, y: from.y + runway},
-                                                      {x: to.x, y: to.y - runway});
+
+            const from_runway = FlowWorkspace.addRunway(from, source_runway_direction, runway);
+            const to_runway = FlowWorkspace.addRunway(to, 'up', runway);
+
+            const x_cut_point = this.find_x_cut_point(from_runway, to_runway);
 
             curve = [
                 "M", from.x, ",", from.y,
-                " L", from.x, ",", from.y + runway,
-                " L", x_cut_point, ",", from.y + runway,
-                " L", x_cut_point, ",", to.y - runway,
-                " L", to.x, ",", to.y - runway,
+                " L", from_runway.x, ",", from_runway.y,
+                " L", x_cut_point, ",", from_runway.y,
+                " L", x_cut_point, ",", to_runway.y,
+                " L", to_runway.x, ",", to_runway.y,
                 " L", to.x, ",", to.y,
             ].join("");
         }
@@ -385,6 +527,19 @@ export class FlowWorkspace {
         path.setAttributeNS(null, 'fill', 'none');
         path.setAttributeNS(null, 'stroke', 'black');
         path.setAttributeNS(null, 'stroke-width', '1');
+    }
+
+    private static addRunway(p: Position2D, direction: Direction2D, runway: number) {
+        switch (direction) {
+            case 'up':
+                return { x: p.x, y: p.y - runway };
+            case 'down':
+                return { x: p.x, y: p.y + runway };
+            case 'left':
+                return { x: p.x - runway, y: p.y };
+            case 'right':
+                return { x: p.x + runway, y: p.y };
+        }
     }
 
     private find_x_cut_point(from: Position2D, to: Position2D): number {
@@ -506,7 +661,7 @@ export class FlowWorkspace {
         sink_position.y -= y_sink_offset;
 
         // Draw
-        this.drawPath(conn.element, source_position, sink_position, runway, sink_block);
+        this.drawPath(conn.element, source_position, sink_position, runway, source_block, sink_block);
     }
 
     getBlockId(block: FlowBlock): string {
@@ -589,13 +744,16 @@ export class FlowWorkspace {
                     this.drawPath(this.current_selecting_connector,
                                   real_center,
                                   real_pointer,
-                                  runway);
+                                  runway,
+                                  block);
                 }
                 else {
                     this.drawPath(this.current_selecting_connector,
                                   real_pointer,
                                   real_center,
-                                  runway, block);
+                                  runway,
+                                  null,
+                                  block);
                 }
             });
 
@@ -894,7 +1052,7 @@ export class FlowWorkspace {
                 {
                     type: "any"
                 },
-                { // TODO: Accept text field
+                {
                     type: "any"
                 },
             ],
@@ -916,7 +1074,7 @@ export class FlowWorkspace {
                 {
                     type: "any"
                 },
-                { // TODO: Accept text field
+                {
                     type: "any"
                 },
             ],
@@ -968,7 +1126,7 @@ export class FlowWorkspace {
             type: "operation",
             message: "Send message to chat",
             inputs: [
-                { // TODO: Text field
+                {
                     name: "message",
                     type: "string",
                 },
@@ -1031,7 +1189,7 @@ export class FlowWorkspace {
             type: "operation",
             message: "Send message to chat",
             inputs: [
-                { // TODO: Text field
+                {
                     name: "message",
                     type: "string",
                 },
@@ -1093,7 +1251,7 @@ export class FlowWorkspace {
         this.draw(time, { x: 50, y: 5 });
 
         this.draw(comp_hour, { x: 50, y: 200 });
-        this.draw(comp_min_sec, { x: 170, y: 200 });
+        const comp_min_sec_id = this.draw(comp_min_sec, { x: 170, y: 200 });
         this.draw(and, { x: 100, y: 400 });
 
         this.draw(when_true, { x: 450, y: 50 });
@@ -1117,6 +1275,10 @@ export class FlowWorkspace {
         this.establishConnection({ block: time, index: 3, type: 'out' },
                                  { block: comp_min_sec, index: 1, type: 'in' });
 
+
+        this.createDirectValue('any', comp_min_sec_id, 2, { position: { x: 310, y: 120 },
+                                                            value: '0',
+                                                          });
 
         this.establishConnection({ block: comp_hour, index: 0, type: 'out' },
                                  { block: and, index: 0, type: 'in' });

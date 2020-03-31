@@ -1,7 +1,7 @@
 import {
     FlowBlock, FlowBlockOptions,
     InputPortDefinition,
-    Area2D, Position2D
+    Area2D, Direction2D, Position2D
 } from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -105,6 +105,10 @@ export class StreamingFlowBlock implements FlowBlock {
         }
 
         return position;
+    }
+
+    public getOutputRunwayDirection(): Direction2D {
+        return 'down';
     }
 
     public getOutputType(index: number): string {

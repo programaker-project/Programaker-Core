@@ -1,5 +1,5 @@
 import { FlowBlock, FlowBlockOptions,
-         Area2D, Position2D,
+         Area2D, Direction2D, Position2D,
          InputPortDefinition, OutputPortDefinition,
        } from './flow_block';
 
@@ -138,6 +138,10 @@ export class AtomicFlowBlock implements FlowBlock {
 
     public getOutputType(index: number): string {
         return this.options.outputs[index].type;
+    }
+
+    public getOutputRunwayDirection(): Direction2D {
+        return 'down';
     }
 
     public render(canvas: SVGElement, position?: {x: number, y: number}): SVGElement {

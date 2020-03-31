@@ -28,6 +28,8 @@ export interface FlowBlockOptions {
     on_io_selected?: OnIOSelected;
 }
 
+export type Direction2D = 'up' | 'down' | 'left' | 'right';
+
 export interface FlowBlock {
     dispose(): void;
     render(canvas: SVGElement, position?: Position2D): SVGElement;
@@ -42,4 +44,5 @@ export interface FlowBlock {
     getPositionOfInput(index: number, edge?: boolean): Position2D;
     getPositionOfOutput(index: number, edge?: boolean): Position2D;
     getOutputType(index: number): string;
+    getOutputRunwayDirection(): Direction2D;
 }
