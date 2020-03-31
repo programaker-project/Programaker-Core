@@ -50,9 +50,9 @@
 }
 
 #workspace > svg g.flow_node rect.node_body {
-    fill: #222;
+    fill: #fff;
     stroke-width: 0;
-    opacity: 0.8;
+    opacity: 0.9;
     filter: url("#shadow");
 }
 
@@ -92,7 +92,7 @@
 }
 
 #workspace > svg g.flow_node text {
-    fill: white;
+    fill: black;
 }
 
 #workspace > svg g.flow_node text.node_name {
@@ -169,6 +169,6 @@
 #workspace > .inline_editor_container > input {
     font-family: helvetica;
     border: none;
-    background-color: #444;
-    color: white;
+    background-color: #fff;
+    color: black;
 }

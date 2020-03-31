@@ -103,8 +103,14 @@ export class FlowWorkspace {
   <path d='M0,0 V4 L2,2 Z' fill='${pulse_head_color}' />
 </marker>
 <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-  <feGaussianBlur result="blurOut" in="offOut" stdDeviation="3" />
-  <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+  <feColorMatrix in="SourceGraphic" out="inverted" type="matrix" values="
+-0.75 0    0    0 1
+ 0   -0.75 0    0 1
+ 0    0   -0.75 0 1
+ 0    0    0    1 0
+"></feColorMatrix>
+  <feGaussianBlur result="blurOut" in="inverted" stdDeviation="2"></feGaussianBlur>
+  <feBlend in="SourceGraphic" in2="blurOut" mode="normal"></feBlend>
 </filter>
 `;
 
