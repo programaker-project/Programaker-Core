@@ -640,7 +640,9 @@ export class FlowWorkspace {
         this.connection_group.appendChild(path);
 
         source.connections.push(conn.id);
-        this.blocks[conn.getSink().block_id].connections.push(conn.id);
+        const sink = this.blocks[conn.getSink().block_id];
+        sink.connections.push(conn.id);
+        sink.block.addConnection(conn.getSink().input_index);
 
         this.connections[conn.id] = { connection: conn, element: path };
         this.updateBlockInputHelpersVisibility(conn.getSink().block_id);
@@ -1064,6 +1066,10 @@ export class FlowWorkspace {
                     type: "any"
                 },
             ],
+            extra_inputs: {
+                type: "any",
+                quantity: "any",
+            },
             outputs: [
                 {
                     type: "boolean",
@@ -1082,10 +1088,11 @@ export class FlowWorkspace {
                 {
                     type: "any"
                 },
-                {
-                    type: "any"
-                },
             ],
+            extra_inputs: {
+                type: "any",
+                quantity: "any",
+            },
             outputs: [
                 {
                     type: "boolean",
@@ -1100,10 +1107,11 @@ export class FlowWorkspace {
                 {
                     type: "boolean"
                 },
-                {
-                    type: "boolean"
-                },
             ],
+            extra_inputs: {
+                type: "boolean",
+                quantity: "any",
+            },
             outputs: [
                 {
                     type: "boolean",

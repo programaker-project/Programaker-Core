@@ -112,6 +112,10 @@ export class DirectValue implements FlowBlock {
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
     }
 
+    public addConnection(_input_index: number) {
+        console.warn("Should NOT be possible to add a connection to a DirectValue block");
+    }
+
     public getInputs(): InputPortDefinition[] {
         return [];
     }

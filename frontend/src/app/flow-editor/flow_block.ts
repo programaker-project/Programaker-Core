@@ -6,12 +6,17 @@ export interface Area2D { x: number, y: number, width: number, height: number  }
 export interface OutputPortDefinition {
     type?: MessageType;
     name?: string;
-}
+};
 
 export interface InputPortDefinition {
     type?: MessageType;
     name?: string;
-}
+};
+
+export interface ExtraInputDefinition {
+    type: MessageType,
+    quantity: 'any' | { max: number },
+};
 
 export type OnIOSelected = ((block: FlowBlock,
                              type: 'in'|'out',
@@ -26,6 +31,7 @@ export interface FlowBlockOptions {
     outputs?: OutputPortDefinition[];
     inputs?: InputPortDefinition[];
     on_io_selected?: OnIOSelected;
+    extra_inputs?: ExtraInputDefinition;
 }
 
 export type Direction2D = 'up' | 'down' | 'left' | 'right';
@@ -39,6 +45,8 @@ export interface FlowBlock {
 
     getOffset(): Position2D;
     moveBy(distance: Position2D): void;
+
+    addConnection(input_index: number): void;
 
     getInputs(): InputPortDefinition[];
     getPositionOfInput(index: number, edge?: boolean): Position2D;

@@ -23,8 +23,9 @@ export class AtomicFlowBlock implements FlowBlock {
         this.options = JSON.parse(JSON.stringify(options));
         this.options.on_io_selected = options.on_io_selected;
 
-        this.input_groups = {};
-        this.output_groups = {};
+        this.input_groups = [];
+        this.output_groups = [];
+        this.inputs_taken = [];
 
         // Update inputs
         if (!this.options.inputs) {
@@ -66,10 +67,14 @@ export class AtomicFlowBlock implements FlowBlock {
 
     private position: {x: number, y: number};
     private textCorrection: {x: number, y: number};
+    private inputs_taken: boolean[];
+
+    private input_x_position: number;
+    private output_x_position: number;
 
     // I/O groups
-    private input_groups: {[key: number]: SVGElement};
-    private output_groups: {[key: number]: SVGElement};
+    private input_groups: SVGElement[];
+    private output_groups: SVGElement[];
 
     public getBodyElement(): SVGElement {
         if (!this.group) {
@@ -131,6 +136,143 @@ export class AtomicFlowBlock implements FlowBlock {
         return position;
     }
 
+    public addConnection(input_index: number) {
+        this.inputs_taken[input_index] = true;
+
+        const extra_opts = this.options.extra_inputs;
+        if (!extra_opts) {
+            return;
+        }
+
+        // Consider need for extra inputs
+        let has_available_inputs = false;
+        for (let i = 0; i < this.options.inputs.length; i++) {
+            if (!this.inputs_taken[i]) {
+                has_available_inputs = true;
+                break;
+            }
+        }
+
+        if (has_available_inputs) {
+            // Available inputs, nothing to do
+            return;
+        }
+
+        if ((extra_opts.quantity === 'any')
+            || (extra_opts.quantity.max < this.input_groups.length)) {
+
+            // Create new input
+            let input_index = this.input_groups.length;
+
+            const input = { type: extra_opts.type };
+
+            this.addInput(input, input_index);
+            this.options.inputs.push(input);
+            this.updateBody();
+        }
+    }
+
+
+    private addInput(input: InputPortDefinition, index: number) {
+        const inputs_x_margin = 10; // px
+        const input_plating_x_margin = 3; // px
+
+        const in_group = document.createElementNS(SvgNS, 'g');
+        in_group.classList.add('input');
+        this.group.appendChild(in_group);
+
+        const port_external = document.createElementNS(SvgNS, 'circle');
+        const port_internal = document.createElementNS(SvgNS, 'circle');
+
+        in_group.appendChild(port_external);
+        in_group.appendChild(port_internal);
+
+        const input_port_size = 50;
+        const input_port_internal_size = 5;
+        const input_position_start = this.input_x_position;
+        let input_position_end = this.input_x_position + input_port_size;
+
+        if (input.name) {
+            // Bind input name and port
+            const port_plating = document.createElementNS(SvgNS, 'rect');
+            in_group.appendChild(port_plating);
+
+            const text = document.createElementNS(SvgNS, 'text');
+            text.textContent = input.name;
+            text.setAttributeNS(null, 'class', 'argument_name input');
+            in_group.appendChild(text);
+
+            input_position_end = Math.max(input_position_end, (this.input_x_position
+                                                               + text.getClientRects()[0].width
+                                                               + input_plating_x_margin * 2));
+            const input_width = input_position_end - input_position_start;
+
+            text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getClientRects()[0].width/2  + '');
+            text.setAttributeNS(null, 'y', (INPUT_PORT_REAL_SIZE + this.textCorrection.y + text.getClientRects()[0].height/3) + '' );
+
+            this.input_x_position = input_position_end + inputs_x_margin;
+
+            const input_height = Math.max(input_port_size / 2, (INPUT_PORT_REAL_SIZE
+                                                                + text.getClientRects()[0].height));
+
+            // Configure port connector now that we know where the input will be positioned
+            port_plating.setAttributeNS(null, 'class', 'port_plating');
+            port_plating.setAttributeNS(null, 'x', input_position_start + '');
+            port_plating.setAttributeNS(null, 'y', '0'); // Node stroke-width /2
+            port_plating.setAttributeNS(null, 'width', (input_position_end - input_position_start) + '');
+            port_plating.setAttributeNS(null, 'height', input_height/1.5 + '');
+        }
+        else {
+            this.input_x_position += input_port_size;
+        }
+
+        let type_class = 'unknown_type';
+        if (input.type) {
+            type_class = input.type + '_port';
+        }
+
+        // Draw the input port
+        const port_x_center = (input_position_start + input_position_end) / 2;
+        const port_y_center = 0;
+
+        port_external.setAttributeNS(null, 'class', 'input external_port ' + type_class);
+        port_external.setAttributeNS(null, 'cx', port_x_center + '');
+        port_external.setAttributeNS(null, 'cy', port_y_center + '');
+        port_external.setAttributeNS(null, 'r', INPUT_PORT_REAL_SIZE + '');
+
+        port_internal.setAttributeNS(null, 'class', 'input internal_port');
+        port_internal.setAttributeNS(null, 'cx', port_x_center + '');
+        port_internal.setAttributeNS(null, 'cy', port_y_center + '');
+        port_internal.setAttributeNS(null, 'r', input_port_internal_size + '');
+
+        if (this.options.on_io_selected) {
+            const element_index = index; // Capture for use in callback
+            in_group.onclick = ((_ev: MouseEvent) => {
+                this.options.on_io_selected(this, 'in', element_index, input,
+                                            { x: port_x_center, y: port_y_center });
+            });
+        }
+
+        this.input_groups[index] = in_group;
+    }
+
+    private updateBody() {
+        const MIN_WIDTH = 100;
+        const X_PADDING = 5; // px
+
+        let widest_section = MIN_WIDTH;
+        widest_section = Math.max(widest_section, this.textBox.getClientRects()[0].width + X_PADDING * 2);
+        widest_section = Math.max(widest_section, this.input_x_position);
+        widest_section = Math.max(widest_section, this.output_x_position);
+
+        const box_width = widest_section;
+
+        this.textBox.setAttributeNS(null, 'x', (this.textCorrection.x
+                                                + (box_width/2)
+                                                - (this.textBox.getClientRects()[0].width/2)) + "");
+        this.rect.setAttributeNS(null, 'width', box_width + "");
+    }
+
     public getInputs(): InputPortDefinition[] {
         if (!this.options.inputs) { return []; }
         return JSON.parse(JSON.stringify(this.options.inputs));
@@ -155,14 +297,10 @@ export class AtomicFlowBlock implements FlowBlock {
 
         if (this.group) { return this.group }
 
-        const min_width = 100;
         const min_height = 25;
 
-        const x_padding = 5; // px
         const y_padding = 5; // px
         const input_initial_x_position = 10; // px
-        const inputs_x_margin = 10; // px
-        const input_plating_x_margin = 3; // px
 
         const output_initial_x_position = 10; // px
         const outputs_x_margin = 10; // px
@@ -195,93 +333,17 @@ export class AtomicFlowBlock implements FlowBlock {
         const box_height = (this.textBox.getClientRects()[0].height * 3 + y_padding * 2);
 
         // Add inputs
-        let input_x_position = input_initial_x_position + this.textCorrection.x;
+        this.input_x_position = input_initial_x_position + this.textCorrection.x;
         let input_index = -1;
 
         for (const input of this.options.inputs) {
             input_index++;
 
-            const in_group = document.createElementNS(SvgNS, 'g');
-            in_group.classList.add('input');
-            this.group.appendChild(in_group);
-
-            const port_external = document.createElementNS(SvgNS, 'circle');
-            const port_internal = document.createElementNS(SvgNS, 'circle');
-
-            in_group.appendChild(port_external);
-            in_group.appendChild(port_internal);
-
-            const input_port_size = 50;
-            const input_port_internal_size = 5;
-            const input_position_start = input_x_position;
-            let input_position_end = input_x_position + input_port_size;
-
-            if (input.name) {
-                // Bind input name and port
-                const port_plating = document.createElementNS(SvgNS, 'rect');
-                in_group.appendChild(port_plating);
-
-                const text = document.createElementNS(SvgNS, 'text');
-                text.textContent = input.name;
-                text.setAttributeNS(null, 'class', 'argument_name input');
-                in_group.appendChild(text);
-
-                input_position_end = Math.max(input_position_end, (input_x_position
-                                                                   + text.getClientRects()[0].width
-                                                                   + input_plating_x_margin * 2));
-                const input_width = input_position_end - input_position_start;
-
-                text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getClientRects()[0].width/2  + '');
-                text.setAttributeNS(null, 'y', (INPUT_PORT_REAL_SIZE + this.textCorrection.y + text.getClientRects()[0].height/3) + '' );
-
-                input_x_position = input_position_end + inputs_x_margin;
-
-                const input_height = Math.max(input_port_size / 2, (INPUT_PORT_REAL_SIZE
-                                                                    + text.getClientRects()[0].height));
-
-                // Configure port connector now that we know where the input will be positioned
-                port_plating.setAttributeNS(null, 'class', 'port_plating');
-                port_plating.setAttributeNS(null, 'x', input_position_start + '');
-                port_plating.setAttributeNS(null, 'y', '0'); // Node stroke-width /2
-                port_plating.setAttributeNS(null, 'width', (input_position_end - input_position_start) + '');
-                port_plating.setAttributeNS(null, 'height', input_height/1.5 + '');
-            }
-            else {
-                input_x_position += input_port_size;
-            }
-
-            let type_class = 'unknown_type';
-            if (input.type) {
-                type_class = input.type + '_port';
-            }
-
-            // Draw the input port
-            const port_x_center = (input_position_start + input_position_end) / 2;
-            const port_y_center = 0;
-
-            port_external.setAttributeNS(null, 'class', 'input external_port ' + type_class);
-            port_external.setAttributeNS(null, 'cx', port_x_center + '');
-            port_external.setAttributeNS(null, 'cy', port_y_center + '');
-            port_external.setAttributeNS(null, 'r', INPUT_PORT_REAL_SIZE + '');
-
-            port_internal.setAttributeNS(null, 'class', 'input internal_port');
-            port_internal.setAttributeNS(null, 'cx', port_x_center + '');
-            port_internal.setAttributeNS(null, 'cy', port_y_center + '');
-            port_internal.setAttributeNS(null, 'r', input_port_internal_size + '');
-
-            if (this.options.on_io_selected) {
-                const element_index = input_index; // Capture for use in callback
-                in_group.onclick = ((_ev: MouseEvent) => {
-                    this.options.on_io_selected(this, 'in', element_index, input,
-                                                { x: port_x_center, y: port_y_center });
-                });
-            }
-
-            this.input_groups[input_index] = in_group;
+            this.addInput(input, input_index);
         }
 
         // Add outputs
-        let output_x_position = output_initial_x_position + this.textCorrection.x;
+        this.output_x_position = output_initial_x_position + this.textCorrection.x;
         let output_index = -1;
 
         for (const output of this.options.outputs) {
@@ -299,8 +361,8 @@ export class AtomicFlowBlock implements FlowBlock {
 
             const output_port_size = 50;
             const output_port_internal_size = 5;
-            const output_position_start = output_x_position;
-            let output_position_end = output_x_position + output_port_size;
+            const output_position_start = this.output_x_position;
+            let output_position_end = this.output_x_position + output_port_size;
 
 
             if (output.name) {
@@ -313,7 +375,7 @@ export class AtomicFlowBlock implements FlowBlock {
                 text.setAttributeNS(null, 'class', 'argument_name output');
                 out_group.appendChild(text);
 
-                output_position_end = Math.max(output_position_end, (output_x_position
+                output_position_end = Math.max(output_position_end, (this.output_x_position
                                                                      + text.getClientRects()[0].width
                                                                      + output_plating_x_margin * 2));
 
@@ -323,7 +385,7 @@ export class AtomicFlowBlock implements FlowBlock {
                 text.setAttributeNS(null, 'y', (this.textCorrection.y + box_height
                                                 - (OUTPUT_PORT_REAL_SIZE/2)) + '' );
 
-                output_x_position = output_position_end + outputs_x_margin;
+                this.output_x_position = output_position_end + outputs_x_margin;
 
                 const output_height = Math.max(output_port_size / 2, (OUTPUT_PORT_REAL_SIZE
                                                                       + text.getClientRects()[0].height));
@@ -337,7 +399,7 @@ export class AtomicFlowBlock implements FlowBlock {
 
             }
             else {
-                output_x_position += output_port_size;
+                this.output_x_position += output_port_size;
             }
 
             let type_class = 'unknown_type';
@@ -369,28 +431,19 @@ export class AtomicFlowBlock implements FlowBlock {
             this.output_groups[output_index] = out_group;
         }
 
-        let widest_section = min_width;
-        widest_section = Math.max(widest_section, this.textBox.getClientRects()[0].width + x_padding * 2);
-        widest_section = Math.max(widest_section, input_x_position);
-        widest_section = Math.max(widest_section, output_x_position);
-
-        const box_width = widest_section;
-
         // Center text box
-        this.textBox.setAttributeNS(null, 'x', (this.textCorrection.x
-                                                + (box_width/2)
-                                                - (this.textBox.getClientRects()[0].width/2)) + "");
         this.textBox.setAttributeNS(null, 'y', this.textCorrection.y + box_height/1.75 + "");
 
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
         this.rect.setAttributeNS(null, 'y', "0");
-        this.rect.setAttributeNS(null, 'width', box_width + "");
         this.rect.setAttributeNS(null, 'height', box_height + "");
 
         this.rect.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
 
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+
+        this.updateBody();
 
         return this.group;
     }
