@@ -242,7 +242,7 @@ export class AtomicFlowBlock implements FlowBlock {
                 // Configure port connector now that we know where the input will be positioned
                 port_plating.setAttributeNS(null, 'class', 'port_plating');
                 port_plating.setAttributeNS(null, 'x', input_position_start + '');
-                port_plating.setAttributeNS(null, 'y', '1'); // Node stroke-width /2
+                port_plating.setAttributeNS(null, 'y', '0'); // Node stroke-width /2
                 port_plating.setAttributeNS(null, 'width', (input_position_end - input_position_start) + '');
                 port_plating.setAttributeNS(null, 'height', input_height/1.5 + '');
             }
@@ -331,7 +331,7 @@ export class AtomicFlowBlock implements FlowBlock {
                 // Configure port connector now that we know where the output will be positioned
                 port_plating.setAttributeNS(null, 'class', 'port_plating');
                 port_plating.setAttributeNS(null, 'x', output_position_start + '');
-                port_plating.setAttributeNS(null, 'y', box_height - output_height/1.5 - 1 + ''); // -1 for node stroke-width /2
+                port_plating.setAttributeNS(null, 'y', box_height - output_height/1.5 + '');
                 port_plating.setAttributeNS(null, 'width', (output_position_end - output_position_start) + '');
                 port_plating.setAttributeNS(null, 'height', output_height/1.5 + '');
 
@@ -380,7 +380,7 @@ export class AtomicFlowBlock implements FlowBlock {
         this.textBox.setAttributeNS(null, 'x', (this.textCorrection.x
                                                 + (box_width/2)
                                                 - (this.textBox.getClientRects()[0].width/2)) + "");
-        this.textBox.setAttributeNS(null, 'y', this.textCorrection.y + box_height / 2 + "");
+        this.textBox.setAttributeNS(null, 'y', this.textCorrection.y + box_height/1.75 + "");
 
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");

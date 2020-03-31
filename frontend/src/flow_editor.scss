@@ -50,10 +50,10 @@
 }
 
 #workspace > svg g.flow_node rect.node_body {
-    fill: #eee;
-    stroke-width: 3px;
-    stroke: #87818e;
+    fill: #222;
+    stroke-width: 0;
     opacity: 0.8;
+    filter: url("#shadow");
 }
 
 #workspace > svg g.flow_node .input, #workspace > svg g.flow_node .output  {
@@ -92,7 +92,7 @@
 }
 
 #workspace > svg g.flow_node text {
-    fill: black;
+    fill: white;
 }
 
 #workspace > svg g.flow_node text.node_name {
@@ -147,13 +147,6 @@
 }
 
 // Direct value node
-#workspace > svg g.flow_node.direct_value_node rect.node_body {
-    fill: #fff;
-    stroke-width: 1px;
-    stroke: #000;
-    opacity: 1;
-}
-
 #workspace > svg g.flow_node.direct_value_node text.node_name {
     font-family: helvetica;
     cursor: text;
@@ -176,4 +169,6 @@
 #workspace > .inline_editor_container > input {
     font-family: helvetica;
     border: none;
+    background-color: #444;
+    color: white;
 }

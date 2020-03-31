@@ -214,7 +214,7 @@ export class StreamingFlowBlock implements FlowBlock {
                 // Configure port connector now that we know where the input will be positioned
                 port_plating.setAttributeNS(null, 'class', 'port_plating');
                 port_plating.setAttributeNS(null, 'x', input_position_start + '');
-                port_plating.setAttributeNS(null, 'y', '1'); // Node stroke-width /2
+                port_plating.setAttributeNS(null, 'y', '0');
                 port_plating.setAttributeNS(null, 'width', (input_position_end - input_position_start) + '');
                 port_plating.setAttributeNS(null, 'height', input_height/1.5 + '');
             }
@@ -302,7 +302,7 @@ export class StreamingFlowBlock implements FlowBlock {
                 // Configure port connector now that we know where the output will be positioned
                 port_plating.setAttributeNS(null, 'class', 'port_plating');
                 port_plating.setAttributeNS(null, 'x', output_position_start + '');
-                port_plating.setAttributeNS(null, 'y', box_height - output_height/1.5 - 1 + ''); // -1 for node stroke-width /2
+                port_plating.setAttributeNS(null, 'y', box_height - output_height/1.5 + '');
                 port_plating.setAttributeNS(null, 'width', (output_position_end - output_position_start) + '');
                 port_plating.setAttributeNS(null, 'height', output_height /1.5 + '');
 

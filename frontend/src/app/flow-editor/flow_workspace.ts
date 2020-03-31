@@ -102,6 +102,10 @@ export class FlowWorkspace {
 <marker id='pulse_head' orient='auto' markerWidth='2' markerHeight='4' refX='1' refY='2'>
   <path d='M0,0 V4 L2,2 Z' fill='${pulse_head_color}' />
 </marker>
+<filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur result="blurOut" in="offOut" stdDeviation="3" />
+  <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+</filter>
 `;
 
         this.connection_group.appendChild(definitions);
