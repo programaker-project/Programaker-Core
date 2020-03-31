@@ -100,10 +100,6 @@ export class AppComponent {
         this.gotoLogin();
     }
 
-    goHome(): void {
-        this.router.navigate(['/']);
-    }
-
     gotoDashboard(): void {
         this.router.navigate(['/dashboard']);
         this.resetSidenavState();
