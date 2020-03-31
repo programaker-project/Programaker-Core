@@ -7,7 +7,7 @@ import {
 const SvgNS = "http://www.w3.org/2000/svg";
 
 const OUTPUT_PORT_REAL_SIZE = 10;
-const MIN_WIDTH = 100;
+const MIN_WIDTH = 50;
 const OUTPUT_PORT_SIZE = 25;
 
 export type OnRequestEdit = (block: DirectValue, type: MessageType, update: (value: string) => void) => void;
@@ -140,7 +140,7 @@ export class DirectValue implements FlowBlock {
         this.value = new_value;
 
         if (this.group) {
-            this.textBox.textContent = this.value;
+            this.textBox.textContent = this.value || '-';
             this.updateSize();
         }
     }
