@@ -155,8 +155,8 @@ export class StreamingFlowBlock implements FlowBlock {
 
         // Read text correction
         this.textCorrection = {
-            x: -(this.textBox.getClientRects()[0].left - canvas.getClientRects()[0].left),
-            y: -(this.textBox.getClientRects()[0].top - canvas.getClientRects()[0].top)
+            x: -(this.textBox.getClientRects()[0].left - this.node.getClientRects()[0].left),
+            y: -(this.textBox.getClientRects()[0].top - this.node.getClientRects()[0].top)
         };
 
         const box_height = (this.textBox.getClientRects()[0].height * 4.5 + y_padding * 2);
@@ -192,7 +192,7 @@ export class StreamingFlowBlock implements FlowBlock {
                 const input_width = input_position_end - input_position_start;
 
                 text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getClientRects()[0].width/2  + '');
-                text.setAttributeNS(null, 'y', (INPUT_PORT_REAL_SIZE + this.textCorrection.y) + '' );
+                text.setAttributeNS(null, 'y', (INPUT_PORT_REAL_SIZE + this.textCorrection.y + text.getClientRects()[0].height/2) + '' );
 
                 input_x_position = input_position_end + inputs_x_margin;
 
@@ -278,7 +278,7 @@ export class StreamingFlowBlock implements FlowBlock {
 
                 text.setAttributeNS(null, 'x', output_position_start + output_width/2 - text.getClientRects()[0].width/2  + '');
                 text.setAttributeNS(null, 'y', (this.textCorrection.y + box_height
-                                                - (OUTPUT_PORT_REAL_SIZE + text.getClientRects()[0].height)) + '' );
+                                                - (OUTPUT_PORT_REAL_SIZE + text.getClientRects()[0].height/2)) + '' );
 
                 output_x_position = output_position_end + outputs_x_margin;
 
@@ -342,7 +342,7 @@ export class StreamingFlowBlock implements FlowBlock {
         this.textBox.setAttributeNS(null, 'x', (this.textCorrection.x
                                                 + (box_width/2)
                                                 - (this.textBox.getClientRects()[0].width/2)) + "");
-        this.textBox.setAttributeNS(null, 'y', (this.textBox.getClientRects()[0].height*2 + this.textCorrection.y) + "");
+        this.textBox.setAttributeNS(null, 'y', (this.textBox.getClientRects()[0].height*3 + this.textCorrection.y) + "");
 
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
