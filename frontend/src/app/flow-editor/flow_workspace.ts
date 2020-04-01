@@ -61,7 +61,7 @@ export class FlowWorkspace {
     private blocks: {[key: string]: {
         block: FlowBlock,
         connections: string[],
-        input_group: SVGElement,
+        input_group: SVGGElement,
     }};
     private connections: {[key: string]: {
         connection: FlowConnection,
@@ -245,7 +245,7 @@ export class FlowWorkspace {
         return id;
     }
 
-    private drawBlockInputHelpers(block: FlowBlock, inputHelperGroup?: SVGGElement) {
+    private drawBlockInputHelpers(block: FlowBlock, inputHelperGroup?: SVGGElement): SVGGElement {
         let existing_inputs = 0;
 
         if (!inputHelperGroup) {
