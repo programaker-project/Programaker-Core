@@ -152,8 +152,8 @@ export class StreamingFlowBlock implements FlowBlock {
             const input_width = input_position_end - input_position_start;
 
             text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getClientRects()[0].width/2  + '');
-            text.setAttributeNS(null, 'y', (this.textCorrection.y + text.getClientRects()[0].height/3
-                                           ) + '' );
+            text.setAttributeNS(null, 'y', INPUT_PORT_REAL_SIZE + this.textCorrection.y + text.getClientRects()[0].height/3
+                                           + '' );
 
             this.input_x_position = input_position_end + inputs_x_margin;
 

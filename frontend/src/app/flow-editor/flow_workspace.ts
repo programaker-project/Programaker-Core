@@ -1100,7 +1100,6 @@ export class FlowWorkspace {
 
         const comp_min_sec = new StreamingFlowBlock({
             message: "If equals",
-            // TODO: Make variadic
             inputs: [
                 {
                     type: "any"
@@ -1125,6 +1124,9 @@ export class FlowWorkspace {
         const and = new StreamingFlowBlock({
             message: "If all true",
             inputs: [
+                {
+                    type: "boolean"
+                },
                 {
                     type: "boolean"
                 },

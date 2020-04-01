@@ -271,6 +271,8 @@ export class DirectValue implements FlowBlock {
         this.rect.setAttributeNS(null, 'width', box_width + "");
         this.rect.setAttributeNS(null, 'height', box_height + "");
 
+        this.rect.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
+
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
         this.size = { width: box_width, height: box_height };

@@ -75,10 +75,7 @@ export class FlowEditorComponent implements OnInit {
         private connectionService: ConnectionService,
         private sessionService: SessionService,
     ) {
-        console.log("Editor:", this);
     }
-
-
 
     ngOnInit(): void {
         this.environment = environment;
