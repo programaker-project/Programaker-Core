@@ -1364,12 +1364,532 @@ export class FlowWorkspace {
                                  { block: set_response2, index: 1, type: 'in' });
     }
 
-    public drawSample() {
-        console.log("Drawing sample on", this);
+    private draw_db_sample() {
+        const db_start = new StreamingFlowBlock({
+            message: "(sample) database",
+            outputs: [
+                {
+                    name: "value",
+                    type: "any"
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
 
+        const get_value = new StreamingFlowBlock({
+            message: "Get value",
+            inputs: [
+                {
+                    name: "registry",
+                    type: "any",
+                },
+                {
+                    name: "field",
+                    type: "any",
+                },
+            ],
+            outputs: [
+                {
+                    name: "value",
+                    type: "any",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const equals = new StreamingFlowBlock({
+            message: "Equals",
+            inputs: [
+                {
+                    type: "any",
+                },
+                {
+                    type: "any",
+                },
+            ],
+            extra_inputs: {
+                type: "any",
+                quantity: "any",
+            },
+            outputs: [
+                {
+                    type: "boolean",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
+        });
+
+        const filter = new StreamingFlowBlock({
+            message: "Filter stream",
+            inputs: [
+                {
+                    type: "any",
+                },
+                {
+                    name: "circuit",
+                    type: "any"
+                },
+            ],
+            outputs: [
+                {
+                    type: "any",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
+        })
+
+        const group_by = new StreamingFlowBlock({
+            message: "Group by",
+            inputs: [
+                {
+                    type: "any",
+                },
+                {
+                    name: 'field',
+                    type: "string"
+                },
+            ],
+            outputs: [
+                {
+                    type: "any",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
+        })
+
+        const count = new StreamingFlowBlock({
+            message: "Count",
+            inputs: [
+                {
+                    type: "any",
+                },
+            ],
+            outputs: [
+                {
+                    type: "integer",
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
+        })
+
+        const sort = new StreamingFlowBlock({
+            message: "Sort by",
+            inputs: [
+                {
+                    type: "any",
+                },
+                {
+                    name: 'sequence',
+                    type: "integer"
+                },
+            ],
+            outputs: [
+                {
+                    type: "any",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
+        })
+
+        const select = new StreamingFlowBlock({
+            message: "Get field",
+            inputs: [
+                {
+                    type: "any",
+                },
+                {
+                    name: 'field',
+                    type: "any",
+                },
+            ],
+            outputs: [
+                {
+                    type: "any",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
+        })
+
+        const concat = new StreamingFlowBlock({
+            message: "Join string",
+            inputs: [
+                {
+                    type: "string",
+                },
+                {
+                    type: "string",
+                },
+            ],
+            outputs: [
+                {
+                    type: "any",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
+        })
+
+        this.draw(db_start, { x: 130, y: 10 });
+        const filter_id = this.draw(filter, { x: 130, y: 135 });
+        const group_by_id = this.draw(group_by, { x: 400, y: 135 });
+        this.draw(count, { x: 400, y: 250 });
+        const select_id = this.draw(select, { x: 550, y: 250 });
+        this.draw(concat, { x: 400, y: 400 });
+        this.draw(sort, { x: 550, y: 400 });
+
+        // Connections
+        this.establishConnection({ block: db_start, index: 0, type: 'out' },
+                                 { block: filter, index: 0, type: 'in' });
+
+        this.createDirectValue('any', filter_id, 1, { position: { x: 300, y: 60 },
+                                                      value: 'ref. to filtering circuit',
+                                                    });
+
+        this.establishConnection({ block: filter, index: 0, type: 'out' },
+                                 { block: group_by, index: 0, type: 'in' });
+
+
+        this.createDirectValue('any', group_by_id, 1, { position: { x: 500, y: 60 },
+                                                        value: 'country',
+                                                      });
+
+        this.establishConnection({ block: group_by, index: 0, type: 'out' },
+                                 { block: count, index: 0, type: 'in' });
+
+        this.establishConnection({ block: group_by, index: 0, type: 'out' },
+                                 { block: select, index: 0, type: 'in' });
+
+        this.establishConnection({ block: count, index: 0, type: 'out' },
+                                 { block: concat, index: 0, type: 'in' });
+
+        this.createDirectValue('any', select_id, 1, { position: { x: 660, y: 180 },
+                                                      value: 'country',
+                                                    });
+
+        this.establishConnection({ block: select, index: 0, type: 'out' },
+                                 { block: concat, index: 1, type: 'in' });
+
+        this.establishConnection({ block: concat, index: 0, type: 'out' },
+                                 { block: sort, index: 0, type: 'in' });
+
+        this.establishConnection({ block: count, index: 0, type: 'out' },
+                                 { block: sort, index: 1, type: 'in' });
+    }
+
+
+    private draw_video_streaming_sample() {
+        const webcam1 = new StreamingFlowBlock({
+            message: "Webcam1",
+            outputs: [
+                {
+                    name: "Video",
+                    type: "any"
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const webcam2 = new StreamingFlowBlock({
+            message: "Webcam2",
+            outputs: [
+                {
+                    name: "Video",
+                    type: "any"
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const webcam3 = new StreamingFlowBlock({
+            message: "Webcam3",
+            outputs: [
+                {
+                    name: "Video",
+                    type: "any"
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const effects = new StreamingFlowBlock({
+            message: "apply effects",
+            inputs: [
+                {
+                    name: "video",
+                    type: "any",
+                },
+            ],
+            outputs: [
+                {
+                    name: 'processed video',
+                    type: 'any',
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const merge = new StreamingFlowBlock({
+            message: "merge video streams",
+            inputs: [
+                {
+                    type: "any",
+                },
+                {
+                    type: "any",
+                },
+            ],
+            extra_inputs: {
+                type: "any",
+                quantity: "any",
+            },
+            outputs: [
+                {
+                    type: 'any',
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+            on_inputs_changed: this.onInputsChanged.bind(this),
+        });
+
+        const delay_value = new StreamingFlowBlock({
+            message: "Variable (delay)",
+            outputs: [
+                {
+                    type: 'integer',
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const delay = new StreamingFlowBlock({
+            message: "Delay",
+            inputs: [
+                {
+                    type: "any",
+                },
+                {
+                    name: 'delay amount',
+                    type: 'integer'
+                }
+            ],
+            outputs: [
+                {
+                    type: 'any',
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const video_port = new StreamingFlowBlock({
+            message: "Video out",
+            inputs: [
+                {
+                    type: "any",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+
+        const delay_button = new AtomicFlowBlock({
+            type: 'trigger',
+            message: "Button (button) pressed",
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const set_0_delay = new AtomicFlowBlock({
+            type: 'operation',
+            message: "Set var (delay)",
+            inputs: [
+                {
+                    type: "integer",
+                }
+            ],
+
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const comp = new StreamingFlowBlock({
+            message: 'Compare',
+            inputs: [
+                {
+                    name: "smaller",
+                    type: "integer",
+                },
+                {
+                    name: "bigger",
+                    type: "integer",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'boolean',
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const _if = new AtomicFlowBlock({
+            message: 'if',
+            type: 'operation',
+            inputs: [
+                {
+                    type: "boolean",
+                },
+            ],
+            outputs: [
+                {
+                    name: 'true',
+                    type: 'pulse',
+                },
+                {
+                    name: 'false',
+                    type: 'pulse',
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+        const wait = new AtomicFlowBlock({
+            message: 'wait',
+            type: 'operation',
+            inputs: [
+                {
+                    name: "seconds to wait",
+                    type: "integer",
+                },
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const add = new StreamingFlowBlock({
+            message: "Add",
+            inputs: [
+                {
+                    type: "integer",
+                },
+                {
+                    type: "integer",
+                }
+            ],
+            outputs: [
+                {
+                    type: "integer",
+                }
+            ],
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const inc_delay = new AtomicFlowBlock({
+            type: 'operation',
+            message: "Set var (delay)",
+            inputs: [
+                {
+                    type: "integer",
+                }
+            ],
+
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        this.draw(webcam1, { x: 50, y: 5 });
+        this.draw(webcam2, { x: 200, y: 5 });
+        this.draw(webcam3, { x: 350, y: 5 });
+
+        this.draw(effects, { x: 50, y: 110 });
+        this.draw(merge, { x: 200, y: 220 });
+        this.draw(delay_value, { x: 420, y: 220 });
+        this.draw(delay, { x: 200, y: 340 });
+        this.draw(video_port, { x: 200, y: 460 });
+
+        this.draw(delay_button, { x: 600, y: 50 });
+        const set_0_delay_id = this.draw(set_0_delay, { x: 600, y: 200 });
+        const comp_id = this.draw(comp, { x: 750, y: 320 });
+        this.draw(_if, { x: 600, y: 320 });
+        const wait_id = this.draw(wait, { x: 600, y: 440 });
+
+        const add_id = this.draw(add, { x: 450, y: 440 });
+        this.draw(inc_delay, { x: 500, y: 560 });
+
+        // Connection
+        // Streaming section
+        this.establishConnection({ block: webcam1, index: 0, type: 'out' },
+                                 { block: effects, index: 0, type: 'in' });
+
+        this.establishConnection({ block: effects, index: 0, type: 'out' },
+                                 { block: merge, index: 0, type: 'in' });
+
+        this.establishConnection({ block: webcam2, index: 0, type: 'out' },
+                                 { block: merge, index: 1, type: 'in' });
+
+        this.establishConnection({ block: webcam3, index: 0, type: 'out' },
+                                 { block: merge, index: 2, type: 'in' });
+
+        this.establishConnection({ block: merge, index: 0, type: 'out' },
+                                 { block: delay, index: 0, type: 'in' });
+
+        this.establishConnection({ block: delay_value, index: 0, type: 'out' },
+                                 { block: delay, index: 1, type: 'in' });
+
+        this.establishConnection({ block: delay, index: 0, type: 'out' },
+                                 { block: video_port, index: 0, type: 'in' });
+
+        // Stepped connection
+        this.createDirectValue('integer', set_0_delay_id, 1, { position: { x: 710, y: 150 },
+                                                               value: '0',
+                                                             });
+
+        this.establishConnection({ block: delay_button, index: 0, type: 'out' },
+                                 { block: set_0_delay, index: 0, type: 'in' });
+
+        this.establishConnection({ block: set_0_delay, index: 0, type: 'out' },
+                                 { block: _if, index: 0, type: 'in' });
+
+        this.establishConnection({ block: delay_value, index: 0, type: 'out' },
+                                 { block: comp, index: 0, type: 'in' });
+
+        this.createDirectValue('integer', comp_id, 1, { position: { x: 905, y: 310 },
+                                                        value: '7',
+                                                      });
+
+        this.establishConnection({ block: comp, index: 0, type: 'out' },
+                                 { block: _if, index: 1, type: 'in' });
+
+        this.establishConnection({ block: _if, index: 0, type: 'out' },
+                                 { block: wait, index: 0, type: 'in' });
+
+        this.createDirectValue('integer', wait_id, 1, { position: { x: 768, y: 410 },
+                                                        value: '1',
+                                                      });
+
+        this.establishConnection({ block: wait, index: 0, type: 'out' },
+                                 { block: inc_delay, index: 0, type: 'in' });
+
+        this.establishConnection({ block: delay_value, index: 0, type: 'out' },
+                                 { block: add, index: 0, type: 'in' });
+
+        this.createDirectValue('integer', add_id, 1, { position: { x: 535, y: 420 },
+                                                       value: '0.1',
+                                                     });
+
+        this.establishConnection({ block: add, index: 0, type: 'out' },
+                                 { block: inc_delay, index: 1, type: 'in' });
+
+        this.establishConnection({ block: inc_delay, index: 0, type: 'out' },
+                                 { block: _if, index: 0, type: 'in' });
+    }
+
+    public drawSample() {
         // this.draw_addition_sample();
         // this.draw_message_sample();
         // this.draw_automatic_door_sample();
-        this.draw_standup_bot_sample();
+        // this.draw_standup_bot_sample();
+        // this.draw_db_sample();
+        this.draw_video_streaming_sample();
     }
 }
