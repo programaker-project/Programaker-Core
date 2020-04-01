@@ -52,11 +52,12 @@ export class FlowWorkspace {
     private baseElement: HTMLElement;
     private inlineEditorContainer: HTMLDivElement;
     private inlineEditor: HTMLInputElement;
-    private canvas: SVGElement;
-    private connection_group: SVGElement;
+    private canvas: SVGSVGElement;
+    private connection_group: SVGGElement;
     private top_left = { x: 0, y: 0 };
     private inv_zoom_level = 1;
-    private input_helper_section: SVGElement;
+    private input_helper_section: SVGGElement;
+    private trashcan: SVGGElement;
 
     private blocks: {[key: string]: {
         block: FlowBlock,
@@ -85,14 +86,19 @@ export class FlowWorkspace {
 
         this.canvas = document.createElementNS(SvgNS, "svg");
         this.input_helper_section = document.createElementNS(SvgNS, "g");
+        this.trashcan = document.createElementNS(SvgNS, "g");
         this.connection_group = document.createElementNS(SvgNS, "g");
 
         this.canvas.appendChild(this.input_helper_section);
+        this.canvas.appendChild(this.trashcan);
         this.canvas.appendChild(this.connection_group);
         this.baseElement.appendChild(this.canvas);
 
         this.init_definitions();
         this.set_events();
+        this.init_trashcan();
+
+        this.update_top_left();
     }
 
     private init_definitions() {
@@ -120,6 +126,23 @@ export class FlowWorkspace {
 `;
 
         this.connection_group.appendChild(definitions);
+    }
+
+    private init_trashcan() {
+        this.trashcan.setAttribute('class', 'trashcan helper');
+
+        const backdrop = document.createElementNS(SvgNS, 'rect');
+        backdrop.setAttributeNS(null, 'class', 'backdrop');
+        backdrop.setAttributeNS(null, 'width', '5ex');
+        backdrop.setAttributeNS(null, 'height', '8ex');
+
+        const image = document.createElementNS(SvgNS, 'image');
+        image.setAttributeNS(null, 'href', '/assets/sprites/delete_forever-black.svg');
+        image.setAttributeNS(null, 'width', '5ex');
+        image.setAttributeNS(null, 'height', '8ex');
+
+        this.trashcan.appendChild(backdrop);
+        this.trashcan.appendChild(image);
     }
 
     private set_events() {
@@ -169,6 +192,12 @@ export class FlowWorkspace {
 
         this.canvas.setAttributeNS(null, 'viewBox',
                                    `${this.top_left.x} ${this.top_left.y} ${width * this.inv_zoom_level} ${height * this.inv_zoom_level}`);
+
+        // Move trashcan
+        const trashbox = this.trashcan.getBBox();
+        const left = width * this.inv_zoom_level - trashbox.width + this.top_left.x;
+        const top = height * this.inv_zoom_level - trashbox.height + this.top_left.y;
+        this.trashcan.setAttributeNS(null, 'transform', `translate(${left},${top})`);
     }
 
     // Max zoom: 0.5
@@ -218,7 +247,8 @@ export class FlowWorkspace {
 
     public draw(block: FlowBlock, position?: {x: number, y: number}): string {
         block.render(this.canvas, position? position: {x: 10, y: 10});
-        block.getBodyElement().onmousedown = ((ev: MouseEvent) => {
+        const bodyElement = block.getBodyElement();
+        bodyElement.onmousedown = ((ev: MouseEvent) => {
             if (this.current_io_selected) { return; }
 
             const block_id = this.getBlockId(block);
@@ -236,10 +266,30 @@ export class FlowWorkspace {
                     this.updateConnection(conn);
                 }
                 this.updateBlockInputHelpersPosition(block_id);
+
+                if (this.isInTrashcan(ev)) {
+                    this.trashcan.classList.add('to-be-activated');
+                    bodyElement.classList.add('to-be-removed');
+                }
+                else {
+                    this.trashcan.classList.remove('to-be-activated');
+                    bodyElement.classList.remove('to-be-removed');
+                }
             });
-            this.canvas.onmouseup = ((_ev: MouseEvent) => {
-                this.canvas.onmousemove = null;
-                this.canvas.onmouseup = null;
+            this.canvas.onmouseup = ((ev: MouseEvent) => {
+                try {
+                    this.canvas.onmousemove = null;
+                    this.canvas.onmouseup = null;
+                    this.trashcan.classList.remove('to-be-activated');
+                    bodyElement.classList.remove('to-be-removed');
+
+                    if (this.isInTrashcan(ev)) {
+                        this.removeBlock(block_id);
+                    }
+                }
+                catch (err) {
+                    console.error(err);
+                }
             });
         });
         const id = uuidv4();
@@ -248,6 +298,17 @@ export class FlowWorkspace {
         this.blocks[id] = { block: block, connections: [], input_group: input_group };
 
         return id;
+    }
+
+    private isInTrashcan(pos: { x: number, y: number }): boolean {
+        const rect = this.trashcan.getClientRects()[0];
+        if ((rect.x <= pos.x) && (rect.x + rect.width >= pos.x)) {
+            if ((rect.y <= pos.y) && (rect.y + rect.height >= pos.y)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private drawBlockInputHelpers(block: FlowBlock, inputHelperGroup?: SVGGElement): SVGGElement {
@@ -461,7 +522,17 @@ export class FlowWorkspace {
 
     public removeBlock(blockId: string) {
         const info = this.blocks[blockId];
+        console.log("Removing block:", info);
+
+        // Make a copy of the array to avoid problems for modifying it during the loop
+        for (const conn_id of info.connections.concat([])) {
+            this.removeConnection(this.connections[conn_id].connection);
+        }
+
+        this.input_helper_section.removeChild(info.input_group);
         info.block.dispose();
+
+        delete this.blocks[blockId];
     }
 
     private getBlockRel(block: FlowBlock, position: {x: number, y: number}): { x: number, y: number }{

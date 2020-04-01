@@ -89,6 +89,10 @@
     filter: url("#shadow");
 }
 
+#workspace > svg g.flow_node a.to-be-removed rect.node_body {
+    fill: #ff4444;
+}
+
 #workspace > svg.drawing rect.node_body {
     pointer-events: none;
 }
@@ -208,4 +212,14 @@
     border: none;
     background-color: #fff;
     color: black;
+}
+
+// Trashcan
+.trashcan .backdrop {
+    fill: #fafafa;
+    filter: url("#shadow");
+}
+
+.trashcan.to-be-activated .backdrop {
+    fill: #ff4444;
 }
