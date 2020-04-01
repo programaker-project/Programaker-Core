@@ -97,10 +97,15 @@ export class FlowWorkspace {
 
     private init_definitions() {
         const pulse_head_color = "#ffcc00";
+        const pulse_head_selected_color = "#bf8c00";
+
         const definitions = document.createElementNS(SvgNS, 'defs');
         definitions.innerHTML = `
 <marker id='pulse_head' orient='auto' markerWidth='2' markerHeight='4' refX='1' refY='2'>
   <path d='M0,0 V4 L2,2 Z' fill='${pulse_head_color}' />
+</marker>
+<marker id='pulse_head_selected' orient='auto' markerWidth='2' markerHeight='4' refX='1' refY='2'>
+  <path d='M0,0 V4 L2,2 Z' fill='${pulse_head_selected_color}' />
 </marker>
 <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
   <feColorMatrix in="SourceGraphic" out="inverted" type="matrix" values="
@@ -344,6 +349,7 @@ export class FlowWorkspace {
         const direct_input = new DirectValue({ type: type,
                                                on_request_edit: this.onEditRequested.bind(this),
                                                value: options.value,
+                                               on_io_selected: this.onIoSelected.bind(this),
                                              });
 
         const direct_input_id = this.draw(direct_input, options.position);
@@ -647,18 +653,62 @@ export class FlowWorkspace {
         path.setAttributeNS(null, 'class', 'established connection ' + type_class);
         if (source_output_type == 'pulse') {
             path.setAttributeNS(null, 'marker-end', 'url(#pulse_head)');
+            path.onmouseenter = () => {
+                path.setAttributeNS(null, 'marker-end', 'url(#pulse_head_selected)');
+            };
+            path.onmouseleave = () => {
+                path.setAttributeNS(null, 'marker-end', 'url(#pulse_head)');
+            };
         }
+        path.onclick = () => {
+            this.removeConnection(conn);
+        };
         this.connection_group.appendChild(path);
-
+        source.block.addConnection('out', conn.getSource().output_index);
         source.connections.push(conn.id);
+
         const sink = this.blocks[conn.getSink().block_id];
         sink.connections.push(conn.id);
-        sink.block.addConnection(conn.getSink().input_index);
+        sink.block.addConnection('in', conn.getSink().input_index);
 
         this.connections[conn.id] = { connection: conn, element: path };
         this.updateBlockInputHelpersVisibility(conn.getSink().block_id);
 
         return path;
+    }
+
+    private removeConnection(conn: FlowConnection) {
+        // Disconnect from source
+        const source = this.blocks[conn.getSource().block_id];
+
+        source.block.removeConnection('out', conn.getSource().output_index);
+        const source_conn_index = source.connections.indexOf(conn.id);
+        if (source_conn_index < 0) {
+            console.error('Connection not found when going to remove. For block', source);
+        }
+        else {
+            source.connections.splice(source_conn_index, 1);
+        }
+        this.updateBlockInputHelpersVisibility(conn.getSource().block_id);
+
+        // Disconnect from sink
+        const sink = this.blocks[conn.getSink().block_id];
+
+        sink.block.removeConnection('in', conn.getSink().input_index);
+        const sink_conn_index = sink.connections.indexOf(conn.id);
+        if (sink_conn_index < 0) {
+            console.error('Connection not found when going to remove. For block', sink);
+        }
+        else {
+            sink.connections.splice(sink_conn_index, 1);
+        }
+        this.updateBlockInputHelpersVisibility(conn.getSink().block_id);
+
+        // Remove workspace information
+        const info = this.connections[conn.id];
+        this.connection_group.removeChild(info.element);
+
+        delete this.connections[conn.id];
     }
 
     updateConnection(connection_id: string) {

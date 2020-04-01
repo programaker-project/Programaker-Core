@@ -52,7 +52,8 @@ export interface FlowBlock {
     getOffset(): Position2D;
     moveBy(distance: Position2D): void;
 
-    addConnection(input_index: number): void;
+    addConnection(direction: 'in' | 'out', input: number): void;
+    removeConnection(direction: 'in' | 'out', index: number): void;
 
     getInputs(): InputPortDefinition[];
     getPositionOfInput(index: number, edge?: boolean): Position2D;

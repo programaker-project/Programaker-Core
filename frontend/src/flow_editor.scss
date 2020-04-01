@@ -15,14 +15,15 @@
 
 #workspace > svg path.building {
     pointer-events: none;
-    stroke-width: 5px;
+    stroke-width: 4px;
 }
 
 #workspace > svg path.connection {
+    stroke-linejoin: round;
 }
 
 #workspace > svg path.established {
-    stroke-width: 2px;
+    stroke-width: 5px;
 }
 
 #workspace > svg path.string_wire {
@@ -43,11 +44,42 @@
 
 #workspace > svg path.pulse_wire {
     stroke: #fc0;
-    stroke-width: 4px;
+    stroke-width: 7px;
 }
 
 #workspace > svg path.unknown_wire {
     stroke: #7f7f7f;
+}
+
+#workspace > svg:not(.drawing) {
+    path.established:hover {
+        stroke-width: 10px;
+        cursor: crosshair;
+
+        &.string_wire {
+            stroke: #049d04;
+        }
+
+        &.integer_wire {
+            stroke: #ad0404;
+        }
+
+        &.boolean_wire {
+            stroke: #0404bf;
+        }
+
+        &.any_wire {
+            stroke: #9d049d;
+        }
+
+        &.pulse_wire {
+            stroke: #b80;
+        }
+
+        &.unknown_wire {
+            stroke: #3f3f3f;
+        }
+    }
 }
 
 #workspace > svg g.flow_node rect.node_body {
@@ -158,7 +190,7 @@
 }
 
 #workspace > svg g.flow_node.direct_value_node.editing rect.node_body {
-    stroke-width: 2px;
+    stroke-width: 5px;
     stroke: #009688;
 }
 

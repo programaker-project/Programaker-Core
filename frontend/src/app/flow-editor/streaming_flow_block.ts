@@ -20,7 +20,7 @@ export class StreamingFlowBlock implements FlowBlock {
         this.options = options;
         this.input_groups = [];
         this.output_groups = [];
-        this.inputs_taken = [];
+        this.input_count = [];
     }
 
     public dispose() {
@@ -36,7 +36,7 @@ export class StreamingFlowBlock implements FlowBlock {
 
     private position: {x: number, y: number};
     private textCorrection: {x: number, y: number};
-    private inputs_taken: boolean[];
+    private input_count: number[];
 
     private input_x_position: number;
     private output_x_position: number;
@@ -77,8 +77,13 @@ export class StreamingFlowBlock implements FlowBlock {
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
     }
 
-    public addConnection(input_index: number) {
-        this.inputs_taken[input_index] = true;
+    public addConnection(direction: 'in' | 'out', input_index: number) {
+        if (direction === 'out') { return; }
+
+        if (!this.input_count[input_index]) {
+            this.input_count[input_index] = 0;
+        }
+        this.input_count[input_index]++;
 
         const extra_opts = this.options.extra_inputs;
         if (!extra_opts) {
@@ -88,7 +93,7 @@ export class StreamingFlowBlock implements FlowBlock {
         // Consider need for extra inputs
         let has_available_inputs = false;
         for (let i = 0; i < this.options.inputs.length; i++) {
-            if (!this.inputs_taken[i]) {
+            if (!this.input_count[i]) {
                 has_available_inputs = true;
                 break;
             }
@@ -114,6 +119,14 @@ export class StreamingFlowBlock implements FlowBlock {
             if (this.options.on_inputs_changed) {
                 this.options.on_inputs_changed(this, input_index);
             }
+        }
+    }
+
+    public removeConnection(direction: 'in' | 'out', index: number) {
+        if (direction === 'out') { return; }
+
+        if (this.input_count[index]) {
+            this.input_count[index]--;
         }
     }
 
