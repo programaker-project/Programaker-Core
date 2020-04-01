@@ -396,7 +396,7 @@ export class FlowWorkspace {
                     this.createDirectValue(input.type, this.getBlockId(block), element_index, { position });
                 }
                 catch (err) {
-                    console.log("Error creating direct value:", err);
+                    console.error("Error creating direct value:", err);
                 }
             });
         }

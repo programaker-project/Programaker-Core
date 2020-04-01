@@ -29,6 +29,7 @@ import { ConnectionService } from '../connection.service';
 import { SessionService } from '../session.service';
 import { environment } from '../../environments/environment';
 import { unixMsToStr } from '../utils';
+import { Session } from '../session';
 
 // import { ToolboxController } from '../blocks/ToolboxController';
 
@@ -50,6 +51,7 @@ export class FlowEditorComponent implements OnInit {
     @Input() program: ProgramContent;
     @ViewChild('logs_drawer') logs_drawer: MatDrawer;
 
+    session: Session;
     programId: string;
     environment: { [key: string]: any };
     workspace: FlowWorkspace;
@@ -88,26 +90,34 @@ export class FlowEditorComponent implements OnInit {
         this.smallScreen = window.innerWidth < 750;
 
         progbar.track(new Promise((resolve) => {
-            this.route.params.pipe(
-                switchMap((params: Params) => {
-                    this.programId = params['program_id'];
-                    return this.programService.getProgramById(params['program_id']).catch(err => {
-                        console.error("Error:", err);
-                        this.goBack();
-                        throw Error("Error loading");
-                    });
-                }))
-                .subscribe(program => {
-                    this.program = program;
-                    resolve();
-                    this.prepareWorkspace().then((/* controller: ToolboxController */) => {
-                        // this.load_program(controller, program);
-                        resolve();
-                    }).catch(err => {
-                        console.error("Error:", err);
-                        resolve();
-                        this.goBack();
-                    });
+            this.sessionService.getSession()
+                .then((session) => {
+                    this.session = session;
+                    this.route.params.pipe(
+                        switchMap((params: Params) => {
+                            this.programId = params['program_id'];
+                            return this.programService.getProgramById(params['program_id']).catch(err => {
+                                console.error("Error:", err);
+                                this.goBack();
+                                throw Error("Error loading");
+                            });
+                        }))
+                        .subscribe(program => {
+                            this.program = program;
+                            resolve();
+                            this.prepareWorkspace().then((/* controller: ToolboxController */) => {
+                                // this.load_program(controller, program);
+                                resolve();
+                            }).catch(err => {
+                                console.error("Error:", err);
+                                resolve();
+                                this.goBack();
+                            });
+                        });
+                })
+                .catch(err => {
+                    console.error("Error loading program:", err);
+                    this.goBack();
                 });
         }));
     }
