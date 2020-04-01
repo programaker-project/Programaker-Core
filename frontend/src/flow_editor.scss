@@ -57,6 +57,10 @@
     filter: url("#shadow");
 }
 
+#workspace > svg.drawing rect.node_body {
+    pointer-events: none;
+}
+
 #workspace > svg g.flow_node .input, #workspace > svg g.flow_node .output  {
     cursor: pointer;
 }

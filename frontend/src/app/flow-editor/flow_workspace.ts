@@ -720,6 +720,7 @@ export class FlowWorkspace {
     }
 
     private disconnectIOSelected() {
+        this.canvas.classList.remove('drawing');
         this.canvas.removeChild(this.current_selecting_connector);
         this.current_selecting_connector = null;
         this.current_io_selected = null;
@@ -756,6 +757,7 @@ export class FlowWorkspace {
             this.current_selecting_connector = document.createElementNS(SvgNS, 'path');
             this.current_selecting_connector.setAttributeNS(null, 'class', 'building connection ' + type_class);
             this.canvas.appendChild(this.current_selecting_connector);
+            this.canvas.classList.add('drawing');
 
             const runway = 20;
 
