@@ -678,27 +678,6 @@ export class FlowWorkspace {
         }
     }
 
-    private isPositionDistoredByFilter(ev: MouseEvent): boolean {
-        // An ad-hoc heuristic to detect when a CSS filter might
-        // have distorted the ev.layer values.
-        // The `drop-shadow` filter does this.
-        //
-        // @TODO: Get a better measure
-        const target = ev.target as any;
-        if (target.tagName === "rect"){
-            const top_attr = target.getAttributeNS(null, 'y');
-            if (top_attr !== undefined) {
-                const top = parseInt(top_attr);
-
-                if ((ev as any).layerY < top) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     addConnection(conn: FlowConnection): boolean {
         const element = this.prepareConnection(conn);
 
@@ -883,7 +862,7 @@ export class FlowWorkspace {
             const runway = 20;
 
             this.canvas.onmousemove = ((ev: any) => {
-                if (!this.canvas.contains(ev.target) || this.isPositionDistoredByFilter(ev)) {
+                if (!this.canvas.contains(ev.target)) {
                     return;
                 }
 
