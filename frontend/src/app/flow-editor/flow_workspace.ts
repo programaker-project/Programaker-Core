@@ -52,12 +52,17 @@ export class FlowWorkspace {
     private baseElement: HTMLElement;
     private inlineEditorContainer: HTMLDivElement;
     private inlineEditor: HTMLInputElement;
+
+    private popupGroup: HTMLDivElement;
     private canvas: SVGSVGElement;
     private connection_group: SVGGElement;
+    private block_group: SVGGElement;
+
     private top_left = { x: 0, y: 0 };
     private inv_zoom_level = 1;
     private input_helper_section: SVGGElement;
     private trashcan: SVGGElement;
+    private variables_in_use: { [key: string]: number } = {};
 
     private blocks: {[key: string]: {
         block: FlowBlock,
@@ -77,21 +82,31 @@ export class FlowWorkspace {
     }
 
     private init() {
+        // Inline editor
         this.inlineEditorContainer = document.createElement('div');
         this.inlineEditorContainer.setAttribute('class', 'inline_editor_container hidden');
         this.baseElement.appendChild(this.inlineEditorContainer);
         this.inlineEditor = document.createElement('input');
         this.inlineEditorContainer.appendChild(this.inlineEditor);
 
+        // Popup group
+        this.popupGroup = document.createElement('div');
+        this.popupGroup.setAttribute('class', 'popup_group');
+        this.baseElement.appendChild(this.popupGroup);
 
         this.canvas = document.createElementNS(SvgNS, "svg");
         this.input_helper_section = document.createElementNS(SvgNS, "g");
         this.trashcan = document.createElementNS(SvgNS, "g");
         this.connection_group = document.createElementNS(SvgNS, "g");
+        this.block_group = document.createElementNS(SvgNS, 'g');
 
+        // The order of elements determines the relative Z-index
+        // The "later" an element is added, the "higher" it is.
+        // The elements are stored in groups so their Z-indexes are consistent.
         this.canvas.appendChild(this.input_helper_section);
         this.canvas.appendChild(this.trashcan);
         this.canvas.appendChild(this.connection_group);
+        this.canvas.appendChild(this.block_group);
         this.baseElement.appendChild(this.canvas);
 
         this.init_definitions();
@@ -238,15 +253,30 @@ export class FlowWorkspace {
     public dispose() {
         if (this.inlineEditorContainer) {
             this.baseElement.removeChild(this.inlineEditorContainer);
+            this.inlineEditorContainer = null;
+        }
+
+        if (this.popupGroup) {
+            this.baseElement.removeChild(this.popupGroup);
+            this.popupGroup = null;
         }
 
         if (this.canvas) {
             this.baseElement.removeChild(this.canvas);
+            this.canvas = null;
         }
     }
 
     public draw(block: FlowBlock, position?: {x: number, y: number}): string {
-        block.render(this.canvas, position? position: {x: 10, y: 10});
+        const slots = block.getSlots();
+        if (slots.variable) {
+            if (!this.variables_in_use[slots.variable]) {
+                this.variables_in_use[slots.variable] = 0;
+            }
+            this.variables_in_use[slots.variable]++;
+        }
+
+        block.render(this.block_group, position? position: {x: 10, y: 10});
         const bodyElement = block.getBodyElement();
         bodyElement.onmousedown = ((ev: MouseEvent) => {
             if (this.current_io_selected) { return; }
@@ -538,6 +568,17 @@ export class FlowWorkspace {
     private getBlockRel(block: FlowBlock, position: {x: number, y: number}): { x: number, y: number }{
         const off = block.getOffset();
         return { x: off.x + position.x, y: off.y + position.y };
+    }
+
+    private getBlockRelArea(block: FlowBlock, area: Area2D): Area2D {
+        const off = block.getOffset();
+
+        return {
+            x: off.x + area.x,
+            y: off.y + area.y,
+            width: area.width,
+            height: area.height,
+        };
     }
 
     private getWorkspaceRelArea(area: Area2D): Area2D {
@@ -900,6 +941,102 @@ export class FlowWorkspace {
                 this.disconnectIOSelected();
             }
         }
+    }
+
+    private onDropdownExtended(block: FlowBlock,
+                               slot_id: string,
+                               previous_value: string,
+                               current_rect: Area2D,
+                               update: (new_value: string) => void,
+                              ): void {
+
+        const backdrop = document.createElement('div');
+        this.baseElement.appendChild(backdrop);
+        backdrop.setAttribute('class', 'backdrop');
+
+        const edition_area = this.getBlockRelArea(block, current_rect);
+        const abs_area = this.getWorkspaceRelArea(edition_area);
+
+        // Compensate dropdown stroke-width
+        abs_area.x -= 1;
+        abs_area.y -= 1;
+        abs_area.width += 2;
+        abs_area.height += 2;
+
+        // Base positioning
+        this.popupGroup.innerHTML = '';
+
+        this.popupGroup.style.left = abs_area.x + 'px';
+        this.popupGroup.style.top = abs_area.y + 'px';
+
+        // Editor
+        const editor_container = document.createElement('div');
+        const editor_input = document.createElement('input');
+
+        editor_input.value = previous_value;
+        editor_input.style.minWidth = abs_area.width + 'px';
+        editor_input.style.minHeight = abs_area.height + 'px';
+        editor_container.setAttribute('class', 'editor');
+        this.popupGroup.appendChild(editor_container);
+        editor_container.appendChild(editor_input);
+
+        // Set callbacks functions
+        const close = () => {
+            this.baseElement.removeChild(backdrop);
+            this.popupGroup.innerHTML = '';
+            this.popupGroup.classList.add('hidden');
+        };
+        const select_value = (val: string) => {
+            close();
+            if (this.variables_in_use[previous_value]) {
+                this.variables_in_use[previous_value]--;
+            }
+            if (!this.variables_in_use[val]) {
+                this.variables_in_use[val] = 0;
+            }
+            this.variables_in_use[val]++;
+
+            update(val);
+        };
+
+        editor_input.onkeypress = (ev:KeyboardEvent) => {
+            if (ev.key === 'Enter') {
+                select_value(editor_input.value);
+            }
+        };
+
+        backdrop.onclick = () => {
+            close();
+        };
+
+        // Options
+        const options = document.createElement('ul');
+        options.setAttribute('class', 'options');
+        this.popupGroup.appendChild(options);
+
+        let option_list = [];
+        if (slot_id === 'variable') {
+            for (const var_name of Object.keys(this.variables_in_use)) {
+                if (this.variables_in_use[var_name] > 0) {
+                    option_list.push(var_name);
+                }
+            }
+        }
+
+        if (option_list.length === 0) {
+            option_list.push('i');
+        }
+
+        for (const option of option_list) {
+            const e = document.createElement('li');
+            e.innerText = option;
+            options.appendChild(e);
+            e.onclick = () => {
+                select_value(option);
+            }
+        }
+
+        this.popupGroup.classList.remove('hidden');
     }
 
     private draw_addition_sample() {
@@ -1760,7 +1897,7 @@ export class FlowWorkspace {
         });
 
         const delay_value = new StreamingFlowBlock({
-            message: "Variable (delay)",
+            message: "Get variable value",
             outputs: [
                 {
                     type: 'integer',
@@ -1807,14 +1944,18 @@ export class FlowWorkspace {
 
         const set_0_delay = new AtomicFlowBlock({
             type: 'operation',
-            message: "Set var (delay)",
+            message: "Set %(variable) variable",
             inputs: [
                 {
                     type: "integer",
                 }
             ],
+            slots: {
+                variable: "delay",
+            },
 
             on_io_selected: this.onIoSelected.bind(this),
+            on_dropdown_extended: this.onDropdownExtended.bind(this),
         });
 
         const comp = new StreamingFlowBlock({
@@ -1889,14 +2030,18 @@ export class FlowWorkspace {
 
         const inc_delay = new AtomicFlowBlock({
             type: 'operation',
-            message: "Set var (delay)",
+            message: "Set %(variable) variable",
             inputs: [
                 {
                     type: "integer",
                 }
             ],
+            slots: {
+                variable: "delay",
+            },
 
             on_io_selected: this.onIoSelected.bind(this),
+            on_dropdown_extended: this.onDropdownExtended.bind(this),
         });
 
         this.draw(webcam1, { x: 50, y: 5 });

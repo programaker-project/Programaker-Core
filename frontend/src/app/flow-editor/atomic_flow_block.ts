@@ -12,6 +12,55 @@ export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     type: 'operation' | 'getter' | 'trigger';
 }
 
+type MessageChunk = { type: 'const', val: string } | { type: 'var', var: string, name: string };
+function parse_chunks(message: string): MessageChunk[] {
+    const result: MessageChunk[] = [];
+
+    let currentChunk = [];
+    let currentChunkIsTag = false;
+
+    for (let index=0; index < message.length; index++) {
+        if (!currentChunkIsTag) {
+            if (message[index] != '%') {
+                currentChunk.push(message[index]);
+            }
+            else {
+                if (((index + 1) >= message.length) || (message[index+1] != '(')) {
+                    currentChunk.push(message[index]);
+                }
+                else {
+                    const name = currentChunk.join('');
+                    result.push({type: 'const', val: name });
+                    currentChunk = [];
+                    currentChunkIsTag = true;
+                    index++;
+                }
+            }
+        }
+        else {
+            if (message[index] == ')') {
+                const name = currentChunk.join('');
+                result.push({ type: 'var', var: name, name: name });
+                currentChunk = [];
+                currentChunkIsTag = false;
+            }
+            else {
+                currentChunk.push(message[index]);
+            }
+        }
+    }
+    if (!currentChunkIsTag) {
+        if (currentChunk) {
+            result.push({type: 'const', val: currentChunk.join('')});
+        }
+    }
+    else {
+        throw new Error("Unclosed tag: %(" + currentChunk.join(''));
+    }
+
+    return result;
+}
+
 export class AtomicFlowBlock implements FlowBlock {
     options: AtomicFlowBlockOptions;
 
@@ -22,6 +71,8 @@ export class AtomicFlowBlock implements FlowBlock {
 
         this.options = JSON.parse(JSON.stringify(options));
         this.options.on_io_selected = options.on_io_selected;
+        this.options.on_dropdown_extended = options.on_dropdown_extended;
+        this.options.on_inputs_changed = options.on_inputs_changed;
 
         this.input_groups = [];
         this.output_groups = [];
@@ -40,6 +91,17 @@ export class AtomicFlowBlock implements FlowBlock {
         if (!this.options.outputs) {
             this.options.outputs = [];
         }
+
+        this.chunks = parse_chunks(this.options.message);
+        for (const chunk of this.chunks) {
+            if (chunk.type === 'var') {
+                if (options.slots && options.slots[chunk.name]) {
+                    chunk.var = options.slots[chunk.name];
+                }
+            }
+        }
+
+        this.chunkBoxes = [];
 
         let has_pulse_output = false;
         for (const output of this.options.outputs) {
@@ -62,8 +124,10 @@ export class AtomicFlowBlock implements FlowBlock {
     private group: SVGElement;
     private node: SVGElement;
     private rect: SVGElement;
-    private textBox: SVGElement;
     private canvas: SVGElement;
+    private chunkGroup: SVGGElement;
+    private chunkBoxes: SVGElement[];
+    private chunks: MessageChunk[];
 
     private position: {x: number, y: number};
     private textCorrection: {x: number, y: number};
@@ -271,21 +335,86 @@ export class AtomicFlowBlock implements FlowBlock {
         this.input_groups[index] = in_group;
     }
 
+    private updateChunk(chunk: MessageChunk, textBox: SVGTextElement, new_value: string) {
+        if (chunk.type === 'const') {
+            console.warn('Constant value chunks cannot be updated');
+            return;
+        }
+
+        chunk.var = new_value;
+        textBox.textContent = new_value;
+        this.updateBody();
+    }
+
     private updateBody() {
         const MIN_WIDTH = 100;
         const X_PADDING = 5; // px
+        const PLATE_X_PADDING = 2; // px
+        const IMAGE_X_PADDING = 2; // px
+
+        let chunks_width = 0;
+        for (let i = 0; i < this.chunks.length; i++) {
+            if (this.chunks[i].type === 'const') {
+                chunks_width += this.chunkBoxes[i].getClientRects()[0].width + X_PADDING;
+            }
+            else if (this.chunks[i].type === 'var') {
+                const group = this.chunkBoxes[i];
+                const image = group.getElementsByClassName('var_dropdown_icon')[0];
+
+                const text = group.getElementsByClassName('var_name')[0];
+                chunks_width += text.getClientRects()[0].width + image.getClientRects()[0].width
+                    + X_PADDING + PLATE_X_PADDING * 2 + IMAGE_X_PADDING * 2;
+            }
+        }
 
         let widest_section = MIN_WIDTH;
-        widest_section = Math.max(widest_section, this.textBox.getClientRects()[0].width + X_PADDING * 2);
+        widest_section = Math.max(widest_section, chunks_width + X_PADDING * 2);
         widest_section = Math.max(widest_section, this.input_x_position);
         widest_section = Math.max(widest_section, this.output_x_position);
 
         const box_width = widest_section;
+        let next_chunk_position = box_width / 2 - chunks_width / 2;
+        for (let i = 0; i < this.chunks.length; i++) {
+            if (this.chunks[i].type === 'const') {
+                this.chunkBoxes[i].setAttributeNS(null, 'x', this.textCorrection.x + next_chunk_position + '');
+                next_chunk_position += this.chunkBoxes[i].getClientRects()[0].width + X_PADDING;
+            }
+            else if (this.chunks[i].type === 'var') {
+                const group = this.chunkBoxes[i];
+                const text = group.getElementsByClassName('var_name')[0];
+                const plate = group.getElementsByClassName('var_plate')[0];
+                const image = group.getElementsByClassName('var_dropdown_icon')[0];
 
-        this.textBox.setAttributeNS(null, 'x', (this.textCorrection.x
-                                                + (box_width/2)
-                                                - (this.textBox.getClientRects()[0].width/2)) + "");
+                text.setAttributeNS(null, 'x', this.textCorrection.x
+                                    + next_chunk_position + PLATE_X_PADDING * 2
+                                    + '');
+
+                const text_width = text.getClientRects()[0].width;
+
+                image.setAttributeNS(null, 'x', next_chunk_position + PLATE_X_PADDING * 2 + text_width + IMAGE_X_PADDING
+                                     + '');
+
+                const image_width = image.getClientRects()[0].width;
+
+                plate.setAttributeNS(null, 'x', next_chunk_position + '');
+                plate.setAttributeNS(null, 'width', text_width + image_width + PLATE_X_PADDING * 2 + IMAGE_X_PADDING * 2 + "");
+
+                next_chunk_position += text_width + image_width + X_PADDING + PLATE_X_PADDING * 2 + IMAGE_X_PADDING * 2;
+            }
+        }
+
         this.rect.setAttributeNS(null, 'width', box_width + "");
+    }
+
+    public getSlots(): {[key: string]: string} {
+        const slots = {};
+        for (const chunk of this.chunks) {
+            if (chunk.type === 'var') {
+                slots[chunk.name] = chunk.var;
+            }
+        }
+
+        return slots;
     }
 
     public getInputs(): InputPortDefinition[] {
@@ -324,28 +453,35 @@ export class AtomicFlowBlock implements FlowBlock {
         this.group = document.createElementNS(SvgNS, 'g');
         this.node = document.createElementNS(SvgNS, 'a');
         this.rect = document.createElementNS(SvgNS, 'rect');
-        this.textBox = document.createElementNS(SvgNS, 'text');
+        this.chunkGroup = document.createElementNS(SvgNS, 'g');
 
         this.group.setAttribute('class', 'flow_node atomic_node');
-        this.textBox.setAttribute('class', 'node_name');
-        this.textBox.textContent = this.options.message;
-        this.textBox.setAttributeNS(null,'textlength', '100%');
-
-        this.textBox.setAttributeNS(null, 'x', "0");
-        this.textBox.setAttributeNS(null, 'y', "0");
 
         this.node.appendChild(this.rect);
-        this.node.appendChild(this.textBox);
+        this.node.appendChild(this.chunkGroup);
         this.group.appendChild(this.node);
         this.canvas.appendChild(this.group);
 
-        // Read text correction
-        this.textCorrection = {
-            x: -(this.textBox.getClientRects()[0].left - this.node.getClientRects()[0].left),
-            y: -(this.textBox.getClientRects()[0].top - this.node.getClientRects()[0].top)
-        };
+        // Calculate text correction
+        const refText = document.createElementNS(SvgNS, 'text');
+        refText.setAttribute('class', 'node_name');
+        refText.textContent = "test";
+        refText.setAttributeNS(null,'textlength', '100%');
 
-        const box_height = (this.textBox.getClientRects()[0].height * 3 + y_padding * 2);
+        refText.setAttributeNS(null, 'x', "0");
+        refText.setAttributeNS(null, 'y', "0");
+        this.node.appendChild(refText);
+
+        const refBox = refText.getClientRects()[0];
+        this.textCorrection = {
+            x: -(refBox.left - this.node.getClientRects()[0].left),
+            y: -(refBox.top - this.node.getClientRects()[0].top)
+        };
+        this.node.removeChild(refText);
+        // End of text correction calculation
+
+
+        const box_height = (refBox.height * 3 + y_padding * 2);
 
         // Add inputs
         this.input_x_position = input_initial_x_position + this.textCorrection.x;
@@ -446,9 +582,65 @@ export class AtomicFlowBlock implements FlowBlock {
             this.output_groups[output_index] = out_group;
         }
 
-        // Center text box
-        this.textBox.setAttributeNS(null, 'y', this.textCorrection.y + box_height/1.75 + "");
+        // Draw chunks
+        for (const chunk of this.chunks) {
+            if (chunk.type === 'const') {
+                const text = document.createElementNS(SvgNS, 'text');
+                this.chunkGroup.appendChild(text);
 
+                text.setAttribute('class', 'node_name');
+                text.setAttributeNS(null,'textlength', '100%');
+                text.setAttributeNS(null, 'y', this.textCorrection.y + box_height/1.75 + "");
+                text.textContent = chunk.val;
+
+                this.chunkBoxes.push(text);
+            }
+            else if (chunk.type === 'var') {
+                const group = document.createElementNS(SvgNS, 'g');
+                group.setAttributeNS(null, 'class', 'var');
+                this.chunkGroup.appendChild(group);
+
+                const plate = document.createElementNS(SvgNS, 'rect');
+                const text = document.createElementNS(SvgNS, 'text');
+                const image = document.createElementNS(SvgNS, 'image');
+
+                group.appendChild(plate);
+                group.appendChild(text);
+                group.appendChild(image);
+
+                text.setAttribute('class', 'var_name dropdown_value');
+                text.setAttributeNS(null,'textlength', '100%');
+                text.setAttributeNS(null, 'y', this.textCorrection.y + box_height/1.75 + "");
+                text.textContent = chunk.var;
+
+                plate.setAttribute('class', 'var_plate');
+                plate.setAttributeNS(null, 'y', box_height/2 - refBox.height  + "");
+                plate.setAttributeNS(null, 'height', refBox.height * 2 + "");
+
+                image.setAttributeNS(null, 'class', 'var_dropdown_icon');
+                image.setAttributeNS(null, 'href', '/assets/sprites/expand_more.svg');
+                image.setAttributeNS(null, 'width', '2ex');
+                image.setAttributeNS(null, 'height', '2ex');
+                image.setAttributeNS(null, 'y', box_height/2 - image.getClientRects()[0].height/2  + "");
+
+                if (this.options.on_dropdown_extended) {
+                    group.onclick = () => {
+                        this.options.on_dropdown_extended(this,
+                                                          chunk.name,
+                                                          chunk.var,
+                                                          plate.getBBox(),
+                                                          (new_value: string) => {
+                                                              this.updateChunk(chunk, text, new_value);
+                                                          }
+                                                         );
+                    };
+                }
+
+                this.chunkBoxes.push(group);
+            }
+        }
+
+        // Center text box
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
         this.rect.setAttributeNS(null, 'y', "0");

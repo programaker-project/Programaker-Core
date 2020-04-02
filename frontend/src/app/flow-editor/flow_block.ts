@@ -29,15 +29,24 @@ export type OnInputsChanged = ((block: FlowBlock,
                                 new_number: number,
                                ) => void);
 
+export type OnDropdownExtended = ((block: FlowBlock,
+                                   slot_id: string,
+                                   previous_value: string,
+                                   current_rect: Area2D,
+                                   update: (new_value: string) => void,
+                                  ) => void);
+
 export interface FlowBlockOptions {
     message: string;
     title?: string;
     outputs?: OutputPortDefinition[];
     inputs?: InputPortDefinition[];
     extra_inputs?: ExtraInputDefinition;
+    slots?: {[key: string]: string};
 
     on_io_selected?: OnIOSelected;
     on_inputs_changed?: OnInputsChanged;
+    on_dropdown_extended?: OnDropdownExtended;
 }
 
 export type Direction2D = 'up' | 'down' | 'left' | 'right';
@@ -55,6 +64,7 @@ export interface FlowBlock {
     addConnection(direction: 'in' | 'out', input: number): void;
     removeConnection(direction: 'in' | 'out', index: number): void;
 
+    getSlots(): {[key: string]: string};
     getInputs(): InputPortDefinition[];
     getPositionOfInput(index: number, edge?: boolean): Position2D;
     getPositionOfOutput(index: number, edge?: boolean): Position2D;

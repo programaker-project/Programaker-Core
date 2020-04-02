@@ -232,6 +232,10 @@ export class StreamingFlowBlock implements FlowBlock {
                                                 - (this.textBox.getClientRects()[0].width/2)) + "");
     }
 
+    public getSlots(): {[key: string]: string} {
+        return {};
+    }
+
     public getInputs(): InputPortDefinition[] {
         if (!this.options.inputs) { return []; }
 

@@ -194,7 +194,7 @@
 }
 
 #workspace > svg g.flow_node.direct_value_node.editing rect.node_body {
-    stroke-width: 5px;
+    stroke-width: 2px;
     stroke: #009688;
 }
 
@@ -212,6 +212,66 @@
     border: none;
     background-color: #fff;
     color: black;
+}
+
+// Variable dropdown editor
+#workspace .var {
+    cursor: pointer;
+}
+
+#workspace .var > .var_name {
+    font-size: 14px;
+    fill: black;
+}
+
+#workspace .var > .var_plate {
+    fill: transparent;
+    stroke-width: 1px;
+    stroke: #444;
+}
+
+// Popup
+.popup_group {
+    position: absolute;
+    border: 1px solid #888;
+    background-color: #fafafa;
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+
+    z-index: 10; // More than .backdrop
+
+    &.hidden {
+        display: none;
+    }
+}
+
+.backdrop {
+    z-index: 5; // More than 0, less than .popup_group
+
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: rgba(0,0,0,0.2);
+}
+
+.popup_group > .editor > input {
+    border: none;
+    border-bottom: 2px solid #009688;
+    padding-left: 1ex;
+}
+
+.options {
+    padding: 0;
+}
+
+.options li {
+    padding-left: 1ex;
+    cursor: pointer;
+
+    &:hover {
+        background-color: rgba(50, 50, 255, 0.3);
+    }
 }
 
 // Trashcan

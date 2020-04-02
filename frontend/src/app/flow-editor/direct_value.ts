@@ -121,6 +121,10 @@ export class DirectValue implements FlowBlock {
     public removeConnection(_direction: 'in' | 'out', _index: number) {
     }
 
+    public getSlots(): {[key: string]: string} {
+        return {};
+    }
+
     public getInputs(): InputPortDefinition[] {
         return [];
     }
