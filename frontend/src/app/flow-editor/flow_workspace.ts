@@ -969,10 +969,11 @@ export class FlowWorkspace {
 
         // Base positioning
         this.popupGroup.innerHTML = '';
+        this.popupGroup.classList.remove('hidden');
 
         this.popupGroup.style.left = abs_pos.x + 'px';
         this.popupGroup.style.top = abs_pos.y + 'px';
-        this.popupGroup.style.height = canvas_rect.height - abs_pos.y + 'px';
+        this.popupGroup.style.maxHeight = canvas_rect.height - abs_pos.y + 'px';
 
         // Editor
         const editor_container = document.createElement('div');
@@ -992,6 +993,8 @@ export class FlowWorkspace {
         // Option list (now empty)
         const options = document.createElement('ul');
         options.setAttribute('class', 'options');
+        options.style.maxHeight = canvas_rect.height - editor_input.getClientRects()[0].height - abs_pos.y - 1 + 'px';
+
         this.popupGroup.appendChild(options);
 
         // Set callbacks functions
@@ -1013,25 +1016,130 @@ export class FlowWorkspace {
             update(val);
         };
 
+
         const MAX_RESULTS = 100; // Max. results to show at a single time
         const TIME_WAIT_FOR_SEARCH_TIME = 200; // Time to wait for next input before attempting to search
-        let bounce_control = null;
-        editor_input.onkeypress = (ev:KeyboardEvent) => {
-            if (bounce_control) {
-                clearTimeout(bounce_control);
-            }
-            bounce_control = setTimeout(() => {
-                bounce_control = null;
-                update_values();
-            }, TIME_WAIT_FOR_SEARCH_TIME);
+        const SCROLL_OPTIONS: ScrollIntoViewOptions = {
+            behavior: 'smooth',
+            block: 'nearest',
         };
+
+        let bounce_control = null;
+        let last_query = null;
+
+        let selected_index = null;
+
+        // Keyup if controled instead of keypress
+        // as ArrowRight and ArrowLeft are not triggered on keypress
+        editor_input.onkeyup = (ev: KeyboardEvent) => {
+            if (ev.key === 'ArrowUp' || ev.key === 'ArrowDown'
+                || ev.key === 'PageDown' || ev.key === 'PageUp'
+                || ev.key === 'Home' || ev.key === 'End'
+               ) {
+                const old_index = selected_index;
+                let scroll_options: ScrollIntoViewOptions = { behavior: SCROLL_OPTIONS.behavior, block: SCROLL_OPTIONS.block };
+
+                if (ev.key === 'ArrowUp') {
+                    if (selected_index) {
+                        selected_index--;
+                    }
+                    else {
+                        selected_index = 0;
+                    }
+                }
+                else if (ev.key === 'ArrowDown') {
+                    if (selected_index === null) {
+                        selected_index = 0;
+                    }
+                    else {
+                        selected_index++;
+                    }
+                }
+                else if (ev.key === 'PageDown') {
+                    if (selected_index === null) {
+                        selected_index = 0;
+                    }
+                    else {
+                        scroll_options.block = 'start';
+                        const children = options.children;
+                        const parent = options.getClientRects()[0];
+                        // Go down the list until an element is not in view
+                        // this is not done directly with `inc = size(container) / size(next_element)`
+                        // to support for cases where elements have different sizes
+                        for (; selected_index < children.length; selected_index++) {
+                            const child = children[selected_index].getClientRects()[0];
+                            if (child.bottom > parent.bottom) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if (ev.key === 'PageUp') {
+                    if (!selected_index) {
+                        selected_index = 0;
+                    }
+                    else {
+                        selected_index--;
+                        scroll_options.block = 'end';
+                        const children = options.children;
+                        const parent = options.getClientRects()[0];
+                        // Go down the list until an element is not in view
+                        // this is not done directly with `inc = size(container) / size(next_element)`
+                        // to support for cases where elements have different sizes
+                        for (; selected_index > 0; selected_index--) {
+                            const child = children[selected_index].getClientRects()[0];
+                            if (child.top < parent.top) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if (ev.key === 'Home') {
+                    selected_index = 0;
+                }
+                else if (ev.key === 'End') {
+                    selected_index = options.children.length - 1;
+                }
+
+                try {
+                    if (old_index !== null) {
+                        options.children[old_index].classList.remove('selected');
+                    }
+
+                    const selected = options.children[selected_index];
+                    selected.classList.add('selected');
+                    selected.scrollIntoView(scroll_options);
+                }
+                catch(err) {
+                    console.warn(err);
+                }
+            }
+            else if (ev.key === 'Enter') {
+                if (selected_index !== null) {
+                    (options.children[selected_index] as HTMLElement).click();
+                }
+            }
+
+            // Avoid updating when no change has been made
+            if (last_query !== editor_input.value) {
+                if (bounce_control) {
+                    clearTimeout(bounce_control);
+                }
+                bounce_control = setTimeout(() => {
+                    bounce_control = null;
+                    update_values();
+                }, TIME_WAIT_FOR_SEARCH_TIME);
+            }
+        }
 
         backdrop.onclick = () => {
             close();
         };
 
         const update_values = () => {
+            selected_index = null;
             const query = editor_input.value;
+            last_query = query;
 
             let matches = values;
             if (query) {
@@ -1073,11 +1181,11 @@ export class FlowWorkspace {
                     select_value(value.id);
                 }
             }
-
+            // Scroll options up
+            options.children[0].scrollIntoView(SCROLL_OPTIONS);
         };
 
         update_values();
-        this.popupGroup.classList.remove('hidden');
         editor_input.focus();
     }
 
