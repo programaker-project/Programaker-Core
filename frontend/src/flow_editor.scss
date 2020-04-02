@@ -236,6 +236,7 @@
     border: 1px solid #888;
     background-color: #fafafa;
     box-shadow: 0 0 4px rgba(0,0,0,0.5);
+    overflow: auto;
 
     z-index: 10; // More than .backdrop
 
@@ -259,6 +260,8 @@
     border: none;
     border-bottom: 2px solid #009688;
     padding-left: 1ex;
+    width: 100%;
+    min-width: 20ex;
 }
 
 .options {
@@ -267,10 +270,12 @@
 
 .options li {
     padding-left: 1ex;
+    padding-right: 1ex;
     cursor: pointer;
 
     &:hover {
-        background-color: rgba(50, 50, 255, 0.3);
+        background-color: #444;
+        color: white;
     }
 }
 

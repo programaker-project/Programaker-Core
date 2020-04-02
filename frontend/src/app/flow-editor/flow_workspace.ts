@@ -7,8 +7,11 @@ import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
 
 import { DirectValue } from './direct_value';
+import { EnumDirectValue, EnumValue } from './enum_direct_value';
 import { StreamingFlowBlock } from './streaming_flow_block';
 import { AtomicFlowBlock } from './atomic_flow_block';
+
+import Fuse from 'fuse.js';
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -941,6 +944,141 @@ export class FlowWorkspace {
                 this.disconnectIOSelected();
             }
         }
+    }
+
+
+    private onSelectRequested(block: FlowBlock,
+                              previous_value: string,
+                              values: EnumValue[],
+                              value_dict: {[key:string]: EnumValue},
+                              update: (new_value: string) => void) : void {
+        const backdrop = document.createElement('div');
+        this.baseElement.appendChild(backdrop);
+        backdrop.setAttribute('class', 'backdrop');
+
+        const global_pos = block.getBodyElement().getClientRects()[0];
+        const canvas_rect = this.canvas.getClientRects()[0];
+        const abs_pos = { x: global_pos.x - canvas_rect.x, y: global_pos.y - canvas_rect.y };
+
+        // TODO: Make this popup separate from the original block.
+        // That should allow avoiding to hand-calculate coordinates, making it more responsive
+
+        // Compensate dropdown stroke-width
+        abs_pos.x -= 1;
+        abs_pos.y -= 1;
+
+        // Base positioning
+        this.popupGroup.innerHTML = '';
+
+        this.popupGroup.style.left = abs_pos.x + 'px';
+        this.popupGroup.style.top = abs_pos.y + 'px';
+        this.popupGroup.style.height = canvas_rect.height - abs_pos.y + 'px';
+
+        // Editor
+        const editor_container = document.createElement('div');
+        const editor_input = document.createElement('input');
+
+        if (value_dict[previous_value]){
+            editor_input.value = value_dict[previous_value].name || previous_value;
+        }
+        else {
+            editor_input.value = previous_value;
+        }
+        editor_input.style.minHeight = '3em';
+        editor_container.setAttribute('class', 'editor');
+        this.popupGroup.appendChild(editor_container);
+        editor_container.appendChild(editor_input);
+
+        // Option list (now empty)
+        const options = document.createElement('ul');
+        options.setAttribute('class', 'options');
+        this.popupGroup.appendChild(options);
+
+        // Set callbacks functions
+        const close = () => {
+            this.baseElement.removeChild(backdrop);
+            this.popupGroup.innerHTML = '';
+            this.popupGroup.classList.add('hidden');
+        };
+        const select_value = (val: string) => {
+            close();
+            if (this.variables_in_use[previous_value]) {
+                this.variables_in_use[previous_value]--;
+            }
+            if (!this.variables_in_use[val]) {
+                this.variables_in_use[val] = 0;
+            }
+            this.variables_in_use[val]++;
+
+            update(val);
+        };
+
+        const MAX_RESULTS = 100; // Max. results to show at a single time
+        const TIME_WAIT_FOR_SEARCH_TIME = 200; // Time to wait for next input before attempting to search
+        let bounce_control = null;
+        editor_input.onkeypress = (ev:KeyboardEvent) => {
+            if (bounce_control) {
+                clearTimeout(bounce_control);
+            }
+            bounce_control = setTimeout(() => {
+                bounce_control = null;
+                update_values();
+            }, TIME_WAIT_FOR_SEARCH_TIME);
+        };
+
+        backdrop.onclick = () => {
+            close();
+        };
+
+        const update_values = () => {
+            const query = editor_input.value;
+
+            let matches = values;
+            if (query) {
+                const options = {
+                    isCaseSensitive: false,
+                    findAllMatches: false,
+                    includeMatches: false,
+                    includeScore: true,
+                    useExtendedSearch: false,
+                    minMatchCharLength: 1,
+                    shouldSort: true,
+                    threshold: 0.6,
+                    location: 0,
+                    distance: 10,
+                    keys: [
+                        "name",
+                    ]
+                };
+
+                const fuse = new Fuse(values, options);
+
+                // Change the pattern
+                const results = fuse.search(query);
+                results.sort((x, y) => (x as any).score - (y as any).score );
+                if (!matches) {
+                    return; // Don't update
+                }
+
+                matches = results.map(v => v.item);
+            }
+
+            // Options
+            options.innerHTML = ''; // Clear children
+            for (const value of matches.slice(0, MAX_RESULTS)) {
+                const e = document.createElement('li');
+                e.innerText = value.name;
+                options.appendChild(e);
+                e.onclick = () => {
+                    select_value(value.id);
+                }
+            }
+
+        };
+
+        update_values();
+        this.popupGroup.classList.remove('hidden');
+        editor_input.focus();
     }
 
     private onDropdownExtended(block: FlowBlock,
