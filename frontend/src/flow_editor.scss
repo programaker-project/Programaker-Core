@@ -4,54 +4,54 @@
     background-color: #ddd;
 }
 
-#workspace > svg.dragging {
+svg.block_renderer.dragging {
     cursor: grabbing;
 }
 
-#workspace > svg g.flow_node > a {
+svg.block_renderer g.flow_node > a {
     pointer-events: all;
     cursor: grab;
 }
 
-#workspace > svg path.building {
+svg.block_renderer path.building {
     pointer-events: none;
     stroke-width: 4px;
 }
 
-#workspace > svg path.connection {
+svg.block_renderer path.connection {
     stroke-linejoin: round;
 }
 
-#workspace > svg path.established {
+svg.block_renderer path.established {
     stroke-width: 5px;
 }
 
-#workspace > svg path.string_wire {
+svg.block_renderer path.string_wire {
     stroke: #44dd44;
 }
 
-#workspace > svg path.integer_wire {
+svg.block_renderer path.integer_wire {
     stroke: #dd4444;
 }
 
-#workspace > svg path.boolean_wire {
+svg.block_renderer path.boolean_wire {
     stroke: #4444ff;
 }
 
-#workspace > svg path.any_wire {
+svg.block_renderer path.any_wire {
     stroke: #dd44dd;
 }
 
-#workspace > svg path.pulse_wire {
+svg.block_renderer path.pulse_wire {
     stroke: #fc0;
     stroke-width: 7px;
 }
 
-#workspace > svg path.unknown_wire {
+svg.block_renderer path.unknown_wire {
     stroke: #7f7f7f;
 }
 
-#workspace > svg:not(.drawing) {
+svg.block_renderer:not(.drawing) {
     path.established:hover {
         stroke-width: 10px;
         cursor: crosshair;
@@ -82,71 +82,71 @@
     }
 }
 
-#workspace > svg g.flow_node rect.node_body {
+svg.block_renderer g.flow_node rect.node_body {
     fill: #fff;
     stroke-width: 0;
     opacity: 0.9;
     filter: url("#shadow");
 }
 
-#workspace > svg g.flow_node a.to-be-removed rect.node_body {
+svg.block_renderer g.flow_node a.to-be-removed rect.node_body {
     fill: #ff4444;
 }
 
-#workspace > svg.drawing rect.node_body {
+svg.block_renderer.drawing rect.node_body {
     pointer-events: none;
 }
 
-#workspace > svg g.flow_node .input, #workspace > svg g.flow_node .output  {
+svg.block_renderer g.flow_node .input, svg.block_renderer g.flow_node .output  {
     cursor: pointer;
 }
 
-#workspace > svg g.flow_node rect.port_plating {
+svg.block_renderer g.flow_node rect.port_plating {
     fill: #27212e;
 }
 
 
-#workspace > svg g.flow_node circle.external_port.string_port {
+svg.block_renderer g.flow_node circle.external_port.string_port {
     fill: #44dd44;
 }
 
-#workspace > svg g.flow_node circle.external_port.integer_port {
+svg.block_renderer g.flow_node circle.external_port.integer_port {
     fill: #dd4444;
 }
-#workspace > svg g.flow_node circle.external_port.boolean_port {
+svg.block_renderer g.flow_node circle.external_port.boolean_port {
     fill: #4444ff;
 }
-#workspace > svg g.flow_node circle.external_port.pulse_port {
+svg.block_renderer g.flow_node circle.external_port.pulse_port {
     fill: #fc0;
 }
 
-#workspace > svg g.flow_node circle.external_port.any_port {
+svg.block_renderer g.flow_node circle.external_port.any_port {
     fill: #dd44dd;
 }
 
-#workspace > svg g.flow_node circle.external_port.unknown_type {
+svg.block_renderer g.flow_node circle.external_port.unknown_type {
     fill: #777;
 }
 
-#workspace > svg g.flow_node circle.internal_port {
+svg.block_renderer g.flow_node circle.internal_port {
     fill: #000000;
 }
 
-#workspace > svg g.flow_node text {
+svg.block_renderer g.flow_node text {
     fill: black;
 }
 
-#workspace > svg g.flow_node text.node_name {
+svg.block_renderer g.flow_node text.node_name {
     font-size: 14px;
 }
 
-#workspace > svg g.flow_node text.argument_name {
+svg.block_renderer g.flow_node text.argument_name {
     font-size: 11px;
     font-weight: bold;
     fill: #fff;
 }
 
-#workspace > svg g.flow_node {
+svg.block_renderer g.flow_node {
     // Avoid text selection
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */
@@ -158,42 +158,42 @@
 }
 
 // Input helpers
-#workspace > svg g.input_helper {
+svg.block_renderer g.input_helper {
     cursor: pointer;
 }
 
-#workspace > svg g.input_helper.hidden {
+svg.block_renderer g.input_helper.hidden {
     display: none;
 }
 
-#workspace > svg g.input_helper.pulse_port { // Pulse port input helpers are not yet implemented
+svg.block_renderer g.input_helper.pulse_port { // Pulse port input helpers are not yet implemented
     display: none;
 }
 
-#workspace > svg g.input_helper .outer_circle {
+svg.block_renderer g.input_helper .outer_circle {
     fill: #fafafa; // Same as background
     stroke: #444;
     stroke-width: 3px;
 }
 
-#workspace > svg g.input_helper rect {
+svg.block_renderer g.input_helper rect {
     fill: #444;
 }
 
 
-#workspace > svg g.input_helper path.connection_line {
+svg.block_renderer g.input_helper path.connection_line {
     stroke: #444;
     stroke-width: 2px;
     stroke-dasharray: 2px,2px;
 }
 
 // Direct value node
-#workspace > svg g.flow_node.direct_value_node text.node_name {
+svg.block_renderer g.flow_node.direct_value_node text.node_name {
     font-family: helvetica;
     cursor: text;
 }
 
-#workspace > svg g.flow_node.direct_value_node.editing rect.node_body {
+svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
     stroke-width: 2px;
     stroke: #009688;
 }
@@ -291,4 +291,32 @@
 
 .trashcan.to-be-activated .backdrop {
     fill: #ff4444;
+}
+
+// Toolbox
+.toolbox {
+    height: 100%;
+    min-width: 5ex;
+    background-color: rgba(0,0,0,0.3);
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
+}
+
+.toolbox.subsumed {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.toolbox.subsumed .block_exhibitor {
+    pointer-events: none;
+}
+
+.toolbox.subsumed svg g.flow_node > a {
+    pointer-events: none;
+}
+
+.showcase {
+    margin: 1ex;
 }

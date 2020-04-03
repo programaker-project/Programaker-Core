@@ -11,6 +11,8 @@ import { EnumDirectValue, EnumValue } from './enum_direct_value';
 import { StreamingFlowBlock } from './streaming_flow_block';
 import { AtomicFlowBlock } from './atomic_flow_block';
 
+import { BlockManager } from './block_manager';
+
 import Fuse from 'fuse.js';
 
 
@@ -32,7 +34,7 @@ type ConnectableNode = {
     index: number,
 };
 
-export class FlowWorkspace {
+export class FlowWorkspace implements BlockManager {
     public static BuildOn(baseElement: HTMLElement): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
@@ -98,6 +100,8 @@ export class FlowWorkspace {
         this.baseElement.appendChild(this.popupGroup);
 
         this.canvas = document.createElementNS(SvgNS, "svg");
+        this.canvas.setAttribute('class', 'block_renderer');
+
         this.input_helper_section = document.createElementNS(SvgNS, "g");
         this.trashcan = document.createElementNS(SvgNS, "g");
         this.connection_group = document.createElementNS(SvgNS, "g");
@@ -270,7 +274,18 @@ export class FlowWorkspace {
         }
     }
 
-    public draw(block: FlowBlock, position?: {x: number, y: number}): string {
+    public drawAbsolute(block: FlowBlock, abs_position: Position2D): string {
+        const canvas_area = this.canvas.getClientRects()[0];
+
+        const rel_pos = {
+            x: abs_position.x - canvas_area.x + this.top_left.x,
+            y: abs_position.y - canvas_area.y + this.top_left.y,
+        };
+
+        return this.draw(block, rel_pos);
+    }
+
+    public draw(block: FlowBlock, position?: Position2D): string {
         const slots = block.getSlots();
         if (slots.variable) {
             if (!this.variables_in_use[slots.variable]) {
@@ -279,51 +294,12 @@ export class FlowWorkspace {
             this.variables_in_use[slots.variable]++;
         }
 
-        block.render(this.block_group, position? position: {x: 10, y: 10});
+        block.render(this.block_group, position ? position: {x: 10, y: 10});
         const bodyElement = block.getBodyElement();
         bodyElement.onmousedown = ((ev: MouseEvent) => {
             if (this.current_io_selected) { return; }
 
-            const block_id = this.getBlockId(block);
-            let last = {x: ev.x, y: ev.y};
-            this.canvas.onmousemove = ((ev: MouseEvent) => {
-                const distance = {
-                    x: (ev.x - last.x) * this.inv_zoom_level,
-                    y: (ev.y - last.y) * this.inv_zoom_level,
-                };
-                last = {x: ev.x, y: ev.y};
-
-                block.moveBy(distance);
-
-                for (const conn of this.blocks[block_id].connections) {
-                    this.updateConnection(conn);
-                }
-                this.updateBlockInputHelpersPosition(block_id);
-
-                if (this.isInTrashcan(ev)) {
-                    this.trashcan.classList.add('to-be-activated');
-                    bodyElement.classList.add('to-be-removed');
-                }
-                else {
-                    this.trashcan.classList.remove('to-be-activated');
-                    bodyElement.classList.remove('to-be-removed');
-                }
-            });
-            this.canvas.onmouseup = ((ev: MouseEvent) => {
-                try {
-                    this.canvas.onmousemove = null;
-                    this.canvas.onmouseup = null;
-                    this.trashcan.classList.remove('to-be-activated');
-                    bodyElement.classList.remove('to-be-removed');
-
-                    if (this.isInTrashcan(ev)) {
-                        this.removeBlock(block_id);
-                    }
-                }
-                catch (err) {
-                    console.error(err);
-                }
-            });
+            this._mouseDownOnBlock(ev, block);
         });
         const id = uuidv4();
         const input_group = this.drawBlockInputHelpers(block);
@@ -331,6 +307,55 @@ export class FlowWorkspace {
         this.blocks[id] = { block: block, connections: [], input_group: input_group };
 
         return id;
+    }
+
+    private _mouseDownOnBlock(ev: MouseEvent, block: FlowBlock, on_done?: () => void) {
+        const bodyElement = block.getBodyElement();
+        const block_id = this.getBlockId(block);
+
+        let last = {x: ev.x, y: ev.y};
+        this.canvas.onmousemove = ((ev: MouseEvent) => {
+            const distance = {
+                x: (ev.x - last.x) * this.inv_zoom_level,
+                y: (ev.y - last.y) * this.inv_zoom_level,
+            };
+            last = {x: ev.x, y: ev.y};
+
+            block.moveBy(distance);
+
+            for (const conn of this.blocks[block_id].connections) {
+                this.updateConnection(conn);
+            }
+            this.updateBlockInputHelpersPosition(block_id);
+
+            if (this.isInTrashcan(ev)) {
+                this.trashcan.classList.add('to-be-activated');
+                bodyElement.classList.add('to-be-removed');
+            }
+            else {
+                this.trashcan.classList.remove('to-be-activated');
+                bodyElement.classList.remove('to-be-removed');
+            }
+        });
+        this.canvas.onmouseup = ((ev: MouseEvent) => {
+            try {
+                if (on_done) {
+                    on_done();
+                }
+
+                this.canvas.onmousemove = null;
+                this.canvas.onmouseup = null;
+                this.trashcan.classList.remove('to-be-activated');
+                bodyElement.classList.remove('to-be-removed');
+
+                if (this.isInTrashcan(ev)) {
+                    this.removeBlock(block_id);
+                }
+            }
+            catch (err) {
+                console.error(err);
+            }
+        });
     }
 
     private isInTrashcan(pos: { x: number, y: number }): boolean {
@@ -873,20 +898,21 @@ export class FlowWorkspace {
         this.canvas.onclick = null;
     }
 
-    private onInputsChanged(block: FlowBlock,
-                            _input_num: number,
-                           ): void {
+    // Block manager interface
+    onInputsChanged(block: FlowBlock,
+                    _input_num: number,
+                   ): void {
 
         const block_id = this.getBlockId(block);
         this.drawBlockInputHelpers(block, this.blocks[block_id].input_group);
     }
 
-    private onIoSelected(block: FlowBlock,
-                           type: 'in'|'out',
-                           index: number,
-                           definition: InputPortDefinition | OutputPortDefinition,
-                           port_center: {x: number, y: number},
-                        ): void {
+    onIoSelected(block: FlowBlock,
+                 type: 'in'|'out',
+                 index: number,
+                 definition: InputPortDefinition | OutputPortDefinition,
+                 port_center: {x: number, y: number},
+                ): void {
 
         if (!this.current_io_selected) {
             const real_center = this.getBlockRel(block, port_center);
@@ -947,11 +973,12 @@ export class FlowWorkspace {
     }
 
 
-    private onSelectRequested(block: FlowBlock,
-                              previous_value: string,
-                              values: EnumValue[],
-                              value_dict: {[key:string]: EnumValue},
-                              update: (new_value: string) => void) : void {
+    onSelectRequested(block: FlowBlock,
+                      previous_value: string,
+                      values: EnumValue[],
+                      value_dict: {[key:string]: EnumValue},
+                      update: (new_value: string) => void) : void {
+
         const backdrop = document.createElement('div');
         this.baseElement.appendChild(backdrop);
         backdrop.setAttribute('class', 'backdrop');
@@ -1189,12 +1216,12 @@ export class FlowWorkspace {
         editor_input.focus();
     }
 
-    private onDropdownExtended(block: FlowBlock,
-                               slot_id: string,
-                               previous_value: string,
-                               current_rect: Area2D,
-                               update: (new_value: string) => void,
-                              ): void {
+    onDropdownExtended(block: FlowBlock,
+                       slot_id: string,
+                       previous_value: string,
+                       current_rect: Area2D,
+                       update: (new_value: string) => void,
+                      ): void {
 
         const backdrop = document.createElement('div');
         this.baseElement.appendChild(backdrop);
@@ -1284,6 +1311,8 @@ export class FlowWorkspace {
 
         this.popupGroup.classList.remove('hidden');
     }
+
+    // </Block manager interface>
 
     private draw_addition_sample() {
         const number1 = new StreamingFlowBlock({

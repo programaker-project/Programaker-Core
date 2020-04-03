@@ -5,8 +5,8 @@ import { ActivatedRoute, Params, Router } from '@angular/router';
 import { ProgramContent, FlowProgram, ProgramLogEntry, ProgramInfoUpdate } from '../program';
 import { ProgramService } from '../program.service';
 
-import { Toolbox } from '../blocks/Toolbox';
 import * as progbar from '../ui/progbar';
+import { buildBaseToolbox, Toolbox } from './toolbox'
 
 import { FlowProgramSerializer } from './flow_program_serializer';
 import { FlowWorkspace } from './flow_workspace';
@@ -55,6 +55,7 @@ export class FlowEditorComponent implements OnInit {
     programId: string;
     environment: { [key: string]: any };
     workspace: FlowWorkspace;
+    toolbox: Toolbox;
 
     logs_drawer_initialized: boolean = false;
     commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
@@ -237,12 +238,14 @@ export class FlowEditorComponent implements OnInit {
             this.calculate_size(workspaceElement);
             this.calculate_program_header_size(programHeaderElement);
             this.workspace.onResize();
+            this.toolbox.onResize();
         });
         this.calculate_size(workspaceElement);
         this.calculate_program_header_size(programHeaderElement);
 
         this.workspace = FlowWorkspace.BuildOn(workspaceElement);
-        this.workspace.drawSample();
+        this.toolbox = buildBaseToolbox(workspaceElement, this.workspace);
+        // this.workspace.drawSample();
 
         // for (const reg of registrations) {
         //     reg(this.workspace);

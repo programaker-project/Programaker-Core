@@ -285,7 +285,7 @@ export class StreamingFlowBlock implements FlowBlock {
             this.position = { x: position.x, y: position.y };
         }
         else {
-            this.position = {x: 0, y: 0};
+            this.position = {x: 0, y: INPUT_PORT_REAL_SIZE};
         }
 
         if (this.group) { return this.group }
