@@ -53,13 +53,20 @@ export class Toolbox {
         const block_exhibitor = BlockExhibitor.FromGenerator(generator, this.blockShowcase);
         const element = block_exhibitor.getElement();
         element.onmousedown = (ev: MouseEvent) => {
-            // Generate block
-            this.toolboxDiv.classList.add('subsumed');
-            const block = generator(this.workspace);
             const rect = block_exhibitor.getInnerElementRect();
+
+            if (!rect) {
+                // Hidden block, ignore
+                return;
+            }
+
+            const block = generator(this.workspace);
+            element.classList.add('hidden');
+            this.toolboxDiv.classList.add('subsumed');
 
             this.workspace.drawAbsolute(block, rect);
             (this.workspace as any)._mouseDownOnBlock(ev, block, () => {
+                element.classList.remove('hidden');
                 this.toolboxDiv.classList.remove('subsumed');
             });
         };

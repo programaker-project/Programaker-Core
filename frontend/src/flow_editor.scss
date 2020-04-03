@@ -306,7 +306,7 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
 
 .toolbox.subsumed {
     pointer-events: none;
-    opacity: 0.5;
+    opacity: 0.2;
 }
 
 .toolbox.subsumed .block_exhibitor {
@@ -315,6 +315,10 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
 
 .toolbox.subsumed svg g.flow_node > a {
     pointer-events: none;
+}
+
+.block_exhibitor.hidden g.flow_node {
+    visibility: hidden;
 }
 
 .showcase {
