@@ -31,7 +31,7 @@ export class CustomBlockService {
         this.onFlightCallbackQueries = {};
     }
 
-    async getCustomBlocksUrl() {
+    private async getCustomBlocksUrl() {
         const userApiRoot = await this.sessionService.getUserApiRoot();
         return userApiRoot + '/custom-blocks/';
     }
@@ -99,7 +99,7 @@ export class CustomBlockService {
 
             // Validate & fill arguments in message
             if (arguments_in_message < arguments_declared) {
-                console.error(`(${arguments_in_message} < ${arguments_declared}) arguments_in_message < arguments_declared on `, block);
+                console.warn(`(${arguments_in_message} < ${arguments_declared}) arguments_in_message < arguments_declared on `, block);
             }
 
             while (arguments_in_message < arguments_declared) {

@@ -436,7 +436,12 @@ export class AtomicFlowBlock implements FlowBlock {
             this.position = { x: position.x, y: position.y };
         }
         else {
-            this.position = {x: 0, y: INPUT_PORT_REAL_SIZE};
+            if (this.options.inputs && this.options.inputs.length > 0) {
+                this.position = {x: 0, y: INPUT_PORT_REAL_SIZE};
+            }
+            else {
+                this.position = {x: 0, y: 0};
+            }
         }
 
         if (this.group) { return this.group }
