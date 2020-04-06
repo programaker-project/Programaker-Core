@@ -6,7 +6,7 @@ import { ProgramContent, FlowProgram, ProgramLogEntry, ProgramInfoUpdate } from 
 import { ProgramService } from '../program.service';
 
 import * as progbar from '../ui/progbar';
-import { buildBaseToolbox, Toolbox } from './toolbox'
+import { buildBaseToolbox, fromCustomBlockService, Toolbox } from './toolbox'
 
 import { FlowProgramSerializer } from './flow_program_serializer';
 import { FlowWorkspace } from './flow_workspace';
@@ -30,13 +30,13 @@ import { SessionService } from '../session.service';
 import { environment } from '../../environments/environment';
 import { unixMsToStr } from '../utils';
 import { Session } from '../session';
-
-// import { ToolboxController } from '../blocks/ToolboxController';
+import { BridgeService } from '../bridges/bridge.service';
 
 @Component({
     selector: 'app-my-flow-editor',
     templateUrl: './flow-editor.component.html',
     providers: [
+        BridgeService,
         ConnectionService, CustomBlockService, CustomSignalService,
         MonitorService, ProgramService, ServiceService, SessionService,
         TemplateService
@@ -77,6 +77,7 @@ export class FlowEditorComponent implements OnInit {
         private notification: MatSnackBar,
         private connectionService: ConnectionService,
         private sessionService: SessionService,
+        private bridgeService: BridgeService,
     ) {
     }
 
@@ -224,13 +225,13 @@ export class FlowEditorComponent implements OnInit {
         // )
         //     .inject()
         //     .then(([toolbox, registrations, controller]) => {
-        this.injectWorkspace(); // toolbox, registrations, controller);
+        await this.injectWorkspace(); // toolbox, registrations, controller);
 
         //     return controller;
         // });
     }
 
-    injectWorkspace() {// toolbox: HTMLElement, registrations: Function[] /* , controller: ToolboxController */)
+    async injectWorkspace() {// toolbox: HTMLElement, registrations: Function[] /* , controller: ToolboxController */)
         const workspaceElement = document.getElementById('workspace');
         const programHeaderElement = document.getElementById('program-header');
 
@@ -244,7 +245,10 @@ export class FlowEditorComponent implements OnInit {
         this.calculate_program_header_size(programHeaderElement);
 
         this.workspace = FlowWorkspace.BuildOn(workspaceElement);
-        this.toolbox = buildBaseToolbox(workspaceElement, this.workspace);
+        this.toolbox = await fromCustomBlockService(workspaceElement, this.workspace,
+                                                    this.customBlockService,
+                                                    this.bridgeService,
+                                                   );
         // this.workspace.drawSample();
 
         // for (const reg of registrations) {

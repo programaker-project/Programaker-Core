@@ -7,51 +7,117 @@ const SvgNS = "http://www.w3.org/2000/svg";
 
 const INPUT_PORT_REAL_SIZE = 10;
 const OUTPUT_PORT_REAL_SIZE = 10;
+const CONNECTOR_SIDE_SIZE = 15;
+const ICON_PADDING = '1ex';
 
 export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     type: 'operation' | 'getter' | 'trigger';
+    icon?: string,
 }
 
-type MessageChunk = { type: 'const', val: string } | { type: 'var', var: string, name: string };
+type MessageChunk = ( { type: 'const', val: string }
+    | { type: 'named_var', val: string, name: string }
+    | { type: 'index_var', index: number, direction: 'in' | 'out' }
+                    );
+
+function is_digit(char: string): boolean {
+    switch (char) {
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 function parse_chunks(message: string): MessageChunk[] {
     const result: MessageChunk[] = [];
 
     let currentChunk = [];
-    let currentChunkIsTag = false;
+    let currentChunkType: 'text' | 'named_var'  | 'index_var' = 'text';
+    let currentDirection: 'in' | 'out' = null;
 
     for (let index=0; index < message.length; index++) {
-        if (!currentChunkIsTag) {
+        if (currentChunkType === 'text') {
             if (message[index] != '%') {
                 currentChunk.push(message[index]);
             }
             else {
-                if (((index + 1) >= message.length) || (message[index+1] != '(')) {
+                if (((index + 1) >= message.length) || ('(io'.indexOf(message[index+1]) < 0)) {
+                    // Cannot continue '%(' for named, '%i' or '%o' for indexed
                     currentChunk.push(message[index]);
+                }
+                else if (message[index+1] === 'i' || message[index+1] === 'o') {
+                    const name = currentChunk.join('');
+                    result.push({type: 'const', val: name });
+                    currentChunk = [];
+                    currentChunkType = 'index_var';
+
+                    if (message[index+1] === 'i') {
+                        currentDirection = 'in';
+                    }
+                    else {
+                        currentDirection = 'out';
+                    }
+                    index++;
                 }
                 else {
                     const name = currentChunk.join('');
                     result.push({type: 'const', val: name });
                     currentChunk = [];
-                    currentChunkIsTag = true;
+                    currentChunkType = 'named_var';
                     index++;
+                }
+            }
+        }
+        else if (currentChunkType === 'index_var') {
+            if (is_digit(message[index])) {
+                currentChunk.push(message[index]);
+            }
+            else {
+                if (currentChunk) {
+                    result.push({
+                        type: 'index_var',
+                        index: parseInt(currentChunk.join('')) - 1, // Account for 1-index in message
+                        direction: currentDirection
+                    });
+                    currentChunk = [];
+                    currentChunkType = 'text';
+                }
+                else {
+                    throw new Error(`Unclosed indexed argument '%${currentDirection[0]}. Expected number, found ${message[index]}`);
                 }
             }
         }
         else {
             if (message[index] == ')') {
                 const name = currentChunk.join('');
-                result.push({ type: 'var', var: name, name: name });
+                result.push({ type: 'named_var', val: name, name: name });
                 currentChunk = [];
-                currentChunkIsTag = false;
+                currentChunkType = 'text';
             }
             else {
                 currentChunk.push(message[index]);
             }
         }
     }
-    if (!currentChunkIsTag) {
+
+    if (currentChunkType === 'text') {
         if (currentChunk) {
             result.push({type: 'const', val: currentChunk.join('')});
+        }
+    }
+    else if (currentChunkType === 'index_var'){
+        if (currentChunk) {
+            result.push({
+                type: 'index_var',
+                index: parseInt(currentChunk.join('')) - 1, // Account for 1-index in message
+                direction: currentDirection
+            });
+        }
+        else {
+            throw new Error("Unclosed indexed argument '%' (expected number)");
         }
     }
     else {
@@ -63,6 +129,8 @@ function parse_chunks(message: string): MessageChunk[] {
 
 export class AtomicFlowBlock implements FlowBlock {
     options: AtomicFlowBlockOptions;
+    synthetic_input_count = 0;
+    synthetic_output_count = 0;
 
     constructor(options: AtomicFlowBlockOptions) {
         if (!(options.message)) {
@@ -85,6 +153,7 @@ export class AtomicFlowBlock implements FlowBlock {
 
         if (this.options.type !== 'trigger') {
             this.options.inputs = ([ { type: "pulse" } ] as InputPortDefinition[]).concat(this.options.inputs);
+            this.synthetic_input_count++;
         }
 
         // Update outputs
@@ -94,9 +163,9 @@ export class AtomicFlowBlock implements FlowBlock {
 
         this.chunks = parse_chunks(this.options.message);
         for (const chunk of this.chunks) {
-            if (chunk.type === 'var') {
+            if (chunk.type === 'named_var') {
                 if (options.slots && options.slots[chunk.name]) {
-                    chunk.var = options.slots[chunk.name];
+                    chunk.val = options.slots[chunk.name];
                 }
             }
         }
@@ -113,6 +182,7 @@ export class AtomicFlowBlock implements FlowBlock {
 
         if (!has_pulse_output) {
             this.options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(this.options.outputs);
+            this.synthetic_output_count++;
         }
     }
 
@@ -125,6 +195,10 @@ export class AtomicFlowBlock implements FlowBlock {
     private node: SVGElement;
     private rect: SVGElement;
     private canvas: SVGElement;
+    private icon: SVGImageElement;
+    private iconPlate: SVGRectElement;
+    private iconSeparator: SVGPathElement;
+
     private chunkGroup: SVGGElement;
     private chunkBoxes: SVGElement[];
     private chunks: MessageChunk[];
@@ -340,8 +414,12 @@ export class AtomicFlowBlock implements FlowBlock {
             console.warn('Constant value chunks cannot be updated');
             return;
         }
+        if (chunk.type === 'index_var') {
+            console.warn('Indexed value chunks cannot be updated');
+            return;
+        }
 
-        chunk.var = new_value;
+        chunk.val = new_value;
         textBox.textContent = new_value;
         this.updateBody();
     }
@@ -352,12 +430,19 @@ export class AtomicFlowBlock implements FlowBlock {
         const PLATE_X_PADDING = 2; // px
         const IMAGE_X_PADDING = 2; // px
 
+        let x_offset = 0;
+        if (this.icon) {
+            const icon_rect = this.icon.getBBox();
+            x_offset += icon_rect.width + icon_rect.x * 2;
+        }
+
+
         let chunks_width = 0;
         for (let i = 0; i < this.chunks.length; i++) {
             if (this.chunks[i].type === 'const') {
                 chunks_width += this.chunkBoxes[i].getClientRects()[0].width + X_PADDING;
             }
-            else if (this.chunks[i].type === 'var') {
+            else if (this.chunks[i].type === 'named_var') {
                 const group = this.chunkBoxes[i];
                 const image = group.getElementsByClassName('var_dropdown_icon')[0];
 
@@ -365,21 +450,27 @@ export class AtomicFlowBlock implements FlowBlock {
                 chunks_width += text.getClientRects()[0].width + image.getClientRects()[0].width
                     + X_PADDING + PLATE_X_PADDING * 2 + IMAGE_X_PADDING * 2;
             }
+            else if (this.chunks[i].type === 'index_var') {
+                chunks_width += CONNECTOR_SIDE_SIZE + X_PADDING + PLATE_X_PADDING * 2;
+            }
         }
 
         let widest_section = MIN_WIDTH;
         widest_section = Math.max(widest_section, chunks_width + X_PADDING * 2);
-        widest_section = Math.max(widest_section, this.input_x_position);
-        widest_section = Math.max(widest_section, this.output_x_position);
 
-        const box_width = widest_section;
-        let next_chunk_position = box_width / 2 - chunks_width / 2;
+        // Both input and output already accout for the x_offset
+        widest_section = Math.max(widest_section, this.input_x_position - x_offset);
+        widest_section = Math.max(widest_section, this.output_x_position - x_offset);
+
+        let next_chunk_position = x_offset + widest_section / 2 - chunks_width / 2;
         for (let i = 0; i < this.chunks.length; i++) {
-            if (this.chunks[i].type === 'const') {
+
+            const chunk = this.chunks[i];
+            if (chunk.type === 'const') {
                 this.chunkBoxes[i].setAttributeNS(null, 'x', this.textCorrection.x + next_chunk_position + '');
                 next_chunk_position += this.chunkBoxes[i].getClientRects()[0].width + X_PADDING;
             }
-            else if (this.chunks[i].type === 'var') {
+            else if (chunk.type === 'named_var') {
                 const group = this.chunkBoxes[i];
                 const text = group.getElementsByClassName('var_name')[0];
                 const plate = group.getElementsByClassName('var_plate')[0];
@@ -401,16 +492,54 @@ export class AtomicFlowBlock implements FlowBlock {
 
                 next_chunk_position += text_width + image_width + X_PADDING + PLATE_X_PADDING * 2 + IMAGE_X_PADDING * 2;
             }
+            else if (chunk.type === 'index_var') {
+                const group = this.chunkBoxes[i];
+                const connector = group.getElementsByClassName('var_connector')[0];
+                const path = group.getElementsByClassName('var_path')[0];
+
+                connector.setAttributeNS(null, 'x', next_chunk_position + '');
+                connector.setAttributeNS(null, 'width', CONNECTOR_SIDE_SIZE + "");
+
+                let target: Position2D;
+                if (chunk.direction === 'in'){
+                    target = this.getPositionOfInput(chunk.index + this.synthetic_input_count);
+                    target.y += INPUT_PORT_REAL_SIZE / 2;
+                }
+                else if (chunk.direction === 'out'){
+                    target = this.getPositionOfOutput(chunk.index + this.synthetic_output_count);
+                    target.y -= OUTPUT_PORT_REAL_SIZE / 2;
+                }
+
+                const conn_area = (connector as any).getBBox() as Area2D;
+                let off: Position2D;
+                if (conn_area.y > target.y) { // Under input, start on connector's top
+                    off = {
+                        x: conn_area.x + conn_area.width / 2,
+                        y: conn_area.y,
+                    };
+                }
+                else { // Over output, start on connector's bottom
+                    off = {
+                        x: conn_area.x + conn_area.width / 2,
+                        y: conn_area.y + conn_area.height,
+                    };
+                }
+
+                path.setAttributeNS(null, 'd', `M${off.x},${off.y} ${target.x},${target.y}`);
+
+                next_chunk_position += CONNECTOR_SIDE_SIZE + X_PADDING + PLATE_X_PADDING * 2;
+            }
         }
 
+        const box_width = widest_section + x_offset;
         this.rect.setAttributeNS(null, 'width', box_width + "");
     }
 
     public getSlots(): {[key: string]: string} {
         const slots = {};
         for (const chunk of this.chunks) {
-            if (chunk.type === 'var') {
-                slots[chunk.name] = chunk.var;
+            if (chunk.type === 'named_var') {
+                slots[chunk.name] = chunk.val;
             }
         }
 
@@ -430,13 +559,32 @@ export class AtomicFlowBlock implements FlowBlock {
         return 'down';
     }
 
+    private getCorrespondingInputIndex(chunk: MessageChunk): number {
+        if (chunk.type !== 'index_var') {
+            return null;
+        }
+        return (chunk.index + this.synthetic_input_count); // Skip inputs not specified by the user
+    }
+
+    private getCorrespondingOutputIndex(chunk: MessageChunk): number {
+        if (chunk.type !== 'index_var') {
+            return null;
+        }
+        return (chunk.index + this.synthetic_output_count); // Skip outputs not specified by the user
+    }
+
     public render(canvas: SVGElement, position?: {x: number, y: number}): SVGElement {
         this.canvas = canvas;
         if (position) {
             this.position = { x: position.x, y: position.y };
         }
         else {
-            this.position = {x: 0, y: INPUT_PORT_REAL_SIZE};
+            if (this.options.inputs && this.options.inputs.length > 0) {
+                this.position = {x: 0, y: INPUT_PORT_REAL_SIZE};
+            }
+            else {
+                this.position = {x: 0, y: 0};
+            }
         }
 
         if (this.group) { return this.group }
@@ -462,6 +610,28 @@ export class AtomicFlowBlock implements FlowBlock {
         this.group.appendChild(this.node);
         this.canvas.appendChild(this.group);
 
+        if (this.options.icon) {
+            this.icon = document.createElementNS(SvgNS, 'image');
+            this.icon.setAttributeNS(null, 'class', 'node_icon');
+            this.icon.setAttributeNS(null, 'href', this.options.icon);
+            this.icon.setAttributeNS(null, 'width', '4ex');
+            this.icon.setAttributeNS(null, 'height', '4ex');
+            this.icon.setAttributeNS(null, 'x', ICON_PADDING);
+
+            this.iconPlate = document.createElementNS(SvgNS, 'rect');
+            this.iconPlate.setAttributeNS(null, 'class', 'node_icon_plate');
+            this.iconPlate.setAttributeNS(null, 'x', '0');
+            this.iconPlate.setAttributeNS(null, 'y', '0');
+            this.iconPlate.setAttributeNS(null, 'rx', '2');
+
+            this.iconSeparator = document.createElementNS(SvgNS, 'path');
+            this.iconSeparator.setAttributeNS(null, 'class', 'node_icon_separator');
+
+            this.group.appendChild(this.iconPlate);
+            this.group.appendChild(this.iconSeparator);
+            this.group.appendChild(this.icon);
+        }
+
         // Calculate text correction
         const refText = document.createElementNS(SvgNS, 'text');
         refText.setAttribute('class', 'node_name');
@@ -480,11 +650,18 @@ export class AtomicFlowBlock implements FlowBlock {
         this.node.removeChild(refText);
         // End of text correction calculation
 
-
         const box_height = (refBox.height * 3 + y_padding * 2);
 
         // Add inputs
         this.input_x_position = input_initial_x_position + this.textCorrection.x;
+        this.output_x_position = output_initial_x_position + this.textCorrection.x;
+
+        if (this.icon) {
+            const icon_rect = this.icon.getBBox();
+            this.input_x_position += icon_rect.width;
+            this.output_x_position += icon_rect.width;
+        }
+
         let input_index = -1;
 
         for (const input of this.options.inputs) {
@@ -494,7 +671,6 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         // Add outputs
-        this.output_x_position = output_initial_x_position + this.textCorrection.x;
         let output_index = -1;
 
         for (const output of this.options.outputs) {
@@ -595,9 +771,9 @@ export class AtomicFlowBlock implements FlowBlock {
 
                 this.chunkBoxes.push(text);
             }
-            else if (chunk.type === 'var') {
+            else if (chunk.type === 'named_var') {
                 const group = document.createElementNS(SvgNS, 'g');
-                group.setAttributeNS(null, 'class', 'var');
+                group.setAttributeNS(null, 'class', 'named_var');
                 this.chunkGroup.appendChild(group);
 
                 const plate = document.createElementNS(SvgNS, 'rect');
@@ -611,7 +787,7 @@ export class AtomicFlowBlock implements FlowBlock {
                 text.setAttribute('class', 'var_name dropdown_value');
                 text.setAttributeNS(null,'textlength', '100%');
                 text.setAttributeNS(null, 'y', this.textCorrection.y + box_height/1.75 + "");
-                text.textContent = chunk.var;
+                text.textContent = chunk.val;
 
                 plate.setAttribute('class', 'var_plate');
                 plate.setAttributeNS(null, 'y', box_height/2 - refBox.height  + "");
@@ -627,7 +803,7 @@ export class AtomicFlowBlock implements FlowBlock {
                     group.onclick = () => {
                         this.options.on_dropdown_extended(this,
                                                           chunk.name,
-                                                          chunk.var,
+                                                          chunk.val,
                                                           plate.getBBox(),
                                                           (new_value: string) => {
                                                               this.updateChunk(chunk, text, new_value);
@@ -638,15 +814,67 @@ export class AtomicFlowBlock implements FlowBlock {
 
                 this.chunkBoxes.push(group);
             }
+            else if (chunk.type === 'index_var') {
+                const group = document.createElementNS(SvgNS, 'g');
+                group.setAttributeNS(null, 'class', 'index_var');
+                this.chunkGroup.appendChild(group);
+
+                const connector = document.createElementNS(SvgNS, 'rect');
+                const path = document.createElementNS(SvgNS, 'path');
+
+                group.appendChild(connector);
+                group.appendChild(path);
+
+                let type = 'any';
+                if (chunk.direction === 'in'){
+                    const inp = this.options.inputs[this.getCorrespondingInputIndex(chunk)];
+                    if (!inp) {
+                        console.error(chunk, this.options.inputs, this.chunks);
+                    }
+                    else {
+                        type = inp.type || type; // Messages are 1-indexed
+                    }
+                }
+                else if (chunk.direction === 'out'){
+                    const outp = this.options.outputs[this.getCorrespondingOutputIndex(chunk)];
+                    if (!outp) {
+                        console.error(chunk, this.options.outputs, this.chunks);
+                    }
+                    else {
+                        type = outp.type || type; // Messages are 1-indexed
+                    }
+                }
+
+                connector.setAttribute('class', `var_connector direction_${chunk.direction} ${type}_port`);
+                connector.setAttributeNS(null, 'y', box_height/2 - CONNECTOR_SIDE_SIZE / 2  + "");
+                connector.setAttributeNS(null, 'height', CONNECTOR_SIDE_SIZE + "");
+
+                path.setAttribute('class', `var_path direction_${chunk.direction} ${type}_port`);
+
+                this.chunkBoxes.push(group);
+            }
         }
 
-        // Center text box
+        // Properly place elements
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
         this.rect.setAttributeNS(null, 'y', "0");
         this.rect.setAttributeNS(null, 'height', box_height + "");
 
         this.rect.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
+
+        if (this.icon) {
+            const icon_rect = this.icon.getBBox();
+            this.icon.setAttributeNS(null, 'y', box_height / 2 - icon_rect.height / 2 + '');
+            const padding_px = icon_rect.x;
+
+            const separator_x = icon_rect.width + padding_px * 2;
+            this.iconSeparator.setAttributeNS(null, 'd', `M${ separator_x },0 L${separator_x},${box_height}`);
+
+            this.iconPlate.setAttributeNS(null, 'width', separator_x + 1 + ''); // +1 to cover separator stroke-width
+            this.iconPlate.setAttributeNS(null, 'height', box_height + '');
+
+        }
 
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 

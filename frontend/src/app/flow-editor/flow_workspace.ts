@@ -96,7 +96,7 @@ export class FlowWorkspace implements BlockManager {
 
         // Popup group
         this.popupGroup = document.createElement('div');
-        this.popupGroup.setAttribute('class', 'popup_group');
+        this.popupGroup.setAttribute('class', 'popup_group hidden');
         this.baseElement.appendChild(this.popupGroup);
 
         this.canvas = document.createElementNS(SvgNS, "svg");
@@ -1684,7 +1684,7 @@ export class FlowWorkspace implements BlockManager {
                     name: "message",
                     type: "string",
                 },
-                { // TODO: Dropdown field
+                {
                     name: "chat",
                     type: "any",
                 },
@@ -1727,7 +1727,7 @@ export class FlowWorkspace implements BlockManager {
 
         const set_response = new AtomicFlowBlock({
             type: "operation",
-            message: "Set variable (var)", // TODO: Variable name dropdown
+            message: "Set variable (var)",
             inputs: [
                 {
                     name: 'value',
@@ -1747,7 +1747,7 @@ export class FlowWorkspace implements BlockManager {
                     name: "message",
                     type: "string",
                 },
-                { // TODO: Dropdown field
+                {
                     name: "chat",
                     type: "any",
                 },
@@ -1790,7 +1790,7 @@ export class FlowWorkspace implements BlockManager {
 
         const set_response2 = new AtomicFlowBlock({
             type: "operation",
-            message: "Set variable (var)", // TODO: Variable name dropdown
+            message: "Set variable (var)",
             inputs: [
                 {
                     name: 'value',
