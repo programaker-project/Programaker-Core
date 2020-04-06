@@ -5,6 +5,8 @@ import { BlockManager } from './block_manager';
 import { FlowWorkspace } from './flow_workspace';
 import { CustomBlockService } from '../custom_block.service';
 import { ResolvedCustomBlock } from '../custom_block';
+import { BridgeService } from '../bridges/bridge.service';
+import { BridgeIndexData } from '../bridges/bridge';
 
 export type BlockGenerator = (manager: BlockManager) => FlowBlock;
 
@@ -13,6 +15,7 @@ export class Toolbox {
     toolboxDiv: HTMLDivElement;
     blockShowcase: HTMLDivElement;
     workspace: FlowWorkspace;
+    categories: { [key: string]: HTMLDivElement } = {};
 
     public static BuildOn(baseElement: HTMLElement, workspace: FlowWorkspace): Toolbox {
         let toolbox: Toolbox;
@@ -51,8 +54,39 @@ export class Toolbox {
         this.toolboxDiv.appendChild(this.blockShowcase);
     }
 
-    addBlockGenerator(generator: BlockGenerator) {
-        const block_exhibitor = BlockExhibitor.FromGenerator(generator, this.blockShowcase);
+    setCategory(cat:{ id: string, name: string }) {
+        const [div, updated] = this.getOrCreateCategory(cat);
+        if (!updated) {
+            const title = div.getElementsByClassName('category_title')[0] as HTMLDivElement;
+            title.innerText = cat.name;
+        }
+    }
+
+    private getOrCreateCategory(cat:{ id: string, name: string }): [HTMLDivElement, boolean] {
+        let category_div = this.categories[cat.id];
+        let created_now = false;
+
+        if (!category_div) {
+            category_div = this.categories[cat.id] = document.createElement('div');
+            category_div.setAttribute('class', 'category empty cat_name_' + cat.name + ' cat_id_' + cat.id);
+            this.blockShowcase.appendChild(category_div);
+
+            const cat_title = document.createElement('div');
+            cat_title.setAttribute('class', 'category_title');
+            cat_title.innerText = cat.name;
+            category_div.appendChild(cat_title)
+
+            created_now = true;
+        }
+
+        return [category_div, created_now];
+    }
+
+    addBlockGenerator(generator: BlockGenerator, category_id: string) {
+        const [category_div] = this.getOrCreateCategory({ id: category_id, name: category_id })
+        category_div.classList.remove('empty');
+
+        const block_exhibitor = BlockExhibitor.FromGenerator(generator, category_div);
         const element = block_exhibitor.getElement();
         element.onmousedown = (ev: MouseEvent) => {
             try {
@@ -82,6 +116,11 @@ export class Toolbox {
 
 export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorkspace): Toolbox {
     const tb = Toolbox.BuildOn(baseElement, workspace);
+
+    const control = 'control';
+
+    tb.setCategory({ id: control, name: 'Control' })
+
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             message: 'wait',
@@ -96,30 +135,40 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             on_dropdown_extended: manager.onDropdownExtended.bind(manager),
             on_inputs_changed: manager.onInputsChanged.bind(manager),
         });
-    });
+    }, control);
 
     return tb;
 }
 
 export async function fromCustomBlockService(baseElement: HTMLElement,
                                              workspace: FlowWorkspace,
-                                             customBlockService: CustomBlockService): Promise<Toolbox> {
+                                             customBlockService: CustomBlockService,
+                                             bridgeService: BridgeService,
+                                            ): Promise<Toolbox> {
     const base = buildBaseToolbox(baseElement, workspace);
 
-    const blocks = await customBlockService.getCustomBlocks();
-    for (const block of blocks) {
-        base.addBlockGenerator((manager) => {
-            return new AtomicFlowBlock({
-                message: get_block_message(block),
-                type: (block.block_type as any),
-                inputs: get_block_inputs(block),
-                outputs: get_block_outputs(block),
-                on_io_selected: manager.onIoSelected.bind(manager),
-                on_dropdown_extended: manager.onDropdownExtended.bind(manager),
-                on_inputs_changed: manager.onInputsChanged.bind(manager),
-            })
-        });
-    }
+    await Promise.all([
+        bridgeService.listUserBridges().then((data: {bridges: BridgeIndexData[]}) => {
+            for (const bridge of data.bridges) {
+                base.setCategory({ id: bridge.id, name: bridge.name });
+            }
+        }),
+        customBlockService.getCustomBlocks().then(blocks => {
+            for (const block of blocks) {
+                base.addBlockGenerator((manager) => {
+                    return new AtomicFlowBlock({
+                        message: get_block_message(block),
+                        type: (block.block_type as any),
+                        inputs: get_block_inputs(block),
+                        outputs: get_block_outputs(block),
+                        on_io_selected: manager.onIoSelected.bind(manager),
+                        on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+                        on_inputs_changed: manager.onInputsChanged.bind(manager),
+                    })
+                }, block.service_port_id);
+            }
+        })
+    ]);
 
     return base;
 }

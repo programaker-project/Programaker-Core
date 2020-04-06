@@ -30,11 +30,13 @@ import { SessionService } from '../session.service';
 import { environment } from '../../environments/environment';
 import { unixMsToStr } from '../utils';
 import { Session } from '../session';
+import { BridgeService } from '../bridges/bridge.service';
 
 @Component({
     selector: 'app-my-flow-editor',
     templateUrl: './flow-editor.component.html',
     providers: [
+        BridgeService,
         ConnectionService, CustomBlockService, CustomSignalService,
         MonitorService, ProgramService, ServiceService, SessionService,
         TemplateService
@@ -75,6 +77,7 @@ export class FlowEditorComponent implements OnInit {
         private notification: MatSnackBar,
         private connectionService: ConnectionService,
         private sessionService: SessionService,
+        private bridgeService: BridgeService,
     ) {
     }
 
@@ -243,7 +246,9 @@ export class FlowEditorComponent implements OnInit {
 
         this.workspace = FlowWorkspace.BuildOn(workspaceElement);
         this.toolbox = await fromCustomBlockService(workspaceElement, this.workspace,
-                                                    this.customBlockService);
+                                                    this.customBlockService,
+                                                    this.bridgeService,
+                                                   );
         // this.workspace.drawSample();
 
         // for (const reg of registrations) {

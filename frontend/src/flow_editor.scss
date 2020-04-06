@@ -319,6 +319,18 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
     opacity: 0.2;
 }
 
+.toolbox .category.empty {
+    display: none;
+}
+
+.category .category_title {
+    background-color: #27212e;
+    padding: 0.5ex;
+    font-weight: bold;
+    width: 100%;
+    color: white;
+}
+
 .toolbox .block_exhibitor {
     margin: 1ex;
 }
@@ -333,10 +345,6 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
 
 .block_exhibitor.hidden g.flow_node {
     visibility: hidden;
-}
-
-.showcase {
-    margin: 1ex;
 }
 
 .block_exhibitor {
