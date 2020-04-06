@@ -13,8 +13,8 @@ import { AtomicFlowBlock } from './atomic_flow_block';
 
 import { BlockManager } from './block_manager';
 
-import Fuse from 'fuse.js';
-
+/// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
+declare const Fuse: any;
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
