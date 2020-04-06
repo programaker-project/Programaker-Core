@@ -110,7 +110,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
     for (const block of blocks) {
         base.addBlockGenerator((manager) => {
             return new AtomicFlowBlock({
-                message: block.message,
+                message: get_block_message(block),
                 type: (block.block_type as any),
                 inputs: get_block_inputs(block),
                 outputs: get_block_outputs(block),
@@ -124,9 +124,8 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
     return base;
 }
 
-function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {
-    // Remove save_to
-    let skipped_indexes = [];
+function get_output_indexes(block: ResolvedCustomBlock): number[] {
+    let output_indexes = [];
     if (block.save_to) {
         if (block.save_to === 'undefined') {
             console.warn('Serialization error on block.save_to');
@@ -137,9 +136,33 @@ function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {
             console.error('BLOCK save to', block);
         }
         else {
-            skipped_indexes.push((block.save_to as any).index);
+            output_indexes.push((block.save_to as any).index);
         }
     }
+
+    return output_indexes;
+}
+
+function get_block_message(block: ResolvedCustomBlock): string {
+    const output_indexes = get_output_indexes(block);
+
+    return block.message.replace(/%(\d+)/g, (_match, digits) => {
+        const num = parseInt(digits);
+        if (output_indexes.indexOf(num - 1) < 0) { // %num are 1-indexed
+            return `%i${digits}`;
+        }
+        else {
+            if (output_indexes.length !== 1) {
+                console.error('TODO: Index output remapping', block);
+            }
+            return '%o1';
+        }
+    });
+}
+
+function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {
+    // Remove save_to
+    const skipped_indexes = get_output_indexes(block);
 
     return (block.arguments
         .filter((_value, index) => skipped_indexes.indexOf(index) < 0)
@@ -230,5 +253,5 @@ function get_arg_type(arg: any): MessageType  {
             console.error("Unknown type", arg.type);
     }
 
-    return 'any';
+    return result_type as MessageType;
 }

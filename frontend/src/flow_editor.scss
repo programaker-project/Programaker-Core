@@ -1,3 +1,12 @@
+// Colors
+$pulse-color: #f0c000;
+$string-color: #44dd44;
+$integer-color: #dd4444;
+$boolean-color: #4444ff;
+$any-color: #dd44dd;
+$unknown-color: #7f7f7f;
+
+// Basics
 #workspace > svg {
     width: 100%;
     height: 100%;
@@ -27,28 +36,28 @@ svg.block_renderer path.established {
 }
 
 svg.block_renderer path.string_wire {
-    stroke: #44dd44;
+    stroke: $string-color;
 }
 
 svg.block_renderer path.integer_wire {
-    stroke: #dd4444;
+    stroke: $integer-color;
 }
 
 svg.block_renderer path.boolean_wire {
-    stroke: #4444ff;
+    stroke: $boolean-color;
 }
 
 svg.block_renderer path.any_wire {
-    stroke: #dd44dd;
+    stroke: $any-color;
 }
 
 svg.block_renderer path.pulse_wire {
-    stroke: #fc0;
+    stroke: $pulse-color;
     stroke-width: 7px;
 }
 
 svg.block_renderer path.unknown_wire {
-    stroke: #7f7f7f;
+    stroke: $unknown-color;
 }
 
 svg.block_renderer:not(.drawing) {
@@ -107,25 +116,25 @@ svg.block_renderer g.flow_node rect.port_plating {
 
 
 svg.block_renderer g.flow_node circle.external_port.string_port {
-    fill: #44dd44;
+    fill: $string-color;
 }
 
 svg.block_renderer g.flow_node circle.external_port.integer_port {
-    fill: #dd4444;
+    fill: $integer-color;
 }
 svg.block_renderer g.flow_node circle.external_port.boolean_port {
-    fill: #4444ff;
+    fill: $boolean-color;
 }
 svg.block_renderer g.flow_node circle.external_port.pulse_port {
-    fill: #fc0;
+    fill: $pulse-color;
 }
 
 svg.block_renderer g.flow_node circle.external_port.any_port {
-    fill: #dd44dd;
+    fill: $any-color;
 }
 
 svg.block_renderer g.flow_node circle.external_port.unknown_type {
-    fill: #777;
+    fill: $unknown-color;
 }
 
 svg.block_renderer g.flow_node circle.internal_port {
@@ -297,16 +306,21 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
 .toolbox {
     height: 100%;
     min-width: 5ex;
+    max-width: 40vw;
     background-color: rgba(0,0,0,0.3);
     position: absolute;
     top: 0;
     left: 0;
-    overflow-y: auto;
+    overflow: auto;
 }
 
 .toolbox.subsumed {
     pointer-events: none;
     opacity: 0.2;
+}
+
+.toolbox .block_exhibitor {
+    margin: 1ex;
 }
 
 .toolbox.subsumed .block_exhibitor {
@@ -327,4 +341,65 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
 
 .block_exhibitor {
     display: block;
+}
+
+// Block internal wiring
+.var_connector {
+    stroke-width: 4px;
+    stroke: $any-color;
+
+    &.string_port {
+        stroke: $string-color;
+    }
+
+    &.integer_port {
+        stroke: $integer-color;
+    }
+
+    &.boolean_port {
+        stroke: $boolean-color;
+    }
+
+    &.any_port {
+        stroke: $any-color;
+    }
+
+    &.pulse_port {
+        stroke: $pulse-color;
+    }
+
+    &.unknown_port {
+        stroke: $unknown-color;
+    }
+}
+
+
+path.var_path {
+    stroke-width: 3px;
+    stroke: $any-color;
+    stroke-dasharray: 5;
+
+    &.string_port {
+        stroke: $string-color;
+    }
+
+    &.integer_port {
+        stroke: $integer-color;
+    }
+
+    &.boolean_port {
+        stroke: $boolean-color;
+    }
+
+    &.any_port {
+        stroke: $any-color;
+    }
+
+    &.pulse_port {
+        stroke: $pulse-color;
+    }
+
+    &.unknown_port {
+        stroke: $unknown-color;
+    }
 }
