@@ -7,6 +7,7 @@ import { CustomBlockService } from '../custom_block.service';
 import { ResolvedCustomBlock } from '../custom_block';
 import { BridgeService } from '../bridges/bridge.service';
 import { BridgeIndexData } from '../bridges/bridge';
+import { iconDataToUrl } from '../utils';
 
 export type BlockGenerator = (manager: BlockManager) => FlowBlock;
 
@@ -131,6 +132,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
 
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
+            icon: '/assets/logo.png',
             message: 'wait',
             type: 'operation',
             inputs: [
@@ -155,28 +157,39 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                                             ): Promise<Toolbox> {
     const base = buildBaseToolbox(baseElement, workspace);
 
-    await Promise.all([
-        bridgeService.listUserBridges().then((data: {bridges: BridgeIndexData[]}) => {
-            for (const bridge of data.bridges) {
-                base.setCategory({ id: bridge.id, name: bridge.name });
-            }
-        }),
-        customBlockService.getCustomBlocks().then(blocks => {
-            for (const block of blocks) {
-                base.addBlockGenerator((manager) => {
-                    return new AtomicFlowBlock({
-                        message: get_block_message(block),
-                        type: (block.block_type as any),
-                        inputs: get_block_inputs(block),
-                        outputs: get_block_outputs(block),
-                        on_io_selected: manager.onIoSelected.bind(manager),
-                        on_dropdown_extended: manager.onDropdownExtended.bind(manager),
-                        on_inputs_changed: manager.onInputsChanged.bind(manager),
-                    })
-                }, block.service_port_id);
-            }
-        })
-    ]);
+    const data = await bridgeService.listUserBridges();
+
+    const bridges = data.bridges;
+    const bridge_by_id: {[key: string]: BridgeIndexData} = {} ;
+
+    for (const bridge of bridges) {
+        bridge_by_id[bridge.id] = bridge;
+        base.setCategory({ id: bridge.id, name: bridge.name });
+    }
+
+
+    const blocks = await customBlockService.getCustomBlocks();
+    for (const block of blocks) {
+        let icon = null;
+
+        const bridge = bridge_by_id[block.service_port_id];
+        if (bridge) {
+            icon = iconDataToUrl(bridge.icon, bridge.id);
+        }
+
+        base.addBlockGenerator((manager) => {
+            return new AtomicFlowBlock({
+                icon: icon,
+                message: get_block_message(block),
+                type: (block.block_type as any),
+                inputs: get_block_inputs(block),
+                outputs: get_block_outputs(block),
+                on_io_selected: manager.onIoSelected.bind(manager),
+                on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+                on_inputs_changed: manager.onInputsChanged.bind(manager),
+            })
+        }, block.service_port_id);
+    }
 
     return base;
 }

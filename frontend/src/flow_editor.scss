@@ -424,3 +424,13 @@ path.var_path {
         stroke: $unknown-color;
     }
 }
+
+// Node icon
+.node_icon_separator {
+    stroke: #000;
+    stroke-width: 1px;
+}
+
+.node_icon_plate {
+    fill: rgba(0,0,0,0.5);
+}

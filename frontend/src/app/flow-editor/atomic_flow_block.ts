@@ -8,9 +8,11 @@ const SvgNS = "http://www.w3.org/2000/svg";
 const INPUT_PORT_REAL_SIZE = 10;
 const OUTPUT_PORT_REAL_SIZE = 10;
 const CONNECTOR_SIDE_SIZE = 15;
+const ICON_PADDING = '1ex';
 
 export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     type: 'operation' | 'getter' | 'trigger';
+    icon?: string,
 }
 
 type MessageChunk = ( { type: 'const', val: string }
@@ -193,6 +195,10 @@ export class AtomicFlowBlock implements FlowBlock {
     private node: SVGElement;
     private rect: SVGElement;
     private canvas: SVGElement;
+    private icon: SVGImageElement;
+    private iconPlate: SVGRectElement;
+    private iconSeparator: SVGPathElement;
+
     private chunkGroup: SVGGElement;
     private chunkBoxes: SVGElement[];
     private chunks: MessageChunk[];
@@ -424,6 +430,13 @@ export class AtomicFlowBlock implements FlowBlock {
         const PLATE_X_PADDING = 2; // px
         const IMAGE_X_PADDING = 2; // px
 
+        let x_offset = 0;
+        if (this.icon) {
+            const icon_rect = this.icon.getBBox();
+            x_offset += icon_rect.width + icon_rect.x * 2;
+        }
+
+
         let chunks_width = 0;
         for (let i = 0; i < this.chunks.length; i++) {
             if (this.chunks[i].type === 'const') {
@@ -444,11 +457,12 @@ export class AtomicFlowBlock implements FlowBlock {
 
         let widest_section = MIN_WIDTH;
         widest_section = Math.max(widest_section, chunks_width + X_PADDING * 2);
-        widest_section = Math.max(widest_section, this.input_x_position);
-        widest_section = Math.max(widest_section, this.output_x_position);
 
-        const box_width = widest_section;
-        let next_chunk_position = box_width / 2 - chunks_width / 2;
+        // Both input and output already accout for the x_offset
+        widest_section = Math.max(widest_section, this.input_x_position - x_offset);
+        widest_section = Math.max(widest_section, this.output_x_position - x_offset);
+
+        let next_chunk_position = x_offset + widest_section / 2 - chunks_width / 2;
         for (let i = 0; i < this.chunks.length; i++) {
 
             const chunk = this.chunks[i];
@@ -517,6 +531,7 @@ export class AtomicFlowBlock implements FlowBlock {
             }
         }
 
+        const box_width = widest_section + x_offset;
         this.rect.setAttributeNS(null, 'width', box_width + "");
     }
 
@@ -595,6 +610,28 @@ export class AtomicFlowBlock implements FlowBlock {
         this.group.appendChild(this.node);
         this.canvas.appendChild(this.group);
 
+        if (this.options.icon) {
+            this.icon = document.createElementNS(SvgNS, 'image');
+            this.icon.setAttributeNS(null, 'class', 'node_icon');
+            this.icon.setAttributeNS(null, 'href', this.options.icon);
+            this.icon.setAttributeNS(null, 'width', '4ex');
+            this.icon.setAttributeNS(null, 'height', '4ex');
+            this.icon.setAttributeNS(null, 'x', ICON_PADDING);
+
+            this.iconPlate = document.createElementNS(SvgNS, 'rect');
+            this.iconPlate.setAttributeNS(null, 'class', 'node_icon_plate');
+            this.iconPlate.setAttributeNS(null, 'x', '0');
+            this.iconPlate.setAttributeNS(null, 'y', '0');
+            this.iconPlate.setAttributeNS(null, 'rx', '2');
+
+            this.iconSeparator = document.createElementNS(SvgNS, 'path');
+            this.iconSeparator.setAttributeNS(null, 'class', 'node_icon_separator');
+
+            this.group.appendChild(this.iconPlate);
+            this.group.appendChild(this.iconSeparator);
+            this.group.appendChild(this.icon);
+        }
+
         // Calculate text correction
         const refText = document.createElementNS(SvgNS, 'text');
         refText.setAttribute('class', 'node_name');
@@ -613,11 +650,18 @@ export class AtomicFlowBlock implements FlowBlock {
         this.node.removeChild(refText);
         // End of text correction calculation
 
-
         const box_height = (refBox.height * 3 + y_padding * 2);
 
         // Add inputs
         this.input_x_position = input_initial_x_position + this.textCorrection.x;
+        this.output_x_position = output_initial_x_position + this.textCorrection.x;
+
+        if (this.icon) {
+            const icon_rect = this.icon.getBBox();
+            this.input_x_position += icon_rect.width;
+            this.output_x_position += icon_rect.width;
+        }
+
         let input_index = -1;
 
         for (const input of this.options.inputs) {
@@ -627,7 +671,6 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         // Add outputs
-        this.output_x_position = output_initial_x_position + this.textCorrection.x;
         let output_index = -1;
 
         for (const output of this.options.outputs) {
@@ -812,13 +855,26 @@ export class AtomicFlowBlock implements FlowBlock {
             }
         }
 
-        // Center text box
+        // Properly place elements
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
         this.rect.setAttributeNS(null, 'y', "0");
         this.rect.setAttributeNS(null, 'height', box_height + "");
 
         this.rect.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
+
+        if (this.icon) {
+            const icon_rect = this.icon.getBBox();
+            this.icon.setAttributeNS(null, 'y', box_height / 2 - icon_rect.height / 2 + '');
+            const padding_px = icon_rect.x;
+
+            const separator_x = icon_rect.width + padding_px * 2;
+            this.iconSeparator.setAttributeNS(null, 'd', `M${ separator_x },0 L${separator_x},${box_height}`);
+
+            this.iconPlate.setAttributeNS(null, 'width', separator_x + 1 + ''); // +1 to cover separator stroke-width
+            this.iconPlate.setAttributeNS(null, 'height', box_height + '');
+
+        }
 
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
