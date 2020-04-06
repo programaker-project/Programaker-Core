@@ -75,6 +75,14 @@ export class Toolbox {
             cat_title.setAttribute('class', 'category_title');
             cat_title.innerText = cat.name;
             category_div.appendChild(cat_title)
+            cat_title.onclick = () => {
+                if (category_div.classList.contains('collapsed')) {
+                    category_div.classList.remove('collapsed');
+                }
+                else {
+                    category_div.classList.add('collapsed');
+                }
+            };
 
             created_now = true;
         }

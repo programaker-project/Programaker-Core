@@ -329,10 +329,23 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
     font-weight: bold;
     width: 100%;
     color: white;
+    cursor: pointer;
+}
+
+.toolbox .showcase {
+    width: max-content;
 }
 
 .toolbox .block_exhibitor {
     margin: 1ex;
+}
+
+.toolbox .category.collapsed .block_exhibitor {
+    display: none;
+}
+
+.toolbox .category.collapsed .category_title {
+    border-bottom: 1px solid #444;
 }
 
 .toolbox.subsumed .block_exhibitor {
