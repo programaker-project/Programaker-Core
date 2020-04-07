@@ -191,17 +191,17 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'When all true',
-            type: 'streaming',
+            type: 'trigger',
             inputs: [
                 {
-                    type: "pulse",
+                    type: "boolean",
                 },
                 {
-                    type: "pulse",
+                    type: "boolean",
                 },
             ],
             extra_inputs: {
-                type: "pulse",
+                type: "boolean",
                 quantity: "any",
             },
             on_io_selected: manager.onIoSelected.bind(manager),
