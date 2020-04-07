@@ -95,7 +95,7 @@ svg.block_renderer g.flow_node rect.node_body {
     fill: #fff;
     stroke-width: 0;
     opacity: 0.9;
-    filter: url("#shadow");
+    // filter: url("#shadow");
 }
 
 svg.block_renderer g.flow_node a.to-be-removed rect.node_body {
@@ -295,7 +295,7 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
 // Trashcan
 .trashcan .backdrop {
     fill: #fafafa;
-    filter: url("#shadow");
+    // filter: url("#shadow");
 }
 
 .trashcan.to-be-activated .backdrop {

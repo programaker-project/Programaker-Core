@@ -635,19 +635,16 @@ export class AtomicFlowBlock implements FlowBlock {
         // Calculate text correction
         const refText = document.createElementNS(SvgNS, 'text');
         refText.setAttribute('class', 'node_name');
-        refText.textContent = "test";
         refText.setAttributeNS(null,'textlength', '100%');
 
         refText.setAttributeNS(null, 'x', "0");
         refText.setAttributeNS(null, 'y', "0");
-        this.node.appendChild(refText);
+        refText.textContent = "test";
+        this.canvas.appendChild(refText);
 
         const refBox = refText.getClientRects()[0];
-        this.textCorrection = {
-            x: -(refBox.left - this.node.getClientRects()[0].left),
-            y: -(refBox.top - this.node.getClientRects()[0].top)
-        };
-        this.node.removeChild(refText);
+        this.textCorrection = { x: 0, y: 0 }; // TODO: Remove text correction
+        this.canvas.removeChild(refText);
         // End of text correction calculation
 
         const box_height = (refBox.height * 3 + y_padding * 2);

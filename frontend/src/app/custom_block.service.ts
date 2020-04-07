@@ -70,14 +70,11 @@ export class CustomBlockService {
 
     private _fixBlockErrors(block: ResolvedCustomBlock): ResolvedCustomBlock {
         try {
-            const matcher = (block.message as any).matchAll(/%\d/g);
-            let arguments_in_message = 0;
-            while (true) {
-                const next = matcher.next();
-                if (next.done) {
-                    break;
-                }
+            const regexp = RegExp(/%\d/g);
 
+            let arguments_in_message = 0;
+            let match;
+            while ((match = regexp.exec(block.message as any)) !== null) {
                 arguments_in_message++;
             }
 
@@ -151,7 +148,7 @@ export class CustomBlockService {
                 this.cacheArgOptions(dynamicArg, block, result);
 
                 // Replace all options in place
-                let index;
+                let index: number;
                 for (index = 0; index < result.length; index++) {
                     options[index] = result[index];
                 }
@@ -171,7 +168,7 @@ export class CustomBlockService {
             }
         }
         catch(exception) {
-            console.error(exception);
+            console.error("Callback error:", exception);
             options = [["Not found", "__plaza_internal_not_found"]];
         }
 
