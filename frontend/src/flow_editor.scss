@@ -241,19 +241,27 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
     border: none;
     background-color: #fff;
     color: black;
+
+    // Remove Spinner arrows
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    -moz-appearance: textfield;
 }
 
 // Variable dropdown editor
-#workspace .var {
+svg.block_renderer .named_var {
     cursor: pointer;
 }
 
-#workspace .var > .var_name {
+svg.block_renderer .named_var .var_name {
     font-size: 14px;
     fill: black;
 }
 
-#workspace .var > .var_plate {
+svg.block_renderer .named_var .var_plate {
     fill: transparent;
     stroke-width: 1px;
     stroke: #444;

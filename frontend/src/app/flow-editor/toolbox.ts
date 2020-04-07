@@ -563,6 +563,58 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         });
     }, operators);
 
+    // Variables
+    const variables = 'variables';
+    tb.setCategory({ id: variables, name: 'Variables' })
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Get %(variable) value',
+            type: 'streaming',
+            outputs: [
+                {
+                    type: 'any'
+                }
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, variables);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Set %(variable) to %i1',
+            type: 'operation',
+            inputs: [
+                {
+                    name: 'new value',
+                    type: "any",
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, variables);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Increment %(variable) by %i1',
+            type: 'operation',
+            inputs: [
+                {
+                    type: "float",
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, variables);
+
 
     return tb;
 }
