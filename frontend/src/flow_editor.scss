@@ -445,3 +445,7 @@ path.var_path {
 .node_icon_plate {
     fill: rgba(0,0,0,0.5);
 }
+
+.node_icon, .node_icon_separator, .node_icon_plate {
+    pointer-events: none;
+}
