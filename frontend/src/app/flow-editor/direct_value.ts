@@ -79,7 +79,7 @@ export class DirectValue implements FlowBlock {
 
         return {
             type: BLOCK_TYPE,
-            value: { opt },
+            value: opt,
         }
     }
 

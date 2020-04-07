@@ -136,9 +136,17 @@ export class AtomicFlowBlock implements FlowBlock {
     synthetic_input_count = 0;
     synthetic_output_count = 0;
 
-    constructor(options: AtomicFlowBlockOptions) {
+    constructor(options: AtomicFlowBlockOptions, synthetic_input_count?: number, synthetic_output_count?: number) {
         if (!(options.message)) {
             throw new Error("'message' property is required to create a block");
+        }
+
+        if (synthetic_input_count) {
+            this.synthetic_input_count = synthetic_input_count;
+        }
+
+        if (synthetic_output_count) {
+            this.synthetic_output_count = synthetic_output_count;
         }
 
         this.options = JSON.parse(JSON.stringify(options));
@@ -237,7 +245,14 @@ export class AtomicFlowBlock implements FlowBlock {
     public serialize(): FlowBlockData {
         return {
             type: BLOCK_TYPE,
-            value: JSON.parse(JSON.stringify(this.options)),
+            value: {
+                opts: JSON.parse(JSON.stringify(this.options)),
+
+                // These counts are needed to keep the consistency when linking
+                // inline arguments to it's ports
+                synthetic_input_count: this.synthetic_input_count,
+                synthetic_output_count: this.synthetic_output_count,
+            },
         }
     }
 
@@ -246,12 +261,15 @@ export class AtomicFlowBlock implements FlowBlock {
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
 
-        const options: AtomicFlowBlockOptions = JSON.parse(JSON.stringify(data.value));
+        const options: AtomicFlowBlockOptions = JSON.parse(JSON.stringify(data.value.opts));
         options.on_dropdown_extended = manager.onDropdownExtended.bind(manager);
         options.on_inputs_changed = manager.onInputsChanged.bind(manager);
         options.on_io_selected = manager.onIoSelected.bind(manager);
 
-        return new AtomicFlowBlock(options);
+        return new AtomicFlowBlock(options,
+                                   data.value.synthetic_input_count,
+                                   data.value.synthetic_output_count
+                                  );
     }
 
     public getBodyElement(): SVGElement {
@@ -869,7 +887,7 @@ export class AtomicFlowBlock implements FlowBlock {
                         console.error(chunk, this.options.inputs, this.chunks);
                     }
                     else {
-                        type = inp.type || type; // Messages are 1-indexed
+                        type = inp.type || type;
                     }
                 }
                 else if (chunk.direction === 'out'){
@@ -878,7 +896,7 @@ export class AtomicFlowBlock implements FlowBlock {
                         console.error(chunk, this.options.outputs, this.chunks);
                     }
                     else {
-                        type = outp.type || type; // Messages are 1-indexed
+                        type = outp.type || type;
                     }
                 }
 
