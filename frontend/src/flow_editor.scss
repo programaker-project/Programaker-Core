@@ -5,6 +5,7 @@ $integer-color: #4444ff;
 $float-color:   #44dddd;
 $boolean-color: #dd4444;
 $any-color:     #dd44dd;
+$enum-color:    #888;
 $unknown-color: #7f7f7f;
 
 // Basics
@@ -50,6 +51,10 @@ svg.block_renderer path.float_wire {
 
 svg.block_renderer path.boolean_wire {
     stroke: $boolean-color;
+}
+
+svg.block_renderer path.enum_wire {
+    stroke: $enum-color;
 }
 
 svg.block_renderer path.any_wire {
@@ -147,6 +152,10 @@ svg.block_renderer g.flow_node circle.external_port.boolean_port {
 
 svg.block_renderer g.flow_node circle.external_port.pulse_port {
     fill: $pulse-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.enum_port {
+    fill: $enum-color;
 }
 
 svg.block_renderer g.flow_node circle.external_port.any_port {
@@ -419,6 +428,10 @@ svg.block_renderer .named_var .var_plate {
         stroke: $boolean-color;
     }
 
+    &.enum_port {
+        stroke: $enum-color;
+    }
+
     &.any_port {
         stroke: $any-color;
     }
@@ -452,6 +465,10 @@ path.var_path {
 
     &.boolean_port {
         stroke: $boolean-color;
+    }
+
+    &.enum_port {
+        stroke: $enum-color;
     }
 
     &.any_port {

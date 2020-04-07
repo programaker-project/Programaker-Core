@@ -1,7 +1,7 @@
 import { BlockManager } from './block_manager';
 import { DirectValue } from './direct_value';
-import { EnumValue, EnumDirectValue } from './enum_direct_value';
-import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D } from './flow_block';
+import { EnumValue, EnumDirectValue, EnumGetter } from './enum_direct_value';
+import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition } from './flow_block';
 import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
 import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
@@ -33,10 +33,11 @@ type State = 'waiting'     // Base state
     | 'dragging-workspace' // Moving around the workspace
 
 export class FlowWorkspace implements BlockManager {
-    public static BuildOn(baseElement: HTMLElement): FlowWorkspace {
+    public static BuildOn(baseElement: HTMLElement,
+                          getEnum: EnumGetter): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
-            workspace = new FlowWorkspace(baseElement);
+            workspace = new FlowWorkspace(baseElement, getEnum);
             workspace.init();
         }
         catch(err) {
@@ -96,7 +97,7 @@ export class FlowWorkspace implements BlockManager {
                     break;
 
                 case EnumDirectValue.GetBlockType():
-                    created_block = EnumDirectValue.Deserialize(block.data, this);
+                    created_block = EnumDirectValue.Deserialize(block.data, this, this.getEnum);
                     break;
 
                 default:
@@ -152,6 +153,7 @@ export class FlowWorkspace implements BlockManager {
     private input_helper_section: SVGGElement;
     private trashcan: SVGGElement;
     private variables_in_use: { [key: string]: number } = {};
+    private getEnum: EnumGetter;
 
     private blocks: {[key: string]: {
         block: FlowBlock,
@@ -163,11 +165,12 @@ export class FlowWorkspace implements BlockManager {
         element: SVGElement,
     }};
 
-    private constructor(baseElement: HTMLElement) {
+    private constructor(baseElement: HTMLElement, getEnum: EnumGetter) {
         this.baseElement = baseElement;
         this.inlineEditor = undefined;
         this.blocks = {};
         this.connections = {};
+        this.getEnum = getEnum;
     }
 
     private init() {
@@ -573,7 +576,12 @@ export class FlowWorkspace implements BlockManager {
                         position.y = parseInt(translate[2]) - 15;
                     }
 
-                    this.createDirectValue(input.type, this.getBlockId(block), element_index, { position });
+                    if (input.type === 'enum') {
+                        this.createEnumValue(input, this.getBlockId(block), element_index, { position })
+                    }
+                    else {
+                        this.createDirectValue(input.type, this.getBlockId(block), element_index, { position });
+                    }
                 }
                 catch (err) {
                     console.error("Error creating direct value:", err);
@@ -583,6 +591,22 @@ export class FlowWorkspace implements BlockManager {
 
         this.input_helper_section.appendChild(inputHelperGroup);
         return inputHelperGroup;
+    }
+
+    private createEnumValue(input: BridgeEnumInputPortDefinition, block_id: string, input_index: number,
+                            options: { position: Position2D, value?: string }) {
+        const enum_input = new EnumDirectValue({
+            enum_name: input.enum_name,
+            enum_namespace: input.enum_namespace,
+            get_values: this.getEnum,
+            on_select_requested: this.onSelectRequested.bind(this),
+            on_io_selected: this.onIoSelected.bind(this),
+        });
+
+        const enum_input_id = this.draw(enum_input, options.position);
+        this.addConnection(new FlowConnection({ block_id: enum_input_id, output_index: 0 },
+                                              { block_id: block_id, input_index: input_index },
+                                             ));
     }
 
     private createDirectValue(type: MessageType, block_id: string, input_index: number,
@@ -1134,12 +1158,8 @@ export class FlowWorkspace implements BlockManager {
         const editor_container = document.createElement('div');
         const editor_input = document.createElement('input');
 
-        if (value_dict[previous_value]){
-            editor_input.value = value_dict[previous_value].name || previous_value;
-        }
-        else {
-            editor_input.value = previous_value;
-        }
+        editor_input.value = '';
+
         editor_input.style.minHeight = '3em';
         editor_container.setAttribute('class', 'editor');
         this.popupGroup.appendChild(editor_container);

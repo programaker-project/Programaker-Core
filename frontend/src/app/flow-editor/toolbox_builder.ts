@@ -1,13 +1,12 @@
 import { BridgeIndexData } from '../bridges/bridge';
 import { BridgeService } from '../bridges/bridge.service';
-import { ResolvedCustomBlock } from '../custom_block';
+import { ResolvedBlockArgument, ResolvedCustomBlock, ResolvedDynamicBlockArgument } from '../custom_block';
 import { CustomBlockService } from '../custom_block.service';
 import { iconDataToUrl } from '../utils';
 import { AtomicFlowBlock } from './atomic_flow_block';
 import { InputPortDefinition, MessageType, OutputPortDefinition } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
 import { Toolbox } from './toolbox';
-
 
 const PLATFORM_ICON = '/assets/logo-dark.png';
 
@@ -804,8 +803,8 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
         base.setCategory({ id: bridge.id, name: bridge.name });
     }
 
-
-    const blocks = await customBlockService.getCustomBlocks();
+    const skip_resolve_argument_options = true; // Enum options will be filled when needed
+    const blocks = await customBlockService.getCustomBlocks(skip_resolve_argument_options);
     for (const block of blocks) {
         let icon = null;
 
@@ -873,9 +872,24 @@ function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {
 
     return (block.arguments
         .filter((_value, index) => skipped_indexes.indexOf(index) < 0)
-        .map((value) => ({
-            type: get_arg_type(value)
-        } as InputPortDefinition) ));
+        .map((value) => (get_block_arg(block, value)) ));
+}
+
+function get_block_arg(block: ResolvedCustomBlock, arg: ResolvedBlockArgument): InputPortDefinition {
+    if ((arg as ResolvedDynamicBlockArgument).callback) {
+        const dyn_arg = (arg as ResolvedDynamicBlockArgument);
+
+        return {
+            type: 'enum',
+            enum_name: dyn_arg.callback,
+            enum_namespace: block.service_port_id,
+        }
+    }
+    else {
+        return {
+            type: get_arg_type(arg),
+        };
+    }
 }
 
 function get_block_outputs(block: ResolvedCustomBlock): OutputPortDefinition[] {

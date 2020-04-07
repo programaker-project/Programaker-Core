@@ -8,10 +8,19 @@ export interface OutputPortDefinition {
     name?: string;
 };
 
-export interface InputPortDefinition {
+export interface PrimitiveTypeInputPortDefinition {
     type?: MessageType;
     name?: string;
 };
+
+export interface BridgeEnumInputPortDefinition {
+    type: 'enum';
+    name?: string;
+    enum_name: string;
+    enum_namespace: string;
+};
+
+export type InputPortDefinition = PrimitiveTypeInputPortDefinition | BridgeEnumInputPortDefinition;
 
 export interface ExtraInputDefinition {
     type: MessageType,

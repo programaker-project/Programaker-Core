@@ -17,6 +17,7 @@ export type EnumValue = {
     name: string,
 };
 
+export type EnumGetter = (namespace: string, name: string) => EnumValue[] | Promise<EnumValue[]>;
 
 export type OnSelectRequested = ((block: FlowBlock,
                                   previous_value: string,
@@ -28,7 +29,7 @@ export type OnSelectRequested = ((block: FlowBlock,
 export interface EnumDirectValueOptions {
     enum_name: string,
     enum_namespace: string,
-    get_values: () => EnumValue[] | Promise<EnumValue[]>;
+    get_values: EnumGetter;
     type?: MessageType,
     on_io_selected?: OnIOSelected,
     on_select_requested?: OnSelectRequested,
@@ -55,6 +56,7 @@ export class EnumDirectValue implements FlowBlock {
     private rect: SVGElement;
     private textBox: SVGElement;
     private canvas: SVGElement;
+    private _defaultText: string;
 
     private position: {x: number, y: number};
     private textCorrection: {x: number, y: number};
@@ -65,24 +67,32 @@ export class EnumDirectValue implements FlowBlock {
     }
 
     public serialize(): FlowBlockData {
-        console.error('Cannot serialize get values:', this.options.get_values);
-
         return {
             type: BLOCK_TYPE,
-            value: JSON.parse(JSON.stringify(this.options)),
+            value: { options: JSON.parse(JSON.stringify(this.options)),
+                     value_id: this.getValue(),
+                     value_text: this.textBox.textContent,
+                   },
         }
     }
 
-    static Deserialize(data: FlowBlockData, manager: BlockManager): FlowBlock {
+    static Deserialize(data: FlowBlockData, manager: BlockManager, enumGetter: EnumGetter): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
 
-        const options: EnumDirectValueOptions = JSON.parse(JSON.stringify(data.value));
+        const options: EnumDirectValueOptions = JSON.parse(JSON.stringify(data.value.options));
         options.on_io_selected = manager.onIoSelected.bind(manager);
         options.on_select_requested = manager.onSelectRequested.bind(manager);
+        options.get_values = enumGetter;
 
-        return new EnumDirectValue(options);
+        const block = new EnumDirectValue(options);
+
+        console.log("Val", data.value);
+        block.value_id = data.value.value_id;
+        block._defaultText = data.value.value_text;
+
+        return block;
     }
 
     public getBodyElement(): SVGElement {
@@ -197,10 +207,17 @@ export class EnumDirectValue implements FlowBlock {
                                                     );
                 }
             });
-            this.setValue(values[0].id);
+
+            if (this.value_id === undefined) {
+                this.setValue(values[0].id);
+            }
         }
 
-        const result = this.options.get_values();
+        if (this.value_id !== undefined) {
+            this.textBox.textContent = this._defaultText;
+        }
+
+        const result = this.options.get_values(this.options.enum_namespace, this.options.enum_name);
         if ((result as any).then) {
             (result as Promise<EnumValue[]>).then(on_done);
         }
@@ -323,7 +340,12 @@ export class EnumDirectValue implements FlowBlock {
 
         this.size = { width: box_width, height: box_height };
 
-        this.loadValues();
+        try {
+            this.loadValues();
+        }
+        catch (err) {
+            console.error("Error loading enum values:", err);
+        }
 
         return this.group;
     }

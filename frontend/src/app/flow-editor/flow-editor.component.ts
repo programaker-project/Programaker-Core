@@ -32,6 +32,7 @@ import { unixMsToStr } from '../utils';
 import { Session } from '../session';
 import { BridgeService } from '../bridges/bridge.service';
 import { FlowGraph } from './flow_graph';
+import { EnumGetter, EnumValue } from './enum_direct_value';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -168,11 +169,21 @@ export class FlowEditorComponent implements OnInit {
         this.calculate_size(workspaceElement);
         this.calculate_program_header_size(programHeaderElement);
 
-        this.workspace = FlowWorkspace.BuildOn(workspaceElement);
+        this.workspace = FlowWorkspace.BuildOn(workspaceElement, this.getEnumValues.bind(this));
         this.toolbox = await fromCustomBlockService(workspaceElement, this.workspace,
                                                     this.customBlockService,
                                                     this.bridgeService,
                                                    );
+    }
+
+    async getEnumValues(enum_namespace: string, enum_name: string): Promise<EnumValue[]> {
+        const values = await this.customBlockService.getCallbackOptions(enum_namespace, enum_name);
+
+        return values.map(v => {
+            return {
+                id: v[1], name: v[0],
+            }
+        });
     }
 
     calculate_size(workspace: HTMLElement) {

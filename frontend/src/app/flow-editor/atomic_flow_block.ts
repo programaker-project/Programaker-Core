@@ -246,7 +246,7 @@ export class AtomicFlowBlock implements FlowBlock {
         return {
             type: BLOCK_TYPE,
             value: {
-                opts: JSON.parse(JSON.stringify(this.options)),
+                options: JSON.parse(JSON.stringify(this.options)),
 
                 // These counts are needed to keep the consistency when linking
                 // inline arguments to it's ports
@@ -261,7 +261,7 @@ export class AtomicFlowBlock implements FlowBlock {
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
 
-        const options: AtomicFlowBlockOptions = JSON.parse(JSON.stringify(data.value.opts));
+        const options: AtomicFlowBlockOptions = JSON.parse(JSON.stringify(data.value.options));
         options.on_dropdown_extended = manager.onDropdownExtended.bind(manager);
         options.on_inputs_changed = manager.onInputsChanged.bind(manager);
         options.on_io_selected = manager.onIoSelected.bind(manager);
