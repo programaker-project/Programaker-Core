@@ -61,9 +61,11 @@ export class BlockExhibitor implements BlockManager {
 
         const area = this.block.getBodyArea();
 
+        this.block.moveBy({x: 5, y: 5}); // Move slightly, to allow all of the block shadow in
+
         // Move block into view
-        this.element.style.width = area.width + 'px';
-        this.element.style.height = area.height + 'px';
+        this.element.style.width = area.width + 10 + 'px';
+        this.element.style.height = area.height + 10 + 'px';
     }
 
     public getElement(): SVGSVGElement {

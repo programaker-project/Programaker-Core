@@ -137,10 +137,10 @@ export class FlowWorkspace implements BlockManager {
 </marker>
 <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
   <feColorMatrix in="SourceGraphic" out="inverted" type="matrix" values="
--0.75 0    0    0 1
- 0   -0.75 0    0 1
- 0    0   -0.75 0 1
- 0    0    0    1 0
+1 0 0 0 0
+0 1 0 0 0
+0 0 1 0 0
+0 0 0 1 0
 "></feColorMatrix>
   <feGaussianBlur result="blurOut" in="inverted" stdDeviation="2"></feGaussianBlur>
   <feBlend in="SourceGraphic" in2="blurOut" mode="normal"></feBlend>
@@ -158,11 +158,17 @@ export class FlowWorkspace implements BlockManager {
         rect.setAttributeNS(null, 'width', '5ex');
         rect.setAttributeNS(null, 'height', '8ex');
 
+        const shadow = document.createElementNS(SvgNS, 'rect');
+        shadow.setAttributeNS(null, 'class', 'backdrop_shadow');
+        shadow.setAttributeNS(null, 'width', '5ex');
+        shadow.setAttributeNS(null, 'height', '8ex');
+
         const image = document.createElementNS(SvgNS, 'image');
         image.setAttributeNS(null, 'href', '/assets/sprites/delete_forever-black.svg');
         image.setAttributeNS(null, 'width', '5ex');
         image.setAttributeNS(null, 'height', '8ex');
 
+        this.trashcan.appendChild(shadow);
         this.trashcan.appendChild(rect);
         this.trashcan.appendChild(image);
     }

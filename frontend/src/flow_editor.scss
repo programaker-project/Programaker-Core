@@ -94,8 +94,13 @@ svg.block_renderer:not(.drawing) {
 svg.block_renderer g.flow_node rect.node_body {
     fill: #fff;
     stroke-width: 0;
-    opacity: 0.9;
-    // filter: url("#shadow");
+}
+
+svg.block_renderer g.flow_node rect.body_shadow {
+    // Separated in a different element to avoid problems
+    // in case filter problems make it disappear
+    filter: url("#shadow");
+    fill: rgba(0,0,0,0.3); // Shadow color
 }
 
 svg.block_renderer g.flow_node a.to-be-removed rect.node_body {
@@ -295,7 +300,13 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
 // Trashcan
 .trashcan .backdrop {
     fill: #fafafa;
-    // filter: url("#shadow");
+}
+
+.trashcan .backdrop_shadow {
+    // Separated in a different element to avoid problems
+    // in case filter problems make it disappear
+    filter: url("#shadow");
+    fill: #000; // Backdrop color
 }
 
 .trashcan.to-be-activated .backdrop {

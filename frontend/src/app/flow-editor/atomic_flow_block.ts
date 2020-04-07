@@ -194,6 +194,7 @@ export class AtomicFlowBlock implements FlowBlock {
     private group: SVGElement;
     private node: SVGElement;
     private rect: SVGElement;
+    private rectShadow: SVGElement;
     private canvas: SVGElement;
     private icon: SVGImageElement;
     private iconPlate: SVGRectElement;
@@ -531,6 +532,7 @@ export class AtomicFlowBlock implements FlowBlock {
 
         const box_width = widest_section + x_offset;
         this.rect.setAttributeNS(null, 'width', box_width + "");
+        this.rectShadow.setAttributeNS(null, 'width', box_width + "");
     }
 
     public getSlots(): {[key: string]: string} {
@@ -599,10 +601,12 @@ export class AtomicFlowBlock implements FlowBlock {
         this.group = document.createElementNS(SvgNS, 'g');
         this.node = document.createElementNS(SvgNS, 'a');
         this.rect = document.createElementNS(SvgNS, 'rect');
+        this.rectShadow = document.createElementNS(SvgNS, 'rect');
         this.chunkGroup = document.createElementNS(SvgNS, 'g');
 
         this.group.setAttribute('class', 'flow_node atomic_node');
 
+        this.node.appendChild(this.rectShadow);
         this.node.appendChild(this.rect);
         this.node.appendChild(this.chunkGroup);
         this.group.appendChild(this.node);
@@ -853,8 +857,13 @@ export class AtomicFlowBlock implements FlowBlock {
         this.rect.setAttributeNS(null, 'x', "0");
         this.rect.setAttributeNS(null, 'y', "0");
         this.rect.setAttributeNS(null, 'height', box_height + "");
-
         this.rect.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
+
+        this.rectShadow.setAttributeNS(null, 'class', "body_shadow");
+        this.rectShadow.setAttributeNS(null, 'x', "0");
+        this.rectShadow.setAttributeNS(null, 'y', "0");
+        this.rectShadow.setAttributeNS(null, 'height', box_height + "");
+        this.rectShadow.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
 
         if (this.icon) {
             const icon_rect = this.icon.getBBox();
