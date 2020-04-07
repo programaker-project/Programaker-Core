@@ -174,11 +174,11 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             ],
             outputs: [
                 {
-                    name: 'true',
+                    name: 'if true',
                     type: 'pulse',
                 },
                 {
-                    name: 'false',
+                    name: 'if false',
                     type: 'pulse',
                 }
             ],
@@ -318,7 +318,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Add (+)',
+            message: '%i1 + %i2',
             type: 'streaming',
             inputs: [
                 {
@@ -342,7 +342,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Subtract (-)',
+            message: '%i1 - %i2',
             type: 'streaming',
             inputs: [
                 {
@@ -366,7 +366,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Multiply (×)',
+            message: '%i1 × %i2',
             type: 'streaming',
             inputs: [
                 {
@@ -390,7 +390,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Divide (÷)',
+            message: '%i1 / %i2',
             type: 'streaming',
             inputs: [
                 {
@@ -416,7 +416,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Is bigger than? (>)',
+            message: 'Is %i1 bigger (>) than %i2 ?',
             type: 'streaming',
             inputs: [
                 {
@@ -442,7 +442,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Are equal? (=)',
+            message: 'Is %i1 equal (=) to %i2?',
             type: 'streaming',
             inputs: [
                 {
@@ -466,7 +466,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Is smaller than? (<)',
+            message: 'Is %i1 smaller (<) than %i2?',
             type: 'streaming',
             inputs: [
                 {
