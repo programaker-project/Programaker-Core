@@ -266,6 +266,52 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         });
     }, control);
 
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Only pass first',
+            type: 'operation',
+            inputs: [
+                {
+                    type: "pulse",
+                },
+                {
+                    type: "pulse",
+                },
+            ],
+            extra_inputs: {
+                type: "pulse",
+                quantity: "any",
+            },
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, control);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Wait for all',
+            type: 'operation',
+            inputs: [
+                {
+                    type: "pulse",
+                },
+                {
+                    type: "pulse",
+                },
+            ],
+            extra_inputs: {
+                type: "pulse",
+                quantity: "any",
+            },
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, control);
+
     // Operators category
     const operators = 'operators';
     tb.setCategory({ id: operators, name: 'Operators' })
