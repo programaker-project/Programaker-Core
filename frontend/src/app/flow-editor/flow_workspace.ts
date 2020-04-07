@@ -34,6 +34,10 @@ type ConnectableNode = {
     index: number,
 };
 
+type State = 'waiting'     // Base state
+    | 'dragging-block'     // Moving around a block
+    | 'dragging-workspace' // Moving around the workspace
+
 export class FlowWorkspace implements BlockManager {
     public static BuildOn(baseElement: HTMLElement): FlowWorkspace {
         let workspace: FlowWorkspace;
@@ -57,6 +61,7 @@ export class FlowWorkspace implements BlockManager {
     private baseElement: HTMLElement;
     private inlineEditorContainer: HTMLDivElement;
     private inlineEditor: HTMLInputElement;
+    private state: State = 'waiting';
 
     private popupGroup: HTMLDivElement;
     private canvas: SVGSVGElement;
@@ -175,12 +180,17 @@ export class FlowWorkspace implements BlockManager {
 
     private set_events() {
         this.canvas.onmousedown = ((ev: MouseEvent) => {
+            if (this.state !== 'waiting') {
+                return;
+            }
+
             if (ev.target !== this.canvas) {
                 return;
             }
 
             let last = { x: ev.x, y: ev.y };
 
+            this.state = 'dragging-workspace';
             this.canvas.classList.add('dragging');
 
             this.canvas.onmousemove = ((ev: MouseEvent) => {
@@ -192,6 +202,7 @@ export class FlowWorkspace implements BlockManager {
             });
 
             this.canvas.onmouseup = (() => {
+                this.state = 'waiting';
                 this.canvas.classList.remove('dragging');
                 this.canvas.onmousemove = null;
                 this.canvas.onmouseup = null;
@@ -305,6 +316,11 @@ export class FlowWorkspace implements BlockManager {
         block.render(this.block_group, position ? position: {x: 10, y: 10});
         const bodyElement = block.getBodyElement();
         bodyElement.onmousedown = ((ev: MouseEvent) => {
+
+            if (this.state !== 'waiting'){
+                return;
+            }
+
             if (this.current_io_selected) { return; }
 
             this._mouseDownOnBlock(ev, block);
@@ -318,31 +334,41 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _mouseDownOnBlock(ev: MouseEvent, block: FlowBlock, on_done?: (ev: MouseEvent) => void) {
+        if (this.state !== 'waiting') {
+            console.error('Forcing start of MouseDown with Workspace state='+this.state);
+        }
+        this.state = 'dragging-block';
+
         const bodyElement = block.getBodyElement();
         const block_id = this.getBlockId(block);
 
         let last = {x: ev.x, y: ev.y};
         this.canvas.onmousemove = ((ev: MouseEvent) => {
-            const distance = {
-                x: (ev.x - last.x) * this.inv_zoom_level,
-                y: (ev.y - last.y) * this.inv_zoom_level,
-            };
-            last = {x: ev.x, y: ev.y};
+            try {
+                const distance = {
+                    x: (ev.x - last.x) * this.inv_zoom_level,
+                    y: (ev.y - last.y) * this.inv_zoom_level,
+                };
+                last = {x: ev.x, y: ev.y};
 
-            block.moveBy(distance);
+                block.moveBy(distance);
 
-            for (const conn of this.blocks[block_id].connections) {
-                this.updateConnection(conn);
+                for (const conn of this.blocks[block_id].connections) {
+                    this.updateConnection(conn);
+                }
+                this.updateBlockInputHelpersPosition(block_id);
+
+                if (this.isInTrashcan(ev)) {
+                    this.trashcan.classList.add('to-be-activated');
+                    bodyElement.classList.add('to-be-removed');
+                }
+                else {
+                    this.trashcan.classList.remove('to-be-activated');
+                    bodyElement.classList.remove('to-be-removed');
+                }
             }
-            this.updateBlockInputHelpersPosition(block_id);
-
-            if (this.isInTrashcan(ev)) {
-                this.trashcan.classList.add('to-be-activated');
-                bodyElement.classList.add('to-be-removed');
-            }
-            else {
-                this.trashcan.classList.remove('to-be-activated');
-                bodyElement.classList.remove('to-be-removed');
+            catch(err) {
+                console.error(err);
             }
         });
         this.canvas.onmouseup = ((ev: MouseEvent) => {
@@ -351,6 +377,7 @@ export class FlowWorkspace implements BlockManager {
                     on_done(ev);
                 }
 
+                this.state = 'waiting';
                 this.canvas.onmousemove = null;
                 this.canvas.onmouseup = null;
                 this.trashcan.classList.remove('to-be-activated');
