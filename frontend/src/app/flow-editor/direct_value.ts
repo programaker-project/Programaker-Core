@@ -45,6 +45,8 @@ export class DirectValue implements FlowBlock {
         if (!type) { return 'sample value'; }
 
         switch (type) {
+            case 'float':
+                return '0.5';
             case 'integer':
                 return '9999';
             case 'boolean':

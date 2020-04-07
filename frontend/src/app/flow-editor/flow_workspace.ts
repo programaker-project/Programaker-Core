@@ -524,6 +524,7 @@ export class FlowWorkspace implements BlockManager {
             case 'pulse':
                 return 'text';
 
+            case 'float':
             case 'integer':
                 return 'number';
 
@@ -535,6 +536,15 @@ export class FlowWorkspace implements BlockManager {
     private editInline(block: DirectValue, type: MessageType, update: (value: string) => void): void {
         this.inlineEditor.value = block.value;
         this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
+        if (type === 'integer') {
+            this.inlineEditor.step = '1';
+        }
+        else if (type === 'float') {
+            this.inlineEditor.step = '0.001';
+        }
+        else {
+            this.inlineEditor.step = '';
+        }
 
         const valueArea = this.getWorkspaceRelArea(block.getValueArea());
 
