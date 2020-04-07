@@ -140,17 +140,122 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
 
     const control = 'control';
 
+    // Control category
     tb.setCategory({ id: control, name: 'Control' })
-
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: '/assets/logo.png',
-            message: 'wait',
+            message: 'Wait',
             type: 'operation',
             inputs: [
                 {
                     name: "seconds to wait",
                     type: "integer",
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, control);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: '/assets/logo.png',
+            message: 'Check',
+            type: 'operation',
+            inputs: [
+                {
+                    name: "check",
+                    type: "boolean",
+                },
+            ],
+            outputs: [
+                {
+                    name: 'true',
+                    type: 'pulse',
+                },
+                {
+                    name: 'false',
+                    type: 'pulse',
+                }
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, control);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: '/assets/logo.png',
+            message: 'Wait for',
+            type: 'trigger',
+            inputs: [
+                {
+                    name: "check",
+                    type: "boolean",
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, control);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: '/assets/logo.png',
+            message: 'Wait for next value',
+            type: 'operation',
+            inputs: [
+                {
+                    type: "any",
+                },
+            ],
+            outputs: [
+                {
+                    name: "value",
+                    type: "any",
+                }
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, control);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: '/assets/logo.png',
+            message: 'Repeat times',
+            type: 'operation',
+            inputs: [
+                {
+                    name: "start loop",
+                    type: "pulse",
+                },
+                {
+                    name: "repetition times",
+                    type: "integer",
+                },
+                {
+                    name: "back to loop",
+                    type: "pulse",
+                },
+            ],
+            outputs: [
+                {
+                    name: "loop continues",
+                    type: "pulse",
+                },
+                {
+                    name: "iteration #",
+                    type: "integer",
+                },
+                {
+                    name: "loop completed",
+                    type: "pulse",
                 },
             ],
             on_io_selected: manager.onIoSelected.bind(manager),
