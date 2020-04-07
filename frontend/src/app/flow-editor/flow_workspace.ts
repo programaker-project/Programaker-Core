@@ -153,17 +153,17 @@ export class FlowWorkspace implements BlockManager {
     private init_trashcan() {
         this.trashcan.setAttribute('class', 'trashcan helper');
 
-        const backdrop = document.createElementNS(SvgNS, 'rect');
-        backdrop.setAttributeNS(null, 'class', 'backdrop');
-        backdrop.setAttributeNS(null, 'width', '5ex');
-        backdrop.setAttributeNS(null, 'height', '8ex');
+        const rect = document.createElementNS(SvgNS, 'rect');
+        rect.setAttributeNS(null, 'class', 'backdrop');
+        rect.setAttributeNS(null, 'width', '5ex');
+        rect.setAttributeNS(null, 'height', '8ex');
 
         const image = document.createElementNS(SvgNS, 'image');
         image.setAttributeNS(null, 'href', '/assets/sprites/delete_forever-black.svg');
         image.setAttributeNS(null, 'width', '5ex');
         image.setAttributeNS(null, 'height', '8ex');
 
-        this.trashcan.appendChild(backdrop);
+        this.trashcan.appendChild(rect);
         this.trashcan.appendChild(image);
     }
 
@@ -216,10 +216,12 @@ export class FlowWorkspace implements BlockManager {
                                    `${this.top_left.x} ${this.top_left.y} ${width * this.inv_zoom_level} ${height * this.inv_zoom_level}`);
 
         // Move trashcan
-        const trashbox = this.trashcan.getBBox();
-        const left = width * this.inv_zoom_level - trashbox.width + this.top_left.x;
-        const top = height * this.inv_zoom_level - trashbox.height + this.top_left.y;
-        this.trashcan.setAttributeNS(null, 'transform', `translate(${left},${top})`);
+        const trashbox = this.trashcan.getElementsByTagName('image')[0].getBBox();
+        if (trashbox) {
+            const left = width * this.inv_zoom_level - trashbox.width + this.top_left.x;
+            const top = height * this.inv_zoom_level - trashbox.height + this.top_left.y;
+            this.trashcan.setAttributeNS(null, 'transform', `translate(${left},${top})`);
+        }
     }
 
     // Max zoom: 0.5
@@ -359,7 +361,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private isInTrashcan(pos: { x: number, y: number }): boolean {
-        const rect = this.trashcan.getClientRects()[0];
+        const rect = this.trashcan.getElementsByTagName('image')[0].getClientRects()[0];
         if ((rect.x <= pos.x) && (rect.x + rect.width >= pos.x)) {
             if ((rect.y <= pos.y) && (rect.y + rect.height >= pos.y)) {
                 return true;
