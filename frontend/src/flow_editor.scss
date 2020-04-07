@@ -1,9 +1,10 @@
 // Colors
-$pulse-color: #f0c000;
-$string-color: #44dd44;
-$integer-color: #dd4444;
-$boolean-color: #4444ff;
-$any-color: #dd44dd;
+$pulse-color:   #f0c000;
+$string-color:  #44dd44;
+$integer-color: #4444ff;
+$float-color:   #44dddd;
+$boolean-color: #dd4444;
+$any-color:     #dd44dd;
 $unknown-color: #7f7f7f;
 
 // Basics
@@ -43,6 +44,10 @@ svg.block_renderer path.integer_wire {
     stroke: $integer-color;
 }
 
+svg.block_renderer path.float_wire {
+    stroke: $float-color;
+}
+
 svg.block_renderer path.boolean_wire {
     stroke: $boolean-color;
 }
@@ -70,11 +75,15 @@ svg.block_renderer:not(.drawing) {
         }
 
         &.integer_wire {
-            stroke: #ad0404;
+            stroke: #0404bf;
+        }
+
+        &.float_wire {
+            stroke: #04bfbf;
         }
 
         &.boolean_wire {
-            stroke: #0404bf;
+            stroke: #ad0404;
         }
 
         &.any_wire {
@@ -127,9 +136,15 @@ svg.block_renderer g.flow_node circle.external_port.string_port {
 svg.block_renderer g.flow_node circle.external_port.integer_port {
     fill: $integer-color;
 }
+
+svg.block_renderer g.flow_node circle.external_port.float_port {
+    fill: $float-color;
+}
+
 svg.block_renderer g.flow_node circle.external_port.boolean_port {
     fill: $boolean-color;
 }
+
 svg.block_renderer g.flow_node circle.external_port.pulse_port {
     fill: $pulse-color;
 }
@@ -388,6 +403,10 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
         stroke: $integer-color;
     }
 
+    &.float_port {
+        stroke: $float-color;
+    }
+
     &.boolean_port {
         stroke: $boolean-color;
     }
@@ -417,6 +436,10 @@ path.var_path {
 
     &.integer_port {
         stroke: $integer-color;
+    }
+
+    &.float_port {
+        stroke: $float-color;
     }
 
     &.boolean_port {

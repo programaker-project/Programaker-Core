@@ -11,6 +11,8 @@ import { iconDataToUrl } from '../utils';
 
 export type BlockGenerator = (manager: BlockManager) => FlowBlock;
 
+const PLATFORM_ICON = '/assets/logo-dark.png';
+
 export class Toolbox {
     baseElement: HTMLElement;
     toolboxDiv: HTMLDivElement;
@@ -144,7 +146,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.setCategory({ id: control, name: 'Control' })
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
-            icon: '/assets/logo.png',
+            icon: PLATFORM_ICON,
             message: 'Wait',
             type: 'operation',
             inputs: [
@@ -161,7 +163,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
 
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
-            icon: '/assets/logo.png',
+            icon: PLATFORM_ICON,
             message: 'Check',
             type: 'operation',
             inputs: [
@@ -188,7 +190,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
 
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
-            icon: '/assets/logo.png',
+            icon: PLATFORM_ICON,
             message: 'Wait for',
             type: 'trigger',
             inputs: [
@@ -205,7 +207,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
 
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
-            icon: '/assets/logo.png',
+            icon: PLATFORM_ICON,
             message: 'Wait for next value',
             type: 'operation',
             inputs: [
@@ -227,7 +229,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
 
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
-            icon: '/assets/logo.png',
+            icon: PLATFORM_ICON,
             message: 'Repeat times',
             type: 'operation',
             inputs: [
@@ -263,6 +265,304 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             on_inputs_changed: manager.onInputsChanged.bind(manager),
         });
     }, control);
+
+    // Operators category
+    const operators = 'operators';
+    tb.setCategory({ id: operators, name: 'Operators' })
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Add (+)',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: "float",
+                },
+                {
+                    type: "float",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'float',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Subtract (-)',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: "float",
+                },
+                {
+                    type: "float",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'float',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Multiply (×)',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: "float",
+                },
+                {
+                    type: "float",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'float',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Divide (÷)',
+            type: 'streaming',
+            inputs: [
+                {
+                    name: 'dividend',
+                    type: "float",
+                },
+                {
+                    name: 'divisor',
+                    type: "float",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'float',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Is bigger than? (>)',
+            type: 'streaming',
+            inputs: [
+                {
+                    name: "bigger",
+                    type: "float",
+                },
+                {
+                    name: "smaller",
+                    type: "float",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'boolean',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Are equal? (=)',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: "any",
+                },
+                {
+                    type: "any",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'boolean',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Is smaller than? (<)',
+            type: 'streaming',
+            inputs: [
+                {
+                    name: "smaller",
+                    type: "float",
+                },
+                {
+                    name: "bigger",
+                    type: "float",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'boolean',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'All true',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: "boolean",
+                },
+                {
+                    type: "boolean",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'boolean',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Any true',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: "boolean",
+                },
+                {
+                    type: "boolean",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'boolean',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Inverse',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: "boolean",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'boolean',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Join texts',
+            type: 'streaming',
+            inputs: [
+                {
+                    name: "beginning",
+                    type: "string",
+                },
+                {
+                    name: "end",
+                    type: "string",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'string',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
+    // Advanced block
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Get key %i1 of %i2',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: "string",
+                },
+                {
+                    type: "any",
+                },
+            ],
+            outputs: [
+                {
+                    type: 'any',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, operators);
+
 
     return tb;
 }
