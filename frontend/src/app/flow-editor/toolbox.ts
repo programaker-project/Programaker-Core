@@ -662,6 +662,169 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     }, variables);
 
 
+    // Lists
+    const lists = 'lists';
+    tb.setCategory({ id: lists, name: 'Lists' })
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Add %i1 to %(list)',
+            inputs: [
+                {
+                type: 'any',
+                }
+            ],
+            type: 'operation',
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, lists);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Delete entry # %i1 to %(list)',
+            type: 'operation',
+            inputs: [
+                {
+                    type: 'integer',
+                }
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, lists);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Delete all of %(list)',
+            type: 'operation',
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, lists);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Insert %i1 at position %i2 of %(list)',
+            type: 'operation',
+            inputs: [
+                {
+                    type: 'any',
+                },
+                {
+                    type: 'integer',
+                }
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, lists);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Replace item at position %i1 of %(list) with %i2',
+            type: 'operation',
+            inputs: [
+                {
+                    type: 'integer',
+                },
+                {
+                    type: 'any',
+                }
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, lists);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Item number %i1 of %(list)',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: 'integer',
+                },
+            ],
+            outputs: [
+                {
+                    type: 'any',
+                }
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, lists);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Position of item %i1 in %(list)',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: 'any',
+                },
+            ],
+            outputs: [
+                {
+                    type: 'integer',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, lists);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Number of items in %(list)',
+            type: 'streaming',
+            outputs: [
+                {
+                    type: 'integer',
+                }
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, lists);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'Does %(list) contain %i1?',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: 'any',
+                }
+            ],
+            outputs: [
+                {
+                    type: 'boolean',
+                }
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, lists);
+
     return tb;
 }
 
