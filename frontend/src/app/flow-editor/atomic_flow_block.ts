@@ -84,6 +84,7 @@ function parse_chunks(message: string): MessageChunk[] {
                     });
                     currentChunk = [];
                     currentChunkType = 'text';
+                    index--;
                 }
                 else {
                     throw new Error(`Unclosed indexed argument '%${currentDirection[0]}. Expected number, found ${message[index]}`);
