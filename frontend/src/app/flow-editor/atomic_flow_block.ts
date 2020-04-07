@@ -152,8 +152,18 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         if (this.options.type !== 'trigger') {
-            this.options.inputs = ([ { type: "pulse" } ] as InputPortDefinition[]).concat(this.options.inputs);
-            this.synthetic_input_count++;
+            let has_pulse_input = false;
+            for (const input of this.options.inputs) {
+                if (input.type === 'pulse') {
+                    has_pulse_input = true;
+                    break;
+                }
+            }
+
+            if (!has_pulse_input) {
+                this.options.inputs = ([ { type: "pulse" } ] as InputPortDefinition[]).concat(this.options.inputs);
+                this.synthetic_input_count++;
+            }
         }
 
         // Update outputs
