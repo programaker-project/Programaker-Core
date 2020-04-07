@@ -468,13 +468,8 @@ path.var_path {
 }
 
 // Node icon
-.node_icon_separator {
-    stroke: #000;
-    stroke-width: 1px;
-}
-
 .node_icon_plate {
-    fill: rgba(0,0,0,0.5);
+    fill: #e7e7e7;
 }
 
 .node_icon, .node_icon_separator, .node_icon_plate {
