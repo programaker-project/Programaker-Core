@@ -6,9 +6,9 @@ import { ProgramContent, FlowProgram, ProgramLogEntry, ProgramInfoUpdate } from 
 import { ProgramService } from '../program.service';
 
 import * as progbar from '../ui/progbar';
-import { buildBaseToolbox, fromCustomBlockService, Toolbox } from './toolbox'
+import { Toolbox } from './toolbox'
+import { fromCustomBlockService } from './toolbox_builder';
 
-import { FlowProgramSerializer } from './flow_program_serializer';
 import { FlowWorkspace } from './flow_workspace';
 
 import { MonitorService } from '../monitor.service';
