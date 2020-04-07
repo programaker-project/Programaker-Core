@@ -312,6 +312,30 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         });
     }, control);
 
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'When all true',
+            type: 'streaming',
+            inputs: [
+                {
+                    type: "pulse",
+                },
+                {
+                    type: "pulse",
+                },
+            ],
+            extra_inputs: {
+                type: "pulse",
+                quantity: "any",
+            },
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, control);
+
     // Operators category
     const operators = 'operators';
     tb.setCategory({ id: operators, name: 'Operators' })
@@ -608,6 +632,63 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             on_inputs_changed: manager.onInputsChanged.bind(manager),
         });
     }, operators);
+
+    // Variables
+    const time = 'time';
+    tb.setCategory({ id: time, name: 'Time' })
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'UTC date',
+            type: 'streaming',
+            outputs: [
+                {
+                    name: 'year',
+                    type: 'integer',
+                },
+                {
+                    name: 'month',
+                    type: 'integer',
+                },
+                {
+                    name: 'day',
+                    type: 'integer',
+                },
+                {
+                    name: 'day of week',
+                    type: 'any',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, time);
+
+    tb.addBlockGenerator((manager) => {
+        return new AtomicFlowBlock({
+            icon: PLATFORM_ICON,
+            message: 'UTC time',
+            type: 'streaming',
+            outputs: [
+                {
+                    name: 'hour',
+                    type: 'integer',
+                },
+                {
+                    name: 'minute',
+                    type: 'integer',
+                },
+                {
+                    name: 'second',
+                    type: 'integer',
+                },
+            ],
+            on_io_selected: manager.onIoSelected.bind(manager),
+            on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+            on_inputs_changed: manager.onInputsChanged.bind(manager),
+        });
+    }, time);
 
     // Variables
     const variables = 'variables';
