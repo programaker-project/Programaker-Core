@@ -1,34 +1,30 @@
 import {
     FlowBlock,
     InputPortDefinition, OnIOSelected,
-    Area2D, Direction2D, Position2D, MessageType,
+    Area2D, Direction2D, Position2D, MessageType, FlowBlockData,
 } from './flow_block';
+import { BlockManager } from './block_manager';
 
 const SvgNS = "http://www.w3.org/2000/svg";
+const BLOCK_TYPE = 'direct_value_block';
 
 const OUTPUT_PORT_REAL_SIZE = 10;
 const MIN_WIDTH = 50;
 const OUTPUT_PORT_SIZE = 25;
 
 export type OnRequestEdit = (block: DirectValue, type: MessageType, update: (value: string) => void) => void;
+interface DirectValueOptions {
+    type?: MessageType,
+    value: string,
+    on_io_selected?: OnIOSelected,
+    on_request_edit?: OnRequestEdit,
+};
 
 export class DirectValue implements FlowBlock {
-    options: {
-        type?: MessageType,
-        on_io_selected?: OnIOSelected,
-        on_request_edit?: OnRequestEdit,
-    };
+    options: DirectValueOptions;
     value: string;
 
-    constructor(options: { type?: MessageType,
-                           on_io_selected?: OnIOSelected,
-                           on_request_edit?: OnRequestEdit,
-                           value?: string,
-                         }) {
-        if (!options) {
-            options = { };
-        }
-
+    constructor(options: DirectValueOptions) {
         this.options = options;
 
         this.value = options.value;
@@ -72,6 +68,32 @@ export class DirectValue implements FlowBlock {
     private position: {x: number, y: number};
     private textCorrection: {x: number, y: number};
     private size: { width: number, height: number };
+
+    public static GetBlockType(): string {
+        return BLOCK_TYPE;
+    }
+
+    public serialize(): FlowBlockData {
+        const opt = JSON.parse(JSON.stringify(this.options))
+        opt.value = this.value;
+
+        return {
+            type: BLOCK_TYPE,
+            value: { opt },
+        }
+    }
+
+    static Deserialize(data: FlowBlockData, manager: BlockManager): FlowBlock {
+        if (data.type !== BLOCK_TYPE){
+            throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
+        }
+
+        const options: DirectValueOptions = JSON.parse(JSON.stringify(data.value));
+        options.on_io_selected = manager.onIoSelected.bind(manager);
+        options.on_request_edit = manager.onRequestEdit.bind(manager);
+
+        return new DirectValue(options);
+    }
 
     public getBodyElement(): SVGElement {
         if (!this.group) {

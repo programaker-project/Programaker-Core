@@ -1,16 +1,11 @@
-import {
-    FlowBlock, MessageType,
-    InputPortDefinition, OutputPortDefinition,
-    Area2D, Direction2D, Position2D,
-} from './flow_block';
+import { BlockManager } from './block_manager';
+import { DirectValue } from './direct_value';
+import { EnumValue, EnumDirectValue } from './enum_direct_value';
+import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D } from './flow_block';
 import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
-
-import { DirectValue } from './direct_value';
-import { EnumDirectValue, EnumValue } from './enum_direct_value';
+import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
 import { AtomicFlowBlock } from './atomic_flow_block';
-
-import { BlockManager } from './block_manager';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -55,6 +50,91 @@ export class FlowWorkspace implements BlockManager {
 
     public onResize() {
         this.update_top_left();
+    }
+
+    public getGraph(): FlowGraph {
+        const blocks: { [key: string]: FlowGraphNode } = {};
+        for (const block_id of Object.keys(this.blocks)) {
+            const block = this.blocks[block_id].block;
+            const serialized = block.serialize();
+            const position = block.getOffset();
+
+            blocks[block_id] = { data: serialized, position: position };
+        }
+
+        const connections: FlowGraphEdge[] = [];
+
+        for (const conn_id of Object.keys(this.connections)) {
+            const connection = this.connections[conn_id].connection;
+
+            const source = connection.getSource();
+            const sink = connection.getSink();
+            connections.push({
+                from: { id: source.block_id, output_index: source.output_index },
+                to: { id: sink.block_id, input_index: sink.input_index },
+            });
+        }
+
+        return {
+            nodes: blocks,
+            edges: connections,
+        }
+    }
+
+    public load(graph: FlowGraph) {
+        for (const block_id of Object.keys(graph.nodes)) {
+            const block = graph.nodes[block_id];
+
+            let created_block = null;
+            switch (block.data.type) {
+                case AtomicFlowBlock.GetBlockType():
+                    created_block = AtomicFlowBlock.Deserialize(block.data, this);
+                    break;
+
+                case DirectValue.GetBlockType():
+                    created_block = DirectValue.Deserialize(block.data, this);
+                    break;
+
+                case EnumDirectValue.GetBlockType():
+                    created_block = EnumDirectValue.Deserialize(block.data, this);
+                    break;
+
+                default:
+                    console.error("Unknown block type:", block.data.type);
+            }
+
+            if (!created_block) {
+                console.error("Error deserializing block:", block.data);
+                continue;
+            }
+
+            try {
+                this.draw(created_block, block.position, block_id);
+            }
+            catch (err) {
+                console.error("Error drawing block", err);
+            }
+        }
+
+        for (const conn of graph.edges) {
+            try {
+                this.establishConnection(
+                    {
+                        block: this.blocks[conn.from.id].block,
+                        type: 'out',
+                        index: conn.from.output_index,
+                    },
+                    {
+                        block: this.blocks[conn.to.id].block,
+                        type: 'in',
+                        index: conn.to.input_index,
+                    },
+                )
+            }
+            catch(err) {
+                console.error("Error establishing connection", err);
+            }
+        }
     }
 
     private baseElement: HTMLElement;
@@ -303,7 +383,16 @@ export class FlowWorkspace implements BlockManager {
         return this.draw(block, rel_pos);
     }
 
-    public draw(block: FlowBlock, position?: Position2D): string {
+    public draw(block: FlowBlock, position?: Position2D, block_id?: string): string {
+        if (block_id) {
+            if (this.blocks[block_id]) {
+                throw new Error('Duplicated block id');
+            }
+        }
+        else {
+            block_id = uuidv4();
+        }
+
         const slots = block.getSlots();
         if (slots.variable) {
             if (!this.variables_in_use[slots.variable]) {
@@ -324,12 +413,11 @@ export class FlowWorkspace implements BlockManager {
 
             this._mouseDownOnBlock(ev, block);
         });
-        const id = uuidv4();
         const input_group = this.drawBlockInputHelpers(block);
 
-        this.blocks[id] = { block: block, connections: [], input_group: input_group };
+        this.blocks[block_id] = { block: block, connections: [], input_group: input_group };
 
-        return id;
+        return block_id;
     }
 
     private _mouseDownOnBlock(ev: MouseEvent, block: FlowBlock, on_done?: (ev: MouseEvent) => void) {
@@ -392,7 +480,7 @@ export class FlowWorkspace implements BlockManager {
         });
     }
 
-    private isInTrashcan(pos: { x: number, y: number }): boolean {
+    private isInTrashcan(pos: Position2D): boolean {
         const rect = this.trashcan.getElementsByTagName('image')[0].getClientRects()[0];
         if ((rect.x <= pos.x) && (rect.x + rect.width >= pos.x)) {
             if ((rect.y <= pos.y) && (rect.y + rect.height >= pos.y)) {
@@ -470,7 +558,7 @@ export class FlowWorkspace implements BlockManager {
                                       + ` ${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
 
             const element_index = index; // Capture current index
-            inputGroup.onclick = ((ev: MouseEvent) => {
+            inputGroup.onclick = ((_ev: MouseEvent) => {
                 try {
                     const transform = inputGroup.getAttributeNS(null, 'transform');
 
@@ -500,7 +588,7 @@ export class FlowWorkspace implements BlockManager {
     private createDirectValue(type: MessageType, block_id: string, input_index: number,
                               options: { position: Position2D, value?: string }) {
         const direct_input = new DirectValue({ type: type,
-                                               on_request_edit: this.onEditRequested.bind(this),
+                                               on_request_edit: this.onRequestEdit.bind(this),
                                                value: options.value,
                                                on_io_selected: this.onIoSelected.bind(this),
                                              });
@@ -509,10 +597,6 @@ export class FlowWorkspace implements BlockManager {
         this.addConnection(new FlowConnection({ block_id: direct_input_id, output_index: 0 },
                                               { block_id: block_id, input_index: input_index },
                                              ));
-    }
-
-    private onEditRequested(block: DirectValue, type: MessageType, update: (value: string) => void): void {
-        this.editInline(block, type, update);
     }
 
     private static MessageTypeToInputType(type: MessageType): string {
@@ -637,7 +721,7 @@ export class FlowWorkspace implements BlockManager {
         delete this.blocks[blockId];
     }
 
-    private getBlockRel(block: FlowBlock, position: {x: number, y: number}): { x: number, y: number }{
+    private getBlockRel(block: FlowBlock, position: Position2D): Position2D {
         const off = block.getOffset();
         return { x: off.x + position.x, y: off.y + position.y };
     }
@@ -667,14 +751,14 @@ export class FlowWorkspace implements BlockManager {
         type: 'in'|'out',
         index: number,
         definition: InputPortDefinition | OutputPortDefinition,
-        port_center: {x: number, y: number},
-        real_center: {x: number, y: number}
+        port_center: Position2D,
+        real_center: Position2D
     };
     private current_selecting_connector: SVGElement;
 
     private drawPath(path: SVGElement,
-                     from: {x: number, y: number},
-                     to: {x: number, y: number},
+                     from: Position2D,
+                     to: Position2D,
                      runway: number,
                      source_block?: FlowBlock,
                      sink_block?: FlowBlock) {
@@ -955,7 +1039,7 @@ export class FlowWorkspace implements BlockManager {
                  type: 'in'|'out',
                  index: number,
                  definition: InputPortDefinition | OutputPortDefinition,
-                 port_center: {x: number, y: number},
+                 port_center: Position2D,
                 ): void {
 
         if (!this.current_io_selected) {
@@ -1234,12 +1318,12 @@ export class FlowWorkspace implements BlockManager {
 
                 // Change the pattern
                 const results = fuse.search(query);
-                results.sort((x, y) => (x as any).score - (y as any).score );
+                results.sort((x: any, y: any) => (x as any).score - (y as any).score );
                 if (!matches) {
                     return; // Don't update
                 }
 
-                matches = results.map(v => v.item);
+                matches = results.map((v: { item: any; }) => v.item);
             }
 
             // Options
@@ -1356,5 +1440,8 @@ export class FlowWorkspace implements BlockManager {
         this.popupGroup.classList.remove('hidden');
     }
 
+    onRequestEdit(block: DirectValue, type: MessageType, update: (value: string) => void): void {
+        this.editInline(block, type, update);
+    }
     // </Block manager interface>
 }

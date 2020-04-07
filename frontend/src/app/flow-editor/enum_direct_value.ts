@@ -1,10 +1,12 @@
 import {
     FlowBlock,
     InputPortDefinition, OnIOSelected,
-    Area2D, Direction2D, Position2D, MessageType,
+    Area2D, Direction2D, Position2D, MessageType, FlowBlockData,
 } from './flow_block';
+import { BlockManager } from './block_manager';
 
 const SvgNS = "http://www.w3.org/2000/svg";
+const BLOCK_TYPE = 'enum_value_block';
 
 const OUTPUT_PORT_REAL_SIZE = 10;
 const MIN_WIDTH = 50;
@@ -57,6 +59,31 @@ export class EnumDirectValue implements FlowBlock {
     private position: {x: number, y: number};
     private textCorrection: {x: number, y: number};
     private size: { width: number, height: number };
+
+    public static GetBlockType(): string {
+        return BLOCK_TYPE;
+    }
+
+    public serialize(): FlowBlockData {
+        console.error('Cannot serialize get values:', this.options.get_values);
+
+        return {
+            type: BLOCK_TYPE,
+            value: JSON.parse(JSON.stringify(this.options)),
+        }
+    }
+
+    static Deserialize(data: FlowBlockData, manager: BlockManager): FlowBlock {
+        if (data.type !== BLOCK_TYPE){
+            throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
+        }
+
+        const options: EnumDirectValueOptions = JSON.parse(JSON.stringify(data.value));
+        options.on_io_selected = manager.onIoSelected.bind(manager);
+        options.on_select_requested = manager.onSelectRequested.bind(manager);
+
+        return new EnumDirectValue(options);
+    }
 
     public getBodyElement(): SVGElement {
         if (!this.group) {

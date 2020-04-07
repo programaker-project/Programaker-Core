@@ -1,9 +1,11 @@
 import { FlowBlock, FlowBlockOptions,
          Area2D, Direction2D, Position2D,
-         InputPortDefinition, OutputPortDefinition,
+    InputPortDefinition, OutputPortDefinition, FlowBlockData,
        } from './flow_block';
+import { BlockManager } from './block_manager';
 
 const SvgNS = "http://www.w3.org/2000/svg";
+const BLOCK_TYPE = 'simple_flow_block';
 
 const INPUT_PORT_REAL_SIZE = 10;
 const OUTPUT_PORT_REAL_SIZE = 10;
@@ -30,6 +32,7 @@ function is_digit(char: string): boolean {
             return false;
     }
 }
+
 
 function parse_chunks(message: string): MessageChunk[] {
     const result: MessageChunk[] = [];
@@ -226,6 +229,30 @@ export class AtomicFlowBlock implements FlowBlock {
     // I/O groups
     private input_groups: SVGElement[];
     private output_groups: SVGElement[];
+
+    public static GetBlockType(): string {
+        return BLOCK_TYPE;
+    }
+
+    public serialize(): FlowBlockData {
+        return {
+            type: BLOCK_TYPE,
+            value: JSON.parse(JSON.stringify(this.options)),
+        }
+    }
+
+    static Deserialize(data: FlowBlockData, manager: BlockManager): FlowBlock {
+        if (data.type !== BLOCK_TYPE){
+            throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
+        }
+
+        const options: AtomicFlowBlockOptions = JSON.parse(JSON.stringify(data.value));
+        options.on_dropdown_extended = manager.onDropdownExtended.bind(manager);
+        options.on_inputs_changed = manager.onInputsChanged.bind(manager);
+        options.on_io_selected = manager.onIoSelected.bind(manager);
+
+        return new AtomicFlowBlock(options);
+    }
 
     public getBodyElement(): SVGElement {
         if (!this.group) {

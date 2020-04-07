@@ -340,7 +340,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Is %i1 equal (=) to %i2?',
+            message: 'Are all equals?',
             type: 'streaming',
             inputs: [
                 {
@@ -350,6 +350,10 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
                     type: "any",
                 },
             ],
+            extra_inputs: {
+                type: "any",
+                quantity: "any",
+            },
             outputs: [
                 {
                     type: 'boolean',

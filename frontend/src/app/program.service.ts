@@ -1,7 +1,7 @@
 
 import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry } from './program';
+import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType } from './program';
 
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
@@ -148,6 +148,26 @@ export class ProgramService {
                 .toPromise()
                 .catch(_ => false)
         );
+    }
+
+    async updateProgramById(program: { id: string, type: ProgramType, orig: any, parsed: any }): Promise<boolean> {
+        const url = await this.getUpdateProgramUrlById(program.id);
+
+        try {
+            (await
+             this.http
+                 .put(url,
+                      JSON.stringify({type: program.type, orig: program.orig, parsed: program.parsed}),
+                      {headers: this.sessionService.addContentType(
+                          this.sessionService.getAuthHeader(),
+                          ContentType.Json)})
+                 .toPromise());
+            return true;
+        }
+        catch (err) {
+            console.error("Error updating program:", err);
+            return false;
+        }
     }
 
     updateProgramTags(user_id: string, program_id: string, programTags: string[]): Promise<boolean> {

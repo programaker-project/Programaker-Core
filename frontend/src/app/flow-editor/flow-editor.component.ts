@@ -2,7 +2,7 @@
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, FlowProgram, ProgramLogEntry, ProgramInfoUpdate } from '../program';
+import { ProgramContent, FlowProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramType } from '../program';
 import { ProgramService } from '../program.service';
 
 import * as progbar from '../ui/progbar';
@@ -31,6 +31,7 @@ import { environment } from '../../environments/environment';
 import { unixMsToStr } from '../utils';
 import { Session } from '../session';
 import { BridgeService } from '../bridges/bridge.service';
+import { FlowGraph } from './flow_graph';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -60,7 +61,6 @@ export class FlowEditorComponent implements OnInit {
     logs_drawer_initialized: boolean = false;
     commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
 
-    // toolboxController: ToolboxController;
     portraitMode: boolean;
     smallScreen: boolean;
 
@@ -106,9 +106,8 @@ export class FlowEditorComponent implements OnInit {
                         }))
                         .subscribe(program => {
                             this.program = program;
-                            resolve();
-                            this.prepareWorkspace().then((/* controller: ToolboxController */) => {
-                                // this.load_program(controller, program);
+                            this.prepareWorkspace().then(() => {
+                                this.load_program(program);
                                 resolve();
                             }).catch(err => {
                                 console.error("Error:", err);
@@ -124,71 +123,11 @@ export class FlowEditorComponent implements OnInit {
         }));
     }
 
-    // /**
-    //  * Check if an DOM element is a Scratch block object.
-    //  */
-    // is_block(blockCandidate: Element) {
-    //     if (blockCandidate.tagName === undefined) {
-    //         return false;
-    //     }
-    //     return blockCandidate.tagName.toUpperCase() === 'BLOCK';
-    // }
+    load_program(program: ProgramContent) {
+        this.workspace.load(program.orig as FlowGraph);
 
-    // /**
-    //  * Clean a program in DOM format in-place.
-    //  *
-    //  * The resulting program doesn't contain any block that is not present
-    //  *  on the Scratch Toolbox.
-    //  *
-    //  */
-    // removeNonExistingBlocks(dom: Element, controller: ToolboxController)  {
-    //     const children = dom.childNodes;
-    //     for (let i = 0; i < children.length; i++) {
-    //         const child = children[i] as Element;
-    //         if (child.tagName !== 'block') {
-    //             continue;
-    //         }
-
-    //         // Clean the contents of the block
-    //         const next = child.getElementsByTagName('next')[0];
-    //         let next_blocks = [];
-    //         if (next !== undefined) {
-    //             this.removeNonExistingBlocks(next, controller);
-
-    //             next_blocks = (Array.from(next.childNodes)
-    //                            .filter((x: Element) => this.is_block(x)));
-
-    //             if (next_blocks.length == 0) {
-    //                 child.removeChild(next);
-    //                 continue;
-    //             }
-    //         }
-
-    //         const _type = child.getAttribute('type');
-    //         // Check if the current block
-    //         if (!controller.isKnownBlock(_type)) {
-    //             // If it's not known, pull the next into the top level "function"
-    //             if (next !== undefined) {
-    //                 next.removeChild(next_blocks[0]);
-    //                 dom.insertBefore(next_blocks[0], child);
-    //                 child.removeChild(next);
-    //                 this.removeNonExistingBlocks(next, controller);
-    //             }
-
-    //             // Remove top level
-    //             dom.removeChild(child);
-    //             console.debug("To replace:", child, 'with', next);
-    //         }
-    //     }
-    // }
-
-    // load_program(controller: ToolboxController, program: ProgramContent) {
-    //     const xml = Blockly.Xml.textToDom(program.orig);
-    //     this.removeNonExistingBlocks(xml, controller);
-    //     (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
-
-    //     this.initializeListeners();
-    // }
+        this.initializeListeners();
+    }
 
     initializeListeners() {
         this.programService.watchProgramLogs(this.program.owner, this.program.id,
@@ -209,29 +148,14 @@ export class FlowEditorComponent implements OnInit {
                 });
     }
 
-    async prepareWorkspace(): Promise<void /* ToolboxController */> {
+    async prepareWorkspace(): Promise<void> {
         // For consistency and because it affects the positioning of the bottom drawer.
         this.reset_header_scroll();
 
-        // return new Toolbox(
-        //     this.monitorService,
-        //     this.customBlockService,
-        //     this.dialog,
-        //     this.templateService,
-        //     this.serviceService,
-        //     this.customSignalService,
-        //     this.connectionService,
-        //     this.sessionService,
-        // )
-        //     .inject()
-        //     .then(([toolbox, registrations, controller]) => {
-        await this.injectWorkspace(); // toolbox, registrations, controller);
-
-        //     return controller;
-        // });
+        await this.injectWorkspace();
     }
 
-    async injectWorkspace() {// toolbox: HTMLElement, registrations: Function[] /* , controller: ToolboxController */)
+    async injectWorkspace() {
         const workspaceElement = document.getElementById('workspace');
         const programHeaderElement = document.getElementById('program-header');
 
@@ -249,13 +173,6 @@ export class FlowEditorComponent implements OnInit {
                                                     this.customBlockService,
                                                     this.bridgeService,
                                                    );
-        // for (const reg of registrations) {
-        //     reg(this.workspace);
-        // }
-
-        // this.toolboxController = controller;
-        // controller.setWorkspace(this.workspace);
-        // controller.update();
     }
 
     calculate_size(workspace: HTMLElement) {
@@ -305,14 +222,9 @@ export class FlowEditorComponent implements OnInit {
     dispose() {
     }
 
-    async sendProgram(): Promise<void> {
-        // // Get workspace
-        // const xml = Blockly.Xml.workspaceToDom(this.workspace);
-
-        // // Remove comments
-        // for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
-        //     comment.parentNode.removeChild(comment);
-        // }
+    async sendProgram(): Promise<boolean> {
+        const graph = this.workspace.getGraph();
+        console.debug("Program graph:", graph);
 
         // // Serialize result
         // const serializer = new FlowProgramSerializer(this.toolboxController);
@@ -321,21 +233,29 @@ export class FlowEditorComponent implements OnInit {
         //                                 serialized.parsed,
         //                                 serialized.orig);
 
-        // // Send update
-        // const button = document.getElementById('program-start-button');
-        // if (button){
-        //     button.classList.add('started');
-        //     button.classList.remove('completed');
-        // }
+        // Send update
+        const button = document.getElementById('program-start-button');
+        if (button){
+            button.classList.add('started');
+            button.classList.remove('completed');
+        }
 
-        // const result = await this.programService.updateProgram(this.programUserName, program);
+        const program = {
+            type: 'flow_program' as ProgramType,
+            parsed: null,
+            orig: graph,
+            id: this.programId,
+        };
 
-        // if (button){
-        //     button.classList.remove('started');
-        //     button.classList.add('completed');
-        // }
 
-        // return result;
+        const result = await this.programService.updateProgramById(program);
+
+        if (button){
+            button.classList.remove('started');
+            button.classList.add('completed');
+        }
+
+        return result;
     }
 
     renameProgram() {

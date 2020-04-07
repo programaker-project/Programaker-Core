@@ -1,8 +1,7 @@
-import { FlowBlock,
-         InputPortDefinition, OutputPortDefinition,
-         Area2D,
-       } from './flow_block';
 import { BlockManager } from './block_manager';
+import { EnumValue } from './enum_direct_value';
+import { Area2D, FlowBlock, InputPortDefinition, OutputPortDefinition, MessageType } from './flow_block';
+import { DirectValue } from './direct_value';
 
 
 export type BlockGenerator = (workspace: any) => FlowBlock;
@@ -38,6 +37,18 @@ export class BlockExhibitor implements BlockManager {
     onInputsChanged(_block: FlowBlock,
                     _input_num: number,
                    ): void {
+        // Do nothing
+    }
+
+    onSelectRequested(_block: FlowBlock,
+                      _previous_value: string,
+                      _values: EnumValue[],
+                      _value_dict: {[key:string]: EnumValue},
+                      _update: (new_value: string) => void) : void {
+        // Do nothing
+    }
+
+    onRequestEdit(_block: DirectValue, _type: MessageType, _update: (value: string) => void): void {
         // Do nothing
     }
 

@@ -7,7 +7,7 @@ export class ProgramMetadata {
     bridges_in_use: string[];
 }
 
-export type ProgramType = 'scratch_program';
+export type ProgramType = 'scratch_program' | 'flow_program';
 
 export class ProgramContent extends ProgramMetadata {
     type: ProgramType;

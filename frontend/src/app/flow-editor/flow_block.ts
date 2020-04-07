@@ -50,10 +50,12 @@ export interface FlowBlockOptions {
 }
 
 export type Direction2D = 'up' | 'down' | 'left' | 'right';
+export type FlowBlockData = { type: string, value: any };
 
 export interface FlowBlock {
     dispose(): void;
     render(canvas: SVGElement, position?: Position2D): SVGElement;
+    serialize(): FlowBlockData;
 
     getBodyElement(): SVGElement;
     getBodyArea(): Area2D;
