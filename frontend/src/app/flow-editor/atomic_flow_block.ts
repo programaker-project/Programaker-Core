@@ -204,7 +204,6 @@ export class AtomicFlowBlock implements FlowBlock {
     private chunks: MessageChunk[];
 
     private position: {x: number, y: number};
-    private textCorrection: {x: number, y: number};
     private input_count: number[];
 
     private input_x_position: number;
@@ -361,7 +360,7 @@ export class AtomicFlowBlock implements FlowBlock {
             const input_width = input_position_end - input_position_start;
 
             text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getClientRects()[0].width/2  + '');
-            text.setAttributeNS(null, 'y', (INPUT_PORT_REAL_SIZE + this.textCorrection.y + text.getClientRects()[0].height/3) + '' );
+            text.setAttributeNS(null, 'y', (INPUT_PORT_REAL_SIZE + text.getClientRects()[0].height/3) + '' );
 
             this.input_x_position = input_position_end + inputs_x_margin;
 
@@ -467,7 +466,7 @@ export class AtomicFlowBlock implements FlowBlock {
 
             const chunk = this.chunks[i];
             if (chunk.type === 'const') {
-                this.chunkBoxes[i].setAttributeNS(null, 'x', this.textCorrection.x + next_chunk_position + '');
+                this.chunkBoxes[i].setAttributeNS(null, 'x', next_chunk_position + '');
                 next_chunk_position += this.chunkBoxes[i].getClientRects()[0].width + X_PADDING;
             }
             else if (chunk.type === 'named_var') {
@@ -476,8 +475,7 @@ export class AtomicFlowBlock implements FlowBlock {
                 const plate = group.getElementsByClassName('var_plate')[0];
                 const image = group.getElementsByClassName('var_dropdown_icon')[0];
 
-                text.setAttributeNS(null, 'x', this.textCorrection.x
-                                    + next_chunk_position + PLATE_X_PADDING * 2
+                text.setAttributeNS(null, 'x', next_chunk_position + PLATE_X_PADDING * 2
                                     + '');
 
                 const text_width = text.getClientRects()[0].width;
@@ -643,15 +641,14 @@ export class AtomicFlowBlock implements FlowBlock {
         this.canvas.appendChild(refText);
 
         const refBox = refText.getClientRects()[0];
-        this.textCorrection = { x: 0, y: 0 }; // TODO: Remove text correction
         this.canvas.removeChild(refText);
         // End of text correction calculation
 
         const box_height = (refBox.height * 3 + y_padding * 2);
 
         // Add inputs
-        this.input_x_position = input_initial_x_position + this.textCorrection.x;
-        this.output_x_position = output_initial_x_position + this.textCorrection.x;
+        this.input_x_position = input_initial_x_position;
+        this.output_x_position = output_initial_x_position;
 
         if (this.icon) {
             const icon_rect = this.icon.getBBox();
@@ -706,8 +703,7 @@ export class AtomicFlowBlock implements FlowBlock {
                 const output_width = output_position_end - output_position_start;
 
                 text.setAttributeNS(null, 'x', output_position_start + output_width/2 - text.getClientRects()[0].width/2  + '');
-                text.setAttributeNS(null, 'y', (this.textCorrection.y + box_height
-                                                - (OUTPUT_PORT_REAL_SIZE/2)) + '' );
+                text.setAttributeNS(null, 'y', box_height - (OUTPUT_PORT_REAL_SIZE/2) + '' );
 
                 this.output_x_position = output_position_end + outputs_x_margin;
 
@@ -763,7 +759,7 @@ export class AtomicFlowBlock implements FlowBlock {
 
                 text.setAttribute('class', 'node_name');
                 text.setAttributeNS(null,'textlength', '100%');
-                text.setAttributeNS(null, 'y', this.textCorrection.y + box_height/1.75 + "");
+                text.setAttributeNS(null, 'y', box_height/1.75 + "");
                 text.textContent = chunk.val;
 
                 this.chunkBoxes.push(text);
@@ -783,7 +779,7 @@ export class AtomicFlowBlock implements FlowBlock {
 
                 text.setAttribute('class', 'var_name dropdown_value');
                 text.setAttributeNS(null,'textlength', '100%');
-                text.setAttributeNS(null, 'y', this.textCorrection.y + box_height/1.75 + "");
+                text.setAttributeNS(null, 'y', box_height/1.75 + "");
                 text.textContent = chunk.val;
 
                 plate.setAttribute('class', 'var_plate');
