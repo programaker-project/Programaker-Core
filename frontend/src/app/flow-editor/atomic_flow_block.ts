@@ -15,6 +15,7 @@ const ICON_PADDING = '1ex';
 export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     type: 'operation' | 'getter' | 'trigger' | 'streaming';
     icon?: string,
+    block_function: string,
 }
 
 type MessageChunk = ( { type: 'const', val: string }

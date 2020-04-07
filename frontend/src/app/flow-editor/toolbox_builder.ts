@@ -21,6 +21,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Wait',
+            block_function: 'flow_wait_seconds',
             type: 'operation',
             inputs: [
                 {
@@ -38,6 +39,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Check',
+            block_function: 'flow_if_then',
             type: 'operation',
             inputs: [
                 {
@@ -65,6 +67,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Wait for',
+            block_function: 'flow_wait_for',
             type: 'trigger',
             inputs: [
                 {
@@ -82,6 +85,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Wait for next value',
+            block_function: 'flow_wait_for_next_value',
             type: 'operation',
             inputs: [
                 {
@@ -104,6 +108,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Repeat times',
+            block_function: 'flow_repeat_times',
             type: 'operation',
             inputs: [
                 {
@@ -143,6 +148,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Only pass first',
+            block_function: 'flow_only_pass_first',
             type: 'operation',
             inputs: [
                 {
@@ -166,6 +172,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Wait for all',
+            block_function: 'flow_wait_for_all',
             type: 'operation',
             inputs: [
                 {
@@ -190,6 +197,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'When all true',
+            block_function: 'flow_when_all_true',
             type: 'trigger',
             inputs: [
                 {
@@ -216,6 +224,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: '%i1 + %i2',
+            block_function: 'flow_addition',
             type: 'streaming',
             inputs: [
                 {
@@ -240,6 +249,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: '%i1 - %i2',
+            block_function: 'flow_subtraction',
             type: 'streaming',
             inputs: [
                 {
@@ -264,6 +274,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: '%i1 × %i2',
+            block_function: 'flow_product',
             type: 'streaming',
             inputs: [
                 {
@@ -288,6 +299,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: '%i1 / %i2',
+            block_function: 'flow_division',
             type: 'streaming',
             inputs: [
                 {
@@ -313,7 +325,8 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Is %i1 bigger (>) than %i2 ?',
+            message: 'Is %i1 greater (>) than %i2 ?',
+            block_function: 'flow_greater_than',
             type: 'streaming',
             inputs: [
                 {
@@ -340,6 +353,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Are all equals?',
+            block_function: 'flow_equals',
             type: 'streaming',
             inputs: [
                 {
@@ -367,7 +381,8 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
     tb.addBlockGenerator((manager) => {
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
-            message: 'Is %i1 smaller (<) than %i2?',
+            message: 'Is %i1 less (<) than %i2?',
+            block_function: 'flow_lesser_than',
             type: 'streaming',
             inputs: [
                 {
@@ -394,6 +409,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'All true',
+            block_function: 'flow_all_true',
             type: 'streaming',
             inputs: [
                 {
@@ -418,6 +434,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Any true',
+            block_function: 'flow_any_true',
             type: 'streaming',
             inputs: [
                 {
@@ -442,6 +459,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Inverse',
+            block_function: 'flow_logic_not',
             type: 'streaming',
             inputs: [
                 {
@@ -463,6 +481,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Join texts',
+            block_function: 'flow_join_text',
             type: 'streaming',
             inputs: [
                 {
@@ -490,6 +509,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Get key %i1 of %i2',
+            block_function: 'flow_get_key',
             type: 'streaming',
             inputs: [
                 {
@@ -517,6 +537,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'UTC date',
+            block_function: 'flow_utc_date',
             type: 'streaming',
             outputs: [
                 {
@@ -546,6 +567,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'UTC time',
+            block_function: 'flow_utc_time',
             type: 'streaming',
             outputs: [
                 {
@@ -574,6 +596,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Get %(variable) value',
+            block_function: 'flow_get_var_value',
             type: 'streaming',
             outputs: [
                 {
@@ -590,6 +613,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Set %(variable) to %i1',
+            block_function: 'flow_set_var_value',
             type: 'operation',
             inputs: [
                 {
@@ -607,6 +631,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Increment %(variable) by %i1',
+            block_function: 'flow_inc_var_by',
             type: 'operation',
             inputs: [
                 {
@@ -627,6 +652,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Add %i1 to %(list)',
+            block_function: 'flow_add_to_list',
             inputs: [
                 {
                 type: 'any',
@@ -643,6 +669,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Delete entry # %i1 to %(list)',
+            block_function: 'flow_delete_list_entry',
             type: 'operation',
             inputs: [
                 {
@@ -659,6 +686,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Delete all of %(list)',
+            block_function: 'flow_delete_all_list',
             type: 'operation',
             on_io_selected: manager.onIoSelected.bind(manager),
             on_dropdown_extended: manager.onDropdownExtended.bind(manager),
@@ -670,6 +698,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Insert %i1 at position %i2 of %(list)',
+            block_function: 'flow_insert_at_list_position',
             type: 'operation',
             inputs: [
                 {
@@ -689,6 +718,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Replace item at position %i1 of %(list) with %i2',
+            block_function: 'flow_replace_at_list_position',
             type: 'operation',
             inputs: [
                 {
@@ -708,6 +738,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Item number %i1 of %(list)',
+            block_function: 'flow_get_at_position',
             type: 'streaming',
             inputs: [
                 {
@@ -729,6 +760,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Position of item %i1 in %(list)',
+            block_function: 'flow_find_index_of',
             type: 'streaming',
             inputs: [
                 {
@@ -750,6 +782,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Number of items in %(list)',
+            block_function: 'flow_list_length',
             type: 'streaming',
             outputs: [
                 {
@@ -766,6 +799,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
         return new AtomicFlowBlock({
             icon: PLATFORM_ICON,
             message: 'Does %(list) contain %i1?',
+            block_function: 'flow_list_contains',
             type: 'streaming',
             inputs: [
                 {
@@ -817,6 +851,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
             return new AtomicFlowBlock({
                 icon: icon,
                 message: get_block_message(block),
+                block_function: 'services.' + bridge.id + '.' + block.function_name,
                 type: (block.block_type as any),
                 inputs: get_block_inputs(block),
                 outputs: get_block_outputs(block),
