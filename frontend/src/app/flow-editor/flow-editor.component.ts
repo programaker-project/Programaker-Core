@@ -249,8 +249,6 @@ export class FlowEditorComponent implements OnInit {
                                                     this.customBlockService,
                                                     this.bridgeService,
                                                    );
-        // this.workspace.drawSample();
-
         // for (const reg of registrations) {
         //     reg(this.workspace);
         // }
