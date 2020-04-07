@@ -11,7 +11,7 @@ const CONNECTOR_SIDE_SIZE = 15;
 const ICON_PADDING = '1ex';
 
 export interface AtomicFlowBlockOptions extends FlowBlockOptions {
-    type: 'operation' | 'getter' | 'trigger';
+    type: 'operation' | 'getter' | 'trigger' | 'streaming';
     icon?: string,
 }
 
@@ -151,7 +151,7 @@ export class AtomicFlowBlock implements FlowBlock {
             this.options.inputs = [];
         }
 
-        if (this.options.type !== 'trigger') {
+        if ((this.options.type !== 'trigger') && (this.options.type !== 'streaming')) {
             let has_pulse_input = false;
             for (const input of this.options.inputs) {
                 if (input.type === 'pulse') {
@@ -182,17 +182,19 @@ export class AtomicFlowBlock implements FlowBlock {
 
         this.chunkBoxes = [];
 
-        let has_pulse_output = false;
-        for (const output of this.options.outputs) {
-            if (output.type === 'pulse') {
-                has_pulse_output = true;
-                break;
+        if (this.options.type !== 'streaming') {
+            let has_pulse_output = false;
+            for (const output of this.options.outputs) {
+                if (output.type === 'pulse') {
+                    has_pulse_output = true;
+                    break;
+                }
             }
-        }
 
-        if (!has_pulse_output) {
-            this.options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(this.options.outputs);
-            this.synthetic_output_count++;
+            if (!has_pulse_output) {
+                this.options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(this.options.outputs);
+                this.synthetic_output_count++;
+            }
         }
     }
 
