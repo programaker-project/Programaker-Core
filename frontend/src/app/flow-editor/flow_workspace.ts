@@ -981,8 +981,8 @@ export class FlowWorkspace implements BlockManager {
                 }
 
                 const real_pointer = {
-                    x: ev.layerX * this.inv_zoom_level + this.top_left.x,
-                    y: ev.layerY * this.inv_zoom_level + this.top_left.y,
+                    x: (ev.x - this.canvas.getClientRects()[0].left) * this.inv_zoom_level + this.top_left.x,
+                    y: (ev.y - this.canvas.getClientRects()[0].top) * this.inv_zoom_level + this.top_left.y,
                 };
 
                 if (type == 'out') {
