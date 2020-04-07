@@ -33,6 +33,7 @@
               "node_modules/scratch-blocks/msg/js/en.js",
               "node_modules/scratch-blocks/blocks_compressed.js",
               "node_modules/scratch-blocks/blocks_compressed_vertical.js",
+              "node_modules/fuse.js/dist/fuse.min.js",
               "node_modules/nprogress/nprogress.js",
             ]
           },
@@ -178,7 +179,7 @@
   "schematics": {
     "@schematics/angular:component": {
       "prefix": "app",
-      "styleext": "scss"
+      "style": "scss"
     },
     "@schematics/angular:directive": {
       "prefix": "app"
