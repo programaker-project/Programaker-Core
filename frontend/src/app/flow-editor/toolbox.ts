@@ -110,10 +110,22 @@ export class Toolbox {
                 element.classList.add('hidden');
                 this.toolboxDiv.classList.add('subsumed');
 
-                this.workspace.drawAbsolute(block, rect);
-                (this.workspace as any)._mouseDownOnBlock(ev, block, () => {
+                const block_id = this.workspace.drawAbsolute(block, rect);
+                (this.workspace as any)._mouseDownOnBlock(ev, block, (ev: MouseEvent) => {
+
                     element.classList.remove('hidden');
                     this.toolboxDiv.classList.remove('subsumed');
+
+                    // Check if the block was dropped on the toolbox, if so remove it
+                    const toolboxRect = this.toolboxDiv.getClientRects()[0];
+                    if ((ev.x >= toolboxRect.x) && (ev.x <= toolboxRect.x + toolboxRect.width)) {
+                        if ((ev.y >= toolboxRect.y) && (ev.y <= toolboxRect.y + toolboxRect.height)) {
+                            // Dropped on toolbox
+                            console.log("Dropped on toolbox, cleaning up");
+                            this.workspace.removeBlock(block_id);
+                        }
+                    }
+
                 });
             }
             catch (err) {

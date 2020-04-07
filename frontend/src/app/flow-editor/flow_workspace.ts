@@ -317,7 +317,7 @@ export class FlowWorkspace implements BlockManager {
         return id;
     }
 
-    private _mouseDownOnBlock(ev: MouseEvent, block: FlowBlock, on_done?: () => void) {
+    private _mouseDownOnBlock(ev: MouseEvent, block: FlowBlock, on_done?: (ev: MouseEvent) => void) {
         const bodyElement = block.getBodyElement();
         const block_id = this.getBlockId(block);
 
@@ -348,7 +348,7 @@ export class FlowWorkspace implements BlockManager {
         this.canvas.onmouseup = ((ev: MouseEvent) => {
             try {
                 if (on_done) {
-                    on_done();
+                    on_done(ev);
                 }
 
                 this.canvas.onmousemove = null;
