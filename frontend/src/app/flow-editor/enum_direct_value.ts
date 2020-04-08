@@ -6,7 +6,18 @@ import {
 import { BlockManager } from './block_manager';
 
 const SvgNS = "http://www.w3.org/2000/svg";
+
+type EnumDirectValueFlowBlockDataType = 'enum_value_block';
 const BLOCK_TYPE = 'enum_value_block';
+
+export interface EnumDirectValueFlowBlockData {
+    type: EnumDirectValueFlowBlockDataType,
+    value: {
+        options: EnumDirectValueOptions
+        value_id: string,
+        value_text: string,
+    },
+}
 
 const OUTPUT_PORT_REAL_SIZE = 10;
 const MIN_WIDTH = 50;
@@ -66,7 +77,7 @@ export class EnumDirectValue implements FlowBlock {
         return BLOCK_TYPE;
     }
 
-    public serialize(): FlowBlockData {
+    public serialize(): EnumDirectValueFlowBlockData {
         return {
             type: BLOCK_TYPE,
             value: { options: JSON.parse(JSON.stringify(this.options)),
