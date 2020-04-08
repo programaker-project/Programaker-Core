@@ -1,0 +1,11 @@
+{
+  "spec_dir": "src/app/tests/logic",
+  "spec_files": [
+    "**/*[sS]pec.[jt]s"
+  ],
+  "helpers": [
+    "helpers/**/*.js"
+  ],
+  "stopSpecOnExpectationFailure": false,
+  "random": false
+}

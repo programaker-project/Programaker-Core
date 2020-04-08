@@ -1,10 +1,9 @@
-import { FlowBlock, FlowBlockOptions,
-         Area2D, Direction2D, Position2D,
-    InputPortDefinition, OutputPortDefinition, FlowBlockData,
-       } from './flow_block';
 import { BlockManager } from './block_manager';
+import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData } from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
+
+export type AtomicFlowBlockType = 'simple_flow_block';
 const BLOCK_TYPE = 'simple_flow_block';
 
 const INPUT_PORT_REAL_SIZE = 10;
