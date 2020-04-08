@@ -12,10 +12,23 @@ const OUTPUT_PORT_REAL_SIZE = 10;
 const CONNECTOR_SIDE_SIZE = 15;
 const ICON_PADDING = '1ex';
 
+
 export interface AtomicFlowBlockOptions extends FlowBlockOptions {
-    type: 'operation' | 'getter' | 'trigger' | 'streaming';
+    type: 'operation' | 'getter' | 'trigger';
     icon?: string,
     block_function: string,
+}
+
+export interface AtomicFlowBlockData extends FlowBlockData {
+    type: AtomicFlowBlockType,
+    value: {
+        options: AtomicFlowBlockOptions,
+
+        // These counts are needed to keep the consistency when linking
+        // inline arguments to it's ports
+        synthetic_input_count: number,
+        synthetic_output_count: number,
+    },
 }
 
 type MessageChunk = ( { type: 'const', val: string }
@@ -164,7 +177,7 @@ export class AtomicFlowBlock implements FlowBlock {
             this.options.inputs = [];
         }
 
-        if ((this.options.type !== 'trigger') && (this.options.type !== 'streaming')) {
+        if (['trigger', 'getter'].indexOf(this.options.type) < 0) {
             let has_pulse_input = false;
             for (const input of this.options.inputs) {
                 if (input.type === 'pulse') {
@@ -195,7 +208,7 @@ export class AtomicFlowBlock implements FlowBlock {
 
         this.chunkBoxes = [];
 
-        if (this.options.type !== 'streaming') {
+        if (this.options.type !== 'getter') {
             let has_pulse_output = false;
             for (const output of this.options.outputs) {
                 if (output.type === 'pulse') {
@@ -243,21 +256,19 @@ export class AtomicFlowBlock implements FlowBlock {
         return BLOCK_TYPE;
     }
 
-    public serialize(): FlowBlockData {
+    public serialize(): AtomicFlowBlockData {
         return {
             type: BLOCK_TYPE,
             value: {
                 options: JSON.parse(JSON.stringify(this.options)),
 
-                // These counts are needed to keep the consistency when linking
-                // inline arguments to it's ports
                 synthetic_input_count: this.synthetic_input_count,
                 synthetic_output_count: this.synthetic_output_count,
             },
         }
     }
 
-    static Deserialize(data: FlowBlockData, manager: BlockManager): FlowBlock {
+    static Deserialize(data: AtomicFlowBlockData, manager: BlockManager): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -647,8 +658,6 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         if (this.group) { return this.group }
-
-        const min_height = 25;
 
         const y_padding = 5; // px
         const input_initial_x_position = 10; // px

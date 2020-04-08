@@ -225,7 +225,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: '%i1 + %i2',
             block_function: 'flow_addition',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: "float",
@@ -250,7 +250,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: '%i1 - %i2',
             block_function: 'flow_subtraction',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: "float",
@@ -275,7 +275,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: '%i1 × %i2',
             block_function: 'flow_product',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: "float",
@@ -300,7 +300,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: '%i1 / %i2',
             block_function: 'flow_division',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     name: 'dividend',
@@ -327,7 +327,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Is %i1 greater (>) than %i2 ?',
             block_function: 'flow_greater_than',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     name: "bigger",
@@ -354,7 +354,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Are all equals?',
             block_function: 'flow_equals',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: "any",
@@ -383,7 +383,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Is %i1 less (<) than %i2?',
             block_function: 'flow_lesser_than',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     name: "smaller",
@@ -410,7 +410,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'All true',
             block_function: 'flow_all_true',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: "boolean",
@@ -435,7 +435,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Any true',
             block_function: 'flow_any_true',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: "boolean",
@@ -460,7 +460,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Inverse',
             block_function: 'flow_logic_not',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: "boolean",
@@ -482,7 +482,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Join texts',
             block_function: 'flow_join_text',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     name: "beginning",
@@ -510,7 +510,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Get key %i1 of %i2',
             block_function: 'flow_get_key',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: "string",
@@ -538,7 +538,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'UTC date',
             block_function: 'flow_utc_date',
-            type: 'streaming',
+            type: 'getter',
             outputs: [
                 {
                     name: 'year',
@@ -568,7 +568,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'UTC time',
             block_function: 'flow_utc_time',
-            type: 'streaming',
+            type: 'getter',
             outputs: [
                 {
                     name: 'hour',
@@ -597,7 +597,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Get %(variable) value',
             block_function: 'flow_get_var_value',
-            type: 'streaming',
+            type: 'getter',
             outputs: [
                 {
                     type: 'any'
@@ -739,7 +739,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Item number %i1 of %(list)',
             block_function: 'flow_get_at_position',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: 'integer',
@@ -761,7 +761,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Position of item %i1 in %(list)',
             block_function: 'flow_find_index_of',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: 'any',
@@ -783,7 +783,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Number of items in %(list)',
             block_function: 'flow_list_length',
-            type: 'streaming',
+            type: 'getter',
             outputs: [
                 {
                     type: 'integer',
@@ -800,7 +800,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
             icon: PLATFORM_ICON,
             message: 'Does %(list) contain %i1?',
             block_function: 'flow_list_contains',
-            type: 'streaming',
+            type: 'getter',
             inputs: [
                 {
                     type: 'any',
