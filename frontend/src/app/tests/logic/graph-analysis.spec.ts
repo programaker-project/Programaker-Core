@@ -1,6 +1,8 @@
 import { FlowGraph } from '../../flow-editor/flow_graph';
+import { compile, get_conversions_to_stepped, get_source_signals, get_stepped_ast, get_tree_with_ends, get_unreachable } from '../../flow-editor/graph_analysis';
 import { TIME_MONITOR_ID } from '../../flow-editor/platform_facilities';
-import { get_unreachable, compile, get_source_signals, get_conversions_to_stepped, get_tree_with_ends, get_stepped_ast } from '../../flow-editor/graph_analysis';
+import { gen_compiled, SimpleArrayAstOperation } from './graph-analysis-tools';
+import { dsl_to_ast } from './graph-analysis-tools-dsl';
 import * as _01_simple_flow from './samples/01_simple_flow.js';
 import * as _02_lone_block from './samples/02_lone_block.js';
 import * as _03_no_start_pulse from './samples/03_no_start_pulse.js';
@@ -305,4 +307,223 @@ describe('FlowGraphAnalysis Compilation E2E', () => {
         ]);
     });
 
+});
+
+describe('FlowGraphAnalysis Compilation E2E', () => {
+    it('should compile samples/01_simple_flow', async () => {
+        expect(compile(_01_simple_flow as FlowGraph)).toEqual([
+            [
+                {
+                    type: "wait_for_monitor",
+                    args: {
+                        monitor_id: {
+                            from_service: TIME_MONITOR_ID,
+                        },
+                        expected_value: 'any_value',
+                    },
+                    contents: []
+                },
+                {
+                    type: "control_if_else",
+                    args: [
+                        {
+                            type: 'block',
+                            value: [
+                                {
+                                    type: 'operator_and',
+                                    args: [
+                                        {
+                                            type: 'block',
+                                            value: [
+                                                {
+                                                    type: 'operator_equals',
+                                                    args: [
+                                                        {
+                                                            type: 'block',
+                                                            value: [
+                                                                {
+                                                                    type: 'flow_last_value',
+                                                                    args: [
+                                                                        {
+                                                                            type: 'constant',
+                                                                            value: 'ad97e5d1-c725-4cc6-826f-30057f239635',
+                                                                        },
+                                                                        {
+                                                                            type: 'constant',
+                                                                            value: '0',
+                                                                        }
+                                                                    ],
+                                                                    contents: [],
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            type: 'constant',
+                                                            value: '11',
+                                                        }
+                                                    ],
+                                                    contents: []
+                                                },
+                                            ],
+                                        },
+                                        {
+                                            type: 'block',
+                                            value: [
+                                                {
+                                                    type: 'operator_equals',
+                                                    args: [
+                                                        {
+                                                            type: 'block',
+                                                            value: [
+                                                                {
+                                                                    type: 'flow_last_value',
+                                                                    args: [
+                                                                        {
+                                                                            type: 'constant',
+                                                                            value: 'ad97e5d1-c725-4cc6-826f-30057f239635',
+                                                                        },
+                                                                        {
+                                                                            type: 'constant',
+                                                                            value: '1',
+                                                                        }
+                                                                    ],
+                                                                    contents: [],
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            type: 'block',
+                                                            value: [
+                                                                {
+                                                                    type: 'flow_last_value',
+                                                                    args: [
+                                                                        {
+                                                                            type: 'constant',
+                                                                            value: 'ad97e5d1-c725-4cc6-826f-30057f239635',
+                                                                        },
+                                                                        {
+                                                                            type: 'constant',
+                                                                            value: '2',
+                                                                        }
+                                                                    ],
+                                                                    contents: []
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            type: 'constant',
+                                                            value: '0',
+                                                        }
+                                                    ],
+                                                    contents: []
+                                                },
+                                            ],
+                                        }
+                                    ],
+                                    contents: []
+                                }
+                            ]
+                        }
+                    ],
+                    contents: [
+                        {
+                            contents: [
+                                {
+                                    type: "command_call_service",
+                                    args: {
+                                        service_id: 'de5baefb-13da-457e-90a5-57a753da8891',
+                                        service_action: 'send_message',
+                                        service_call_values: [
+                                            {
+                                                type: 'constant',
+                                                value: '-137414823',
+                                            },
+                                            {
+                                                type: 'block',
+                                                value: [
+                                                    {
+                                                        type: "command_call_service",
+                                                        args: {
+                                                            service_id: '536bf266-fabf-44a6-ba89-a0c71b8db608',
+                                                            service_action: 'get_today_max_in_place',
+                                                            service_call_values: [
+                                                                {
+                                                                    type: "constant",
+                                                                    value: "12/36/057/7"
+                                                                }
+                                                            ]
+                                                        },
+                                                        contents: []
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    contents: []
+                                }
+                            ]
+                        },
+                        {
+                            contents: []
+                        }
+                    ]
+                }
+            ]
+        ]);
+    });
+
+    it('should match tool compilation', async () => {
+        expect(compile(_01_simple_flow as FlowGraph)).toEqual([
+            gen_compiled([
+                ['wait_for_monitor', { monitor_id: { from_service: TIME_MONITOR_ID }, expected_value: 'any_value' }],
+                ['control_if_else',
+                 ['operator_and', ['operator_equals',
+                                   ['flow_last_value', 'ad97e5d1-c725-4cc6-826f-30057f239635', 0],
+                                   11],
+                  ['operator_equals',
+                   ['flow_last_value', 'ad97e5d1-c725-4cc6-826f-30057f239635', 1],
+                   ['flow_last_value', 'ad97e5d1-c725-4cc6-826f-30057f239635', 2],
+                   0
+                  ]
+                 ] as SimpleArrayAstOperation,
+                 [
+                     ['command_call_service', {
+                         service_id: 'de5baefb-13da-457e-90a5-57a753da8891',
+                         service_action: 'send_message',
+                         service_call_values: ['-137414823',
+                                               ['command_call_service', {
+                                                   service_id: '536bf266-fabf-44a6-ba89-a0c71b8db608',
+                                                   service_action: 'get_today_max_in_place',
+                                                   service_call_values: ["12/36/057/7"]
+                                               }]],
+                     }]
+                 ]
+                ]
+            ])
+        ]);
+    });
+
+    it('should match DSL compilation', async () => {
+        const TIME_BLOCK = "ad97e5d1-c725-4cc6-826f-30057f239635";
+        const CHAT_SVC = "de5baefb-13da-457e-90a5-57a753da8891";
+        const WEATHER_SVC = "536bf266-fabf-44a6-ba89-a0c71b8db608";
+
+        expect(compile(_01_simple_flow as FlowGraph)).toEqual([
+            gen_compiled(dsl_to_ast(
+                `;PM-DSL ;; Entrypoint for mmm-mode
+                 (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                 (if (and (= (flow-last-value "${TIME_BLOCK}" 0)
+                             11)
+                          (= (flow-last-value "${TIME_BLOCK}" 1)
+                             (flow-last-value "${TIME_BLOCK}" 2)
+                             0))
+                     ((call-service id: "${CHAT_SVC}"
+                                    action: "send_message"
+                                    values: ("-137414823"
+                                             (call-service id: "${WEATHER_SVC}"
+                                                           action: "get_today_max_in_place"
+                                                           values: ("12/36/057/7"))))))
+                      `))
+        ]);
+    });
 });
