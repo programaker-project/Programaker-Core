@@ -7,8 +7,8 @@ import { BlockManager } from './block_manager';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
-type DirectValueBlockType = 'direct_value_block';
-const BLOCK_TYPE = 'direct_value_block';
+export type DirectValueBlockType = 'direct_value_block';
+export const BLOCK_TYPE = 'direct_value_block';
 
 const OUTPUT_PORT_REAL_SIZE = 10;
 const MIN_WIDTH = 50;

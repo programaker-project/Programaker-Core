@@ -12,7 +12,7 @@ function get_source_blocks(graph: FlowGraph): string[] {
         if (block.data.type === AtomicFlowBlock.GetBlockType()){
             const data = block.data as AtomicFlowBlockData;
 
-            const inputs = data.value.options.inputs;
+            const inputs = data.value.options.inputs || [];
 
             // If it has no pulse inputs its a source block
             if (inputs.filter(v => v.type === 'pulse').length === 0) {
@@ -35,6 +35,10 @@ function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
         const data = block.data as AtomicFlowBlockData;
 
         const input = data.value.options.inputs[conn.to.input_index];
+        if (!input) {
+            throw new Error(`No input #${conn.to.input_index} on ${JSON.stringify(data.value.options.inputs)} [conn: ${JSON.stringify(conn)}]`);
+        }
+
         return input.type === 'pulse';
     }
     else if (block.data.type === DirectValue.GetBlockType()){

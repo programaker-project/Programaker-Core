@@ -4,7 +4,7 @@ import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, 
 const SvgNS = "http://www.w3.org/2000/svg";
 
 export type AtomicFlowBlockType = 'simple_flow_block';
-const BLOCK_TYPE = 'simple_flow_block';
+export const BLOCK_TYPE = 'simple_flow_block';
 
 const INPUT_PORT_REAL_SIZE = 10;
 const OUTPUT_PORT_REAL_SIZE = 10;
@@ -12,8 +12,10 @@ const CONNECTOR_SIDE_SIZE = 15;
 const ICON_PADDING = '1ex';
 
 
+export type AtomicFlowBlockOperationType = 'operation' | 'getter' | 'trigger';
+
 export interface AtomicFlowBlockOptions extends FlowBlockOptions {
-    type: 'operation' | 'getter' | 'trigger';
+    type: AtomicFlowBlockOperationType;
     icon?: string,
     block_function: string,
 }
@@ -171,30 +173,7 @@ export class AtomicFlowBlock implements FlowBlock {
         this.output_groups = [];
         this.input_count = [];
 
-        // Update inputs
-        if (!this.options.inputs) {
-            this.options.inputs = [];
-        }
-
-        if (['trigger', 'getter'].indexOf(this.options.type) < 0) {
-            let has_pulse_input = false;
-            for (const input of this.options.inputs) {
-                if (input.type === 'pulse') {
-                    has_pulse_input = true;
-                    break;
-                }
-            }
-
-            if (!has_pulse_input) {
-                this.options.inputs = ([ { type: "pulse" } ] as InputPortDefinition[]).concat(this.options.inputs);
-                this.synthetic_input_count++;
-            }
-        }
-
-        // Update outputs
-        if (!this.options.outputs) {
-            this.options.outputs = [];
-        }
+        [this.options, this.synthetic_input_count, this.synthetic_output_count ] = AtomicFlowBlock.add_synth_io(this.options);
 
         this.chunks = parse_chunks(this.options.message);
         for (const chunk of this.chunks) {
@@ -206,10 +185,45 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         this.chunkBoxes = [];
+    }
 
-        if (this.options.type !== 'getter') {
+    public dispose() {
+        this.canvas.removeChild(this.group);
+    }
+
+    static add_synth_io(options: AtomicFlowBlockOptions): [AtomicFlowBlockOptions, number, number] {
+        let synthetic_input_count = 0;
+        let synthetic_output_count = 0;
+
+        // Update inputs
+        if (!options.inputs) {
+            options.inputs = [];
+        }
+
+        // Update outputs
+        if (!options.outputs) {
+            options.outputs = [];
+        }
+
+        if (AtomicFlowBlock.required_synth_inputs(options) > 0) {
+            options.inputs = ([ { type: "pulse" } ] as InputPortDefinition[]).concat(options.inputs);
+            synthetic_input_count++;
+        }
+
+        if (AtomicFlowBlock.required_synth_outputs(options) > 0) {
+            options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(options.outputs);
+            synthetic_output_count++;
+        }
+
+        return [options, synthetic_input_count, synthetic_output_count];
+    }
+
+    public static required_synth_outputs(options: AtomicFlowBlockOptions): number {
+        let num_outputs = 0;
+
+        if (options.type !== 'getter') {
             let has_pulse_output = false;
-            for (const output of this.options.outputs) {
+            for (const output of options.outputs || []) {
                 if (output.type === 'pulse') {
                     has_pulse_output = true;
                     break;
@@ -217,14 +231,35 @@ export class AtomicFlowBlock implements FlowBlock {
             }
 
             if (!has_pulse_output) {
-                this.options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(this.options.outputs);
-                this.synthetic_output_count++;
+                num_outputs = 1;
             }
         }
+
+        return num_outputs;
     }
 
-    public dispose() {
-        this.canvas.removeChild(this.group);
+    public static required_synth_inputs(options: AtomicFlowBlockOptions): number {
+        let num_inputs = 0;
+
+        if (['trigger', 'getter'].indexOf(options.type) < 0) {
+            let has_pulse_input = false;
+            for (const input of options.inputs || []) {
+                if (!input) {
+                    throw new Error(`Empty input on ${options.inputs}`);
+                }
+
+                if (input.type === 'pulse') {
+                    has_pulse_input = true;
+                    break;
+                }
+            }
+
+            if (!has_pulse_input) {
+                num_inputs++;
+            }
+        }
+
+        return num_inputs;
     }
 
     // Render elements

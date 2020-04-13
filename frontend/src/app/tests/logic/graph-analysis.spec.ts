@@ -2,11 +2,12 @@ import { FlowGraph } from '../../flow-editor/flow_graph';
 import { compile, get_conversions_to_stepped, get_source_signals, get_stepped_ast, get_tree_with_ends, get_unreachable } from '../../flow-editor/graph_analysis';
 import { TIME_MONITOR_ID } from '../../flow-editor/platform_facilities';
 import { gen_compiled, SimpleArrayAstOperation } from './graph-analysis-tools';
-import { dsl_to_ast } from './graph-analysis-tools-dsl';
+import { dsl_to_ast } from './graph-analysis-tools-ast-dsl';
 import * as _01_simple_flow from './samples/01_simple_flow.js';
 import * as _02_lone_block from './samples/02_lone_block.js';
 import * as _03_no_start_pulse from './samples/03_no_start_pulse.js';
 import * as _04_no_start_loop from './samples/04_no_start_loop.js';
+import {synth_01_simple_flow, synth_02_lone_block, synth_03_no_start_pulse, synth_04_no_start_loop} from './samples/synthetic';
 
 describe('FlowGraphAnalysis Reachability', () => {
     it('should find no unreachable blocks on samples/01_simple_flow', async () => {
@@ -30,6 +31,29 @@ describe('FlowGraphAnalysis Reachability', () => {
         expect(get_unreachable(_04_no_start_loop as FlowGraph)).toEqual([
             "4652b79c-603b-4add-9164-92508be43fdf",
             "1545b4f2-8b4f-4c59-ae0b-a0a0e5d6746c",
+        ]);
+    });
+
+    it('should find no unreachable blocks on samples/synthetic-01_simple_flow', async () => {
+        expect(get_unreachable(synth_01_simple_flow())).toEqual([]);
+    });
+
+    it('should find an unreachable block on sample/synthetic-02_lone_block', async () => {
+        expect(get_unreachable(synth_02_lone_block())).toEqual([
+            "lone"
+        ]);
+    });
+
+    it('should find unreachable blocks on sample/synthetic-03_no_start_pulse', async () => {
+        expect(get_unreachable(synth_03_no_start_pulse())).toEqual([
+            "not-started",
+        ]);
+    });
+
+    it('should find unreachable blocks on sample/synthetic-04_no_start_loop', async () => {
+        expect(get_unreachable(synth_04_no_start_loop())).toEqual([
+            "first",
+            "second",
         ]);
     });
 });

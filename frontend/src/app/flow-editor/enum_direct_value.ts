@@ -7,8 +7,8 @@ import { BlockManager } from './block_manager';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
-type EnumDirectValueFlowBlockDataType = 'enum_value_block';
-const BLOCK_TYPE = 'enum_value_block';
+export type EnumDirectValueFlowBlockDataType = 'enum_value_block';
+export const BLOCK_TYPE = 'enum_value_block';
 
 export interface EnumDirectValueFlowBlockData {
     type: EnumDirectValueFlowBlockDataType,
