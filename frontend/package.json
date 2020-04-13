@@ -42,6 +42,7 @@
     "@types/jasmine": "3.3.12",
     "@types/node": "^11.15.9",
     "codelyzer": "^5.0.1",
+    "fast-json-stable-stringify": "^2.1.0",
     "google-closure-library": "^20190325.0.0",
     "jasmine-core": "~3.3.0",
     "jasmine-spec-reporter": "~4.2.1",

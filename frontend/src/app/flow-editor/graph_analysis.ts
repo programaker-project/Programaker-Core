@@ -36,6 +36,11 @@ function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
 
         const input = data.value.options.inputs[conn.to.input_index];
         if (!input) {
+            const extras = data.value.options.extra_inputs;
+            if (extras) {
+                return extras.type === 'pulse';
+            }
+
             throw new Error(`No input #${conn.to.input_index} on ${JSON.stringify(data.value.options.inputs)} [conn: ${JSON.stringify(conn)}]`);
         }
 
@@ -110,7 +115,7 @@ export function get_source_signals(graph: FlowGraph): string[] {
         if (block.data.type === AtomicFlowBlock.GetBlockType()){
             const data = block.data as AtomicFlowBlockData;
 
-            const inputs = data.value.options.inputs;
+            const inputs = data.value.options.inputs || [];
 
             // If it has any pulse input, its not a source block
             if (inputs.filter(v => v.type === 'pulse').length > 0) {
@@ -130,7 +135,7 @@ function has_pulse_output(block: FlowGraphNode): boolean {
     if (block.data.type === AtomicFlowBlock.GetBlockType()){
         const data = block.data as AtomicFlowBlockData;
 
-        const outputs = data.value.options.outputs;
+        const outputs = data.value.options.outputs || [];
 
         // If it has no pulse inputs its a source block
         return outputs.filter(v => v.type === 'pulse').length > 0;
@@ -556,7 +561,6 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
         for (let j = 0; j < filters[i].length; j++) {
             const filter = filters[i][j];
             const ast = stepped_asts[i][j];
-
             flows.push(assemble_flow(graph, signal_id, filter, ast));
         }
     }

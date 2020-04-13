@@ -41,7 +41,7 @@ function infer_block_options(block_type: string,
 
     return {
         message: block_type,
-        block_function: block_type,
+        block_function: `services.${options.namespace}.${block_type}`,
         type: params.type,
         inputs: inputs,
         outputs: [
@@ -153,7 +153,7 @@ export class GraphBuilder {
         this.nodes[ref] = {
             type: VALUE_BLOCK_TYPE,
             value: {
-                value: value,
+                value: value + '',
                 type: type,
             }
         };
@@ -173,7 +173,7 @@ export class GraphBuilder {
             for (const arg of options.args) {
                 idx++;
 
-                if (!arg) { continue; } // Skip nulls
+                if (arg === null || arg === undefined) { continue; }
 
                 // Direct value
                 if (typeof arg === 'number' || typeof arg === 'string') {
@@ -225,19 +225,20 @@ export class GraphBuilder {
     add_trigger(block_type: string, options?: BlockOptions): OpNodeBuilderRef {
         const ref = options.id ? options.id : (block_type + '_' + uuidv4());
 
-        const block_options = this.blocks[block_type];
+        let block_options = this.blocks[block_type];
         if (!block_options) {
             throw new Error(`Unknown block type: ${block_type}`);
         }
 
-        const synth_in = AtomicFlowBlock.required_synth_inputs(block_options);
+        let synth_in: number, synth_out: number
+        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
 
         this.nodes[ref] = {
             type: ATOMIC_BLOCK_TYPE,
             value: {
                 options: block_options,
                 synthetic_input_count: synth_in,
-                synthetic_output_count: AtomicFlowBlock.required_synth_outputs(block_options),
+                synthetic_output_count: synth_out,
             }
         }
 

@@ -26,7 +26,7 @@ export function convert_to_graphviz(graph: FlowGraph): string {
     }
 
     for (const conn of graph.edges) {
-        tokens.push(`"${conn.from.id}" -> "${conn.to.id}";`);
+        tokens.push(`"${conn.from.id}" -> "${conn.to.id}"[label="${conn.from.output_index} → ${conn.to.input_index}"];`);
     }
 
     tokens.push('}');

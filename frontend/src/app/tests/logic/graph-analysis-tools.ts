@@ -1,4 +1,5 @@
-import { CompiledFlowGraph, CompiledBlock, CompiledBlockArg, ContentBlock } from '../../flow-editor/flow_graph';
+import { CompiledFlowGraph, CompiledBlock, CompiledBlockArg, ContentBlock, CompiledBlockArgList, CompiledBlockArgCallServiceDict } from '../../flow-editor/flow_graph';
+const stable_stringify = require('json-stable-stringify');
 
 type _AndOp = ['operator_and', SimpleArrayAstArgument, SimpleArrayAstArgument];
 type _EqualsOp = ['operator_equals', SimpleArrayAstArgument, SimpleArrayAstArgument]
@@ -90,4 +91,74 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
 export function gen_compiled(ast: SimpleArrayAst): CompiledFlowGraph {
     const result = ast.map(v => convert_operation(v));
     return result;
+}
+
+function canonicalize_arg(arg: CompiledBlockArg): CompiledBlockArg {
+    if (arg.type === 'constant') {
+        return arg;
+    }
+    else {
+        return {
+            type: arg.type,
+            value: arg.value.map(b => canonicalize_op(b)),
+        }
+    }
+}
+
+function canonicalize_content(content: (CompiledBlock | ContentBlock)): (CompiledBlock | ContentBlock) {
+    if ((content as CompiledBlock).type) {
+        return canonicalize_op((content as CompiledBlock));
+    }
+    else {
+        return {contents: content.contents.map(c => canonicalize_content(c))};
+    }
+}
+
+function canonicalize_op(op: CompiledBlock): CompiledBlock {
+    switch (op.type) {
+        case "wait_for_monitor":
+        case "flow_last_value":
+            // Nothing to canonicalize
+            break;
+
+        case "control_if_else":
+            op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
+            op.contents = op.contents.map(content => canonicalize_content(content));
+            break;
+
+        case "flow_set_value":
+            op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
+            break;
+
+        case "command_call_service":
+            const values = (op.args as CompiledBlockArgCallServiceDict).service_call_values;
+            if (values) {
+                (op.args as CompiledBlockArgCallServiceDict).service_call_values = values.map(arg => canonicalize_arg(arg));
+            }
+            break;
+
+        case "operator_and":
+        case "operator_equals":
+            const args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
+
+            // This is very inefficient, but as canonicalization only makes
+            // sense on unit tests it might be acceptable
+            op.args = args.sort((a, b) => stable_stringify(a).localeCompare(stable_stringify(b)));
+            break;
+
+        default:
+            throw new Error(`Unknown operation: ${op.type}`);
+    }
+
+    return op;
+}
+
+function canonicalize_ast(ast: CompiledFlowGraph): CompiledFlowGraph {
+    return ast.map(op => canonicalize_op(op));
+}
+
+export function canonicalize_ast_list(asts: CompiledFlowGraph[]): CompiledFlowGraph[] {
+    // This sorting is very inefficient, but as canonicalization only makes
+    // sense on unit tests it might be acceptable
+    return asts.map(ast => canonicalize_ast(ast)).sort((a, b) => stable_stringify(a).localeCompare(stable_stringify(b)));
 }
