@@ -155,7 +155,7 @@ module.exports = {
               "type": "boolean",
               "quantity": "any"
             },
-            "block_function": "flow_when_all_true"
+            "block_function": "trigger_when_all_true"
           },
           "synthetic_input_count": 0,
           "synthetic_output_count": 1

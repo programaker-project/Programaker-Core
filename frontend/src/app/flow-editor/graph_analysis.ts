@@ -467,7 +467,7 @@ export function compile_block(graph: FlowGraph,
         else if (block_fun.startsWith('flow_equals')) {
             block_type = "operator_equals";
         }
-        else if (block_fun === 'flow_when_all_true') {
+        else if (block_fun === 'trigger_when_all_true') {
             block_type = "control_if_else";
 
             // Tie arguments with an *and* operation

@@ -20,7 +20,7 @@ export function synth_01_simple_flow(): FlowGraph {
     const cond2 = builder.add_stream('flow_equals', {args: [[source, 0], 11]});
 
     // Stepped section
-    builder.add_trigger('flow_when_all_true', {args: [[cond1, 0], [cond2, 0]]})
+    builder.add_trigger('trigger_when_all_true', {args: [[cond1, 0], [cond2, 0]]})
         .then(f => f.add_op('send_message', { namespace: chat,
                                               args: [channel,
                                                      [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,
@@ -121,7 +121,7 @@ export function synth_05_multiple_streams_in(): FlowGraph {
     const cond2 = builder.add_stream('flow_equals', {args: [[source2, 1], [source2, 2], 0]});
 
     // Stepped section
-    builder.add_trigger('flow_when_all_true', {id: 'trigger', args: [[cond1, 0], [cond2, 0]]})
+    builder.add_trigger('trigger_when_all_true', {id: 'trigger', args: [[cond1, 0], [cond2, 0]]})
         .then(f => f.add_op('send_message', { namespace: chat,
                                               args: [channel,
                                                      [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,

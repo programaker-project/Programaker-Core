@@ -17,7 +17,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Wait',
-                block_function: 'flow_wait_seconds',
+                block_function: 'op_wait_seconds',
                 type: 'operation',
                 inputs: [
                     {
@@ -29,7 +29,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Check',
-                block_function: 'flow_if_then',
+                block_function: 'op_if_then',
                 type: 'operation',
                 inputs: [
                     {
@@ -51,7 +51,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Wait for',
-                block_function: 'flow_wait_for',
+                block_function: 'trigger_wait_for',
                 type: 'trigger',
                 inputs: [
                     {
@@ -63,7 +63,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Wait for next value',
-                block_function: 'flow_wait_for_next_value',
+                block_function: 'op_wait_for_next_value',
                 type: 'operation',
                 inputs: [
                     {
@@ -80,7 +80,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Repeat times',
-                block_function: 'flow_repeat_times',
+                block_function: 'op_repeat_times',
                 type: 'operation',
                 inputs: [
                     {
@@ -114,7 +114,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Only pass first',
-                block_function: 'flow_only_pass_first',
+                block_function: 'op_only_pass_first',
                 type: 'operation',
                 inputs: [
                     {
@@ -132,7 +132,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Wait for all',
-                block_function: 'flow_wait_for_all',
+                block_function: 'op_wait_for_all',
                 type: 'operation',
                 inputs: [
                     {
@@ -150,7 +150,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'When all true',
-                block_function: 'flow_when_all_true',
+                block_function: 'trigger_when_all_true',
                 type: 'trigger',
                 inputs: [
                     {
@@ -479,7 +479,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Set %(variable) to %i1',
-                block_function: 'flow_set_var_value',
+                block_function: 'op_set_var_value',
                 type: 'operation',
                 inputs: [
                     {
@@ -491,7 +491,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Increment %(variable) by %i1',
-                block_function: 'flow_inc_var_by',
+                block_function: 'op_inc_var_by',
                 type: 'operation',
                 inputs: [
                     {
@@ -508,7 +508,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Add %i1 to %(list)',
-                block_function: 'flow_add_to_list',
+                block_function: 'op_add_to_list',
                 inputs: [
                     {
                         type: 'any',
@@ -519,7 +519,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Delete entry # %i1 to %(list)',
-                block_function: 'flow_delete_list_entry',
+                block_function: 'op_delete_list_entry',
                 type: 'operation',
                 inputs: [
                     {
@@ -530,13 +530,13 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Delete all of %(list)',
-                block_function: 'flow_delete_all_list',
+                block_function: 'op_delete_all_list',
                 type: 'operation'
             },
             {
                 icon: PLATFORM_ICON,
                 message: 'Insert %i1 at position %i2 of %(list)',
-                block_function: 'flow_insert_at_list_position',
+                block_function: 'op_insert_at_list_position',
                 type: 'operation',
                 inputs: [
                     {
@@ -550,7 +550,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Replace item at position %i1 of %(list) with %i2',
-                block_function: 'flow_replace_at_list_position',
+                block_function: 'op_replace_at_list_position',
                 type: 'operation',
                 inputs: [
                     {
