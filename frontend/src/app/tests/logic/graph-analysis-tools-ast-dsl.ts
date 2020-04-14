@@ -10,9 +10,12 @@ const OP_TRANSLATIONS = {
     'if': 'control_if_else',
     '=': 'operator_equals',
     'and': 'operator_and',
+    'wait-seconds': 'op_wait_seconds',
     'wait-for-monitor': 'wait_for_monitor',
     'call-service': 'command_call_service',
     'flow-last-value': 'flow_last_value',
+    'jump-to': 'jump_to_block',
+    'jump-point': 'jump_point',
 };
 
 const OPS_WITH_MAP_ARGUMENTS = [

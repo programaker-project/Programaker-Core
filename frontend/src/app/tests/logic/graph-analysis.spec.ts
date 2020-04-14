@@ -192,7 +192,7 @@ export function are_equivalent_ast(actual: CompiledFlowGraph[], expected: Compil
 
 describe('FlowGraphAnalysis Compilation E2E', () => {
     it('should compile samples/01_simple_flow', async () => {
-        expect(compile(_01_simple_flow as FlowGraph)).toEqual([
+        are_equivalent_ast(compile(_01_simple_flow as FlowGraph), [
             [
                 {
                     type: "wait_for_monitor",
@@ -354,7 +354,7 @@ describe('FlowGraphAnalysis Compilation E2E', () => {
     });
 
     it('should match tool compilation', async () => {
-        expect(compile(_01_simple_flow as FlowGraph)).toEqual([
+        are_equivalent_ast(compile(_01_simple_flow as FlowGraph), [
             gen_compiled([
                 ['wait_for_monitor', { monitor_id: { from_service: TIME_MONITOR_ID }, expected_value: 'any_value' }],
                 ['control_if_else',
@@ -389,7 +389,7 @@ describe('FlowGraphAnalysis Compilation E2E', () => {
         const CHAT_SVC = "de5baefb-13da-457e-90a5-57a753da8891";
         const WEATHER_SVC = "536bf266-fabf-44a6-ba89-a0c71b8db608";
 
-        expect(compile(_01_simple_flow as FlowGraph)).toEqual([
+        are_equivalent_ast(compile(_01_simple_flow as FlowGraph), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                  (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
@@ -455,19 +455,15 @@ describe('FlowGraphAnalysis Compilation E2E', () => {
         const CHAT_SVC = "de5baefb-13da-457e-90a5-57a753da8891";
         const WEATHER_SVC = "536bf266-fabf-44a6-ba89-a0c71b8db608";
 
-        let compiled = compile(synth_06_stepped_loops());
-
-        // console.log(JSON.stringify(compiled, null, 4));
-
-        are_equivalent_ast(compiled,
+        are_equivalent_ast(compile(synth_06_stepped_loops()),
                            [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
-                (if (and (= (flow-last-value "source1" 0)
+                (if (and (= (flow-last-value "source" 0)
                             11)
-                         (= (flow-last-value "source2" 1)
-                            (flow-last-value "source2" 2)
+                         (= (flow-last-value "source" 1)
+                            (flow-last-value "source" 2)
                             0))
                     ((jump-point "loop-start")
                      (call-service id: "${CHAT_SVC}"

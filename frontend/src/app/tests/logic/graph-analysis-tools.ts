@@ -1,4 +1,5 @@
 import { CompiledFlowGraph, CompiledBlock, CompiledBlockArg, ContentBlock, CompiledBlockArgList, CompiledBlockArgCallServiceDict } from '../../flow-editor/flow_graph';
+import { _link_graph } from '../../flow-editor/graph_analysis';
 const stable_stringify = require('json-stable-stringify');
 
 type _AndOp = ['operator_and', SimpleArrayAstArgument, SimpleArrayAstArgument];
@@ -90,7 +91,7 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
 
 export function gen_compiled(ast: SimpleArrayAst): CompiledFlowGraph {
     const result = ast.map(v => convert_operation(v));
-    return result;
+    return _link_graph(result);
 }
 
 function canonicalize_arg(arg: CompiledBlockArg): CompiledBlockArg {
@@ -115,6 +116,8 @@ function canonicalize_content(content: (CompiledBlock | ContentBlock)): (Compile
 }
 
 function canonicalize_op(op: CompiledBlock): CompiledBlock {
+    delete op.id;
+
     switch (op.type) {
         case "wait_for_monitor":
         case "flow_last_value":
@@ -146,8 +149,19 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             op.args = args.sort((a, b) => stable_stringify(a).localeCompare(stable_stringify(b)));
             break;
 
+        case "jump_to_position":
+        case "jump_to_block":
+            break;
+
         default:
-            throw new Error(`Unknown operation: ${op.type}`);
+            console.warn(`Unknown operation: ${op.type}`);
+        case "op_wait_seconds":
+            if ((op.args as CompiledBlockArgList).length) {
+                op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
+            }
+            if (op.contents) {
+                op.contents = op.contents.map(content => canonicalize_content(content));
+            }
     }
 
     return op;

@@ -54,6 +54,10 @@ export type CompiledBlockType = "wait_for_monitor"
     | "operator_and" | "operator_equals"
     | "flow_last_value" | "flow_set_value"
     | "command_call_service"
+    | "op_wait_seconds"
+    | "jump_to_position"
+    | "jump_to_block"
+    | "jump_point" // Not found on executable stage, will be removed in link phase
     ;
 export type CompiledBlockArgs = CompiledBlockArgMonitorDict | CompiledBlockArgCallServiceDict | CompiledBlockArgList;
 
@@ -62,6 +66,7 @@ export interface ContentBlock {
 };
 
 export interface CompiledBlock {
+    id?: string,
     type: CompiledBlockType,
     args?: CompiledBlockArgs,
     contents?: (CompiledBlock | ContentBlock)[],

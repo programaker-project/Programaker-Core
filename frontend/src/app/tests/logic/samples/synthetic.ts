@@ -154,6 +154,7 @@ export function synth_06_stepped_loops(): FlowGraph {
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {id: 'trigger', args: [[cond1, 0], [cond2, 0]]})
     const send_message = builder.add_op('send_message', { namespace: chat,
+                                                          id: 'loop-start',
                                                           args: [channel,
                                                                  [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,
                                                                                                                   args: [loc]
@@ -162,7 +163,7 @@ export function synth_06_stepped_loops(): FlowGraph {
     const wait_1sec = builder.add_op('op_wait_seconds', { args: [1]
                                                         });
 
-    trigger.then(send_message).then(wait_1sec).then(send_message);
+    trigger.then(send_message).then(wait_1sec).then(send_message).then(wait_1sec);
 
     const graph = builder.build();
     // console.log('\n' + convert_to_graphviz(graph) + '\n');
