@@ -7,7 +7,7 @@ import * as _01_simple_flow from './samples/01_simple_flow.js';
 import * as _02_lone_block from './samples/02_lone_block.js';
 import * as _03_no_start_pulse from './samples/03_no_start_pulse.js';
 import * as _04_no_start_loop from './samples/04_no_start_loop.js';
-import { synth_01_simple_flow, synth_02_lone_block, synth_03_no_start_pulse, synth_04_no_start_loop, synth_05_multiple_streams_in } from './samples/synthetic';
+import { synth_01_simple_flow, synth_02_lone_block, synth_03_no_start_pulse, synth_04_no_start_loop, synth_05_multiple_streams_in, synth_06_stepped_loops } from './samples/synthetic';
 
 
 describe('FlowGraphAnalysis Reachability', () => {
@@ -447,6 +447,40 @@ describe('FlowGraphAnalysis Compilation E2E', () => {
                                                           values: ("12/36/057/7"))))))
                 `
             ))
+        ]);
+    });
+
+    it('should be able to compile with stepped loops input streams', async () => {
+        const TIME_BLOCK = "ad97e5d1-c725-4cc6-826f-30057f239635";
+        const CHAT_SVC = "de5baefb-13da-457e-90a5-57a753da8891";
+        const WEATHER_SVC = "536bf266-fabf-44a6-ba89-a0c71b8db608";
+
+        let compiled = compile(synth_06_stepped_loops());
+
+        // console.log(JSON.stringify(compiled, null, 4));
+
+        are_equivalent_ast(compiled,
+                           [
+            gen_compiled(dsl_to_ast(
+                `;PM-DSL ;; Entrypoint for mmm-mode
+                (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                (if (and (= (flow-last-value "source1" 0)
+                            11)
+                         (= (flow-last-value "source2" 1)
+                            (flow-last-value "source2" 2)
+                            0))
+                    ((jump-point "loop-start")
+                     (call-service id: "${CHAT_SVC}"
+                                   action: "send_message"
+                                   values: ("-137414823"
+                                            (call-service id: "${WEATHER_SVC}"
+                                                          action: "get_today_max_in_place"
+                                                          values: ("12/36/057/7"))))
+                     (wait-seconds 1)
+                     (jump-to "loop-start")
+                     ))
+                `
+            )),
         ]);
     });
 });
