@@ -40,7 +40,7 @@
     "@angular/cli": "^9.1.0",
     "@angular/compiler-cli": "^9.1.0",
     "@types/jasmine": "3.3.12",
-    "@types/node": "^11.15.9",
+    "@types/node": "^11.15.10",
     "codelyzer": "^5.0.1",
     "fast-json-stable-stringify": "^2.1.0",
     "google-closure-library": "^20190325.0.0",
