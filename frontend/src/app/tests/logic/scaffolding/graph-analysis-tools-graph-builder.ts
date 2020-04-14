@@ -201,9 +201,14 @@ export class GraphBuilder {
     add_stream(block_type: string, options?: BlockOptions): StreamNodeBuilderRef {
         const ref = options.id ? options.id : (block_type + '_' + uuidv4());
 
-        const block_options = this.blocks[block_type];
+        let block_options = this.blocks[block_type];
         if (!block_options) {
-            throw new Error(`Unknown block type: ${block_type}`);
+            if (options && options.namespace) {
+                block_options = infer_block_options(block_type, options, { type: 'getter' });
+            }
+            else {
+                throw new Error(`Unknown block type: ${block_type}`);
+            }
         }
 
         const synth_in = AtomicFlowBlock.required_synth_inputs(block_options);
@@ -227,7 +232,12 @@ export class GraphBuilder {
 
         let block_options = this.blocks[block_type];
         if (!block_options) {
-            throw new Error(`Unknown block type: ${block_type}`);
+            if (options && options.namespace) {
+                block_options = infer_block_options(block_type, options, { type: 'trigger' });
+            }
+            else {
+                throw new Error(`Unknown block type: ${block_type}`);
+            }
         }
 
         let synth_in: number, synth_out: number

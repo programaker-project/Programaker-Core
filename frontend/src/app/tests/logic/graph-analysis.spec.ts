@@ -1,5 +1,6 @@
 import { CompiledFlowGraph, FlowGraph } from '../../flow-editor/flow_graph';
 import { compile, get_conversions_to_stepped, get_source_signals, get_stepped_ast, get_tree_with_ends, get_unreachable } from '../../flow-editor/graph_analysis';
+import { validate } from '../../flow-editor/graph_validation';
 import { TIME_MONITOR_ID } from '../../flow-editor/platform_facilities';
 import { canonicalize_ast_list, gen_compiled, SimpleArrayAstOperation } from './graph-analysis-tools';
 import { dsl_to_ast } from './graph-analysis-tools-ast-dsl';
@@ -7,7 +8,7 @@ import * as _01_simple_flow from './samples/01_simple_flow.js';
 import * as _02_lone_block from './samples/02_lone_block.js';
 import * as _03_no_start_pulse from './samples/03_no_start_pulse.js';
 import * as _04_no_start_loop from './samples/04_no_start_loop.js';
-import { synth_01_simple_flow, synth_02_lone_block, synth_03_no_start_pulse, synth_04_no_start_loop, synth_05_multiple_streams_in, synth_06_stepped_loops } from './samples/synthetic';
+import { synth_01_simple_flow, synth_02_lone_block, synth_03_no_start_pulse, synth_04_no_start_loop, synth_05_multiple_streams_in, synth_06_stepped_loops, synth_07_streaming_loops } from './samples/synthetic';
 
 
 describe('FlowGraphAnalysis Reachability', () => {
@@ -478,5 +479,25 @@ describe('FlowGraphAnalysis Compilation E2E', () => {
                 `
             )),
         ]);
+    });
+
+    it('validation of flow 01_sample should pass', async () => {
+        expect(() => validate(synth_01_simple_flow()))
+            .toBeTruthy()
+    });
+
+    it('validation of flow 05_multiple_streams should pass', async () => {
+        expect(() => validate(synth_05_multiple_streams_in()))
+            .toBeTruthy()
+    });
+
+    it('validation of flow 06_stepped_loops should pass', async () => {
+        expect(() => validate(synth_06_stepped_loops()))
+            .toBeTruthy()
+    });
+
+    it('validation of flow with streaming loops should fail', async () => {
+        expect(() => validate(synth_07_streaming_loops()))
+            .toThrowError(/ValidationError:.*loops? in streaming section.*/i);
     });
 });
