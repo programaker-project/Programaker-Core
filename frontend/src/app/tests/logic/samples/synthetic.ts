@@ -193,3 +193,41 @@ export function synth_07_streaming_loops(): FlowGraph {
     const graph = builder.build();
     return graph;
 }
+
+export function synth_08_branching(): FlowGraph {
+    const builder = new GraphBuilder();
+
+    // Services
+    const weather = builder.add_service('536bf266-fabf-44a6-ba89-a0c71b8db608');
+    const chat = builder.add_service('de5baefb-13da-457e-90a5-57a753da8891');
+
+    // Values
+    const loc = builder.add_enum_node(weather, 'get_locations', 'Vigo', '12/36/057/7');
+    const channel1 = builder.add_enum_node(chat, 'get_known_channels', 'Bot testing', '-137414823');
+    const channel2 = builder.add_enum_node(chat, 'get_known_channels', 'Personal', '-137414824');
+
+    // Stream section
+    const source = builder.add_stream('flow_utc_time', {'id': 'source', message: 'UTC time'});
+    const cond1 = builder.add_stream('flow_equals', {args: [[source, 1], [source, 2], 0]});
+    const cond2 = builder.add_stream('flow_equals', {args: [[source, 0], 11]});
+
+    // Stepped section
+    const trigger = builder.add_trigger('trigger_when_all_true', {args: [[cond1, 0], [cond2, 0]]});
+    trigger.then(f => f.add_op('send_message', { namespace: chat,
+                                                 args: [channel1,
+                                                        [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,
+                                                                                                         args: [loc]
+                                                                                                       }), 0]]
+                                               }));
+
+    trigger.then(f => f.add_op('send_message', { namespace: chat,
+                                                 args: [channel2,
+                                                        [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,
+                                                                                                         args: [loc]
+                                                                                                       }), 0]]
+                                               }));
+
+    const graph = builder.build();
+
+    return graph;
+}

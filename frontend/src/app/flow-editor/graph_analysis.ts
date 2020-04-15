@@ -22,10 +22,9 @@ function index_toolbox_description(desc: ToolboxDescription): {[key: string]: At
 
 const BASE_TOOLBOX_BLOCKS = index_toolbox_description(BaseToolboxDescription);
 
-const VIRTUAL_BLOCK_TYPE = 'virtual-block';
 const JUMP_TO_POSITION_OPERATION = 'jump_to_position';
 const JUMP_TO_BLOCK_OPERATION = 'jump_to_block';
-
+const FORK_OPERATION = 'fork_execution';
 
 function get_source_blocks(graph: FlowGraph): string[] {
     const sources = [];
@@ -263,12 +262,25 @@ export interface SteppedBlockTreeBlock extends BlockTree  {
     contents: SteppedBlockTree[],
 };
 
-export interface SteppedBlockTreeJump {
+export interface VirtualSteppedBlock {
+    block_id: string,
+    type: string,
+    contents?: SteppedBlockTree[],
+    arguments?: BlockTreeArgument[],
+}
+
+export interface SteppedBlockTreeJump extends VirtualSteppedBlock {
     block_id: string,
     type: 'jump_to_block';
 }
 
-export type  SteppedBlockTree = SteppedBlockTreeBlock | SteppedBlockTreeJump;
+export interface SteppedBlockTreeFork extends VirtualSteppedBlock {
+    block_id: string,
+    type: 'fork_execution',
+    contents: SteppedBlockTree[],
+}
+
+export type SteppedBlockTree = SteppedBlockTreeBlock | VirtualSteppedBlock;
 
 export function get_tree_with_ends(graph: FlowGraph, top: string, bottom: string): BlockTree {
     const args: FlowGraphEdge[] = [];
@@ -344,6 +356,33 @@ export function get_stepped_block_arguments(graph: FlowGraph, block_id: string):
     return args;
 }
 
+function get_stepped_ast_continuation(graph: FlowGraph,
+                                      continuation: FlowGraphEdge,
+                                      ast: SteppedBlockTree[],
+                                      reached: {[key: string]: boolean}) {
+
+    const block_id = continuation.to.id;
+
+    if (reached[block_id]) {
+        // Create new jump-to block here
+
+        ast.push({
+            block_id: block_id,
+            type: JUMP_TO_BLOCK_OPERATION
+        });
+    }
+    else {
+        ast.push({
+            block_id: block_id,
+            arguments: get_stepped_block_arguments(graph, block_id),
+            contents: [],
+        });
+
+        reached[block_id] = true;
+        get_stepped_ast_branch(graph, block_id, ast, reached);
+    }
+}
+
 function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: SteppedBlockTree[], reached: {[key: string]: boolean}) {
     let continuations = get_pulse_continuations(graph, source_id);
 
@@ -353,36 +392,28 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
 
     if (continuations.length == 1) {
         if (continuations[0].length == 1) {
-            const block_id = continuations[0][0].to.id;
-
-
-            if (reached[block_id]) {
-
-                // Create new jump-to block here
-
-                ast.push({
-                    block_id: block_id,
-                    type: JUMP_TO_BLOCK_OPERATION
-                });
-            }
-            else {
-                ast.push({
-                    block_id: continuations[0][0].to.id,
-                    arguments: get_stepped_block_arguments(graph, continuations[0][0].to.id),
-                    contents: [],
-                });
-
-                reached[block_id] = true;
-
-                get_stepped_ast_branch(graph, block_id, ast, reached);
-            }
+            get_stepped_ast_continuation(graph, continuations[0][0], ast, reached);
         }
         else {
-            throw new Error("NOT IMPLEMENTED: Flow fork");
+            const block_id = uuidv4();
+
+            const contents = [];
+            for (const cont of continuations[0]) {
+                const subast = [];
+
+                const subreached = Object.assign({}, reached)
+                get_stepped_ast_continuation(graph, cont, subast, subreached);
+                contents.push(subast);
+            }
+
+            ast.push({
+                block_id: block_id,
+                type: FORK_OPERATION,
+                contents: contents,
+            });
         }
     }
-
-    if (continuations.length == 0) {
+    else if (continuations.length == 0) {
         // Empty AST
         // Nothing to do
     }
@@ -397,15 +428,9 @@ export function get_stepped_ast(graph: FlowGraph, source_id: string): SteppedBlo
 }
 
 function compile_contents(graph: FlowGraph, contents: SteppedBlockTree[]): CompiledBlock[] {
-    return contents.map(v => {
-        if ((v as SteppedBlockTreeBlock).contents) {
-            const b = (v as SteppedBlockTreeBlock);
-            return compile_block(graph, v.block_id, b.arguments, b.contents, { inside_args: false, jump_op: false })
-        }
-        else if ((v as SteppedBlockTreeJump).type === JUMP_TO_BLOCK_OPERATION) {
-            return compile_block(graph, v.block_id, [], [], { inside_args: false, jump_op: true })
-        }
-    });
+    return contents.map(v =>
+        compile_block(graph, v.block_id, v.arguments, v.contents, { inside_args: false, orig_tree: v })
+                       );
 }
 
 function is_signal_block(_graph: FlowGraph, _arg: BlockTreeArgument, data: AtomicFlowBlockData): boolean {
@@ -446,7 +471,7 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument): CompiledBlockArg
         else{
             return {
                 type: 'block',
-                value: [ compile_block(graph, arg.tree.block_id, arg.tree.arguments, [], { inside_args: true, jump_op: false }) ]
+                value: [ compile_block(graph, arg.tree.block_id, arg.tree.arguments, [], { inside_args: true, orig_tree: null }) ]
             }
         }
     }
@@ -475,17 +500,40 @@ function compile_block(graph: FlowGraph,
                        block_id: string,
                        args: BlockTreeArgument[],
                        contents: SteppedBlockTree[][] | SteppedBlockTree[],
-                       flags: { inside_args: boolean, jump_op: boolean }): CompiledBlock {
+                       flags: { inside_args: boolean, orig_tree: SteppedBlockTree }): CompiledBlock {
 
-    if (flags.jump_op) {
-        return {
-            type: JUMP_TO_BLOCK_OPERATION,
-            args: [{ type: 'constant', value: block_id }],
-            contents: [],
-        };
+    if (flags.orig_tree && (flags.orig_tree as VirtualSteppedBlock).type) {
+        const vblock = flags.orig_tree as VirtualSteppedBlock;
+
+        if (vblock.type === 'jump_to_block') {
+            return {
+                type: JUMP_TO_BLOCK_OPERATION,
+                args: [{ type: 'constant', value: block_id }],
+                contents: [],
+            };
+        }
+        else if (vblock.type === 'fork_execution') {
+            return {
+                type: FORK_OPERATION,
+                args: [],
+                contents: (contents as SteppedBlockTree[][]).map(c => { return { contents: compile_contents(graph, c)} })
+            };
+        }
+        else {
+            throw new Error(`Unknown virtual block (type: ${vblock.type})`);
+        }
     }
 
     const block = graph.nodes[block_id];
+
+    if (!block) {
+        if (flags) {
+            throw new Error(`Block not found (id: ${block_id}, inside_args: ${flags.inside_args})\nValue: ${JSON.stringify(flags.orig_tree)}`)
+        }
+        else {
+            throw new Error(`Block not found (id: ${block_id}, no flags)`)
+        }
+    }
 
     if (block.data.type === AtomicFlowBlock.GetBlockType()){
         const data = block.data as AtomicFlowBlockData;
@@ -666,8 +714,8 @@ export function assemble_flow(graph: FlowGraph,
                               stepped_ast: SteppedBlockTree[]): CompiledFlowGraph {
 
     const compiled_graph = [
-        compile_block(graph, signal_id, [], [], { inside_args: false, jump_op: false }),
-        compile_block(graph, filter.block_id, filter.arguments, [ stepped_ast, [] ], { inside_args: false, jump_op: false })
+        compile_block(graph, signal_id, [], [], { inside_args: false, orig_tree: null }),
+        compile_block(graph, filter.block_id, filter.arguments, [ stepped_ast, [] ], { inside_args: false, orig_tree: null })
     ];
 
     return _link_graph(compiled_graph);

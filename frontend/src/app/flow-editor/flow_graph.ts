@@ -58,6 +58,7 @@ export type CompiledBlockType = "wait_for_monitor"
     | "jump_to_position"
     | "jump_to_block"
     | "jump_point" // Not found on executable stage, will be removed in link phase
+    | "fork_execution"
     ;
 export type CompiledBlockArgs = CompiledBlockArgMonitorDict | CompiledBlockArgCallServiceDict | CompiledBlockArgList;
 

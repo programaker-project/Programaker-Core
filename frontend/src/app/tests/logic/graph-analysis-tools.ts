@@ -10,12 +10,14 @@ type _CallServiceOp = ['command_call_service',
 type _WaitForMonitorOp = ['wait_for_monitor', { monitor_id: { from_service: string }, expected_value: any }];
 type _LastValueOp = ['flow_last_value', string, number | string];
 type _IfElseOp = ['control_if_else', SimpleArrayAstArgument, SimpleArrayAstOperation[]];
+type _ForkExecOp = ['fork_execution', SimpleArrayAstArgument[], SimpleArrayAstOperation[]]
 
 export type SimpleArrayAstArgument = SimpleArrayAstOperation | string | number
 export type SimpleArrayAstOperation = _AndOp | _EqualsOp
     | _CallServiceOp
     | _WaitForMonitorOp | _LastValueOp
     | _IfElseOp
+    | _ForkExecOp
 ;
 
 export type SimpleArrayAst = SimpleArrayAstOperation[];
@@ -80,6 +82,20 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
         }
     }
 
+    if (op[0] === 'fork_execution') {
+        const contents = (op[2] as SimpleArrayAstOperation[][]).map(v => convert_contents(v));
+
+        if (contents.length < 2) {
+            console.warn('Fork (fork_execution) with less than two outward paths');
+        }
+
+        return {
+            type: op[0],
+            args: op[1].map(arg => convert_argument(arg)),
+            contents: contents,
+        }
+    }
+
     const args: SimpleArrayAstArgument[] = op.slice(1);
 
     return {
@@ -119,20 +135,30 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
     delete op.id;
 
     switch (op.type) {
+            // Nothing to canonicalize
         case "wait_for_monitor":
         case "flow_last_value":
-            // Nothing to canonicalize
+        case "jump_to_position":
+        case "jump_to_block":
             break;
 
+            // Cannonicalize args and contents, but don't sort
+        case "fork_execution":
         case "control_if_else":
-            op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
-            op.contents = op.contents.map(content => canonicalize_content(content));
-            break;
-
         case "flow_set_value":
+        case "op_wait_seconds":
+            if (op.args) {
+                op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
+            }
+            if (op.contents) {
+                op.contents = op.contents.map(content => canonicalize_content(content));
+            }
+            break;
+
             op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
             break;
 
+            // Special argument handling
         case "command_call_service":
             const values = (op.args as CompiledBlockArgCallServiceDict).service_call_values;
             if (values) {
@@ -140,6 +166,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             }
             break;
 
+            // Canonicalize args and allow sorting them
         case "operator_and":
         case "operator_equals":
             const args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
@@ -149,19 +176,8 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             op.args = args.sort((a, b) => stable_stringify(a).localeCompare(stable_stringify(b)));
             break;
 
-        case "jump_to_position":
-        case "jump_to_block":
-            break;
-
         default:
             console.warn(`Unknown operation: ${op.type}`);
-        case "op_wait_seconds":
-            if ((op.args as CompiledBlockArgList).length) {
-                op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
-            }
-            if (op.contents) {
-                op.contents = op.contents.map(content => canonicalize_content(content));
-            }
     }
 
     return op;

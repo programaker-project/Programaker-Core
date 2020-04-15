@@ -16,6 +16,7 @@ const OP_TRANSLATIONS = {
     'flow-last-value': 'flow_last_value',
     'jump-to': 'jump_to_block',
     'jump-point': 'jump_point',
+    'fork': 'fork_execution',
 };
 
 const OPS_WITH_MAP_ARGUMENTS = [
@@ -88,6 +89,45 @@ function transform_call(args: any[]): any[] {
             args[1].service_call_values = args[1].values;
             delete args[1].values;
         }
+    }
+
+    if (op === 'fork_execution') {
+        let kw_args_index;
+        for (kw_args_index = 1; kw_args_index < args.length;kw_args_index) {
+            const arg = args[kw_args_index];
+
+            if (typeof arg !== 'string') {
+                break;
+            }
+
+            if (arg.indexOf(':') >= 0) {
+                if (arg.indexOf(':') != (arg.length - 1)) {
+                    throw new Error(`Character ':' allowed ONLY at the end of symbol, not before. On (op:${op}, arg: ${arg})`);
+                }
+
+                args[kw_args_index] = arg.substring(0, arg.length - 1);
+            }
+        }
+
+        let contents = [];
+        let kw_args = [];
+
+        if (args.length > kw_args_index) {
+            contents = args.splice(kw_args_index);
+        }
+        if (args.length > 1) {
+            kw_args = args.splice(1);
+        }
+
+        // Translate direct operations (in contents) with an operation list
+        for (let idx = 0; idx < contents.length; idx++) {
+            if (typeof contents[idx][0] === 'string') {
+                contents[idx] = [contents[idx]];
+            }
+        }
+
+        args[1] = kw_args;
+        args[2] = contents;
     }
 
     return args;
