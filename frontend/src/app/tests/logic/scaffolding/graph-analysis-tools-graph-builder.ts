@@ -15,7 +15,7 @@ type NodeGenerator = (builder: GraphBuilder) => OpNodeBuilderRef;
 
 type NodeRef = ValueNodeRef | StreamNodeBuilderRef | OpNodeBuilderRef;
 
-type BlockArgument = [NodeRef, number] | [StreamGenerator, number] | ValueNodeRef | string | number;
+type BlockArgument = [OpNodeBuilderRef, 'pulse'] | [NodeRef, number] | [StreamGenerator, number] | ValueNodeRef | string | number;
 
 
 function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions} {
@@ -186,13 +186,22 @@ export class GraphBuilder {
                 }
                 // Node reference
                 else if ((arg[0] as StreamNodeBuilderRef).id) {
-                    this.establish_connection([(arg[0] as StreamNodeBuilderRef).id, arg[1]], [node, idx]);
+                    let out_index = arg[1] as number;
+                    if (arg[1] === 'pulse'){
+                        out_index = 0;
+                    }
+                    this.establish_connection([(arg[0] as StreamNodeBuilderRef).id, out_index], [node, idx]);
                 }
                 // Generator
                 else {
+                    let out_index = arg[1] as number;
+                    if (arg[1] === 'pulse'){
+                        out_index = 0;
+                    }
+
                     const gen = arg[0] as StreamGenerator;
 
-                    this.establish_connection([gen(this).id, arg[1]], [node, idx]);
+                    this.establish_connection([gen(this).id, out_index], [node, idx]);
                 }
             }
         }

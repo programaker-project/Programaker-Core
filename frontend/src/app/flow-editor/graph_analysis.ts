@@ -1,11 +1,10 @@
-import { FlowGraph, FlowGraphEdge, FlowGraphNode, CompiledFlowGraph, CompiledBlock, CompiledBlockArgs, CompiledBlockArg, ContentBlock } from './flow_graph';
 import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions } from './atomic_flow_block';
+import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_description';
+import { BASE_TOOLBOX_SOURCE_SIGNALS } from './definitions';
 import { DirectValue, DirectValueFlowBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
-import { BASE_TOOLBOX_SOURCE_SIGNALS } from './definitions';
+import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { TIME_MONITOR_ID } from './platform_facilities';
-import { ToolboxDescription, BaseToolboxDescription } from './base_toolbox_description';
-import { uuidv4 } from './utils';
 
 
 function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions} {
@@ -326,18 +325,17 @@ export function get_stepped_block_arguments(graph: FlowGraph, block_id: string):
     const args: BlockTreeArgument[] = [];
 
     let pulse_offset = 0;
+    let pulse_ports = {};
+
     for (const conn of graph.edges) {
         if (conn.to.id === block_id) {
             if (is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index)) {
-                if (conn.to.input_index == 0) {
-                    // Discard pulse inputs
-                    pulse_offset = 1;
-                }
-                else {
-                    throw new Error("NOT IMPLEMENTED: Multiple pulse inputs");
-                }
+                pulse_ports[conn.to.input_index] = true;
+                pulse_offset = Math.max(pulse_offset, conn.to.input_index + 1);
             }
             else {
+                pulse_ports[conn.to.input_index] = false;
+
                 if (args[conn.to.input_index] !== undefined) {
                     throw new Error("Multiple inputs on single port");
                 }
@@ -353,9 +351,16 @@ export function get_stepped_block_arguments(graph: FlowGraph, block_id: string):
         }
     }
 
-    if (pulse_offset == 1) {
-        args.shift();
+    // Validate that all pulse's are grouped
+    for (let i = 0; i < pulse_offset; i++) {
+        if (pulse_ports[i]) {
+            args.shift();
+        }
+        else {
+            throw new Error(`Non-pulse input before a pulse one on block_id:${block_id}`);
+        }
     }
+
     return args;
 }
 
@@ -386,11 +391,74 @@ function get_stepped_ast_continuation(graph: FlowGraph,
     }
 }
 
+function cut_on_block_id(ast: SteppedBlockTree[], block_id: string): [SteppedBlockTree[], SteppedBlockTree[]] {
+    for (let cut_idx = 0;cut_idx < ast.length; cut_idx++) {
+        if (ast[cut_idx].block_id === block_id) {
+            return [
+                ast.slice(0, cut_idx),
+                ast.slice(cut_idx),
+            ];
+        }
+    }
+
+    throw new Error(`Block (id: ${block_id}) not found`);
+}
+
+function find_common_merge(asts: SteppedBlockTree[][]): { asts: SteppedBlockTree[][], common_suffix: SteppedBlockTree[] } {
+    const findings: { [key: string]: number[]} = {};
+    const common_blocks: [string, number][] = [];
+
+    if (asts.length === 0) {
+        return null;
+    }
+
+    for (let idx = 0; idx < asts.length; idx++) {
+        const ast = asts[idx];
+
+        for (let op_idx = 0; op_idx < ast.length; op_idx++) {
+            const op = ast[op_idx];
+
+            const block_id = op.block_id;
+            if (!findings[block_id]) {
+                findings[block_id] = [];
+            }
+
+            findings[block_id].push(op_idx);
+            if (findings[block_id].length === asts.length) {
+                common_blocks.push([block_id, findings[block_id].reduce((a, b) => a + b, 0)]);
+            }
+            else if (findings[block_id].length > asts.length) {
+                throw new Error(`Duplicated block (id=${block_id}) found on ast`);
+            }
+        }
+    }
+
+    if (common_blocks.length === 0) {
+        return null;
+    }
+
+    const sorted_ascending = common_blocks.sort((a, b) => a[1] - b[1]);
+    const first_cut_id = sorted_ascending[0][0];
+
+    const [unique_first_ast, common_suffix] = cut_on_block_id(asts[0], first_cut_id);
+
+    const differences = [unique_first_ast];
+    for (let idx = 1; idx < asts.length; idx++) {
+        const [unique, ] = cut_on_block_id(asts[idx], first_cut_id);
+        differences.push(unique);
+    }
+
+    return {
+        asts: differences,
+        common_suffix: common_suffix,
+    }
+}
+
 function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: SteppedBlockTree[], reached: {[key: string]: boolean}) {
     let continuations = get_pulse_continuations(graph, source_id);
 
     if (continuations.length > 1) {
-        const contents = [];
+        let contents = [];
 
         for (const cont of continuations) {
             const subast = [];
@@ -404,8 +472,19 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             contents.push(subast);
         }
 
+        const re_merge_data = find_common_merge(contents);
+        let common_suffix = [];
+
+        if (re_merge_data) {
+            contents = re_merge_data.asts;
+            common_suffix = re_merge_data.common_suffix;
+        }
         ast[ast.length - 1].contents = contents; // Update parent block contents
+        for (const op of common_suffix) {
+            ast.push(op);
+        }
     }
+
 
     if (continuations.length == 1) {
         if (continuations[0].length == 1) {

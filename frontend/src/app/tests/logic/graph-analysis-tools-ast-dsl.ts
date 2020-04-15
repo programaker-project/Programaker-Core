@@ -100,12 +100,18 @@ function transform_call(args: any[]): any[] {
                 break;
             }
 
-            if (arg.indexOf(':') >= 0) {
-                if (arg.indexOf(':') != (arg.length - 1)) {
-                    throw new Error(`Character ':' allowed ONLY at the end of symbol, not before. On (op:${op}, arg: ${arg})`);
+            const colon_pos = arg.indexOf(':');
+            if (colon_pos >= 0) {
+                if (colon_pos === 0 && (arg.substring(1).indexOf(':') < 0)) {
+                    args[kw_args_index] = arg.substring(1);
+                }
+                else if (colon_pos === (arg.length - 1)) {
+                    args[kw_args_index] = arg.substring(0, arg.length - 1);
+                }
+                else {
+                    throw new Error(`Character ':' allowed ONLY at beginning or end of symbol. On (op:${op}, arg: ${arg})`);
                 }
 
-                args[kw_args_index] = arg.substring(0, arg.length - 1);
             }
         }
 

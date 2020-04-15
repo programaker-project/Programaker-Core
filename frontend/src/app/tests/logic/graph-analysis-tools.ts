@@ -1,6 +1,7 @@
 import { CompiledFlowGraph, CompiledBlock, CompiledBlockArg, ContentBlock, CompiledBlockArgList, CompiledBlockArgCallServiceDict } from '../../flow-editor/flow_graph';
 import { _link_graph } from '../../flow-editor/graph_analysis';
 const stable_stringify = require('json-stable-stringify');
+import { uuidv4 } from '../../flow-editor/utils';
 
 type _AndOp = ['operator_and', SimpleArrayAstArgument, SimpleArrayAstArgument];
 type _EqualsOp = ['operator_equals', SimpleArrayAstArgument, SimpleArrayAstArgument]
@@ -36,13 +37,30 @@ function convert_argument(arg: SimpleArrayAstArgument): CompiledBlockArg {
     };
 }
 
-function convert_content_single(op: SimpleArrayAstOperation): (CompiledBlock | ContentBlock) {
-    return convert_operation(op as SimpleArrayAstOperation);
+function convert_ast(ast: SimpleArrayAstOperation[]): CompiledBlock[] {
+    const result = [];
+    for (let idx = 0; idx < ast.length; idx++) {
+        const op = convert_operation(ast[idx]);
+        result.push(op);
+
+        // Add a 'trigger_when_all_completed' after op_fork_exection if it's not
+        // the last block
+        if ((op.type === 'op_fork_execution') && ((idx + 1) < ast.length)) {
+            const ref = uuidv4();
+
+            result.push({
+                type: 'trigger_when_all_completed',
+                args: [],
+            })
+        }
+    }
+
+    return result;
 }
 
 function convert_contents(contents: SimpleArrayAstOperation[]): ContentBlock {
     return {
-        contents: contents.map(v => convert_content_single(v))
+        contents: convert_ast(contents)
     }
 }
 
@@ -106,7 +124,7 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
 }
 
 export function gen_compiled(ast: SimpleArrayAst): CompiledFlowGraph {
-    const result = ast.map(v => convert_operation(v));
+    const result = convert_ast(ast);
     return _link_graph(result);
 }
 
@@ -143,10 +161,11 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             break;
 
             // Cannonicalize args and contents, but don't sort
-        case "op_fork_execution":
-        case "control_if_else":
-        case "flow_set_value":
         case "op_wait_seconds":
+        case "flow_set_value":
+        case "control_if_else":
+        case "op_fork_execution":
+        case "trigger_when_all_completed":
             if (op.args) {
                 op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
             }
