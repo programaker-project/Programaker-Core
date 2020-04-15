@@ -164,6 +164,21 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     type: "boolean",
                     quantity: "any",
                 },
+            },
+            {
+                icon: PLATFORM_ICON,
+                message: 'Do on parallel',
+                block_function: 'op_fork_execution',
+                type: 'operation',
+                outputs: [
+                    {
+                        type: "pulse",
+                    },
+                    {
+                        type: "pulse",
+                    },
+                ]
+            },
             }
         ]
     },

@@ -16,7 +16,7 @@ const OP_TRANSLATIONS = {
     'flow-last-value': 'flow_last_value',
     'jump-to': 'jump_to_block',
     'jump-point': 'jump_point',
-    'fork': 'fork_execution',
+    'fork': 'op_fork_execution',
 };
 
 const OPS_WITH_MAP_ARGUMENTS = [
@@ -91,9 +91,9 @@ function transform_call(args: any[]): any[] {
         }
     }
 
-    if (op === 'fork_execution') {
-        let kw_args_index;
-        for (kw_args_index = 1; kw_args_index < args.length;kw_args_index) {
+    if (op === 'op_fork_execution') {
+        let kw_args_index: number;
+        for (kw_args_index = 1; kw_args_index < args.length; kw_args_index++) {
             const arg = args[kw_args_index];
 
             if (typeof arg !== 'string') {
@@ -172,7 +172,8 @@ function read(s: string, idx: number, linenum: number, colnum: number): [SimpleA
             op = transform_call(op as any) as any;
         }
         catch (err) {
-            throw new Error(`${start[1]}:${start[2]} ` + err.message);
+            err.message = `On call starting at ${start[1]}:${start[2]}: ${err.message}`;
+            throw err;
         }
 
         idx++;

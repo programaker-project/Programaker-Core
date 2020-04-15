@@ -24,7 +24,7 @@ const BASE_TOOLBOX_BLOCKS = index_toolbox_description(BaseToolboxDescription);
 
 const JUMP_TO_POSITION_OPERATION = 'jump_to_position';
 const JUMP_TO_BLOCK_OPERATION = 'jump_to_block';
-const FORK_OPERATION = 'fork_execution';
+const FORK_OPERATION = 'op_fork_execution';
 
 function get_source_blocks(graph: FlowGraph): string[] {
     const sources = [];
@@ -179,6 +179,9 @@ function is_pulse_output(block: FlowGraphNode, index: number): boolean {
         const data = block.data as AtomicFlowBlockData;
 
         const outputs = data.value.options.outputs;
+        if (!outputs[index]) {
+            throw new Error(`IndexError: Index (${index}) not found on outputs (${JSON.stringify(outputs)})`)
+        }
 
         // If it has no pulse inputs its a source block
         return outputs[index].type === 'pulse';
@@ -276,7 +279,7 @@ export interface SteppedBlockTreeJump extends VirtualSteppedBlock {
 
 export interface SteppedBlockTreeFork extends VirtualSteppedBlock {
     block_id: string,
-    type: 'fork_execution',
+    type: 'op_fork_execution',
     contents: SteppedBlockTree[],
 }
 
@@ -387,7 +390,21 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
     let continuations = get_pulse_continuations(graph, source_id);
 
     if (continuations.length > 1) {
-        throw new Error("NOT IMPLEMENTED: Flow control");
+        const contents = [];
+
+        for (const cont of continuations) {
+            const subast = [];
+
+            if (cont.length !== 1) {
+                throw new Error(`There should be one and only one pulse per output`)
+            }
+
+            const subreached = Object.assign({}, reached)
+            get_stepped_ast_continuation(graph, cont[0], subast, subreached);
+            contents.push(subast);
+        }
+
+        ast[ast.length - 1].contents = contents; // Update parent block contents
     }
 
     if (continuations.length == 1) {
@@ -395,22 +412,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             get_stepped_ast_continuation(graph, continuations[0][0], ast, reached);
         }
         else {
-            const block_id = uuidv4();
-
-            const contents = [];
-            for (const cont of continuations[0]) {
-                const subast = [];
-
-                const subreached = Object.assign({}, reached)
-                get_stepped_ast_continuation(graph, cont, subast, subreached);
-                contents.push(subast);
-            }
-
-            ast.push({
-                block_id: block_id,
-                type: FORK_OPERATION,
-                contents: contents,
-            });
+            throw new Error(`Multiple outputs pulses from the same port`);
         }
     }
     else if (continuations.length == 0) {
@@ -512,7 +514,7 @@ function compile_block(graph: FlowGraph,
                 contents: [],
             };
         }
-        else if (vblock.type === 'fork_execution') {
+        else if (vblock.type === 'op_fork_execution') {
             return {
                 type: FORK_OPERATION,
                 args: [],

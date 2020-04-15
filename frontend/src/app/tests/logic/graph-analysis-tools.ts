@@ -10,7 +10,7 @@ type _CallServiceOp = ['command_call_service',
 type _WaitForMonitorOp = ['wait_for_monitor', { monitor_id: { from_service: string }, expected_value: any }];
 type _LastValueOp = ['flow_last_value', string, number | string];
 type _IfElseOp = ['control_if_else', SimpleArrayAstArgument, SimpleArrayAstOperation[]];
-type _ForkExecOp = ['fork_execution', SimpleArrayAstArgument[], SimpleArrayAstOperation[]]
+type _ForkExecOp = ['op_fork_execution', SimpleArrayAstArgument[], SimpleArrayAstOperation[]]
 
 export type SimpleArrayAstArgument = SimpleArrayAstOperation | string | number
 export type SimpleArrayAstOperation = _AndOp | _EqualsOp
@@ -82,11 +82,11 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
         }
     }
 
-    if (op[0] === 'fork_execution') {
+    if (op[0] === 'op_fork_execution') {
         const contents = (op[2] as SimpleArrayAstOperation[][]).map(v => convert_contents(v));
 
         if (contents.length < 2) {
-            console.warn('Fork (fork_execution) with less than two outward paths');
+            console.warn('Fork (op_fork_execution) with less than two outward paths');
         }
 
         return {
@@ -143,7 +143,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             break;
 
             // Cannonicalize args and contents, but don't sort
-        case "fork_execution":
+        case "op_fork_execution":
         case "control_if_else":
         case "flow_set_value":
         case "op_wait_seconds":

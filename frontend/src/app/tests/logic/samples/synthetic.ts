@@ -213,21 +213,22 @@ export function synth_08_branching(): FlowGraph {
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {args: [[cond1, 0], [cond2, 0]]});
-    trigger.then(f => f.add_op('send_message', { namespace: chat,
-                                                 args: [channel1,
-                                                        [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,
-                                                                                                         args: [loc]
-                                                                                                       }), 0]]
-                                               }));
+    const branch1 = builder.add_op('send_message', { namespace: chat,
+                                                     args: [channel1,
+                                                            [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,
+                                                                                                             args: [loc]
+                                                                                                           }), 0]]
+                                                   });
 
-    trigger.then(f => f.add_op('send_message', { namespace: chat,
-                                                 args: [channel2,
+    const branch2 = builder.add_op('send_message', { namespace: chat,
+                                                     args: [channel2,
                                                         [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,
                                                                                                          args: [loc]
                                                                                                        }), 0]]
-                                               }));
+                                                   });
+
+    builder.add_fork(trigger, branch1, branch2);
 
     const graph = builder.build();
-
     return graph;
 }

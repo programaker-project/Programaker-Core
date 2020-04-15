@@ -309,6 +309,33 @@ export class GraphBuilder {
         return new OpNodeBuilderRef(this, ref);
     }
 
+    add_fork(source: OpNodeBuilderRef, branch1: OpNodeBuilderRef, branch2: OpNodeBuilderRef, options?: { id?: string }): string {
+        if (!options) { options = {} };
+
+        const block_type = 'op_fork_execution';
+
+        const ref = options.id ? options.id : (block_type + '_' + uuidv4());
+
+        let block_options = this.blocks[block_type];
+        let synth_in: number, synth_out: number
+        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
+
+        this.nodes[ref] = {
+            type: ATOMIC_BLOCK_TYPE,
+            value: {
+                options: block_options,
+                synthetic_input_count: synth_in,
+                synthetic_output_count: synth_out,
+            }
+        }
+
+        this.establish_connection([source.id, 0], [ref, 0]);
+        this.establish_connection([ref, 0], [branch1.id, 0]);
+        this.establish_connection([ref, 1], [branch2.id, 0]);
+
+        return ref;
+    }
+
     establish_connection(source: [string, number], sink: [string, number]) {
         this.edges.push({
             from: { id: source[0], output_index: source[1] },
