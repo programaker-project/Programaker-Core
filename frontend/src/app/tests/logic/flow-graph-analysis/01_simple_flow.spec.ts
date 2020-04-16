@@ -41,7 +41,7 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
 
 describe('Flow-01: Simple flow.', () => {
     it('Validation should pass', async () => {
-        expect(() => validate(gen_flow()))
+        expect(validate(gen_flow()))
             .toBeTruthy()
     });
 

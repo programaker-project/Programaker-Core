@@ -43,7 +43,7 @@ export function gen_flow(): FlowGraph {
 
 describe('Flow-06: Stepped loops.', () => {
     it('Validation should pass', async () => {
-        expect(() => validate(gen_flow()))
+        expect(validate(gen_flow()))
             .toBeTruthy()
     });
 

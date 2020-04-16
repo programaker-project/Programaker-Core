@@ -48,17 +48,16 @@ export function gen_flow(): FlowGraph {
                                               }));
 
     const graph = builder.build();
-    // console.log(convert_to_graphviz(graph));
     return graph;
 }
 
-describe('Flow-09: Stepped branch-and-join', () => {
-    it('validation should pass', async () => {
-        expect(() => validate(gen_flow()))
+describe('Flow-09: Stepped branch-and-join.', () => {
+    it('Validation should pass', async () => {
+        expect(validate(gen_flow()))
             .toBeTruthy()
     });
 
-    it('should be able to compile', async () => {
+    it('Should be able to compile', async () => {
         const CHAT_SVC = "de5baefb-13da-457e-90a5-57a753da8891";
         const WEATHER_SVC = "536bf266-fabf-44a6-ba89-a0c71b8db608";
 

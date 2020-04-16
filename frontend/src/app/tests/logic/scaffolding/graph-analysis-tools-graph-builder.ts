@@ -220,14 +220,15 @@ export class GraphBuilder {
             }
         }
 
-        const synth_in = AtomicFlowBlock.required_synth_inputs(block_options);
+        let synth_in: number, synth_out: number
+        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
 
         this.nodes[ref] = {
             type: ATOMIC_BLOCK_TYPE,
             value: {
                 options: block_options,
                 synthetic_input_count: synth_in,
-                synthetic_output_count: AtomicFlowBlock.required_synth_outputs(block_options),
+                synthetic_output_count: synth_out,
             }
         }
 

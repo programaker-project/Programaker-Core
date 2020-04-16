@@ -328,6 +328,7 @@ export function get_stepped_block_arguments(graph: FlowGraph, block_id: string):
     let pulse_ports = {};
 
     for (const conn of graph.edges) {
+
         if (conn.to.id === block_id) {
             if (is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index)) {
                 pulse_ports[conn.to.input_index] = true;

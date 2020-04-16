@@ -35,13 +35,12 @@ export function gen_flow(): FlowGraph {
                                             }));
 
     const graph = builder.build();
-
     return graph;
 }
 
 describe('Flow-05: Multiple stream in.', () => {
     it('Validation should pass', async () => {
-        expect(() => validate(gen_flow()))
+        expect(validate(gen_flow()))
             .toBeTruthy()
     });
 

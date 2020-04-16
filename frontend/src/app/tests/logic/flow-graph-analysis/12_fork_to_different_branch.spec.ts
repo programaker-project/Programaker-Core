@@ -41,6 +41,9 @@ export function gen_flow(): FlowGraph {
                                                                                                            args: [loc]
                                                                                                          }), 0]]
                                                  });
+    const body3 = builder.add_op('send_message', { namespace: chat,
+                                                   args: [channel2, "this in parallel"]
+                                                 });
 
     // Common end
     const ending = builder.add_op('send_message', { namespace: chat,
@@ -49,13 +52,15 @@ export function gen_flow(): FlowGraph {
                                                   });
 
     trigger1.then(body1).then(body2);
-    trigger2.then(body2).then(ending);
+
+    builder.add_fork(trigger2, body2, body3);
+    body2.then(ending);
 
     const graph = builder.build();
     return graph;
 }
 
-describe('Flow-11: Common stepped ending.', () => {
+describe('Flow-12: Fork to different branch.', () => {
     it('Validation should pass', async () => {
         expect(validate(gen_flow()))
             .toBeTruthy()
@@ -99,17 +104,24 @@ describe('Flow-11: Common stepped ending.', () => {
             (if (and (= (flow-last-value "source2" 1)
                         (flow-last-value "source2" 2)
                         0))
-                ((call-service id: "${CHAT_SVC}"
-                               action: "send_message"
-                               values: ("-137414824"
-                                        (call-service id: "${WEATHER_SVC}"
-                                                      action: "get_today_max_in_place"
-                                                      values: ("12/36/057/7"))))
-                 (call-service id: "${CHAT_SVC}"
-                               action: "send_message"
-                               values: ("-137414824"
-                                        "done"))
-                 ))
+                ((fork
+                  ;; Branch1
+                  ((call-service id: "${CHAT_SVC}"
+                                 action: "send_message"
+                                 values: ("-137414824"
+                                          (call-service id: "${WEATHER_SVC}"
+                                                        action: "get_today_max_in_place"
+                                                        values: ("12/36/057/7"))))
+                   (call-service id: "${CHAT_SVC}"
+                                 action: "send_message"
+                                 values: ("-137414824"
+                                          "done")))
+                  ;; Branch2
+                  ((call-service id: "${CHAT_SVC}"
+                                 action: "send_message"
+                                 values: ("-137414824"
+                                          "this in parallel")))
+                  )))
             `
         );
 

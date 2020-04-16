@@ -30,7 +30,7 @@ export function convert_to_graphviz(graph: FlowGraph): string {
                     break;
             }
 
-            tokens.push(`"${node_id}"[label="${a_node.value.options.block_function}",`
+            tokens.push(`  "${node_id}"[label="${a_node.value.options.block_function}",`
                         +`style="filled",shape=rect,fontcolor="${fontcolor}",fillcolor="${fillcolor}"]`);
         }
         else if (node.data.type === VALUE_BLOCK_TYPE ) {
@@ -49,9 +49,9 @@ export function convert_to_graphviz(graph: FlowGraph): string {
             const value = raws[from_id];
 
             from_id = raw_value_prefixes + next_raw_id++;
-            tokens.push(`"${from_id}"[label="${value}"]`);
+            tokens.push(`  "${from_id}"[label="${value}"]`);
         }
-        tokens.push(`"${from_id}" -> "${conn.to.id}"[label="${conn.from.output_index} → ${conn.to.input_index}"];`);
+        tokens.push(`  "${from_id}" -> "${conn.to.id}"[label="${conn.from.output_index} → ${conn.to.input_index}"];`);
     }
 
     tokens.push('}');

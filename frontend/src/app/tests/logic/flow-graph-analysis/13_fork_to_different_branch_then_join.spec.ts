@@ -41,6 +41,9 @@ export function gen_flow(): FlowGraph {
                                                                                                            args: [loc]
                                                                                                          }), 0]]
                                                  });
+    const body3 = builder.add_op('send_message', { namespace: chat,
+                                                   args: [channel2, "this in parallel"]
+                                                 });
 
     // Common end
     const ending = builder.add_op('send_message', { namespace: chat,
@@ -49,72 +52,22 @@ export function gen_flow(): FlowGraph {
                                                   });
 
     trigger1.then(body1).then(body2);
-    trigger2.then(body2).then(ending);
+
+    builder.add_fork(trigger2, body2, body3);
+    body2.then(ending);
+
+    const joiner = builder.add_trigger('trigger_when_all_completed', {args: [[ ending, 'pulse' ], [body3, 'pulse']]});
+    joiner.then(f => f.add_op('send_message', { namespace: chat,
+                                                args: [channel2, 'completed']
+                                              }));
 
     const graph = builder.build();
     return graph;
 }
 
-describe('Flow-11: Common stepped ending.', () => {
-    it('Validation should pass', async () => {
-        expect(validate(gen_flow()))
-            .toBeTruthy()
-    });
-
-    it('Should be able to compile', async () => {
-        const CHAT_SVC = "de5baefb-13da-457e-90a5-57a753da8891";
-        const WEATHER_SVC = "536bf266-fabf-44a6-ba89-a0c71b8db608";
-
-        const join = compile(gen_flow());
-
-        const dsl_ast_branch1 = dsl_to_ast(
-            `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
-            (if (and (= (flow-last-value "source1" 0)
-                        11)
-                     )
-                ((call-service id: "${CHAT_SVC}"
-                               action: "send_message"
-                               values: ("-137414823"
-                                        (call-service id: "${WEATHER_SVC}"
-                                                      action: "get_today_max_in_place"
-                                                      values: ("12/36/057/7"))))
-                 (call-service id: "${CHAT_SVC}"
-                               action: "send_message"
-                               values: ("-137414824"
-                                        (call-service id: "${WEATHER_SVC}"
-                                                      action: "get_today_max_in_place"
-                                                      values: ("12/36/057/7"))))
-                 (call-service id: "${CHAT_SVC}"
-                               action: "send_message"
-                               values: ("-137414824"
-                                        "done"))
-                 ))
-            `
-        );
-
-        const dsl_ast_branch2 = dsl_to_ast(
-            `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
-            (if (and (= (flow-last-value "source2" 1)
-                        (flow-last-value "source2" 2)
-                        0))
-                ((call-service id: "${CHAT_SVC}"
-                               action: "send_message"
-                               values: ("-137414824"
-                                        (call-service id: "${WEATHER_SVC}"
-                                                      action: "get_today_max_in_place"
-                                                      values: ("12/36/057/7"))))
-                 (call-service id: "${CHAT_SVC}"
-                               action: "send_message"
-                               values: ("-137414824"
-                                        "done"))
-                 ))
-            `
-        );
-
-        const from_ast = [gen_compiled(dsl_ast_branch1), gen_compiled(dsl_ast_branch2)];
-
-        are_equivalent_ast(join, from_ast);
+describe('Flow-13: Fork to different branch then join.', () => {
+    it('Validation should FAIL', async () => {
+        expect(() => validate(gen_flow()))
+            .toThrowError(/^ValidationError:.*Joins can only be done between flows that have previously forked.*/g)
     });
 });

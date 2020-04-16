@@ -41,7 +41,7 @@ export function gen_flow(): FlowGraph {
 describe('Flow-04: No start loop.', () => {
     it('Validation should FAIL', async () => {
         expect(() => validate(gen_flow()))
-            .toThrowError(/^Validation error:.*Unreachable blocks?.*/g)
+            .toThrowError(/^ValidationError:.*Unreachable blocks?.*/g)
     });
 
     it('Should find an unreachable blocks', async () => {
