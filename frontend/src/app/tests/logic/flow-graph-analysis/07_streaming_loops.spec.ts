@@ -2,7 +2,7 @@ import { FlowGraph } from '../../../flow-editor/flow_graph';
 import { validate } from '../../../flow-editor/graph_validation';
 import { GraphBuilder } from '../scaffolding/graph-analysis-tools-graph-builder';
 
-function gen_flow(): FlowGraph {
+export function gen_flow(): FlowGraph {
     const builder = new GraphBuilder();
 
     // Stream section

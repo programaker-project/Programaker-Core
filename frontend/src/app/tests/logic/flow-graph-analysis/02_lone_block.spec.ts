@@ -4,7 +4,7 @@ import { validate } from '../../../flow-editor/graph_validation';
 import * as _02_lone_block from '../samples/02_lone_block.js';
 import { GraphBuilder } from '../scaffolding/graph-analysis-tools-graph-builder';
 
-function gen_flow(): FlowGraph {
+export function gen_flow(): FlowGraph {
     const builder = new GraphBuilder();
 
     const chat = builder.add_service('de5baefb-13da-457e-90a5-57a753da8891');

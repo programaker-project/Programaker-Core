@@ -4,7 +4,7 @@ import { validate } from '../../../flow-editor/graph_validation';
 import * as _03_no_start_pulse from '../samples/03_no_start_pulse.js';
 import { GraphBuilder } from '../scaffolding/graph-analysis-tools-graph-builder';
 
-function gen_flow(): FlowGraph {
+export function gen_flow(): FlowGraph {
     const builder = new GraphBuilder();
 
     // Services

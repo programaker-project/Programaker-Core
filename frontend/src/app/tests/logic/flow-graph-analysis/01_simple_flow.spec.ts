@@ -8,8 +8,7 @@ import { dsl_to_ast } from '../scaffolding/graph-analysis-tools-ast-dsl';
 import { GraphBuilder } from '../scaffolding/graph-analysis-tools-graph-builder';
 import { are_equivalent_ast } from './utils.spec';
 
-
-function gen_flow(options?: { source_id?: string }): FlowGraph {
+export function gen_flow(options?: { source_id?: string }): FlowGraph {
     if (!options) { options = {} }
 
     const builder = new GraphBuilder();
