@@ -164,7 +164,7 @@ export class AtomicFlowBlock implements FlowBlock {
             this.synthetic_output_count = synthetic_output_count;
         }
 
-        this.options = JSON.parse(JSON.stringify(options));
+        [this.options, this.synthetic_input_count, this.synthetic_output_count ] = AtomicFlowBlock.add_synth_io(this.options);
         this.options.on_io_selected = options.on_io_selected;
         this.options.on_dropdown_extended = options.on_dropdown_extended;
         this.options.on_inputs_changed = options.on_inputs_changed;
@@ -173,7 +173,6 @@ export class AtomicFlowBlock implements FlowBlock {
         this.output_groups = [];
         this.input_count = [];
 
-        [this.options, this.synthetic_input_count, this.synthetic_output_count ] = AtomicFlowBlock.add_synth_io(this.options);
 
         this.chunks = parse_chunks(this.options.message);
         for (const chunk of this.chunks) {
@@ -194,6 +193,8 @@ export class AtomicFlowBlock implements FlowBlock {
     public static add_synth_io(options: AtomicFlowBlockOptions): [AtomicFlowBlockOptions, number, number] {
         let synthetic_input_count = 0;
         let synthetic_output_count = 0;
+
+        options = JSON.parse(JSON.stringify(options));
 
         // Update inputs
         if (!options.inputs) {
