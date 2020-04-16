@@ -191,7 +191,7 @@ export class AtomicFlowBlock implements FlowBlock {
         this.canvas.removeChild(this.group);
     }
 
-    static add_synth_io(options: AtomicFlowBlockOptions): [AtomicFlowBlockOptions, number, number] {
+    public static add_synth_io(options: AtomicFlowBlockOptions): [AtomicFlowBlockOptions, number, number] {
         let synthetic_input_count = 0;
         let synthetic_output_count = 0;
 
@@ -302,7 +302,7 @@ export class AtomicFlowBlock implements FlowBlock {
         }
     }
 
-    static Deserialize(data: AtomicFlowBlockData, manager: BlockManager): FlowBlock {
+    public static Deserialize(data: AtomicFlowBlockData, manager: BlockManager): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -326,7 +326,7 @@ export class AtomicFlowBlock implements FlowBlock {
         return this.node;
     }
 
-    getBodyArea(): Area2D {
+    public getBodyArea(): Area2D {
         const rect = (this.group as any).getBBox();
         return {
             x: this.position.x,
