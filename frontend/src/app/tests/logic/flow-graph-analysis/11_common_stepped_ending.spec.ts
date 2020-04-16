@@ -5,7 +5,7 @@ import { TIME_MONITOR_ID } from '../../../flow-editor/platform_facilities';
 import { gen_compiled } from '../scaffolding/graph-analysis-tools';
 import { dsl_to_ast } from '../scaffolding/graph-analysis-tools-ast-dsl';
 import { GraphBuilder } from '../scaffolding/graph-analysis-tools-graph-builder';
-import { are_equivalent_ast } from './utils';
+import { are_equivalent_ast } from './utils.spec';
 
 function gen_flow(): FlowGraph {
     const builder = new GraphBuilder();
