@@ -1,5 +1,6 @@
 import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
 import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
+import { get_unreachable } from './graph_analysis';
 
 function get_streaming_section(graph: FlowGraph): FlowGraph {
     const nodes: {[key:string]: FlowGraphNode } = {};
@@ -95,6 +96,10 @@ function validate_loops_in_streaming_section(graph: FlowGraph) {
 export function validate(graph: FlowGraph) {
     // Reject loops in streaming section
     validate_loops_in_streaming_section(graph);
+    const unreachable = get_unreachable(graph);
+    if (unreachable.length > 0) {
+        throw new Error(`Validation error: Unreachable blocks (${unreachable})`);
+    }
 
     return true;
 }

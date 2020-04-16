@@ -16,6 +16,11 @@ function gen_flow(): FlowGraph {
 }
 
 describe('Flow-02: Lone block.', () => {
+    it('Validation should FAIL', async () => {
+        expect(() => validate(gen_flow()))
+            .toThrowError(/^Validation error:.*Unreachable blocks?.*/g)
+    });
+
     it('Should find an unreachable block', async () => {
         expect(get_unreachable(gen_flow())).toEqual([
             "lone"
