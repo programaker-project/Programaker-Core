@@ -116,6 +116,10 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
 
     const args: SimpleArrayAstArgument[] = op.slice(1);
 
+    if (typeof args !== 'object') {
+        throw new Error(`ASTCompilationError: Expected argument array, found: ${JSON.stringify(args)}. Check for errors on argument nesting`);
+    }
+
     return {
         type: op[0],
         args: args.map(v => convert_argument(v)),

@@ -10,5 +10,11 @@ jasmine.getEnv().addReporter(new SpecReporter({
         displaySuccessful: false,
         displayPending: true,
         displayDuration: true,
+        displayStacktrace: false,
+    },
+    summary: {
+        displayErrorMessages: true,
+        displayStacktrace: true,
     }
+
 }));
