@@ -1,4 +1,4 @@
-import { SimpleArrayAst, SimpleArrayAstArgument, SimpleArrayAstOperation } from './graph-analysis-tools';
+import { SimpleArrayAst, SimpleArrayAstArgument } from './graph-analysis-tools';
 
 const SYMBOL_CHARACTERS = (
     'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
