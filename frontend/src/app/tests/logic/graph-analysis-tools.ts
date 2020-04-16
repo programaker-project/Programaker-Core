@@ -1,6 +1,6 @@
 import { CompiledFlowGraph, CompiledBlock, CompiledBlockArg, ContentBlock, CompiledBlockArgList, CompiledBlockArgCallServiceDict } from '../../flow-editor/flow_graph';
 import { _link_graph } from '../../flow-editor/graph_analysis';
-const stable_stringify = require('json-stable-stringify');
+const stable_stringify = require('fast-json-stable-stringify');
 import { uuidv4 } from '../../flow-editor/utils';
 
 type _AndOp = ['operator_and', SimpleArrayAstArgument, SimpleArrayAstArgument];
