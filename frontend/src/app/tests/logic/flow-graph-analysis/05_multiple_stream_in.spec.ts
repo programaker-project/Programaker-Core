@@ -44,7 +44,7 @@ describe('Flow-05: Multiple stream in.', () => {
             .toBeTruthy()
     });
 
-    it('Should find no unreachable blocks on samples/synth_05_multiple_streams', async () => {
+    it('Should find no unreachable blocks', async () => {
         expect(get_unreachable(gen_flow())).toEqual([]);
     });
 
