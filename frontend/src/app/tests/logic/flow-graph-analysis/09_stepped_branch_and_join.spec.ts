@@ -40,7 +40,7 @@ export function gen_flow(): FlowGraph {
                                                                                                        }), 0]]
                                                    });
 
-    builder.add_fork(trigger, branch1, branch2);
+    builder.add_fork(trigger, [branch1, branch2]);
 
     const joiner = builder.add_trigger('trigger_when_all_completed', {args: [[ branch1, 'pulse' ], [branch2, 'pulse']]});
     joiner.then(f => f.add_op('send_message', { namespace: chat,
@@ -72,19 +72,19 @@ describe('Flow-09: Stepped branch-and-join.', () => {
                         (flow-last-value "source" 2)
                         0))
                 ((fork
-                       (call-service id: "${CHAT_SVC}"
-                                     action: "send_message"
-                                     values: ("-137414823"
-                                              (call-service id: "${WEATHER_SVC}"
-                                                            action: "get_today_max_in_place"
-                                                            values: ("12/36/057/7"))))
-                       (call-service id: "${CHAT_SVC}"
-                                     action: "send_message"
-                                     values: ("-137414824"
-                                              (call-service id: "${WEATHER_SVC}"
-                                                            action: "get_today_max_in_place"
-                                                            values: ("12/36/057/7"))))
-                       )
+                  (call-service id: "${CHAT_SVC}"
+                                action: "send_message"
+                                values: ("-137414823"
+                                         (call-service id: "${WEATHER_SVC}"
+                                                       action: "get_today_max_in_place"
+                                                       values: ("12/36/057/7"))))
+                  (call-service id: "${CHAT_SVC}"
+                                action: "send_message"
+                                values: ("-137414824"
+                                         (call-service id: "${WEATHER_SVC}"
+                                                       action: "get_today_max_in_place"
+                                                       values: ("12/36/057/7"))))
+                  )
                  (call-service id: "${CHAT_SVC}"
                                action: "send_message"
                                values: ("-137414824"

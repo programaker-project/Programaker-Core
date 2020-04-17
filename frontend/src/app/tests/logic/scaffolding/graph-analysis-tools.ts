@@ -168,7 +168,6 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "op_wait_seconds":
         case "flow_set_value":
         case "control_if_else":
-        case "op_fork_execution":
         case "trigger_when_all_completed":
             if (op.args) {
                 op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
@@ -176,9 +175,6 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             if (op.contents) {
                 op.contents = op.contents.map(content => canonicalize_content(content));
             }
-            break;
-
-            op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
             break;
 
             // Special argument handling
@@ -197,6 +193,12 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             // This is very inefficient, but as canonicalization only makes
             // sense on unit tests it might be acceptable
             op.args = args.sort((a, b) => stable_stringify(a).localeCompare(stable_stringify(b)));
+            break;
+
+            // Canonicalize contents and allow sorting them
+        case "op_fork_execution":
+            op.contents = op.contents.map(content => canonicalize_content(content));
+            op.contents = op.contents.sort((a, b) => stable_stringify(a).localeCompare(stable_stringify(b)));
             break;
 
         default:

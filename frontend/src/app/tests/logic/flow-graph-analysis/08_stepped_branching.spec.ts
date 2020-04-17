@@ -40,7 +40,7 @@ export function gen_flow(): FlowGraph {
                                                                                                        }), 0]]
                                                    });
 
-    builder.add_fork(trigger, branch1, branch2);
+    builder.add_fork(trigger, [branch1, branch2]);
 
     const graph = builder.build();
     return graph;

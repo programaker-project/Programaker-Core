@@ -319,7 +319,7 @@ export class GraphBuilder {
         return new OpNodeBuilderRef(this, ref);
     }
 
-    add_fork(source: OpNodeBuilderRef, branch1: OpNodeBuilderRef, branch2: OpNodeBuilderRef, options?: { id?: string }): string {
+    add_fork(source: OpNodeBuilderRef, branches: OpNodeBuilderRef[], options?: { id?: string }): string {
         if (!options) { options = {} };
 
         const block_type = 'op_fork_execution';
@@ -340,8 +340,12 @@ export class GraphBuilder {
         }
 
         this.establish_connection([source.id, 0], [ref, 0]);
-        this.establish_connection([ref, 0], [branch1.id, 0]);
-        this.establish_connection([ref, 1], [branch2.id, 0]);
+        let out_index = -1;
+        for (const branch of branches) {
+            out_index++;
+
+            this.establish_connection([ref, out_index], [branch.id, 0]);
+        }
 
         return ref;
     }

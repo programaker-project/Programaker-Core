@@ -53,7 +53,7 @@ export function gen_flow(): FlowGraph {
 
     trigger1.then(body1).then(body2);
 
-    builder.add_fork(trigger2, body2, body3);
+    builder.add_fork(trigger2, [body2, body3]);
     body2.then(ending);
 
     const graph = builder.build();

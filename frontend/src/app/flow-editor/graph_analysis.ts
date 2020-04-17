@@ -5,6 +5,7 @@ import { DirectValue, DirectValueFlowBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { TIME_MONITOR_ID } from './platform_facilities';
+import { uuidv4 } from './utils';
 
 
 function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions} {
@@ -267,7 +268,7 @@ export interface SteppedBlockTreeBlock extends BlockTree  {
 export interface VirtualSteppedBlock {
     block_id: string,
     type: string,
-    contents?: SteppedBlockTree[],
+    contents?: (SteppedBlockTree | SteppedBlockTree[])[],
     arguments?: BlockTreeArgument[],
 }
 
@@ -279,7 +280,7 @@ export interface SteppedBlockTreeJump extends VirtualSteppedBlock {
 export interface SteppedBlockTreeFork extends VirtualSteppedBlock {
     block_id: string,
     type: 'op_fork_execution',
-    contents: SteppedBlockTree[],
+    contents: (SteppedBlockTree | SteppedBlockTree[])[],
 }
 
 export type SteppedBlockTree = SteppedBlockTreeBlock | VirtualSteppedBlock;
@@ -455,6 +456,167 @@ function find_common_merge(asts: SteppedBlockTree[][]): { asts: SteppedBlockTree
     }
 }
 
+function find_common_merge_groups_ast(asts: SteppedBlockTree[][]): SteppedBlockTree[][] {
+    const findings: { [key: string]: [number, number][]} = {};
+    const common_blocks: {[key:string]: [number[], number]} = {};
+    const grouped: {[key: string]: boolean} = {};
+
+    if (asts.length === 0) {
+        return null;
+    }
+
+    for (let idx = 0; idx < asts.length; idx++) {
+        const ast = asts[idx];
+
+        for (let op_idx = 0; op_idx < ast.length; op_idx++) {
+            const op = ast[op_idx];
+
+            const block_id = op.block_id;
+            if (!findings[block_id]) {
+                findings[block_id] = [];
+            }
+
+            findings[block_id].push([idx, op_idx]);
+            const block_findings = findings[block_id];
+
+            if (block_findings.length > 1) {
+                grouped[idx] = true;
+                common_blocks[block_id] = [block_findings.map(v => v[0]),
+                                           block_findings.reduce((acc, val) => acc + val[1], 0)];
+            }
+            if (block_findings.length === 2) {
+                // Add also the first on the list
+                grouped[block_findings[0][0]] = true;
+            }
+        }
+    }
+
+    if (Object.keys(grouped).length === 0) {
+        return null; // No groups found
+    }
+
+    if (Object.keys(common_blocks).length === 0) {
+        throw new Error('This should not happen. Groups found but no common_blocks');
+    }
+
+    const groups: number[][] = [];
+    const group_index: {[key: string]: boolean} = {};
+    for (const block of Object.values(common_blocks)) {
+        if (!group_index[block[0].toString()]) {
+            group_index[block[0].toString()] = true;
+            groups.push(block[0]);
+        }
+    }
+
+    groups.sort((x, y) => y.length - x.length); // Descending length
+
+    const group_asts: { asts: SteppedBlockTree[][], common_suffix: SteppedBlockTree[] }[] = [];
+    const in_previous_group: {[key: number]: [number, number]} = {};
+
+    // Build group tree
+    for (let group_idx = 0; group_idx < groups.length; group_idx++) {
+        const column_asts = [];
+        const inserts = [];
+        const deletes = [] ;
+        let ast_idx = -1;
+        const inserted_asts = {};
+        for (const column of groups[group_idx]) {
+            ast_idx++;
+
+            if (in_previous_group[column] !== undefined) {
+                const prev_group = in_previous_group[column];
+                const splitted_ast = group_asts[prev_group[0]];
+
+                if (!inserted_asts[prev_group[0]]) {
+                    inserts.push(prev_group[0]);
+                }
+                inserted_asts[prev_group[0]] = true;
+
+                column_asts.push(splitted_ast.asts[prev_group[1]]);
+                deletes.push({ group: prev_group[0], position: prev_group[1] })
+
+                in_previous_group[column] = [group_idx, ast_idx];
+            }
+            else {
+                column_asts.push(asts[column]);
+                in_previous_group[column] = [group_idx, ast_idx];
+            }
+        }
+
+        const merged_ast = find_common_merge(column_asts);
+        if (!merged_ast){
+            throw new Error(`Error merging asts (idx:${groups[group_idx]})`)
+        }
+
+        for (const _delete of deletes) {
+            delete group_asts[_delete.group].asts[_delete.position];
+        }
+
+        if (inserts.length === 0) {
+            group_asts.push(merged_ast);
+        }
+        else {
+            for (const insert of inserts) {
+                group_asts[insert].asts.push(merged_ast as any);
+            }
+        }
+    }
+
+    const grouped_ast_tree: (SteppedBlockTree[] | { asts: SteppedBlockTree[][], common_suffix: SteppedBlockTree[] })[] = group_asts;
+
+    for (let idx = 0; idx < asts.length; idx++) {
+        if (!grouped[idx]) {
+            grouped_ast_tree.push(asts[idx]);
+        }
+    }
+
+    // Clean grouped AST tree
+    const result: SteppedBlockTree[][] = [];
+
+    function compile_group(e: (SteppedBlockTree[] | { asts: SteppedBlockTree[][],
+                                                      common_suffix: SteppedBlockTree[] })): SteppedBlockTree[] {
+        // Just copy non-grouped ASTs
+        if (!(e as any).common_suffix) {
+            return e as SteppedBlockTree[];
+        }
+
+        const group = e as { asts: SteppedBlockTree[][], common_suffix: SteppedBlockTree[] };
+
+        const fork_ref = uuidv4();
+
+        let commons: SteppedBlockTree[] = [];
+        for (const common of group.common_suffix) {
+            if (common !== undefined) {
+                commons = commons.concat(compile_group(common as any));
+            }
+        }
+
+        const contents: SteppedBlockTree[][] = [];
+        for (const content of group.asts) {
+            if (content !== undefined) {
+                contents.push(compile_group(content));
+            }
+        }
+
+        const fork_block: SteppedBlockTreeFork = {
+            block_id: fork_ref,
+            type: 'op_fork_execution',
+            arguments: [],
+            contents: contents,
+        };
+        return (([fork_block] as SteppedBlockTree[]).concat(commons));
+
+    }
+
+    for (const group of grouped_ast_tree) {
+        if (group !== undefined) {
+            result.push(compile_group(group));
+        }
+    }
+
+    return result;
+}
+
 function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: SteppedBlockTree[], reached: {[key: string]: boolean}) {
     let continuations = get_pulse_continuations(graph, source_id);
 
@@ -480,6 +642,21 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             contents = re_merge_data.asts;
             common_suffix = re_merge_data.common_suffix;
         }
+        else {
+            // Try a bit harder on a op_fork_execution
+            const source_node = graph.nodes[source_id];
+            if (source_node.data.type === AtomicFlowBlock.GetBlockType()) {
+                if ((source_node.data as AtomicFlowBlockData).value.options.block_function === FORK_OPERATION) {
+
+                    const merged_groups = find_common_merge_groups_ast(contents);
+                    if (merged_groups) {
+                        contents = merged_groups;
+                        common_suffix = [];
+                    }
+                }
+            }
+        }
+
         ast[ast.length - 1].contents = contents; // Update parent block contents
         for (const op of common_suffix) {
             ast.push(op);
@@ -511,7 +688,7 @@ export function get_stepped_ast(graph: FlowGraph, source_id: string): SteppedBlo
 
 function compile_contents(graph: FlowGraph, contents: SteppedBlockTree[]): CompiledBlock[] {
     return contents.map(v =>
-        compile_block(graph, v.block_id, v.arguments, v.contents, { inside_args: false, orig_tree: v })
+        compile_block(graph, v.block_id, v.arguments, v.contents as SteppedBlockTree[], { inside_args: false, orig_tree: v })
                        );
 }
 

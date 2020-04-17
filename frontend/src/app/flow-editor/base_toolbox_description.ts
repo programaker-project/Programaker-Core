@@ -177,7 +177,24 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     {
                         type: "pulse",
                     },
-                ]
+                    {
+                        type: "pulse",
+                    },
+                    {
+                        type: "pulse",
+                    },
+                    {
+                        type: "pulse",
+                    },
+                    {
+                        type: "pulse",
+                    },
+                ],
+                // TODO: Implement extra_outputs
+                // extra_outputs: {
+                //     type: "boolean",
+                //     quantity: "any",
+                // },
             },
             {
                 icon: PLATFORM_ICON,
