@@ -81,6 +81,12 @@ class OpNodeBuilderRef {
         this.id = id;
     }
 
+    then_id(next: string) {
+        // Separated from `then` as this cannot guarantee that a
+        // OpNodeBuilderRef that also can perform `.then` can be returned
+        this.builder.establish_connection([this.id, 0], [next, 0]);
+    }
+
     then(next: NodeGenerator | OpNodeBuilderRef): OpNodeBuilderRef {
         if ((next as OpNodeBuilderRef).id) {
             const nextOp = (next as OpNodeBuilderRef);
@@ -346,6 +352,36 @@ export class GraphBuilder {
 
             this.establish_connection([ref, out_index], [branch.id, 0]);
         }
+
+        return ref;
+    }
+
+    add_if(if_true: OpNodeBuilderRef, if_false: OpNodeBuilderRef, options: { id?: string, cond: BlockArgument | StreamGenerator }): string {
+        const block_type = 'op_if_then';
+
+        const ref = options.id ? options.id : (block_type + '_' + uuidv4());
+
+        let block_options = this.blocks[block_type];
+        let synth_in: number, synth_out: number
+        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
+
+        this.nodes[ref] = {
+            type: ATOMIC_BLOCK_TYPE,
+            value: {
+                options: block_options,
+                synthetic_input_count: synth_in,
+                synthetic_output_count: synth_out,
+            }
+        }
+
+        let cond = options.cond;
+        if (typeof cond === 'function') {
+            cond = [(cond as StreamGenerator)(this), 0];
+        }
+
+        this.resolve_args(ref, { args: [ cond ] }, synth_in);
+        this.establish_connection([ref, 0], [if_true.id, 0]);
+        this.establish_connection([ref, 1], [if_false.id, 0]);
 
         return ref;
     }

@@ -160,7 +160,7 @@ function validate_that_all_paths_have_fork(graph: FlowGraph,
                 }
             }catch (err) {
                 if (err.message === 'Maximum call stack size exceeded') {
-                    err.message = `[Depth ${depth}] ${err.message}. Maybe there's an undiagnosed loop?`;
+                    err.message = `[Depth ${depth}] ${err.message}. Maybe there's an unmanaged loop?`;
                 }
                 throw err;
             }
