@@ -467,11 +467,19 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][]): SteppedBlockT
 
     for (let idx = 0; idx < asts.length; idx++) {
         const ast = asts[idx];
+        const found_blocks = {};
 
         for (let op_idx = 0; op_idx < ast.length; op_idx++) {
             const op = ast[op_idx];
 
             const block_id = op.block_id;
+            // Stop if already found by this same column
+            // This means a there's a loop inside the fork
+            if (found_blocks[block_id]) {
+                break;
+            }
+            found_blocks[block_id] = true;
+
             if (!findings[block_id]) {
                 findings[block_id] = [];
             }
