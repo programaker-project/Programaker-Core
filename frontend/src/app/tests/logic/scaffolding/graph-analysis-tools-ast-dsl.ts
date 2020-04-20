@@ -6,7 +6,7 @@ const SYMBOL_CHARACTERS = (
         + '!$\'",_-./:;?+<=>#%&*@[\]{|}`^~'
 );
 
-const OP_TRANSLATIONS = {
+export const OP_TRANSLATIONS = {
     'if': 'control_if_else',
     '=': 'operator_equals',
     'and': 'operator_and',
@@ -258,7 +258,6 @@ export function dsl_to_ast(s: string): SimpleArrayAst {
 
     let linenum = 1;
     let colnum = 1;
-
 
     for (let idx = 0; idx < s.length;) {
         let token: SimpleArrayAstArgument;
