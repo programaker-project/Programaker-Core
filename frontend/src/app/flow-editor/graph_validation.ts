@@ -137,8 +137,7 @@ function validate_that_all_paths_have_fork(graph: FlowGraph,
                                            join_bottom_id: string,
                                            conn_index: {[key: string]:FlowGraphEdge[]}) {
 
-    // TODO: Add check for loops inside forks. This will come up in a later test
-    function try_find_upwards_without_fork(bottom_id: string, depth: number): string {
+    function try_find_upwards_without_fork(bottom_id: string, depth: number, reached: {[key: string]: boolean}): string {
         const block = graph.nodes[bottom_id];
         if (block.data.type === AtomicFlowBlock.GetBlockType()) {
             const a_block = block.data as AtomicFlowBlockData;
@@ -152,13 +151,33 @@ function validate_that_all_paths_have_fork(graph: FlowGraph,
             return bottom_id; // Found a problematic path
         }
 
+        reached[bottom_id] = true;
+
+        let conn_out_of_loop = 0;
         for (const conn of upwards) {
+            if (reached[conn.from.id]) {
+                continue; // Skip if already reached
+            }
+
+            const col_reached = Object.assign({}, reached);
             try {
-                const source = try_find_upwards_without_fork(conn.from.id, depth + 1);
+                const source = try_find_upwards_without_fork(conn.from.id, depth + 1, col_reached);
                 if (source) {
                     return source;
                 }
-            }catch (err) {
+                conn_out_of_loop += 1;
+            }
+            catch (err) {
+                // This is horribly inefficient, as the exception will be thrown
+                // and catched >3000 times.
+                //
+                // As is now, this should only happen when a infinite loop is
+                // found during the validation of the graph. This would signal a
+                // error on the way to work of the function. In that case we can
+                // pay a performance price in exchange of getting as much
+                // information as possible. This should NEVER happen on real
+                // usage of the code, and at most when writing new tests for
+                // problematic data.
                 if (err.message === 'Maximum call stack size exceeded') {
                     err.message = `[Depth ${depth}] ${err.message}. Maybe there's an unmanaged loop?`;
                 }
@@ -166,12 +185,17 @@ function validate_that_all_paths_have_fork(graph: FlowGraph,
             }
         }
 
+        if (conn_out_of_loop === 0) {
+            return bottom_id; // Cannot get to a FORK even if all paths are explored
+        }
         return null;
     }
 
 
     for (const conn of conn_index[join_bottom_id] ) {
-        const source = try_find_upwards_without_fork(conn.from.id, 1);
+        const reached = {};
+        reached[conn.to.id] = true;
+        const source = try_find_upwards_without_fork(conn.from.id, 1, reached);
         if (source) {
             throw new Error(`ValidationError: Block (id:${source}) can get to Join (id:${join_bottom_id}) with no fork.`
                             + 'Joins can only be done between flows that have previously forked.');

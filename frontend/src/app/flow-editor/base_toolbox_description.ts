@@ -29,7 +29,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Check',
-                block_function: 'op_if_then',
+                block_function: 'control_if_else',
                 type: 'operation',
                 inputs: [
                     {

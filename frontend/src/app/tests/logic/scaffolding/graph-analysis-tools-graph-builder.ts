@@ -357,7 +357,7 @@ export class GraphBuilder {
     }
 
     add_if(if_true: OpNodeBuilderRef, if_false: OpNodeBuilderRef, options: { id?: string, cond: BlockArgument | StreamGenerator }): string {
-        const block_type = 'op_if_then';
+        const block_type = 'control_if_else';
 
         const ref = options.id ? options.id : (block_type + '_' + uuidv4());
 
