@@ -406,13 +406,37 @@ function cut_on_block_id(ast: SteppedBlockTree[], block_id: string): [SteppedBlo
     throw new Error(`Block (id: ${block_id}) not found`);
 }
 
-function find_common_merge(asts: SteppedBlockTree[][]): { asts: SteppedBlockTree[][], common_suffix: SteppedBlockTree[] } {
+function find_common_merge(asts: SteppedBlockTree[][], options: { prune_not_finishing: boolean }): { asts: SteppedBlockTree[][], common_suffix: SteppedBlockTree[] } {
     const findings: { [key: string]: number[]} = {};
     const common_blocks: [string, number][] = [];
 
     if (asts.length === 0) {
         return null;
     }
+
+    let not_finishing = [];
+    if (options && options.prune_not_finishing) {
+        for (let idx = 0; idx < asts.length; idx++) {
+            const ast = asts[idx];
+
+            for (let op_idx = 0; op_idx < ast.length; op_idx++) {
+                const op = ast[op_idx];
+
+                if ((op as VirtualSteppedBlock).type) {
+                    const fun = (op as VirtualSteppedBlock).type;
+
+                    if (fun === JUMP_TO_BLOCK_OPERATION || fun === JUMP_TO_POSITION_OPERATION) {
+                        not_finishing.push(idx);
+                        break;
+                    }
+                }
+            }
+        }
+        if (not_finishing.length === asts.length) {
+            not_finishing = [];
+        }
+    }
+
 
     for (let idx = 0; idx < asts.length; idx++) {
         const ast = asts[idx];
@@ -426,7 +450,7 @@ function find_common_merge(asts: SteppedBlockTree[][]): { asts: SteppedBlockTree
             }
 
             findings[block_id].push(op_idx);
-            if (findings[block_id].length === asts.length) {
+            if ((findings[block_id].length + not_finishing.length) === asts.length) {
                 common_blocks.push([block_id, findings[block_id].reduce((a, b) => a + b, 0)]);
             }
             else if (findings[block_id].length > asts.length) {
@@ -442,12 +466,23 @@ function find_common_merge(asts: SteppedBlockTree[][]): { asts: SteppedBlockTree
     const sorted_ascending = common_blocks.sort((a, b) => a[1] - b[1]);
     const first_cut_id = sorted_ascending[0][0];
 
-    const [unique_first_ast, common_suffix] = cut_on_block_id(asts[0], first_cut_id);
+    let common_suffix = null;
+    const differences = [];
+    for (let idx = 0; idx < asts.length; idx++) {
+        if (not_finishing.indexOf(idx) >= 0) {
+            differences.push(asts[idx]);
+        }
+        else {
+            const [unique_ast, suffix] = cut_on_block_id(asts[idx], first_cut_id);
+            if (common_suffix === null) {
+                common_suffix = suffix;
+            }
+            differences.push(unique_ast);
+        }
+    }
 
-    const differences = [unique_first_ast];
-    for (let idx = 1; idx < asts.length; idx++) {
-        const [unique, ] = cut_on_block_id(asts[idx], first_cut_id);
-        differences.push(unique);
+    if (common_suffix === null) {
+        throw new Error('Unexpected: No suffix, but it should have.');
     }
 
     return {
@@ -456,7 +491,7 @@ function find_common_merge(asts: SteppedBlockTree[][]): { asts: SteppedBlockTree
     }
 }
 
-function find_common_merge_groups_ast(asts: SteppedBlockTree[][]): SteppedBlockTree[][] {
+function find_common_merge_groups_ast(asts: SteppedBlockTree[][], options: { prune_not_finishing: boolean }): SteppedBlockTree[][] {
     const findings: { [key: string]: [number, number][]} = {};
     const common_blocks: {[key:string]: [number[], number]} = {};
     const grouped: {[key: string]: boolean} = {};
@@ -551,7 +586,7 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][]): SteppedBlockT
             }
         }
 
-        const merged_ast = find_common_merge(column_asts);
+        const merged_ast = find_common_merge(column_asts, options);
         if (!merged_ast){
             throw new Error(`Error merging asts (idx:${groups[group_idx]})`)
         }
@@ -643,7 +678,17 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             contents.push(subast);
         }
 
-        const re_merge_data = find_common_merge(contents);
+        // Pruning has to be done on if-else constructions to properly handle loops
+        let prune_not_finishing = false;
+        const node = graph.nodes[source_id];
+        if (node.data.type === AtomicFlowBlock.GetBlockType()) {
+            const fun = (node.data as AtomicFlowBlockData).value.options.block_function;
+            const functions_requiring_prune = ['control_if_else'];
+
+            prune_not_finishing = functions_requiring_prune.indexOf(fun) >= 0;
+        }
+
+        const re_merge_data = find_common_merge(contents, { prune_not_finishing });
         let common_suffix = [];
 
         if (re_merge_data) {
@@ -656,7 +701,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             if (source_node.data.type === AtomicFlowBlock.GetBlockType()) {
                 if ((source_node.data as AtomicFlowBlockData).value.options.block_function === FORK_OPERATION) {
 
-                    const merged_groups = find_common_merge_groups_ast(contents);
+                    const merged_groups = find_common_merge_groups_ast(contents, { prune_not_finishing: false });
                     if (merged_groups) {
                         contents = merged_groups;
                         common_suffix = [];
@@ -814,7 +859,7 @@ function compile_block(graph: FlowGraph,
             }
 
             if (contents.length > 0) {
-                if ((contents as SteppedBlockTree[][])[0].length) {
+                if ((contents as SteppedBlockTree[][])[0] instanceof Array) {
                     compiled_contents = (contents as SteppedBlockTree[][]).map(v => {
                         return {
                             contents: compile_contents(graph, v)

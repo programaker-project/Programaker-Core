@@ -5,7 +5,7 @@ import { decompile_to_dsl } from '../scaffolding/graph-analysis-tools-dsl-decomp
 export function are_equivalent_ast(actual: CompiledFlowGraph[], expected: CompiledFlowGraph[]) {
     const expectationMsg = `
 +----------+
-|  ACTUAL  |
+|  RESULT  |
 +----------+
 
 ${decompile_to_dsl(actual).join('\n;; Alternative\n')}

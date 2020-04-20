@@ -61,8 +61,6 @@ describe('Flow-16: Stepped loop inside fork reaches join.', () => {
 
 
     it('Should be able to compile', async () => {
-        pending('Known limitation (currently being addressed)');
-
         const compiled_flow = compile(gen_flow());
 
         const dsl_ast = dsl_to_ast(
@@ -72,18 +70,16 @@ describe('Flow-16: Stepped loop inside fork reaches join.', () => {
                         11)
                      )
                 ((fork
-                  ;; Branches 1 and 2
-                  ((fork
-                    (op_wait_seconds 1) ; Branch 1
-                    (op_wait_seconds 2))) ; Branch 2
+                  (op_wait_seconds 1) ; Branch 1
+                  (op_wait_seconds 2) ; Branch 2
 
                   ;; Branch 3
                   ((jump-point "loop-start")
                    (op_wait_seconds 3) ; Branch 3
                    (if (= 1 1)
-                       ((op_wait_seconds 3.5))
+                       ()
                      ((jump-to "loop-start")))
-                   )
+                   (op_wait_seconds 3.5))
                   )
                  (op_wait_seconds 11)))
             `
