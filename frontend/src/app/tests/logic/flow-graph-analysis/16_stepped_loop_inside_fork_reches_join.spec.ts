@@ -61,7 +61,7 @@ describe('Flow-16: Stepped loop inside fork reaches join.', () => {
 
 
     it('Should be able to compile', async () => {
-        pending();
+        pending('Known limitation (currently being addressed)');
 
         const compiled_flow = compile(gen_flow());
 

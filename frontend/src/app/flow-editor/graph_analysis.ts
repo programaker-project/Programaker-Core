@@ -695,9 +695,11 @@ export function get_stepped_ast(graph: FlowGraph, source_id: string): SteppedBlo
 }
 
 function compile_contents(graph: FlowGraph, contents: SteppedBlockTree[]): CompiledBlock[] {
-    return contents.map(v =>
-        compile_block(graph, v.block_id, v.arguments, v.contents as SteppedBlockTree[], { inside_args: false, orig_tree: v })
-                       );
+    return (contents
+        .map(v =>
+            compile_block(graph, v.block_id, v.arguments, v.contents as SteppedBlockTree[], { inside_args: false, orig_tree: v })
+            )
+        .filter(v => v != null));
 }
 
 function is_signal_block(_graph: FlowGraph, _arg: BlockTreeArgument, data: AtomicFlowBlockData): boolean {
@@ -862,6 +864,11 @@ function compile_block(graph: FlowGraph,
                     args: compiled_args,
                 }],
             }];
+        }
+        else if (block_fun === 'trigger_when_any_completed') {
+            // Natural exit of an IF
+            // TODO: Check that it happens after a control_if_else
+            return null;
         }
         else if (BASE_TOOLBOX_BLOCKS[block_fun]) {
             block_type = block_fun;

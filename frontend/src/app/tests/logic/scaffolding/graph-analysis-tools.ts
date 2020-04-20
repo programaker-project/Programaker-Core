@@ -162,6 +162,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "flow_last_value":
         case "jump_to_position":
         case "jump_to_block":
+        case "trigger_when_any_completed":
             break;
 
             // Cannonicalize args and contents, but don't sort

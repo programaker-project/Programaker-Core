@@ -213,7 +213,26 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     type: "pulse",
                     quantity: "any",
                 },
+            },
+            {
+                icon: PLATFORM_ICON,
+                message: 'When all completed',
+                block_function: 'trigger_when_any_completed',
+                type: 'trigger',
+                inputs: [
+                    {
+                        type: "pulse",
+                    },
+                    {
+                        type: "pulse",
+                    },
+                ],
+                extra_inputs: {
+                    type: "pulse",
+                    quantity: "any",
+                },
             }
+
         ]
     },
     {
