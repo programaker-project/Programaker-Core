@@ -603,6 +603,12 @@ export const BaseToolboxDescription: ToolboxDescription = [
                         name: 'new value',
                         type: "any",
                     },
+                ],
+                outputs: [
+                    {
+                        name: 'saved value',
+                        type: 'any',
+                    }
                 ]
             },
             {
@@ -737,6 +743,24 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     }
                 ]
             },
+        ]
+    },
+    {
+        id: 'advanced',
+        name: 'Advanced',
+        blocks: [
+            {
+                icon: PLATFORM_ICON,
+                message: 'Get thread ID',
+                block_function: 'flow_get_thread_id',
+                type: 'getter',
+                outputs: [
+                    {
+                        type: "string",
+                    },
+                ],
+            },
+
         ]
     }
 ];

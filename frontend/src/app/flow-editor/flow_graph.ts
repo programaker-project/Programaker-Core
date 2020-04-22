@@ -57,7 +57,7 @@ export type CompiledBlockType = "wait_for_monitor"
     | "op_set_var_value" | "flow_get_var_value"
     | "command_call_service"
     | "op_wait_seconds"
-    | "op_log_value"
+    | "op_log_value" | "flow_get_thread_id"
     | "jump_to_position"
     | "jump_to_block"
     | "jump_point" // Not found on executable stage, will be removed in link phase

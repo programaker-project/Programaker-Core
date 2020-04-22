@@ -183,8 +183,8 @@ export class GraphBuilder {
         return this.add_getter('flow_get_var_value', { id: id, slots: { variable: var_name } });
     }
 
-    private resolve_args(node: string, options: BlockOptions, offset?: number) {
-        if (options.args) {
+    private resolve_args(node: string, options?: BlockOptions, offset?: number) {
+        if (options && options.args) {
             let idx = -1;
 
             if (offset) {
@@ -295,7 +295,7 @@ export class GraphBuilder {
     }
 
     add_getter(block_type: string, options?: BlockOptions): StreamNodeBuilderRef {
-        const ref = options.id ? options.id : (block_type + '_' + uuidv4());
+        const ref = options && options.id ? options.id : (block_type + '_' + uuidv4());
 
         let block_options = this.blocks[block_type];
 
