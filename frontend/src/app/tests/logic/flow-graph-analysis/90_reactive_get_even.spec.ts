@@ -26,7 +26,7 @@ export function gen_flow(): FlowGraph {
     return graph;
 }
 
-describe('Flow-20: [Reactive] Get even values.', () => {
+describe('Flow-90: [Reactive] Get even values.', () => {
     it('Validation should pass', async () => {
         expect(validate(gen_flow()))
             .toBeTruthy()
