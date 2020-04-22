@@ -178,7 +178,9 @@ export class GraphBuilder {
     }
 
     private add_variable_getter_node(var_name: any): StreamNodeBuilderRef {
-        return this.add_getter('flow_get_var_value', { slots: { variable: var_name } });
+        const id = 'set_var_' + var_name + '_' + uuidv4();
+
+        return this.add_getter('flow_get_var_value', { id: id, slots: { variable: var_name } });
     }
 
     private resolve_args(node: string, options: BlockOptions, offset?: number) {

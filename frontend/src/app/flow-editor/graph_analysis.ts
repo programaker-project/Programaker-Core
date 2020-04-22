@@ -4,7 +4,7 @@ import { BASE_TOOLBOX_SOURCE_SIGNALS } from './definitions';
 import { DirectValue, DirectValueFlowBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
-import { index_connections, reverse_index_connections } from './graph_utils';
+import { index_connections } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
 
@@ -770,7 +770,6 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][], options: { pru
 function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: SteppedBlockTree[], reached: {[key: string]: boolean}) {
     let continuations = get_pulse_continuations(graph, source_id);
 
-    // TODO: Handle properly IFs with only one branch
     if (continuations.length > 1) {
         let contents = [];
 
@@ -827,7 +826,19 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
 
     if (continuations.length == 1) {
         if (continuations[0].length == 1) {
-            get_stepped_ast_continuation(graph, continuations[0][0], ast, reached);
+            const block = graph.nodes[source_id];
+
+            if ((block.data.type === AtomicFlowBlock.GetBlockType()
+                && (block.data as AtomicFlowBlockData).value.options.block_function === 'control_if_else')) {
+                // IF statement with only one output
+                const contents = [];
+                get_stepped_ast_continuation(graph, continuations[0][0], contents, reached);
+
+                ast[ast.length - 1].contents = [contents, []]; // Update parent block contents
+            }
+            else {
+                get_stepped_ast_continuation(graph, continuations[0][0], ast, reached);
+            }
         }
         else {
             throw new Error(`Multiple outputs pulses from the same port`);
