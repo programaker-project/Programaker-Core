@@ -1,6 +1,7 @@
-import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
 import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
+import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { get_unreachable } from './graph_analysis';
+import { index_connections, reverse_index_connections } from './graph_utils';
 
 function get_edges_for_nodes(graph: FlowGraph, nodes: {[key:string]: FlowGraphNode }): FlowGraphEdge[] {
     const edges: FlowGraphEdge[] = [];
@@ -64,9 +65,9 @@ function get_stepped_section(graph: FlowGraph): FlowGraph {
     };
 }
 
-function validate_streaming_no_loop_around(graph: FlowGraph,
-                                        connections_index: {[key: string]:FlowGraphEdge[]},
-                                        block_id: string): {[key:string]: boolean} {
+function validate_streaming_no_loop_around(_graph: FlowGraph,
+                                           connections_index: {[key: string]:FlowGraphEdge[]},
+                                           block_id: string): {[key:string]: boolean} {
 
     function aux(block_id:string, top: {[key:string]: boolean}): {[key:string]: boolean} {
         const reached = {};
@@ -95,18 +96,6 @@ function validate_streaming_no_loop_around(graph: FlowGraph,
     return reached;
 }
 
-function index_connections(graph: FlowGraph): {[key: string]:FlowGraphEdge[]} {
-    const index = {};
-    for (const conn of graph.edges) {
-        if (!index[conn.from.id]) {
-            index[conn.from.id] = [];
-        }
-        index[conn.from.id].push(conn);
-    }
-
-    return index;
-}
-
 function validate_no_loops_in_streaming_section(graph: FlowGraph) {
     const streaming_graph = get_streaming_section(graph);
 
@@ -119,18 +108,6 @@ function validate_no_loops_in_streaming_section(graph: FlowGraph) {
             Object.assign(validated, validated_group);
         }
     }
-}
-
-function reverse_index_connections(graph: FlowGraph): {[key: string]:FlowGraphEdge[]} {
-    const index = {};
-    for (const conn of graph.edges) {
-        if (!index[conn.to.id]) {
-            index[conn.to.id] = [];
-        }
-        index[conn.to.id].push(conn);
-    }
-
-    return index;
 }
 
 function validate_that_all_paths_have_fork(graph: FlowGraph,

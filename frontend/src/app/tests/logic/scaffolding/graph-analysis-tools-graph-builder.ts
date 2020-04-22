@@ -122,8 +122,8 @@ export class GraphBuilder {
     }
 
 
-    add_enum_node(namespace: string, name: string, value: string, id: string): ValueNodeRef {
-        const ref = name + '_' + uuidv4();
+    add_enum_node(namespace: string, name: string, value: string, id: string, options?: { id: string }): ValueNodeRef {
+        const ref = options && options.id ? options.id : 'enum_' + name + '_' + uuidv4();
 
         this.nodes[ref] = {
             type: ENUM_BLOCK_TYPE,
@@ -141,7 +141,7 @@ export class GraphBuilder {
     }
 
     private add_direct_node(value: any): ValueNodeRef {
-        const ref = uuidv4();
+        const ref = 'dir_' + value.toString().toLowerCase() + '_' + uuidv4();
 
         let type: MessageType = 'any';
         if (typeof value === 'string') {

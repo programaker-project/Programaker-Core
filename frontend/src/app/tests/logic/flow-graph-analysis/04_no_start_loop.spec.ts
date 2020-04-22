@@ -12,14 +12,15 @@ export function gen_flow(): FlowGraph {
     const chat = builder.add_service('de5baefb-13da-457e-90a5-57a753da8891');
 
     // Values
-    const loc = builder.add_enum_node(weather, 'get_locations', 'Vigo', '12/36/057/7');
-    const channel = builder.add_enum_node(chat, 'get_known_channels', 'Bot testing', '-137414823');
+    const loc = builder.add_enum_node(weather, 'get_locations', 'Vigo', '12/36/057/7', {id: 'loc'});
+    const channel = builder.add_enum_node(chat, 'get_known_channels', 'Bot testing', '-137414823', {id: 'channel'});
 
     // Stepped section
     const msg1 = builder.add_op('send_message', { namespace: chat,
                                                   id: 'first',
                                                   args: [channel,
-                                                         [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,
+                                                         [(b) => b.add_getter('get_today_max_in_place', { id: 'first-getter',
+                                                                                                          namespace: weather,
                                                                                                           args: [loc]
                                                                                                         }), 0]]
                                                 });
@@ -27,7 +28,8 @@ export function gen_flow(): FlowGraph {
     const msg2 = builder.add_op('send_message', { namespace: weather,
                                                   id: 'second',
                                                   args: [channel,
-                                                         [(b) => b.add_getter('get_today_max_in_place', { namespace: weather,
+                                                         [(b) => b.add_getter('get_today_max_in_place', { id: 'second-getter',
+                                                                                                          namespace: weather,
                                                                                                           args: [loc]
                                                                                                         }), 0]]
                                                 });
@@ -45,18 +47,24 @@ describe('Flow-04: No start loop.', () => {
     });
 
     it('Should find an unreachable blocks', async () => {
-        expect(get_unreachable(gen_flow())).toEqual([
+        expect(get_unreachable(gen_flow()).sort()).toEqual([
             "first",
             "second",
-        ]);
+            "first-getter",
+            "second-getter",
+            "loc",
+            "channel"
+        ].sort());
     });
 
     describe('Sample-based tests.', async () => {
         it('Should find unreachable blocks', async () => {
-            expect(get_unreachable(_04_no_start_loop as FlowGraph)).toEqual([
+            expect(get_unreachable(_04_no_start_loop as FlowGraph).sort()).toEqual([
                 "4652b79c-603b-4add-9164-92508be43fdf",
                 "1545b4f2-8b4f-4c59-ae0b-a0a0e5d6746c",
-            ]);
+                "f1b8670c-0001-4417-8a39-2c52f5140383",
+                "099ee247-851d-41bb-819c-5347247cd06a",
+            ].sort());
         });
     });
 });
