@@ -51,7 +51,7 @@ export type CompiledBlockArgList = CompiledBlockArg[];
 
 export type CompiledBlockType = "wait_for_monitor"
     | "control_if_else"
-    | "operator_and" | "operator_equals" | "flow_lesser_than"
+    | "operator_and" | "operator_equals" | "flow_lesser_than" | "flow_greater_than"
     | "flow_addition" | "flow_modulo"
     | "flow_last_value"
     | "op_set_var_value" | "flow_get_var_value"

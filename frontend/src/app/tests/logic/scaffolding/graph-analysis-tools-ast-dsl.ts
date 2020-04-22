@@ -23,6 +23,7 @@ export const OP_TRANSLATIONS = {
     'get-var': 'flow_get_var_value',
     '+': 'flow_addition',
     '<': 'flow_lesser_than',
+    '>': 'flow_greater_than',
 };
 
 const OPS_WITH_MAP_ARGUMENTS = [

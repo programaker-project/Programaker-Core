@@ -27,8 +27,8 @@ export function gen_flow(): FlowGraph {
     const op = builder.add_op('op_log_value', { args: [ [source, 0] ]
                                               });
 
-    const take_cond = builder.add_if(update, null, {
-        cond: [f => f.add_getter('flow_lesser_than', { args: [ { from_variable: 'count' }, 'N' ] }), 0]
+    const take_cond = builder.add_if(null, update, {
+        cond: [f => f.add_getter('flow_greater_than', { args: [ { from_variable: 'count' }, 'N' ] }), 0]
     });
     trigger.then_id(take_cond);
     update.then(op);
@@ -37,7 +37,7 @@ export function gen_flow(): FlowGraph {
     return graph;
 }
 
-describe('Flow-21: [Reactive] Take N first values.', () => {
+describe('Flow-21-2: [Reactive] Take N first values (inverted if).', () => {
     it('Validation should pass', async () => {
         expect(validate(gen_flow()))
             .toBeTruthy()
@@ -53,7 +53,9 @@ describe('Flow-21: [Reactive] Take N first values.', () => {
             (if (and (= (mod (flow-last-value "source" 0) 2)
                         0)
                      )
-                ((if (< (get-var counter) N)
+                ((if (> (get-var counter) N)
+                     ()
+                   ; Else branch ↓
                      ((set-var counter (+ 1 (get-var counter)))
                       (log (flow-last-value "source" 0))))))
             `

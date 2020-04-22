@@ -776,13 +776,17 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
         for (const cont of continuations) {
             const subast = [];
 
-            if (cont.length !== 1) {
+            if (!cont || cont.length === 0) {
+                contents.push([]);
+            }
+            else if (cont.length > 1) {
                 throw new Error(`There should be one and only one pulse per output`)
             }
-
-            const subreached = Object.assign({}, reached)
-            get_stepped_ast_continuation(graph, cont[0], subast, subreached);
-            contents.push(subast);
+            else {
+                const subreached = Object.assign({}, reached)
+                get_stepped_ast_continuation(graph, cont[0], subast, subreached);
+                contents.push(subast);
+            }
         }
 
         // Pruning has to be done on if-else constructions to properly handle loops

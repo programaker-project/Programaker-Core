@@ -173,6 +173,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "flow_addition":
         case "op_log_value":
         case "flow_lesser_than":
+        case "flow_greater_than":
         case "op_set_var_value":
         case "flow_get_var_value":
             if (op.args) {
