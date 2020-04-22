@@ -170,6 +170,8 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "flow_set_value":
         case "control_if_else":
         case "trigger_when_all_completed":
+        case "flow_modulo":
+        case "op_log_value":
             if (op.args) {
                 op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
             }

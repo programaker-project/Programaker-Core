@@ -39,10 +39,10 @@ describe('Flow-20: [Reactive] Get even values.', () => {
         const dsl_ast = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
             (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
-            (if (and (mod (flow-last-value "source" 2)
-                          0)
+            (if (and (= (mod (flow-last-value "source" 0) 2)
+                        0)
                      )
-                ((log (flow-last-value "source" 2))))
+                ((log (flow-last-value "source" 0))))
             `
         );
 

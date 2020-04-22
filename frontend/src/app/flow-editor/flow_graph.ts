@@ -52,9 +52,11 @@ export type CompiledBlockArgList = CompiledBlockArg[];
 export type CompiledBlockType = "wait_for_monitor"
     | "control_if_else"
     | "operator_and" | "operator_equals"
+    | "flow_modulo"
     | "flow_last_value" | "flow_set_value"
     | "command_call_service"
     | "op_wait_seconds"
+    | "op_log_value"
     | "jump_to_position"
     | "jump_to_block"
     | "jump_point" // Not found on executable stage, will be removed in link phase

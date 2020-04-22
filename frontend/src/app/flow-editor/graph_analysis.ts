@@ -260,6 +260,27 @@ function has_pulse_output(block: FlowGraphNode): boolean {
     }
 }
 
+function has_pulse_input(block: FlowGraphNode): boolean {
+    if (block.data.type === AtomicFlowBlock.GetBlockType()){
+        const data = block.data as AtomicFlowBlockData;
+
+        const inputs = data.value.options.inputs || [];
+        console.log(data.value.options.block_function, JSON.stringify(inputs));
+
+        // If it has no pulse inputs its a source block
+        return inputs.filter(v => v.type === 'pulse').length > 0;
+    }
+    else if (block.data.type === DirectValue.GetBlockType()){
+        return false;
+    }
+    else if (block.data.type === EnumDirectValue.GetBlockType()){
+        return false;
+    }
+    else {
+        throw new Error("Unknown block type: " + block.data.type)
+    }
+}
+
 function is_pulse_output(block: FlowGraphNode, index: number): boolean {
     if (block.data.type === AtomicFlowBlock.GetBlockType()){
         const data = block.data as AtomicFlowBlockData;
@@ -298,7 +319,8 @@ export function get_conversions_to_stepped(graph: FlowGraph, source_block_id: st
         const skipped: FlowGraphEdge[] = [];
         for (const conn of remaining_connections) {
             if (reached[conn.from.id]) {
-                if (has_pulse_output(graph.nodes[conn.to.id])) {
+                const node = graph.nodes[conn.to.id];
+                if (has_pulse_output(node) && !has_pulse_input(node)) {
                     // Conversor to step
                     results[conn.to.id] = true;
                 }
