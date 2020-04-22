@@ -4,15 +4,15 @@ import { decompile_to_dsl } from '../scaffolding/graph-analysis-tools-dsl-decomp
 
 export function are_equivalent_ast(actual: CompiledFlowGraph[], expected: CompiledFlowGraph[]) {
     const expectationMsg = `
-+----------+
-|  RESULT  |
-+----------+
+╭──────────╮
+│  RESULT  │
+╰──────────╯
 
 ${decompile_to_dsl(actual).join('\n;; Alternative\n')}
 
-+----------+
-| EXPECTED |
-+----------+
+╭──────────╮
+│ EXPECTED │
+╰──────────╯
 
 ${decompile_to_dsl(expected).join('\n;; Alternative\n')}
 `;
