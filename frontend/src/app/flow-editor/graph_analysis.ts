@@ -827,13 +827,18 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
         }
     }
 
-
     if (continuations.length == 1) {
         if (continuations[0].length == 1) {
             const block = graph.nodes[source_id];
+            const is_atomic_block = block.data.type === AtomicFlowBlock.GetBlockType();
+            let atom_data: AtomicFlowBlockData = null;
+            let func_name: string = null;
+            if (is_atomic_block) {
+                atom_data = block.data as AtomicFlowBlockData;
+                func_name = atom_data.value.options.block_function;
+            }
 
-            if ((block.data.type === AtomicFlowBlock.GetBlockType()
-                && (block.data as AtomicFlowBlockData).value.options.block_function === 'control_if_else')) {
+            if (is_atomic_block && func_name === 'control_if_else') {
                 // IF statement with only one output
                 const contents = [];
                 get_stepped_ast_continuation(graph, continuations[0][0], contents, reached);
@@ -1155,10 +1160,35 @@ export function assemble_flow(graph: FlowGraph,
                               filter: BlockTree,
                               stepped_ast: SteppedBlockTree[]): CompiledFlowGraph {
 
-    const compiled_graph = [
-        compile_block(graph, signal_id, [], [], { inside_args: false, orig_tree: null }),
-        compile_block(graph, filter.block_id, filter.arguments, [ stepped_ast, [] ], { inside_args: false, orig_tree: null })
-    ];
+    const signal_ast = compile_block(graph, signal_id, [], [], { inside_args: false, orig_tree: null });
+    const filter_node = graph.nodes[filter.block_id];
+    let compiled_graph = null;
+
+    if (filter_node.data.type === AtomicFlowBlock.GetBlockType()) {
+        const f_block = (filter_node.data as AtomicFlowBlockData);
+        if (f_block.value.options.block_function === 'trigger_on_signal') {
+            const filter_ast = stepped_ast.map(b => compile_block(graph,
+                                                                  b.block_id,
+                                                                  b.arguments,
+                                                                  b.contents as SteppedBlockTree[],
+                                                                  { inside_args: false, orig_tree: null }));
+            compiled_graph = [
+                signal_ast,
+            ].concat(filter_ast);
+}
+        else {
+            const filter_ast = compile_block(graph, filter.block_id, filter.arguments, [ stepped_ast, [] ],
+                                             { inside_args: false, orig_tree: null })
+
+            compiled_graph = [
+                signal_ast,
+                filter_ast,
+            ];
+        }
+    }
+    else {
+        throw new Error(`Unexpected filter block: ${JSON.stringify(filter_node)}`);
+    }
 
     return _link_graph(compiled_graph);
 }

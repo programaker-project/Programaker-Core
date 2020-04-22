@@ -62,6 +62,17 @@ export const BaseToolboxDescription: ToolboxDescription = [
             },
             {
                 icon: PLATFORM_ICON,
+                message: 'Wait for',
+                block_function: 'trigger_on_signal',
+                type: 'trigger',
+                inputs: [
+                    {
+                        type: "any",
+                    },
+                ]
+            },
+            {
+                icon: PLATFORM_ICON,
                 message: 'Wait for next value',
                 block_function: 'op_wait_for_next_value',
                 type: 'operation',

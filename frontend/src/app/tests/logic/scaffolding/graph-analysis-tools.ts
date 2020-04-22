@@ -176,6 +176,9 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "flow_greater_than":
         case "op_set_var_value":
         case "flow_get_var_value":
+        case "flow_list_length":
+        case "op_delete_list_entry":
+        case "op_add_to_list":
             if (op.args) {
                 op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
             }

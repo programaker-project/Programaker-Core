@@ -64,6 +64,8 @@ export type CompiledBlockType = "wait_for_monitor"
     | "op_fork_execution"
     | "trigger_when_all_completed"
     | "trigger_when_any_completed"
+
+    | "flow_list_length" | "op_delete_list_entry" | "op_add_to_list"
     ;
 export type CompiledBlockArgs = CompiledBlockArgMonitorDict | CompiledBlockArgCallServiceDict | CompiledBlockArgList;
 

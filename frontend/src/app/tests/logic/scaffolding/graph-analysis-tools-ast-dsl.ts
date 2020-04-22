@@ -7,23 +7,35 @@ const SYMBOL_CHARACTERS = (
 );
 
 export const OP_TRANSLATIONS = {
+    // Flow control
     'if': 'control_if_else',
-    '=': 'operator_equals',
-    'and': 'operator_and',
-    'wait-seconds': 'op_wait_seconds',
-    'wait-for-monitor': 'wait_for_monitor',
-    'call-service': 'command_call_service',
-    'flow-last-value': 'flow_last_value',
     'jump-to': 'jump_to_block',
     'jump-point': 'jump_point',
     'fork': 'op_fork_execution',
-    'mod': 'flow_modulo',
+
+    // Operations
     'log': 'op_log_value',
+    'wait-seconds': 'op_wait_seconds',
+    'call-service': 'command_call_service',
+
+    // Variables
     'set-var': 'op_set_var_value',
     'get-var': 'flow_get_var_value',
-    '+': 'flow_addition',
+    'flow-last-value': 'flow_last_value',
+    'wait-for-monitor': 'wait_for_monitor',
+
+    // Comparations
+    '=': 'operator_equals',
+    'and': 'operator_and',
     '<': 'flow_lesser_than',
     '>': 'flow_greater_than',
+
+    // Operations
+    'mod': 'flow_modulo',
+    '+': 'flow_addition',
+    'add-to-list': 'op_add_to_list',
+    'list-length': 'flow_list_length',
+    'delete-list-index': 'op_delete_list_entry',
 };
 
 const OPS_WITH_MAP_ARGUMENTS = [
@@ -104,7 +116,25 @@ function transform_call(args: any[]): any[] {
         args.splice(1);
     }
 
+    if (op === 'flow_list_length') {
+        // Remove first arg, as it will go into the "slots"
+        // TODO: Send to slots
+        args.splice(1, 1);
+    }
+
     if (op === 'op_set_var_value') {
+        // Remove first arg, as it will go into the "slots"
+        // TODO: Send to slots
+        args.splice(1, 1);
+    }
+
+    if (op === 'op_delete_list_entry') {
+        // Remove first arg, as it will go into the "slots"
+        // TODO: Send to slots
+        args.splice(1, 1);
+    }
+
+    if (op === 'op_add_to_list') {
         // Remove first arg, as it will go into the "slots"
         // TODO: Send to slots
         args.splice(1, 1);
