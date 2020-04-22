@@ -319,6 +319,27 @@ export const BaseToolboxDescription: ToolboxDescription = [
             },
             {
                 icon: PLATFORM_ICON,
+                message: '%i1 modulo %i2',
+                block_function: 'flow_modulo',
+                type: 'getter',
+                inputs: [
+                    {
+                        name: 'dividend',
+                        type: "float",
+                    },
+                    {
+                        name: 'divisor',
+                        type: "float",
+                    },
+                ],
+                outputs: [
+                    {
+                        type: 'float',
+                    },
+                ]
+            },
+            {
+                icon: PLATFORM_ICON,
                 message: 'Is %i1 greater (>) than %i2 ?',
                 block_function: 'flow_greater_than',
                 type: 'getter',
@@ -476,6 +497,23 @@ export const BaseToolboxDescription: ToolboxDescription = [
                         type: 'any',
                     },
                 ]
+            },
+        ]
+    },
+    {
+        id: 'debug',
+        name: 'Debug',
+        blocks: [
+            {
+                icon: PLATFORM_ICON,
+                message: 'Log value %1',
+                block_function: 'op_log_value',
+                type: 'operation',
+                inputs: [
+                    {
+                        type: "any",
+                    },
+                ],
             },
         ]
     },

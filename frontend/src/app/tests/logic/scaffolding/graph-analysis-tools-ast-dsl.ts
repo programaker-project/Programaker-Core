@@ -17,6 +17,8 @@ export const OP_TRANSLATIONS = {
     'jump-to': 'jump_to_block',
     'jump-point': 'jump_point',
     'fork': 'op_fork_execution',
+    'mod': 'flow_modulo',
+    'log': 'op_log_value'
 };
 
 const OPS_WITH_MAP_ARGUMENTS = [
