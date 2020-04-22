@@ -265,7 +265,6 @@ function has_pulse_input(block: FlowGraphNode): boolean {
         const data = block.data as AtomicFlowBlockData;
 
         const inputs = data.value.options.inputs || [];
-        console.log(data.value.options.block_function, JSON.stringify(inputs));
 
         // If it has no pulse inputs its a source block
         return inputs.filter(v => v.type === 'pulse').length > 0;
@@ -771,6 +770,7 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][], options: { pru
 function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: SteppedBlockTree[], reached: {[key: string]: boolean}) {
     let continuations = get_pulse_continuations(graph, source_id);
 
+    // TODO: Handle properly IFs with only one branch
     if (continuations.length > 1) {
         let contents = [];
 

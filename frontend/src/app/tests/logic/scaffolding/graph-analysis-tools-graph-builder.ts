@@ -14,8 +14,16 @@ type StreamGenerator = (builder: GraphBuilder) => StreamNodeBuilderRef;
 type NodeGenerator = (builder: GraphBuilder) => OpNodeBuilderRef;
 
 type NodeRef = ValueNodeRef | StreamNodeBuilderRef | OpNodeBuilderRef;
+type VariableRef = {from_variable: string};
 
-type BlockArgument = [OpNodeBuilderRef, 'pulse'] | [NodeRef, number] | [StreamGenerator, number] | ValueNodeRef | string | number;
+type BlockArgument = [OpNodeBuilderRef, 'pulse']
+    | [NodeRef, number]
+    | [StreamGenerator, number]
+    | ValueNodeRef
+    | VariableRef
+    | string
+    | number
+;
 
 
 function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions} {
@@ -60,6 +68,7 @@ interface BlockOptions {
     message?: string,
     args?: BlockArgument[],
     id?: string,
+    slots?: {[key: string]: string};
 }
 
 class StreamNodeBuilderRef {
@@ -168,6 +177,10 @@ export class GraphBuilder {
 
     }
 
+    private add_variable_getter_node(var_name: any): StreamNodeBuilderRef {
+        return this.add_getter('flow_get_var_value', { slots: { variable: var_name } });
+    }
+
     private resolve_args(node: string, options: BlockOptions, offset?: number) {
         if (options.args) {
             let idx = -1;
@@ -185,6 +198,12 @@ export class GraphBuilder {
                 if (typeof arg === 'number' || typeof arg === 'string') {
                     const ref = this.add_direct_node(arg);
                     this.establish_connection(ref, [node, idx]);
+                }
+                // Variaable reference
+                else if ((arg as VariableRef).from_variable) {
+                    const vblock = this.add_variable_getter_node((arg as VariableRef).from_variable);
+
+                    this.establish_connection([ vblock.id, 0 ], [node, idx]);
                 }
                 // Direct node reference
                 else if (typeof (arg[0]) === 'string') {
@@ -311,6 +330,10 @@ export class GraphBuilder {
         let synth_in: number, synth_out: number
         [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
 
+        if (options && options.slots) {
+            block_options.slots = Object.assign(block_options.slots || {}, options.slots)
+        }
+
         this.nodes[ref] = {
             type: ATOMIC_BLOCK_TYPE,
             value: {
@@ -380,8 +403,12 @@ export class GraphBuilder {
         }
 
         this.resolve_args(ref, { args: [ cond ] }, synth_in);
-        this.establish_connection([ref, 0], [if_true.id, 0]);
-        this.establish_connection([ref, 1], [if_false.id, 0]);
+        if (if_true) {
+            this.establish_connection([ref, 0], [if_true.id, 0]);
+        }
+        if (if_false) {
+            this.establish_connection([ref, 1], [if_false.id, 0]);
+        }
 
         return ref;
     }

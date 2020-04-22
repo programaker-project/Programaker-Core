@@ -18,7 +18,11 @@ export const OP_TRANSLATIONS = {
     'jump-point': 'jump_point',
     'fork': 'op_fork_execution',
     'mod': 'flow_modulo',
-    'log': 'op_log_value'
+    'log': 'op_log_value',
+    'set-var': 'op_set_var_value',
+    'get-var': 'flow_get_var_value',
+    '+': 'flow_addition',
+    '<': 'flow_lesser_than',
 };
 
 const OPS_WITH_MAP_ARGUMENTS = [
@@ -91,6 +95,18 @@ function transform_call(args: any[]): any[] {
             args[1].service_call_values = args[1].values;
             delete args[1].values;
         }
+    }
+
+    if (op === 'flow_get_var_value') {
+        // Remove args, as they will go into the "slots"
+        // TODO: Send to slots
+        args.splice(1);
+    }
+
+    if (op === 'op_set_var_value') {
+        // Remove first arg, as it will go into the "slots"
+        // TODO: Send to slots
+        args.splice(1, 1);
     }
 
     if (op === 'op_fork_execution') {
