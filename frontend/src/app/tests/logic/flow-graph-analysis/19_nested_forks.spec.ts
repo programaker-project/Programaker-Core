@@ -6,6 +6,12 @@ import { gen_compiled } from '../scaffolding/graph-analysis-tools';
 import { dsl_to_ast } from '../scaffolding/graph-analysis-tools-ast-dsl';
 import { GraphBuilder } from '../scaffolding/graph-analysis-tools-graph-builder';
 import { are_equivalent_ast } from './utils.spec';
+import { lift_common_ops } from '../../../flow-editor/graph_transformations';
+
+export function process_flow(graph: FlowGraph): FlowGraph {
+    // Used by visualizing script to produce a processed version specific for this test
+    return lift_common_ops(graph);
+}
 
 export function gen_flow(): FlowGraph {
     const builder = new GraphBuilder();
@@ -62,8 +68,6 @@ describe('Flow-19: Nested forks.', () => {
 
 
     it('Should be able to compile', async () => {
-        pending("Development wavefront");
-
         const compiled_flow = compile(gen_flow());
 
         const dsl_ast = dsl_to_ast(
@@ -78,13 +82,13 @@ describe('Flow-19: Nested forks.', () => {
                  (fork
                   ;; Branch 1 & 6
                   ((fork
-                    ((wait-seconds 1)
-                     (wait-seconds 6)))
+                    ((wait-seconds 1))
+                    ((wait-seconds 6)))
                    (wait-seconds 16))
                   ;; Branch 2
                   ((fork
-                    (wait-seconds 5)
-                    (wait-seconds 3))
+                    ((wait-seconds 5))
+                    ((wait-seconds 3)))
                    (wait-seconds 35)))
                  (wait-seconds 9)
                  ))

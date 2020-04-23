@@ -4,7 +4,8 @@ import { BASE_TOOLBOX_SOURCE_SIGNALS } from './definitions';
 import { DirectValue, DirectValueFlowBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
-import { index_connections } from './graph_utils';
+import { lift_common_ops } from './graph_transformations';
+import { index_connections, EdgeIndex } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
 
@@ -29,7 +30,7 @@ const FORK_OPERATION = 'op_fork_execution';
 
 function activates_trigger(graph: FlowGraph,
                            block_id: string,
-                           conn_index: {[key: string]:FlowGraphEdge[]},
+                           conn_index: EdgeIndex,
                            reached: {[key: string]: boolean}): boolean {
 
     for (const conn of conn_index[block_id] || []) {
@@ -750,7 +751,7 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][], options: { pru
 
         const fork_block: SteppedBlockTreeFork = {
             block_id: fork_ref,
-            type: 'op_fork_execution',
+            type: FORK_OPERATION,
             arguments: [],
             contents: contents,
         };
@@ -799,27 +800,39 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             prune_not_finishing = functions_requiring_prune.indexOf(fun) >= 0;
         }
 
-        const re_merge_data = find_common_merge(contents, { prune_not_finishing });
         let common_suffix = [];
+        const source_node = graph.nodes[source_id];
+        if (source_node.data.type === AtomicFlowBlock.GetBlockType() &&
+            (source_node.data as AtomicFlowBlockData).value.options.block_function === FORK_OPERATION) {
 
-        if (re_merge_data) {
-            contents = re_merge_data.asts;
-            common_suffix = re_merge_data.common_suffix;
-        }
-        else {
-            // Try a bit harder on a op_fork_execution
-            const source_node = graph.nodes[source_id];
-            if (source_node.data.type === AtomicFlowBlock.GetBlockType()) {
-                if ((source_node.data as AtomicFlowBlockData).value.options.block_function === FORK_OPERATION) {
-
-                    const merged_groups = find_common_merge_groups_ast(contents, { prune_not_finishing: false });
-                    if (merged_groups) {
-                        contents = merged_groups;
-                        common_suffix = [];
+            const merged_groups = find_common_merge_groups_ast(contents, { prune_not_finishing: false });
+            if (merged_groups) {
+                if (merged_groups.length === 1){
+                    // There's a top level fork, just replace it
+                    const fork_block = merged_groups[0][0];
+                    if ((fork_block as VirtualSteppedBlock).type !== FORK_OPERATION) {
+                        throw new Error(`Unexpected: Expecting first block of common merge to be ${FORK_OPERATION},`
+                                        + ` found ${(fork_block as VirtualSteppedBlock).type}`);
                     }
+
+                    contents = fork_block.contents;
+                    common_suffix = merged_groups[0].slice(1);
+                }
+                else {
+                    contents = merged_groups;
+                    common_suffix = [];
                 }
             }
         }
+        else {
+            const re_merge_data = find_common_merge(contents, { prune_not_finishing });
+            if (re_merge_data) {
+                contents = re_merge_data.asts;
+                common_suffix = re_merge_data.common_suffix;
+            }
+        }
+
+
 
         ast[ast.length - 1].contents = contents; // Update parent block contents
         for (const op of common_suffix) {
@@ -1194,6 +1207,8 @@ export function assemble_flow(graph: FlowGraph,
 }
 
 export function compile(graph: FlowGraph): CompiledFlowGraph[] {
+    graph = lift_common_ops(graph);
+
     const source_signals = get_source_signals(graph);
     const filters: BlockTree[][] = [];
     for (const signal_id of source_signals) {
