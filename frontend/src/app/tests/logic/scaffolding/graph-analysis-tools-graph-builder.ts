@@ -375,7 +375,9 @@ export class GraphBuilder {
         for (const branch of branches) {
             out_index++;
 
-            this.establish_connection([ref, out_index], [branch.id, 0]);
+            if (branch) { // Represent null as unused output port
+                this.establish_connection([ref, out_index], [branch.id, 0]);
+            }
         }
 
         return ref;

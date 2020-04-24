@@ -599,7 +599,10 @@ function find_common_merge(asts: SteppedBlockTree[][], options: { prune_not_fini
     }
 }
 
-function find_common_merge_groups_ast(asts: SteppedBlockTree[][], options: { prune_not_finishing: boolean }): SteppedBlockTree[][] {
+function find_common_merge_groups_ast(asts: SteppedBlockTree[][],
+                                      options: { prune_not_finishing: boolean, remove_empty: boolean }
+                                     ): SteppedBlockTree[][] {
+
     const findings: { [key: string]: [number, number][]} = {};
     const common_blocks: {[key:string]: [number[], number]} = {};
     const grouped: {[key: string]: boolean} = {};
@@ -610,6 +613,14 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][], options: { pru
 
     for (let idx = 0; idx < asts.length; idx++) {
         const ast = asts[idx];
+
+        // Remove empty ASTs if so requested (used on Fork() blocks).
+        if ((ast.length === 0) && options.remove_empty) {
+            asts.splice(idx, 1);
+            idx--;
+            continue;
+        }
+
         const found_blocks = {};
 
         for (let op_idx = 0; op_idx < ast.length; op_idx++) {
@@ -805,7 +816,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
         if (source_node.data.type === AtomicFlowBlock.GetBlockType() &&
             (source_node.data as AtomicFlowBlockData).value.options.block_function === FORK_OPERATION) {
 
-            const merged_groups = find_common_merge_groups_ast(contents, { prune_not_finishing: false });
+            const merged_groups = find_common_merge_groups_ast(contents, { prune_not_finishing: false, remove_empty: true });
             if (merged_groups) {
                 if (merged_groups.length === 1){
                     // There's a top level fork, just replace it
