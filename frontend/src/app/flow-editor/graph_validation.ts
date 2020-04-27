@@ -114,12 +114,24 @@ function validate_that_all_paths_have_fork(graph: FlowGraph,
                                            join_bottom_id: string,
                                            conn_index: {[key: string]:FlowGraphEdge[]}) {
 
-    function try_find_upwards_without_fork(bottom_id: string, depth: number, reached: {[key: string]: boolean}): string {
+    function try_find_upwards_without_fork(bottom_id: string, depth: number, reached: {[key: string]: boolean},
+                                           acc: { control_if: string[]  }): string {
         const block = graph.nodes[bottom_id];
+        let control_if_acc = acc.control_if;
+
         if (block.data.type === AtomicFlowBlock.GetBlockType()) {
             const a_block = block.data as AtomicFlowBlockData;
             if (a_block.value.options.block_function === "op_fork_execution") {
                 return null; // This path is not problematic
+            }
+            else if (a_block.value.options.block_function === "control_if_else") {
+                if (control_if_acc) {
+                    control_if_acc.push(bottom_id);
+                }
+            }
+            else if (a_block.value.options.block_function === "trigger_when_first_completed") {
+                // This disables the problem related to the control_if accumulator
+                control_if_acc = null;
             }
         }
 
@@ -138,7 +150,7 @@ function validate_that_all_paths_have_fork(graph: FlowGraph,
 
             const col_reached = Object.assign({}, reached);
             try {
-                const source = try_find_upwards_without_fork(conn.from.id, depth + 1, col_reached);
+                const source = try_find_upwards_without_fork(conn.from.id, depth + 1, col_reached, { control_if: control_if_acc });
                 if (source) {
                     return source;
                 }
@@ -168,14 +180,27 @@ function validate_that_all_paths_have_fork(graph: FlowGraph,
         return null;
     }
 
+    const known_if_blocks = {};
 
     for (const conn of conn_index[join_bottom_id] ) {
         const reached = {};
         reached[conn.to.id] = true;
-        const source = try_find_upwards_without_fork(conn.from.id, 1, reached);
+
+        const acc = { control_if: [] };
+        const source = try_find_upwards_without_fork(conn.from.id, 1, reached, acc);
         if (source) {
             throw new Error(`ValidationError: Block (id:${source}) can get to Join (id:${join_bottom_id}) with no fork.`
                             + ' Joins can only be done between flows that have previously forked.');
+        }
+
+        // Check that no two connections lead to the same IF
+        for (const block of acc.control_if) {
+            if (known_if_blocks[block]) {
+                throw new Error(`ValidationError: A single conditional block (id:${block}) has two connections to a fork join block.`
+                    + ' From an IF block only one connection can be established to the Join block.'
+                    + ' Consider merging the conditional paths using a `trigger_when_first_completed` block.');
+            }
+            known_if_blocks[block] = true;
         }
     }
 }
