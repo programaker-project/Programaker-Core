@@ -1,7 +1,10 @@
 import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
 import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { get_unreachable } from './graph_analysis';
-import { index_connections, reverse_index_connections } from './graph_utils';
+import { index_connections, reverse_index_connections, EdgeIndex } from './graph_utils';
+import { find_downstream } from './graph_transformations';
+
+const LOOP_FOUND = '__loop_found__';
 
 function get_edges_for_nodes(graph: FlowGraph, nodes: {[key:string]: FlowGraphNode }): FlowGraphEdge[] {
     const edges: FlowGraphEdge[] = [];
@@ -220,6 +223,45 @@ function validate_joins_only_after_forks(graph: FlowGraph) {
     }
 }
 
+function validate_no_loops_around_block(graph: FlowGraph, block_id: string, conn_index: EdgeIndex) {
+    // Look for the block_id starting from each connection
+    for (const conn of conn_index[block_id]) {
+        find_downstream(graph, conn.to.id, conn_index, (node_id: string, _node: FlowGraphNode) => {
+            if (node_id === block_id) {
+                throw LOOP_FOUND;
+            }
+
+            return 'continue';
+        });
+    }
+}
+
+function validate_jumps_not_out_of_forks(graph: FlowGraph) {
+    const stepped_graph = get_stepped_section(graph);
+    const connections_index = index_connections(stepped_graph);
+    for (const block_id of Object.keys(stepped_graph.nodes)) {
+        const block = stepped_graph.nodes[block_id];
+
+        if (block.data.type === AtomicFlowBlock.GetBlockType()) {
+            const a_block = block.data as AtomicFlowBlockData;
+            if (a_block.value.options.block_function === "op_fork_execution") {
+                try {
+                    validate_no_loops_around_block(stepped_graph, block_id, connections_index);
+                }
+                catch (err) {
+                    if (err === LOOP_FOUND) {
+                        throw new Error('ValidationError: Loop around Fork blocks not allowed.'
+                                        + ` Found around block (id:${block_id})`)
+                    }
+                    else {
+                        throw err;
+                    }
+                }
+            }
+        }
+    }
+}
+
 export function validate(graph: FlowGraph) {
     // Reject loops in streaming section
     validate_no_loops_in_streaming_section(graph);
@@ -228,6 +270,7 @@ export function validate(graph: FlowGraph) {
         throw new Error(`ValidationError: Unreachable blocks (${unreachable})`);
     }
     validate_joins_only_after_forks(graph);
+    validate_jumps_not_out_of_forks(graph);
 
     return true;
 }

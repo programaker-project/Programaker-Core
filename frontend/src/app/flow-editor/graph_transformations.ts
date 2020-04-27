@@ -62,9 +62,9 @@ function get_paths_between(_graph: FlowGraph,
     return results;
 }
 
-function find_downstream(graph: FlowGraph, source_id: string,
-                         conn_index: EdgeIndex,
-                         controller: (node_id: string, node: FlowGraphNode) => FindCommand): string[] {
+export function find_downstream(graph: FlowGraph, source_id: string,
+                                conn_index: EdgeIndex,
+                                controller: (node_id: string, node: FlowGraphNode) => FindCommand): string[] {
     const reached = {};
     const results = {};
     reached[source_id] = true;
@@ -99,9 +99,9 @@ function find_downstream(graph: FlowGraph, source_id: string,
     return Object.keys(results);
 }
 
-function find_upstream(graph: FlowGraph, source_id: string,
-                       rev_conn_index: EdgeIndex,
-                       controller: (node_id: string, node: FlowGraphNode) => FindCommand): string[] {
+export function find_upstream(graph: FlowGraph, source_id: string,
+                              rev_conn_index: EdgeIndex,
+                              controller: (node_id: string, node: FlowGraphNode) => FindCommand): string[] {
     const reached = {};
     const results = {};
     reached[source_id] = true;
