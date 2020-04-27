@@ -24,21 +24,40 @@ export function gen_flow(): FlowGraph {
                                                         args: [ 2 ]
                                                       });
 
-    trigger.then_id(builder.add_if(branch1, branch2, {
-        cond: [ cond, 0 ]
-    }))
+    builder.add_fork(trigger, [branch1, branch2]);
 
     // Join branch 1 and 2
-    const joiner12 = builder.add_trigger('trigger_when_all_completed', {args: [[branch1, 'pulse'], [ branch2, 'pulse' ]]});
+    const joiner12 = builder.add_trigger('trigger_when_first_completed', {args: [[branch1, 'pulse'], [ branch2, 'pulse' ]]});
     joiner12.then(f => f.add_op('op_wait_seconds', { id: 'joiner12', args: [ 12 ] }));
 
     const graph = builder.build();
     return graph;
 }
 
-describe('Flow-21-2: If with fork closer (when any completed).', () => {
-    it('Validation should FAIL', async () => {
-        expect(() => validate(gen_flow()))
-            .toThrowError(/^ValidationError:.*can get to Join.*with no fork.*$/)
+describe('Flow-21-01: Fork with IF closer (when FIRST completed).', () => {
+    it('Validation should pass', async () => {
+        expect(validate(gen_flow()))
+            .toBeTruthy()
+    });
+
+    it('Should be able to compile', async () => {
+        const compiled_flow = compile(gen_flow());
+
+        const dsl_ast = dsl_to_ast(
+            `;PM-DSL ;; Entrypoint for mmm-mode
+            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (if (and (= (flow-last-value "source" 0)
+                        11)
+                     )
+                ((fork :exit-when-first-completed
+                  ((wait-seconds 1))
+                  ((wait-seconds 2)))
+                 (wait-seconds 12)))
+            `
+        );
+
+        const from_ast = [gen_compiled(dsl_ast)];
+
+        are_equivalent_ast(compiled_flow, from_ast);
     });
 });
