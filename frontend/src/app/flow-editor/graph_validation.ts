@@ -175,7 +175,7 @@ function validate_that_all_paths_have_fork(graph: FlowGraph,
         const source = try_find_upwards_without_fork(conn.from.id, 1, reached);
         if (source) {
             throw new Error(`ValidationError: Block (id:${source}) can get to Join (id:${join_bottom_id}) with no fork.`
-                            + 'Joins can only be done between flows that have previously forked.');
+                            + ' Joins can only be done between flows that have previously forked.');
         }
     }
 }
