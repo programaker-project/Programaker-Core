@@ -44,6 +44,6 @@ export function gen_flow(): FlowGraph {
 describe('Flow-21-04: Fork then IF, close merging ALL (fail: no if merge).', () => {
     it('Validation should FAIL', async () => {
         expect(() => validate(gen_flow()))
-            .toThrowError()
+            .toThrowError(/^ValidationError:.*single conditional block.*has two connections to a fork join block/i)
     });
 });

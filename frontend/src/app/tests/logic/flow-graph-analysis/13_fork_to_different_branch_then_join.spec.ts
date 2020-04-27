@@ -68,6 +68,6 @@ export function gen_flow(): FlowGraph {
 describe('Flow-13: Fork to different branch then join.', () => {
     it('Validation should FAIL', async () => {
         expect(() => validate(gen_flow()))
-            .toThrowError(/^ValidationError:.*Joins can only be done between flows that have previously forked.*/g)
+            .toThrowError(/^ValidationError:.*Joins can only be done between flows that have previously forked.*/i)
     });
 });

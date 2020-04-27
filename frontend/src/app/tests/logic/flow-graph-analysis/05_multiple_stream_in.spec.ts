@@ -89,7 +89,7 @@ describe('Flow-05: Multiple stream in.', () => {
         ]);
     });
 
-    describe('Intermediate step tests. ', async () => {
+    describe('Intermediate step tests.', async () => {
         it('Should recognize source signals', async () => {
             expect(get_source_signals(gen_flow())).toEqual([
                 "source1",

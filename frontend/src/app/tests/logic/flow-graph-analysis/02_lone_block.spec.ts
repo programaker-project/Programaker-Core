@@ -18,7 +18,7 @@ export function gen_flow(): FlowGraph {
 describe('Flow-02: Lone block.', () => {
     it('Validation should FAIL', async () => {
         expect(() => validate(gen_flow()))
-            .toThrowError(/^ValidationError:.*Unreachable blocks?.*/g)
+            .toThrowError(/^ValidationError:.*Unreachable blocks?.*/i)
     });
 
     it('Should find an unreachable block', async () => {

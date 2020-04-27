@@ -43,6 +43,6 @@ export function gen_flow(): FlowGraph {
 describe('Flow-21-10: IF then Fork, close merging ALL (wrong form).', () => {
     it('Validation should FAIL', async () => {
         expect(() => validate(gen_flow()))
-            .toThrowError(/^ValidationError:.*can get to Join.*with no fork.*$/)
+            .toThrowError(/^ValidationError:.*can get to Join.*with no fork.*$/i)
     });
 });

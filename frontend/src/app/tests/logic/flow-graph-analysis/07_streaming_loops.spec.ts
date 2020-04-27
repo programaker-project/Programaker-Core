@@ -28,6 +28,6 @@ export function gen_flow(): FlowGraph {
 describe('Flow-07: Streaming loops.', () => {
     it('Validation should FAIL', async () => {
         expect(() => validate(gen_flow()))
-            .toThrowError(/ValidationError:.*loops? in streaming section.*/i);
+            .toThrowError(/^ValidationError:.*loops? in streaming section.*/i);
     });
 });

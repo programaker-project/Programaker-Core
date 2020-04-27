@@ -34,6 +34,6 @@ export function gen_flow(): FlowGraph {
 describe('Flow-21-02: If with fork closer (when ALL completed).', () => {
     it('Validation should FAIL', async () => {
         expect(() => validate(gen_flow()))
-            .toThrowError(/^ValidationError:.*can get to Join.*with no fork.*$/)
+            .toThrowError(/^ValidationError:.*can get to Join.*with no fork.*/i)
     });
 });
