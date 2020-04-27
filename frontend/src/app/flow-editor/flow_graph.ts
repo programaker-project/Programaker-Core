@@ -63,7 +63,7 @@ export type CompiledBlockType = "wait_for_monitor"
     | "jump_point" // Not found on executable stage, will be removed in link phase
     | "op_fork_execution"
     | "trigger_when_all_completed"
-    | "trigger_when_any_completed"
+    | "trigger_when_first_completed"
 
     | "flow_list_length" | "op_delete_list_entry" | "op_add_to_list"
     ;

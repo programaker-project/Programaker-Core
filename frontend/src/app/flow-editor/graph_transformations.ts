@@ -171,7 +171,7 @@ function find_forks(graph: FlowGraph): string[] {
 function find_downstream_joins(graph: FlowGraph, source_id: string, conn_index: EdgeIndex): string[] {
     return find_downstream_atomic(graph, source_id, conn_index,
                                   (_node_id: string, node: AtomicFlowBlockData) => {
-                                      if (node.value.options.block_function === 'trigger_when_any_completed'
+                                      if (node.value.options.block_function === 'trigger_when_first_completed'
                                           || node.value.options.block_function === 'trigger_when_all_completed') {
                                           return 'capture';
                                       }

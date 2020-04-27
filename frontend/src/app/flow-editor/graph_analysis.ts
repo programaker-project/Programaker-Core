@@ -8,6 +8,7 @@ import { lift_common_ops } from './graph_transformations';
 import { index_connections, EdgeIndex } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
+import { AssertionError } from 'assert';
 
 
 function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions} {
@@ -892,11 +893,21 @@ export function get_stepped_ast(graph: FlowGraph, source_id: string): SteppedBlo
 }
 
 function compile_contents(graph: FlowGraph, contents: SteppedBlockTree[]): CompiledBlock[] {
-    return (contents
-        .map(v =>
-            compile_block(graph, v.block_id, v.arguments, v.contents as SteppedBlockTree[], { inside_args: false, orig_tree: v })
-            )
-        .filter(v => v != null));
+    let latest = null;
+    const results = [];
+
+    for (const block of contents) {
+        const compiled = compile_block(graph, block.block_id, block.arguments, block.contents as SteppedBlockTree[],
+                                       { inside_args: false, orig_tree: block },
+                                       { before: latest }
+                                      )
+        if (compiled !== null) {
+            results.push(compiled);
+            latest = compiled;
+        }
+    }
+
+    return results;
 }
 
 function is_signal_block(_graph: FlowGraph, _arg: BlockTreeArgument, data: AtomicFlowBlockData): boolean {
@@ -937,7 +948,10 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument): CompiledBlockArg
         else{
             return {
                 type: 'block',
-                value: [ compile_block(graph, arg.tree.block_id, arg.tree.arguments, [], { inside_args: true, orig_tree: null }) ]
+                value: [ compile_block(graph, arg.tree.block_id, arg.tree.arguments, [],
+                                       { inside_args: true, orig_tree: null },
+                                       { before: null },
+                                      ) ]
             }
         }
     }
@@ -966,7 +980,8 @@ function compile_block(graph: FlowGraph,
                        block_id: string,
                        args: BlockTreeArgument[],
                        contents: SteppedBlockTree[][] | SteppedBlockTree[],
-                       flags: { inside_args: boolean, orig_tree: SteppedBlockTree }): CompiledBlock {
+                       flags: { inside_args: boolean, orig_tree: SteppedBlockTree },
+                       relatives: { before: CompiledBlock }): CompiledBlock {
 
     if (flags.orig_tree && (flags.orig_tree as VirtualSteppedBlock).type) {
         const vblock = flags.orig_tree as VirtualSteppedBlock;
@@ -1062,9 +1077,41 @@ function compile_block(graph: FlowGraph,
                 }],
             }];
         }
-        else if (block_fun === 'trigger_when_any_completed') {
+        else if (block_fun === 'trigger_when_first_completed') {
             // Natural exit of an IF
-            // TODO: Check that it happens after a control_if_else
+            if (relatives.before && relatives.before.type === 'control_if_else') {
+                return null; // Nothing to add
+            }
+            else if (relatives.before && relatives.before.type === FORK_OPERATION) {
+                if (!relatives.before.args) {
+                    relatives.before.args = [{
+                        type: 'constant',
+                        value: 'exit-when-first-completed'
+                    }];
+                }
+                else if (Array.isArray(relatives.before.args)) {
+                    relatives.before.args.push({
+                        type: 'constant',
+                        value: 'exit-when-first-completed'
+                    });
+                }
+                else {
+                    throw new Error(`AssertionError: '${FORK_OPERATION}' args must be an array`);
+                }
+                return null;
+            }
+            else {
+                throw new Error("Expected block 'trigger_when_first_completed' 'control_if_else' or 'op_fork_execution'");
+            }
+        }
+        else if (block_fun === 'trigger_when_all_completed') {
+            // Natural exit of a Fork
+            if (relatives.before && relatives.before.type === FORK_OPERATION ) {
+                // Nothing to add
+            }
+            else {
+                throw new Error("Expected block 'trigger_when_all_completed' after 'op_fork_execution'");
+            }
             return null;
         }
         else if (BASE_TOOLBOX_BLOCKS[block_fun]) {
@@ -1184,7 +1231,9 @@ export function assemble_flow(graph: FlowGraph,
                               filter: BlockTree,
                               stepped_ast: SteppedBlockTree[]): CompiledFlowGraph {
 
-    const signal_ast = compile_block(graph, signal_id, [], [], { inside_args: false, orig_tree: null });
+    const signal_ast = compile_block(graph, signal_id, [], [],
+                                     { inside_args: false, orig_tree: null },
+                                     { before: null });
     const filter_node = graph.nodes[filter.block_id];
     let compiled_graph = null;
 
@@ -1195,14 +1244,18 @@ export function assemble_flow(graph: FlowGraph,
                                                                   b.block_id,
                                                                   b.arguments,
                                                                   b.contents as SteppedBlockTree[],
-                                                                  { inside_args: false, orig_tree: null }));
+                                                                  { inside_args: false, orig_tree: null },
+                                                                  { before: signal_ast }
+                                                                 ));
             compiled_graph = [
                 signal_ast,
             ].concat(filter_ast);
 }
         else {
             const filter_ast = compile_block(graph, filter.block_id, filter.arguments, [ stepped_ast, [] ],
-                                             { inside_args: false, orig_tree: null })
+                                             { inside_args: false, orig_tree: null },
+                                             { before: signal_ast }
+                                            )
 
             compiled_graph = [
                 signal_ast,

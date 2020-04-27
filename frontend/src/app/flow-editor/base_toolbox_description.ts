@@ -227,8 +227,8 @@ export const BaseToolboxDescription: ToolboxDescription = [
             },
             {
                 icon: PLATFORM_ICON,
-                message: 'When all completed',
-                block_function: 'trigger_when_any_completed',
+                message: 'When first completed',
+                block_function: 'trigger_when_first_completed',
                 type: 'trigger',
                 inputs: [
                     {

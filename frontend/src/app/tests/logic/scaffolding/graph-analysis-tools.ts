@@ -42,17 +42,6 @@ function convert_ast(ast: SimpleArrayAstOperation[]): CompiledBlock[] {
     for (let idx = 0; idx < ast.length; idx++) {
         const op = convert_operation(ast[idx]);
         result.push(op);
-
-        // Add a 'trigger_when_all_completed' after op_fork_exection if it's not
-        // the last block
-        if ((op.type === 'op_fork_execution') && ((idx + 1) < ast.length)) {
-            const ref = uuidv4();
-
-            result.push({
-                type: 'trigger_when_all_completed',
-                args: [],
-            })
-        }
     }
 
     return result;
@@ -162,7 +151,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "flow_last_value":
         case "jump_to_position":
         case "jump_to_block":
-        case "trigger_when_any_completed":
+        case "trigger_when_first_completed":
             break;
 
             // Cannonicalize args and contents, but don't sort
