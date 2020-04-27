@@ -199,6 +199,12 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "op_fork_execution":
             op.contents = op.contents.map(content => canonicalize_content(content));
             op.contents = op.contents.sort((a, b) => stable_stringify(a).localeCompare(stable_stringify(b)));
+
+            // Remove redundant parameters
+            if (op.args && Array.isArray(op.args)) {
+                op.args = op.args.filter(a => !(a.type === 'constant' && a.value === 'exit-when-all-completed'))
+            }
+
             break;
 
         default:

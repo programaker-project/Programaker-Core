@@ -31,8 +31,6 @@ export function gen_flow(): FlowGraph {
     builder.add_fork(if_true, [branch3, branch4]);
 
     // Join branch 1 and 2
-
-
     const if_joiner = builder.add_trigger('trigger_when_first_completed', {args: [[branch3, 'pulse'], [branch4, 'pulse'], [ if_false, 'pulse']]});
     if_joiner.then(f => f.add_op('op_wait_seconds', { args: [ 9 ] }));
 

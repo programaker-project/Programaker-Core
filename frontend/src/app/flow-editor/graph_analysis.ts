@@ -976,6 +976,32 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument): CompiledBlockArg
     }
 }
 
+function get_latest_blocks_on_each_ast_level(block: CompiledBlock): CompiledBlock[] {
+    const results = [];
+    const levels = [block.contents];
+
+    while (levels.length > 0) {
+        const next = levels.pop();
+        if (next.length === 0) {
+            continue;
+        }
+
+        if ((next[0] as CompiledBlock).type) {
+            // Are compiled blocks, so take the last and add to level
+            const latest = next[next.length - 1];
+            results.push(latest);
+            levels.push(latest.contents)
+        }
+        else {
+            for (const content of next){
+                levels.push(content.contents);
+            }
+        }
+    }
+
+    return results;
+}
+
 function compile_block(graph: FlowGraph,
                        block_id: string,
                        args: BlockTreeArgument[],
@@ -1079,35 +1105,69 @@ function compile_block(graph: FlowGraph,
         }
         else if (block_fun === 'trigger_when_first_completed') {
             // Natural exit of an IF
-            if (relatives.before && relatives.before.type === 'control_if_else') {
-                return null; // Nothing to add
-            }
-            else if (relatives.before && relatives.before.type === FORK_OPERATION) {
-                if (!relatives.before.args) {
-                    relatives.before.args = [{
-                        type: 'constant',
-                        value: 'exit-when-first-completed'
-                    }];
-                }
-                else if (Array.isArray(relatives.before.args)) {
-                    relatives.before.args.push({
-                        type: 'constant',
-                        value: 'exit-when-first-completed'
-                    });
-                }
-                else {
-                    throw new Error(`AssertionError: '${FORK_OPERATION}' args must be an array`);
-                }
-                return null;
-            }
-            else {
+            if (relatives.before && ['control_if_else', FORK_OPERATION].indexOf(relatives.before.type) < 0 ) {
                 throw new Error("Expected block 'trigger_when_first_completed' 'control_if_else' or 'op_fork_execution'");
             }
+
+            if (relatives.before) {
+                const all_before = get_latest_blocks_on_each_ast_level(relatives.before).concat([relatives.before]);
+
+                for (const block of all_before) {
+                    if (block.type === FORK_OPERATION) {
+                        if (!block.args) {
+                            block.args = [{
+                                type: 'constant',
+                                value: 'exit-when-first-completed'
+                            }];
+                        }
+                        else if (Array.isArray(block.args)) {
+                            if (block.args
+                                .filter(a => a.type === 'constant'
+                                    && (a.value === 'exit-when-first-completed'
+                                        || a.value === 'exit-when-all-completed'))
+                                .length === 0) {
+
+                                block.args.push({
+                                    type: 'constant',
+                                    value: 'exit-when-first-completed'
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
         else if (block_fun === 'trigger_when_all_completed') {
             // Natural exit of a Fork
             if (relatives.before && relatives.before.type === FORK_OPERATION ) {
                 // Nothing to add
+                const all_before = get_latest_blocks_on_each_ast_level(relatives.before).concat([relatives.before]);
+
+                for (const block of all_before) {
+                    if (block.type === FORK_OPERATION) {
+                        if (!block.args) {
+                            block.args = [{
+                                type: 'constant',
+                                value: 'exit-when-all-completed'
+                            }];
+                        }
+                        else if (Array.isArray(block.args)) {
+                            if (block.args
+                                .filter(a => a.type === 'constant'
+                                    && (a.value === 'exit-when-first-completed'
+                                        || a.value === 'exit-when-all-completed'))
+                                .length === 0) {
+
+                                block.args.push({
+                                    type: 'constant',
+                                    value: 'exit-when-all-completed'
+                                });
+                            }
+                        }
+                    }
+                }
             }
             else {
                 throw new Error("Expected block 'trigger_when_all_completed' after 'op_fork_execution'");
