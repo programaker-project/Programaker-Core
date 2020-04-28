@@ -10,10 +10,10 @@ export function run(): Promise<any[]> {
     let done_count = 0;
     const promises = candidates.map((file: string) => {
         return new Promise(async (resolve, reject) => {
-            const mod_name = file.substr(0, file.length - 3);
-            const mod = require('./' + mod_name); // Remove '.ts'
-            if (mod.gen_flow) {
-                try {
+            try {
+                const mod_name = file.substr(0, file.length - 3);
+                const mod = require('./' + mod_name); // Remove '.ts'
+                if (mod.gen_flow) {
                     await util.promisify(fs.writeFile)(`${__dirname}/${file}.dot`, convert_to_graphviz(mod.gen_flow()));
                     spawn("dot", ["-Tpng", `${__dirname}/${file}.dot`, '-o', `${__dirname}/${file}.png`]);
 
@@ -27,14 +27,14 @@ export function run(): Promise<any[]> {
                     process.stdout.write(`[${done_count}/${candidates.length}] ${file}\n`)
                     resolve(file);
                 }
-                catch (err) {
-                    process.stdout.write(file + ': ' + err.toString() + '\n');
-                    reject(err);
+                else {
+                    process.stdout.write('No flow found\n');
+                    resolve(null);
                 }
             }
-            else {
-                process.stdout.write('No flow found\n');
-                resolve(null);
+            catch (err) {
+                process.stdout.write(file + ': ' + err.toString() + '\n');
+                reject(err);
             }
         });
     });
