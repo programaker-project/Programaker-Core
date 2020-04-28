@@ -924,7 +924,8 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument): CompiledBlockArg
     if (block.data.type === AtomicFlowBlock.GetBlockType()){
         const data = block.data as AtomicFlowBlockData;
 
-        if (is_signal_block(graph, arg, data)) {
+        /// TODO: Replace is_signal_block with "is_past_block"
+        if ((data.value.options.type !== 'getter') || is_signal_block(graph, arg, data)) {
             return {
                 type: 'block',
                 value: [
