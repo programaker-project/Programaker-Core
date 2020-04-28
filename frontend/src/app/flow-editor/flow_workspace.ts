@@ -5,7 +5,7 @@ import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, Outpu
 import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
 import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
-import { AtomicFlowBlock } from './atomic_flow_block';
+import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -89,7 +89,7 @@ export class FlowWorkspace implements BlockManager {
             let created_block = null;
             switch (block.data.type) {
                 case AtomicFlowBlock.GetBlockType():
-                    created_block = AtomicFlowBlock.Deserialize(block.data, this);
+                    created_block = AtomicFlowBlock.Deserialize(block.data as AtomicFlowBlockData, this);
                     break;
 
                 case DirectValue.GetBlockType():

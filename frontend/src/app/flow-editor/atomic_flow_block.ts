@@ -1,20 +1,35 @@
-import { FlowBlock, FlowBlockOptions,
-         Area2D, Direction2D, Position2D,
-    InputPortDefinition, OutputPortDefinition, FlowBlockData,
-       } from './flow_block';
 import { BlockManager } from './block_manager';
+import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData } from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
-const BLOCK_TYPE = 'simple_flow_block';
+
+export type AtomicFlowBlockType = 'simple_flow_block';
+export const BLOCK_TYPE = 'simple_flow_block';
 
 const INPUT_PORT_REAL_SIZE = 10;
 const OUTPUT_PORT_REAL_SIZE = 10;
 const CONNECTOR_SIDE_SIZE = 15;
 const ICON_PADDING = '1ex';
 
+
+export type AtomicFlowBlockOperationType = 'operation' | 'getter' | 'trigger';
+
 export interface AtomicFlowBlockOptions extends FlowBlockOptions {
-    type: 'operation' | 'getter' | 'trigger' | 'streaming';
+    type: AtomicFlowBlockOperationType;
     icon?: string,
+    block_function: string,
+}
+
+export interface AtomicFlowBlockData extends FlowBlockData {
+    type: AtomicFlowBlockType,
+    value: {
+        options: AtomicFlowBlockOptions,
+
+        // These counts are needed to keep the consistency when linking
+        // inline arguments to it's ports
+        synthetic_input_count: number,
+        synthetic_output_count: number,
+    },
 }
 
 type MessageChunk = ( { type: 'const', val: string }
@@ -149,7 +164,7 @@ export class AtomicFlowBlock implements FlowBlock {
             this.synthetic_output_count = synthetic_output_count;
         }
 
-        this.options = JSON.parse(JSON.stringify(options));
+        [this.options, this.synthetic_input_count, this.synthetic_output_count ] = AtomicFlowBlock.add_synth_io(this.options);
         this.options.on_io_selected = options.on_io_selected;
         this.options.on_dropdown_extended = options.on_dropdown_extended;
         this.options.on_inputs_changed = options.on_inputs_changed;
@@ -158,30 +173,6 @@ export class AtomicFlowBlock implements FlowBlock {
         this.output_groups = [];
         this.input_count = [];
 
-        // Update inputs
-        if (!this.options.inputs) {
-            this.options.inputs = [];
-        }
-
-        if ((this.options.type !== 'trigger') && (this.options.type !== 'streaming')) {
-            let has_pulse_input = false;
-            for (const input of this.options.inputs) {
-                if (input.type === 'pulse') {
-                    has_pulse_input = true;
-                    break;
-                }
-            }
-
-            if (!has_pulse_input) {
-                this.options.inputs = ([ { type: "pulse" } ] as InputPortDefinition[]).concat(this.options.inputs);
-                this.synthetic_input_count++;
-            }
-        }
-
-        // Update outputs
-        if (!this.options.outputs) {
-            this.options.outputs = [];
-        }
 
         this.chunks = parse_chunks(this.options.message);
         for (const chunk of this.chunks) {
@@ -193,10 +184,47 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         this.chunkBoxes = [];
+    }
 
-        if (this.options.type !== 'streaming') {
+    public dispose() {
+        this.canvas.removeChild(this.group);
+    }
+
+    public static add_synth_io(options: AtomicFlowBlockOptions): [AtomicFlowBlockOptions, number, number] {
+        let synthetic_input_count = 0;
+        let synthetic_output_count = 0;
+
+        options = JSON.parse(JSON.stringify(options));
+
+        // Update inputs
+        if (!options.inputs) {
+            options.inputs = [];
+        }
+
+        // Update outputs
+        if (!options.outputs) {
+            options.outputs = [];
+        }
+
+        if (AtomicFlowBlock.required_synth_inputs(options) > 0) {
+            options.inputs = ([ { type: "pulse" } ] as InputPortDefinition[]).concat(options.inputs);
+            synthetic_input_count++;
+        }
+
+        if (AtomicFlowBlock.required_synth_outputs(options) > 0) {
+            options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(options.outputs);
+            synthetic_output_count++;
+        }
+
+        return [options, synthetic_input_count, synthetic_output_count];
+    }
+
+    public static required_synth_outputs(options: AtomicFlowBlockOptions): number {
+        let num_outputs = 0;
+
+        if (options.type !== 'getter') {
             let has_pulse_output = false;
-            for (const output of this.options.outputs) {
+            for (const output of options.outputs || []) {
                 if (output.type === 'pulse') {
                     has_pulse_output = true;
                     break;
@@ -204,14 +232,35 @@ export class AtomicFlowBlock implements FlowBlock {
             }
 
             if (!has_pulse_output) {
-                this.options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(this.options.outputs);
-                this.synthetic_output_count++;
+                num_outputs = 1;
             }
         }
+
+        return num_outputs;
     }
 
-    public dispose() {
-        this.canvas.removeChild(this.group);
+    public static required_synth_inputs(options: AtomicFlowBlockOptions): number {
+        let num_inputs = 0;
+
+        if (['trigger', 'getter'].indexOf(options.type) < 0) {
+            let has_pulse_input = false;
+            for (const input of options.inputs || []) {
+                if (!input) {
+                    throw new Error(`Empty input on ${options.inputs}`);
+                }
+
+                if (input.type === 'pulse') {
+                    has_pulse_input = true;
+                    break;
+                }
+            }
+
+            if (!has_pulse_input) {
+                num_inputs++;
+            }
+        }
+
+        return num_inputs;
     }
 
     // Render elements
@@ -242,21 +291,19 @@ export class AtomicFlowBlock implements FlowBlock {
         return BLOCK_TYPE;
     }
 
-    public serialize(): FlowBlockData {
+    public serialize(): AtomicFlowBlockData {
         return {
             type: BLOCK_TYPE,
             value: {
                 options: JSON.parse(JSON.stringify(this.options)),
 
-                // These counts are needed to keep the consistency when linking
-                // inline arguments to it's ports
                 synthetic_input_count: this.synthetic_input_count,
                 synthetic_output_count: this.synthetic_output_count,
             },
         }
     }
 
-    static Deserialize(data: FlowBlockData, manager: BlockManager): FlowBlock {
+    public static Deserialize(data: AtomicFlowBlockData, manager: BlockManager): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -280,7 +327,7 @@ export class AtomicFlowBlock implements FlowBlock {
         return this.node;
     }
 
-    getBodyArea(): Area2D {
+    public getBodyArea(): Area2D {
         const rect = (this.group as any).getBBox();
         return {
             x: this.position.x,
@@ -646,8 +693,6 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         if (this.group) { return this.group }
-
-        const min_height = 25;
 
         const y_padding = 5; // px
         const input_initial_x_position = 10; // px

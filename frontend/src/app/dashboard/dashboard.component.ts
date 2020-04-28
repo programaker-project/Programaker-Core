@@ -140,7 +140,7 @@ export class NewDashboardComponent {
     }
 
     async openProgram(program: ProgramMetadata): Promise<void> {
-        if (program.type === 'flow') {
+        if (program.type === 'flow_program') {
             this.router.navigate(['/programs/' + program.id + '/flow']);
         }
         else if ((!program.type) || (program.type === 'scratch_program')) {

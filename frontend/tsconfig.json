@@ -2,7 +2,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "downlevelIteration": true,
-    "module": "esnext",
+    "module": "commonjs",
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "declaration": false,
@@ -10,8 +10,9 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "lib": [
-      "es2016",
-      "dom",
+        "es2016",
+        "dom"
     ],
     "target": "es2015"
+  }
 }

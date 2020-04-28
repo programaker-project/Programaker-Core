@@ -49,6 +49,8 @@ export class AppComponent {
                     console.error("Session info data stopped")
                 }
             });
+        }).catch(err => {
+            console.warn('Error monitoring session:', err);
         });
 
         this.bridgeService.listUserBridges().then((data) => {
@@ -65,6 +67,8 @@ export class AppComponent {
                     console.error("Bridge count data stopped")
                 }
             });
+        }).catch(err => {
+            console.warn('Error listing bridges:', err);
         });
 
         window.onresize = this.updateVerticalSpaces;
