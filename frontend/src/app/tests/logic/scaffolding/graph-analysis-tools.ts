@@ -1,6 +1,5 @@
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgCallServiceDict, CompiledBlockArgList, CompiledFlowGraph, ContentBlock } from '../../../flow-editor/flow_graph';
 import { _link_graph } from '../../../flow-editor/graph_analysis';
-import { uuidv4 } from '../../../flow-editor/utils';
 const stable_stringify = require('fast-json-stable-stringify');
 
 type _AndOp = ['operator_and', SimpleArrayAstArgument, SimpleArrayAstArgument];
@@ -169,6 +168,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "flow_get_thread_id":
         case "op_delete_list_entry":
         case "op_add_to_list":
+        case "op_preload_getter":
             if (op.args) {
                 op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
             }

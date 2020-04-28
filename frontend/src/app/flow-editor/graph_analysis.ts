@@ -4,12 +4,10 @@ import { BASE_TOOLBOX_SOURCE_SIGNALS } from './definitions';
 import { DirectValue, DirectValueFlowBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
-import { lift_common_ops } from './graph_transformations';
-import { index_connections, EdgeIndex } from './graph_utils';
+import { extract_internally_reused_argument, lift_common_ops, scan_upstream, is_pulse_output } from './graph_transformations';
+import { EdgeIndex, index_connections, reverse_index_connections } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
-import { AssertionError } from 'assert';
-
 
 function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions} {
     const result: {[key: string]: AtomicFlowBlockOptions} = {};
@@ -273,31 +271,6 @@ function has_pulse_input(block: FlowGraphNode): boolean {
     }
     else if (block.data.type === DirectValue.GetBlockType()){
         return false;
-    }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
-        return false;
-    }
-    else {
-        throw new Error("Unknown block type: " + block.data.type)
-    }
-}
-
-function is_pulse_output(block: FlowGraphNode, index: number): boolean {
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
-        const data = block.data as AtomicFlowBlockData;
-
-        const outputs = data.value.options.outputs;
-        if (!outputs[index]) {
-            throw new Error(`IndexError: Index (${index}) not found on outputs (${JSON.stringify(outputs)})`)
-        }
-
-        // If it has no pulse inputs its a source block
-        return outputs[index].type === 'pulse';
-    }
-    else if (block.data.type === DirectValue.GetBlockType()){
-        const data = block.data as DirectValueFlowBlockData;
-
-        return data.value.type === 'pulse';
     }
     else if (block.data.type === EnumDirectValue.GetBlockType()){
         return false;
@@ -910,22 +883,67 @@ function compile_contents(graph: FlowGraph, contents: SteppedBlockTree[]): Compi
     return results;
 }
 
-function is_signal_block(_graph: FlowGraph, _arg: BlockTreeArgument, data: AtomicFlowBlockData): boolean {
-    if (data.value.options.block_function === 'flow_utc_time') {
-        return true;
+
+function already_used_in_past(graph: FlowGraph, arg_id: string,
+                              parent: string,
+                              reference_block: string): boolean {
+
+    // TODO: Don't re-index every time this function is called
+    const rev_conn_index = reverse_index_connections(graph);
+
+    let has_pulse_input = false;
+    const node = graph.nodes[reference_block];
+    if (node.data.type === AtomicFlowBlock.GetBlockType()) {
+        const ref_node = node.data as AtomicFlowBlockData;
+
+        if (ref_node.value.options.type === 'operation') {
+            has_pulse_input = true;
+        }
+        else if (ref_node.value.options.type === 'trigger') {
+            // Trigger have no pulse inputs, but consider the signals to be cached
+            // TODO: Don't find source blocks each time this function is called
+            const sources = get_source_signals(graph);
+            if (sources.indexOf(arg_id) >= 0) {
+                return true;
+            }
+        }
+    }
+
+    for (const conn of rev_conn_index[reference_block]) {
+        if (has_pulse_input && (!is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index))) {
+            // Skip first level non-pulse outputs if the reference block has any
+            // pulse input
+            continue;
+        }
+
+        const result = (scan_upstream(graph, conn.from.id, rev_conn_index,
+                                      (found_id: string, _, path: string[]) => {
+                                          if (found_id === arg_id) {
+                                              if (path[path.length - 2] === parent) {
+                                                  // Ignore this match and branch if it's just above the parent
+                                                  return 'stop';
+                                              }
+                                              return 'capture';
+                                          }
+                                          else {
+                                              return 'continue';
+                                          }
+                                      }));
+        if (result) {
+            return true;
+        }
     }
 
     return false;
 }
 
-function compile_arg(graph: FlowGraph, arg: BlockTreeArgument): CompiledBlockArg {
+function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, orig: string): CompiledBlockArg {
     const block = graph.nodes[arg.tree.block_id];
 
     if (block.data.type === AtomicFlowBlock.GetBlockType()){
         const data = block.data as AtomicFlowBlockData;
 
-        /// TODO: Replace is_signal_block with "is_past_block"
-        if ((data.value.options.type !== 'getter') || is_signal_block(graph, arg, data)) {
+        if ((data.value.options.type !== 'getter') || already_used_in_past(graph, arg.tree.block_id, parent, orig)) {
             return {
                 type: 'block',
                 value: [
@@ -951,7 +969,7 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument): CompiledBlockArg
                 type: 'block',
                 value: [ compile_block(graph, arg.tree.block_id, arg.tree.arguments, [],
                                        { inside_args: true, orig_tree: null },
-                                       { before: null },
+                                       { before: null, exec_orig: orig },
                                       ) ]
             }
         }
@@ -1008,7 +1026,7 @@ function compile_block(graph: FlowGraph,
                        args: BlockTreeArgument[],
                        contents: SteppedBlockTree[][] | SteppedBlockTree[],
                        flags: { inside_args: boolean, orig_tree: SteppedBlockTree },
-                       relatives: { before: CompiledBlock }): CompiledBlock {
+                       relatives: { before: CompiledBlock, exec_orig?: string }): CompiledBlock {
 
     if (flags.orig_tree && (flags.orig_tree as VirtualSteppedBlock).type) {
         const vblock = flags.orig_tree as VirtualSteppedBlock;
@@ -1067,7 +1085,9 @@ function compile_block(graph: FlowGraph,
         }
 
         let block_type = null;
-        let compiled_args: CompiledBlockArgs = args.map(v => compile_arg(graph, v));
+        let compiled_args: CompiledBlockArgs = args.map(v => compile_arg(graph, v,
+                                                                         block_id,
+                                                                         relatives.exec_orig ? relatives.exec_orig : block_id));
         const block_fun = data.value.options.block_function;
 
         if (block_fun === 'flow_utc_time') {
@@ -1333,6 +1353,7 @@ export function assemble_flow(graph: FlowGraph,
 
 export function compile(graph: FlowGraph): CompiledFlowGraph[] {
     graph = lift_common_ops(graph);
+    graph = extract_internally_reused_argument(graph);
 
     const source_signals = get_source_signals(graph);
     const filters: BlockTree[][] = [];

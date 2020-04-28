@@ -16,21 +16,23 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
     const source = builder.add_stream('flow_utc_time', {id: options.source_id, message: 'UTC time'});
     const trigger = builder.add_trigger('trigger_on_signal', {args: [[source, 0]]});
 
-    // Stepped section
-    const operation = builder.add_op('create_issue', { id: 'operation-with-value',
-                                                       namespace: 'gitlab',
-                                                       args: [ "Sample project", "Sample title" ]
-                                                     });
-    trigger.then(operation);
-    operation
-        .then(f => f.add_op('op_wait_seconds', { args: [ 1 ] }))
-        .then(f => f.add_op('op_log_value', { args: [[operation, 1]] }));
+    // Var
+    const xblock = builder.add_variable_getter_node('x', { id: 'x1' });
+    const xblock2 = builder.add_variable_getter_node('x', { id: 'x2' });
+
+    const addition1 = builder.add_op('flow_addition', { id: 'add1', args: [[xblock, 0], 1] });
+    const addition2 = builder.add_op('flow_addition', { id: 'add2', args: [[addition1, 0], [xblock, 0]] });
+    const log1 = builder.add_op('op_log_value', { id: 'log1', args: [[addition1, 0]] });
+    const log2 = builder.add_op('op_log_value', { id: 'log2', args: [[addition2, 0]] });
+    const log3 = builder.add_op('op_log_value', { id: 'log3', args: [[xblock2, 0]] });
+
+    trigger.then(log1).then(log2).then(log3);
 
     const graph = builder.build();
     return graph;
 }
 
-describe('Flow-24: Get output of operation block.', () => {
+describe('Flow-25-01: Defend against glitches.', () => {
     it('Validation should pass', async () => {
         expect(validate(gen_flow()))
             .toBeTruthy()
@@ -38,17 +40,14 @@ describe('Flow-24: Get output of operation block.', () => {
 
     it('Should be able to compile', async () => {
         const TIME_BLOCK = "ad97e5d1-c725-4cc6-826f-30057f239635";
-        const OP_BLOCK_ID = "operation-with-value";
 
         are_equivalent_ast(compile(gen_flow({ source_id: TIME_BLOCK })), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                  (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
-                 (call-service id: "gitlab"
-                                action: "create_issue"
-                                values: ("Sample project" "Sample title"))
-                 (wait-seconds 1)
-                 (log (flow-last-value "${OP_BLOCK_ID}" 1))
+                 (log (+ (get-var x) 1))
+                 (log (+ (flow-last-value "add1" 0) (flow-last-value "x1" 0)))
+                 (log (get-var x))
                 `))
         ]);
     });

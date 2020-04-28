@@ -9,6 +9,20 @@ interface Category {
 
 export type ToolboxDescription = Category[];
 
+export const OP_PRELOAD_BLOCK: AtomicFlowBlockOptions = {
+    icon: PLATFORM_ICON,
+    message: 'Preload getter',
+    block_function: 'op_preload_getter',
+    type: 'operation',
+    inputs: [
+        {
+            name: "getter",
+            type: "any",
+        },
+    ],
+    outputs: [],
+};
+
 export const BaseToolboxDescription: ToolboxDescription = [
     {
         id: 'control',
@@ -760,7 +774,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     },
                 ],
             },
-
+            OP_PRELOAD_BLOCK,
         ]
     }
 ];

@@ -17,6 +17,7 @@ export const OP_TRANSLATIONS = {
     'log': 'op_log_value',
     'wait-seconds': 'op_wait_seconds',
     'call-service': 'command_call_service',
+    'preload': 'op_preload_getter',
 
     // Variables
     'set-var': 'op_set_var_value',

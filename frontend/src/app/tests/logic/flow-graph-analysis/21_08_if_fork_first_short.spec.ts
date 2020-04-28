@@ -12,7 +12,7 @@ export function gen_flow(): FlowGraph {
 
     // Stream section
     const source = builder.add_stream('flow_utc_time', {id: 'source', message: 'UTC time'});
-    const cond = builder.add_stream('flow_equals', {args: [[source, 0], 11]});
+    const cond = builder.add_stream('flow_equals', {id: 'eq-check', args: [[source, 0], 11]});
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {args: [[cond, 0]]});
@@ -53,8 +53,7 @@ describe('Flow-21-08: IF then fork, close with IF merging (wait FIRST, short for
             (if (and (= (flow-last-value "source" 0)
                         11)
                      )
-                ((if (= (flow-last-value "source" 0)
-                        11)
+                ((if (flow-last-value "eq-check" 0)
                      ((wait-seconds 1)
                       (fork :exit-when-first-completed
                        ((wait-seconds 3))
