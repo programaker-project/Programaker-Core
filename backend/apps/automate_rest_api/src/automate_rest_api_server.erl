@@ -20,6 +20,9 @@ start_link() ->
                           {"/metrics", automate_rest_api_metrics, []}
                         , {"/api/v0/ping", automate_rest_api_ping, []}
 
+                          %% Administration
+                        , {"/api/v0/admin/stats", automate_rest_api_admin_stats_root, []}
+
                           %% Assets
                         , {"/api/v0/assets/icons/[...]", cowboy_static, {dir, automate_configuration:asset_directory("public/icons")}}
 

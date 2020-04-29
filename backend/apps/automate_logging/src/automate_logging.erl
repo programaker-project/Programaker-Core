@@ -10,6 +10,7 @@
         , log_call_to_bridge/5
         , log_program_error/1
         , log_platform/4
+        , log_platform/2
         , log_api/3
         ]).
 
@@ -98,8 +99,15 @@ log_program_error(LogEntry=#user_program_log_entry{ program_id=ProgramId }) ->
     automate_storage:log_program_error(LogEntry).
 
 -spec log_platform(atom(), _, _, _) -> ok.
+log_platform(warning, ErrorNS, Error, _StackTrace) ->
+    io:fwrite("[~p] ~p:~p~n", [warning, ErrorNS, Error]);
+
 log_platform(Severity, ErrorNS, Error, StackTrace) ->
     io:fwrite("[~p] ~p:~p || ~p~n", [Severity, ErrorNS, Error, StackTrace]).
+
+-spec log_platform(atom(), _) -> ok.
+log_platform(Severity, Msg) ->
+    io:fwrite("[~p] ~p~n", [Severity, Msg]).
 
 -spec log_api(atom(), _, _) -> ok.
 log_api(Severity, Endpoint, Error) ->

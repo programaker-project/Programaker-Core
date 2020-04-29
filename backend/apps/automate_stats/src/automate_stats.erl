@@ -11,11 +11,13 @@
         , log_observation/3
         , format/1
         , remove_metric/2
+        , get_internal_metrics/0
         ]).
 
 %% Internal calls
 -export([ prepare/0
         ]).
+-include("./records.hrl").
 
 -type metric_type() :: boolean | gauge | counter.
 
@@ -56,8 +58,8 @@ format(prometheus) ->
     update_internal_metrics(), %% TODO: Avoid too much calling here
     prometheus_text_format:format().
 
-update_internal_metrics() ->
-    %% Services
+-spec get_internal_metrics() -> {ok, #internal_metrics{}, [iolist()]}.
+get_internal_metrics() ->
     Services = [ automate_storage_sup
 
                , automate_channel_engine_sup
@@ -76,74 +78,133 @@ update_internal_metrics() ->
                , automate_service_port_engine_sup
                ],
 
-    lists:foreach(fun (S) ->
-                          set_metric(boolean, automate_service,
-                                     whereis(S) =/= undefined, [S])
-                  end, Services),
+    ServiceCounts = maps:from_list(lists:map(fun (S) ->
+                                                     {S, whereis(S) =/= undefined}
+                                             end, Services)),
+
+    Errors = [],
 
     %% Bots
-    try
-        supervisor:count_children(automate_bot_engine_runner_sup)
-    of Bots ->
-            set_metric(gauge, automate_bot_count,
-                       proplists:get_value(workers, Bots), [total]),
-
-            set_metric(gauge, automate_bot_count,
-                       proplists:get_value(active, Bots), [running])
-    catch BotErrNS:BotErr:BotStackTrace ->
-            io:fwrite("Error counting bots: ~p~n", [{BotErrNS, BotErr, BotStackTrace}]),
-            set_metric(gauge, automate_bot_count, 0, [running])
-    end,
-
-    %% Program logs
-    {ok, LogCountPerProgram} = automate_storage_stats:get_program_metrics(),
-    ok = set_log_count_metrics(LogCountPerProgram),
+    {BotCount, Err1} = try supervisor:count_children(automate_bot_engine_runner_sup)
+               of Bots ->
+                               { maps:from_list(lists:filter(fun({K, _}) -> (K =:= active) or (K =:= workers) end, Bots))
+                               , Errors}
+               catch BotErrNS:BotErr:BotStackTrace ->
+                       { #{ active => undefined, worker => undefined }
+                       , [{bot_engine_programs, {BotErrNS, BotErr, BotStackTrace}} | Errors]}
+               end,
 
     %% Threads
-    try
-        supervisor:count_children(automate_bot_engine_thread_runner_sup)
-    of Threads ->
-            set_metric(gauge, automate_program_thread_count,
-                       proplists:get_value(workers, Threads), [total]),
-
-            set_metric(gauge, automate_program_thread_count,
-                       proplists:get_value(active, Threads), [running])
-    catch ThreadErrNS:ThreadErr:ThreadStackTrace ->
-            io:fwrite("Error counting threads: ~p~n", [{ThreadErrNS, ThreadErr, ThreadStackTrace}]),
-            set_metric(gauge, automate_program_thread_count, 0, [running])
-    end,
+    { ThreadCount, Err2 } = try supervisor:count_children(automate_bot_engine_thread_runner_sup)
+                               of Threads ->
+                                    { maps:from_list(lists:filter(fun({K, _}) -> (K =:= active) or (K =:= workers) end, Threads))
+                                    , Err1}
+                               catch ThreadErrNS:ThreadErr:ThreadStackTrace ->
+                                       { #{ active => undefined, worker => undefined }
+                                       , [{bot_engine_threads, {ThreadErrNS, ThreadErr, ThreadStackTrace}} | Err1]}
+                               end,
 
     %% Monitors
-    try
-        supervisor:count_children(automate_monitor_engine_runner_sup)
-    of Monitors ->
-            set_metric(gauge, automate_monitor_count,
-                       proplists:get_value(workers, Monitors), [total]),
-
-            set_metric(gauge, automate_monitor_count,
-                       proplists:get_value(active, Monitors), [running])
-    catch MonitorErrNS:MonitorErr:MonitorStackTrace ->
-            io:fwrite("Error counting monitors: ~p~n", [{MonitorErrNS, MonitorErr, MonitorStackTrace}]),
-            set_metric(gauge, automate_monitor_count, 0, [running])
-    end,
+    { MonitorCount, Err3 } = try supervisor:count_children(automate_monitor_engine_runner_sup)
+                             of Monitors ->
+                                     { maps:from_list(lists:filter(fun({K, _}) -> (K =:= active) or (K =:= workers) end, Monitors))
+                                     , Err2}
+                             catch MonitorErrNS:MonitorErr:MonitorStackTrace ->
+                                     { #{ active => undefined, worker => undefined }
+                                     , [{monitor_engine, {MonitorErrNS, MonitorErr, MonitorStackTrace}} | Err2]}
+                             end,
 
     %% Services
-    case automate_service_registry:get_all_public_services() of
-        {ok, PublicServices} ->
-            set_metric(gauge, automate_service_count,
-                       maps:size(PublicServices), [public]),
-
-            set_metric(gauge, automate_service_count,
-                       automate_service_registry:count_all_services(), [all]);
-        {error, _, _} ->
-            remove_metric(gauge, automate_service_count)
-    end,
+    { ServiceCount, Err4 } = case automate_service_registry:get_all_public_services() of
+                                 {ok, PublicServices} ->
+                                     { #{ public => maps:size(PublicServices)
+                                        , all => automate_service_registry:count_all_services()
+                                        }
+                                     , Err3 };
+                                 {error, Reason, _} ->
+                                     { #{ all => undefined, public => undefined }
+                                     , [ { public_services, Reason } | Err3 ]}
+                             end,
 
     %% Users
     { ok
     , UserCount, RegisteredUsersLastDay, RegisteredUsersLastWeek, RegisteredUsersLastMonth
     , LoggedUsersLastHour, LoggedUsersLastDay, LoggedUsersLastWeek, LoggedUsersLastMonth
     } = automate_storage_stats:get_user_metrics(),
+
+    { ok
+    , NumBridgesPublic, NumBridgesPrivate
+    , NumConnections, NumUniqueConnections
+    , NumMessagesOnFlight
+    } = automate_service_port_engine_stats:get_bridge_metrics(),
+
+    {ok
+    , #internal_metrics{ services_active=ServiceCounts
+                       , bot_count=BotCount
+                       , thread_count=ThreadCount
+                       , monitor_count=MonitorCount
+                       , service_count=ServiceCount
+                       , user_stats=#user_stat_metrics{ count=UserCount
+                                                      , registered_last_day=RegisteredUsersLastDay
+                                                      , registered_last_week=RegisteredUsersLastWeek
+                                                      , registered_last_month=RegisteredUsersLastMonth
+                                                      , logged_last_hour=LoggedUsersLastHour
+                                                      , logged_last_day=LoggedUsersLastDay
+                                                      , logged_last_week=LoggedUsersLastWeek
+                                                      , logged_last_month=LoggedUsersLastMonth
+                                                      }
+                       , bridge_stats=#bridge_stat_metrics{ public_count=NumBridgesPublic
+                                                          , private_count=NumBridgesPrivate
+                                                          , connections=NumConnections
+                                                          , unique_connections=NumUniqueConnections
+                                                          , messages_on_flight=NumMessagesOnFlight
+                                                          }
+                       }
+    , Err4}.
+
+%%====================================================================
+%% Functions for internal usage
+%%====================================================================
+update_internal_metrics() ->
+    %% Services
+    {ok, #internal_metrics{ services_active=Services
+                          , bot_count=BotCount
+                          , thread_count=ThreadCount
+                          , monitor_count=MonitorCount
+                          , service_count=ServiceCount
+                          , user_stats=UserStats
+                          , bridge_stats=BridgeStats
+           }, Errors} = get_internal_metrics(),
+    maps:map(fun(Service, Active) ->
+                     set_metric(boolean, automate_service, Active, [Service])
+             end, Services),
+
+    maps:map(fun(Category, Count) ->
+                      set_metric(gauge, automate_bot_count, Count, [Category])
+              end, BotCount),
+
+    maps:map(fun(Category, Count) ->
+                      set_metric(gauge, automate_program_thread_count, Count, [Category])
+              end, ThreadCount),
+
+    maps:map(fun(Category, Count) ->
+                      set_metric(gauge, automate_monitor_count, Count, [Category])
+              end, MonitorCount),
+
+    maps:map(fun(Category, Count)  ->
+                      set_metric(gauge, automate_service_count, Count, [Category])
+              end, ServiceCount),
+
+    %% Users
+    #user_stat_metrics{ count=UserCount
+                      , registered_last_day=RegisteredUsersLastDay
+                      , registered_last_week=RegisteredUsersLastWeek
+                      , registered_last_month=RegisteredUsersLastMonth
+                      , logged_last_hour=LoggedUsersLastHour
+                      , logged_last_day=LoggedUsersLastDay
+                      , logged_last_week=LoggedUsersLastWeek
+                      , logged_last_month=LoggedUsersLastMonth
+                      } = UserStats,
     set_metric(gauge, automate_user_count, UserCount, [registered]),
     set_metric(gauge, automate_registered_users_last_day, RegisteredUsersLastDay, [registered]),
     set_metric(gauge, automate_registered_users_last_week, RegisteredUsersLastWeek, [registered]),
@@ -155,23 +216,34 @@ update_internal_metrics() ->
     set_metric(gauge, automate_logged_users_last_month, LoggedUsersLastMonth, [registered]),
 
     %% Bridges
-    { ok
-    , NumBridgesPublic, NumBridgesPrivate
-    , NumConnections, NumUniqueConnections
-    , NumMessagesOnFlight
-    } = automate_service_port_engine_stats:get_bridge_metrics(),
+    #bridge_stat_metrics{ public_count=NumBridgesPublic
+                        , private_count=NumBridgesPrivate
+                        , connections=NumConnections
+                        , unique_connections=NumUniqueConnections
+                        , messages_on_flight=NumMessagesOnFlight
+                        } = BridgeStats,
     set_metric(gauge, automate_bridges_count, NumBridgesPublic, [public]),
     set_metric(gauge, automate_bridges_count, NumBridgesPrivate, [private]),
     set_metric(gauge, automate_bridges_connections_count, NumConnections, []),
     set_metric(gauge, automate_bridges_unique_connections_count, NumUniqueConnections, []),
     set_metric(gauge, automate_bridges_messages_on_flight_count, NumMessagesOnFlight, []),
 
+    %% Program logs
+    {ok, LogCountPerProgram} = automate_storage_stats:get_program_metrics(),
+    ok = set_log_count_metrics(LogCountPerProgram),
+
+    lists:map(fun({Module, Reason}) ->
+                      case Reason of
+                          {ErrorNS, Error, StackTrace} ->
+                              automate_logging:log_platform(warning, ErrorNS, Error, StackTrace);
+                          _ ->
+                              automate_logging:log_platform(warning, io_lib:format("Error getting stats for ~p. Reason: ~p",
+                                                                                   [Module, Reason]))
+                      end
+              end, Errors),
+
     ok.
 
-
-%%====================================================================
-%% Functions for internal usage
-%%====================================================================
 set_log_count_metrics(LogCountPerProgram) ->
     %% No foreach, so we use maps:map/2
     maps:map(fun(ProgramId, Value) ->

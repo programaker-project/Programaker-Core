@@ -1,27 +1,17 @@
-import * as progbar from '../ui/progbar';
-
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-
-import { ProgramService } from '../program.service';
-
+import { AdminService, PlatformStatsInfo, UserAdminData } from '../admin.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
-import { AdminService, UserAdminData } from '../admin.service';
-
-import { ServiceService } from '../service.service';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-
-import { MonitorService } from '../monitor.service';
-import { ConnectionService } from '../connection.service';
-import { BridgeService } from '../bridges/bridge.service';
 import { unixMsToStr } from '../utils';
 
 interface Note {
     icon: string;
     text: string;
 }
+
+const SYSTEM_STAT_RELOAD_TIME = 15000; // 15 seconds
 
 @Component({
     // moduleId: module.id,
@@ -38,6 +28,8 @@ export class AdminSettingsComponent {
     session: Session;
     users: UserAdminData[];
     notes: { [key: string]: Note[] } = {};
+    stats: PlatformStatsInfo;
+    serviceNames: string[] = [];
 
     constructor(
         public adminService: AdminService,
@@ -75,6 +67,15 @@ export class AdminSettingsComponent {
                         this.annotate(user);
                     }
                 });
+
+                const reload_stats = () => this.adminService.getStats().then(stats => {
+                    this.stats = stats;
+                    this.serviceNames = Object.keys(stats.stats.active_services).sort();
+                    setTimeout(reload_stats, SYSTEM_STAT_RELOAD_TIME);
+                }).catch(err => {
+                    console.error("Error loading stats:", err);
+                });
+                reload_stats();
             })
             .catch(e => {
                 console.log('Error getting session', e);
