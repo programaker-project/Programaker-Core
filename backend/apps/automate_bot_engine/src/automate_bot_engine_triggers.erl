@@ -6,6 +6,7 @@
         ]).
 
 -define(SERVER, ?MODULE).
+-define(UTILS, automate_bot_engine_utils).
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
 -include("instructions.hrl").
@@ -50,7 +51,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FO
     automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
-get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
+get_expected_action_from_trigger(X=#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
                                                              , ?ARGUMENTS := Arguments
                                                              }},
                                  #program_permissions{owner_user_id=UserId}, _ProgramId) ->
@@ -66,6 +67,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
         { not_found } ->
             automate_channel_engine:listen_channel(MonitorId)
     end,
+
     ?TRIGGERED_BY_MONITOR;
 
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
@@ -106,12 +108,12 @@ get_subkey_value(_) ->
 %% If any value is OK
 -spec trigger_thread(#program_trigger{}, {atom(), any()}, #program_state{}) -> 'false' | {'true', #program_thread{}}.
 trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
-                                            , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
-                                                                         , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
-                                                                         }
-                                            }
-                               , subprogram=Program
-                               },
+                                                  , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
+                                                                               , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
+                                                                               }
+                                                  }
+                                     , subprogram=Program
+                                     },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }} },
                #program_state{program_id=ProgramId}) ->
 
@@ -197,7 +199,7 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                        case get_subkey_value(FullMessage) of
                            {ok, TriggeredSubKey} ->
                                (Key == TriggeredKey) and (string:lowercase(SubKey) == string:lowercase(TriggeredSubKey));
-                           E ->
+                           _ ->
                                false
                        end;
                    { key, Key } ->
@@ -205,6 +207,7 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                    { not_found } ->
                        FunctionName == TriggeredKey
                end,
+
     case KeyMatch of
         false ->
             false;
@@ -233,7 +236,19 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
 
                     {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
                                         ThreadWithSavedValue, MonitorId, FullMessage),
-                    {true, NewThread};
+
+                    SavedThread = case {?UTILS:get_block_id(Op), FullMessage} of
+                                      {undefined, _} ->
+                                          NewThread;
+                                      {BlockId, #{ ?CHANNEL_MESSAGE_CONTENT := Content }} ->
+                                          automate_bot_engine_variables:set_instruction_memory(NewThread,
+                                                                                               Content,
+                                                                                               BlockId);
+                                      _ ->
+                                          NewThread
+                                  end,
+
+                    {true, SavedThread};
                 _ ->
                     false
             end

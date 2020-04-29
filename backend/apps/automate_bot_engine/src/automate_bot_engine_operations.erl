@@ -620,7 +620,7 @@ get_block_result(Op=#{ ?TYPE := ?MATCH_TEMPLATE_CHECK
     {ok, InputValue} = automate_bot_engine_variables:resolve_argument(Input, Thread, Op),
 
     case automate_template_engine:match(UserId, Thread, TemplateId, InputValue) of
-        {ok, NewThread, _Value} ->
+        {ok, _NewThread, _Value} ->
             {ok, true};
         {error, not_found} ->
             {ok, false}
@@ -738,9 +738,7 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_AND
         [{ok, true}, {ok, true}] ->
             {ok, true};
         [_, _] ->
-            {ok, false};
-        _ ->
-            {error, not_found}
+            {ok, false}
     end;
 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_OR
@@ -756,9 +754,7 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_OR
         [_, {ok, true}] ->
             {ok, true};
         [_, _] ->
-            {ok, false};
-        _ ->
-            {error, not_found}
+            {ok, false}
     end;
 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_NOT
@@ -912,10 +908,27 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_LIST_GET_CONTENTS
                                 })
     end;
 
-%% Fail
+get_block_result(Op=#{ ?TYPE := ?FLOW_LAST_VALUE
+                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
+                                        , ?VALUE := BlockId
+                                        }
+                                     , #{ ?TYPE := ?VARIABLE_CONSTANT
+                                        , ?VALUE := _Index
+                                        }
+                                     ]
+                     }, Thread) ->
+    case automate_bot_engine_variables:retrieve_instruction_memory(Thread, BlockId) of
+        {ok, Value} ->
+            {ok, Value};
+        {error, not_found} ->
+            throw(#program_error{ error=#memory_not_set{ block_id=BlockId }
+                                , block_id=?UTILS:get_block_id(Op)
+                                })
+    end;
 
+%% Fail
 get_block_result(Block, _Thread) ->
-    io:format("Result from: ~p~n", [Block]),
+    io:format("Don't know how to get result from: ~p~n", [Block]),
     throw(#program_error{ error=#unknown_operation{}
                         , block_id=?UTILS:get_block_id(Block)
                         }).

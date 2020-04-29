@@ -1,6 +1,6 @@
 import { FlowGraph } from '../../../flow-editor/flow_graph';
 import { compile } from '../../../flow-editor/graph_analysis';
-import { extract_internally_reused_argument } from '../../../flow-editor/graph_transformations';
+import { extract_internally_reused_arguments } from '../../../flow-editor/graph_transformations';
 import { validate } from '../../../flow-editor/graph_validation';
 import { TIME_MONITOR_ID } from '../../../flow-editor/platform_facilities';
 import { gen_compiled } from '../scaffolding/graph-analysis-tools';
@@ -10,7 +10,7 @@ import { are_equivalent_ast } from './utils.spec';
 
 export function process_flow(graph: FlowGraph): FlowGraph {
     // Used by visualizing script to produce a processed version specific for this test
-    return extract_internally_reused_argument(graph);
+    return extract_internally_reused_arguments(graph);
 }
 
 export function gen_flow(options?: { source_id?: string }): FlowGraph {

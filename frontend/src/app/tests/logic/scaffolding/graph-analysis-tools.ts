@@ -208,7 +208,17 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             break;
 
         default:
-            console.warn(`Unknown operation: ${op.type}`);
+            if (op.type.startsWith('services.')) {
+                if (op.args) {
+                    op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
+                }
+                if (op.contents) {
+                    op.contents = op.contents.map(content => canonicalize_content(content));
+                }
+            }
+            else {
+                console.warn(`Unknown operation: ${op.type}`);
+            }
     }
 
     return op;

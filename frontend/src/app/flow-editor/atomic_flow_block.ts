@@ -164,7 +164,9 @@ export class AtomicFlowBlock implements FlowBlock {
             this.synthetic_output_count = synthetic_output_count;
         }
 
-        [this.options, this.synthetic_input_count, this.synthetic_output_count ] = AtomicFlowBlock.add_synth_io(this.options);
+        [this.options, this.synthetic_input_count, this.synthetic_output_count ] = AtomicFlowBlock.add_synth_io(options,
+                                                                                                                synthetic_input_count,
+                                                                                                                synthetic_output_count);
         this.options.on_io_selected = options.on_io_selected;
         this.options.on_dropdown_extended = options.on_dropdown_extended;
         this.options.on_inputs_changed = options.on_inputs_changed;
@@ -190,9 +192,11 @@ export class AtomicFlowBlock implements FlowBlock {
         this.canvas.removeChild(this.group);
     }
 
-    public static add_synth_io(options: AtomicFlowBlockOptions): [AtomicFlowBlockOptions, number, number] {
-        let synthetic_input_count = 0;
-        let synthetic_output_count = 0;
+    public static add_synth_io(options: AtomicFlowBlockOptions,
+                               synthetic_input_count?: number,
+                               synthetic_output_count?: number): [AtomicFlowBlockOptions, number, number] {
+        synthetic_input_count = synthetic_input_count || 0;
+        synthetic_output_count = synthetic_output_count || 0;
 
         options = JSON.parse(JSON.stringify(options));
 
@@ -206,12 +210,12 @@ export class AtomicFlowBlock implements FlowBlock {
             options.outputs = [];
         }
 
-        if (AtomicFlowBlock.required_synth_inputs(options) > 0) {
+        if (!synthetic_input_count && AtomicFlowBlock.required_synth_inputs(options) > 0) {
             options.inputs = ([ { type: "pulse" } ] as InputPortDefinition[]).concat(options.inputs);
             synthetic_input_count++;
         }
 
-        if (AtomicFlowBlock.required_synth_outputs(options) > 0) {
+        if (!synthetic_output_count && AtomicFlowBlock.required_synth_outputs(options) > 0) {
             options.outputs = ([ { type: "pulse" } ] as OutputPortDefinition[]).concat(options.outputs);
             synthetic_output_count++;
         }

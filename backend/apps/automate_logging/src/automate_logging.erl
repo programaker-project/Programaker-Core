@@ -106,6 +106,8 @@ log_platform(Severity, ErrorNS, Error, StackTrace) ->
     io:fwrite("[~p] ~p:~p || ~p~n", [Severity, ErrorNS, Error, StackTrace]).
 
 -spec log_platform(atom(), _) -> ok.
+log_platform(Severity, Msg) when is_list(Msg) ->
+    io:fwrite("[~p] ~s~n", [Severity, binary:list_to_bin(lists:flatten(Msg))]);
 log_platform(Severity, Msg) ->
     io:fwrite("[~p] ~p~n", [Severity, Msg]).
 

@@ -94,3 +94,4 @@
 -define(SERVICE_ACTION, <<"service_action">>).
 
 -define(LAST_MONITOR_VALUES, <<"__last_monitor_values__">>).
+-define(FLOW_LAST_VALUE, <<"flow_last_value">>).

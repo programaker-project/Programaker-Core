@@ -14,7 +14,9 @@
         , retrieve_thread_values/2
 
         , retrieve_instruction_memory/1
+        , retrieve_instruction_memory/2
         , set_instruction_memory/2
+        , set_instruction_memory/3
         , unset_instruction_memory/1
         , get_thread_context/1
         ]).
@@ -131,8 +133,21 @@ retrieve_instruction_memory(#program_thread{ instruction_memory=Memory, position
             {error, not_found}
     end.
 
+-spec retrieve_instruction_memory(#program_thread{}, any()) -> {ok, any()} | {error, not_found}.
+retrieve_instruction_memory(#program_thread{ instruction_memory=Memory }, Position) ->
+    case maps:find(Position, Memory) of
+        Response = {ok, _} ->
+            Response;
+        error ->
+            {error, not_found}
+    end.
+
 -spec set_instruction_memory(#program_thread{}, any()) -> #program_thread{}.
 set_instruction_memory(Thread=#program_thread{ instruction_memory=Memory, position=Position }, Value) ->
+    Thread#program_thread{ instruction_memory=Memory#{ Position => Value } }.
+
+-spec set_instruction_memory(#program_thread{}, any(), any()) -> #program_thread{}.
+set_instruction_memory(Thread=#program_thread{ instruction_memory=Memory }, Value, Position) ->
     Thread#program_thread{ instruction_memory=Memory#{ Position => Value } }.
 
 -spec unset_instruction_memory(#program_thread{}) -> #program_thread{}.

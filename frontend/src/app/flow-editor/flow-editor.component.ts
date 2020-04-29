@@ -33,6 +33,7 @@ import { Session } from '../session';
 import { BridgeService } from '../bridges/bridge.service';
 import { FlowGraph } from './flow_graph';
 import { EnumGetter, EnumValue } from './enum_direct_value';
+import { compile } from './graph_analysis';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -235,14 +236,10 @@ export class FlowEditorComponent implements OnInit {
 
     async sendProgram(): Promise<boolean> {
         const graph = this.workspace.getGraph();
-        console.debug("Program graph:", graph);
 
-        // // Serialize result
-        // const serializer = new FlowProgramSerializer(this.toolboxController);
-        // const serialized = serializer.ToJson(xml);
-        // const program = new FlowProgram(this.program,
-        //                                 serialized.parsed,
-        //                                 serialized.orig);
+        const t0 = new Date();
+        const compiled_program = compile(graph);
+        console.debug('Compilation time:', (new Date() as any) - (t0 as any), 'ms')
 
         // Send update
         const button = document.getElementById('program-start-button');
@@ -253,11 +250,10 @@ export class FlowEditorComponent implements OnInit {
 
         const program = {
             type: 'flow_program' as ProgramType,
-            parsed: null,
+            parsed: { blocks: compiled_program, variables: [] },
             orig: graph,
             id: this.programId,
         };
-
 
         const result = await this.programService.updateProgramById(program);
 

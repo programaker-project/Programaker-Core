@@ -45,7 +45,7 @@ listen_channel(ChannelId, {Key, SubKey}) ->
 listen_channel(ChannelId, {Key}) ->
     automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, self(), node(), Key, undefined).
 
--spec send_to_channel(binary(), any()) -> ok.
+-spec send_to_channel(binary(), any()) -> ok | {error, channel_not_found }.
 send_to_channel(ChannelId, Message) ->
     %% TODO: Use the key/subkey information to better route calls
     spawn(fun () ->

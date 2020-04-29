@@ -187,14 +187,24 @@ from_service_port(ServicePortId, UserId, Msg) ->
 
                             {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                                                  Module, ToUserInternalId),
-                            ok = automate_channel_engine:send_to_channel(MonitorId,
+                            case automate_channel_engine:send_to_channel(MonitorId,
                                                                          #{ <<"key">> => Key
                                                                           , <<"value">> => Value
                                                                           , <<"content">> => Content
                                                                           , <<"subkey">> => get_subkey_from_notification(Notif)
-                                                                          });
+                                                                          }) of
+                                ok ->
+                                    ok;
+                                {error, Reason} ->
+                                    automate_logging:log_platform(
+                                      error,
+                                      io_lib:format("[~p] Error propagating notification: ~p  (conn: ~p, monitor_id: ~p)~n",
+                                                    [ServicePortId, Reason, ToUser, MonitorId]))
+                            end;
                         {error, Reason} ->
-                            io:fwrite("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason])
+                            automate_logging:log_platform(
+                              error,
+                              io_lib:format("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason]))
                     end
             end
     end.
