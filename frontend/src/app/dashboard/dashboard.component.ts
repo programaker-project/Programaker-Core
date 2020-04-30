@@ -1,32 +1,26 @@
-import * as progbar from '../ui/progbar';
-
-import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
-import { AddConnectionDialogComponent } from '../connections/add-connection-dialog.component';
-
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-
-import { ProgramMetadata } from '../program';
+import { BridgeService } from '../bridges/bridge.service';
+import { BridgeConnection } from '../connection';
+import { ConnectionService } from '../connection.service';
+import { AddConnectionDialogComponent } from '../connections/add-connection-dialog.component';
+import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
+import { MonitorService } from '../monitor.service';
+import { ProgramMetadata, ProgramType } from '../program';
 import { ProgramService } from '../program.service';
-
-import { Session } from '../session';
-import { SessionService } from '../session.service';
-
+import { SelectProgrammingModelDialogComponent } from '../programs/select-programming-model-dialog/select-programming-model-dialog.component';
 import { AvailableService, ServiceEnableHowTo } from '../service';
 import { ServiceService } from '../service.service';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSlideToggle } from '@angular/material/slide-toggle';
-import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-
-import { MonitorMetadata } from '../monitor';
-import { MonitorService } from '../monitor.service';
-import { ConnectionService } from '../connection.service';
-import { BridgeConnection, HashedIcon } from '../connection';
-import { BridgeService } from '../bridges/bridge.service';
-import { BridgeIndexData } from '../bridges/bridge';
-import { BridgeDeleteDialogComponent } from '../bridges/delete-dialog.component';
-import { ApiHost } from '../api-config';
+import { Session } from '../session';
+import { SessionService } from '../session.service';
 import { iconDataToUrl } from '../utils';
+
+
+
+
+
+
 
 type BridgeConnectionWithIconUrl = { conn: BridgeConnection, extra: { icon_url?: string}};
 type TutorialData = { description: string, icons: string[], url: string };
@@ -90,6 +84,7 @@ export class NewDashboardComponent {
         this.sessionService.getSession()
             .then(session => {
                 this.session = session;
+
                 if (!session.active) {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 } else {
@@ -106,9 +101,22 @@ export class NewDashboardComponent {
     }
 
     addProgram(): void {
-        this.programService.createProgram().then(program => {
-            this.openProgram(program);
-        });
+        if (this.session.tags.is_in_preview) {
+            const dialogRef = this.dialog.open(SelectProgrammingModelDialogComponent, { width: '90%' });
+
+            dialogRef.afterClosed().subscribe((result: {success: boolean, program_type: ProgramType, program_name: string}) => {
+                if (result && result.success) {
+                    this.programService.createProgram(result.program_type, result.program_name).then(program => {
+                        this.openProgram(program);
+                    });
+                }
+            });
+        }
+        else {
+            this.programService.createProgram('scratch_program').then(program => {
+                this.openProgram(program);
+            });
+        }
     }
 
     addConnection(): void {

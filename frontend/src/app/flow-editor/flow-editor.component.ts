@@ -126,7 +126,9 @@ export class FlowEditorComponent implements OnInit {
     }
 
     load_program(program: ProgramContent) {
-        this.workspace.load(program.orig as FlowGraph);
+        if (program.orig && program.orig !== 'undefined') {
+            this.workspace.load(program.orig as FlowGraph);
+        }
 
         this.initializeListeners();
     }
@@ -227,7 +229,7 @@ export class FlowEditorComponent implements OnInit {
 
     goBack(): boolean {
         this.dispose();
-        // this.router.navigate(['/dashboard'])
+        this.router.navigate(['/dashboard'])
         return false;
     }
 

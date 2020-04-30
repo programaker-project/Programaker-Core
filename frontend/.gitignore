@@ -3,10 +3,11 @@
 # Ignore non-applicable changes when ADDing files
 Dockerfile
 .git
- 
+
 # compiled output
 /dist
 /tmp
+out-tsc
 
 # dependencies
 /node_modules

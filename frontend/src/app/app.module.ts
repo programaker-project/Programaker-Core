@@ -73,6 +73,7 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
+import { SelectProgrammingModelDialogComponent } from './programs/select-programming-model-dialog/select-programming-model-dialog.component';
 
 @NgModule({
     declarations: [
@@ -111,6 +112,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         // Pipes
         SummarizeJSON,
         SelectFromJSON,
+        SelectProgrammingModelDialogComponent,
     ],
     imports: [
         MatAutocompleteModule,

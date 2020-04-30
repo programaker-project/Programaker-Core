@@ -16,6 +16,7 @@
         , update_user_settings/3
         , promote_user_to_admin/1
         , admin_list_users/0
+        , set_user_in_preview/2
 
         , create_mail_verification_entry/1
         , verify_registration_with_code/1
@@ -25,6 +26,7 @@
         , reset_password/2
 
         , create_program/2
+        , create_program/3
         , get_program/2
         , lists_programs_from_username/1
         , list_programs_from_userid/1
@@ -78,9 +80,8 @@
 -include("./records.hrl").
 -include("../../automate_bot_engine/src/program_records.hrl").
 
--define(DEFAULT_PROGRAM_TYPE, scratch_program).
 -define(WAIT_READY_LOOP_TIME, 1000).
-
+-define(DEFAULT_PROGRAM_TYPE, scratch_program).
 
 %%====================================================================
 %% API functions
@@ -175,6 +176,24 @@ promote_user_to_admin(UserId) ->
                               [User] ->
                                   ok = mnesia:write(?REGISTERED_USERS_TABLE
                                                    , User#registered_user_entry{ is_admin=true }
+                                                   , write);
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+set_user_in_preview(UserId, InPreview) when is_boolean(InPreview) ->
+    Transaction = fun() ->
+                          case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
+                              [User] ->
+                                  ok = mnesia:write(?REGISTERED_USERS_TABLE
+                                                   , User#registered_user_entry{ is_in_preview=InPreview }
                                                    , write);
                               [] ->
                                   {error, not_found}
@@ -429,6 +448,9 @@ check_password_reset_verification_code(VerificationCode) ->
     check_verification_code(VerificationCode, password_reset_verification).
 
 create_program(Username, ProgramName) ->
+    create_program(Username, ProgramName, ?DEFAULT_PROGRAM_TYPE).
+
+create_program(Username, ProgramName, ProgramType) ->
     {ok, UserId} = get_userid_from_username(Username),
     ProgramId = generate_id(),
     {ok, ProgramChannel} = automate_channel_engine:create_channel(),
@@ -436,7 +458,7 @@ create_program(Username, ProgramName) ->
     UserProgram = #user_program_entry{ id=ProgramId
                                      , user_id=UserId
                                      , program_name=ProgramName
-                                     , program_type=?DEFAULT_PROGRAM_TYPE
+                                     , program_type=ProgramType
                                      , program_parsed=undefined
                                      , program_orig=undefined
                                      , enabled=true

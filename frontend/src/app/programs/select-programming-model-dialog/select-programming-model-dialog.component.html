@@ -1,0 +1,60 @@
+<h2 mat-dialog-title>Name your program and select it's type</h2>
+
+<mat-dialog-content>
+    <div class="options-row row">
+        <mat-form-field class="full-size col-sm-12">
+            <mat-label>Program name</mat-label>
+            <input matInput class="program_name_input"
+                [formControl]="programName"
+                placeholder="My new cool program"
+                name="program_name" />
+            <mat-error *ngIf="programName.invalid">{{getNameErrorMessage()}}</mat-error>
+        </mat-form-field>
+
+        <mat-card [ngClass]="{
+            'col-sm-5': true,
+            'selected': selectedType === 'scratch_program'
+            }"
+            (click)="selectType('scratch_program')"
+            role="button">
+            <h4 class="title">Scratch's blocks</h4>
+            <div class="example">
+                <img src="/assets/showcase/scratch/scratch-example.png" />
+            </div>
+            <div class="description">
+                <p>Classic block style, used by MIT's block-based editor.</p>
+                <p class="reason">Choose this if you already used MIT's Scratch.</p>
+            </div>
+        </mat-card>
+
+        <mat-card [ngClass]="{
+            'col-sm-5': true,
+            'selected': selectedType === 'flow_program'
+            }"
+            (click)="selectType('flow_program')"
+            role="button">
+            <h4 class="title">PrograMaker's Flow</h4>
+            <div class="example">
+                <img src="/assets/showcase/flow/flow-example.png" />
+            </div>
+            <div class="description">
+                <p>PrograMaker's re-imagining of visual programming.</p>
+                <!-- Let's keep the verbosity down.
+                     <p>Designed to create an uniform experience when designing web and mobile applications.</p>
+                -->
+                <p class="reason">Choose this if you want to add visual elements to your program.</p>
+            </div>
+        </mat-card>
+    </div>
+
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
+    <button class="confirmation"
+        type="submit"
+        color="primary"
+        mat-button
+        [disabled]="selectedType === null || programName.invalid"
+        (click)="this.confirmSelection()"
+        mat-raised-button>Start</button>
+</mat-dialog-actions>
