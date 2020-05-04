@@ -25,9 +25,9 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
     // Var
     const xblock = builder.add_variable_getter_node('x', { id: 'x' });
 
-    const addition1 = builder.add_op('flow_addition', { id: 'add1', args: [[xblock, 0], 1] });
-    const addition2 = builder.add_op('flow_addition', { id: 'add2', args: [[xblock, 0], 2] });
-    const join_add = builder.add_op('flow_addition', { id: 'join_add', args: [[addition1, 0], [addition2, 0]] });
+    const addition1 = builder.add_op('operator_add', { id: 'add1', args: [[xblock, 0], 1] });
+    const addition2 = builder.add_op('operator_add', { id: 'add2', args: [[xblock, 0], 2] });
+    const join_add = builder.add_op('operator_add', { id: 'join_add', args: [[addition1, 0], [addition2, 0]] });
     const log1 = builder.add_op('op_log_value', { id: 'log1', args: [[join_add, 0]] });
 
     trigger.then(log1);

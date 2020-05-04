@@ -20,8 +20,8 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
     const xblock = builder.add_variable_getter_node('x', { id: 'x1' });
     const xblock2 = builder.add_variable_getter_node('x', { id: 'x2' });
 
-    const addition1 = builder.add_op('flow_addition', { id: 'add1', args: [[xblock, 0], 1] });
-    const addition2 = builder.add_op('flow_addition', { id: 'add2', args: [[addition1, 0], [xblock, 0]] });
+    const addition1 = builder.add_op('operator_add', { id: 'add1', args: [[xblock, 0], 1] });
+    const addition2 = builder.add_op('operator_add', { id: 'add2', args: [[addition1, 0], [xblock, 0]] });
     const log1 = builder.add_op('op_log_value', { id: 'log1', args: [[addition1, 0]] });
     const log2 = builder.add_op('op_log_value', { id: 'log2', args: [[addition2, 0]] });
     const log3 = builder.add_op('op_log_value', { id: 'log3', args: [[xblock2, 0]] });

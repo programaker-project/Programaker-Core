@@ -31,7 +31,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Wait',
-                block_function: 'op_wait_seconds',
+                block_function: 'control_wait',
                 type: 'operation',
                 inputs: [
                     {
@@ -65,7 +65,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Wait for',
-                block_function: 'trigger_wait_for',
+                block_function: 'control_wait_until',
                 type: 'trigger',
                 inputs: [
                     {
@@ -105,7 +105,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Repeat times',
-                block_function: 'op_repeat_times',
+                block_function: 'control_repeat',
                 type: 'operation',
                 inputs: [
                     {
@@ -267,7 +267,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: '%i1 + %i2',
-                block_function: 'flow_addition',
+                block_function: 'operator_add',
                 type: 'getter',
                 inputs: [
                     {
@@ -286,7 +286,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: '%i1 - %i2',
-                block_function: 'flow_subtraction',
+                block_function: 'opearator_subtract',
                 type: 'getter',
                 inputs: [
                     {
@@ -305,7 +305,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: '%i1 × %i2',
-                block_function: 'flow_product',
+                block_function: 'operator_multiply',
                 type: 'getter',
                 inputs: [
                     {
@@ -324,7 +324,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: '%i1 / %i2',
-                block_function: 'flow_division',
+                block_function: 'operator_divide',
                 type: 'getter',
                 inputs: [
                     {
@@ -366,7 +366,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Is %i1 greater (>) than %i2 ?',
-                block_function: 'flow_greater_than',
+                block_function: 'operator_gt',
                 type: 'getter',
                 inputs: [
                     {
@@ -387,7 +387,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Are all equals?',
-                block_function: 'flow_equals',
+                block_function: 'operator_equals',
                 type: 'getter',
                 inputs: [
                     {
@@ -410,7 +410,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Is %i1 less (<) than %i2?',
-                block_function: 'flow_lesser_than',
+                block_function: 'operator_lt',
                 type: 'getter',
                 inputs: [
                     {
@@ -431,7 +431,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'All true',
-                block_function: 'flow_all_true',
+                block_function: 'operator_and',
                 type: 'getter',
                 inputs: [
                     {
@@ -450,7 +450,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Any true',
-                block_function: 'flow_any_true',
+                block_function: 'operator_or',
                 type: 'getter',
                 inputs: [
                     {
@@ -469,7 +469,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Inverse',
-                block_function: 'flow_logic_not',
+                block_function: 'operator_not',
                 type: 'getter',
                 inputs: [
                     {
@@ -485,7 +485,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Join texts',
-                block_function: 'flow_join_text',
+                block_function: 'operator_join',
                 type: 'getter',
                 inputs: [
                     {
@@ -507,7 +507,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Get key %i1 of %i2',
-                block_function: 'flow_get_key',
+                block_function: 'operator_json_parser',
                 type: 'getter',
                 inputs: [
                     {
@@ -599,7 +599,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Get %(variable) value',
-                block_function: 'flow_get_var_value',
+                block_function: 'data_variable',
                 type: 'getter',
                 outputs: [
                     {
@@ -610,7 +610,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Set %(variable) to %i1',
-                block_function: 'op_set_var_value',
+                block_function: 'data_setvariableto',
                 type: 'operation',
                 inputs: [
                     {
@@ -628,7 +628,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Increment %(variable) by %i1',
-                block_function: 'op_inc_var_by',
+                block_function: 'data_changevariableby',
                 type: 'operation',
                 inputs: [
                     {
@@ -645,7 +645,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Add %i1 to %(list)',
-                block_function: 'op_add_to_list',
+                block_function: 'data_addtolist',
                 inputs: [
                     {
                         type: 'any',
@@ -656,7 +656,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Delete entry # %i1 to %(list)',
-                block_function: 'op_delete_list_entry',
+                block_function: 'data_deleteoflist',
                 type: 'operation',
                 inputs: [
                     {
@@ -673,7 +673,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Insert %i1 at position %i2 of %(list)',
-                block_function: 'op_insert_at_list_position',
+                block_function: 'data_insertatlist',
                 type: 'operation',
                 inputs: [
                     {
@@ -687,7 +687,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Replace item at position %i1 of %(list) with %i2',
-                block_function: 'op_replace_at_list_position',
+                block_function: 'data_replaceitemoflist',
                 type: 'operation',
                 inputs: [
                     {
@@ -701,7 +701,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Item number %i1 of %(list)',
-                block_function: 'flow_get_at_position',
+                block_function: 'data_itemoflist',
                 type: 'getter',
                 inputs: [
                     {
@@ -717,7 +717,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Position of item %i1 in %(list)',
-                block_function: 'flow_find_index_of',
+                block_function: 'data_itemnumoflist',
                 type: 'getter',
                 inputs: [
                     {
@@ -733,7 +733,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Number of items in %(list)',
-                block_function: 'flow_list_length',
+                block_function: 'data_lengthoflist',
                 type: 'getter',
                 outputs: [
                     {
@@ -744,7 +744,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Does %(list) contain %i1?',
-                block_function: 'flow_list_contains',
+                block_function: 'data_listcontainsitem',
                 type: 'getter',
                 inputs: [
                     {

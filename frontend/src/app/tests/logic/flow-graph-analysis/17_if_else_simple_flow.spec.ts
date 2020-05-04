@@ -12,19 +12,19 @@ export function gen_flow(): FlowGraph {
 
     // Stream section
     const source = builder.add_stream('flow_utc_time', {id: 'source', message: 'UTC time'});
-    const stream_cond = builder.add_stream('flow_equals', {args: [[source, 0], 11]});
+    const stream_cond = builder.add_stream('operator_equals', {args: [[source, 0], 11]});
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {args: [[stream_cond, 0]]});
-    const root = trigger.then(f => f.add_op('op_wait_seconds', { args: [ 0 ] }))
-    const branch1_top = builder.add_op('op_wait_seconds', { args: [ 1 ] });
-    const branch1_bot = branch1_top.then(f => f.add_op('op_wait_seconds', { args: [ 1.1 ]}));
+    const root = trigger.then(f => f.add_op('control_wait', { args: [ 0 ] }))
+    const branch1_top = builder.add_op('control_wait', { args: [ 1 ] });
+    const branch1_bot = branch1_top.then(f => f.add_op('control_wait', { args: [ 1.1 ]}));
 
-    const branch2_top = builder.add_op('op_wait_seconds', { args: [ 2 ] });
-    const branch2_bot = branch2_top.then(f => f.add_op('op_wait_seconds', { args: [ 2.1 ]}));
+    const branch2_top = builder.add_op('control_wait', { args: [ 2 ] });
+    const branch2_bot = branch2_top.then(f => f.add_op('control_wait', { args: [ 2.1 ]}));
 
     const if_cond = builder.add_if(branch1_top, branch2_top,
-                                   { cond: f => f.add_stream('flow_equals', {args: [1, 1]})
+                                   { cond: f => f.add_stream('operator_equals', {args: [1, 1]})
                                    });
 
     root.then_id(if_cond);
@@ -34,7 +34,7 @@ export function gen_flow(): FlowGraph {
         [ branch1_bot, 'pulse' ],
         [ branch2_bot, 'pulse' ],
     ]});
-    joiner.then(f => f.add_op('op_wait_seconds', { id: 'joiner', args: [ 3 ] }));
+    joiner.then(f => f.add_op('control_wait', { id: 'joiner', args: [ 3 ] }));
 
     const graph = builder.build();
     return graph;
@@ -62,7 +62,7 @@ describe('Flow-17: Simple If-Else flow.', () => {
                        (wait-seconds 1.1))
                     ((wait-seconds 2)
                      (wait-seconds 2.1)))
-                  (op_wait_seconds 3)))
+                  (control_wait 3)))
             `
         );
 

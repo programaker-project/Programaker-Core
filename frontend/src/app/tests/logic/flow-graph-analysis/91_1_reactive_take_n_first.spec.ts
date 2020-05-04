@@ -14,21 +14,21 @@ export function gen_flow(): FlowGraph {
     const source = builder.add_stream('flow_utc_time', {id: 'source', message: 'UTC time'});
 
     const mod = builder.add_stream('flow_modulo', {args: [[source, 0], 2]});
-    const cond = builder.add_stream('flow_equals', {args: [[mod, 0], 0]});
+    const cond = builder.add_stream('operator_equals', {args: [[mod, 0], 0]});
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {args: [[cond, 0]]});
 
-    const update = builder.add_op('op_set_var_value', {
+    const update = builder.add_op('data_setvariableto', {
         args: [
-            [f => f.add_getter('flow_addition', { args: [ 1, { from_variable: 'count' } ] }) , 0] ],
+            [f => f.add_getter('operator_add', { args: [ 1, { from_variable: 'count' } ] }) , 0] ],
         slots: { 'variable': 'count' }
     });
     const op = builder.add_op('op_log_value', { args: [ [source, 0] ]
                                               });
 
     const take_cond = builder.add_if(update, null, {
-        cond: [f => f.add_getter('flow_lesser_than', { args: [ { from_variable: 'count' }, 'N' ] }), 0]
+        cond: [f => f.add_getter('operator_lt', { args: [ { from_variable: 'count' }, 'N' ] }), 0]
     });
     trigger.then_id(take_cond);
     update.then(op);

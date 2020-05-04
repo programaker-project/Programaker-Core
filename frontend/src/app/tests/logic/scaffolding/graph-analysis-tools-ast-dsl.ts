@@ -15,28 +15,28 @@ export const OP_TRANSLATIONS = {
 
     // Operations
     'log': 'op_log_value',
-    'wait-seconds': 'op_wait_seconds',
+    'wait-seconds': 'control_wait',
     'call-service': 'command_call_service',
     'preload': 'op_preload_getter',
 
     // Variables
-    'set-var': 'op_set_var_value',
-    'get-var': 'flow_get_var_value',
+    'set-var': 'data_setvariableto',
+    'get-var': 'data_variable',
     'flow-last-value': 'flow_last_value',
     'wait-for-monitor': 'wait_for_monitor',
 
     // Comparations
     '=': 'operator_equals',
     'and': 'operator_and',
-    '<': 'flow_lesser_than',
-    '>': 'flow_greater_than',
+    '<': 'operator_lt',
+    '>': 'operator_gt',
 
     // Operations
     'mod': 'flow_modulo',
-    '+': 'flow_addition',
-    'add-to-list': 'op_add_to_list',
-    'list-length': 'flow_list_length',
-    'delete-list-index': 'op_delete_list_entry',
+    '+': 'operator_add',
+    'add-to-list': 'data_addtolist',
+    'list-length': 'data_lengthoflist',
+    'delete-list-index': 'data_deleteoflist',
 };
 
 const OPS_WITH_MAP_ARGUMENTS = [
@@ -111,31 +111,31 @@ function transform_call(args: any[]): any[] {
         }
     }
 
-    if (op === 'flow_get_var_value') {
+    if (op === 'data_variable') {
         // Remove args, as they will go into the "slots"
         // TODO: Send to slots
         args.splice(1);
     }
 
-    if (op === 'flow_list_length') {
+    if (op === 'data_lengthoflist') {
         // Remove first arg, as it will go into the "slots"
         // TODO: Send to slots
         args.splice(1, 1);
     }
 
-    if (op === 'op_set_var_value') {
+    if (op === 'data_setvariableto') {
         // Remove first arg, as it will go into the "slots"
         // TODO: Send to slots
         args.splice(1, 1);
     }
 
-    if (op === 'op_delete_list_entry') {
+    if (op === 'data_deleteoflist') {
         // Remove first arg, as it will go into the "slots"
         // TODO: Send to slots
         args.splice(1, 1);
     }
 
-    if (op === 'op_add_to_list') {
+    if (op === 'data_addtolist') {
         // Remove first arg, as it will go into the "slots"
         // TODO: Send to slots
         args.splice(1, 1);

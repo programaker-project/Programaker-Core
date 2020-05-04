@@ -14,7 +14,7 @@ export function gen_flow(): FlowGraph {
     const source = builder.add_stream('flow_utc_time', {id: 'source', message: 'UTC time'});
 
     const mod = builder.add_stream('flow_modulo', {args: [[source, 0], 2]});
-    const cond = builder.add_stream('flow_equals', {args: [[mod, 0], 0]});
+    const cond = builder.add_stream('operator_equals', {args: [[mod, 0], 0]});
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {args: [[cond, 0]]});

@@ -23,7 +23,7 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
                                                      });
     trigger.then(operation);
     operation
-        .then(f => f.add_op('op_wait_seconds', { args: [ 1 ] }))
+        .then(f => f.add_op('control_wait', { args: [ 1 ] }))
         .then(f => f.add_op('op_log_value', { args: [[operation, 1]] }));
 
     const graph = builder.build();

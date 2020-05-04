@@ -154,20 +154,20 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             break;
 
             // Cannonicalize args and contents, but don't sort
-        case "op_wait_seconds":
+        case "control_wait":
         case "control_if_else":
         case "trigger_when_all_completed":
         case "flow_modulo":
-        case "flow_addition":
+        case "operator_add":
         case "op_log_value":
-        case "flow_lesser_than":
-        case "flow_greater_than":
-        case "op_set_var_value":
-        case "flow_get_var_value":
-        case "flow_list_length":
+        case "operator_lt":
+        case "operator_gt":
+        case "data_setvariableto":
+        case "data_variable":
+        case "data_lengthoflist":
         case "flow_get_thread_id":
-        case "op_delete_list_entry":
-        case "op_add_to_list":
+        case "data_deleteoflist":
+        case "data_addtolist":
         case "op_preload_getter":
             if (op.args) {
                 op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));

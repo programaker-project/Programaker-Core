@@ -23,8 +23,8 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
 
     // Stream section
     const source = builder.add_stream('flow_utc_time', {id: options.source_id, message: 'UTC time'});
-    const cond1 = builder.add_stream('flow_equals', {args: [[source, 1], [source, 2], 0]});
-    const cond2 = builder.add_stream('flow_equals', {args: [[source, 0], 11]});
+    const cond1 = builder.add_stream('operator_equals', {args: [[source, 1], [source, 2], 0]});
+    const cond2 = builder.add_stream('operator_equals', {args: [[source, 0], 11]});
 
     // Stepped section
     builder.add_trigger('trigger_when_all_true', {id: 'trigger', args: [[cond1, 0], [cond2, 0]]})

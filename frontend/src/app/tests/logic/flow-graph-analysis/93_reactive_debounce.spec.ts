@@ -17,7 +17,7 @@ export function gen_flow(): FlowGraph {
     const op = builder.add_op('op_log_value', { args: [ [source, 0] ]
                                               });
     const cond = builder.add_if(op, null, {
-        cond: [f => f.add_getter('flow_equals', { args: [ { from_variable: 'latest' },
+        cond: [f => f.add_getter('operator_equals', { args: [ { from_variable: 'latest' },
                                                           [ f => f.add_getter('flow_get_thread_id'),
                                                             0 ]
                                                         ] }), 0]
@@ -25,13 +25,13 @@ export function gen_flow(): FlowGraph {
 
     builder
         .add_trigger('trigger_on_signal', {args: [[source, 0]]})
-        .then(f => f.add_op('op_set_var_value', {
+        .then(f => f.add_op('data_setvariableto', {
             args: [
                 [f => f.add_getter('flow_get_thread_id'), 0],
             ],
             slots: { 'variable': 'latest' }
         }))
-        .then(f => f.add_op('op_wait_seconds', {args: [ 1 ]}))
+        .then(f => f.add_op('control_wait', {args: [ 1 ]}))
         .then_id(cond)
     ;
 

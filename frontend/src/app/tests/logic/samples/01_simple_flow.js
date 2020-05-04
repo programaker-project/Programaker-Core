@@ -173,7 +173,7 @@ module.exports = {
           "options": {
             "icon": "/assets/logo-dark.png",
             "message": "Are all equals?",
-            "block_function": "flow_equals",
+            "block_function": "operator_equals",
             "type": "getter",
             "inputs": [
               {
@@ -212,7 +212,7 @@ module.exports = {
           "options": {
             "icon": "/assets/logo-dark.png",
             "message": "Are all equals?",
-            "block_function": "flow_equals",
+            "block_function": "operator_equals",
             "type": "getter",
             "inputs": [
               {

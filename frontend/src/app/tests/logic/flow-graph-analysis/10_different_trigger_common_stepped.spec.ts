@@ -21,13 +21,13 @@ export function gen_flow(): FlowGraph {
     // First trigger
     // Stream section
     const source1 = builder.add_stream('flow_utc_time', {id: 'source1', message: 'UTC time'});
-    const cond1 = builder.add_stream('flow_equals', {args: [[source1, 0], 11]});
+    const cond1 = builder.add_stream('operator_equals', {args: [[source1, 0], 11]});
     const trigger1 = builder.add_trigger('trigger_when_all_true', {args: [[cond1, 0]]});
 
 
     // Second trigger
     const source2 = builder.add_stream('flow_utc_time', {id: 'source2', message: 'UTC time'});
-    const cond2 = builder.add_stream('flow_equals', {args: [[source2, 1], [source2, 2], 0]});
+    const cond2 = builder.add_stream('operator_equals', {args: [[source2, 1], [source2, 2], 0]});
     const trigger2 = builder.add_trigger('trigger_when_all_true', {args: [[cond2, 0]]});
 
     // Stepped section

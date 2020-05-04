@@ -51,12 +51,12 @@ export type CompiledBlockArgList = CompiledBlockArg[];
 
 export type CompiledBlockType = "wait_for_monitor"
     | "control_if_else"
-    | "operator_and" | "operator_equals" | "flow_lesser_than" | "flow_greater_than"
-    | "flow_addition" | "flow_modulo"
+    | "operator_and" | "operator_equals" | "operator_lt" | "operator_gt"
+    | "operator_add" | "flow_modulo"
     | "flow_last_value"
-    | "op_set_var_value" | "flow_get_var_value"
+    | "data_setvariableto" | "data_variable"
     | "command_call_service"
-    | "op_wait_seconds"
+    | "control_wait"
     | "op_log_value" | "flow_get_thread_id"
     | "jump_to_position"
     | "jump_to_block"
@@ -65,7 +65,7 @@ export type CompiledBlockType = "wait_for_monitor"
     | "trigger_when_all_completed"
     | "trigger_when_first_completed"
     | "op_preload_getter"
-    | "flow_list_length" | "op_delete_list_entry" | "op_add_to_list"
+    | "data_lengthoflist" | "data_deleteoflist" | "data_addtolist"
     ;
 export type CompiledBlockArgs = CompiledBlockArgMonitorDict | CompiledBlockArgCallServiceDict | CompiledBlockArgList;
 

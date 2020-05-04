@@ -12,29 +12,29 @@ export function gen_flow(): FlowGraph {
 
     // Stream section
     const source = builder.add_stream('flow_utc_time', {id: 'source', message: 'UTC time'});
-    const cond = builder.add_stream('flow_equals', {id: 'eq-check', args: [[source, 0], 11]});
+    const cond = builder.add_stream('operator_equals', {id: 'eq-check', args: [[source, 0], 11]});
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {args: [[cond, 0]]});
 
-    const branch1 = builder.add_op('op_wait_seconds', { id: 'branch1',
+    const branch1 = builder.add_op('control_wait', { id: 'branch1',
                                                         args: [ 1 ]
                                                       });
 
-    const branch2 = builder.add_op('op_wait_seconds', { id: 'branch2',
+    const branch2 = builder.add_op('control_wait', { id: 'branch2',
                                                         args: [ 2 ]
                                                       });
 
     builder.add_fork(trigger, [branch1, branch2]);
 
     // Join branch 1 and 2
-    const if_true = builder.add_op('op_wait_seconds', { args: [ 3 ] });
-    const if_false = builder.add_op('op_wait_seconds', { args: [ 4 ] });
+    const if_true = builder.add_op('control_wait', { args: [ 3 ] });
+    const if_false = builder.add_op('control_wait', { args: [ 4 ] });
 
     branch2.then_id(builder.add_if(if_true, if_false, { cond: [cond, 0] }))
 
     const joiner = builder.add_trigger('trigger_when_first_completed', {args: [[branch1, 'pulse'], [ if_true, 'pulse'], [if_false, 'pulse']]});
-    joiner.then(f => f.add_op('op_wait_seconds', { args: [ 9 ] }));
+    joiner.then(f => f.add_op('control_wait', { args: [ 9 ] }));
 
     const graph = builder.build();
     return graph;

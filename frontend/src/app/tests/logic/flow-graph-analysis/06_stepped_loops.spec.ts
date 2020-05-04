@@ -20,8 +20,8 @@ export function gen_flow(): FlowGraph {
 
     // Stream section
     const source = builder.add_stream('flow_utc_time', {id: 'source', message: 'UTC time'});
-    const cond1 = builder.add_stream('flow_equals', {args: [[source, 0], 11]});
-    const cond2 = builder.add_stream('flow_equals', {args: [[source, 1], [source, 2], 0]});
+    const cond1 = builder.add_stream('operator_equals', {args: [[source, 0], 11]});
+    const cond2 = builder.add_stream('operator_equals', {args: [[source, 1], [source, 2], 0]});
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {id: 'trigger', args: [[cond1, 0], [cond2, 0]]})
@@ -32,7 +32,7 @@ export function gen_flow(): FlowGraph {
                                                                                                                   args: [loc]
                                                                                                                 }), 0]]
                                                         });
-    const wait_1sec = builder.add_op('op_wait_seconds', { args: [1]
+    const wait_1sec = builder.add_op('control_wait', { args: [1]
                                                         });
 
     trigger.then(send_message).then(wait_1sec).then(send_message).then(wait_1sec);
