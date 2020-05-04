@@ -13,7 +13,7 @@ export function gen_flow(): FlowGraph {
     // Stream section
     const source = builder.add_stream('flow_utc_time', {id: 'source', message: 'UTC time'});
 
-    const mod = builder.add_stream('flow_modulo', {args: [[source, 0], 2]});
+    const mod = builder.add_stream('operator_modulo', {args: [[source, 0], 2]});
     const cond = builder.add_stream('operator_equals', {args: [[mod, 0], 0]});
 
     // Stepped section

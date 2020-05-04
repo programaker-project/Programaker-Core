@@ -35,6 +35,7 @@
 -define(COMMAND_SUBTRACT, <<"operator_subtract">>).
 -define(COMMAND_MULTIPLY, <<"operator_multiply">>).
 -define(COMMAND_DIVIDE, <<"operator_divide">>).
+-define(COMMAND_MODULO, <<"operator_modulo">>).
 
 %% Variable control
 -define(COMMAND_SET_VARIABLE, <<"data_setvariableto">>).

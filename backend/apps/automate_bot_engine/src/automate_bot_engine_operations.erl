@@ -683,6 +683,20 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_DIVIDE
             {error, not_found}
     end;
 
+get_block_result(Op=#{ ?TYPE := ?COMMAND_MODULO
+                     , ?ARGUMENTS := [ First
+                                     , Second
+                                     ]
+                     }, Thread) ->
+    FirstResult = automate_bot_engine_variables:resolve_argument(First, Thread, Op),
+    SecondResult = automate_bot_engine_variables:resolve_argument(Second, Thread, Op),
+    case [FirstResult, SecondResult] of
+        [{ok, FirstValue}, {ok, SecondValue}] ->
+            automate_bot_engine_values:modulo(FirstValue, SecondValue);
+        _ ->
+            {error, not_found}
+    end;
+
 %% Comparations
 get_block_result(Op=#{ ?TYPE := ?COMMAND_LESS_THAN
                      , ?ARGUMENTS := [ First

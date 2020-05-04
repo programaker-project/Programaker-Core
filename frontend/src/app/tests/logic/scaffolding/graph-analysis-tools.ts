@@ -157,7 +157,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "control_wait":
         case "control_if_else":
         case "trigger_when_all_completed":
-        case "flow_modulo":
+        case "operator_modulo":
         case "operator_add":
         case "op_log_value":
         case "operator_lt":

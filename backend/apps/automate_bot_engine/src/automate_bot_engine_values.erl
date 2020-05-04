@@ -7,6 +7,7 @@
         , subtract/2
         , multiply/2
         , divide/2
+        , modulo/2
         , is_less_than/2
         , is_greater_than/2
         , is_equal_to/2
@@ -42,7 +43,7 @@ get_value_by_key(Key, Map) when is_map(Map) and is_binary(Key) ->
     end;
 
 %% If this is not a map, fail
-get_value_by_key(V1, V2) ->
+get_value_by_key(_V1, _V2) ->
     {error, not_found}.
 
 -spec subtract(_, _) -> {ok, number()} | {error, not_found}.
@@ -88,6 +89,22 @@ divide(Left, Right) when is_binary(Left) and is_binary(Right) ->
 
 divide(V1, V2) ->
     divide(to_bin(V1), to_bin(V2)).
+
+-spec modulo(_, _) -> {ok, number()} | {error, not_found}.
+modulo(Left, Right) when is_binary(Left) and is_binary(Right) ->
+    case combined_type(Left, Right) of
+        {integer, PreviousInt, ChangeInt} ->
+            %% Probably overkill, but this implements a proper modulo, and not
+            %% just a truncated division.
+            {ok, math:fmod(math:fmod(PreviousInt, ChangeInt) + ChangeInt, ChangeInt)};
+        {float, PreviousF, ChangeF} ->
+            {ok, math:fmod(math:fmod(PreviousF, ChangeF) + ChangeF, ChangeF)};
+        _ ->
+            {error, not_found}
+    end;
+
+modulo(V1, V2) ->
+    modulo(to_bin(V1), to_bin(V2)).
 
 
 -spec is_less_than(_, _) -> {ok, boolean()} | {error, not_found}.

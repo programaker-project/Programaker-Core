@@ -52,7 +52,7 @@ export type CompiledBlockArgList = CompiledBlockArg[];
 export type CompiledBlockType = "wait_for_monitor"
     | "control_if_else"
     | "operator_and" | "operator_equals" | "operator_lt" | "operator_gt"
-    | "operator_add" | "flow_modulo"
+    | "operator_add" | "operator_modulo"
     | "flow_last_value"
     | "data_setvariableto" | "data_variable"
     | "command_call_service"

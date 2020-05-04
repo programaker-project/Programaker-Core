@@ -345,7 +345,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: '%i1 modulo %i2',
-                block_function: 'flow_modulo',
+                block_function: 'operator_modulo',
                 type: 'getter',
                 inputs: [
                     {

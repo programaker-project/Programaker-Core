@@ -99,6 +99,18 @@ tests(_SetupResult) ->
     , {"[Bot operation][Divide] Divide int and float",   fun divide_int_and_float/0}
     , {"[Bot operation][Divide] Divide float and float", fun divide_float_and_float/0}
 
+      %% Modulo
+    , {"[Bot operation][Divide] Modulo",                          fun modulo_simple/0}
+    , {"[Bot operation][Divide] Modulo of positive and negative", fun modulo_pos_and_neg/0}
+    , {"[Bot operation][Divide] Modulo of negative and positive", fun modulo_neg_and_pos/0}
+    , {"[Bot operation][Divide] Modulo of negative and negative", fun modulo_neg_and_neg/0}
+    , {"[Bot operation][Divide] Modulo two str",         fun modulo_str_and_str/0}
+    , {"[Bot operation][Divide] Modulo str and int",     fun modulo_str_and_int/0}
+    , {"[Bot operation][Divide] Modulo str and float",   fun modulo_str_and_float/0}
+    , {"[Bot operation][Divide] Modulo int and int",     fun modulo_int_and_int/0}
+    , {"[Bot operation][Divide] Modulo int and float",   fun modulo_int_and_float/0}
+    , {"[Bot operation][Divide] Modulo float and float", fun modulo_float_and_float/0}
+
       %%# Comparisons
       %% Less than
     , {"[Bot operation][Equals] Less than string and string (true)",  fun lt_string_and_string_true/0}
@@ -389,6 +401,90 @@ divide_float_and_float() ->
                                                                    ]
                                                    }, ?EMPTY_THREAD),
     ?assertMatch({ok, 5.25}, R).
+
+%%% Modulo
+modulo_simple() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(4)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 0.0}, R).
+
+%% Difference between remainder and modulo
+modulo_pos_and_neg() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(7)
+                                                                   , constant_val(-3)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, -2.0}, R).
+
+%% Difference between remainder and modulo
+modulo_neg_and_pos() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(-7)
+                                                                   , constant_val(3)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 2.0}, R).
+
+%% Difference between remainder and modulo
+modulo_neg_and_neg() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(-7)
+                                                                   , constant_val(-3)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, -1.0}, R).
+
+modulo_str_and_str() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(<<"5">>)
+                                                                   , constant_val(<<"2">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0}, R).
+
+modulo_str_and_int() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(<<"5">>)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0}, R).
+
+modulo_str_and_float() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(<<"5">>)
+                                                                   , constant_val(2.0)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0}, R).
+
+modulo_int_and_int() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(5)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0}, R).
+
+modulo_int_and_float() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(5)
+                                                                   , constant_val(2.0)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0}, R).
+
+modulo_float_and_float() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(5.25)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.25}, R).
 
 %%%% Comparisons
 %%% Less than

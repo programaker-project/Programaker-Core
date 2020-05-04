@@ -32,7 +32,7 @@ export const OP_TRANSLATIONS = {
     '>': 'operator_gt',
 
     // Operations
-    'mod': 'flow_modulo',
+    'mod': 'operator_modulo',
     '+': 'operator_add',
     'add-to-list': 'data_addtolist',
     'list-length': 'data_lengthoflist',
