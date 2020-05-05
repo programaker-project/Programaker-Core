@@ -37,11 +37,11 @@
 %%                   }) ->
 %%     automate_monitor_engine:get_last_monitor_result(MonitorId).
 
--spec resolve_argument(map(), #program_thread{}, map()) -> {ok, any()} | {error, not_found}.
+-spec resolve_argument(map(), #program_thread{}, map()) -> {ok, any(), #program_thread{}} | {error, not_found}.
 resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
                   , ?VALUE := Value
-                  }, _Thread, _ParentBlock) ->
-    {ok, Value};
+                  }, Thread, _ParentBlock) ->
+    {ok, Value, Thread};
 
 resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
                   , ?VALUE := [Operator]
@@ -53,7 +53,7 @@ resolve_argument(Op=#{ ?TYPE := ?VARIABLE_VARIABLE
                      }, Thread, ParentBlock) ->
     case get_program_variable(Thread, VariableName) of
         {ok, Value} ->
-            {ok, Value};
+            {ok, Value, Thread};
         {error, not_found} ->
             BlockId = case {?UTILS:get_block_id(Op), ?UTILS:get_block_id(ParentBlock)} of
                           { none, Value } -> Value;
@@ -70,7 +70,7 @@ resolve_argument(Op=#{ ?TYPE := ?VARIABLE_LIST
                      }, Thread, ParentBlock) ->
     case get_program_variable(Thread, VariableName) of
         {ok, Value} ->
-            {ok, Value};
+            {ok, Value, Thread};
         {error, not_found} ->
             BlockId = case {?UTILS:get_block_id(Op), ?UTILS:get_block_id(ParentBlock)} of
                           { none, Value } -> Value;

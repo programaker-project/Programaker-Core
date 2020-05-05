@@ -164,11 +164,11 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COM
                                  end,
 
     case automate_bot_engine_variables:resolve_argument(Argument, ThreadWithSavedValue, Op) of
-        {ok, MessageContent} ->
+        {ok, MessageContent, UpdatedThread} ->
             {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
-                                ThreadWithSavedValue, MonitorId, FullMessage),
+                                UpdatedThread, MonitorId, FullMessage),
             {true, NewThread};
-        {ok, _Found} ->
+        {ok, _Found, _DiscardedThread} ->
             %% io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
             false
     end;
@@ -214,14 +214,14 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
         true ->
             {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
             {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-            MatchingContent = case MonitorArgs of
+            {MatchingContent, Thread2} = case MonitorArgs of
                                   #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->
-                                      {ok, ResolvedExpectedValue} = automate_bot_engine_variables:resolve_argument(
-                                                                      ExpectedValue, Thread, Op),
+                                      {ok, ResolvedExpectedValue, UpdatedThread} = automate_bot_engine_variables:resolve_argument(
+                                                                              ExpectedValue, Thread, Op),
                                       ActualValue = maps:get(?CHANNEL_MESSAGE_CONTENT, FullMessage, none),
-                                      ResolvedExpectedValue == ActualValue;
+                                                 {ResolvedExpectedValue == ActualValue, UpdatedThread};
                                   _ ->
-                                      true
+                                      {true, Thread}
                               end,
             case {MonitorId, MatchingContent} of
                 {TriggeredMonitorId, true} ->
@@ -229,9 +229,9 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                                                      { #{ ?MONITOR_SAVE_VALUE_TO := SaveTo }
                                                      , #{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }
                                                      } ->
-                                                         save_value(Thread, SaveTo, MessageContent);
+                                                         save_value(Thread2, SaveTo, MessageContent);
                                                      _ ->
-                                                         {ok, Thread}
+                                                         {ok, Thread2}
                                                  end,
 
                     {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(

@@ -16,14 +16,14 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec add(_, _) -> {ok, number()}.
+-spec add(_, _) -> {ok, number()} | {error, not_found}.
 add(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->
             {ok, PreviousInt + ChangeInt};
         {float, PreviousF, ChangeF} ->
             {ok, PreviousF + ChangeF};
-        {string, PreviousS, ChangeS} ->
+        {string, _PreviousS, _ChangeS} ->
             {error, not_found}
     end;
 
@@ -31,11 +31,11 @@ add(Left, Right) when is_binary(Left) and is_binary(Right) ->
 add(V1, V2) ->
     add(to_bin(V1), to_bin(V2)).
 
--spec join(_, _) -> {ok, binary()}.
+-spec join(_, _) -> {ok, binary()} | {error, any()}.
 join(V1, V2) ->
     {ok, binary:list_to_bin(lists:flatten(io_lib:format("~s~s", [to_string(V1), to_string(V2)])))}.
 
--spec get_value_by_key(binary(), map()) -> {ok, binary()}.
+-spec get_value_by_key(binary(), map()) -> {ok, binary()} | {error, not_found}.
 get_value_by_key(Key, Map) when is_map(Map) and is_binary(Key) ->
     case maps:is_key(Key, Map) of
         true -> {ok, maps:get(Key, Map)};
