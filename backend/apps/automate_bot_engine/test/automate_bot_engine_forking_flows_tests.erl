@@ -55,6 +55,7 @@ tests(_SetupResult) ->
     %% Operations
     %% Lists
     [ {"[Bot engine][Fork Operations] Simple fork (no join)", fun simple_fork_no_join/0}
+    , {"[Bot engine][Fork Operations] Simple fork with join", fun simple_fork_with_join/0}
     ].
 
 %%%% Operations
@@ -63,21 +64,22 @@ simple_fork_no_join() ->
 
     ProgramId = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
     Thread = #program_thread{ position = [1]
-                            , program=[#{ ?TYPE => ?COMMAND_FORK_EXECUTION
-                                        , ?CONTENTS => [ #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
-                                                                            , ?ARGUMENTS => [ constant_val(<<"first branch">>)
-                                                                                            ]
-                                                                            }
-                                                                         ]
-                                                          }
-                                                       , #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
-                                                                            , ?ARGUMENTS => [ constant_val(<<"second branch">>)
-                                                                                            ]
-                                                                            }
-                                                                         ]
-                                                          }
-                                                       ]
-                                        }]
+                            , program=[ #{ ?TYPE => ?COMMAND_FORK_EXECUTION
+                                         , ?CONTENTS => [ #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                             , ?ARGUMENTS => [ constant_val(<<"first branch">>)
+                                                                                             ]
+                                                                             }
+                                                                          ]
+                                                           }
+                                                        , #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                             , ?ARGUMENTS => [ constant_val(<<"second branch">>)
+                                                                                             ]
+                                                                             }
+                                                                          ]
+                                                           }
+                                                        ]
+                                         }
+                                      ]
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
@@ -87,13 +89,58 @@ simple_fork_no_join() ->
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
     {ok, Logs} = automate_bot_engine:get_user_generated_logs(ProgramId),
 
-    [#user_generated_log_entry{event_message=First},
-     #user_generated_log_entry{event_message=Second}] = Logs,
+    [ #user_generated_log_entry{event_message=First}
+    , #user_generated_log_entry{event_message=Second}
+    ] = Logs,
 
     io:fwrite("Logs: ~p~n", [[First, Second]]),
     io:fwrite("Expected: ~p~n", [ExpectedLogs]),
     ?assert(([First, Second] =:= ExpectedLogs)
             or ([Second, First] =:= ExpectedLogs)).
+
+simple_fork_with_join() ->
+    ExpectedLogs = [<<"first branch">>, <<"second branch">>, <<"joined">>], %% Note that the first two might be shuffled
+
+    ProgramId = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+    Thread = #program_thread{ position = [1]
+                            , program=[ #{ ?TYPE => ?COMMAND_FORK_EXECUTION
+                                         , ?CONTENTS => [ #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                             , ?ARGUMENTS => [ constant_val(<<"first branch">>)
+                                                                                             ]
+                                                                             }
+                                                                          ]
+                                                           }
+                                                        , #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                             , ?ARGUMENTS => [ constant_val(<<"second branch">>)
+                                                                                             ]
+                                                                             }
+                                                                          ]
+                                                           }
+                                                        ]
+                                         }
+                                      , #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                         , ?ARGUMENTS => [ constant_val(<<"joined">>)
+                                                         ]
+                                         }
+                                      ]
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            },
+
+    {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread),
+    timer:sleep(?WAIT_PER_INSTRUCTION * 4),
+    {ok, Logs} = automate_bot_engine:get_user_generated_logs(ProgramId),
+
+    [ #user_generated_log_entry{event_message=First}
+    , #user_generated_log_entry{event_message=Second}
+    , #user_generated_log_entry{event_message=Joined}
+    ] = Logs,
+
+    io:fwrite("Logs: ~p~n", [[First, Second]]),
+    io:fwrite("Expected: ~p~n", [ExpectedLogs]),
+    ?assert(([First, Second, Joined] =:= ExpectedLogs)
+            or ([Second, First, Joined] =:= ExpectedLogs)).
 
 
 %%====================================================================

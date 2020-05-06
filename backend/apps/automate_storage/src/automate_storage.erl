@@ -57,6 +57,7 @@
         , dirty_list_running_threads/0
         , register_thread_runner/2
         , get_thread_from_id/1
+        , dirty_is_thread_alive/1
         , delete_thread/1
         , update_thread/1
         , get_threads_from_program/1
@@ -946,7 +947,14 @@ get_thread_from_id(ThreadId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
-
+-spec dirty_is_thread_alive(binary()) -> {ok, boolean()}.
+dirty_is_thread_alive(ThreadId) ->
+    case mnesia:dirty_read(?RUNNING_THREADS_TABLE, ThreadId) of
+        [] ->
+            {ok, false};
+        [_Thread] ->
+            {ok, true}
+    end.
 
 -spec get_program_variable(binary(), binary()) -> {ok, any()} | {error, not_found}.
 get_program_variable(ProgramId, Key) ->
