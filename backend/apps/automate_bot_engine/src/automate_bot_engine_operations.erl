@@ -566,8 +566,33 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_LOG_VALUE
                                                    }),
     {ran_this_tick, increment_position(Thread2)};
 
+run_instruction(#{ ?TYPE := ?COMMAND_FORK_EXECUTION
+                   %% , ?ARGUMENTS := [ Arg
+                   %%                 ]
+                 , ?CONTENTS := Flows
+                 }, Thread=#program_thread{ program_id=ProgramId, position=Position },
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+        {ok, _} ->
+            _Thread2 = automate_bot_engine_variables:unset_instruction_memory(Thread),
+            {stopped, thread_finished}; %% TODO: Find a way to re-join forked executions
+        {error, not_found} ->
+            Thread2 = automate_bot_engine_variables:set_instruction_memory(
+                        Thread, {already_run, true}),
+
+            lists:map(fun(Index) ->
+                              {ok, _ThreadId } = automate_bot_engine_thread_launcher:launch_thread(
+                                                   ProgramId,
+                                                   Thread2#program_thread{position=Position ++ [Index, 1]})
+                      end, lists:seq(1, length(Flows))),
+            {stopped, thread_finished} %% TODO: Find a way to re-join forked executions
+    end;
+
 run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
-    io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
+    automate_logging:log_platform(
+      warning,
+      io_lib:format("Unhandled instruction/msg: ~p/~p", [Instruction, Message])),
     {did_not_run, waiting};
 
 run_instruction(#{ <<"contents">> := _Content }, Thread, _Message) ->

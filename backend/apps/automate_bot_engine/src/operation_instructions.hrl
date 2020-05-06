@@ -11,6 +11,7 @@
 -define(COMMAND_WAIT_UNTIL, <<"control_wait_until">>).
 -define(COMMAND_IF, <<"control_if">>).
 -define(COMMAND_IF_ELSE, <<"control_if_else">>).
+-define(COMMAND_FORK_EXECUTION, <<"op_fork_execution">>).
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).

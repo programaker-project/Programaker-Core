@@ -38,9 +38,14 @@ set_metric(Type, Name, Value, Labels) ->
 
 
 -spec log_observation(counter, atom() | binary(), [atom() | binary()]) -> ok.
+-ifdef(NOTEST).
 log_observation(counter, Name, Labels) ->
     prometheus_counter:inc(Name, Labels),
     ok.
+-else.
+log_observation(counter, _Name, _Labels) ->
+    ok.
+-endif.
 
 -spec remove_metric(metric_type(), atom() | binary()) -> ok.
 remove_metric(Type, Name) ->
