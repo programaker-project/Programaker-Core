@@ -548,6 +548,24 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_PRELOAD_GETTER
     {ok, _Result, Thread2 } = automate_bot_engine_variables:resolve_argument(Arg, Thread, Op),
     {ran_this_tick, increment_position(Thread2)};
 
+run_instruction(Op=#{ ?TYPE := ?COMMAND_LOG_VALUE
+                    , ?ARGUMENTS := [ Arg
+                                    ]
+                    }, Thread=#program_thread{ program_id=ProgramId },
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, ArgValue, Thread2 } = automate_bot_engine_variables:resolve_argument(Arg, Thread, Op),
+    Message = binary:list_to_bin(
+                lists:flatten(io_lib:format("~s", [ArgValue]))),
+    ok = automate_storage:add_user_generated_log(#user_generated_log_entry{
+                                                    severity=debug,
+                                                    program_id=ProgramId,
+                                                    block_id=?UTILS:get_block_id(Op),
+                                                    event_message=Message,
+                                                    event_time=os:system_time(millisecond)
+                                                   }),
+    {ran_this_tick, increment_position(Thread2)};
+
 run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
     io:format("Unhandled instruction/msg: ~p/~p~n", [Instruction, Message]),
     {did_not_run, waiting};

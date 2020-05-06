@@ -58,3 +58,6 @@
 %% Introduced by compiler
 -define(FLOW_LAST_VALUE, <<"flow_last_value">>).
 -define(COMMAND_PRELOAD_GETTER, <<"op_preload_getter">>).
+
+%% Logging
+-define(COMMAND_LOG_VALUE, <<"logging_add_log">>).

@@ -50,6 +50,9 @@
         , get_logs_from_program_id/1
         , dirty_list_running_programs/0
 
+        , add_user_generated_log/1
+        , get_user_generated_logs/1
+
         , create_thread/2
         , dirty_list_running_threads/0
         , register_thread_runner/2
@@ -974,6 +977,41 @@ log_program_error(LogEntry) when is_record(LogEntry, user_program_log_entry) ->
             {error, Reason}
     end.
 
+
+-spec add_user_generated_log(#user_generated_log_entry{}) -> ok | {error, atom()}.
+add_user_generated_log(LogEntry) when is_record(LogEntry, user_generated_log_entry) ->
+    Transaction = fun() ->
+                          %% TODO: Prune logs if ABSOLUTE_MAX_LOG_RESULT_LENGHT is surpassed
+                          ok = mnesia:write(?USER_GENERATED_LOGS_TABLE, LogEntry, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, Reason}
+    end.
+
+-spec get_user_generated_logs(binary()) -> {ok, [#user_generated_log_entry{}]}.
+get_user_generated_logs(ProgramId) ->
+    Transaction = fun() ->
+                          Results = mnesia:read(?USER_GENERATED_LOGS_TABLE, ProgramId),
+                          case length(Results) > ?MAX_LOG_RESULT_LENGTH of
+                              false ->
+                                  {ok, Results};
+                              true ->
+                                  {ok, lists:sublist(Results, length(Results) - ?MAX_LOG_RESULT_LENGTH, length(Results))}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, Reason}
+    end.
+
+
+
 -spec mark_successful_call_to_bridge(binary(), binary()) -> ok.
 mark_successful_call_to_bridge(ProgramId, _BridgeId) ->
     CurrentTime = erlang:system_time(second),
@@ -1698,6 +1736,7 @@ set_program_variable(ProgramId, Key, Value) ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
+
 
 %%====================================================================
 %% Startup functions
