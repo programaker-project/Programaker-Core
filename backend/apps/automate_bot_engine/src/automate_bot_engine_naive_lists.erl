@@ -8,6 +8,8 @@
         , get_length/1
         , contains/2
         , get_item_num/2
+
+        , pad_to_length/3
         ]).
 
 %%%===================================================================
@@ -50,6 +52,11 @@ contains(List, Value) ->
 -spec get_item_num([any()], any()) -> {ok, pos_integer()} | {error, not_found}.
 get_item_num(List, Value) ->
     find_item(List, Value, 1).
+
+
+pad_to_length(List, Length, Padding) ->
+    List ++ build_list(Length - length(List), Padding).
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -95,3 +102,14 @@ find_item([], _, _) ->
 
 find_item([_ | T ], Value, Index) ->
     find_item(T, Value, Index + 1).
+
+
+-spec build_list(number(), any()) -> [any()].
+build_list(Length, _Element) when Length =< 0 ->
+    [];
+build_list(Length, Element) ->
+    build_list(Length, Element, []).
+build_list(0, _Element, Acc) ->
+    Acc;
+build_list(Length, Element, Acc) when Length > 0 ->
+    build_list(Length - 1, Element, [Element | Acc]).

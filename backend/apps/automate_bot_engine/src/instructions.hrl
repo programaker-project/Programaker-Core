@@ -42,3 +42,6 @@
 -define(SERVICE_ACTION, <<"service_action">>).
 
 -define(LAST_MONITOR_VALUES, <<"__last_monitor_values__">>).
+
+%%%% Special data
+-define(LIST_FILL, null).

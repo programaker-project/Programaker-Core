@@ -338,9 +338,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_ADD_TO_LIST
                       {ok, Value} ->
                           Value;
                       {error, not_found} ->
-                          throw(#program_error{ error=#list_not_set{ list_name=ListName }
-                                              , block_id=?UTILS:get_block_id(Op)
-                                              })
+                          []
                   end,
 
     %% TODO (optimization) avoid using list++list
@@ -373,6 +371,16 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
     {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, ListName, ValueAfter),
     {ran_this_tick, increment_position(Thread3)};
 
+run_instruction(#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                    , ?VALUE := ListName
+                                    }
+                                 ]
+                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Thread2 } = automate_bot_engine_variables:set_program_variable(Thread, ListName, []),
+    {ran_this_tick, increment_position(Thread2)};
+
 run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
                                        , ?VALUE := ListName
@@ -389,12 +397,13 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
                       {ok, ListOnDB} ->
                           ListOnDB;
                       {error, not_found} ->
-                          throw(#program_error{ error=#list_not_set{ list_name=ListName }
-                                              , block_id=?UTILS:get_block_id(Op)
-                                              })
+                          []
                   end,
 
-    ValueAfter = automate_bot_engine_naive_lists:insert_nth(ValueBefore, Index, Value),
+    PaddedValue = automate_bot_engine_naive_lists:pad_to_length(
+                    ValueBefore, IndexValue - 1, ?LIST_FILL), %% Remember: 1-indexed
+
+    ValueAfter = automate_bot_engine_naive_lists:insert_nth(PaddedValue, Index, Value),
 
     {ok, Thread4 } = automate_bot_engine_variables:set_program_variable(Thread3, ListName, ValueAfter),
     {ran_this_tick, increment_position(Thread4)};
@@ -415,12 +424,12 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
                       {ok, ListOnDB} ->
                           ListOnDB;
                       {error, not_found} ->
-                          throw(#program_error{ error=#list_not_set{ list_name=ListName }
-                                              , block_id=?UTILS:get_block_id(Op)
-                                              })
+                          []
                   end,
 
-    ValueAfter = automate_bot_engine_naive_lists:replace_nth(ValueBefore, Index, Value),
+    PaddedValue = automate_bot_engine_naive_lists:pad_to_length(
+                    ValueBefore, IndexValue - 1, ?LIST_FILL), %% Remember: 1-indexed
+    ValueAfter = automate_bot_engine_naive_lists:replace_nth(PaddedValue, Index, Value),
 
     {ok, Thread4 } = automate_bot_engine_variables:set_program_variable(Thread3, ListName, ValueAfter),
     {ran_this_tick, increment_position(Thread4)};
@@ -847,29 +856,29 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_ITEMNUM_OF_LIST
     case automate_bot_engine_variables:get_program_variable(Thread2, ListName) of
         {ok, List} ->
             case automate_bot_engine_naive_lists:get_item_num(List, Value) of
-                {ok, Value} ->
-                    {ok, Value, Thread2}
-            end;
+                {ok, Index} ->
+                    {ok, Index, Thread2};
+                {error, not_found} ->
+                    {error, not_found}
+                end;
         {error, not_found} ->
             throw(#program_error{ error=#list_not_set{ list_name=ListName }
                                 , block_id=?UTILS:get_block_id(Op)
                                 })
     end;
 
-get_block_result(Op=#{ ?TYPE := ?COMMAND_LENGTH_OF_LIST
-                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
-                                        , ?VALUE := ListName
-                                        }
-                                     ]
-                     }, Thread) ->
+get_block_result(#{ ?TYPE := ?COMMAND_LENGTH_OF_LIST
+                  , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                     , ?VALUE := ListName
+                                     }
+                                  ]
+                  }, Thread) ->
     case automate_bot_engine_variables:get_program_variable(Thread, ListName) of
         {ok, List} ->
             {ok, Value} = automate_bot_engine_naive_lists:get_length(List),
             {ok, Value, Thread};
         {error, not_found} ->
-            throw(#program_error{ error=#list_not_set{ list_name=ListName }
-                                , block_id=?UTILS:get_block_id(Op)
-                                })
+            {ok, 0, Thread}
     end;
 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
@@ -882,12 +891,10 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_LIST_CONTAINS_ITEM
     {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(ValueArg, Thread, Op),
     case automate_bot_engine_variables:get_program_variable(Thread2, ListName) of
         {ok, List} ->
-            Value = automate_bot_engine_naive_lists:contains(List, Value),
-            {ok, Value, Thread2};
+            Found = automate_bot_engine_naive_lists:contains(List, Value),
+            {ok, Found, Thread2};
         {error, not_found} ->
-            throw(#program_error{ error=#list_not_set{ list_name=ListName }
-                                , block_id=?UTILS:get_block_id(Op)
-                                })
+            {ok, false, Thread2}
     end;
 
 get_block_result(#{ ?TYPE := <<"monitor.retrieve.", MonitorId/binary>>
