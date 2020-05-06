@@ -1,8 +1,7 @@
-
-%%% Automate bot engine operation tests.
+%%% Automate bot engine getters tests.
 %%% @end
 
--module(automate_bot_engine_operations_tests).
+-module(automate_bot_engine_getters_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 %% Data structures
@@ -58,104 +57,104 @@ stop({_NodeName}) ->
 
 
 tests(_SetupResult) ->
-    %%# Operations
+    %% Operations
     %% Join
-    [ {"[Bot operation][Join] Join two str",        fun join_str_and_str/0}
-    , {"[Bot operation][Join] Join str to int",     fun join_str_to_int/0}
-    , {"[Bot operation][Join] Join str to float",   fun join_str_to_float/0}
-    , {"[Bot operation][Join] Join int to int",     fun join_int_to_int/0}
-    , {"[Bot operation][Join] Join int to float",   fun join_int_to_float/0}
-    , {"[Bot operation][Join] Join float to float", fun join_float_to_float/0}
+    [ {"[Bot engine][Getter][Join] Join two str",        fun join_str_and_str/0}
+    , {"[Bot engine][Getter][Join] Join str to int",     fun join_str_to_int/0}
+    , {"[Bot engine][Getter][Join] Join str to float",   fun join_str_to_float/0}
+    , {"[Bot engine][Getter][Join] Join int to int",     fun join_int_to_int/0}
+    , {"[Bot engine][Getter][Join] Join int to float",   fun join_int_to_float/0}
+    , {"[Bot engine][Getter][Join] Join float to float", fun join_float_to_float/0}
 
       %% Add
-    , {"[Bot operation][Add] Add two str",        fun add_str_and_str/0}
-    , {"[Bot operation][Add] Add str to int",     fun add_str_and_int/0}
-    , {"[Bot operation][Add] Add str to float",   fun add_str_and_float/0}
-    , {"[Bot operation][Add] Add int to int",     fun add_int_and_int/0}
-    , {"[Bot operation][Add] Add int to float",   fun add_int_and_float/0}
-    , {"[Bot operation][Add] Add float to float", fun add_float_and_float/0}
+    , {"[Bot engine][Getter][Add] Add two str",        fun add_str_and_str/0}
+    , {"[Bot engine][Getter][Add] Add str to int",     fun add_str_and_int/0}
+    , {"[Bot engine][Getter][Add] Add str to float",   fun add_str_and_float/0}
+    , {"[Bot engine][Getter][Add] Add int to int",     fun add_int_and_int/0}
+    , {"[Bot engine][Getter][Add] Add int to float",   fun add_int_and_float/0}
+    , {"[Bot engine][Getter][Add] Add float to float", fun add_float_and_float/0}
 
       %% Subtract
-    , {"[Bot operation][Sub] Subtract two str",          fun sub_str_and_str/0}
-    , {"[Bot operation][Sub] Subtract str from int",     fun sub_str_and_int/0}
-    , {"[Bot operation][Sub] Subtract str from float",   fun sub_str_and_float/0}
-    , {"[Bot operation][Sub] Subtract int from int",     fun sub_int_and_int/0}
-    , {"[Bot operation][Sub] Subtract int from float",   fun sub_int_and_float/0}
-    , {"[Bot operation][Sub] Subtract float from float", fun sub_float_and_float/0}
+    , {"[Bot engine][Getter][Sub] Subtract two str",          fun sub_str_and_str/0}
+    , {"[Bot engine][Getter][Sub] Subtract str from int",     fun sub_str_and_int/0}
+    , {"[Bot engine][Getter][Sub] Subtract str from float",   fun sub_str_and_float/0}
+    , {"[Bot engine][Getter][Sub] Subtract int from int",     fun sub_int_and_int/0}
+    , {"[Bot engine][Getter][Sub] Subtract int from float",   fun sub_int_and_float/0}
+    , {"[Bot engine][Getter][Sub] Subtract float from float", fun sub_float_and_float/0}
 
       %% Multiply
-    , {"[Bot operation][Multiply] Multiply two str",         fun mult_str_and_str/0}
-    , {"[Bot operation][Multiply] Multiply str and int",     fun mult_str_and_int/0}
-    , {"[Bot operation][Multiply] Multiply str and float",   fun mult_str_and_float/0}
-    , {"[Bot operation][Multiply] Multiply int and int",     fun mult_int_and_int/0}
-    , {"[Bot operation][Multiply] Multiply int and float",   fun mult_int_and_float/0}
-    , {"[Bot operation][Multiply] Multiply float and float", fun mult_float_and_float/0}
+    , {"[Bot engine][Getter][Multiply] Multiply two str",         fun mult_str_and_str/0}
+    , {"[Bot engine][Getter][Multiply] Multiply str and int",     fun mult_str_and_int/0}
+    , {"[Bot engine][Getter][Multiply] Multiply str and float",   fun mult_str_and_float/0}
+    , {"[Bot engine][Getter][Multiply] Multiply int and int",     fun mult_int_and_int/0}
+    , {"[Bot engine][Getter][Multiply] Multiply int and float",   fun mult_int_and_float/0}
+    , {"[Bot engine][Getter][Multiply] Multiply float and float", fun mult_float_and_float/0}
 
       %% Divide
-    , {"[Bot operation][Divide] Divide two str",         fun divide_str_and_str/0}
-    , {"[Bot operation][Divide] Divide str and int",     fun divide_str_and_int/0}
-    , {"[Bot operation][Divide] Divide str and float",   fun divide_str_and_float/0}
-    , {"[Bot operation][Divide] Divide int and int",     fun divide_int_and_int/0}
-    , {"[Bot operation][Divide] Divide int and float",   fun divide_int_and_float/0}
-    , {"[Bot operation][Divide] Divide float and float", fun divide_float_and_float/0}
+    , {"[Bot engine][Getter][Divide] Divide two str",         fun divide_str_and_str/0}
+    , {"[Bot engine][Getter][Divide] Divide str and int",     fun divide_str_and_int/0}
+    , {"[Bot engine][Getter][Divide] Divide str and float",   fun divide_str_and_float/0}
+    , {"[Bot engine][Getter][Divide] Divide int and int",     fun divide_int_and_int/0}
+    , {"[Bot engine][Getter][Divide] Divide int and float",   fun divide_int_and_float/0}
+    , {"[Bot engine][Getter][Divide] Divide float and float", fun divide_float_and_float/0}
 
       %% Modulo
-    , {"[Bot operation][Divide] Modulo",                          fun modulo_simple/0}
-    , {"[Bot operation][Divide] Modulo of positive and negative", fun modulo_pos_and_neg/0}
-    , {"[Bot operation][Divide] Modulo of negative and positive", fun modulo_neg_and_pos/0}
-    , {"[Bot operation][Divide] Modulo of negative and negative", fun modulo_neg_and_neg/0}
-    , {"[Bot operation][Divide] Modulo two str",         fun modulo_str_and_str/0}
-    , {"[Bot operation][Divide] Modulo str and int",     fun modulo_str_and_int/0}
-    , {"[Bot operation][Divide] Modulo str and float",   fun modulo_str_and_float/0}
-    , {"[Bot operation][Divide] Modulo int and int",     fun modulo_int_and_int/0}
-    , {"[Bot operation][Divide] Modulo int and float",   fun modulo_int_and_float/0}
-    , {"[Bot operation][Divide] Modulo float and float", fun modulo_float_and_float/0}
+    , {"[Bot engine][Getter][Divide] Modulo",                          fun modulo_simple/0}
+    , {"[Bot engine][Getter][Divide] Modulo of positive and negative", fun modulo_pos_and_neg/0}
+    , {"[Bot engine][Getter][Divide] Modulo of negative and positive", fun modulo_neg_and_pos/0}
+    , {"[Bot engine][Getter][Divide] Modulo of negative and negative", fun modulo_neg_and_neg/0}
+    , {"[Bot engine][Getter][Divide] Modulo two str",         fun modulo_str_and_str/0}
+    , {"[Bot engine][Getter][Divide] Modulo str and int",     fun modulo_str_and_int/0}
+    , {"[Bot engine][Getter][Divide] Modulo str and float",   fun modulo_str_and_float/0}
+    , {"[Bot engine][Getter][Divide] Modulo int and int",     fun modulo_int_and_int/0}
+    , {"[Bot engine][Getter][Divide] Modulo int and float",   fun modulo_int_and_float/0}
+    , {"[Bot engine][Getter][Divide] Modulo float and float", fun modulo_float_and_float/0}
 
       %%# Comparisons
       %% Less than
-    , {"[Bot operation][Equals] Less than string and string (true)",  fun lt_string_and_string_true/0}
-    , {"[Bot operation][Equals] Less than string and string (false)", fun lt_string_and_string_false/0}
-    , {"[Bot operation][Equals] Less than string and int (true)",     fun lt_string_and_int_true/0}
-    , {"[Bot operation][Equals] Less than string and int (false)",    fun lt_string_and_int_false/0}
-    , {"[Bot operation][Equals] Less than string and float (true)",   fun lt_string_and_float_true/0}
-    , {"[Bot operation][Equals] Less than string and float (false)",  fun lt_string_and_float_false/0}
-    , {"[Bot operation][Equals] Less than int and int (true)",        fun lt_int_and_int_true/0}
-    , {"[Bot operation][Equals] Less than int and int (false)",       fun lt_int_and_int_false/0}
-    , {"[Bot operation][Equals] Less than int and float (true)",      fun lt_int_and_float_true/0}
-    , {"[Bot operation][Equals] Less than int and float (false)",     fun lt_int_and_float_false/0}
-    , {"[Bot operation][Equals] Less than float and float (true)",    fun lt_float_and_float_true/0}
-    , {"[Bot operation][Equals] Less than float and float (false)",   fun lt_float_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Less than string and string (true)",  fun lt_string_and_string_true/0}
+    , {"[Bot engine][Getter][Equals] Less than string and string (false)", fun lt_string_and_string_false/0}
+    , {"[Bot engine][Getter][Equals] Less than string and int (true)",     fun lt_string_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Less than string and int (false)",    fun lt_string_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Less than string and float (true)",   fun lt_string_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Less than string and float (false)",  fun lt_string_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Less than int and int (true)",        fun lt_int_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Less than int and int (false)",       fun lt_int_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Less than int and float (true)",      fun lt_int_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Less than int and float (false)",     fun lt_int_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Less than float and float (true)",    fun lt_float_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Less than float and float (false)",   fun lt_float_and_float_false/0}
 
       %% Greater than
-    , {"[Bot operation][Equals] Greater than string and string (true)",  fun gt_string_and_string_true/0}
-    , {"[Bot operation][Equals] Greater than string and string (false)", fun gt_string_and_string_false/0}
-    , {"[Bot operation][Equals] Greater than string and int (true)",     fun gt_string_and_int_true/0}
-    , {"[Bot operation][Equals] Greater than string and int (false)",    fun gt_string_and_int_false/0}
-    , {"[Bot operation][Equals] Greater than string and float (true)",   fun gt_string_and_float_true/0}
-    , {"[Bot operation][Equals] Greater than string and float (false)",  fun gt_string_and_float_false/0}
-    , {"[Bot operation][Equals] Greater than int and int (true)",        fun gt_int_and_int_true/0}
-    , {"[Bot operation][Equals] Greater than int and int (false)",       fun gt_int_and_int_false/0}
-    , {"[Bot operation][Equals] Greater than int and float (true)",      fun gt_int_and_float_true/0}
-    , {"[Bot operation][Equals] Greater than int and float (false)",     fun gt_int_and_float_false/0}
-    , {"[Bot operation][Equals] Greater than float and float (true)",    fun gt_float_and_float_true/0}
-    , {"[Bot operation][Equals] Greater than float and float (false)",   fun gt_float_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and string (true)",  fun gt_string_and_string_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and string (false)", fun gt_string_and_string_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and int (true)",     fun gt_string_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and int (false)",    fun gt_string_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and float (true)",   fun gt_string_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and float (false)",  fun gt_string_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than int and int (true)",        fun gt_int_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than int and int (false)",       fun gt_int_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than int and float (true)",      fun gt_int_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than int and float (false)",     fun gt_int_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than float and float (true)",    fun gt_float_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than float and float (false)",   fun gt_float_and_float_false/0}
 
       %% Equal to
-    , {"[Bot operation][Equals] Equal string and string (true)",  fun eq_string_and_string_true/0}
-    , {"[Bot operation][Equals] Equal string and string (false)", fun eq_string_and_string_false/0}
-    , {"[Bot operation][Equals] Equal string and int (true)",     fun eq_string_and_int_true/0}
-    , {"[Bot operation][Equals] Equal string and int (false)",    fun eq_string_and_int_false/0}
-    , {"[Bot operation][Equals] Equal string and float (true)",   fun eq_string_and_float_true/0}
-    , {"[Bot operation][Equals] Equal string and float (false)",  fun eq_string_and_float_false/0}
-    , {"[Bot operation][Equals] Equal int and int (true)",        fun eq_int_and_int_true/0}
-    , {"[Bot operation][Equals] Equal int and int (false)",       fun eq_int_and_int_false/0}
-    , {"[Bot operation][Equals] Equal int and float (true)",      fun eq_int_and_float_true/0}
-    , {"[Bot operation][Equals] Equal int and float (false)",     fun eq_int_and_float_false/0}
-    , {"[Bot operation][Equals] Equal float and float (true)",    fun eq_float_and_float_true/0}
-    , {"[Bot operation][Equals] Equal float and float (false)",   fun eq_float_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Equal string and string (true)",  fun eq_string_and_string_true/0}
+    , {"[Bot engine][Getter][Equals] Equal string and string (false)", fun eq_string_and_string_false/0}
+    , {"[Bot engine][Getter][Equals] Equal string and int (true)",     fun eq_string_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Equal string and int (false)",    fun eq_string_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Equal string and float (true)",   fun eq_string_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Equal string and float (false)",  fun eq_string_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Equal int and int (true)",        fun eq_int_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Equal int and int (false)",       fun eq_int_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Equal int and float (true)",      fun eq_int_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Equal int and float (false)",     fun eq_int_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Equal float and float (true)",    fun eq_float_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Equal float and float (false)",   fun eq_float_and_float_false/0}
 
-    , {"[Bot operation][Preload/Last-Value] Sample int-int equality (true)",   fun preload_last_val_eq_int_int_true/0}
-    , {"[Bot operation][Preload/Last-Value] Sample int-int equality (false)",   fun preload_last_val_eq_int_int_false/0}
+    , {"[Bot engine][Getter][Preload/Last-Value] Sample int-int equality (true)",   fun preload_last_val_eq_int_int_true/0}
+    , {"[Bot engine][Getter][Preload/Last-Value] Sample int-int equality (false)",   fun preload_last_val_eq_int_int_false/0}
     ].
 
 %%%% Operations
