@@ -57,6 +57,7 @@ tests(_SetupResult) ->
     [ {"[Bot engine][Fork Operations] Simple fork (no join)", fun simple_fork_no_join/0}
     , {"[Bot engine][Fork Operations] Simple fork with join", fun simple_fork_with_join/0}
     , {"[Bot engine][Fork Operations] Fork and join, check thread IDs", fun fork_and_join_check_thread_ids/0}
+    , {"[Bot engine][Fork Operations] Nested fork and join, check thread IDs", fun nested_fork_and_join_check_thread_ids/0}
     ].
 
 %%%% Operations
@@ -207,6 +208,168 @@ fork_and_join_check_thread_ids() ->
     io:fwrite("Logs: ~p~n", [[Main, First, Second, Main2]]),
     ?assert((Main =:= Main2)
             and (First =/= Second)).
+
+nested_fork_and_join_check_thread_ids() ->
+    ProgramId = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+    Thread = #program_thread{ position = [1]
+                            , program=[ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                         , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                            , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                           }
+                                                                        ]
+                                                            }
+                                                         ]
+                                         }
+                                      , #{ ?TYPE => ?COMMAND_FORK_EXECUTION
+                                         , ?CONTENTS => [ #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                             , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                               }
+                                                                                                            ]
+                                                                                                }
+                                                                                             ]
+                                                                             }
+                                                                          , #{ ?TYPE => ?COMMAND_FORK_EXECUTION
+                                                                             , ?CONTENTS => [ #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                                                                 , ?ARGUMENTS => [  #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                                                     , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                                                                    }
+                                                                                                                                                 ]
+                                                                                                                                     }
+                                                                                                                                 ]
+                                                                                                                 }
+                                                                                                              ]
+                                                                                               }
+                                                                                            , #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                                                                 , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                                                    , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                                                                   }
+                                                                                                                                                ]
+                                                                                                                                    }
+                                                                                                                                 ]
+                                                                                                                 }
+                                                                                                              ]
+                                                                                               }
+                                                                                            ]
+                                                                             }
+                                                                          , #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                             , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                               }
+                                                                                                            ]
+                                                                                                }
+                                                                                             ]
+                                                                             }
+                                                                          ]
+                                                           }
+                                                        ,  #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                              , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                 , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                                }
+                                                                                                             ]
+                                                                                                 }
+                                                                                              ]
+                                                                              }
+                                                                           , #{ ?TYPE => ?COMMAND_FORK_EXECUTION
+                                                                              , ?CONTENTS => [ #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                                                                  , ?ARGUMENTS => [  #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                                                      , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                                                                     }
+                                                                                                                                                  ]
+                                                                                                                                      }
+                                                                                                                                  ]
+                                                                                                                  }
+                                                                                                               ]
+                                                                                                }
+                                                                                             , #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                                                                  , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                                                     , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                                                                    }
+                                                                                                                                                 ]
+                                                                                                                                     }
+                                                                                                                                  ]
+                                                                                                                  }
+                                                                                                               ]
+                                                                                                }
+                                                                                             ]
+                                                                              }
+                                                                           , #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                              , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                 , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                                }
+                                                                                                             ]
+                                                                                                 }
+                                                                                              ]
+                                                                              }
+                                                                           ]
+                                                            }
+                                                        ]
+                                         }
+                                      , #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                         , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                            , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                           }
+                                                                        ]
+                                                            }
+                                                         ]
+                                         }
+                                      ]
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+
+    {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread),
+    timer:sleep(?WAIT_PER_INSTRUCTION * 20),
+    {ok, Logs} = automate_bot_engine:get_user_generated_logs(ProgramId),
+
+    Messages = [ Msg ||  #user_generated_log_entry{event_message=Msg} <- Logs ],
+    io:fwrite("Logs: ~p~n", [Messages]),
+
+    ?assertEqual(length(Messages), 10),
+
+    %% The first and the last should be the same (before fork and after the merge).
+    First = lists:nth(1, Messages),
+    ?assertEqual(First, lists:nth(10, Messages)),
+
+    %% The second should be repeated (as it's one of the top level forks, it will be joined).
+    Second = lists:nth(2, Messages),
+    ?assertEqual(length(lists:filter(fun (X) -> X =:= Second end, Messages)), 2),
+
+    CountOcurrences = fun(E, L) ->
+                              length(lists:filter(fun (Y) -> E =:= Y end, L))
+                      end,
+
+    %% Same for the one-to-last (in case is not the same as the Second)
+    SecondFork = case lists:nth(9, Messages) of
+                     Second -> %% If it's the same as Second, find the other duplicated one
+                         {value, Result} = lists:search(fun(X) ->
+                                                                case X of
+                                                                    First -> false ;
+                                                                    Second -> false;
+                                                                    _ ->
+                                                                        CountOcurrences(X, Messages) =:= 2
+                                                                end
+                                                        end, Messages),
+                         Result;
+                     _ ->
+                         OneToLast = lists:nth(9, Messages),
+                         ?assertEqual(length(lists:filter(fun (X) -> X =:= OneToLast end, Messages)), 2),
+                         OneToLast
+                 end,
+
+    %% The rest should only appear once
+    ?assert(lists:all(fun (X) ->
+                              case X of
+                                  First -> true;
+                                  Second -> true;
+                                  SecondFork -> true;
+                                  _ ->
+                                      %% No duplicates
+                                      CountOcurrences(X, Messages) =:= 1
+                              end
+                      end, Messages)).
 
 %%====================================================================
 %% Util functions
