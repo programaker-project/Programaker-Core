@@ -92,11 +92,18 @@ log_call_to_bridge(BridgeId, FunctionName, Arguments, UserId, ExtraData) ->
     end.
 
 -spec log_program_error(#user_program_log_entry{}) -> ok | {error, atom()}.
-log_program_error(LogEntry=#user_program_log_entry{ program_id=ProgramId }) ->
-    {ok, #user_program_entry{ program_channel=Channel }} = automate_storage:get_program_from_id(ProgramId),
-    automate_channel_engine:send_to_channel(Channel, LogEntry),
+log_program_error(LogEntry=#user_program_log_entry{ severity=Severity, program_id=ProgramId }) ->
+    case automate_storage:get_program_from_id(ProgramId) of
+        {ok, #user_program_entry{ program_channel=Channel }} ->
+            automate_channel_engine:send_to_channel(Channel, LogEntry);
+        {error, not_found} ->
+            log_platform(Severity, io_lib:format(
+                                     "Cannot log error on program '~p', channel not found",
+                                     [ProgramId]))
+    end,
 
     automate_storage:log_program_error(LogEntry).
+
 
 -spec log_platform(atom(), _, _, _) -> ok.
 log_platform(warning, ErrorNS, Error, _StackTrace) ->
