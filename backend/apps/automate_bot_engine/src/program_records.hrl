@@ -7,6 +7,7 @@
                         , global_memory :: map()   % Thread-specific values TODO: rename
                         , instruction_memory :: map() % Memory held for each individual instruction on the program
                         , program_id :: binary()      % ID of the program being run
+                        , thread_id :: binary() |undefined % ID of the thread being run
                         }).
 
 -record(program_permissions, { owner_user_id :: binary()

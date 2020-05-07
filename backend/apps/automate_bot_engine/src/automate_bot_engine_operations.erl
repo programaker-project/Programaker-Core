@@ -1030,6 +1030,10 @@ get_block_result(Op=#{ ?TYPE := ?FLOW_LAST_VALUE
                                 })
     end;
 
+get_block_result(#{ ?TYPE := ?COMMAND_GET_THREAD_ID
+                  }, Thread=#program_thread{ thread_id=ThreadId }) ->
+    {ok, ThreadId, Thread};
+
 %% Fail
 get_block_result(Block, _Thread) ->
     io:format("Don't know how to get result from: ~p~n", [Block]),

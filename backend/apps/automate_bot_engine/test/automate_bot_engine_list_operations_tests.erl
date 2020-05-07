@@ -408,4 +408,5 @@ empty_thread() ->
                    , global_memory=#{}
                    , instruction_memory=#{}
                    , program_id=binary:list_to_bin(uuid:to_string(uuid:uuid4()))
+                   , thread_id=undefined
                    }.

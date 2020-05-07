@@ -123,6 +123,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
 
@@ -154,6 +155,7 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COM
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
     {ok, ThreadWithSavedValue} = case MonitorArgs of
@@ -190,6 +192,7 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
     [ServiceId, FunctionName] = binary:split(MonitorPath, <<".">>),
@@ -274,6 +277,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
     case SaveTo of

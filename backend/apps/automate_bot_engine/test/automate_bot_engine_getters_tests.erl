@@ -23,6 +23,7 @@
                                      , global_memory=#{}
                                      , instruction_memory=#{}
                                      , program_id=undefined
+                                     , thread_id=undefined
                                      }).
 
 %%====================================================================

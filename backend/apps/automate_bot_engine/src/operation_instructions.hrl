@@ -60,5 +60,6 @@
 -define(FLOW_LAST_VALUE, <<"flow_last_value">>).
 -define(COMMAND_PRELOAD_GETTER, <<"op_preload_getter">>).
 
-%% Logging
+%% Debugging
 -define(COMMAND_LOG_VALUE, <<"logging_add_log">>).
+-define(COMMAND_GET_THREAD_ID, <<"flow_get_thread_id">>).

@@ -56,6 +56,7 @@ tests(_SetupResult) ->
     %% Lists
     [ {"[Bot engine][Fork Operations] Simple fork (no join)", fun simple_fork_no_join/0}
     , {"[Bot engine][Fork Operations] Simple fork with join", fun simple_fork_with_join/0}
+    , {"[Bot engine][Fork Operations] Fork and join, check thread IDs", fun fork_and_join_check_thread_ids/0}
     ].
 
 %%%% Operations
@@ -83,6 +84,7 @@ simple_fork_no_join() ->
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
     {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread),
@@ -126,6 +128,7 @@ simple_fork_with_join() ->
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
     {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread),
@@ -142,6 +145,68 @@ simple_fork_with_join() ->
     ?assert(([First, Second, Joined] =:= ExpectedLogs)
             or ([Second, First, Joined] =:= ExpectedLogs)).
 
+fork_and_join_check_thread_ids() ->
+    ProgramId = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+    Thread = #program_thread{ position = [1]
+                            , program=[ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                         , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                            , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                           }
+                                                                        ]
+                                                            }
+                                                         ]
+                                         }
+                                      , #{ ?TYPE => ?COMMAND_FORK_EXECUTION
+                                         , ?CONTENTS => [ #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                             , ?ARGUMENTS => [  #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                 , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                                }
+                                                                                                             ]
+                                                                                                 }
+                                                                                             ]
+                                                                             }
+                                                                          ]
+                                                           }
+                                                        , #{ ?CONTENTS => [ #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                                                             , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                                                                , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                                                               }
+                                                                                                            ]
+                                                                                                }
+                                                                                             ]
+                                                                             }
+                                                                          ]
+                                                           }
+                                                        ]
+                                         }
+                                      , #{ ?TYPE => ?COMMAND_LOG_VALUE
+                                         , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                            , ?VALUE => [ #{ ?TYPE => ?COMMAND_GET_THREAD_ID
+                                                                           }
+                                                                        ]
+                                                            }
+                                                         ]
+                                         }
+                                      ]
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+
+    {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread),
+    timer:sleep(?WAIT_PER_INSTRUCTION * 5),
+    {ok, Logs} = automate_bot_engine:get_user_generated_logs(ProgramId),
+
+    [ #user_generated_log_entry{event_message=Main}
+    , #user_generated_log_entry{event_message=First}
+    , #user_generated_log_entry{event_message=Second}
+    , #user_generated_log_entry{event_message=Main2}
+    ] = Logs,
+
+    io:fwrite("Logs: ~p~n", [[Main, First, Second, Main2]]),
+    ?assert((Main =:= Main2)
+            and (First =/= Second)).
 
 %%====================================================================
 %% Util functions
