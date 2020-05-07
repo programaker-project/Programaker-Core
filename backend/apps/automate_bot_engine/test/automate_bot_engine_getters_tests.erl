@@ -153,6 +153,8 @@ tests(_SetupResult) ->
     , {"[Bot engine][Getter][Equals] Equal int and float (false)",     fun eq_int_and_float_false/0}
     , {"[Bot engine][Getter][Equals] Equal float and float (true)",    fun eq_float_and_float_true/0}
     , {"[Bot engine][Getter][Equals] Equal float and float (false)",   fun eq_float_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Variadic equals (false)",         fun eq_variadic_false/0}
+    , {"[Bot engine][Getter][Equals] Variadic equals (true)",          fun eq_variadic_true/0}
 
     , {"[Bot engine][Getter][Preload/Last-Value] Sample int-int equality (true)",   fun preload_last_val_eq_int_int_true/0}
     , {"[Bot engine][Getter][Preload/Last-Value] Sample int-int equality (false)",   fun preload_last_val_eq_int_int_false/0}
@@ -780,6 +782,26 @@ eq_float_and_float_false() ->
                                                                    ]
                                                    }, ?EMPTY_THREAD),
     ?assertMatch({ok, false, _}, R).
+
+eq_variadic_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(1.0)
+                                                                   , constant_val(<<"99999999.0">>)
+                                                                   , constant_val(<<"1">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false, _}, R).
+
+eq_variadic_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(1.0)
+                                                                   , constant_val(<<"1.0">>)
+                                                                   , constant_val(<<"1">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true, _}, R).
 
 preload_last_val_eq_int_int_true() ->
     {ran_this_tick, Thread} = automate_bot_engine_operations:run_instruction(

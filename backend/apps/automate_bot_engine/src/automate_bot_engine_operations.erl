@@ -840,13 +840,11 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_GREATER_THAN
     {ok, Value, Thread2};
 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_EQUALS
-                     , ?ARGUMENTS := [ First
-                                     , Second
-                                     ]
+                     , ?ARGUMENTS := Args
                      }, Thread) ->
-    {[FirstValue, SecondValue], Thread2} = eval_args([First, Second], Thread, Op),
-    {ok, Value} = automate_bot_engine_values:is_equal_to(FirstValue, SecondValue),
-    {ok, Value, Thread2};
+    {Values, Thread2} = eval_args(Args, Thread, Op),
+    {ok, Result} = automate_bot_engine_values:are_equal(Values),
+    {ok, Result, Thread2};
 
 %% Boolean operations
 get_block_result(Op=#{ ?TYPE := ?COMMAND_AND

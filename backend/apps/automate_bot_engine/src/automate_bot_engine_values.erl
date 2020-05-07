@@ -10,6 +10,7 @@
         , modulo/2
         , is_less_than/2
         , is_greater_than/2
+        , are_equal/1
         , is_equal_to/2
         ]).
 
@@ -134,6 +135,23 @@ is_greater_than(V1, V2) when is_binary(V1) and is_binary(V2) ->
 
 is_greater_than(V1, V2) ->
     is_greater_than(to_bin(V1), to_bin(V2)).
+
+
+%% Probably this can be optimized to perform combined_type/2 less times, but
+%% this should work for now.
+
+%% NOTE there might be some cases where evaluating combined_type/2 independently
+%% might cause strange comparation bugs to happen. If one is found, strongly
+%% consider rethinking this function.
+-spec are_equal([any]) -> {ok, boolean()}.
+are_equal(Values=[_|T]) ->
+    Pairs = lists:zip(lists:droplast(Values), T),
+    { ok
+    , lists:all(fun({X, Y}) ->
+                        {ok, Result} = is_equal_to(X, Y),
+                        Result
+                end, Pairs)
+    }.
 
 -spec is_equal_to(_, _) -> {ok, boolean()} | {error, not_found}.
 is_equal_to(V1, V2) when is_binary(V1) and is_binary(V2) ->
