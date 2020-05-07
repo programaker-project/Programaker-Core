@@ -145,6 +145,12 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
     delete op.id;
 
     switch (op.type) {
+            // These operations should not appear on a properly compiled AST
+        case "trigger_when_all_completed":
+        case "trigger_when_first_completed":
+            throw new Error(`Invalid AST Operation: Operation (type:${op.type}) should now be present on a properly compiled AST.`);
+
+
             // Nothing to canonicalize
         case "wait_for_monitor":
         case "flow_last_value":

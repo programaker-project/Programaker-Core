@@ -138,42 +138,6 @@ export const BaseToolboxDescription: ToolboxDescription = [
             },
             {
                 icon: PLATFORM_ICON,
-                message: 'Only pass first',
-                block_function: 'op_only_pass_first',
-                type: 'operation',
-                inputs: [
-                    {
-                        type: "pulse",
-                    },
-                    {
-                        type: "pulse",
-                    },
-                ],
-                extra_inputs: {
-                    type: "pulse",
-                    quantity: "any",
-                }
-            },
-            {
-                icon: PLATFORM_ICON,
-                message: 'Wait for all',
-                block_function: 'op_wait_for_all',
-                type: 'operation',
-                inputs: [
-                    {
-                        type: "pulse",
-                    },
-                    {
-                        type: "pulse",
-                    },
-                ],
-                extra_inputs: {
-                    type: "pulse",
-                    quantity: "any",
-                }
-            },
-            {
-                icon: PLATFORM_ICON,
                 message: 'When all true',
                 block_function: 'trigger_when_all_true',
                 type: 'trigger',

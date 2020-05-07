@@ -1113,7 +1113,8 @@ function compile_block(graph: FlowGraph,
             }];
         }
         else if (block_fun === 'trigger_when_first_completed') {
-            // Natural exit of an IF
+            // Natural exit of an IF.
+            // This block is structural and MUST not appear on a compiled AST.
             if (relatives.before && ['control_if_else', FORK_OPERATION].indexOf(relatives.before.type) < 0 ) {
                 throw new Error("Expected block 'trigger_when_first_completed' 'control_if_else' or 'op_fork_execution'");
             }
@@ -1150,6 +1151,7 @@ function compile_block(graph: FlowGraph,
         }
         else if (block_fun === 'trigger_when_all_completed') {
             // Natural exit of a Fork
+            // This block is structural and MUST not appear on a compiled AST.
             if (relatives.before && relatives.before.type === FORK_OPERATION ) {
                 // Nothing to add
                 const all_before = get_latest_blocks_on_each_ast_level(relatives.before).concat([relatives.before]);
