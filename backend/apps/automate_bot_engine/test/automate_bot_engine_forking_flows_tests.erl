@@ -19,6 +19,8 @@
 -define(TEST_SERVICE, automate_service_registry_test_service:get_uuid()).
 -define(TEST_SERVICE_ACTION, test_action).
 -define(WAIT_PER_INSTRUCTION, 100).  %% Milliseconds
+%% Note, if waiting per instruction takes too much time consider adding a method
+%% which checks periodically.
 -define(UTILS, automate_bot_engine_test_utils).
 
 %%====================================================================
@@ -59,6 +61,7 @@ tests(_SetupResult) ->
     , {"[Bot engine][Fork Operations] Simple fork with join", fun simple_fork_with_join/0}
     , {"[Bot engine][Fork Operations] Fork and join, check thread IDs", fun fork_and_join_check_thread_ids/0}
     , {"[Bot engine][Fork Operations] Nested fork and join, check thread IDs", fun nested_fork_and_join_check_thread_ids/0}
+    , {"[Bot engine][Fork Operations] Fork fork and join first", fun fork_and_join_first/0}
     ].
 
 %%%% Operations
@@ -236,6 +239,35 @@ nested_fork_and_join_check_thread_ids() ->
                                       CountOcurrences(X, Messages) =:= 1
                               end
                       end, Messages)).
+
+fork_and_join_first() ->
+    ProgramId = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+    Thread = #program_thread{ position = [1]
+                            , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [ ?UTILS:block_val({ ?COMMAND_GET_THREAD_ID }) ] }
+                                                       , { ?COMMAND_FORK_EXECUTION, [ constant_val(?OP_FORK_CONTINUE_ON_FIRST) ]
+                                                         , [ [ { ?COMMAND_LOG_VALUE, [ ?UTILS:block_val({ ?COMMAND_GET_THREAD_ID }) ] } ]
+                                                           , [ { ?COMMAND_WAIT, [ constant_val(0.01) ] }
+                                                             , { ?COMMAND_LOG_VALUE, [ ?UTILS:block_val({ ?COMMAND_GET_THREAD_ID }) ] } ]
+                                                           ]
+                                                         }
+                                                       , { ?COMMAND_LOG_VALUE, [ ?UTILS:block_val({ ?COMMAND_GET_THREAD_ID }) ] }
+                                                       ])
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+
+    {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread),
+    timer:sleep(?WAIT_PER_INSTRUCTION * 5 + 200), %% Take into account the wait operation
+    {ok, Logs} = automate_bot_engine:get_user_generated_logs(ProgramId),
+
+    Messages = [ M || #user_generated_log_entry{event_message=M} <- Logs ],
+    [ Main, First, Main2, Waited ] = Messages,
+
+    io:fwrite("Logs: ~p~n", [[Main, First, Main2, Waited]]),
+    ?assert((Main =:= Main2)
+            and (First =/= Waited)).
 
 %%====================================================================
 %% Util functions

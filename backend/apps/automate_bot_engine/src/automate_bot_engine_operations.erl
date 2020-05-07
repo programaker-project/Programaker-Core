@@ -307,7 +307,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT
                     , ?ARGUMENTS := [Argument]
                     }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, Seconds, Thread2} = automate_bot_engine_variables:resolve_argument(Argument, Thread, Op),
+    {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(Argument, Thread, Op),
     StartTime = case automate_bot_engine_variables:retrieve_instruction_memory(Thread2) of
                     {ok, MemoryValue} ->
                         MemoryValue;
@@ -315,7 +315,14 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT
                         erlang:monotonic_time(millisecond)
                 end,
 
-    WaitFinished = StartTime + binary_to_integer(Seconds) * 1000 < erlang:monotonic_time(millisecond),
+    MsToWait = case Value of
+                     B when is_binary(B) ->
+                         binary_to_integer(B) * 1000;
+                     N when is_number(N) ->
+                         N * 1000
+                 end,
+
+    WaitFinished = StartTime + MsToWait < erlang:monotonic_time(millisecond),
     case WaitFinished of
         true ->
             Thread3 = automate_bot_engine_variables:unset_instruction_memory(Thread2),
@@ -566,11 +573,10 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_LOG_VALUE
                                                    }),
     {ran_this_tick, increment_position(Thread2)};
 
-run_instruction(#{ ?TYPE := ?COMMAND_FORK_EXECUTION
-                   %% , ?ARGUMENTS := [ Arg
-                   %%                 ]
-                 , ?CONTENTS := Flows
-                 }, Thread=#program_thread{ program_id=ProgramId, position=Position },
+run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
+                    , ?ARGUMENTS := Arguments
+                    , ?CONTENTS := Flows
+                    }, Thread=#program_thread{ program_id=ProgramId, position=Position },
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
     %% TODO: Consider actively signaling the parent when children end
@@ -580,32 +586,48 @@ run_instruction(#{ ?TYPE := ?COMMAND_FORK_EXECUTION
             Thread2 = automate_bot_engine_variables:set_instruction_memory(
                         Thread, #{ already_run => true }),
 
+            {ComputedArgs, Thread3} = eval_args(Arguments, Thread2, Op),
+            ContinuationType = case lists:search(fun(X) -> X =:= ?OP_FORK_CONTINUE_ON_FIRST end, ComputedArgs) of
+                                   { value, _ } ->
+                                       continue_on_first_done;
+                                   _ ->
+                                       continue_when_all_done
+                               end,
+
             ChildrenIds = lists:map(fun(Index) ->
                                          {ok, NewThreadId } = automate_bot_engine_thread_launcher:launch_thread(
                                                              ProgramId,
-                                                             Thread2#program_thread{position=Position ++ [Index, 1]}),
+                                                             Thread3#program_thread{position=Position ++ [Index, 1]}),
                                             NewThreadId
                                  end, lists:seq(1, length(Flows))),
 
-            Thread3 = automate_bot_engine_variables:set_instruction_memory(
-                        Thread2, #{ already_run => true, children => ChildrenIds }),
+            Thread4 = automate_bot_engine_variables:set_instruction_memory(
+                        Thread3, #{ already_run => true
+                                  , children => ChildrenIds
+                                  , continuation_type => ContinuationType
+                                  }),
             %% Note that position is not incremented, so this instruction keeps
             %% executing until all the children end
-            {ran_this_tick, Thread3};
+            {ran_this_tick, Thread4};
         %% Parent keeps executing and periodically checks if children did finish
-        {ok, #{ children := Children, already_run := true } } ->
-            {RemainingChildren, _CompletedChildren} = lists:partition(
+        {ok, #{ children := Children, already_run := true, continuation_type := ContinuationType } } ->
+            {RemainingChildren, CompletedChildren} = lists:partition(
                                                         fun(ChildId) ->
                                                                 {ok, Value} = automate_storage:dirty_is_thread_alive(ChildId),
                                                                 Value
                                                         end, Children),
-            case RemainingChildren of
-                [] -> %% Children completed
+            ForkDone = (((ContinuationType =:= continue_when_all_done) and (length(RemainingChildren) =:= 0))
+                        or ((ContinuationType =:= continue_on_first_done) and (length(CompletedChildren) > 0))),
+            case ForkDone of
+                true ->
                     Thread2 = automate_bot_engine_variables:unset_instruction_memory(Thread),
                     {ran_this_tick, increment_position(Thread2)};
-                _ ->
+                false ->
                     Thread2 = automate_bot_engine_variables:set_instruction_memory(
-                                Thread, #{ already_run => true, children => RemainingChildren }),
+                                Thread, #{ already_run => true
+                                         , children => RemainingChildren
+                                         , continuation_type => ContinuationType
+                                         }),
                     {did_not_run, {new_state, Thread2}}
             end;
         %% Children thread, just finish thread

@@ -12,6 +12,7 @@
 -define(COMMAND_IF, <<"control_if">>).
 -define(COMMAND_IF_ELSE, <<"control_if_else">>).
 -define(COMMAND_FORK_EXECUTION, <<"op_fork_execution">>).
+-define(OP_FORK_CONTINUE_ON_FIRST, <<"exit-when-first-completed">> ).
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
