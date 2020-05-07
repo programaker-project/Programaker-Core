@@ -581,10 +581,10 @@ run_instruction(#{ ?TYPE := ?COMMAND_FORK_EXECUTION
                         Thread, #{ already_run => true }),
 
             ChildrenIds = lists:map(fun(Index) ->
-                                         {ok, ThreadId } = automate_bot_engine_thread_launcher:launch_thread(
+                                         {ok, NewThreadId } = automate_bot_engine_thread_launcher:launch_thread(
                                                              ProgramId,
                                                              Thread2#program_thread{position=Position ++ [Index, 1]}),
-                                         ThreadId
+                                            NewThreadId
                                  end, lists:seq(1, length(Flows))),
 
             Thread3 = automate_bot_engine_variables:set_instruction_memory(
@@ -594,7 +594,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_FORK_EXECUTION
             {ran_this_tick, Thread3};
         %% Parent keeps executing and periodically checks if children did finish
         {ok, #{ children := Children, already_run := true } } ->
-            {_CompletedChildren, RemainingChildren} = lists:partition(
+            {RemainingChildren, _CompletedChildren} = lists:partition(
                                                         fun(ChildId) ->
                                                                 {ok, Value} = automate_storage:dirty_is_thread_alive(ChildId),
                                                                 Value
