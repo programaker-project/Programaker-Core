@@ -22,7 +22,12 @@
 -define(COMMAND_CUSTOM_SIGNAL, <<"automate_trigger_custom_signal">>). % Caller
 
 %%%% Operation parameters
+-ifdef(NOTEST).
 -define(MILLIS_PER_TICK, 100).
+-else.
+-define(MILLIS_PER_TICK, 1).
+-endif.
+
 
 %%%% Monitors
 %% Values
