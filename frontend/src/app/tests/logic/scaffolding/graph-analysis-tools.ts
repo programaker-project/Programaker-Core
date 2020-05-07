@@ -148,6 +148,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             // These operations should not appear on a properly compiled AST
         case "trigger_when_all_completed":
         case "trigger_when_first_completed":
+        case "trigger_on_signal":
             throw new Error(`Invalid AST Operation: Operation (type:${op.type}) should now be present on a properly compiled AST.`);
 
 
