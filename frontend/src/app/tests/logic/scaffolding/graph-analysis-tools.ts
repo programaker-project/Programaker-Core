@@ -165,7 +165,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "trigger_when_all_completed":
         case "operator_modulo":
         case "operator_add":
-        case "op_log_value":
+        case "logging_add_log":
         case "operator_lt":
         case "operator_gt":
         case "data_setvariableto":

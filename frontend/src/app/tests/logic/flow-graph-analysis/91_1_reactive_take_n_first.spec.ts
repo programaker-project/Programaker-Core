@@ -24,7 +24,7 @@ export function gen_flow(): FlowGraph {
             [f => f.add_getter('operator_add', { args: [ 1, { from_variable: 'count' } ] }) , 0] ],
         slots: { 'variable': 'count' }
     });
-    const op = builder.add_op('op_log_value', { args: [ [source, 0] ]
+    const op = builder.add_op('logging_add_log', { args: [ [source, 0] ]
                                               });
 
     const take_cond = builder.add_if(update, null, {

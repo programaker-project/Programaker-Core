@@ -57,7 +57,7 @@ export type CompiledBlockType = "wait_for_monitor"
     | "data_setvariableto" | "data_variable"
     | "command_call_service"
     | "control_wait"
-    | "op_log_value" | "flow_get_thread_id"
+    | "logging_add_log" | "flow_get_thread_id"
     | "jump_to_position"
     | "jump_to_block"
     | "jump_point" // Not found on executable stage, will be removed in link phase

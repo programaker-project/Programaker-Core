@@ -14,7 +14,7 @@ export function gen_flow(): FlowGraph {
     const source = builder.add_stream('flow_utc_time', {id: 'source', message: 'UTC time'});
 
     // Stepped section
-    const op = builder.add_op('op_log_value', { args: [ [source, 0] ]
+    const op = builder.add_op('logging_add_log', { args: [ [source, 0] ]
                                               });
     const cond = builder.add_if(op, null, {
         cond: [f => f.add_getter('operator_equals', { args: [ { from_variable: 'latest' },

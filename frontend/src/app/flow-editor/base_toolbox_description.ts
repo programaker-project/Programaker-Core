@@ -250,7 +250,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: '%i1 - %i2',
-                block_function: 'opearator_subtract',
+                block_function: 'operator_subtract',
                 type: 'getter',
                 inputs: [
                     {
@@ -496,7 +496,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Log value %1',
-                block_function: 'op_log_value',
+                block_function: 'logging_add_log',
                 type: 'operation',
                 inputs: [
                     {

@@ -14,7 +14,7 @@ export const OP_TRANSLATIONS = {
     'fork': 'op_fork_execution',
 
     // Operations
-    'log': 'op_log_value',
+    'log': 'logging_add_log',
     'wait-seconds': 'control_wait',
     'call-service': 'command_call_service',
     'preload': 'op_preload_getter',

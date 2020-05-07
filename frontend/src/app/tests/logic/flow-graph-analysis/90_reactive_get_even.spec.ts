@@ -18,7 +18,7 @@ export function gen_flow(): FlowGraph {
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {args: [[cond, 0]]});
-    const op = builder.add_op('op_log_value', { args: [ [source, 0] ]
+    const op = builder.add_op('logging_add_log', { args: [ [source, 0] ]
                                               });
     trigger.then(op);
 
