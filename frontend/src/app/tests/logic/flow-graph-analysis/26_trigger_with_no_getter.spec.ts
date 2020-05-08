@@ -48,7 +48,6 @@ describe('Flow-26: Trigger with no getter.', () => {
                                action: respond
                                values: ((flow-last-value trigger 1)
                                         ))
-
                 `))
         ]);
     });

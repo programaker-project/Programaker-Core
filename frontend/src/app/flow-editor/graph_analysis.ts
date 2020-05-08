@@ -892,10 +892,18 @@ function already_used_in_past(graph: FlowGraph, arg_id: string,
     }
 
     for (const conn of rev_conn_index[reference_block]) {
-        if (has_pulse_input && (!is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index))) {
+        const is_pulse_connection = is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index);
+        if (has_pulse_input && !is_pulse_connection) {
             // Skip first level non-pulse outputs if the reference block has any
             // pulse input
             continue;
+        }
+
+        // Consider direct pulse outputs (mostly from triggers)
+        if (is_pulse_connection) {
+            if (conn.from.id === arg_id) {
+                return true;
+            }
         }
 
         const result = (scan_upstream(graph, conn.from.id, rev_conn_index,
@@ -925,7 +933,7 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
     if (block.data.type === AtomicFlowBlock.GetBlockType()){
         const data = block.data as AtomicFlowBlockData;
 
-        if ((data.value.options.type !== 'getter') || already_used_in_past(graph, arg.tree.block_id, parent, orig)) {
+        if (already_used_in_past(graph, arg.tree.block_id, parent, orig)) {
             return {
                 type: 'block',
                 value: [
