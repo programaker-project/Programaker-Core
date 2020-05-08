@@ -81,6 +81,15 @@ get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
 
     ?TRIGGERED_BY_MONITOR;
 
+get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                                    , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_VARIABLE
+                                                       , ?VALUE := _VarName
+                                                       }
+                                                    ]
+                                    }, _Thread) ->
+    %% TODO: Have channel to send variable updates
+    ?SIGNAL_PROGRAM_TICK;
+
 get_expected_action_from_operation(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                        }, _Thread) ->
     automate_logging:log_platform(error,
@@ -673,6 +682,39 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
         %% Children thread, just finish thread
         {ok, #{ already_run := true }} ->
             {stopped, thread_finished}
+    end;
+
+run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                    , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_VARIABLE
+                                       , ?VALUE := VarName
+                                       }
+                                    ]
+                    }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+    CurrentValue = case automate_bot_engine_variables:get_program_variable(Thread, VarName) of
+                {ok, Val} ->
+                    Val;
+                {error, not_found} ->
+                    not_found
+            end,
+    case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
+        {error, not_found} ->
+            %% Initial run, save current value and wait
+            Thread2 = automate_bot_engine_variables:set_instruction_memory(Thread, #{ initial_value => CurrentValue }),
+            {did_not_run, {new_state, Thread2}};
+        {ok, #{ initial_value := CurrentValue } } ->
+            %% Non-initial run, variable value did NOT change (old matches with current)
+            {did_not_run, waiting};
+        {ok, #{ initial_value := _OtherValue }} ->
+            %% Non-initial run, variable DID change
+            Thread2 = case ?UTILS:get_block_id(Op) of
+                          none ->
+                              Thread;
+                          Id ->
+                              automate_bot_engine_variables:set_instruction_memory(Thread,
+                                                                                   CurrentValue,
+                                                                                   Id)
+                      end,
+            {ran_this_tick, increment_position(Thread2)}
     end;
 
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE

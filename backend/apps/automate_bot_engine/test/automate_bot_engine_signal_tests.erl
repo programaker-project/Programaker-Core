@@ -56,6 +56,7 @@ tests(_SetupResult) ->
     [ {"[Bot engine][Signal management] Wait for signal operation", fun simple_wait_for_signal/0}
     , {"[Bot engine][Signal management] Wait for signal, check key", fun wait_for_signal_check_key/0}
     , {"[Bot engine][Signal management] Wait for signal, check subkey", fun wait_for_signal_check_subkey/0}
+    , {"[Bot engine][Signal management] Wait for variable operation", fun simple_wait_for_variable/0}
     ].
 
 %%%% Operations
@@ -282,6 +283,48 @@ wait_for_signal_check_subkey() ->
                                                                       , <<"value">> => <<"sample value">>
                                                                       , <<"content">> => <<"sample content">>
                                                                       })),
+
+    %% Check logs after sending signal
+    timer:sleep(?WAIT_PER_INSTRUCTION * 3),
+    {ok, LogsAfter} = automate_bot_engine:get_user_generated_logs(ProgramId),
+    MsgsAfter = [ M || #user_generated_log_entry{event_message=M} <- LogsAfter ],
+
+    io:fwrite("Logs after signal: ~p~n", [MsgsAfter]),
+    ?assertMatch([ <<"before">>, <<"after">>], MsgsAfter),
+    ok.
+
+simple_wait_for_variable() ->
+    {_Username, _ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+    Thread = #program_thread{ position = [1]
+                            , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
+                                                       , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
+                                                           [ #{ ?TYPE => ?VARIABLE_VARIABLE
+                                                              , ?VALUE => <<"checkpoint">>
+                                                              }
+                                                           ]
+                                                         }
+                                                       , { ?COMMAND_LOG_VALUE, [constant_val(<<"after">>)] }
+                                                       ])
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+    {ok, Thread2} = automate_bot_engine_variables:set_program_variable(Thread,  <<"checkpoint">>, false),
+
+    %% Launch
+    {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread2),
+
+    %% Check logs before sending signal
+    timer:sleep(?WAIT_PER_INSTRUCTION * 3),
+    {ok, LogsBefore} = automate_bot_engine:get_user_generated_logs(ProgramId),
+    MsgsBefore = [ M || #user_generated_log_entry{event_message=M} <- LogsBefore ],
+
+    io:fwrite("Logs before signal: ~p~n", [MsgsBefore]),
+    ?assertMatch([ <<"before">> ], MsgsBefore),
+
+    %% Update variable
+    {ok, _Thread3} = automate_bot_engine_variables:set_program_variable(Thread2,  <<"checkpoint">>, true),
 
     %% Check logs after sending signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
