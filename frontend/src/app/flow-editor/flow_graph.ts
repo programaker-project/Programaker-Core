@@ -68,7 +68,8 @@ export type CompiledBlockType = "wait_for_monitor"
     | "data_lengthoflist" | "data_deleteoflist" | "data_addtolist"
 
 // Operations should not appear on a properly compiled AST
-    | "trigger_when_all_completed" | "trigger_when_first_completed" | "trigger_on_signal"
+    | "trigger_when_all_completed" | "trigger_when_first_completed"
+    | "trigger_on_signal" | "trigger_when_all_true"
     ;
 export type CompiledBlockArgs = CompiledBlockArgMonitorDict | CompiledBlockArgCallServiceDict | CompiledBlockArgList;
 

@@ -15,10 +15,7 @@
 -include("just_wait_program.hrl").
 
 -define(APPLICATION, automate_bot_engine).
--define(TEST_NODES, [node()]).
--define(TEST_MONITOR, <<"__test_monitor__">>).
--define(TEST_SERVICE, automate_service_registry_test_service:get_uuid()).
--define(TEST_SERVICE_ACTION, test_action).
+-define(UTILS, automate_bot_engine_test_utils).
 
 %%====================================================================
 %% Test API
@@ -74,7 +71,7 @@ start_thread_and_stop_threads_continues() ->
     %% Thread                            *-- wait ........YES..........X                                    NO
 
     %% Program creation
-    {Username, ProgramName, ProgramId} = create_anonymous_program(),
+    {Username, ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
 
     %% Launch program
     ?assertMatch({ok, ProgramId},
@@ -91,14 +88,14 @@ start_thread_and_stop_threads_continues() ->
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
 
     %% Check that program id alive
-    ?assertMatch(ok, wait_for_program_alive(ProgramId, 10, 100)),
+    ?assertMatch(ok, ?UTILS:wait_for_program_alive(ProgramId, 10, 100)),
 
     {ok, ProgramPid} = automate_storage:get_program_pid(ProgramId),
     ?assert(is_process_alive(ProgramPid)),
 
     %% Trigger sent, thread is spawned
     ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
-    ok = wait_for_check_ok(
+    ok = ?UTILS:wait_for_check_ok(
            fun() ->
                    case automate_storage:get_threads_from_program(ProgramId) of
                        {ok, [ThreadId]} ->
@@ -125,7 +122,7 @@ start_thread_and_stop_threads_continues() ->
     ?assert(is_process_alive(ProgramPid2)),
 
     %% Check that thread is dead
-    wait_for_check_ok(
+    ?UTILS:wait_for_check_ok(
       fun() ->
               case automate_storage:get_threads_from_program(ProgramId) of
                   {ok, []} -> true;
@@ -149,7 +146,7 @@ start_program_and_stop_threads_nothing() ->
     TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
                            , { ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }}},
 
-    {Username, ProgramName, ProgramId} = create_anonymous_program(),
+    {Username, ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
 
     %% Launch program
     ?assertMatch({ok, ProgramId},
@@ -166,7 +163,7 @@ start_program_and_stop_threads_nothing() ->
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
 
     %% Check that program id alive
-    ?assertMatch(ok, wait_for_program_alive(ProgramId, 10, 100)),
+    ?assertMatch(ok, ?UTILS:wait_for_program_alive(ProgramId, 10, 100)),
 
     {ok, ProgramPid} = automate_storage:get_program_pid(ProgramId),
     ?assert(is_process_alive(ProgramPid)),
@@ -179,47 +176,3 @@ start_program_and_stop_threads_nothing() ->
     ?assert(is_process_alive(ProgramPid2)),
 
     ok.
-
-
-%%====================================================================
-%% Util functions
-%%====================================================================
-create_anonymous_program() ->
-
-    {Username, UserId} = create_random_user(),
-
-    ProgramName = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
-    {ok, ProgramId} = automate_storage:create_program(Username, ProgramName),
-    {Username, ProgramName, ProgramId}.
-
-
-create_random_user() ->
-    Username = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
-    Password = undefined,
-    Email = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
-
-    {ok, UserId} = automate_storage:create_user(Username, Password, Email, ready),
-    {Username, UserId}.
-
-wait_for_program_alive(Pid, 0, SleepTime) ->
-    {error, timeout};
-
-wait_for_program_alive(ProgramId, TestTimes, SleepTime) ->
-    case automate_storage:get_program_pid(ProgramId) of
-        {ok, _} ->
-            ok;
-        {error, not_running} ->
-            timer:sleep(SleepTime),
-            wait_for_program_alive(ProgramId, TestTimes - 1, SleepTime)
-    end.
-
-
-wait_for_check_ok(Check, 0, SleepTime) ->
-    {error, timeout};
-wait_for_check_ok(Check, TestTimes, SleepTime) ->
-    case Check() of
-        true -> ok;
-        false ->
-            timer:sleep(SleepTime),
-            wait_for_check_ok(Check, TestTimes - 1, SleepTime)
-    end. 

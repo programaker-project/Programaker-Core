@@ -15,6 +15,7 @@
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
 -include("instructions.hrl").
+-include("../../automate_channel_engine/src/records.hrl").
 
 -define(UTILS, automate_bot_engine_utils).
 
@@ -45,10 +46,49 @@ get_expected_action_from_thread(Thread) ->
         {error, element_not_found} ->
             none;
         {ok, Operation} ->
-            get_expected_action_from_operation(Operation)
+            get_expected_action_from_operation(Operation, Thread)
     end.
 
-get_expected_action_from_operation(_) ->
+get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                                    , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_BLOCK
+                                                       , ?VALUE := [ Listened=#{ ?TYPE := <<"services.", MonitorPath/binary>>
+                                                                               }
+                                                                   ]
+                                                       }
+                                                    ]
+                                    }, #program_thread{ program_id=ProgramId }) ->
+    [ServiceId, MonitorKey] = binary:split(MonitorPath, <<".">>),
+
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
+
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
+
+    Args = case Listened of
+               #{ ?ARGUMENTS := Arguments } ->
+                   Arguments;
+               _ ->
+                   []
+           end,
+    case ?UTILS:get_block_key_subkey(Args) of
+        { key_and_subkey, Key, SubKey } ->
+            automate_channel_engine:listen_channel(MonitorId, { Key, SubKey });
+        { key, Key } ->
+            automate_channel_engine:listen_channel(MonitorId, { Key });
+        { not_found } ->
+            automate_channel_engine:listen_channel(MonitorId)
+    end,
+
+    ?TRIGGERED_BY_MONITOR;
+
+get_expected_action_from_operation(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                                       }, _Thread) ->
+    automate_logging:log_platform(error,
+                                  io_lib:format("Cannot find appropriate channel to hear for op: ~p", [Op])),
+    ?TRIGGERED_BY_MONITOR;
+
+get_expected_action_from_operation(_Op, _Thread) ->
+    %% Just wait for next TICK
     ?SIGNAL_PROGRAM_TICK.
 
 -spec get_instruction(#program_thread{}) -> {ok, map()} | {error, element_not_found}.
@@ -635,6 +675,65 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
             {stopped, thread_finished}
     end;
 
+run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                 , ?ARGUMENTS := [ _Block
+                                 ]
+                 }, _Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+    %% This must not advace on tick, only when a new value (of the listened block) is passed
+    {did_not_run, waiting};
+
+run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                    , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_BLOCK
+                                       , ?VALUE := [ Listened=#{ ?TYPE := <<"services.", MonitorPath/binary>>
+                                                               }
+                                                   ]
+                                       }
+                                    ]
+                    },
+                Thread=#program_thread{ program_id=ProgramId },
+                { ?TRIGGERED_BY_MONITOR, {MonitorId, Message} }) ->
+
+    [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
+
+    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
+
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, ReceivedMonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
+
+    case ReceivedMonitorId of
+        MonitorId ->
+            %% TODO: Check for key/subkey match
+            %% Save content if appropriate
+            Thread2 = case Message of
+                          #{ ?CHANNEL_MESSAGE_CONTENT := Content } ->
+                              case ?UTILS:get_block_id(Op) of
+                                  none ->
+                                      Thread;
+                                  Id ->
+                                      automate_bot_engine_variables:set_instruction_memory(Thread,
+                                                                                           Content,
+                                                                                           Id)
+                              end;
+                          _ -> Thread
+                      end,
+
+            {ran_this_tick, increment_position(Thread2)};
+        _ ->
+            automate_logging:log_platform(warning,
+                                          io_lib:format("Unexpected signal (monitor didn't match) ~p for block: ~p",
+                                                        [Message, Listened])),
+            {did_not_run, waiting}
+    end;
+
+run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                 , ?ARGUMENTS := [ Block
+                                 ]
+                 }, _Thread, Message) ->
+    automate_logging:log_platform(warning, io_lib:format("Got unexpected signal ~p for block: ~p",
+                                                         [Message, Block])),
+
+    {did_not_run, waiting};
+
 run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
     automate_logging:log_platform(
       warning,
@@ -646,16 +745,14 @@ run_instruction(#{ <<"contents">> := _Content }, Thread, _Message) ->
     {ran_this_tick, increment_position(Thread)}.
 
 increment_position(Thread = #program_thread{position=Position}) ->
-    %% TODO: Consider which elements can be removed
     IncrementedInnermost = increment_innermost(Position),
-    BackToParent = back_to_parent(Position),
     FollowInSameLevelState = Thread#program_thread{position=IncrementedInnermost},
-    BackToParentState = Thread#program_thread{position=BackToParent},
     case get_instruction(FollowInSameLevelState) of
         {ok, _} ->
             FollowInSameLevelState;
         {error, element_not_found} ->
-            BackToParentState
+            BackToParent = back_to_parent(Position),
+            Thread#program_thread{position=BackToParent}
     end.
 
 
@@ -1004,6 +1101,9 @@ get_block_result(Op=#{ ?TYPE := <<"services.", ServiceCall/binary>>
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
     {ok, Value, Thread3};
+
+get_block_result(Op=#{ ?TYPE := <<"services.", _ServiceCall/binary>> }, Thread) ->
+    get_block_result(Op#{ ?ARGUMENTS => [] }, Thread);
 
 get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
                   , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId

@@ -52,14 +52,14 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FO
     ?TRIGGERED_BY_MONITOR;
 
 get_expected_action_from_trigger(X=#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
-                                                             , ?ARGUMENTS := Arguments
-                                                             }},
+                                                               , ?ARGUMENTS := Arguments
+                                                               }},
                                  #program_permissions{owner_user_id=UserId}, _ProgramId) ->
     [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
 
-    case get_block_key_subkey(Arguments) of
+    case ?UTILS:get_block_key_subkey(Arguments) of
         { key_and_subkey, Key, SubKey } ->
             automate_channel_engine:listen_channel(MonitorId, { Key, SubKey });
         { key, Key } ->
@@ -85,23 +85,6 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?SIGNAL_
 get_expected_action_from_trigger(Trigger, _Permissions, ProgramId) ->
     io:fwrite("[WARN][Bot/Triggers][ProgId=~p] Unknown trigger: ~p~n",  [ProgramId, Trigger]),
     ?SIGNAL_PROGRAM_TICK.
-
-get_block_key_subkey(#{ <<"key">> := Key
-                      , <<"subkey">> := #{ <<"type">> := <<"constant">>
-                                         , <<"value">> := SubKey
-                                         }
-                      }) ->
-    { key_and_subkey, Key, SubKey };
-get_block_key_subkey(#{ <<"key">> := Key }) ->
-    {key, Key};
-get_block_key_subkey(_) ->
-    { not_found }.
-
-get_subkey_value(#{ <<"subkey">> := SubKey }) when is_binary(SubKey) ->
-    {ok, SubKey};
-get_subkey_value(_) ->
-    {error, not_found}.
-
 
 %%%% Thread creation
 %%% Monitors
@@ -197,9 +180,9 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
 
     [ServiceId, FunctionName] = binary:split(MonitorPath, <<".">>),
 
-    KeyMatch = case get_block_key_subkey(MonitorArgs) of
+    KeyMatch = case ?UTILS:get_block_key_subkey(MonitorArgs) of
                    { key_and_subkey, Key, SubKey } ->
-                       case get_subkey_value(FullMessage) of
+                       case ?UTILS:get_subkey_value(FullMessage) of
                            {ok, TriggeredSubKey} ->
                                (Key == TriggeredKey) and (string:lowercase(SubKey) == string:lowercase(TriggeredSubKey));
                            _ ->
@@ -292,7 +275,6 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
 trigger_thread(Trigger, Message, ProgramState) ->
     notify_trigger_not_matched(Trigger, Message, ProgramState),
     false.
-
 
 %%%===================================================================
 %%% Aux functions

@@ -1,0 +1,135 @@
+%%% Automate bot engine getters tests.
+%%% @end
+
+-module(automate_bot_engine_signal_tests).
+-include_lib("eunit/include/eunit.hrl").
+
+%% Data structures
+-include("../../automate_storage/src/records.hrl").
+-include("../src/program_records.hrl").
+-include("../src/instructions.hrl").
+-include("../../automate_channel_engine/src/records.hrl").
+
+%% Test data
+-include("single_line_program.hrl").
+
+-define(APPLICATION, automate_bot_engine).
+-define(WAIT_PER_INSTRUCTION, 100).  %% Milliseconds
+%% Note, if waiting per instruction takes too much time consider adding a method
+%% which checks periodically.
+-define(UTILS, automate_bot_engine_test_utils).
+
+%%====================================================================
+%% Test API
+%%====================================================================
+
+session_manager_test_() ->
+    {setup
+    , fun setup/0
+    , fun stop/1
+    , fun tests/1
+    }.
+
+%% @doc App infrastructure setup.
+%% @end
+setup() ->
+    NodeName = node(),
+
+    %% Use a custom node name to avoid overwriting the actual databases
+    net_kernel:start([testing, shortnames]),
+
+    {ok, _Pid} = application:ensure_all_started(?APPLICATION),
+
+    {NodeName}.
+
+%% @doc App infrastructure teardown.
+%% @end
+stop({_NodeName}) ->
+    application:stop(?APPLICATION),
+
+    ok.
+
+
+tests(_SetupResult) ->
+    %% Operations
+    %% Lists
+    [ {"[Bot engine][Signal management] Wait for signal operation", fun simple_wait_for_signal/0}
+    ].
+
+%%%% Operations
+simple_wait_for_signal() ->
+    Prefix = erlang:atom_to_list(?MODULE),
+    OwnerUserId = iolist_to_binary([Prefix,"-test-1-owner"]),
+    ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
+
+    {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
+
+    Configuration = #{ <<"is_public">> => true
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ ]
+                     },
+    ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
+                                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                                      , <<"value">> => Configuration
+                                                                      })),
+
+    {ok, MonitorId} = automate_service_port_engine_service:get_monitor_id(OwnerUserId, [ServicePortId]),
+
+    _TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
+                            , { MonitorId, #{ ?CHANNEL_MESSAGE_CONTENT => start }}},
+
+    {_Username, _ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+    Thread = #program_thread{ position = [1]
+                            , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
+                                                       , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
+                                                           [ ?UTILS:block_val({ iolist_to_binary([ "services."
+                                                                                                 , ServicePortId
+                                                                                                 , ".on_new_message"
+                                                                                                 ])
+                                                                              })
+                                                           ]
+                                                         }
+                                                       , { ?COMMAND_LOG_VALUE, [constant_val(<<"after">>)] }
+                                                       ])
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+
+    %% Launch
+    {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread),
+
+    %% Check logs before sending signal
+    timer:sleep(?WAIT_PER_INSTRUCTION * 3),
+    {ok, LogsBefore} = automate_bot_engine:get_user_generated_logs(ProgramId),
+    MsgsBefore = [ M || #user_generated_log_entry{event_message=M} <- LogsBefore ],
+
+    io:fwrite("Logs before signal: ~p~n", [MsgsBefore]),
+    ?assertMatch([ <<"before">> ], MsgsBefore),
+
+    %% Send signal
+    ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
+                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
+                                                                      , <<"key">> => <<"on_new_message">>
+                                                                      , <<"to_user">> => null
+                                                                      , <<"value">> => <<"sample value">>
+                                                                      , <<"content">> => <<"sample content">>
+                                                                      })),
+
+    %% Check logs after sending signal
+    timer:sleep(?WAIT_PER_INSTRUCTION * 3),
+    {ok, LogsAfter} = automate_bot_engine:get_user_generated_logs(ProgramId),
+    MsgsAfter = [ M || #user_generated_log_entry{event_message=M} <- LogsAfter ],
+
+    io:fwrite("Logs after signal: ~p~n", [MsgsAfter]),
+    ?assertMatch([ <<"before">>, <<"after">>], MsgsAfter),
+    ok.
+
+%%====================================================================
+%% Util functions
+%%====================================================================
+constant_val(Val) ->
+    #{ ?TYPE => ?VARIABLE_CONSTANT
+     , ?VALUE => Val
+     }.

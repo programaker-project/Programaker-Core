@@ -14,10 +14,6 @@
 -include("single_line_program.hrl").
 
 -define(APPLICATION, automate_bot_engine).
--define(TEST_NODES, [node()]).
--define(TEST_MONITOR, <<"__test_monitor__">>).
--define(TEST_SERVICE, automate_service_registry_test_service:get_uuid()).
--define(TEST_SERVICE_ACTION, test_action).
 
 %%====================================================================
 %% Test API

@@ -89,7 +89,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Wait for next value',
-                block_function: 'op_wait_for_next_value',
+                block_function: 'control_wait_for_next_value',
                 type: 'operation',
                 inputs: [
                     {

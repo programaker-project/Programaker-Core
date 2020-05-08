@@ -1104,9 +1104,6 @@ function compile_block(graph: FlowGraph,
                 };
             }
         }
-        else if (block_fun.startsWith('operator_equals')) {
-            block_type = "operator_equals";
-        }
         else if (block_fun === 'trigger_when_all_true') {
             block_type = "control_if_else";
 

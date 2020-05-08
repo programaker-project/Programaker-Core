@@ -149,6 +149,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "trigger_when_all_completed":
         case "trigger_when_first_completed":
         case "trigger_on_signal":
+        case "trigger_when_all_true":
             throw new Error(`Invalid AST Operation: Operation (type:${op.type}) should now be present on a properly compiled AST.`);
 
 
@@ -163,7 +164,6 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             // Cannonicalize args and contents, but don't sort
         case "control_wait":
         case "control_if_else":
-        case "trigger_when_all_completed":
         case "operator_modulo":
         case "operator_add":
         case "logging_add_log":
