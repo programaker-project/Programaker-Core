@@ -242,7 +242,7 @@ fork_and_join_first() ->
                             , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [ ?UTILS:block_val({ ?COMMAND_GET_THREAD_ID }) ] }
                                                        , { ?COMMAND_FORK_EXECUTION, [ constant_val(?OP_FORK_CONTINUE_ON_FIRST) ]
                                                          , [ [ { ?COMMAND_LOG_VALUE, [ ?UTILS:block_val({ ?COMMAND_GET_THREAD_ID }) ] } ]
-                                                           , [ { ?COMMAND_WAIT, [ constant_val(0.01) ] }
+                                                           , [ { ?COMMAND_WAIT, [ constant_val(0.1) ] }
                                                              , { ?COMMAND_LOG_VALUE, [ ?UTILS:block_val({ ?COMMAND_GET_THREAD_ID }) ] } ]
                                                            ]
                                                          }

@@ -39,7 +39,7 @@ build_ast_instruction({Name, Args, Contents}) ->
      }.
 
 create_anonymous_program() ->
-    {Username, UserId} = create_random_user(),
+    {Username, _UserId} = create_random_user(),
 
     ProgramName = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
     {ok, ProgramId} = automate_storage:create_program(Username, ProgramName),
