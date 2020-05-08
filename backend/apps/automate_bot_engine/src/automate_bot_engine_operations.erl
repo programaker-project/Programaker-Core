@@ -76,7 +76,7 @@ get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
         { key, Key } ->
             automate_channel_engine:listen_channel(MonitorId, { Key });
         { not_found } ->
-            automate_channel_engine:listen_channel(MonitorId)
+            automate_channel_engine:listen_channel(MonitorId, { MonitorKey })
     end,
 
     ?TRIGGERED_BY_MONITOR;
@@ -691,9 +691,9 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                     ]
                     },
                 Thread=#program_thread{ program_id=ProgramId },
-                { ?TRIGGERED_BY_MONITOR, {MonitorId, Message} }) ->
+                { ?TRIGGERED_BY_MONITOR, {MonitorId, Message=#{ <<"key">> := MessageKey }} }) ->
 
-    [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
+    [ServiceId, MonitorKey] = binary:split(MonitorPath, <<".">>),
 
     {ok, UserId} = automate_storage:get_program_owner(ProgramId),
 
@@ -702,22 +702,46 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
 
     case ReceivedMonitorId of
         MonitorId ->
-            %% TODO: Check for key/subkey match
-            %% Save content if appropriate
-            Thread2 = case Message of
-                          #{ ?CHANNEL_MESSAGE_CONTENT := Content } ->
-                              case ?UTILS:get_block_id(Op) of
-                                  none ->
-                                      Thread;
-                                  Id ->
-                                      automate_bot_engine_variables:set_instruction_memory(Thread,
-                                                                                           Content,
-                                                                                           Id)
-                              end;
-                          _ -> Thread
-                      end,
+            SubKeyMatch = case Listened of
+                              #{ ?ARGUMENTS := Arguments } ->
+                                  case {?UTILS:get_block_key_subkey(Arguments), Message} of
+                                      {{ key_and_subkey, _Key, SubKey }, #{ <<"subkey">> := SubKey }} ->
+                                          %% Subkey match
+                                          true;
+                                      {{key_and_subkey, _Key, _SubKey}, _} ->
+                                          %% Subkey NO match
+                                          false;
+                                      _ ->
+                                          true %% Subkey not present
+                                  end;
+                              _ ->
+                                  %% No arguments, so key match is enough
+                                  true
+                          end,
+            KeyMatch = (MonitorKey =:= MessageKey) and SubKeyMatch,
+            case KeyMatch of
+                true ->
+                    %% Save content if appropriate
+                    Thread2 = case Message of
+                                  #{ ?CHANNEL_MESSAGE_CONTENT := Content } ->
+                                      case ?UTILS:get_block_id(Op) of
+                                          none ->
+                                              Thread;
+                                          Id ->
+                                              automate_bot_engine_variables:set_instruction_memory(Thread,
+                                                                                                   Content,
+                                                                                                   Id)
+                                      end;
+                                  _ -> Thread
+                              end,
 
-            {ran_this_tick, increment_position(Thread2)};
+                    {ran_this_tick, increment_position(Thread2)};
+                false ->
+                    automate_logging:log_platform(warning,
+                                                  io_lib:format("Unexpected signal (key did't match) ~p for block: ~p",
+                                                                [Message, Listened])),
+                    {did_not_run, waiting}
+            end;
         _ ->
             automate_logging:log_platform(warning,
                                           io_lib:format("Unexpected signal (monitor didn't match) ~p for block: ~p",
@@ -1156,7 +1180,8 @@ get_block_result(#{ ?TYPE := ?COMMAND_GET_THREAD_ID
 
 %% Fail
 get_block_result(Block, _Thread) ->
-    io:format("Don't know how to get result from: ~p~n", [Block]),
+    automate_logging:log_platform(error, io_lib:format("Don't know how to get result from: ~p~n",
+                                                       [Block])),
     throw(#program_error{ error=#unknown_operation{}
                         , block_id=?UTILS:get_block_id(Block)
                         }).
