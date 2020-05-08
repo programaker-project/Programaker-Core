@@ -50,6 +50,7 @@ export type CompiledBlockArg = CompiledBlockArgBlock | CompiledConstantArg;
 export type CompiledBlockArgList = CompiledBlockArg[];
 
 export type CompiledBlockType = "wait_for_monitor"
+    | "control_wait_for_next_value"
     | "control_if_else"
     | "operator_and" | "operator_equals" | "operator_lt" | "operator_gt"
     | "operator_add" | "operator_modulo"

@@ -1405,7 +1405,9 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
         }
         else {
             const ast = stepped_asts[i][0];
-            flows.push(assemble_flow(graph, signal_id, null, ast));
+            if (ast.length > 0) { // Ignore triggers with no operations
+                flows.push(assemble_flow(graph, signal_id, null, ast));
+            }
         }
     }
 

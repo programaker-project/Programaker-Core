@@ -163,6 +163,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
 
             // Cannonicalize args and contents, but don't sort
         case "control_wait":
+        case "control_wait_for_next_value":
         case "control_if_else":
         case "operator_modulo":
         case "operator_add":
