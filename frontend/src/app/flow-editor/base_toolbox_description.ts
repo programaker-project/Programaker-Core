@@ -64,9 +64,9 @@ export const BaseToolboxDescription: ToolboxDescription = [
             },
             {
                 icon: PLATFORM_ICON,
-                message: 'Wait for',
+                message: 'Wait for %i1 to be true',
                 block_function: 'control_wait_until',
-                type: 'trigger',
+                type: 'operation',
                 inputs: [
                     {
                         name: "check",
@@ -76,11 +76,12 @@ export const BaseToolboxDescription: ToolboxDescription = [
             },
             {
                 icon: PLATFORM_ICON,
-                message: 'Wait for',
+                message: 'On new %i1 value',
                 block_function: 'trigger_on_signal',
                 type: 'trigger',
                 inputs: [
                     {
+                        name: "signal",
                         type: "any",
                     },
                 ]
@@ -153,10 +154,16 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     type: "boolean",
                     quantity: "any",
                 },
-            },
-            {
+            }
+        ]
+    },
+    {
+        id: 'parallelization',
+        name: 'Parallelization',
+        blocks: [
+                        {
                 icon: PLATFORM_ICON,
-                message: 'Do on parallel',
+                message: 'Run on parallel',
                 block_function: 'op_fork_execution',
                 type: 'operation',
                 outputs: [
@@ -221,7 +228,6 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     quantity: "any",
                 },
             }
-
         ]
     },
     {
@@ -495,7 +501,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
         blocks: [
             {
                 icon: PLATFORM_ICON,
-                message: 'Log value %1',
+                message: 'Log value %i1',
                 block_function: 'logging_add_log',
                 type: 'operation',
                 inputs: [
