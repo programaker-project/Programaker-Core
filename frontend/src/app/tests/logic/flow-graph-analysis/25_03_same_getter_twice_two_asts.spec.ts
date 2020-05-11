@@ -53,7 +53,7 @@ describe('Flow-25-03: Same getter used twice in two ASTs.', () => {
         const TIME_BLOCK = "ad97e5d1-c725-4cc6-826f-30057f239635";
 
         const expected_ast = gen_compiled(dsl_to_ast(`;PM-DSL;; Entrypoint for mmm-mode
-             (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+             (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
              (preload (get-var x))
              (log (+ (+ (flow-last-value x 0) 1)
                      (+ (flow-last-value x 0) 2)))

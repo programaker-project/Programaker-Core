@@ -51,7 +51,7 @@ describe('Flow-92: [Reactive] Take N last values.', () => {
 
         const dsl_ast = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (wait-for-monitor key: utc_time  from_service: "${TIME_MONITOR_ID}")
             (if (> (list-length counter) 3)
                 ((delete-list-index latest 1)))
             (add-to-list latest (flow-last-value "source" 0))

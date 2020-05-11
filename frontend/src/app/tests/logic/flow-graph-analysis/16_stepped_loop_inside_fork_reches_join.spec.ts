@@ -65,7 +65,7 @@ describe('Flow-16: Stepped loop inside fork reaches join.', () => {
 
         const dsl_ast = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
             (if (and (= (flow-last-value "source" 0)
                         11)
                      )

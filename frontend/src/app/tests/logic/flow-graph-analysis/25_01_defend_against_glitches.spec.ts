@@ -44,7 +44,7 @@ describe('Flow-25-01: Defend against glitches.', () => {
         are_equivalent_ast(compile(gen_flow({ source_id: TIME_BLOCK })), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                 (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                 (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                  (log (+ (get-var x) 1))
                  (log (+ (flow-last-value "add1" 0) (flow-last-value "x1" 0)))
                  (log (get-var x))

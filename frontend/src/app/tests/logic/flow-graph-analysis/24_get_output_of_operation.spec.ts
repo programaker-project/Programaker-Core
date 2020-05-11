@@ -43,7 +43,7 @@ describe('Flow-24: Get output of operation block.', () => {
         are_equivalent_ast(compile(gen_flow({ source_id: TIME_BLOCK })), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                 (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                 (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                  (call-service id: "gitlab"
                                 action: "create_issue"
                                 values: ("Sample project" "Sample title"))

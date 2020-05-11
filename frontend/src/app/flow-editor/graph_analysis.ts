@@ -1086,6 +1086,17 @@ function compile_block(graph: FlowGraph,
                 monitor_id: {
                     from_service: TIME_MONITOR_ID,
                 },
+                key: "utc_time",
+                expected_value: 'any_value',
+            };
+        }
+        else if (block_fun === 'flow_utc_date') {
+            block_type = "wait_for_monitor";
+            compiled_args = {
+                monitor_id: {
+                    from_service: TIME_MONITOR_ID,
+                },
+                key: "utc_date",
                 expected_value: 'any_value',
             };
         }

@@ -48,7 +48,7 @@ describe('Flow-25-02: Same getter used twice by same operation.', () => {
         are_equivalent_ast(compile(gen_flow({ source_id: TIME_BLOCK })), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                 (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                 (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                  (preload (get-var x))
                  (log (+ (+ (flow-last-value x 0) 1)
                          (+ (flow-last-value x 0) 2)))

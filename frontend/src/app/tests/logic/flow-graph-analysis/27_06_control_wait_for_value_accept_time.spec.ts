@@ -40,10 +40,10 @@ describe('Flow-27-06: Wait for value might have direct connection from a time tr
         are_equivalent_ast(compile(gen_flow()), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                 (if (and (= (flow-last-value "source" 0)
                             11))
-                    ((control_wait_for_next_value (wait-for-monitor from_service: "${TIME_MONITOR_ID}" ))))
+                    ((control_wait_for_next_value (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}" ))))
                 `))
         ]);
     });

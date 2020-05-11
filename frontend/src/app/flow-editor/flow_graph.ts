@@ -28,6 +28,7 @@ export interface CompiledBlockArgMonitorDict {
         from_service: string,
     },
     expected_value: MonitorExpectedValue | 'any_value';
+    key: "utc_time" | "utc_date";
     save_to?: {
         type: 'variable',
         value: string,

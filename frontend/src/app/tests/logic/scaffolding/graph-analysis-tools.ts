@@ -7,7 +7,7 @@ type _EqualsOp = ['operator_equals', SimpleArrayAstArgument, SimpleArrayAstArgum
     | ['operator_equals', SimpleArrayAstArgument, SimpleArrayAstArgument, SimpleArrayAstArgument];
 type _CallServiceOp = ['command_call_service',
                        { service_id: string, service_action: string, service_call_values: SimpleArrayAstArgument[] }];
-type _WaitForMonitorOp = ['wait_for_monitor', { monitor_id: { from_service: string }, expected_value: any }];
+type _WaitForMonitorOp = ['wait_for_monitor', { monitor_id: { from_service: string }, key: "utc_time" | "utc_date", expected_value: any }];
 type _LastValueOp = ['flow_last_value', string, number | string];
 type _IfElseOp = ['control_if_else', SimpleArrayAstArgument, SimpleArrayAstOperation[]];
 type _ForkExecOp = ['op_fork_execution', SimpleArrayAstArgument[], SimpleArrayAstOperation[]]

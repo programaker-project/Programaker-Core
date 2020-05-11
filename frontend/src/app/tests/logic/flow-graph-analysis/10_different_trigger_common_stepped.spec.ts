@@ -59,7 +59,7 @@ describe('Flow-10: Different trigger common stepped.', () => {
 
         const dsl_ast_branch1 = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
             (if (and (= (flow-last-value "source1" 0)
                         11)
                      )
@@ -74,7 +74,7 @@ describe('Flow-10: Different trigger common stepped.', () => {
 
         const dsl_ast_branch2 = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
             (if (and (= (flow-last-value "source2" 1)
                         (flow-last-value "source2" 2)
                         0))

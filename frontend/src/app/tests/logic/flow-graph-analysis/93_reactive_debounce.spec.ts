@@ -51,7 +51,7 @@ describe('Flow-93: [Reactive] Debounce operation.', () => {
 
         const dsl_ast = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
             (set-var latest (flow_get_thread_id))
             (wait-seconds 1)
             (if (= (get-var latest) (flow_get_thread_id))
