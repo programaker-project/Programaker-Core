@@ -184,7 +184,7 @@ get_config_for_service(ServiceId, Property) ->
                           case mnesia:read(?SERVICE_CONFIGURATION_TABLE, {ServiceId, Property}) of
                               [] ->
                                   {error, not_found};
-                              [#service_configuration_entry{value=Value}] ->
+                              [#services_configuration_entry{value=Value}] ->
                                   {ok, Value}
                           end
                   end,
@@ -195,20 +195,20 @@ get_config_for_service(ServiceId, Property) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec set_config_for_service(binary(), atom(), any()) -> ok.
+-spec set_config_for_service(binary(), atom(), any()) -> ok | {error, atom()}.
 set_config_for_service(ServiceId, Property, Value) ->
     Transaction = fun() ->
                           %% TODO: Check user permissions
-                          mnesia:write(?SERVICE_CONFIGURATION_TABLE,
-                                       #service_configuration_entry{ configuration_id={ServiceId, Property}
-                                                                   , value=Value
-                                                                   }, write)
+                          ok = mnesia:write(?SERVICE_CONFIGURATION_TABLE,
+                                            #services_configuration_entry{ configuration_id={ServiceId, Property}
+                                                                         , value=Value
+                                                                         }, write)
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
             Result;
         {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+            {error, Reason}
     end.
 
 -spec count_all_services() -> number().
