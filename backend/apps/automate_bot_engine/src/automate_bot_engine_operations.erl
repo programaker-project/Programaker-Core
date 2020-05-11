@@ -90,6 +90,18 @@ get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
     %% TODO: Have channel to send variable updates
     ?SIGNAL_PROGRAM_TICK;
 
+get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                                    , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_BLOCK
+                                                       , ?VALUE := [ #{ ?TYPE := ?WAIT_FOR_MONITOR
+                                                                      , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId }
+                                                                      }
+                                                                   ]
+                                                       }
+                                                    ]
+                                    }, _Thread) ->
+    automate_channel_engine:listen_channel(MonitorId),
+    ?TRIGGERED_BY_MONITOR;
+
 get_expected_action_from_operation(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                        }, _Thread) ->
     automate_logging:log_platform(error,
@@ -790,6 +802,18 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                                         [Message, Listened])),
             {did_not_run, waiting}
     end;
+
+run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_BLOCK
+                                    , ?VALUE := [ #{ ?TYPE := ?WAIT_FOR_MONITOR
+                                                   , ?ARGUMENTS := _MonArgs=#{ ?MONITOR_ID := MonitorId }
+                                                   }
+                                                ]
+                                    }
+                                 ]
+                 }, _Thread,
+                { ?TRIGGERED_BY_MONITOR, {MonitorId, _Message} }) ->
+    {did_not_run_waiting};
 
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                  , ?ARGUMENTS := [ Block
