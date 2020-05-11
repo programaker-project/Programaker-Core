@@ -2,7 +2,7 @@ import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
 import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { get_unreachable } from './graph_analysis';
 import { index_connections, reverse_index_connections, EdgeIndex } from './graph_utils';
-import { find_downstream } from './graph_transformations';
+import { find_downstream, is_pulse_output } from './graph_transformations';
 
 const LOOP_FOUND = '__loop_found__';
 
@@ -262,6 +262,69 @@ function validate_jumps_not_out_of_forks(graph: FlowGraph) {
     }
 }
 
+function validate_no_blocks_with_disconnected_required_inputs(graph: FlowGraph) {
+    const rev_conn = reverse_index_connections(graph);
+    for (const block_id of Object.keys(graph.nodes)) {
+        const block = graph.nodes[block_id];
+        if (block.data.type === AtomicFlowBlock.GetBlockType()) {
+            const a_block = block.data as AtomicFlowBlockData;
+
+            const block_cons = rev_conn[block_id];
+
+            if (a_block.value.options.inputs) {
+                for (let input_index = 0; input_index < a_block.value.options.inputs.length; input_index++) {
+                    const input = a_block.value.options.inputs[input_index];
+                    if (input.required) {
+                        const connections_to_input = block_cons.filter(
+                            (v: FlowGraphEdge) => v.to.input_index === input_index
+                        );
+                        if (connections_to_input.length === 0) {
+                            throw new Error(`ValidationError: Required input has no connections (block:${block_id},input:${input_index})`);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+function validate_wait_for_value_blocks(graph: FlowGraph) {
+    const rev_conn = reverse_index_connections(graph);
+    for (const block_id of Object.keys(graph.nodes)) {
+        const block = graph.nodes[block_id];
+        if (block.data.type === AtomicFlowBlock.GetBlockType()) {
+            const a_block = block.data as AtomicFlowBlockData;
+            if (a_block.value.options.block_function !== 'control_wait_for_next_value') {
+                continue;
+            }
+
+            const block_cons = rev_conn[block_id];
+
+            // Only allow pulse connections, from variables or bridge signals
+            for (const conn of block_cons) {
+                if (is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index)) {
+                    continue;
+                }
+
+                const value_input = graph.nodes[conn.from.id];
+                if (value_input.data.type !== AtomicFlowBlock.GetBlockType()) {
+                    throw new Error(`ValidationError: Wait for value does not accept a constant as input (block:${block_id})`);
+                }
+
+                const inp_block = value_input.data as AtomicFlowBlockData;
+                const func = inp_block.value.options.block_function;
+                if ((func !== 'data_variable') // Check changes in variable
+                    && (func !== 'flow_utc_time') && (func !== 'flow_utc_date') // Check time trigger
+                    && (!func.startsWith('services.')) // Check bridge trigger/getter
+                   ) {
+                    throw new Error(`ValidationError: Wait for value does not accept a getter as input (block:${block_id},func:${func})`);
+                }
+            }
+
+        }
+    }
+}
+
 export function validate(graph: FlowGraph) {
     // Reject loops in streaming section
     validate_no_loops_in_streaming_section(graph);
@@ -271,6 +334,9 @@ export function validate(graph: FlowGraph) {
     }
     validate_joins_only_after_forks(graph);
     validate_jumps_not_out_of_forks(graph);
+    validate_no_blocks_with_disconnected_required_inputs(graph);
+
+    validate_wait_for_value_blocks(graph);
 
     return true;
 }

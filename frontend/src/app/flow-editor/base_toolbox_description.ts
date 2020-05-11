@@ -35,6 +35,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         name: "seconds to wait",
                         type: "integer",
                     },
@@ -47,6 +48,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         name: "check",
                         type: "boolean",
                     },
@@ -69,6 +71,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         name: "check",
                         type: "boolean",
                     },
@@ -81,6 +84,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'trigger',
                 inputs: [
                     {
+                        required: true,
                         name: "signal",
                         type: "any",
                     },
@@ -93,6 +97,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         type: "any",
                     },
                 ],
@@ -114,6 +119,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                         type: "pulse",
                     },
                     {
+                        required: true,
                         name: "repetition times",
                         type: "integer",
                     },
@@ -241,9 +247,11 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: "float",
                     },
                     {
+                        required: true,
                         type: "float",
                     },
                 ],
@@ -260,9 +268,11 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: "float",
                     },
                     {
+                        required: true,
                         type: "float",
                     },
                 ],
@@ -279,9 +289,11 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: "float",
                     },
                     {
+                        required: true,
                         type: "float",
                     },
                 ],
@@ -298,10 +310,12 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         name: 'dividend',
                         type: "float",
                     },
                     {
+                        required: true,
                         name: 'divisor',
                         type: "float",
                     },
@@ -319,10 +333,12 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         name: 'dividend',
                         type: "float",
                     },
                     {
+                        required: true,
                         name: 'divisor',
                         type: "float",
                     },
@@ -340,10 +356,12 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         name: "bigger",
                         type: "float",
                     },
                     {
+                        required: true,
                         name: "smaller",
                         type: "float",
                     },
@@ -361,9 +379,11 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: "any",
                     },
                     {
+                        required: true,
                         type: "any",
                     },
                 ],
@@ -384,10 +404,12 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         name: "smaller",
                         type: "float",
                     },
                     {
+                        required: true,
                         name: "bigger",
                         type: "float",
                     },
@@ -405,9 +427,11 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: "boolean",
                     },
                     {
+                        required: true,
                         type: "boolean",
                     },
                 ],
@@ -424,9 +448,11 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: "boolean",
                     },
                     {
+                        required: true,
                         type: "boolean",
                     },
                 ],
@@ -443,6 +469,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: "boolean",
                     },
                 ],
@@ -459,10 +486,12 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         name: "beginning",
                         type: "string",
                     },
                     {
+                        required: true,
                         name: "end",
                         type: "string",
                     },
@@ -481,9 +510,13 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
+                        name: "key",
                         type: "string",
                     },
                     {
+                        required: true,
+                        name: "dictionary",
                         type: "any",
                     },
                 ],
@@ -506,6 +539,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         type: "any",
                     },
                 ],
@@ -584,6 +618,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         name: 'new value',
                         type: "any",
                     },
@@ -602,6 +637,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         type: "float",
                     },
                 ]
@@ -618,6 +654,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 block_function: 'data_addtolist',
                 inputs: [
                     {
+                        required: true,
                         type: 'any',
                     }
                 ],
@@ -630,6 +667,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         type: 'integer',
                     }
                 ]
@@ -647,9 +685,11 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         type: 'any',
                     },
                     {
+                        required: true,
                         type: 'integer',
                     }
                 ]
@@ -661,9 +701,11 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'operation',
                 inputs: [
                     {
+                        required: true,
                         type: 'integer',
                     },
                     {
+                        required: true,
                         type: 'any',
                     }
                 ]
@@ -675,6 +717,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: 'integer',
                     },
                 ],
@@ -691,6 +734,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: 'any',
                     },
                 ],
@@ -718,6 +762,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 type: 'getter',
                 inputs: [
                     {
+                        required: true,
                         type: 'any',
                     }
                 ],
