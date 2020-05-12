@@ -104,7 +104,7 @@ spawn_timekeeper() ->
     end.
 
 
-timekeeping_loop(ChannelId, {{_LYear, _LMonth, _LDay}, {LHour, LMin, LSec}}) ->
+timekeeping_loop(ChannelId, {{LYear, LMonth, LDay}, {LHour, LMin, LSec}}) ->
     {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
     case (Sec =/= LSec) orelse (Min =/= LMin) orelse (Hour =/= LHour) of
         true ->
@@ -120,6 +120,24 @@ timekeeping_loop(ChannelId, {{_LYear, _LMonth, _LDay}, {LHour, LMin, LSec}}) ->
                                                                       , <<"second">> => Sec
                                                                       }
                                                      , <<"key">> => <<"utc_time">>
+                                                     });
+        false ->
+            ok
+    end,
+    case (Year =/= LYear) orelse (Month =/= LMonth) orelse (Day =/= LDay) of
+        true ->
+            StrDate = binary:list_to_bin(lists:flatten(io_lib:format("~p/~p/~p", [Year, Month, Day]))),
+            automate_channel_engine:send_to_channel(ChannelId,
+                                                    #{ ?CHANNEL_MESSAGE_CONTENT => StrDate
+                                                     , <<"full">> => #{ <<"year">> => Year
+                                                                      , <<"month">> => Month
+                                                                      , <<"day">> => Day
+
+                                                                      , <<"hour">> => Hour
+                                                                      , <<"minute">> => Min
+                                                                      , <<"second">> => Sec
+                                                                      }
+                                                     , <<"key">> => <<"utc_date">>
                                                      });
         false ->
             ok
