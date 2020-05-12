@@ -120,14 +120,17 @@ thread_link(OrigCall, ResultAction, ServiceId) ->
 
     %% Get second block, first argument, <<"type">>
     ?assertMatch(#{ ?ARGUMENTS :=
-                       [ #{ ?TYPE := ?COMMAND_CALL_SERVICE
-                          , ?ARGUMENTS :=
-                                #{ ?SERVICE_ACTION := ResultAction
-                                 , ?SERVICE_ID := ServiceId
-                                 , ?SERVICE_CALL_VALUES :=
-                                       #{ ?TYPE := OrigCall
-                                        }
-                                 }
+                       [ #{ ?TYPE := ?VARIABLE_BLOCK
+                          , ?VALUE := [ #{ ?TYPE := ?COMMAND_CALL_SERVICE
+                                         , ?ARGUMENTS :=
+                                               #{ ?SERVICE_ACTION := ResultAction
+                                                , ?SERVICE_ID := ServiceId
+                                                , ?SERVICE_CALL_VALUES :=
+                                                      #{ ?TYPE := OrigCall
+                                                       }
+                                                }
+                                         }
+                                      ]
                           }]},
                  lists:nth(2, Program)).
 
@@ -137,7 +140,7 @@ thread_link(OrigCall, ResultAction, ServiceId) ->
 %%====================================================================
 create_anonymous_program() ->
 
-    {Username, UserId} = create_random_user(),
+    {Username, _UserId} = create_random_user(),
 
     ProgramName = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
     {ok, ProgramId} = automate_storage:create_program(Username, ProgramName),
@@ -180,10 +183,12 @@ wait_and_print(X) -> [#{<<"args">> => [#{<<"type">> => <<"constant">>,
                        , <<"contents">> => []
                        , <<"type">> => <<"control_wait">>
                        },
-                      #{<<"args">> => [#{<<"type">> => X
-                                        , <<"args">> => []
-                                        , <<"contents">> => []
-                                        }]
+                      #{<<"args">> => [#{ ?TYPE => ?VARIABLE_BLOCK
+                                        , ?VALUE => [ #{ <<"type">> => X
+                                                       }
+                                                    ]
+                                        }
+                                      ]
                        , <<"contents">> => []
-                       , <<"type">> => <<"control_print">>
+                       , <<"type">> => ?COMMAND_LOG_VALUE
                        }].
