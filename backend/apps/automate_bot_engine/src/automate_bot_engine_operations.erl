@@ -93,14 +93,20 @@ get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
 get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_BLOCK
                                                        , ?VALUE := [ #{ ?TYPE := ?WAIT_FOR_MONITOR
-                                                                      , ?ARGUMENTS := #{ ?MONITOR_ID := MonitorId }
+                                                                      , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId }
                                                                       }
                                                                    ]
                                                        }
                                                     ]
                                     }, _Thread) ->
-    automate_channel_engine:listen_channel(MonitorId),
+    case MonitorArgs of
+        #{ <<"key">> := Key } ->
+            automate_channel_engine:listen_channel(MonitorId, {Key});
+        _ ->
+            automate_channel_engine:listen_channel(MonitorId)
+    end,
     ?TRIGGERED_BY_MONITOR;
+
 
 get_expected_action_from_operation(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                        }, _Thread) ->
@@ -803,17 +809,48 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
             {did_not_run, waiting}
     end;
 
-run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
-                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_BLOCK
-                                    , ?VALUE := [ #{ ?TYPE := ?WAIT_FOR_MONITOR
-                                                   , ?ARGUMENTS := _MonArgs=#{ ?MONITOR_ID := MonitorId }
-                                                   }
-                                                ]
-                                    }
-                                 ]
-                 }, _Thread,
-                { ?TRIGGERED_BY_MONITOR, {MonitorId, _Message} }) ->
-    {did_not_run_waiting};
+run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                    , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_BLOCK
+                                       , ?VALUE := [ #{ ?TYPE := ?WAIT_FOR_MONITOR
+                                                      , ?ARGUMENTS := MonArgs=#{ ?MONITOR_ID := MonitorId }
+                                                      }
+                                                   ]
+                                       }
+                                    ]
+                    },
+                Thread,
+                { ?TRIGGERED_BY_MONITOR, {MonitorId, Message} }) ->
+
+    Accepted = case MonArgs of
+                   #{ <<"key">> := ExpectedKey } ->
+                       case Message of
+                           #{ <<"key">> := ExpectedKey} ->
+                               true;
+                           _ ->
+                               false
+                       end;
+                   _ -> %% No key required
+                       true
+               end,
+    case Accepted of
+        false ->
+            {did_not_run, waiting};
+        true ->
+            Thread2 = case Message of
+                          #{ ?CHANNEL_MESSAGE_CONTENT := Content } ->
+                              case ?UTILS:get_block_id(Op) of
+                                  none ->
+                                      Thread;
+                                  Id ->
+                                      automate_bot_engine_variables:set_instruction_memory(Thread,
+                                                                                           Content,
+                                                                                           Id)
+                              end;
+                          _ -> Thread
+                      end,
+
+            {ran_this_tick, increment_position(Thread2)}
+    end;
 
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                  , ?ARGUMENTS := [ Block

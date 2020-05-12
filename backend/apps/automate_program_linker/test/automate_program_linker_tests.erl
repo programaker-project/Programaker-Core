@@ -52,6 +52,7 @@ link_monitor_inside_wait_for_next() ->
                   , ?ARGUMENTS => [ #{ ?TYPE => ?WAIT_FOR_MONITOR
                                      , ?ARGUMENTS => #{ ?MONITOR_ID => #{ <<"from_service">> => automate_services_time:get_uuid()
                                                                         }
+                                                      , <<"key">> => <<"sample_key">>
                                                       }
                                      }
                                   ]
@@ -60,6 +61,7 @@ link_monitor_inside_wait_for_next() ->
     Expected = [ [ #{ ?TYPE => ?COMMAND_WAIT_FOR_NEXT_VALUE
                     , ?ARGUMENTS => [ #{ ?TYPE => ?WAIT_FOR_MONITOR
                                        , ?ARGUMENTS => #{ ?MONITOR_ID => TimeMonitorId
+                                                        , <<"key">> => <<"sample_key">>
                                                         }
                                        }
                                     ]
