@@ -23,7 +23,7 @@ function repr_args(args: CompiledBlockArgs, depth: number): string {
     else if ((args as CompiledBlockArgMonitorDict).monitor_id) {
         const mon_args = (args as CompiledBlockArgMonitorDict);
         const value = JSON.stringify(mon_args.expected_value);
-        return `from_service: "${mon_args.monitor_id.from_service}" expected_value: ${value}`
+        return `key: ${mon_args.key} from_service: "${mon_args.monitor_id.from_service}" expected_value: ${value}`
     }
     else if ((args as CompiledBlockArgCallServiceDict).service_id) {
         const call_args = (args as CompiledBlockArgCallServiceDict);

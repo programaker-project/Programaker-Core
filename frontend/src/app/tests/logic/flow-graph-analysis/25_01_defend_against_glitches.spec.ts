@@ -20,11 +20,11 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
     const xblock = builder.add_variable_getter_node('x', { id: 'x1' });
     const xblock2 = builder.add_variable_getter_node('x', { id: 'x2' });
 
-    const addition1 = builder.add_op('flow_addition', { id: 'add1', args: [[xblock, 0], 1] });
-    const addition2 = builder.add_op('flow_addition', { id: 'add2', args: [[addition1, 0], [xblock, 0]] });
-    const log1 = builder.add_op('op_log_value', { id: 'log1', args: [[addition1, 0]] });
-    const log2 = builder.add_op('op_log_value', { id: 'log2', args: [[addition2, 0]] });
-    const log3 = builder.add_op('op_log_value', { id: 'log3', args: [[xblock2, 0]] });
+    const addition1 = builder.add_op('operator_add', { id: 'add1', args: [[xblock, 0], 1] });
+    const addition2 = builder.add_op('operator_add', { id: 'add2', args: [[addition1, 0], [xblock, 0]] });
+    const log1 = builder.add_op('logging_add_log', { id: 'log1', args: [[addition1, 0]] });
+    const log2 = builder.add_op('logging_add_log', { id: 'log2', args: [[addition2, 0]] });
+    const log3 = builder.add_op('logging_add_log', { id: 'log3', args: [[xblock2, 0]] });
 
     trigger.then(log1).then(log2).then(log3);
 
@@ -44,7 +44,7 @@ describe('Flow-25-01: Defend against glitches.', () => {
         are_equivalent_ast(compile(gen_flow({ source_id: TIME_BLOCK })), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                 (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                 (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                  (log (+ (get-var x) 1))
                  (log (+ (flow-last-value "add1" 0) (flow-last-value "x1" 0)))
                  (log (get-var x))

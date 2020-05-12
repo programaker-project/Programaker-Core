@@ -13,10 +13,10 @@ export function gen_flow(): FlowGraph {
     const trigger2 = builder.add_trigger('trigger_on_signal', {args: [[source2, 0]]});
 
     // Stepped section
-    const branch1 = builder.add_op('op_wait_seconds', { args: [ 1 ]
+    const branch1 = builder.add_op('control_wait', { args: [ 1 ]
                                                       });
 
-    const branch2 = builder.add_op('op_wait_seconds', { args: [ 2 ]
+    const branch2 = builder.add_op('control_wait', { args: [ 2 ]
                                                       });
 
     builder.add_fork(trigger1, [branch1, branch2]);
@@ -24,7 +24,7 @@ export function gen_flow(): FlowGraph {
 
     // Join branch 1 and 2
     const joiner = builder.add_trigger('trigger_when_all_completed', {args: [[ branch1, 'pulse' ], [branch2, 'pulse']]});
-    joiner.then(f => f.add_op('op_wait_seconds', { args: [ 9 ] }));
+    joiner.then(f => f.add_op('control_wait', { args: [ 9 ] }));
 
     const graph = builder.build();
     return graph;

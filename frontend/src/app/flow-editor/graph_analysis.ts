@@ -1,11 +1,10 @@
 import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions } from './atomic_flow_block';
 import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_description';
-import { BASE_TOOLBOX_SOURCE_SIGNALS } from './definitions';
 import { DirectValue, DirectValueFlowBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
-import { extract_internally_reused_argument, lift_common_ops, scan_upstream, is_pulse_output } from './graph_transformations';
-import { EdgeIndex, index_connections, reverse_index_connections } from './graph_utils';
+import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream } from './graph_transformations';
+import { index_connections, reverse_index_connections } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
 
@@ -26,70 +25,6 @@ const BASE_TOOLBOX_BLOCKS = index_toolbox_description(BaseToolboxDescription);
 const JUMP_TO_POSITION_OPERATION = 'jump_to_position';
 const JUMP_TO_BLOCK_OPERATION = 'jump_to_block';
 const FORK_OPERATION = 'op_fork_execution';
-
-function activates_trigger(graph: FlowGraph,
-                           block_id: string,
-                           conn_index: EdgeIndex,
-                           reached: {[key: string]: boolean}): boolean {
-
-    for (const conn of conn_index[block_id] || []) {
-        const target_id = conn.to.id;
-        if (reached[target_id]) {
-            continue;
-        }
-
-        reached[target_id] = true;
-
-        const target = graph.nodes[target_id];
-        if (target.data.type === AtomicFlowBlock.GetBlockType()) {
-            const block = (target.data as AtomicFlowBlockData);
-
-            if (block.value.options.type === 'trigger') {
-                return true;
-            }
-            else if (block.value.options.type === 'operation') {
-                // Operations have to be triggered themselves, so they cannot be a source
-            }
-            else {
-                if (activates_trigger(graph, target_id, conn_index, reached)) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
-function get_source_blocks(graph: FlowGraph): string[] {
-    const sources = [];
-    const conn_index = index_connections(graph);
-
-    for (const block_id of Object.keys(graph.nodes)) {
-        const block = graph.nodes[block_id];
-        if (block.data.type === AtomicFlowBlock.GetBlockType()){
-            const data = block.data as AtomicFlowBlockData;
-
-            const inputs = data.value.options.inputs || [];
-
-            // If it has no pulse inputs it might be a source block
-            if (inputs.filter(v => v.type === 'pulse').length === 0) {
-                // If it activates a trigger downstream, it might be a source
-                if (activates_trigger(graph, block_id, conn_index, {})) {
-                    sources.push(block_id);
-                }
-            }
-        }
-        else if (block.data.type === DirectValue.GetBlockType()){
-            // This is just a value, cannot be a source
-        }
-        else if (block.data.type === EnumDirectValue.GetBlockType()){
-            // This is just a value, cannot be a source
-        }
-    }
-
-    return sources;
-}
 
 function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
     if (block.data.type === AtomicFlowBlock.GetBlockType()){
@@ -164,7 +99,7 @@ function is_getter_node(block: FlowGraphNode): boolean {
 
 
 export function get_unreachable(graph: FlowGraph): string[] {
-    const reached = build_index(get_source_blocks(graph));
+    const reached = build_index(get_source_signals(graph));
 
     let remaining_connections: FlowGraphEdge[] = [].concat(graph.edges);
     let empty_pass = false;
@@ -217,6 +152,9 @@ export function get_unreachable(graph: FlowGraph): string[] {
 export function get_source_signals(graph: FlowGraph): string[] {
     const signals = [];
 
+    const conn_index = index_connections(graph);
+    const rev_conn_index = reverse_index_connections(graph);
+
     for (const block_id of Object.keys(graph.nodes)) {
         const block = graph.nodes[block_id];
         if (block.data.type === AtomicFlowBlock.GetBlockType()){
@@ -224,14 +162,58 @@ export function get_source_signals(graph: FlowGraph): string[] {
 
             const inputs = data.value.options.inputs || [];
 
-            // If it has any pulse input, its not a source block
+            // If it has any pulse input, it's not a source block
             if (inputs.filter(v => v.type === 'pulse').length > 0) {
                 continue;
             }
 
-            if (BASE_TOOLBOX_SOURCE_SIGNALS.indexOf(data.value.options.block_function) >= 0) {
-                signals.push(block_id);
+            // If it has a getter input, it's not a source block (the getter is)
+            let has_block_inputs = false;
+            for (const conn of rev_conn_index[block_id] || []) {
+                const orig = graph.nodes[conn.from.id];
+                if (orig.data.type === AtomicFlowBlock.GetBlockType()) {
+                    const a_block = orig.data as AtomicFlowBlockData;
+                    if (a_block.value.options.type === 'getter') {
+                        has_block_inputs = true;
+                        break;
+                    }
+                    else {
+                        throw new Error(`Unexpected input block to trigger (id: ${conn.from.id}, type: ${a_block.value.options.type}), expected a "getter"`);
+                    }
+                }
             }
+
+            if (has_block_inputs) {
+                continue;
+            }
+
+            // If it's a getter check that it gets derived into a trigger
+            if (data.value.options.type === 'getter') {
+                const find_triggers_downstream_controller = ((_node_id: string, node: FlowGraphNode, _: string[]) => {
+                    if (node.data.type === AtomicFlowBlock.GetBlockType()) {
+                        const a_node = node.data as AtomicFlowBlockData;
+
+                        if (a_node.value.options.type === 'getter') {
+                            return 'continue'; // This path might be valid, continue checking downstream
+                        }
+                        else if (a_node.value.options.type === 'operation') {
+                            return 'stop'; // This path is not valid
+                        }
+                        else if (a_node.value.options.type === 'trigger') {
+                            return 'capture'; // This is a valid path
+                        }
+                    }
+                    else {
+                        throw new Error(`Unexpected: Direct value block should not have an input`);
+                    }
+                });
+
+                if (!scan_downstream(graph, block_id, conn_index, find_triggers_downstream_controller)) {
+                    continue; // Ignore this entry if id doesn't derive into a trigger
+                }
+            }
+
+            signals.push(block_id);
         }
     }
 
@@ -910,10 +892,18 @@ function already_used_in_past(graph: FlowGraph, arg_id: string,
     }
 
     for (const conn of rev_conn_index[reference_block]) {
-        if (has_pulse_input && (!is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index))) {
+        const is_pulse_connection = is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index);
+        if (has_pulse_input && !is_pulse_connection) {
             // Skip first level non-pulse outputs if the reference block has any
             // pulse input
             continue;
+        }
+
+        // Consider direct pulse outputs (mostly from triggers)
+        if (is_pulse_connection) {
+            if (conn.from.id === arg_id) {
+                return true;
+            }
         }
 
         const result = (scan_upstream(graph, conn.from.id, rev_conn_index,
@@ -943,7 +933,7 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
     if (block.data.type === AtomicFlowBlock.GetBlockType()){
         const data = block.data as AtomicFlowBlockData;
 
-        if ((data.value.options.type !== 'getter') || already_used_in_past(graph, arg.tree.block_id, parent, orig)) {
+        if (already_used_in_past(graph, arg.tree.block_id, parent, orig)) {
             return {
                 type: 'block',
                 value: [
@@ -1096,20 +1086,34 @@ function compile_block(graph: FlowGraph,
                 monitor_id: {
                     from_service: TIME_MONITOR_ID,
                 },
+                key: "utc_time",
+                expected_value: 'any_value',
+            };
+        }
+        else if (block_fun === 'flow_utc_date') {
+            block_type = "wait_for_monitor";
+            compiled_args = {
+                monitor_id: {
+                    from_service: TIME_MONITOR_ID,
+                },
+                key: "utc_date",
                 expected_value: 'any_value',
             };
         }
         else if (block_fun.startsWith('services.')) {
-            block_type = "command_call_service";
-            const [, bridge_id, call_name] = block_fun.split('.');
-            compiled_args = {
-                service_id: bridge_id,
-                service_action: call_name,
-                service_call_values: compiled_args,
-            };
-        }
-        else if (block_fun.startsWith('flow_equals')) {
-            block_type = "operator_equals";
+            if (data.value.options.type === 'trigger') {
+                // Ignore
+                block_type = block_fun;
+            }
+            else {
+                block_type = "command_call_service";
+                const [, bridge_id, call_name] = block_fun.split('.');
+                compiled_args = {
+                    service_id: bridge_id,
+                    service_action: call_name,
+                    service_call_values: compiled_args,
+                };
+            }
         }
         else if (block_fun === 'trigger_when_all_true') {
             block_type = "control_if_else";
@@ -1125,7 +1129,8 @@ function compile_block(graph: FlowGraph,
             }];
         }
         else if (block_fun === 'trigger_when_first_completed') {
-            // Natural exit of an IF
+            // Natural exit of an IF.
+            // This block is structural and MUST not appear on a compiled AST.
             if (relatives.before && ['control_if_else', FORK_OPERATION].indexOf(relatives.before.type) < 0 ) {
                 throw new Error("Expected block 'trigger_when_first_completed' 'control_if_else' or 'op_fork_execution'");
             }
@@ -1162,6 +1167,7 @@ function compile_block(graph: FlowGraph,
         }
         else if (block_fun === 'trigger_when_all_completed') {
             // Natural exit of a Fork
+            // This block is structural and MUST not appear on a compiled AST.
             if (relatives.before && relatives.before.type === FORK_OPERATION ) {
                 // Nothing to add
                 const all_before = get_latest_blocks_on_each_ast_level(relatives.before).concat([relatives.before]);
@@ -1315,60 +1321,84 @@ export function assemble_flow(graph: FlowGraph,
     const signal_ast = compile_block(graph, signal_id, [], [],
                                      { inside_args: false, orig_tree: null },
                                      { before: null });
-    const filter_node = graph.nodes[filter.block_id];
+
+    let skip_filter = false;
     let compiled_graph = null;
 
-    if (filter_node.data.type === AtomicFlowBlock.GetBlockType()) {
-        const f_block = (filter_node.data as AtomicFlowBlockData);
-        if (f_block.value.options.block_function === 'trigger_on_signal') {
-            const filter_ast = stepped_ast.map(b => compile_block(graph,
-                                                                  b.block_id,
-                                                                  b.arguments,
-                                                                  b.contents as SteppedBlockTree[],
-                                                                  { inside_args: false, orig_tree: null },
-                                                                  { before: signal_ast }
-                                                                 ));
-            compiled_graph = [
-                signal_ast,
-            ].concat(filter_ast);
-}
-        else {
-            const filter_ast = compile_block(graph, filter.block_id, filter.arguments, [ stepped_ast, [] ],
-                                             { inside_args: false, orig_tree: null },
-                                             { before: signal_ast }
-                                            )
+    if (filter) {
+        const filter_node = graph.nodes[filter.block_id];
 
-            compiled_graph = [
-                signal_ast,
-                filter_ast,
-            ];
+        if (filter_node.data.type === AtomicFlowBlock.GetBlockType()) {
+            const f_block = (filter_node.data as AtomicFlowBlockData);
+            if (f_block.value.options.block_function === 'trigger_on_signal') {
+                skip_filter = true;
+            }
+        }
+        else {
+            throw new Error(`Unexpected filter block: ${JSON.stringify(filter_node)}`);
         }
     }
     else {
-        throw new Error(`Unexpected filter block: ${JSON.stringify(filter_node)}`);
+        skip_filter = true;
+    }
+
+    if (skip_filter) {
+        const filter_ast = stepped_ast.map(b => compile_block(graph,
+                                                              b.block_id,
+                                                              b.arguments,
+                                                              b.contents as SteppedBlockTree[],
+                                                              { inside_args: false, orig_tree: null },
+                                                              { before: signal_ast }
+                                                             ));
+        compiled_graph = [
+            signal_ast,
+        ].concat(filter_ast);
+    }
+    else {
+        const filter_ast = compile_block(graph, filter.block_id, filter.arguments, [ stepped_ast, [] ],
+                                         { inside_args: false, orig_tree: null },
+                                         { before: signal_ast }
+                                        )
+
+        compiled_graph = [
+            signal_ast,
+            filter_ast,
+        ];
     }
 
     return _link_graph(compiled_graph);
 }
 
 export function compile(graph: FlowGraph): CompiledFlowGraph[] {
+    // Isolate destructive changes. These are mostly performed on
+    // `lift_common_ops` and `extract_internally_reused_arguments`.
+    graph = JSON.parse(JSON.stringify(graph));
+
     graph = lift_common_ops(graph);
-    graph = extract_internally_reused_argument(graph);
+    graph = extract_internally_reused_arguments(graph);
 
     const source_signals = get_source_signals(graph);
     const filters: BlockTree[][] = [];
     for (const signal_id of source_signals) {
-        filters.push(get_filters(graph, signal_id));
+        const source_filters = get_filters(graph, signal_id);
+        filters.push(source_filters);
     }
 
     const stepped_asts = [];
-    for (const subfilters of filters) {
+
+    for (let i = 0; i < filters.length ; i++) {
+        const subfilters = filters[i];
         let columns = [];
 
-        for (const subfilter of subfilters) {
-            columns.push(get_stepped_ast(graph, subfilter.block_id));
+        if (subfilters.length > 0) {
+            for (const subfilter of subfilters) {
+                columns.push(get_stepped_ast(graph, subfilter.block_id));
+            }
         }
-
+        else {
+            // If the source is a trigger, the filter does not exist itself
+            columns.push(get_stepped_ast(graph, source_signals[i]))
+        }
         stepped_asts.push(columns);
     }
 
@@ -1377,10 +1407,18 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
     for (let i = 0; i < source_signals.length; i++) {
         const signal_id = source_signals[i];
 
-        for (let j = 0; j < filters[i].length; j++) {
-            const filter = filters[i][j];
-            const ast = stepped_asts[i][j];
-            flows.push(assemble_flow(graph, signal_id, filter, ast));
+        if (filters[i].length > 0) {
+            for (let j = 0; j < filters[i].length; j++) {
+                const filter = filters[i][j];
+                const ast = stepped_asts[i][j];
+                flows.push(assemble_flow(graph, signal_id, filter, ast));
+            }
+        }
+        else {
+            const ast = stepped_asts[i][0];
+            if (ast.length > 0) { // Ignore triggers with no operations
+                flows.push(assemble_flow(graph, signal_id, null, ast));
+            }
         }
     }
 

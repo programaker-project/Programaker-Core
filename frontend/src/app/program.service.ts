@@ -122,16 +122,20 @@ export class ProgramService {
                       .toPromise()) as Promise<ProgramLogEntry[]>);
     }
 
-    createProgram(): Promise<ProgramMetadata> {
-        return this.getCreateProgramsUrl().then(url =>
-            this.http
-                .post(url, JSON.stringify({}),
-                      {headers: this.sessionService.addJsonContentType(
-                          this.sessionService.getAuthHeader())}).pipe(
-                map(response => {
-                    return response as ProgramMetadata;
-                }))
-                .toPromise());
+    public async createProgram(program_type?: ProgramType, program_name?: string): Promise<ProgramMetadata> {
+        const data: { type?: string, name?: string } = {};
+        if (program_type) {
+            data.type = program_type;
+        }
+        if (program_name) {
+            data.name = program_name;
+        }
+
+        const url = await this.getCreateProgramsUrl();
+        return await this.http
+            .post(url, JSON.stringify(data), {
+                headers: this.sessionService.addJsonContentType(this.sessionService.getAuthHeader())
+            }).toPromise() as Promise<ProgramMetadata>;
     }
 
     updateProgram(username: string,

@@ -22,7 +22,7 @@ export function gen_flow(): FlowGraph {
     // First trigger
     // Stream section
     const source1 = builder.add_stream('flow_utc_time', {id: 'source1', message: 'UTC time'});
-    const cond1 = builder.add_stream('flow_equals', {args: [[source1, 0], 11]});
+    const cond1 = builder.add_stream('operator_equals', {args: [[source1, 0], 11]});
     const trigger1 = builder.add_trigger('trigger_when_all_true', {args: [[cond1, 0]]});
     const body1 = builder.add_op('send_message', { namespace: chat,
                                                    args: [channel1,
@@ -33,7 +33,7 @@ export function gen_flow(): FlowGraph {
 
     // Second trigger
     const source2 = builder.add_stream('flow_utc_time', {id: 'source2', message: 'UTC time'});
-    const cond2 = builder.add_stream('flow_equals', {args: [[source2, 1], [source2, 2], 0]});
+    const cond2 = builder.add_stream('operator_equals', {args: [[source2, 1], [source2, 2], 0]});
     const trigger2 = builder.add_trigger('trigger_when_all_true', {args: [[cond2, 0]]});
     const body2 = builder.add_op('send_message', { namespace: chat,
                                                    args: [channel2,
@@ -74,7 +74,7 @@ describe('Flow-12: Fork to different branch.', () => {
 
         const dsl_ast_branch1 = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
             (if (and (= (flow-last-value "source1" 0)
                         11)
                      )
@@ -100,7 +100,7 @@ describe('Flow-12: Fork to different branch.', () => {
 
         const dsl_ast_branch2 = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
             (if (and (= (flow-last-value "source2" 1)
                         (flow-last-value "source2" 2)
                         0))

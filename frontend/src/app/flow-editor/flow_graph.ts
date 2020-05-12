@@ -28,6 +28,7 @@ export interface CompiledBlockArgMonitorDict {
         from_service: string,
     },
     expected_value: MonitorExpectedValue | 'any_value';
+    key: "utc_time" | "utc_date";
     save_to?: {
         type: 'variable',
         value: string,
@@ -50,14 +51,15 @@ export type CompiledBlockArg = CompiledBlockArgBlock | CompiledConstantArg;
 export type CompiledBlockArgList = CompiledBlockArg[];
 
 export type CompiledBlockType = "wait_for_monitor"
+    | "control_wait_for_next_value"
     | "control_if_else"
-    | "operator_and" | "operator_equals" | "flow_lesser_than" | "flow_greater_than"
-    | "flow_addition" | "flow_modulo"
+    | "operator_and" | "operator_equals" | "operator_lt" | "operator_gt"
+    | "operator_add" | "operator_modulo"
     | "flow_last_value"
-    | "op_set_var_value" | "flow_get_var_value"
+    | "data_setvariableto" | "data_variable"
     | "command_call_service"
-    | "op_wait_seconds"
-    | "op_log_value" | "flow_get_thread_id"
+    | "control_wait"
+    | "logging_add_log" | "flow_get_thread_id"
     | "jump_to_position"
     | "jump_to_block"
     | "jump_point" // Not found on executable stage, will be removed in link phase
@@ -65,7 +67,11 @@ export type CompiledBlockType = "wait_for_monitor"
     | "trigger_when_all_completed"
     | "trigger_when_first_completed"
     | "op_preload_getter"
-    | "flow_list_length" | "op_delete_list_entry" | "op_add_to_list"
+    | "data_lengthoflist" | "data_deleteoflist" | "data_addtolist"
+
+// Operations should not appear on a properly compiled AST
+    | "trigger_when_all_completed" | "trigger_when_first_completed"
+    | "trigger_on_signal" | "trigger_when_all_true"
     ;
 export type CompiledBlockArgs = CompiledBlockArgMonitorDict | CompiledBlockArgCallServiceDict | CompiledBlockArgList;
 

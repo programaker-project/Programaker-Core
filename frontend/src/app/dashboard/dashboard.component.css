@@ -27,15 +27,45 @@ mat-card.program {
     padding: 0;
 }
 
+.program-data {
+    display: grid;
+}
+
+.program-data > .program-type {
+    grid-row: 1;
+    grid-column: 1;
+    width: max-content;
+
+    position: relative;
+}
+
+.program-data > .program-type > img {
+    padding: 1ex;
+    max-width: 8ex;
+    max-height: 8ex;
+
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 mat-card.program > .program-data > .connection-icon-list {
     background-color: rgba(0, 48, 150,0.05);
     border-top: 1px solid rgba(0, 48, 150,0.25);
 
     text-align: left;
     padding: 1ex;
+
+    grid-row: 2;
+
+    grid-column-start: 1;
+    grid-column-end: 3;
 }
 
 mat-card.program > .program-data > .card-title {
+    grid-row: 1;
+    grid-column: 2;
+
     padding: 1em;
     font-weight: 600;
 }
@@ -43,6 +73,9 @@ mat-card.program > .program-data > .card-title {
 mat-card.call-to-action > .program-data > .card-title {
     color: #fff;
     padding: 2em 1em 2em 1em;
+
+    grid-row: 1;
+    grid-column: 1;
 }
 
 mat-card.program > .program-operation {

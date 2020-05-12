@@ -12,15 +12,15 @@ export function gen_flow(): FlowGraph {
 
     // Stream section
     const source = builder.add_stream('flow_utc_time', {id: 'source', message: 'UTC time'});
-    const cond = builder.add_stream('flow_equals', {args: [[source, 0], 11]});
+    const cond = builder.add_stream('operator_equals', {args: [[source, 0], 11]});
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {args: [[cond, 0]]});
-    const branch1 = builder.add_op('op_wait_seconds', { id: 'branch1',
+    const branch1 = builder.add_op('control_wait', { id: 'branch1',
                                                         args: [ 1 ]
                                                       });
 
-    const branch2 = builder.add_op('op_wait_seconds', { id: 'branch2',
+    const branch2 = builder.add_op('control_wait', { id: 'branch2',
                                                         args: [ 2 ]
                                                       });
 
@@ -28,7 +28,7 @@ export function gen_flow(): FlowGraph {
 
     // Join branch 1 and 2
     const joiner12 = builder.add_trigger('trigger_when_first_completed', {args: [[branch1, 'pulse'], [ branch2, 'pulse' ]]});
-    joiner12.then(f => f.add_op('op_wait_seconds', { id: 'joiner12', args: [ 12 ] }));
+    joiner12.then(f => f.add_op('control_wait', { id: 'joiner12', args: [ 12 ] }));
 
     const graph = builder.build();
     return graph;
@@ -45,7 +45,7 @@ describe('Flow-21-01: Fork with IF closer (when FIRST completed).', () => {
 
         const dsl_ast = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
             (if (and (= (flow-last-value "source" 0)
                         11)
                      )

@@ -11,6 +11,7 @@ export interface OutputPortDefinition {
 export interface PrimitiveTypeInputPortDefinition {
     type?: MessageType;
     name?: string;
+    required?: boolean;
 };
 
 export interface BridgeEnumInputPortDefinition {
@@ -18,6 +19,7 @@ export interface BridgeEnumInputPortDefinition {
     name?: string;
     enum_name: string;
     enum_namespace: string;
+    required?: boolean;
 };
 
 export type InputPortDefinition = PrimitiveTypeInputPortDefinition | BridgeEnumInputPortDefinition;

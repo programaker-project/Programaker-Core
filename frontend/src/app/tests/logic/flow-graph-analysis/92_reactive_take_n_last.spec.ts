@@ -16,16 +16,16 @@ export function gen_flow(): FlowGraph {
     // Stepped section
     const trigger = builder.add_trigger('trigger_on_signal', {args: [[source, 0]]});
 
-    const make_space = builder.add_op('op_delete_list_entry', { slots: { list: 'latest' }, args: [ 1 ] })
+    const make_space = builder.add_op('data_deleteoflist', { slots: { list: 'latest' }, args: [ 1 ] })
 
-    const add_new = builder.add_op('op_add_to_list', { slots: { list: 'latest' }, args:  [ [source, 0] ] })
+    const add_new = builder.add_op('data_addtolist', { slots: { list: 'latest' }, args:  [ [source, 0] ] })
     make_space.then(add_new);
 
     const take_cond = builder.add_if(make_space, add_new, {
-        cond: [f => f.add_getter('flow_greater_than',
+        cond: [f => f.add_getter('operator_gt',
                                  { args: [
                                      [
-                                         f => f.add_getter('flow_list_length',
+                                         f => f.add_getter('data_lengthoflist',
                                                            {slots: { list: 'latest' }}),
                                          0 ],
                                      3]
@@ -51,7 +51,7 @@ describe('Flow-92: [Reactive] Take N last values.', () => {
 
         const dsl_ast = dsl_to_ast(
             `;PM-DSL ;; Entrypoint for mmm-mode
-            (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+            (wait-for-monitor key: utc_time  from_service: "${TIME_MONITOR_ID}")
             (if (> (list-length counter) 3)
                 ((delete-list-index latest 1)))
             (add-to-list latest (flow-last-value "source" 0))

@@ -183,11 +183,11 @@ export function scan_upstream(graph: FlowGraph, source_id: string,
 
 export function scan_downstream(graph: FlowGraph, source_id: string,
                               conn_index: EdgeIndex,
-                              controller: (node_id: string, node: FlowGraphNode, path: string[]) => ScanCommand): [string] {
+                              controller: (node_id: string, node: FlowGraphNode, path: string[]) => ScanCommand): string[] {
     const reached = {};
     reached[source_id] = true;
 
-    function _aux(source_id: string, path: string[]) {
+    function _aux(source_id: string, path: string[]): string[] {
         for (const conn of conn_index[source_id] || []) {
             const next_id = conn.to.id;
             if (reached[next_id]) {
@@ -434,7 +434,7 @@ function get_number_of_uses(graph: FlowGraph, operation: string, getter: string,
     return count;
 }
 
-export function extract_internally_reused_argument(graph: FlowGraph): FlowGraph {
+export function extract_internally_reused_arguments(graph: FlowGraph): FlowGraph {
     const conn_index = index_connections(graph);
     const rev_conn_index = reverse_index_connections(graph);
 

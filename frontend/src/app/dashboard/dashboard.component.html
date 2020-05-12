@@ -52,6 +52,12 @@
                         }"
                         role="button">
                         <div class="program-data" (click)="openProgram(program)">
+                            <div *ngIf="session && session.tags.is_in_preview" class="program-type">
+                                <img *ngIf="program.type === 'scratch_program'"
+                                    src="/assets/blocks-icon.svg" />
+                                <img *ngIf="program.type === 'flow_program'"
+                                    src="/assets/flow-icon.svg" />
+                            </div>
                             <div class="card-title">{{program.name}}</div>
                             <div class="connection-icon-list">
                                 <span *ngFor="let bridge of program.bridges_in_use">

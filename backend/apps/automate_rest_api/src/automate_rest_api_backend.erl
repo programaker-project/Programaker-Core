@@ -14,7 +14,7 @@
         , is_valid_token_uid/1
         , create_monitor/2
         , lists_monitors_from_username/1
-        , create_program/1
+        , create_program/3
         , get_program/1
         , get_program/2
         , update_program_tags/3
@@ -170,13 +170,14 @@ lists_monitors_from_username(Username) ->
                   || {Id, Name} <- Monitors]}
     end.
 
-create_program(Username) ->
-    ProgramName = generate_program_name(),
-    case automate_storage:create_program(Username, ProgramName) of
+create_program(Username, ProgramName, ProgramType) ->
+    case automate_storage:create_program(Username, ProgramName, ProgramType) of
         { ok, ProgramId } ->
             { ok, { ProgramId
                   , ProgramName
-                  , generate_url_for_program_name(Username, ProgramName) } }
+                  , generate_url_for_program_name(Username, ProgramName)
+                  , ProgramType
+                  } }
     end.
 
 get_program(Username, ProgramName) ->
@@ -509,9 +510,6 @@ generate_url_for_service_id(Username, ServiceId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/id/~s", [Username, ServiceId]))).
 
 %% *TODO* generate more interesting names.
-generate_program_name() ->
-    binary:list_to_bin(uuid:to_string(uuid:uuid4())).
-
 generate_url_for_program_name(Username, ProgramName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/programs/~s", [Username, ProgramName]))).
 

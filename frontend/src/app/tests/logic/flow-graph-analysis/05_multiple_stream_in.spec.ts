@@ -20,10 +20,10 @@ export function gen_flow(): FlowGraph {
 
     // Stream section
     const source1 = builder.add_stream('flow_utc_time', {id: 'source1', message: 'UTC time'});
-    const cond1 = builder.add_stream('flow_equals', {args: [[source1, 0], 11]});
+    const cond1 = builder.add_stream('operator_equals', {args: [[source1, 0], 11]});
 
     const source2 = builder.add_stream('flow_utc_time', {id: 'source2', message: 'UTC time'});
-    const cond2 = builder.add_stream('flow_equals', {args: [[source2, 1], [source2, 2], 0]});
+    const cond2 = builder.add_stream('operator_equals', {args: [[source2, 1], [source2, 2], 0]});
 
     // Stepped section
     builder.add_trigger('trigger_when_all_true', {id: 'trigger', args: [[cond1, 0], [cond2, 0]]})
@@ -56,7 +56,7 @@ describe('Flow-05: Multiple stream in.', () => {
                            [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                 (if (and (= (flow-last-value "source1" 0)
                             11)
                          (= (flow-last-value "source2" 1)
@@ -72,7 +72,7 @@ describe('Flow-05: Multiple stream in.', () => {
             )),
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                 (if (and (= (flow-last-value "source1" 0)
                             11)
                          (= (flow-last-value "source2" 1)

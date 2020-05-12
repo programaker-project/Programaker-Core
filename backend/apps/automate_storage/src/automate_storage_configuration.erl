@@ -397,6 +397,29 @@ get_versioning(Nodes) ->
                                                 )
                         end
                 }
+
+                %% Add user generated logs table.
+              , #database_version_transformation
+                { id=13
+                , apply=fun() ->
+                                automate_storage_versioning:create_database(
+                                  #database_version_data
+                                  { database_name=?USER_GENERATED_LOGS_TABLE
+                                  , records=[ program_id
+                                            , block_id
+                                            , severity
+                                            , event_time
+                                            , event_message
+                                            ]
+                                  , record_name=user_generated_log_entry
+                                  , type=bag
+                                  }, Nodes),
+
+                                ok = mnesia:wait_for_tables([ ?USER_GENERATED_LOGS_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
+                        end
+                }
+
               ]
         }.
 

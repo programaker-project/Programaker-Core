@@ -8,6 +8,7 @@
                  , automate_channel_engine
                  , automate_monitor_engine
                  , automate_configuration
+                 , automate_coordination
                  ]},
   {env, [
         ]},

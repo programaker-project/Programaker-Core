@@ -1,6 +1,6 @@
 import { FlowGraph } from '../../../flow-editor/flow_graph';
 import { compile } from '../../../flow-editor/graph_analysis';
-import { extract_internally_reused_argument } from '../../../flow-editor/graph_transformations';
+import { extract_internally_reused_arguments } from '../../../flow-editor/graph_transformations';
 import { validate } from '../../../flow-editor/graph_validation';
 import { TIME_MONITOR_ID } from '../../../flow-editor/platform_facilities';
 import { gen_compiled } from '../scaffolding/graph-analysis-tools';
@@ -10,7 +10,7 @@ import { are_equivalent_ast } from './utils.spec';
 
 export function process_flow(graph: FlowGraph): FlowGraph {
     // Used by visualizing script to produce a processed version specific for this test
-    return extract_internally_reused_argument(graph);
+    return extract_internally_reused_arguments(graph);
 }
 
 export function gen_flow(options?: { source_id?: string }): FlowGraph {
@@ -25,10 +25,10 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
     // Var
     const xblock = builder.add_variable_getter_node('x', { id: 'x' });
 
-    const addition1 = builder.add_op('flow_addition', { id: 'add1', args: [[xblock, 0], 1] });
-    const addition2 = builder.add_op('flow_addition', { id: 'add2', args: [[xblock, 0], 2] });
-    const join_add = builder.add_op('flow_addition', { id: 'join_add', args: [[addition1, 0], [addition2, 0]] });
-    const log1 = builder.add_op('op_log_value', { id: 'log1', args: [[join_add, 0]] });
+    const addition1 = builder.add_op('operator_add', { id: 'add1', args: [[xblock, 0], 1] });
+    const addition2 = builder.add_op('operator_add', { id: 'add2', args: [[xblock, 0], 2] });
+    const join_add = builder.add_op('operator_add', { id: 'join_add', args: [[addition1, 0], [addition2, 0]] });
+    const log1 = builder.add_op('logging_add_log', { id: 'log1', args: [[join_add, 0]] });
 
     trigger.then(log1);
 
@@ -48,7 +48,7 @@ describe('Flow-25-02: Same getter used twice by same operation.', () => {
         are_equivalent_ast(compile(gen_flow({ source_id: TIME_BLOCK })), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                 (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                 (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                  (preload (get-var x))
                  (log (+ (+ (flow-last-value x 0) 1)
                          (+ (flow-last-value x 0) 2)))

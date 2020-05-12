@@ -6,6 +6,7 @@
         ]).
 
 -define(SERVER, ?MODULE).
+-define(UTILS, automate_bot_engine_utils).
 -include("../../automate_storage/src/records.hrl").
 -include("program_records.hrl").
 -include("instructions.hrl").
@@ -50,15 +51,15 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FO
     automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
-get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
-                                                             , ?ARGUMENTS := Arguments
-                                                             }},
+get_expected_action_from_trigger(X=#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
+                                                               , ?ARGUMENTS := Arguments
+                                                               }},
                                  #program_permissions{owner_user_id=UserId}, _ProgramId) ->
     [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
 
-    case get_block_key_subkey(Arguments) of
+    case ?UTILS:get_block_key_subkey(Arguments) of
         { key_and_subkey, Key, SubKey } ->
             automate_channel_engine:listen_channel(MonitorId, { Key, SubKey });
         { key, Key } ->
@@ -66,6 +67,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
         { not_found } ->
             automate_channel_engine:listen_channel(MonitorId)
     end,
+
     ?TRIGGERED_BY_MONITOR;
 
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
@@ -84,34 +86,17 @@ get_expected_action_from_trigger(Trigger, _Permissions, ProgramId) ->
     io:fwrite("[WARN][Bot/Triggers][ProgId=~p] Unknown trigger: ~p~n",  [ProgramId, Trigger]),
     ?SIGNAL_PROGRAM_TICK.
 
-get_block_key_subkey(#{ <<"key">> := Key
-                      , <<"subkey">> := #{ <<"type">> := <<"constant">>
-                                         , <<"value">> := SubKey
-                                         }
-                      }) ->
-    { key_and_subkey, Key, SubKey };
-get_block_key_subkey(#{ <<"key">> := Key }) ->
-    {key, Key};
-get_block_key_subkey(_) ->
-    { not_found }.
-
-get_subkey_value(#{ <<"subkey">> := SubKey }) when is_binary(SubKey) ->
-    {ok, SubKey};
-get_subkey_value(_) ->
-    {error, not_found}.
-
-
 %%%% Thread creation
 %%% Monitors
 %% If any value is OK
 -spec trigger_thread(#program_trigger{}, {atom(), any()}, #program_state{}) -> 'false' | {'true', #program_thread{}}.
 trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
-                                            , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
-                                                                         , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
-                                                                         }
-                                            }
-                               , subprogram=Program
-                               },
+                                                  , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
+                                                                               , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
+                                                                               }
+                                                  }
+                                     , subprogram=Program
+                                     },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }} },
                #program_state{program_id=ProgramId}) ->
 
@@ -121,6 +106,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
 
@@ -152,6 +138,7 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COM
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
     {ok, ThreadWithSavedValue} = case MonitorArgs of
@@ -162,11 +149,11 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COM
                                  end,
 
     case automate_bot_engine_variables:resolve_argument(Argument, ThreadWithSavedValue, Op) of
-        {ok, MessageContent} ->
+        {ok, MessageContent, UpdatedThread} ->
             {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
-                                ThreadWithSavedValue, MonitorId, FullMessage),
+                                UpdatedThread, MonitorId, FullMessage),
             {true, NewThread};
-        {ok, _Found} ->
+        {ok, _Found, _DiscardedThread} ->
             %% io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
             false
     end;
@@ -188,16 +175,17 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
     [ServiceId, FunctionName] = binary:split(MonitorPath, <<".">>),
 
-    KeyMatch = case get_block_key_subkey(MonitorArgs) of
+    KeyMatch = case ?UTILS:get_block_key_subkey(MonitorArgs) of
                    { key_and_subkey, Key, SubKey } ->
-                       case get_subkey_value(FullMessage) of
+                       case ?UTILS:get_subkey_value(FullMessage) of
                            {ok, TriggeredSubKey} ->
                                (Key == TriggeredKey) and (string:lowercase(SubKey) == string:lowercase(TriggeredSubKey));
-                           E ->
+                           _ ->
                                false
                        end;
                    { key, Key } ->
@@ -205,20 +193,21 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                    { not_found } ->
                        FunctionName == TriggeredKey
                end,
+
     case KeyMatch of
         false ->
             false;
         true ->
             {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
             {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-            MatchingContent = case MonitorArgs of
+            {MatchingContent, Thread2} = case MonitorArgs of
                                   #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->
-                                      {ok, ResolvedExpectedValue} = automate_bot_engine_variables:resolve_argument(
-                                                                      ExpectedValue, Thread, Op),
+                                      {ok, ResolvedExpectedValue, UpdatedThread} = automate_bot_engine_variables:resolve_argument(
+                                                                              ExpectedValue, Thread, Op),
                                       ActualValue = maps:get(?CHANNEL_MESSAGE_CONTENT, FullMessage, none),
-                                      ResolvedExpectedValue == ActualValue;
+                                                 {ResolvedExpectedValue == ActualValue, UpdatedThread};
                                   _ ->
-                                      true
+                                      {true, Thread}
                               end,
             case {MonitorId, MatchingContent} of
                 {TriggeredMonitorId, true} ->
@@ -226,14 +215,26 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                                                      { #{ ?MONITOR_SAVE_VALUE_TO := SaveTo }
                                                      , #{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }
                                                      } ->
-                                                         save_value(Thread, SaveTo, MessageContent);
+                                                         save_value(Thread2, SaveTo, MessageContent);
                                                      _ ->
-                                                         {ok, Thread}
+                                                         {ok, Thread2}
                                                  end,
 
                     {ok, NewThread} = automate_bot_engine_variables:set_last_monitor_value(
                                         ThreadWithSavedValue, MonitorId, FullMessage),
-                    {true, NewThread};
+
+                    SavedThread = case {?UTILS:get_block_id(Op), FullMessage} of
+                                      {undefined, _} ->
+                                          NewThread;
+                                      {BlockId, #{ ?CHANNEL_MESSAGE_CONTENT := Content }} ->
+                                          automate_bot_engine_variables:set_instruction_memory(NewThread,
+                                                                                               Content,
+                                                                                               BlockId);
+                                      _ ->
+                                          NewThread
+                                  end,
+
+                    {true, SavedThread};
                 _ ->
                     false
             end
@@ -259,6 +260,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
                             , global_memory=#{}
                             , instruction_memory=#{}
                             , program_id=ProgramId
+                            , thread_id=undefined
                             },
 
     case SaveTo of
@@ -273,7 +275,6 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
 trigger_thread(Trigger, Message, ProgramState) ->
     notify_trigger_not_matched(Trigger, Message, ProgramState),
     false.
-
 
 %%%===================================================================
 %%% Aux functions

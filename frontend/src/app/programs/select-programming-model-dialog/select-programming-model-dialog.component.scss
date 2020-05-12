@@ -1,0 +1,32 @@
+.options-row {
+    margin: 1ex;
+
+    &>mat-card {
+        // margin: 1ex;
+    }
+}
+
+.options-row > mat-card {
+    &.selected {
+        background-color: rgba(170, 255, 170, 0.5);
+    }
+
+    margin-left: 1ex;
+}
+
+.example > img {
+    max-width: 100%;
+    max-height: 20ex;
+    padding: 1ex;
+
+    background: #ddd;
+    border-radius: 5px;
+}
+
+.description > .reason {
+    font-weight: bold;
+}
+
+.title {
+    text-align: center;
+}

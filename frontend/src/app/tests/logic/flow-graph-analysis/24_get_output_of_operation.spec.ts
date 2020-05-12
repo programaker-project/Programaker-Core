@@ -23,8 +23,8 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
                                                      });
     trigger.then(operation);
     operation
-        .then(f => f.add_op('op_wait_seconds', { args: [ 1 ] }))
-        .then(f => f.add_op('op_log_value', { args: [[operation, 1]] }));
+        .then(f => f.add_op('control_wait', { args: [ 1 ] }))
+        .then(f => f.add_op('logging_add_log', { args: [[operation, 1]] }));
 
     const graph = builder.build();
     return graph;
@@ -43,7 +43,7 @@ describe('Flow-24: Get output of operation block.', () => {
         are_equivalent_ast(compile(gen_flow({ source_id: TIME_BLOCK })), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                 (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                 (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                  (call-service id: "gitlab"
                                 action: "create_issue"
                                 values: ("Sample project" "Sample title"))

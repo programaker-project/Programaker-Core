@@ -21,8 +21,8 @@ export function gen_flow(): FlowGraph {
 
     // Stream section
     const source = builder.add_stream('flow_utc_time', {'id': 'source', message: 'UTC time'});
-    const cond1 = builder.add_stream('flow_equals', {args: [[source, 1], [source, 2], 0]});
-    const cond2 = builder.add_stream('flow_equals', {args: [[source, 0], 11]});
+    const cond1 = builder.add_stream('operator_equals', {args: [[source, 1], [source, 2], 0]});
+    const cond2 = builder.add_stream('operator_equals', {args: [[source, 0], 11]});
 
     // Stepped section
     const trigger = builder.add_trigger('trigger_when_all_true', {args: [[cond1, 0], [cond2, 0]]});
@@ -59,7 +59,7 @@ describe('Flow-08: Stepped branching.', () => {
         are_equivalent_ast(compile(gen_flow()), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                (wait-for-monitor from_service: "${TIME_MONITOR_ID}")
+                (wait-for-monitor key: utc_time from_service: "${TIME_MONITOR_ID}")
                 (if (and (= (flow-last-value "source" 0)
                             11)
                          (= (flow-last-value "source" 1)

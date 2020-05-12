@@ -7,7 +7,7 @@ type _EqualsOp = ['operator_equals', SimpleArrayAstArgument, SimpleArrayAstArgum
     | ['operator_equals', SimpleArrayAstArgument, SimpleArrayAstArgument, SimpleArrayAstArgument];
 type _CallServiceOp = ['command_call_service',
                        { service_id: string, service_action: string, service_call_values: SimpleArrayAstArgument[] }];
-type _WaitForMonitorOp = ['wait_for_monitor', { monitor_id: { from_service: string }, expected_value: any }];
+type _WaitForMonitorOp = ['wait_for_monitor', { monitor_id: { from_service: string }, key: "utc_time" | "utc_date", expected_value: any }];
 type _LastValueOp = ['flow_last_value', string, number | string];
 type _IfElseOp = ['control_if_else', SimpleArrayAstArgument, SimpleArrayAstOperation[]];
 type _ForkExecOp = ['op_fork_execution', SimpleArrayAstArgument[], SimpleArrayAstOperation[]]
@@ -145,6 +145,14 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
     delete op.id;
 
     switch (op.type) {
+            // These operations should not appear on a properly compiled AST
+        case "trigger_when_all_completed":
+        case "trigger_when_first_completed":
+        case "trigger_on_signal":
+        case "trigger_when_all_true":
+            throw new Error(`Invalid AST Operation: Operation (type:${op.type}) should now be present on a properly compiled AST.`);
+
+
             // Nothing to canonicalize
         case "wait_for_monitor":
         case "flow_last_value":
@@ -154,20 +162,20 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             break;
 
             // Cannonicalize args and contents, but don't sort
-        case "op_wait_seconds":
+        case "control_wait":
+        case "control_wait_for_next_value":
         case "control_if_else":
-        case "trigger_when_all_completed":
-        case "flow_modulo":
-        case "flow_addition":
-        case "op_log_value":
-        case "flow_lesser_than":
-        case "flow_greater_than":
-        case "op_set_var_value":
-        case "flow_get_var_value":
-        case "flow_list_length":
+        case "operator_modulo":
+        case "operator_add":
+        case "logging_add_log":
+        case "operator_lt":
+        case "operator_gt":
+        case "data_setvariableto":
+        case "data_variable":
+        case "data_lengthoflist":
         case "flow_get_thread_id":
-        case "op_delete_list_entry":
-        case "op_add_to_list":
+        case "data_deleteoflist":
+        case "data_addtolist":
         case "op_preload_getter":
             if (op.args) {
                 op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
@@ -208,7 +216,17 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             break;
 
         default:
-            console.warn(`Unknown operation: ${op.type}`);
+            if (op.type.startsWith('services.')) {
+                if (op.args) {
+                    op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
+                }
+                if (op.contents) {
+                    op.contents = op.contents.map(content => canonicalize_content(content));
+                }
+            }
+            else {
+                console.warn(`Unknown operation: ${op.type}`);
+            }
     }
 
     return op;
