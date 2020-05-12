@@ -629,8 +629,14 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_LOG_VALUE
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, ArgValue, Thread2 } = automate_bot_engine_variables:resolve_argument(Arg, Thread, Op),
+    Format = case ArgValue of
+                 X when is_binary(X) ->
+                     "~s";
+                 _ ->
+                     "~p"
+             end,
     Message = binary:list_to_bin(
-                lists:flatten(io_lib:format("~s", [ArgValue]))),
+                lists:flatten(io_lib:format(Format, [ArgValue]))),
     ok = automate_storage:add_user_generated_log(#user_generated_log_entry{
                                                     severity=debug,
                                                     program_id=ProgramId,

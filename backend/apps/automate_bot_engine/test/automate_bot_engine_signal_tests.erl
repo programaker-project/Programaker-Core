@@ -38,7 +38,8 @@ setup() ->
     %% Use a custom node name to avoid overwriting the actual databases
     net_kernel:start([testing, shortnames]),
 
-    {ok, _Pid} = application:ensure_all_started(?APPLICATION),
+    {ok, _} = application:ensure_all_started(?APPLICATION),
+    {ok, _} = application:ensure_all_started(automate_services_time),
 
     {NodeName}.
 
@@ -59,6 +60,7 @@ tests(_SetupResult) ->
     , {"[Bot engine][Signal management] Wait for variable operation", fun simple_wait_for_variable/0}
     , {"[Bot engine][Signal management] Wait for monitor signal", fun wait_for_monitor_signal/0}
     , {"[Bot engine][Signal management] Wait for monitor signal, check key", fun wait_for_monitor_signal_check_key/0}
+    , {"[Bot engine][Signal management] Wait for time signal", fun wait_for_time_signal/0}
     ].
 
 %%%% Operations
@@ -483,6 +485,39 @@ wait_for_monitor_signal_check_key() ->
 
     %% Check logs after sending signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
+    {ok, LogsAfter} = automate_bot_engine:get_user_generated_logs(ProgramId),
+    MsgsAfter = [ M || #user_generated_log_entry{event_message=M} <- LogsAfter ],
+
+    io:fwrite("Logs after signal: ~p~n", [MsgsAfter]),
+    ?assertMatch([ <<"before">>, <<"after">>], MsgsAfter),
+    ok.
+
+wait_for_time_signal() ->
+    {_Username, _ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+    {ok, TimeMonitorId} = automate_services_time:get_monitor_id(none),
+    Thread = #program_thread{ position = [1]
+                            , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
+                                                       , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
+                                                           [ ?UTILS:block_val({ ?WAIT_FOR_MONITOR
+                                                                              , #{ ?MONITOR_ID => TimeMonitorId
+                                                                                 , <<"key">> => <<"utc_time">>
+                                                                                 }
+                                                                              })
+                                                           ]
+                                                         }
+                                                       , { ?COMMAND_LOG_VALUE, [constant_val(<<"after">>)] }
+                                                       ])
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+
+    %% Launch
+    {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread),
+
+    %% Wait ~2 seconds, should be enough for the time signal to arrive
+    timer:sleep(3000),
     {ok, LogsAfter} = automate_bot_engine:get_user_generated_logs(ProgramId),
     MsgsAfter = [ M || #user_generated_log_entry{event_message=M} <- LogsAfter ],
 

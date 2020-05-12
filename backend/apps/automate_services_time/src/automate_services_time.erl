@@ -93,7 +93,7 @@ spawn_timekeeper() ->
            fun() ->
                    {ok, ChannelId} = get_monitor_id(none),
                    {ok, _} = automate_service_registry:register_public(automate_services_time),
-                   timekeeping_loop(ChannelId, {0, 0, 0})
+                   timekeeping_loop(ChannelId, {{0, 0, 0}, {0, 0, 0}})
            end, ?MODULE) of
         {started, Pid} ->
             {ok, Pid};
@@ -104,17 +104,25 @@ spawn_timekeeper() ->
     end.
 
 
-timekeeping_loop(ChannelId, {LHour, LMin, LSec}) ->
-    {_, {Hour, Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+timekeeping_loop(ChannelId, {{_LYear, _LMonth, _LDay}, {LHour, LMin, LSec}}) ->
+    {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
     case (Sec =/= LSec) orelse (Min =/= LMin) orelse (Hour =/= LHour) of
         true ->
-            %% automate_channel_engine:send_to_channel(ChannelId, {Hour, Min, Sec});
             StrTime = binary:list_to_bin(lists:flatten(io_lib:format("~p:~p:~p", [Hour, Min, Sec]))),
             automate_channel_engine:send_to_channel(ChannelId,
                                                     #{ ?CHANNEL_MESSAGE_CONTENT => StrTime
+                                                     , <<"full">> => #{ <<"year">> => Year
+                                                                      , <<"month">> => Month
+                                                                      , <<"day">> => Day
+
+                                                                      , <<"hour">> => Hour
+                                                                      , <<"minute">> => Min
+                                                                      , <<"second">> => Sec
+                                                                      }
+                                                     , <<"key">> => <<"utc_time">>
                                                      });
         false ->
             ok
     end,
     timer:sleep(?SLEEP_RESOULUTION_MS), % Wait for less than a second
-    timekeeping_loop(ChannelId, {Hour, Min, Sec}).
+    timekeeping_loop(ChannelId, {{Year, Month, Day}, {Hour, Min, Sec}}).
