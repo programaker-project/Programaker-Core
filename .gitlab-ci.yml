@@ -132,7 +132,7 @@ build-backend:
   stage: build
   artifacts:
     paths:
-      - tmp_docker_images/
+      - tmp_docker_images_optimized/
     expire_in: 24h # No need to keep it around
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
