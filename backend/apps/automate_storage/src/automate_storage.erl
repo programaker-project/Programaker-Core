@@ -961,14 +961,11 @@ get_program_variable(ProgramId, Key) ->
     Transaction = fun() ->
                           mnesia:read(?PROGRAM_VARIABLE_TABLE, {ProgramId, Key})
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, [#program_variable_table_entry{value=Value}] } ->
+    case mnesia:async_dirty(Transaction) of
+        [#program_variable_table_entry{value=Value}] ->
             {ok, Value};
-        { atomic, [] } ->
-            {error, not_found};
-        { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
-            {error, mnesia:error_description(Reason)}
+        [] ->
+            {error, not_found}
     end.
 
 -spec log_program_error(#user_program_log_entry{}) -> ok | {error, atom()}.
