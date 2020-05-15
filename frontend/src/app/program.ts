@@ -3,10 +3,11 @@ export class ProgramMetadata {
     name: string;
     link: string;
     enabled: boolean;
+    type: string;
     bridges_in_use: string[];
 }
 
-export type ProgramType = 'scratch_program';
+export type ProgramType = 'scratch_program' | 'flow_program';
 
 export class ProgramContent extends ProgramMetadata {
     type: ProgramType;
@@ -30,6 +31,12 @@ export class ProgramContent extends ProgramMetadata {
 export class ScratchProgram extends ProgramContent {
     constructor(metadata: ProgramMetadata, parsed: any, orig: any) {
        super(metadata, parsed, orig, 'scratch_program');
+    }
+}
+
+export class FlowProgram extends ProgramContent {
+    constructor(metadata: ProgramMetadata, parsed: any, orig: any) {
+        super(metadata, parsed, orig, 'scratch_program');
     }
 }
 

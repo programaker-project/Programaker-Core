@@ -10,6 +10,7 @@
         , change_program_status/3
         , get_user_from_pid/1
         , get_bridges_on_program/1
+        , get_user_generated_logs/1
         ]).
 
 -include("../../automate_storage/src/records.hrl").
@@ -43,3 +44,7 @@ get_user_from_pid(Pid) ->
 -spec get_bridges_on_program(#user_program_entry{}) -> { ok, [binary()] }.
 get_bridges_on_program(Program) ->
     automate_bot_engine_program_decoder:get_bridges_on_program(Program).
+
+-spec get_user_generated_logs(binary()) -> {error, not_found} | {ok, [#user_generated_log_entry{}]}.
+get_user_generated_logs(Pid) ->
+    automate_storage:get_user_generated_logs(Pid).

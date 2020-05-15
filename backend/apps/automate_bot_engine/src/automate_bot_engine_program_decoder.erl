@@ -32,7 +32,17 @@ initialize_program(ProgramId,
                             , permissions=#program_permissions{ owner_user_id=OwnerUserId }
                             , triggers=get_triggers(Blocks)
                             , enabled=Enabled
-                            }}
+                            }};
+        X ->
+            automate_logging:log_platform(error, io_lib:format(
+                                                   "When decoding ~p returned (unexpected): ~p~n",
+                                                   [ ProgramId, X ])),
+            {ok, #program_state{ program_id=ProgramId
+                               , variables=[]
+                               , permissions=#program_permissions{ owner_user_id=OwnerUserId }
+                               , triggers=[]
+                               , enabled=Enabled
+                               }}
 
     catch ErrNS:Err:StackTrace ->
             io:fwrite("\033[41;37m Error decoding program: ~p \033[0m~n", [{ErrNS, Err, StackTrace}]),

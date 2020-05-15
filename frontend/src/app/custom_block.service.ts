@@ -31,12 +31,12 @@ export class CustomBlockService {
         this.onFlightCallbackQueries = {};
     }
 
-    async getCustomBlocksUrl() {
+    private async getCustomBlocksUrl() {
         const userApiRoot = await this.sessionService.getUserApiRoot();
         return userApiRoot + '/custom-blocks/';
     }
 
-    async getCustomBlocks(): Promise<ResolvedCustomBlock[]> {
+    public async getCustomBlocks(skip_resolve_argument_options?: boolean): Promise<ResolvedCustomBlock[]> {
         const blocks = await this.getCustomBlocksUrl().then(url =>
             this.http.get(url,
                 {
@@ -60,7 +60,7 @@ export class CustomBlockService {
                 .toPromise());
 
         const resolvedBlocks = await Promise.all(blocks.map(async (block): Promise<ResolvedCustomBlock> => {
-            return await this._resolveBlock(block);
+            return await this._resolveBlock(block, skip_resolve_argument_options === true);
         }));
 
         return resolvedBlocks.filter((v, _i, _a) => {
@@ -70,14 +70,11 @@ export class CustomBlockService {
 
     private _fixBlockErrors(block: ResolvedCustomBlock): ResolvedCustomBlock {
         try {
-            const matcher = (block.message as any).matchAll(/%\d/g);
-            let arguments_in_message = 0;
-            while (true) {
-                const next = matcher.next();
-                if (next.done) {
-                    break;
-                }
+            const regexp = RegExp(/%\d/g);
 
+            let arguments_in_message = 0;
+            let match;
+            while ((match = regexp.exec(block.message as any)) !== null) {
                 arguments_in_message++;
             }
 
@@ -99,7 +96,7 @@ export class CustomBlockService {
 
             // Validate & fill arguments in message
             if (arguments_in_message < arguments_declared) {
-                console.error("(arguments_in_message < arguments_declared) on ", block);
+                console.warn(`(${arguments_in_message} < ${arguments_declared}) arguments_in_message < arguments_declared on `, block);
             }
 
             while (arguments_in_message < arguments_declared) {
@@ -115,15 +112,18 @@ export class CustomBlockService {
         return block;
     }
 
-    private async _resolveBlock(block: CustomBlock): Promise<ResolvedCustomBlock> {
+    private async _resolveBlock(block: CustomBlock, skip_resolve_argument_options: boolean): Promise<ResolvedCustomBlock> {
         // Note that the block is not copied, the resolution is done destructively!
         const resolvedBlock = block as ResolvedCustomBlock;
-        const newArguments: ResolvedBlockArgument[] = [];
-        for (const argument of block.arguments) {
-            newArguments.push(await this._resolveArgument(argument, block));
-        }
 
-        resolvedBlock.arguments = newArguments;
+        if (!skip_resolve_argument_options) {
+            const newArguments: ResolvedBlockArgument[] = [];
+            for (const argument of block.arguments) {
+                newArguments.push(await this._resolveArgument(argument, block));
+            }
+
+            resolvedBlock.arguments = newArguments;
+        }
 
         this._fixBlockErrors(resolvedBlock);
 
@@ -143,15 +143,13 @@ export class CustomBlockService {
             const loading = options[0][1] === '__plaza_internal_loading';
 
             // Reload asynchronously
-            this.getArgOptions(dynamicArg, block).then((result) => {
+            this.getArgOptions(block.service_port_id, dynamicArg.callback).then((result) => {
                 if (result.length === 0){
                     throw Error("No options found for dynamic argument: " + arg);
                 }
 
-                this.cacheArgOptions(dynamicArg, block, result);
-
                 // Replace all options in place
-                let index;
+                let index: number;
                 for (index = 0; index < result.length; index++) {
                     options[index] = result[index];
                 }
@@ -171,7 +169,7 @@ export class CustomBlockService {
             }
         }
         catch(exception) {
-            console.error(exception);
+            console.error("Callback error:", exception);
             options = [["Not found", "__plaza_internal_not_found"]];
         }
 
@@ -181,17 +179,17 @@ export class CustomBlockService {
         return resolved;
     }
 
-    getCallbackCacheId(arg: DynamicBlockArgument, block: CustomBlock): string {
+    private getCallbackCacheId(bridge_id: string, callback_name: string): string {
         return (CustomBlockService.DataCallbackCachePrefix
                 + '/'
-                + block.service_port_id
+                + bridge_id
                 + '/'
-                + arg.callback);
+                + callback_name);
     }
 
-    async getCachedArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
+    private async getCachedArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
         const storage = window.localStorage;
-        const results = storage.getItem(this.getCallbackCacheId(arg, block));
+        const results = storage.getItem(this.getCallbackCacheId(block.service_port_id, arg.callback));
 
         if ((results === null) || (results.length == 0)) {
             return [["Loading", "__plaza_internal_loading"]];
@@ -199,24 +197,47 @@ export class CustomBlockService {
         return JSON.parse(results);
     }
 
-    async cacheArgOptions(arg: DynamicBlockArgument, block: CustomBlock, result: [string, string][]) {
+    private async cacheArgOptions(bridge_id: string, callback_name: string, result: [string, string][]) {
         const storage = window.localStorage;
-        const results = storage.setItem(this.getCallbackCacheId(arg, block),
+        const results = storage.setItem(this.getCallbackCacheId(bridge_id, callback_name),
                                         JSON.stringify(result));
     }
 
-    async getArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
+    public async getCallbackOptions(bridge_id: string, callback_name: string): Promise<[string, string][]> {
+        try {
+            const result = await this.getArgOptions(bridge_id, callback_name);
+            // Awaited here to catch the error
+            return result;
+        }
+        catch (err) {
+            // Pull from disk cache if there's an error on the service
+            const storage = window.localStorage;
+            const results = storage.getItem(this.getCallbackCacheId(bridge_id, callback_name));
+
+            // Check if it's in cache
+            if ((results !== null) && (results.length > 0)) {
+                // If it is, log the error and send results back
+                console.log("Error getting callback options:", err);
+
+                return JSON.parse(results);
+            }
+
+            // Else, we cannot handle it, pass it over
+            throw err;
+        }
+    }
+
+    private async getArgOptions(bridge_id: string, callback_name: string): Promise<[string, string][]> {
         const userApiRoot = await this.sessionService.getApiRootForUserId();
-        const url = userApiRoot + '/bridges/id/' + block.service_port_id + '/callback/' + arg.callback;
+        const url = userApiRoot + '/bridges/id/' + bridge_id + '/callback/' + callback_name;
 
         // Already being performed, "attach" to the on flight query
         if (this.onFlightCallbackQueries[url] !== undefined) {
             return this.onFlightCallbackQueries[url];
         }
 
-        const query = this.http.get(url, { headers: this.sessionService.getAuthHeader() }).pipe(
-            map((response: { result: CallbackResult } ) => {
-
+        const query = (this.http.get(url, { headers: this.sessionService.getAuthHeader() }).toPromise()
+            .then((response: { result: CallbackResult } ) => {
                 if (response.result.constructor == Object) {
                     // Data from callback as dictionary
                     const options = [];
@@ -240,8 +261,20 @@ export class CustomBlockService {
 
                     return options;
                 }
-            }))
-            .toPromise();
+            }));
+
+        // Cache result
+
+        query.then(result => {
+            this.cacheArgOptions(bridge_id, callback_name, result);
+        });
+
+
+
+        query.catch(err => {
+            console.error(err);
+            delete this.onFlightCallbackQueries[url];
+        });
 
         this.onFlightCallbackQueries[url] = query;
         return query;

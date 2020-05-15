@@ -14,7 +14,9 @@
         , retrieve_thread_values/2
 
         , retrieve_instruction_memory/1
+        , retrieve_instruction_memory/2
         , set_instruction_memory/2
+        , set_instruction_memory/3
         , unset_instruction_memory/1
         , get_thread_context/1
         ]).
@@ -35,11 +37,11 @@
 %%                   }) ->
 %%     automate_monitor_engine:get_last_monitor_result(MonitorId).
 
--spec resolve_argument(map(), #program_thread{}, map()) -> {ok, any()} | {error, not_found}.
+-spec resolve_argument(map(), #program_thread{}, map()) -> {ok, any(), #program_thread{}} | {error, not_found}.
 resolve_argument(#{ ?TYPE := ?VARIABLE_CONSTANT
                   , ?VALUE := Value
-                  }, _Thread, _ParentBlock) ->
-    {ok, Value};
+                  }, Thread, _ParentBlock) ->
+    {ok, Value, Thread};
 
 resolve_argument(#{ ?TYPE := ?VARIABLE_BLOCK
                   , ?VALUE := [Operator]
@@ -51,7 +53,7 @@ resolve_argument(Op=#{ ?TYPE := ?VARIABLE_VARIABLE
                      }, Thread, ParentBlock) ->
     case get_program_variable(Thread, VariableName) of
         {ok, Value} ->
-            {ok, Value};
+            {ok, Value, Thread};
         {error, not_found} ->
             BlockId = case {?UTILS:get_block_id(Op), ?UTILS:get_block_id(ParentBlock)} of
                           { none, Value } -> Value;
@@ -68,7 +70,7 @@ resolve_argument(Op=#{ ?TYPE := ?VARIABLE_LIST
                      }, Thread, ParentBlock) ->
     case get_program_variable(Thread, VariableName) of
         {ok, Value} ->
-            {ok, Value};
+            {ok, Value, Thread};
         {error, not_found} ->
             BlockId = case {?UTILS:get_block_id(Op), ?UTILS:get_block_id(ParentBlock)} of
                           { none, Value } -> Value;
@@ -131,8 +133,21 @@ retrieve_instruction_memory(#program_thread{ instruction_memory=Memory, position
             {error, not_found}
     end.
 
+-spec retrieve_instruction_memory(#program_thread{}, any()) -> {ok, any()} | {error, not_found}.
+retrieve_instruction_memory(#program_thread{ instruction_memory=Memory }, Position) ->
+    case maps:find(Position, Memory) of
+        Response = {ok, _} ->
+            Response;
+        error ->
+            {error, not_found}
+    end.
+
 -spec set_instruction_memory(#program_thread{}, any()) -> #program_thread{}.
 set_instruction_memory(Thread=#program_thread{ instruction_memory=Memory, position=Position }, Value) ->
+    Thread#program_thread{ instruction_memory=Memory#{ Position => Value } }.
+
+-spec set_instruction_memory(#program_thread{}, any(), any()) -> #program_thread{}.
+set_instruction_memory(Thread=#program_thread{ instruction_memory=Memory }, Value, Position) ->
     Thread#program_thread{ instruction_memory=Memory#{ Position => Value } }.
 
 -spec unset_instruction_memory(#program_thread{}) -> #program_thread{}.

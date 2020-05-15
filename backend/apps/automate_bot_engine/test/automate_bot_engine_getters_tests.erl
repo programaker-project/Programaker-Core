@@ -1,8 +1,7 @@
-
-%%% Automate bot engine operation tests.
+%%% Automate bot engine getters tests.
 %%% @end
 
--module(automate_bot_engine_operations_tests).
+-module(automate_bot_engine_getters_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 %% Data structures
@@ -24,6 +23,7 @@
                                      , global_memory=#{}
                                      , instruction_memory=#{}
                                      , program_id=undefined
+                                     , thread_id=undefined
                                      }).
 
 %%====================================================================
@@ -58,89 +58,106 @@ stop({_NodeName}) ->
 
 
 tests(_SetupResult) ->
-    %%# Operations
+    %% Operations
     %% Join
-    [ {"[Bot operation][Join] Join two str",        fun join_str_and_str/0}
-    , {"[Bot operation][Join] Join str to int",     fun join_str_to_int/0}
-    , {"[Bot operation][Join] Join str to float",   fun join_str_to_float/0}
-    , {"[Bot operation][Join] Join int to int",     fun join_int_to_int/0}
-    , {"[Bot operation][Join] Join int to float",   fun join_int_to_float/0}
-    , {"[Bot operation][Join] Join float to float", fun join_float_to_float/0}
+    [ {"[Bot engine][Getter][Join] Join two str",        fun join_str_and_str/0}
+    , {"[Bot engine][Getter][Join] Join str to int",     fun join_str_to_int/0}
+    , {"[Bot engine][Getter][Join] Join str to float",   fun join_str_to_float/0}
+    , {"[Bot engine][Getter][Join] Join int to int",     fun join_int_to_int/0}
+    , {"[Bot engine][Getter][Join] Join int to float",   fun join_int_to_float/0}
+    , {"[Bot engine][Getter][Join] Join float to float", fun join_float_to_float/0}
 
       %% Add
-    , {"[Bot operation][Add] Add two str",        fun add_str_and_str/0}
-    , {"[Bot operation][Add] Add str to int",     fun add_str_and_int/0}
-    , {"[Bot operation][Add] Add str to float",   fun add_str_and_float/0}
-    , {"[Bot operation][Add] Add int to int",     fun add_int_and_int/0}
-    , {"[Bot operation][Add] Add int to float",   fun add_int_and_float/0}
-    , {"[Bot operation][Add] Add float to float", fun add_float_and_float/0}
+    , {"[Bot engine][Getter][Add] Add two str",        fun add_str_and_str/0}
+    , {"[Bot engine][Getter][Add] Add str to int",     fun add_str_and_int/0}
+    , {"[Bot engine][Getter][Add] Add str to float",   fun add_str_and_float/0}
+    , {"[Bot engine][Getter][Add] Add int to int",     fun add_int_and_int/0}
+    , {"[Bot engine][Getter][Add] Add int to float",   fun add_int_and_float/0}
+    , {"[Bot engine][Getter][Add] Add float to float", fun add_float_and_float/0}
 
       %% Subtract
-    , {"[Bot operation][Sub] Subtract two str",          fun sub_str_and_str/0}
-    , {"[Bot operation][Sub] Subtract str from int",     fun sub_str_and_int/0}
-    , {"[Bot operation][Sub] Subtract str from float",   fun sub_str_and_float/0}
-    , {"[Bot operation][Sub] Subtract int from int",     fun sub_int_and_int/0}
-    , {"[Bot operation][Sub] Subtract int from float",   fun sub_int_and_float/0}
-    , {"[Bot operation][Sub] Subtract float from float", fun sub_float_and_float/0}
+    , {"[Bot engine][Getter][Sub] Subtract two str",          fun sub_str_and_str/0}
+    , {"[Bot engine][Getter][Sub] Subtract str from int",     fun sub_str_and_int/0}
+    , {"[Bot engine][Getter][Sub] Subtract str from float",   fun sub_str_and_float/0}
+    , {"[Bot engine][Getter][Sub] Subtract int from int",     fun sub_int_and_int/0}
+    , {"[Bot engine][Getter][Sub] Subtract int from float",   fun sub_int_and_float/0}
+    , {"[Bot engine][Getter][Sub] Subtract float from float", fun sub_float_and_float/0}
 
       %% Multiply
-    , {"[Bot operation][Multiply] Multiply two str",         fun mult_str_and_str/0}
-    , {"[Bot operation][Multiply] Multiply str and int",     fun mult_str_and_int/0}
-    , {"[Bot operation][Multiply] Multiply str and float",   fun mult_str_and_float/0}
-    , {"[Bot operation][Multiply] Multiply int and int",     fun mult_int_and_int/0}
-    , {"[Bot operation][Multiply] Multiply int and float",   fun mult_int_and_float/0}
-    , {"[Bot operation][Multiply] Multiply float and float", fun mult_float_and_float/0}
+    , {"[Bot engine][Getter][Multiply] Multiply two str",         fun mult_str_and_str/0}
+    , {"[Bot engine][Getter][Multiply] Multiply str and int",     fun mult_str_and_int/0}
+    , {"[Bot engine][Getter][Multiply] Multiply str and float",   fun mult_str_and_float/0}
+    , {"[Bot engine][Getter][Multiply] Multiply int and int",     fun mult_int_and_int/0}
+    , {"[Bot engine][Getter][Multiply] Multiply int and float",   fun mult_int_and_float/0}
+    , {"[Bot engine][Getter][Multiply] Multiply float and float", fun mult_float_and_float/0}
 
       %% Divide
-    , {"[Bot operation][Divide] Divide two str",         fun divide_str_and_str/0}
-    , {"[Bot operation][Divide] Divide str and int",     fun divide_str_and_int/0}
-    , {"[Bot operation][Divide] Divide str and float",   fun divide_str_and_float/0}
-    , {"[Bot operation][Divide] Divide int and int",     fun divide_int_and_int/0}
-    , {"[Bot operation][Divide] Divide int and float",   fun divide_int_and_float/0}
-    , {"[Bot operation][Divide] Divide float and float", fun divide_float_and_float/0}
+    , {"[Bot engine][Getter][Divide] Divide two str",         fun divide_str_and_str/0}
+    , {"[Bot engine][Getter][Divide] Divide str and int",     fun divide_str_and_int/0}
+    , {"[Bot engine][Getter][Divide] Divide str and float",   fun divide_str_and_float/0}
+    , {"[Bot engine][Getter][Divide] Divide int and int",     fun divide_int_and_int/0}
+    , {"[Bot engine][Getter][Divide] Divide int and float",   fun divide_int_and_float/0}
+    , {"[Bot engine][Getter][Divide] Divide float and float", fun divide_float_and_float/0}
+
+      %% Modulo
+    , {"[Bot engine][Getter][Divide] Modulo",                          fun modulo_simple/0}
+    , {"[Bot engine][Getter][Divide] Modulo of positive and negative", fun modulo_pos_and_neg/0}
+    , {"[Bot engine][Getter][Divide] Modulo of negative and positive", fun modulo_neg_and_pos/0}
+    , {"[Bot engine][Getter][Divide] Modulo of negative and negative", fun modulo_neg_and_neg/0}
+    , {"[Bot engine][Getter][Divide] Modulo two str",         fun modulo_str_and_str/0}
+    , {"[Bot engine][Getter][Divide] Modulo str and int",     fun modulo_str_and_int/0}
+    , {"[Bot engine][Getter][Divide] Modulo str and float",   fun modulo_str_and_float/0}
+    , {"[Bot engine][Getter][Divide] Modulo int and int",     fun modulo_int_and_int/0}
+    , {"[Bot engine][Getter][Divide] Modulo int and float",   fun modulo_int_and_float/0}
+    , {"[Bot engine][Getter][Divide] Modulo float and float", fun modulo_float_and_float/0}
 
       %%# Comparisons
       %% Less than
-    , {"[Bot operation][Equals] Less than string and string (true)",  fun lt_string_and_string_true/0}
-    , {"[Bot operation][Equals] Less than string and string (false)", fun lt_string_and_string_false/0}
-    , {"[Bot operation][Equals] Less than string and int (true)",     fun lt_string_and_int_true/0}
-    , {"[Bot operation][Equals] Less than string and int (false)",    fun lt_string_and_int_false/0}
-    , {"[Bot operation][Equals] Less than string and float (true)",   fun lt_string_and_float_true/0}
-    , {"[Bot operation][Equals] Less than string and float (false)",  fun lt_string_and_float_false/0}
-    , {"[Bot operation][Equals] Less than int and int (true)",        fun lt_int_and_int_true/0}
-    , {"[Bot operation][Equals] Less than int and int (false)",       fun lt_int_and_int_false/0}
-    , {"[Bot operation][Equals] Less than int and float (true)",      fun lt_int_and_float_true/0}
-    , {"[Bot operation][Equals] Less than int and float (false)",     fun lt_int_and_float_false/0}
-    , {"[Bot operation][Equals] Less than float and float (true)",    fun lt_float_and_float_true/0}
-    , {"[Bot operation][Equals] Less than float and float (false)",   fun lt_float_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Less than string and string (true)",  fun lt_string_and_string_true/0}
+    , {"[Bot engine][Getter][Equals] Less than string and string (false)", fun lt_string_and_string_false/0}
+    , {"[Bot engine][Getter][Equals] Less than string and int (true)",     fun lt_string_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Less than string and int (false)",    fun lt_string_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Less than string and float (true)",   fun lt_string_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Less than string and float (false)",  fun lt_string_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Less than int and int (true)",        fun lt_int_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Less than int and int (false)",       fun lt_int_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Less than int and float (true)",      fun lt_int_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Less than int and float (false)",     fun lt_int_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Less than float and float (true)",    fun lt_float_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Less than float and float (false)",   fun lt_float_and_float_false/0}
 
       %% Greater than
-    , {"[Bot operation][Equals] Greater than string and string (true)",  fun gt_string_and_string_true/0}
-    , {"[Bot operation][Equals] Greater than string and string (false)", fun gt_string_and_string_false/0}
-    , {"[Bot operation][Equals] Greater than string and int (true)",     fun gt_string_and_int_true/0}
-    , {"[Bot operation][Equals] Greater than string and int (false)",    fun gt_string_and_int_false/0}
-    , {"[Bot operation][Equals] Greater than string and float (true)",   fun gt_string_and_float_true/0}
-    , {"[Bot operation][Equals] Greater than string and float (false)",  fun gt_string_and_float_false/0}
-    , {"[Bot operation][Equals] Greater than int and int (true)",        fun gt_int_and_int_true/0}
-    , {"[Bot operation][Equals] Greater than int and int (false)",       fun gt_int_and_int_false/0}
-    , {"[Bot operation][Equals] Greater than int and float (true)",      fun gt_int_and_float_true/0}
-    , {"[Bot operation][Equals] Greater than int and float (false)",     fun gt_int_and_float_false/0}
-    , {"[Bot operation][Equals] Greater than float and float (true)",    fun gt_float_and_float_true/0}
-    , {"[Bot operation][Equals] Greater than float and float (false)",   fun gt_float_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and string (true)",  fun gt_string_and_string_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and string (false)", fun gt_string_and_string_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and int (true)",     fun gt_string_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and int (false)",    fun gt_string_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and float (true)",   fun gt_string_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than string and float (false)",  fun gt_string_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than int and int (true)",        fun gt_int_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than int and int (false)",       fun gt_int_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than int and float (true)",      fun gt_int_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than int and float (false)",     fun gt_int_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Greater than float and float (true)",    fun gt_float_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Greater than float and float (false)",   fun gt_float_and_float_false/0}
 
       %% Equal to
-    , {"[Bot operation][Equals] Equal string and string (true)",  fun eq_string_and_string_true/0}
-    , {"[Bot operation][Equals] Equal string and string (false)", fun eq_string_and_string_false/0}
-    , {"[Bot operation][Equals] Equal string and int (true)",     fun eq_string_and_int_true/0}
-    , {"[Bot operation][Equals] Equal string and int (false)",    fun eq_string_and_int_false/0}
-    , {"[Bot operation][Equals] Equal string and float (true)",   fun eq_string_and_float_true/0}
-    , {"[Bot operation][Equals] Equal string and float (false)",  fun eq_string_and_float_false/0}
-    , {"[Bot operation][Equals] Equal int and int (true)",        fun eq_int_and_int_true/0}
-    , {"[Bot operation][Equals] Equal int and int (false)",       fun eq_int_and_int_false/0}
-    , {"[Bot operation][Equals] Equal int and float (true)",      fun eq_int_and_float_true/0}
-    , {"[Bot operation][Equals] Equal int and float (false)",     fun eq_int_and_float_false/0}
-    , {"[Bot operation][Equals] Equal float and float (true)",    fun eq_float_and_float_true/0}
-    , {"[Bot operation][Equals] Equal float and float (false)",   fun eq_float_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Equal string and string (true)",  fun eq_string_and_string_true/0}
+    , {"[Bot engine][Getter][Equals] Equal string and string (false)", fun eq_string_and_string_false/0}
+    , {"[Bot engine][Getter][Equals] Equal string and int (true)",     fun eq_string_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Equal string and int (false)",    fun eq_string_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Equal string and float (true)",   fun eq_string_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Equal string and float (false)",  fun eq_string_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Equal int and int (true)",        fun eq_int_and_int_true/0}
+    , {"[Bot engine][Getter][Equals] Equal int and int (false)",       fun eq_int_and_int_false/0}
+    , {"[Bot engine][Getter][Equals] Equal int and float (true)",      fun eq_int_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Equal int and float (false)",     fun eq_int_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Equal float and float (true)",    fun eq_float_and_float_true/0}
+    , {"[Bot engine][Getter][Equals] Equal float and float (false)",   fun eq_float_and_float_false/0}
+    , {"[Bot engine][Getter][Equals] Variadic equals (false)",         fun eq_variadic_false/0}
+    , {"[Bot engine][Getter][Equals] Variadic equals (true)",          fun eq_variadic_true/0}
+
+    , {"[Bot engine][Getter][Preload/Last-Value] Sample int-int equality (true)",   fun preload_last_val_eq_int_int_true/0}
+    , {"[Bot engine][Getter][Preload/Last-Value] Sample int-int equality (false)",   fun preload_last_val_eq_int_int_false/0}
     ].
 
 %%%% Operations
@@ -151,7 +168,7 @@ join_str_and_str()->
                                                                    , constant_val(<<"2">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, <<"22">>}, R).
+    ?assertMatch({ok, <<"22">>, _}, R).
 
 join_str_to_int()->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_JOIN
@@ -159,7 +176,7 @@ join_str_to_int()->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, <<"22">>}, R).
+    ?assertMatch({ok, <<"22">>, _}, R).
 
 join_str_to_float()->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_JOIN
@@ -167,7 +184,7 @@ join_str_to_float()->
                                                                    , constant_val(2.2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, <<"22.2">>}, R).
+    ?assertMatch({ok, <<"22.2">>, _}, R).
 
 join_int_to_int()->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_JOIN
@@ -175,7 +192,7 @@ join_int_to_int()->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, <<"22">>}, R).
+    ?assertMatch({ok, <<"22">>, _}, R).
 
 join_int_to_float()->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_JOIN
@@ -183,7 +200,7 @@ join_int_to_float()->
                                                                    , constant_val(2.2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, <<"22.2">>}, R).
+    ?assertMatch({ok, <<"22.2">>, _}, R).
 
 join_float_to_float()->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_JOIN
@@ -191,7 +208,7 @@ join_float_to_float()->
                                                                    , constant_val(2.2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, <<"2.22.2">>}, R).
+    ?assertMatch({ok, <<"2.22.2">>, _}, R).
 
 
 %%% Add
@@ -201,7 +218,7 @@ add_str_and_str() ->
                                                                    , constant_val(<<"2">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4}, R).
+    ?assertMatch({ok, 4, _}, R).
 
 add_str_and_int() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_ADD
@@ -209,7 +226,7 @@ add_str_and_int() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4}, R).
+    ?assertMatch({ok, 4, _}, R).
 
 add_str_and_float() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_ADD
@@ -217,7 +234,7 @@ add_str_and_float() ->
                                                                    , constant_val(2.2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4.2}, R).
+    ?assertMatch({ok, 4.2, _}, R).
 
 add_int_and_int() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_ADD
@@ -225,7 +242,7 @@ add_int_and_int() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4}, R).
+    ?assertMatch({ok, 4, _}, R).
 
 add_int_and_float() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_ADD
@@ -233,7 +250,7 @@ add_int_and_float() ->
                                                                    , constant_val(2.2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4.2}, R).
+    ?assertMatch({ok, 4.2, _}, R).
 
 add_float_and_float() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_ADD
@@ -241,7 +258,7 @@ add_float_and_float() ->
                                                                    , constant_val(2.2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4.4}, R).
+    ?assertMatch({ok, 4.4, _}, R).
 
 %%% Substract
 sub_str_and_str() ->
@@ -250,7 +267,7 @@ sub_str_and_str() ->
                                                                    , constant_val(<<"2">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 0}, R).
+    ?assertMatch({ok, 0, _}, R).
 
 sub_str_and_int() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_SUBTRACT
@@ -258,38 +275,38 @@ sub_str_and_int() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 0}, R).
+    ?assertMatch({ok, 0, _}, R).
 
 sub_str_and_float() ->
-    {ok, R} = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_SUBTRACT
-                                                   , ?ARGUMENTS => [ constant_val(<<"2">>)
-                                                                   , constant_val(2.2)
-                                                                   ]
-                                                   }, ?EMPTY_THREAD),
+    {ok, R, _} = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_SUBTRACT
+                                                            , ?ARGUMENTS => [ constant_val(<<"2">>)
+                                                                            , constant_val(2.2)
+                                                                            ]
+                                                            }, ?EMPTY_THREAD),
     ?assert(approx(R, -0.2)).
 
 sub_int_and_int() ->
-    {ok, R} = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_SUBTRACT
-                                                   , ?ARGUMENTS => [ constant_val(2)
-                                                                   , constant_val(2.2)
-                                                                   ]
-                                                   }, ?EMPTY_THREAD),
+    {ok, R, _} = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_SUBTRACT
+                                                            , ?ARGUMENTS => [ constant_val(2)
+                                                                            , constant_val(2.2)
+                                                                            ]
+                                                            }, ?EMPTY_THREAD),
     ?assert(approx(R, -0.2)).
 
 sub_int_and_float() ->
-    {ok, R} = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_SUBTRACT
-                                                   , ?ARGUMENTS => [ constant_val(2)
-                                                                   , constant_val(2.2)
-                                                                   ]
-                                                   }, ?EMPTY_THREAD),
+    {ok, R, _} = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_SUBTRACT
+                                                            , ?ARGUMENTS => [ constant_val(2)
+                                                                            , constant_val(2.2)
+                                                                            ]
+                                                            }, ?EMPTY_THREAD),
     ?assert(approx(R, -0.2)).
 
 sub_float_and_float() ->
-    {ok, R} = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_SUBTRACT
-                                                   , ?ARGUMENTS => [ constant_val(2.1)
-                                                                   , constant_val(2.2)
-                                                                   ]
-                                                   }, ?EMPTY_THREAD),
+    {ok, R, _} = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_SUBTRACT
+                                                            , ?ARGUMENTS => [ constant_val(2.1)
+                                                                            , constant_val(2.2)
+                                                                            ]
+                                                            }, ?EMPTY_THREAD),
     ?assert(approx(R, -0.1)).
 
 %%% Multiply
@@ -299,7 +316,7 @@ mult_str_and_str() ->
                                                                    , constant_val(<<"2">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4}, R).
+    ?assertMatch({ok, 4, _}, R).
 
 mult_str_and_int() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MULTIPLY
@@ -307,7 +324,7 @@ mult_str_and_int() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4}, R).
+    ?assertMatch({ok, 4, _}, R).
 
 mult_str_and_float() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MULTIPLY
@@ -315,7 +332,7 @@ mult_str_and_float() ->
                                                                    , constant_val(2.2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4.4}, R).
+    ?assertMatch({ok, 4.4, _}, R).
 
 mult_int_and_int() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MULTIPLY
@@ -323,7 +340,7 @@ mult_int_and_int() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4}, R).
+    ?assertMatch({ok, 4, _}, R).
 
 mult_int_and_float() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MULTIPLY
@@ -331,7 +348,7 @@ mult_int_and_float() ->
                                                                    , constant_val(2.2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4.4}, R).
+    ?assertMatch({ok, 4.4, _}, R).
 
 mult_float_and_float() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MULTIPLY
@@ -339,7 +356,7 @@ mult_float_and_float() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 2.25}, R).
+    ?assertMatch({ok, 2.25, _}, R).
 
 %%% Divide
 divide_str_and_str() ->
@@ -348,7 +365,7 @@ divide_str_and_str() ->
                                                                    , constant_val(<<"2">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 5.0}, R).
+    ?assertMatch({ok, 5.0, _}, R).
 
 divide_str_and_int() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_DIVIDE
@@ -356,7 +373,7 @@ divide_str_and_int() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 5.0}, R).
+    ?assertMatch({ok, 5.0, _}, R).
 
 divide_str_and_float() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_DIVIDE
@@ -364,7 +381,7 @@ divide_str_and_float() ->
                                                                    , constant_val(2.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4.0}, R).
+    ?assertMatch({ok, 4.0, _}, R).
 
 divide_int_and_int() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_DIVIDE
@@ -372,7 +389,7 @@ divide_int_and_int() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 5.0}, R).
+    ?assertMatch({ok, 5.0, _}, R).
 
 divide_int_and_float() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_DIVIDE
@@ -380,7 +397,7 @@ divide_int_and_float() ->
                                                                    , constant_val(2.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 4.0}, R).
+    ?assertMatch({ok, 4.0, _}, R).
 
 divide_float_and_float() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_DIVIDE
@@ -388,7 +405,91 @@ divide_float_and_float() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, 5.25}, R).
+    ?assertMatch({ok, 5.25, _}, R).
+
+%%% Modulo
+modulo_simple() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(4)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 0.0, _}, R).
+
+%% Difference between remainder and modulo
+modulo_pos_and_neg() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(7)
+                                                                   , constant_val(-3)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, -2.0, _}, R).
+
+%% Difference between remainder and modulo
+modulo_neg_and_pos() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(-7)
+                                                                   , constant_val(3)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 2.0, _}, R).
+
+%% Difference between remainder and modulo
+modulo_neg_and_neg() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(-7)
+                                                                   , constant_val(-3)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, -1.0, _}, R).
+
+modulo_str_and_str() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(<<"5">>)
+                                                                   , constant_val(<<"2">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0, _}, R).
+
+modulo_str_and_int() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(<<"5">>)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0, _}, R).
+
+modulo_str_and_float() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(<<"5">>)
+                                                                   , constant_val(2.0)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0, _}, R).
+
+modulo_int_and_int() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(5)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0, _}, R).
+
+modulo_int_and_float() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(5)
+                                                                   , constant_val(2.0)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.0, _}, R).
+
+modulo_float_and_float() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_MODULO
+                                                   , ?ARGUMENTS => [ constant_val(5.25)
+                                                                   , constant_val(2)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, 1.25, _}, R).
 
 %%%% Comparisons
 %%% Less than
@@ -398,7 +499,7 @@ lt_string_and_string_true() ->
                                                                    , constant_val(<<"2">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 lt_string_and_string_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -406,7 +507,7 @@ lt_string_and_string_false() ->
                                                                    , constant_val(<<"0">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 lt_string_and_int_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -414,7 +515,7 @@ lt_string_and_int_true() ->
                                                                    , constant_val(1)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 lt_string_and_int_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -422,7 +523,7 @@ lt_string_and_int_false() ->
                                                                    , constant_val(1)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 lt_string_and_float_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -430,7 +531,7 @@ lt_string_and_float_true() ->
                                                                    , constant_val(2.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 lt_string_and_float_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -438,7 +539,7 @@ lt_string_and_float_false() ->
                                                                    , constant_val(1.1)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 lt_int_and_int_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -446,7 +547,7 @@ lt_int_and_int_true() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 lt_int_and_int_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -454,7 +555,7 @@ lt_int_and_int_false() ->
                                                                    , constant_val(0)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 lt_int_and_float_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -462,7 +563,7 @@ lt_int_and_float_true() ->
                                                                    , constant_val(0.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 lt_int_and_float_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -470,7 +571,7 @@ lt_int_and_float_false() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 lt_float_and_float_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -478,7 +579,7 @@ lt_float_and_float_true() ->
                                                                    , constant_val(2.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 lt_float_and_float_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_LESS_THAN
@@ -486,7 +587,7 @@ lt_float_and_float_false() ->
                                                                    , constant_val(0.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 %%% Greater than
 gt_string_and_string_true() ->
@@ -495,7 +596,7 @@ gt_string_and_string_true() ->
                                                                    , constant_val(<<"1">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 gt_string_and_string_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -503,7 +604,7 @@ gt_string_and_string_false() ->
                                                                    , constant_val(<<"1">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 gt_string_and_int_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -511,7 +612,7 @@ gt_string_and_int_true() ->
                                                                    , constant_val(0)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 gt_string_and_int_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -519,7 +620,7 @@ gt_string_and_int_false() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 gt_string_and_float_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -527,7 +628,7 @@ gt_string_and_float_true() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 gt_string_and_float_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -535,7 +636,7 @@ gt_string_and_float_false() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 gt_int_and_int_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -543,7 +644,7 @@ gt_int_and_int_true() ->
                                                                    , constant_val(1)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 gt_int_and_int_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -551,7 +652,7 @@ gt_int_and_int_false() ->
                                                                    , constant_val(1)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 gt_int_and_float_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -559,7 +660,7 @@ gt_int_and_float_true() ->
                                                                    , constant_val(0.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 gt_int_and_float_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -567,7 +668,7 @@ gt_int_and_float_false() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 gt_float_and_float_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -575,7 +676,7 @@ gt_float_and_float_true() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 gt_float_and_float_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_GREATER_THAN
@@ -583,7 +684,7 @@ gt_float_and_float_false() ->
                                                                    , constant_val(2.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 %%% Equal to
 eq_string_and_string_true() ->
@@ -592,7 +693,7 @@ eq_string_and_string_true() ->
                                                                    , constant_val(<<"1">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 eq_string_and_string_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -600,7 +701,7 @@ eq_string_and_string_false() ->
                                                                    , constant_val(<<"2">>)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 eq_string_and_int_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -608,7 +709,7 @@ eq_string_and_int_true() ->
                                                                    , constant_val(1)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 eq_string_and_int_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -616,7 +717,7 @@ eq_string_and_int_false() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 eq_string_and_float_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -624,7 +725,7 @@ eq_string_and_float_true() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 eq_string_and_float_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -632,7 +733,7 @@ eq_string_and_float_false() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 eq_int_and_int_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -640,7 +741,7 @@ eq_int_and_int_true() ->
                                                                    , constant_val(1)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 eq_int_and_int_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -648,7 +749,7 @@ eq_int_and_int_false() ->
                                                                    , constant_val(2)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 eq_int_and_float_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -656,7 +757,7 @@ eq_int_and_float_true() ->
                                                                    , constant_val(1.0)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 eq_int_and_float_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -664,7 +765,7 @@ eq_int_and_float_false() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
 
 eq_float_and_float_true() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -672,7 +773,7 @@ eq_float_and_float_true() ->
                                                                    , constant_val(1.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, true}, R).
+    ?assertMatch({ok, true, _}, R).
 
 eq_float_and_float_false() ->
     R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
@@ -680,7 +781,69 @@ eq_float_and_float_false() ->
                                                                    , constant_val(2.5)
                                                                    ]
                                                    }, ?EMPTY_THREAD),
-    ?assertMatch({ok, false}, R).
+    ?assertMatch({ok, false, _}, R).
+
+eq_variadic_false() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(1.0)
+                                                                   , constant_val(<<"99999999.0">>)
+                                                                   , constant_val(<<"1">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, false, _}, R).
+
+eq_variadic_true() ->
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?COMMAND_EQUALS
+                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                   , constant_val(1.0)
+                                                                   , constant_val(<<"1.0">>)
+                                                                   , constant_val(<<"1">>)
+                                                                   ]
+                                                   }, ?EMPTY_THREAD),
+    ?assertMatch({ok, true, _}, R).
+
+preload_last_val_eq_int_int_true() ->
+    {ran_this_tick, Thread} = automate_bot_engine_operations:run_instruction(
+                                #{ ?TYPE => ?COMMAND_PRELOAD_GETTER
+                                 , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                    , ?VALUE => [ #{ ?TYPE => ?COMMAND_EQUALS
+                                                                   , ?ARGUMENTS => [ constant_val(1)
+                                                                                   , constant_val(1)
+                                                                                   ]
+                                                                   , ?BLOCK_ID => <<"reference">>
+                                                                   }
+                                                                ]
+                                                    }
+                                                 ]
+                                 }, ?EMPTY_THREAD, {?SIGNAL_PROGRAM_TICK, test}),
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?FLOW_LAST_VALUE
+                                                   , ?ARGUMENTS => [ constant_val(<<"reference">>)
+                                                                   , constant_val(1)
+                                                                   ]
+                                                   }, Thread),
+    ?assertMatch({ok, true, _}, R).
+
+preload_last_val_eq_int_int_false() ->
+    {ran_this_tick, Thread} = automate_bot_engine_operations:run_instruction(
+                                #{ ?TYPE => ?COMMAND_PRELOAD_GETTER
+                                 , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
+                                                    , ?VALUE => [ #{ ?TYPE => ?COMMAND_EQUALS
+                                                                   , ?ARGUMENTS => [ constant_val(0)
+                                                                                   , constant_val(1)
+                                                                                   ]
+                                                                   , ?BLOCK_ID => <<"reference">>
+                                                                   }
+                                                                ]
+                                                    }
+                                                 ]
+                                 }, ?EMPTY_THREAD, {?SIGNAL_PROGRAM_TICK, test}),
+    R = automate_bot_engine_operations:get_result(#{ ?TYPE => ?FLOW_LAST_VALUE
+                                                   , ?ARGUMENTS => [ constant_val(<<"reference">>)
+                                                                   , constant_val(1)
+                                                                   ]
+                                                   }, Thread),
+    ?assertMatch({ok, false, _}, R).
 
 %%====================================================================
 %% Util functions

@@ -69,12 +69,14 @@ is_enabled_for_user(_Username, _Params) ->
 %% No need to enable service
 get_how_to_enable(#{ user_id := UserId }, [ServicePortId]) ->
     {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, UserId),
-    {ok, #{ <<"result">> := Result }} = automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId),
-    case Result of
-        null ->
+    {ok, Response} = automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId),
+    case Response of
+        #{ <<"result">> := null } ->
             {ok, #{ <<"type">> => <<"direct">> } };
+        #{ <<"result">> := Result } ->
+            {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }};
         _ ->
-            {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }}
+            {ok, #{ <<"type">> => <<"direct">> } }
     end.
 
 send_registration_data(UserId, RegistrationData, [ServicePortId], Properties) ->

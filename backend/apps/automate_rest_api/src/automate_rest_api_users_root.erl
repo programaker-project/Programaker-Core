@@ -6,13 +6,11 @@
 -export([init/2]).
 -export([ allowed_methods/2
         , is_authorized/2
-        , content_types_accepted/2
         , content_types_provided/2
         , options/2
         ]).
 
--export([ accept_json_modify_collection/2
-        , to_json/2
+-export([ to_json/2
         ]).
 -define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
@@ -58,27 +56,11 @@ options(Req, State) ->
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
     io:fwrite("[~p] Asking for methods~n", [?MODULE]),
-    {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
-
-content_types_accepted(Req, State) ->
-    {[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
-     Req, State}.
+    {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 content_types_provided(Req, State) ->
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
-
-%%%% POST                                               %
-%% Reserved for manual creation of users (by admin)
--spec accept_json_modify_collection(cowboy_req:req(),#rest_session{}) -> {'true',cowboy_req:req(),_}.
-accept_json_modify_collection(Req, Session) ->
-    case cowboy_req:has_body(Req) of
-        true ->
-            {ok, _Body, Req2} = ?UTILS:read_body(Req),
-            {true, Req2, Session};
-        false ->
-            {false, Req, Session }
-    end.
 
 %%%% GET
 -spec to_json(cowboy_req:req(),#rest_session{}) -> {binary(),cowboy_req:req(),_}.

@@ -1,27 +1,25 @@
-import * as progbar from './ui/progbar';
+import * as progbar from '../ui/progbar';
 
-import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
+import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
 
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { ProgramMetadata } from './program';
-import { ProgramService } from './program.service';
+import { ProgramMetadata } from '../program';
+import { ProgramService } from '../program.service';
 
-import { Session } from './session';
-import { SessionService } from './session.service';
+import { Session } from '../session';
+import { SessionService } from '../session.service';
 
-import { AvailableService, ServiceEnableHowTo } from './service';
-import { ServiceService } from './service.service';
+import { AvailableService, ServiceEnableHowTo } from '../service';
+import { ServiceService } from '../service.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
-import { MonitorMetadata } from './monitor';
-import { MonitorService } from './monitor.service';
-import { BridgeService } from './bridges/bridge.service';
-import { BridgeIndexData } from './bridges/bridge';
-import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
+import { MonitorMetadata } from '../monitor';
+import { MonitorService } from '../monitor.service';
+import { BridgeService } from '../bridges/bridge.service';
 
 @Component({
     // moduleId: module.id,
@@ -30,8 +28,8 @@ import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
     providers: [BridgeService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'dashboard.component.css',
-        'libs/css/material-icons.css',
-        'libs/css/bootstrap.min.css',
+        '../libs/css/material-icons.css',
+        '../libs/css/bootstrap.min.css',
     ],
 })
 

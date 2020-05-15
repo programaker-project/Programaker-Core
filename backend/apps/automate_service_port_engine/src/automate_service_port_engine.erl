@@ -24,6 +24,7 @@
         , get_bridge_info/1
 
         , listen_bridge/2
+        , listen_bridge/3
         , list_established_connections/1
         , get_pending_connection_info/1
         , is_module_connectable_bridge/2
@@ -84,6 +85,15 @@ listen_bridge(BridgeId, UserId) ->
     case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId);
+        {error, _X, Description} ->
+            {error, Description}
+    end.
+
+-spec listen_bridge(binary(), binary(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
+listen_bridge(BridgeId, UserId, Selector) ->
+    case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
+        { ok, ChannelId } ->
+            automate_channel_engine:listen_channel(ChannelId, Selector);
         {error, _X, Description} ->
             {error, Description}
     end.
@@ -177,14 +187,24 @@ from_service_port(ServicePortId, UserId, Msg) ->
 
                             {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                                                  Module, ToUserInternalId),
-                            ok = automate_channel_engine:send_to_channel(MonitorId,
+                            case automate_channel_engine:send_to_channel(MonitorId,
                                                                          #{ <<"key">> => Key
                                                                           , <<"value">> => Value
                                                                           , <<"content">> => Content
                                                                           , <<"subkey">> => get_subkey_from_notification(Notif)
-                                                                          });
+                                                                          }) of
+                                ok ->
+                                    ok;
+                                {error, Reason} ->
+                                    automate_logging:log_platform(
+                                      error,
+                                      io_lib:format("[~p] Error propagating notification: ~p  (conn: ~p, monitor_id: ~p)~n",
+                                                    [ServicePortId, Reason, ToUser, MonitorId]))
+                            end;
                         {error, Reason} ->
-                            io:fwrite("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason])
+                            automate_logging:log_platform(
+                              error,
+                              io_lib:format("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason]))
                     end
             end
     end.

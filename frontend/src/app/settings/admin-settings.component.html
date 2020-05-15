@@ -1,4 +1,18 @@
 <div class="settings-section">
+    <div class="loading-message" *ngIf="serviceNames.length === 0">Loading stats...</div>
+    <div class="stat-lights row">
+        <div *ngFor="let service of serviceNames"
+            [ngClass]="{
+            'stat-card': true,
+            'col-sm': true,
+            'running-service': stats.stats.active_services[service],
+            'stopped-service': !stats.stats.active_services[service]
+            }">
+            <div class="system-name">{{service}}</div>
+        </div>
+
+    </div>
+
     <div class="user-list">
         <table class="table">
             <thead>

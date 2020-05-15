@@ -75,7 +75,7 @@ allow_user(ServiceId, UserId) ->
 get_config_for_service(ServiceId, Property) ->
     ?BACKEND:get_config_for_service(ServiceId, Property).
 
--spec set_config_for_service(binary(), atom(), any()) -> ok.
+-spec set_config_for_service(binary(), atom(), any()) -> ok | {error, atom()}.
 set_config_for_service(ServiceId, Property, Value) ->
     ?BACKEND:set_config_for_service(ServiceId, Property, Value).
 

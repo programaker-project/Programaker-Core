@@ -28,6 +28,14 @@ relink_block(Block, UserId) ->
     B3 = relink_block_args_values(B2, UserId),
     relink_block_values(B3, UserId).
 
+relink_block_contents(Value = #{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                               , ?ARGUMENTS := Arguments
+                               }, UserId) ->
+    io:fwrite("Args: ~p~n", [Arguments]),
+    Value#{ ?ARGUMENTS => lists:map(fun(B) -> relink_block(B, UserId) end,
+                                    Arguments)
+          };
+
 relink_block_contents(Block=#{ ?CONTENTS := Contents
                              }, UserId) when is_list(Contents) ->
     Block#{ ?CONTENTS => lists:map(fun(B) -> relink_block(B, UserId) end,
@@ -104,7 +112,7 @@ relink_value(Value = #{ ?TYPE := <<"time_get_utc_seconds">>
      };
 
 %%%% ^^^ Service linking
-relink_value(Block=#{ ?ARGUMENTS := Arguments }) ->
+relink_value(Block=#{ ?ARGUMENTS := Arguments }) when is_list(Arguments) ->
     Block#{ ?ARGUMENTS => lists:map(fun relink_value/1, Arguments) };
 
 relink_value(Block=#{ ?VALUE := Values }) when is_list(Values) ->

@@ -27,6 +27,7 @@
                           , name
                           , link
                           , enabled
+                          , type
                           }).
 
 -record(program_content, { type

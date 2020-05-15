@@ -299,6 +299,9 @@ set_service_port_configuration(ServicePortId, Configuration=#service_port_config
                    end,
             {ok, Todo};
         {aborted, Reason} ->
+            automate_logging:log_platform(error,
+                                          io_lib:format("Error saving configuration for bridge id=~p: ~p~n",
+                                                        [ServicePortId, Reason])),
             {error, Reason}
     end.
 

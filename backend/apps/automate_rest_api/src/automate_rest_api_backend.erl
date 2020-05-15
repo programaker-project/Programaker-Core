@@ -14,7 +14,8 @@
         , is_valid_token_uid/1
         , create_monitor/2
         , lists_monitors_from_username/1
-        , create_program/1
+        , create_program/3
+        , get_program/1
         , get_program/2
         , update_program_tags/3
         , update_program_status/3
@@ -23,11 +24,14 @@
         , stop_program_threads/2
         , lists_programs_from_username/1
         , update_program/3
+        , update_program_by_id/2
         , list_services_from_username/1
         , get_service_enable_how_to/2
 
         , update_program_metadata/3
+        , update_program_metadata/2
         , delete_program/2
+        , delete_program/1
 
         , create_service_port/2
         , list_custom_blocks_from_username/1
@@ -166,17 +170,26 @@ lists_monitors_from_username(Username) ->
                   || {Id, Name} <- Monitors]}
     end.
 
-create_program(Username) ->
-    ProgramName = generate_program_name(),
-    case automate_storage:create_program(Username, ProgramName) of
+create_program(Username, ProgramName, ProgramType) ->
+    case automate_storage:create_program(Username, ProgramName, ProgramType) of
         { ok, ProgramId } ->
             { ok, { ProgramId
                   , ProgramName
-                  , generate_url_for_program_name(Username, ProgramName) } }
+                  , generate_url_for_program_name(Username, ProgramName)
+                  , ProgramType
+                  } }
     end.
 
 get_program(Username, ProgramName) ->
     case automate_storage:get_program(Username, ProgramName) of
+        {ok, ProgramData} ->
+            {ok, program_entry_to_program(ProgramData)};
+        X ->
+            X
+    end.
+
+get_program(ProgramId) ->
+    case automate_storage:get_program_from_id(ProgramId) of
         {ok, ProgramData} ->
             {ok, program_entry_to_program(ProgramData)};
         X ->
@@ -227,12 +240,14 @@ stop_program_threads(UserId, ProgramId) ->
 lists_programs_from_username(Username) ->
     case automate_storage:lists_programs_from_username(Username) of
         {ok, Programs} ->
-            {ok, [#program_metadata{ id=ProgramId
-                                   , name=ProgramName
-                                   , link=generate_url_for_program_name(Username, ProgramName)
-                                   , enabled=Enabled
-                                   }
-                  || {ProgramId, ProgramName, Enabled} <- Programs]}
+            {ok, lists:map(fun({ProgramId, ProgramName, Enabled, ProgramType}) ->
+                                   #program_metadata{ id=ProgramId
+                                                    , name=ProgramName
+                                                    , link=generate_url_for_program_name(Username, ProgramName)
+                                                    , enabled=Enabled
+                                                    , type=ProgramType
+                                                    }
+                           end, Programs)}
     end.
 
 update_program(Username, ProgramName,
@@ -244,6 +259,21 @@ update_program(Username, ProgramName,
                                          #stored_program_content{ orig=Orig
                                                                 , parsed=Parsed
                                                                 , type=Type }) of
+        { ok, ProgramId } ->
+            automate_bot_engine_launcher:update_program(ProgramId);
+        { error, Reason } ->
+            {error, Reason}
+    end.
+
+update_program_by_id(ProgramId,
+                     #program_content{ orig=Orig
+                                     , parsed=Parsed
+                                     , type=Type }) ->
+
+    case automate_storage:update_program_by_id(ProgramId,
+                                               #stored_program_content{ orig=Orig
+                                                                      , parsed=Parsed
+                                                                      , type=Type }) of
         { ok, ProgramId } ->
             automate_bot_engine_launcher:update_program(ProgramId);
         { error, Reason } ->
@@ -262,11 +292,31 @@ update_program_metadata(Username, ProgramName,
             {error, Reason}
     end.
 
+update_program_metadata(ProgramId,
+                        Metadata=#editable_user_program_metadata{program_name=NewProgramName}) ->
+
+    case automate_storage:update_program_metadata(ProgramId, Metadata) of
+        { ok, _ProgramId } ->
+            ok;
+        { error, Reason } ->
+            {error, Reason}
+    end.
+
 
 -spec delete_program(binary(), binary()) -> ok | {error, any()}.
 delete_program(Username, ProgramName) ->
     case automate_storage:delete_program(Username, ProgramName) of
         {ok, ProgramId} ->
+            {ok, _} = automate_bot_engine_launcher:stop_program(ProgramId),
+            ok;
+        X ->
+            X
+    end.
+
+-spec delete_program(binary()) -> ok | {error, any()}.
+delete_program(ProgramId) ->
+    case automate_storage:delete_program(ProgramId) of
+        ok ->
             {ok, _} = automate_bot_engine_launcher:stop_program(ProgramId),
             ok;
         X ->
@@ -460,9 +510,6 @@ generate_url_for_service_id(Username, ServiceId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/id/~s", [Username, ServiceId]))).
 
 %% *TODO* generate more interesting names.
-generate_program_name() ->
-    binary:list_to_bin(uuid:to_string(uuid:uuid4())).
-
 generate_url_for_program_name(Username, ProgramName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/programs/~s", [Username, ProgramName]))).
 

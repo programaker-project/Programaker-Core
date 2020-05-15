@@ -39,7 +39,7 @@ setup() ->
 %% @doc App infrastructure teardown.
 %% @end
 stop({NodeName}) ->
-    ?BACKEND:uninstall(),
+    %% ?BACKEND:uninstall(),
     ok = application:stop(?APPLICATION),
 
     ok.

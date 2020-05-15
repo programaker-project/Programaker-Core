@@ -1,0 +1,494 @@
+// Colors
+$pulse-color:   #f0c000;
+$string-color:  #44dd44;
+$integer-color: #4444ff;
+$float-color:   #44dddd;
+$boolean-color: #dd4444;
+$any-color:     #dd44dd;
+$enum-color:    #888;
+$unknown-color: #7f7f7f;
+
+// Basics
+#workspace > svg {
+    width: 100%;
+    height: 100%;
+    background-color: #ddd;
+}
+
+svg.block_renderer.dragging {
+    cursor: grabbing;
+}
+
+svg.block_renderer g.flow_node > a {
+    pointer-events: all;
+    cursor: grab;
+}
+
+svg.block_renderer path.building {
+    pointer-events: none;
+    stroke-width: 4px;
+}
+
+svg.block_renderer path.connection {
+    stroke-linejoin: round;
+}
+
+svg.block_renderer path.established {
+    stroke-width: 5px;
+}
+
+svg.block_renderer path.string_wire {
+    stroke: $string-color;
+}
+
+svg.block_renderer path.integer_wire {
+    stroke: $integer-color;
+}
+
+svg.block_renderer path.float_wire {
+    stroke: $float-color;
+}
+
+svg.block_renderer path.boolean_wire {
+    stroke: $boolean-color;
+}
+
+svg.block_renderer path.enum_wire {
+    stroke: $enum-color;
+}
+
+svg.block_renderer path.any_wire {
+    stroke: $any-color;
+}
+
+svg.block_renderer path.pulse_wire {
+    stroke: $pulse-color;
+    stroke-width: 7px;
+}
+
+svg.block_renderer path.unknown_wire {
+    stroke: $unknown-color;
+}
+
+svg.block_renderer:not(.drawing) {
+    path.established:hover {
+        stroke-width: 10px;
+        cursor: crosshair;
+
+        &.string_wire {
+            stroke: #049d04;
+        }
+
+        &.integer_wire {
+            stroke: #0404bf;
+        }
+
+        &.float_wire {
+            stroke: #04bfbf;
+        }
+
+        &.boolean_wire {
+            stroke: #ad0404;
+        }
+
+        &.any_wire {
+            stroke: #9d049d;
+        }
+
+        &.pulse_wire {
+            stroke: #b80;
+        }
+
+        &.unknown_wire {
+            stroke: #3f3f3f;
+        }
+    }
+}
+
+svg.block_renderer g.flow_node rect.node_body {
+    fill: #fff;
+    stroke-width: 0;
+}
+
+svg.block_renderer g.flow_node rect.body_shadow {
+    // Separated in a different element to avoid problems
+    // in case filter problems make it disappear
+    filter: url("#shadow");
+    fill: rgba(0,0,0,0.3); // Shadow color
+}
+
+svg.block_renderer g.flow_node a.to-be-removed rect.node_body {
+    fill: #ff4444;
+}
+
+svg.block_renderer.drawing rect.node_body {
+    pointer-events: none;
+}
+
+svg.block_renderer g.flow_node .input, svg.block_renderer g.flow_node .output  {
+    cursor: pointer;
+}
+
+svg.block_renderer g.flow_node rect.port_plating {
+    fill: #27212e;
+}
+
+
+svg.block_renderer g.flow_node circle.external_port.string_port {
+    fill: $string-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.integer_port {
+    fill: $integer-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.float_port {
+    fill: $float-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.boolean_port {
+    fill: $boolean-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.pulse_port {
+    fill: $pulse-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.enum_port {
+    fill: $enum-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.any_port {
+    fill: $any-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.unknown_type {
+    fill: $unknown-color;
+}
+
+svg.block_renderer g.flow_node circle.internal_port {
+    fill: #000000;
+}
+
+svg.block_renderer g.flow_node text {
+    fill: black;
+}
+
+svg.block_renderer g.flow_node text.node_name {
+    font-size: 14px;
+}
+
+svg.block_renderer g.flow_node text.argument_name {
+    font-size: 11px;
+    font-weight: bold;
+    fill: #fff;
+}
+
+svg.block_renderer g.flow_node {
+    // Avoid text selection
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Opera and Firefox */
+}
+
+// Input helpers
+svg.block_renderer g.input_helper {
+    cursor: pointer;
+}
+
+svg.block_renderer g.input_helper.hidden {
+    display: none;
+}
+
+svg.block_renderer g.input_helper.pulse_port { // Pulse port input helpers are not yet implemented
+    display: none;
+}
+
+svg.block_renderer g.input_helper .outer_circle {
+    fill: #fafafa; // Same as background
+    stroke: #444;
+    stroke-width: 3px;
+}
+
+svg.block_renderer g.input_helper rect {
+    fill: #444;
+}
+
+
+svg.block_renderer g.input_helper path.connection_line {
+    stroke: #444;
+    stroke-width: 2px;
+    stroke-dasharray: 2px,2px;
+}
+
+// Direct value node
+svg.block_renderer g.flow_node.direct_value_node text.node_name {
+    font-family: helvetica;
+    cursor: text;
+}
+
+svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
+    stroke-width: 2px;
+    stroke: #009688;
+}
+
+// Inline editor
+#workspace > .inline_editor_container {
+    position: absolute;
+}
+
+#workspace > .inline_editor_container.hidden {
+    display: none;
+}
+
+#workspace > .inline_editor_container > input {
+    font-family: helvetica;
+    border: none;
+    background-color: #fff;
+    color: black;
+
+    // Remove Spinner arrows
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    -moz-appearance: textfield;
+}
+
+// Variable dropdown editor
+svg.block_renderer .named_var {
+    cursor: pointer;
+}
+
+svg.block_renderer .named_var .var_name {
+    font-size: 14px;
+    fill: black;
+}
+
+svg.block_renderer .named_var .var_plate {
+    fill: transparent;
+    stroke-width: 1px;
+    stroke: #444;
+}
+
+// Popup
+.popup_group {
+    position: absolute;
+    border: 1px solid #888;
+    background-color: #fafafa;
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+
+    z-index: 10; // More than .backdrop
+
+    &.hidden {
+        display: none;
+    }
+}
+
+.backdrop {
+    z-index: 5; // More than 0, less than .popup_group
+
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: rgba(0,0,0,0.2);
+}
+
+.popup_group > .editor > input {
+    border: none;
+    border-bottom: 2px solid #009688;
+    padding-left: 1ex;
+    width: 100%;
+    min-width: 20ex;
+}
+
+.options {
+    padding: 0;
+    margin: 0;
+    overflow: auto;
+}
+
+.options li {
+    padding-left: 1ex;
+    padding-right: 1ex;
+    cursor: pointer;
+
+    &:hover, &.selected {
+        background-color: #444;
+        color: white;
+    }
+
+    border-bottom: 1px solid rgba(0,0,0,0.3);
+    padding: 0.5ex 1ex 0.5ex 1ex;
+}
+
+// Trashcan
+.trashcan .backdrop {
+    fill: #fafafa;
+}
+
+.trashcan .backdrop_shadow {
+    // Separated in a different element to avoid problems
+    // in case filter problems make it disappear
+    filter: url("#shadow");
+    fill: #000; // Backdrop color
+}
+
+.trashcan.to-be-activated .backdrop {
+    fill: #ff4444;
+}
+
+// Toolbox
+.toolbox {
+    height: 100%;
+    min-width: 5ex;
+    max-width: 40vw;
+    background-color: rgba(0,0,0,0.3);
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: auto;
+}
+
+.toolbox.subsumed {
+    pointer-events: none;
+    opacity: 0.2;
+}
+
+.toolbox .category.empty {
+    display: none;
+}
+
+.category .category_title {
+    background-color: #27212e;
+    padding: 0.5ex;
+    font-weight: bold;
+    width: 100%;
+    color: white;
+    cursor: pointer;
+}
+
+.toolbox .showcase {
+    width: max-content;
+}
+
+.toolbox .block_exhibitor {
+    margin: 1ex;
+}
+
+.toolbox .category.collapsed .block_exhibitor {
+    display: none;
+}
+
+.toolbox .category.collapsed .category_title {
+    border-bottom: 1px solid #444;
+}
+
+.toolbox.subsumed .block_exhibitor {
+    pointer-events: none;
+}
+
+.toolbox.subsumed svg g.flow_node > a {
+    pointer-events: none;
+}
+
+.block_exhibitor.hidden g.flow_node {
+    visibility: hidden;
+}
+
+.block_exhibitor {
+    display: block;
+}
+
+// Block internal wiring
+.var_connector {
+    stroke-width: 4px;
+    stroke: $any-color;
+
+    &.string_port {
+        stroke: $string-color;
+    }
+
+    &.integer_port {
+        stroke: $integer-color;
+    }
+
+    &.float_port {
+        stroke: $float-color;
+    }
+
+    &.boolean_port {
+        stroke: $boolean-color;
+    }
+
+    &.enum_port {
+        stroke: $enum-color;
+    }
+
+    &.any_port {
+        stroke: $any-color;
+    }
+
+    &.pulse_port {
+        stroke: $pulse-color;
+    }
+
+    &.unknown_port {
+        stroke: $unknown-color;
+    }
+}
+
+
+path.var_path {
+    stroke-width: 3px;
+    stroke: $any-color;
+    stroke-dasharray: 5;
+
+    &.string_port {
+        stroke: $string-color;
+    }
+
+    &.integer_port {
+        stroke: $integer-color;
+    }
+
+    &.float_port {
+        stroke: $float-color;
+    }
+
+    &.boolean_port {
+        stroke: $boolean-color;
+    }
+
+    &.enum_port {
+        stroke: $enum-color;
+    }
+
+    &.any_port {
+        stroke: $any-color;
+    }
+
+    &.pulse_port {
+        stroke: $pulse-color;
+    }
+
+    &.unknown_port {
+        stroke: $unknown-color;
+    }
+}
+
+// Node icon
+.node_icon_plate {
+    fill: #e7e7e7;
+}
+
+.node_icon, .node_icon_separator, .node_icon_plate {
+    pointer-events: none;
+}

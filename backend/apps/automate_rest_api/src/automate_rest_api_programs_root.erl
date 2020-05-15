@@ -17,6 +17,8 @@
         ]).
 
 -include("./records.hrl").
+-define(UTILS, automate_rest_api_utils).
+-define(DEFAULT_PROGRAM_TYPE, scratch_program).
 
 -record(create_program_seq, { username }).
 
@@ -77,12 +79,25 @@ content_types_accepted(Req, State) ->
                                 -> {{'true', binary()},cowboy_req:req(), #create_program_seq{}}.
 accept_json_create_program(Req, State) ->
     #create_program_seq{username=Username} = State,
-    case automate_rest_api_backend:create_program(Username) of
-        { ok, {ProgramId, ProgramName, ProgramUrl} } ->
+
+    {Type, Name} = try
+                       {ok, Body, _} = ?UTILS:read_body(Req),
+                       jiffy:decode(Body, [return_maps])
+                   of
+                       Map ->
+                           { get_program_type_from_options(Map)
+                           , get_program_name_from_options(Map)
+                           }
+                   catch _:_ ->
+                           { ?DEFAULT_PROGRAM_TYPE, generate_program_name() }
+             end,
+    case automate_rest_api_backend:create_program(Username, Name, Type) of
+        { ok, {ProgramId, ProgramName, ProgramUrl, ProgramType} } ->
 
             Output = jiffy:encode(#{ <<"id">> => ProgramId
                                    , <<"name">> => ProgramName
                                    , <<"link">> =>  ProgramUrl
+                                   , <<"type">> => ProgramType
                                    }),
 
             Res1 = cowboy_req:set_resp_body(Output, Req),
@@ -103,7 +118,6 @@ to_json(Req, State) ->
     #create_program_seq{username=Username} = State,
     case automate_rest_api_backend:lists_programs_from_username(Username) of
         { ok, Programs } ->
-
             Output = jiffy:encode(encode_program_list(Programs)),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
@@ -113,32 +127,50 @@ to_json(Req, State) ->
 
 
 encode_program_list(Programs) ->
-    encode_program_list(Programs, []).
-
-
-encode_program_list([], Acc) ->
-    lists:reverse(Acc);
-
-encode_program_list([H | T], Acc) ->
-    #program_metadata{ id=Id
-                     , name=Name
-                     , link=Link
-                     , enabled=Enabled
-                     } = H,
-    AsDictionary = #{ <<"id">> => Id
-                    , <<"name">> => Name
-                    , <<"link">> =>  Link
-                    , <<"enabled">> => Enabled
-                    , <<"bridges_in_use">> => try get_bridges_on_program_id(Id) of
-                                                  Bridges -> Bridges
-                                              catch ErrNS:Error:StackTrace ->
-                                                      automate_logging:log_platform(error, ErrNS, Error, StackTrace),
-                                                      []
-                                              end
-                    },
-    encode_program_list(T, [AsDictionary | Acc]).
+    lists:map(fun(#program_metadata{ id=Id
+                                   , name=Name
+                                   , link=Link
+                                   , enabled=Enabled
+                                   , type=Type
+                                   }) ->
+                      #{ <<"id">> => Id
+                       , <<"name">> => Name
+                       , <<"link">> =>  Link
+                       , <<"enabled">> => Enabled
+                       , <<"type">> => Type
+                       , <<"bridges_in_use">> => try get_bridges_on_program_id(Id) of
+                                                     Bridges -> Bridges
+                                                 catch ErrNS:Error:StackTrace ->
+                                                         automate_logging:log_platform(error, ErrNS, Error, StackTrace),
+                                                         []
+                                                 end
+                       }
+              end, Programs).
 
 get_bridges_on_program_id(ProgramId) ->
     {ok, Program} = automate_storage:get_program_from_id(ProgramId),
     {ok, Bridges} = automate_bot_engine:get_bridges_on_program(Program),
     Bridges.
+
+% Util functions
+get_program_type_from_options(#{ <<"type">> := <<"scratch_program">> }) ->
+    scratch_program;
+get_program_type_from_options(#{ <<"type">> := <<"flow_program">> }) ->
+    flow_program;
+get_program_type_from_options(#{ <<"type">> := Type }) when is_binary(Type) ->
+    Type;
+get_program_type_from_options(_) ->
+    ?DEFAULT_PROGRAM_TYPE.
+
+get_program_name_from_options(#{ <<"name">> := Name }) when is_binary(Name) ->
+    case size(Name) < 4 of
+        true ->
+            generate_program_name();
+        false ->
+            Name
+    end;
+get_program_name_from_options(_) ->
+    generate_program_name().
+
+generate_program_name() ->
+    binary:list_to_bin(uuid:to_string(uuid:uuid4())).

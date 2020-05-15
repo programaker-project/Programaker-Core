@@ -27,14 +27,14 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AlertModule } from 'ngx-bootstrap';
 
 import { AppComponent } from './app.component';
-import { DashboardComponent } from './dashboard.component';
+import { DashboardComponent } from './old-dashboard/dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings.component';
 
 // Programs
-import { ProgramsComponent } from './programs.component';
 import { ProgramDetailComponent } from './program-detail.component';
+import { FlowEditorComponent } from './flow-editor/flow-editor.component';
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
@@ -73,6 +73,7 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
+import { SelectProgrammingModelDialogComponent } from './programs/select-programming-model-dialog/select-programming-model-dialog.component';
 
 @NgModule({
     declarations: [
@@ -81,8 +82,8 @@ import { SelectFromJSON } from './select_from_json.filter';
         NewDashboardComponent,
         SettingsComponent,
         AdminSettingsComponent,
-        ProgramsComponent,
         ProgramDetailComponent,
+        FlowEditorComponent,
         BridgeIndexComponent,
         BridgeAddComponent,
         ServicesComponent,
@@ -111,6 +112,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         // Pipes
         SummarizeJSON,
         SelectFromJSON,
+        SelectProgrammingModelDialogComponent,
     ],
     imports: [
         MatAutocompleteModule,

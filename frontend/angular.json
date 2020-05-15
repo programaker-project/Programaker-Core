@@ -33,6 +33,7 @@
               "node_modules/scratch-blocks/msg/js/en.js",
               "node_modules/scratch-blocks/blocks_compressed.js",
               "node_modules/scratch-blocks/blocks_compressed_vertical.js",
+              "node_modules/fuse.js/dist/fuse.min.js",
               "node_modules/nprogress/nprogress.js",
             ]
           },
@@ -57,7 +58,7 @@
             "programaker": {
               "optimization": true,
               "outputHashing": "all",
-              "sourceMap": false,
+              "sourceMap": true,
               "extractCss": true,
               "namedChunks": false,
               "aot": true,
@@ -74,7 +75,7 @@
             "production": {
               "optimization": true,
               "outputHashing": "all",
-              "sourceMap": false,
+              "sourceMap": true,
               "extractCss": true,
               "namedChunks": false,
               "aot": true,
@@ -118,23 +119,24 @@
             "polyfills": "src/polyfills.ts",
             "tsConfig": "src/tsconfig.spec.json",
             "scripts": [
-              "src/app/blocks/blockly_vertical.js",
-              "src/app/blocks/blocks.js",
-              "src/app/blocks/blocks_vertical.js",
-              "src/app/blocks/msg_en.js",
-              "src/app/js/workspace.js",
-              "src/app/js/initial.js",
-              "src/app/js/custom_blocks.js",
-              "src/app/js/custom_toolbox.js"
+              "node_modules/scratch-blocks/blockly_compressed_vertical.js",
+              "node_modules/scratch-blocks/msg/messages.js",
+              "node_modules/scratch-blocks/msg/js/en.js",
+              "node_modules/scratch-blocks/blocks_compressed.js",
+              "node_modules/scratch-blocks/blocks_compressed_vertical.js",
+              "node_modules/fuse.js/dist/fuse.min.js",
+              "node_modules/nprogress/nprogress.js",
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/nprogress/nprogress.css",
               "src/styles.scss",
               "src/material_theme.scss"
             ],
             "assets": [
               "src/assets",
-              "src/favicon.ico"
+              "src/favicon.ico",
+              "src/favicon.png"
             ]
           }
         },
@@ -178,7 +180,7 @@
   "schematics": {
     "@schematics/angular:component": {
       "prefix": "app",
-      "styleext": "scss"
+      "style": "scss"
     },
     "@schematics/angular:directive": {
       "prefix": "app"

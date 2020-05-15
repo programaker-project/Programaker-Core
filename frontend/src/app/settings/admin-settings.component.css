@@ -13,3 +13,23 @@ tbody tr:hover {
 .error-icon {
     color: #ff0000;
 }
+
+.stat-card {
+    padding: 0.5ex;
+    border: 1px solid rgba(0,0,0,0.3);
+    text-align: center;
+}
+
+.stat-card.running-service {
+    color: white;
+    background-color: #080;
+}
+.stat-card.stopped-service {
+    color: white;
+    background-color: #b00;
+}
+
+.loading-message {
+    padding: 1ex;
+    text-align: center;
+}

@@ -1,8 +1,8 @@
 image: docker:19.03.5-dind
 
 stages:
-  - build
   - test
+  - build
   - push-commit
   - push-branch  # To avoid duplicating the upload do it sequentially
 
@@ -15,7 +15,14 @@ services:
   - docker:19.03.5-dind
 
 ## Frontend
-build-frontend:
+test-frontend-logic:
+  stage: test
+  before_script:
+    - cd frontend
+  script:
+    - docker build --target builder --build-arg BUILD_COMMAND=test-logic -f scripts/ci-partial.dockerfile .
+
+build-prod-frontend:
   stage: build
   before_script:
     - mkdir -p tmp_docker_images/ || true
@@ -28,13 +35,10 @@ build-frontend:
     - docker build -t $DOCKER_IMAGE_FRONTEND -f scripts/ci-partial.dockerfile .
     - docker save $DOCKER_IMAGE_FRONTEND -o ../tmp_docker_images/frontend.tar
 
-# On frontend there's NO NEED for optimizing the image
-# as it's minified by default (while there are no tests)
-
 push-frontend:
   stage: push-commit
   dependencies:
-    - build-frontend
+    - build-prod-frontend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images/frontend.tar
@@ -49,7 +53,7 @@ push-frontend:
 tag-frontend-branch:
   stage: push-branch
   dependencies:
-    - build-frontend
+    - build-prod-frontend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images/frontend.tar
@@ -61,7 +65,7 @@ tag-frontend-branch:
     - develop
     - master
 
-## Frontend
+## Programaker Frontend
 build-programaker-frontend:
   stage: build
   before_script:
@@ -75,8 +79,6 @@ build-programaker-frontend:
     - docker build --build-arg BUILD_COMMAND=build-programaker -t $DOCKER_IMAGE_FRONTEND  -f scripts/ci-partial.dockerfile .
     - docker save $DOCKER_IMAGE_FRONTEND -o ../tmp_docker_images/programaker-frontend.tar
 
-# On frontend there's NO NEED for optimizing the image
-# as it's minified by default (while there are no tests)
 push-programaker-frontend:
   stage: push-commit
   dependencies:
@@ -108,6 +110,24 @@ tag-programaker-frontend-branch:
     - master
 
 ## Backend
+test-backend:
+  stage: test
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - cd backend
+  script:
+    - docker build -t $DOCKER_IMAGE_BACKEND -f scripts/ci-partial.dockerfile .
+    - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 eunit
+
+dialyze-backend:
+  stage: test
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - cd backend
+  script:
+    - docker build -t $DOCKER_IMAGE_BACKEND -f scripts/ci-partial.dockerfile .
+    - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 dialyzer
+
 build-backend:
   stage: build
   artifacts:
@@ -116,48 +136,10 @@ build-backend:
     expire_in: 24h # No need to keep it around
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - mkdir -p tmp_docker_images/ || true
-    - cd backend
-  script:
-    - docker build -t $DOCKER_IMAGE_BACKEND -f scripts/ci-partial.dockerfile .
-    - docker save $DOCKER_IMAGE_BACKEND -o ../tmp_docker_images/backend.tar
-
-test-backend:
-  stage: test
-  dependencies:
-    - build-backend
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker load -i tmp_docker_images/backend.tar
-    - cd backend
-  script:
-    - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 eunit
-
-dialyze-backend:
-  stage: test
-  dependencies:
-    - build-backend
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker load -i tmp_docker_images/backend.tar
-    - cd backend
-  script:
-    - docker run -t --rm $DOCKER_IMAGE_BACKEND rebar3 dialyzer
-
-optimize-image-backend:
-  stage: test
-  dependencies:
-    - build-backend
-  artifacts:
-    paths:
-      - tmp_docker_images_optimized/ # Don't carry the unoptimized around
-    expire_in: 24h # No need to keep it around
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker load -i tmp_docker_images/backend.tar
     - mkdir -p tmp_docker_images_optimized/ || true
     - cd backend
   script:
+    - docker build -t $DOCKER_IMAGE_BACKEND -f scripts/ci-partial.dockerfile .
     - sh ../utils/ci-preparations/optimize-backend-image.sh $DOCKER_IMAGE_BACKEND $DOCKER_IMAGE_BACKEND_OPTIMIZED
     # Run sanity check
     - docker run -t --rm $DOCKER_IMAGE_BACKEND_OPTIMIZED /app/release/bin/automate escript ../scripts/sanity_check.erl
@@ -166,7 +148,7 @@ optimize-image-backend:
 push-backend:
   stage: push-commit
   dependencies:
-    - optimize-image-backend
+    - build-backend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images_optimized/backend-optimized.tar
@@ -181,7 +163,7 @@ push-backend:
 tag-backend-branch:
   stage: push-branch
   dependencies:
-    - optimize-image-backend
+    - build-backend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images_optimized/backend-optimized.tar

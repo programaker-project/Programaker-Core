@@ -10,6 +10,7 @@
         , log_call_to_bridge/5
         , log_program_error/1
         , log_platform/4
+        , log_platform/2
         , log_api/3
         ]).
 
@@ -91,15 +92,31 @@ log_call_to_bridge(BridgeId, FunctionName, Arguments, UserId, ExtraData) ->
     end.
 
 -spec log_program_error(#user_program_log_entry{}) -> ok | {error, atom()}.
-log_program_error(LogEntry=#user_program_log_entry{ program_id=ProgramId }) ->
-    {ok, #user_program_entry{ program_channel=Channel }} = automate_storage:get_program_from_id(ProgramId),
-    automate_channel_engine:send_to_channel(Channel, LogEntry),
+log_program_error(LogEntry=#user_program_log_entry{ severity=Severity, program_id=ProgramId }) ->
+    case automate_storage:get_program_from_id(ProgramId) of
+        {ok, #user_program_entry{ program_channel=Channel }} ->
+            automate_channel_engine:send_to_channel(Channel, LogEntry);
+        {error, not_found} ->
+            log_platform(Severity, io_lib:format(
+                                     "Cannot log error on program '~p', channel not found",
+                                     [ProgramId]))
+    end,
 
     automate_storage:log_program_error(LogEntry).
 
+
 -spec log_platform(atom(), _, _, _) -> ok.
+log_platform(warning, ErrorNS, Error, _StackTrace) ->
+    io:fwrite("[~p] ~p:~p~n", [warning, ErrorNS, Error]);
+
 log_platform(Severity, ErrorNS, Error, StackTrace) ->
     io:fwrite("[~p] ~p:~p || ~p~n", [Severity, ErrorNS, Error, StackTrace]).
+
+-spec log_platform(atom(), _) -> ok.
+log_platform(Severity, Msg) when is_list(Msg) ->
+    io:fwrite("[~p] ~s~n", [Severity, binary:list_to_bin(lists:flatten(Msg))]);
+log_platform(Severity, Msg) ->
+    io:fwrite("[~p] ~p~n", [Severity, Msg]).
 
 -spec log_api(atom(), _, _) -> ok.
 log_api(Severity, Endpoint, Error) ->
