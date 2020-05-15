@@ -31,5 +31,25 @@ get_versioning(_Nodes) ->
 
     #database_version_progression
         { base=Version_1
-        , updates=[]
+        , updates=[ #database_version_transformation
+                    %% Fix old registry record name
+                    { id=1
+                    , apply=fun() ->
+                                    mnesia:transform_table(
+                                      ?SERVICE_CONFIGURATION_TABLE,
+                                      fun(Old) ->
+                                              case Old of
+                                                  %% If record name was set incorrectly, fix it
+                                                  {service_configuration_entry, ConfigId, Value} ->
+                                                      {services_configuration_entry, ConfigId, Value};
+                                                  _ ->
+                                                      Old %% Keep old record
+                                              end
+                                      end,
+                                      [ configuration_id, value ],
+                                      services_configuration_entry
+                                     )
+                            end
+                    }
+                  ]
         }.
