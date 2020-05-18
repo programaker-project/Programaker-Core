@@ -8,8 +8,6 @@
                    , automate_rest_api
                    , automate_bot_engine
                    , automate_monitor_engine
-                     %% Profiling components
-                   , tools
     ]},
     {env, [
     ]},
