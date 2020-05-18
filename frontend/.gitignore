@@ -8,6 +8,7 @@ Dockerfile
 /dist
 /tmp
 out-tsc
+scripts/frontend-browser-ci-partial.dockerfile
 
 # dependencies
 /node_modules

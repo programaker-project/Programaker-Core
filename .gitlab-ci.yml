@@ -22,6 +22,15 @@ test-frontend-logic:
   script:
     - docker build --target builder --build-arg BUILD_COMMAND=test-logic -f scripts/ci-partial.dockerfile .
 
+test-frontend-on-browser:
+  stage: test
+  before_script:
+    - cd frontend
+  script:
+    - docker build -t browser-test -f scripts/browser-test-ci-partial.dockerfile .
+    - docker run -v `pwd`:/app --rm -e BROWSER_BIN="chromium-browser" -e BROWSER_OPTS="--no-sandbox" browser-test sh -- /app/scripts/run-browser-tests.sh
+
+
 build-prod-frontend:
   stage: build
   before_script:
