@@ -29,24 +29,20 @@ mat-card.program {
 
 .program-data {
     display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: max-content auto;
 }
 
 .program-data > .program-type {
     grid-row: 1;
     grid-column: 1;
     width: max-content;
-
-    position: relative;
 }
 
 .program-data > .program-type > img {
     padding: 1ex;
     max-width: 8ex;
     max-height: 8ex;
-
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
 }
 
 mat-card.program > .program-data > .connection-icon-list {
@@ -75,7 +71,7 @@ mat-card.call-to-action > .program-data > .card-title {
     padding: 2em 1em 2em 1em;
 
     grid-row: 1;
-    grid-column: 1;
+    grid-column: 2;
 }
 
 mat-card.program > .program-operation {
