@@ -35,6 +35,8 @@ get_triggered_threads(Program=#program_state{triggers=Triggers}, Signal) ->
 get_expected_signals_from_triggers(Triggers, Permissions, ProgramId) ->
     lists:filtermap(fun(Trigger) ->
                             try get_expected_action_from_trigger(Trigger, Permissions, ProgramId) of
+                                false ->
+                                    false;
                                 Result ->
                                     {true, Result}
                             catch ErrorNS:Error:StackTrace ->
@@ -51,24 +53,40 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?WAIT_FO
     automate_channel_engine:listen_channel(MonitorId),
     ?TRIGGERED_BY_MONITOR;
 
-get_expected_action_from_trigger(X=#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
-                                                               , ?ARGUMENTS := Arguments
-                                                               }},
-                                 #program_permissions{owner_user_id=UserId}, _ProgramId) ->
+get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
+                                                             , ?ARGUMENTS := Arguments
+                                                             }},
+                                 #program_permissions{owner_user_id=UserId}, ProgramId) ->
     [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
+    case automate_service_registry:get_service_by_id(ServiceId, UserId) of
+        {ok, #{ module := Module }} ->
+            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
 
-    case ?UTILS:get_block_key_subkey(Arguments) of
-        { key_and_subkey, Key, SubKey } ->
-            automate_channel_engine:listen_channel(MonitorId, { Key, SubKey });
-        { key, Key } ->
-            automate_channel_engine:listen_channel(MonitorId, { Key });
-        { not_found } ->
-            automate_channel_engine:listen_channel(MonitorId)
-    end,
+            case ?UTILS:get_block_key_subkey(Arguments) of
+                { key_and_subkey, Key, SubKey } ->
+                    automate_channel_engine:listen_channel(MonitorId, { Key, SubKey });
+                { key, Key } ->
+                    automate_channel_engine:listen_channel(MonitorId, { Key });
+                { not_found } ->
+                    automate_channel_engine:listen_channel(MonitorId)
+            end,
 
-    ?TRIGGERED_BY_MONITOR;
+            ?TRIGGERED_BY_MONITOR;
+        {error, Reason} ->
+            automate_logging:log_program_error(
+              #user_program_log_entry{ program_id=ProgramId
+                                     , thread_id=none
+                                     , user_id=UserId
+                                     , block_id=undefined
+                                     , event_data={error, Reason}
+                                     , event_message=binary:list_to_bin(
+                                                       lists:flatten(io_lib:format("Error finding service for signal. Might not be active anymore.", [])))
+                                     , event_time=erlang:system_time(millisecond)
+                                     , severity=warning
+                                     , exception_data=none
+                                     }),
+            false
+    end;
 
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
                                                              , ?ARGUMENTS := [ #{ ?TYPE := <<"constant">>
@@ -83,7 +101,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?SIGNAL_
 
 %% By default let's suppose no special data is needed to keep the program running
 get_expected_action_from_trigger(Trigger, _Permissions, ProgramId) ->
-    io:fwrite("[WARN][Bot/Triggers][ProgId=~p] Unknown trigger: ~p~n",  [ProgramId, Trigger]),
+    %% io:fwrite("[WARN][Bot/Triggers][ProgId=~p] Unknown trigger: ~p~n",  [ProgramId, Trigger]),
     ?SIGNAL_PROGRAM_TICK.
 
 %%%% Thread creation
