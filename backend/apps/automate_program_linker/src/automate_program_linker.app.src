@@ -5,6 +5,8 @@
   {registered, []},
   {applications, [ automate_channel_engine
                  , automate_configuration
+                 , stdlib
+                 , kernel
                  ]},
   {env, [
         ]},
