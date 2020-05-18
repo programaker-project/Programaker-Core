@@ -1,10 +1,10 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { FormControl, Validators } from '@angular/forms';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ConnectionService } from '../../connection.service';
+import { ProgramType } from '../../program';
 import { ServiceService } from '../../service.service';
 import { SessionService } from '../../session.service';
-import { ProgramType } from '../../program';
-import { FormControl, Validators } from '@angular/forms';
 
 @Component({
     selector: 'app-select-programming-model-dialog',
@@ -20,7 +20,6 @@ export class SelectProgrammingModelDialogComponent implements OnInit {
                 public sessionService: SessionService,
                 public serviceService: ServiceService,
                 public connectionService: ConnectionService,
-                public dialog: MatDialog,
 
                 @Inject(MAT_DIALOG_DATA)
                 public data: {  }) {
