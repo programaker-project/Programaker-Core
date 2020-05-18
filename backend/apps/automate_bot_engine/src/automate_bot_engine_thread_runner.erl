@@ -143,7 +143,7 @@ run_tick(State = #state{ thread=Thread }, Message) ->
     %% Trigger now the timer signal if needed
     case lists:member(?SIGNAL_PROGRAM_TICK, ExpectedSignals) of
         true ->
-            timer:send_after(?MILLIS_PER_TICK, self(), {?SIGNAL_PROGRAM_TICK, {}});
+            erlang:send_after(?MILLIS_PER_TICK, self(), {?SIGNAL_PROGRAM_TICK, {}});
         _ ->
             ok
     end,
