@@ -54,14 +54,17 @@
                         <div class="program-data" (click)="openProgram(program)">
                             <div class="program-type">
                                 <img *ngIf="program.type === 'scratch_program'"
-                                    src="/assets/blocks-icon.svg" />
+                                    src="/assets/blocks-icon.svg"
+                                    data-toggle="tooltip" data-placement="top" title="Block style program" />
                                 <img *ngIf="program.type === 'flow_program'"
-                                    src="/assets/flow-icon.svg" />
+                                    src="/assets/flow-icon.svg"
+                                    data-toggle="tooltip" data-placement="top" title="Flow style program"/>
                             </div>
                             <div class="card-title">{{program.name}}</div>
                             <div class="connection-icon-list">
                                 <span *ngFor="let bridge of program.bridges_in_use">
-                                    <img class="icon" *ngIf="bridgeInfo[bridge] && bridgeInfo[bridge].icon" src="{{ bridgeInfo[bridge].icon }}" />
+                                    <img class="icon" *ngIf="bridgeInfo[bridge] && bridgeInfo[bridge].icon" src="{{ bridgeInfo[bridge].icon }}"
+                                        data-toggle="tooltip" title="{{bridgeInfo[bridge].name}} bridge"/>
                                     <span class="nametag" *ngIf="bridgeInfo[bridge] && (!bridgeInfo[bridge].icon) && bridgeInfo[bridge].name">
                                         {{ bridgeInfo[bridge].name }}
                                     </span>
