@@ -32,7 +32,7 @@ websocket_init(State=#state{ connection_id=ConnectionId
 
     io:fwrite("[WS/Pending Connection] Listening on connection ~p; channel: ~p~n", [ConnectionId, ChannelId]),
     ok = automate_channel_engine:listen_channel(ChannelId),
-    timer:send_after(?PING_INTERVAL_MILLISECONDS, ping_interval),
+    erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
 
     {ok, State}.
 
@@ -44,7 +44,7 @@ websocket_handle(Message, State) ->
 
 
 websocket_info(ping_interval, State) ->
-    timer:send_after(?PING_INTERVAL_MILLISECONDS, ping_interval),
+    erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
     {reply, ping, State};
 
 websocket_info({channel_engine, _ChannelId, connection_established}, State) ->

@@ -57,7 +57,7 @@ start_link(MonitorId) ->
 init(MonitorId) ->
     io:format("Starting ~p~n", [MonitorId]),
     Monitor = automate_storage:get_monitor_from_id(MonitorId),
-    timer:send_after(?FIRST_CHECK_INTERVAL, ?END_OF_INTERVAL_MESSAGE),
+    erlang:send_after(?FIRST_CHECK_INTERVAL, self(), ?END_OF_INTERVAL_MESSAGE),
 
     loop(#state{ monitor=Monitor
                }).
@@ -74,7 +74,7 @@ loop(State=#state{ monitor=Monitor
             ok;
         ?END_OF_INTERVAL_MESSAGE ->
             NextState = run(Monitor),
-            timer:send_after(?CHECK_INTERVAL, ?END_OF_INTERVAL_MESSAGE),
+            erlang:send_after(?CHECK_INTERVAL, self(), ?END_OF_INTERVAL_MESSAGE),
 
             loop(State#state{ monitor=NextState })
     end.
