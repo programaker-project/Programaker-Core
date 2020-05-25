@@ -4,6 +4,7 @@
         , serialize_logs/1
         , serialize_log_entry/1
         , serialize_icon/1
+        , serialize_maybe_undefined/1
         , reason_to_json/1
         ]).
 
@@ -95,6 +96,11 @@ serialize_icon({url, Url}) ->
     #{ <<"url">> => Url };
 serialize_icon({hash, HashType, HashResult}) ->
     #{ HashType => HashResult }.
+
+serialize_maybe_undefined(undefined) ->
+    null;
+serialize_maybe_undefined(X) ->
+    X.
 
 %% Reason
 reason_to_json({Type, Subtype}) ->
