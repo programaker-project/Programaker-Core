@@ -17,6 +17,7 @@
 -include("../../automate_service_port_engine/src/records.hrl").
 
 -record(state, { username }).
+-define(FORMATTING, automate_rest_api_utils_formatting).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -94,7 +95,7 @@ encode_block(#service_port_block{ block_id=BlockId
      , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
      , <<"block_type">> => BlockType
      , <<"block_result_type">> => BlockResultType
-     , <<"save_to">> => SaveTo
+     , <<"save_to">> => ?FORMATTING:serialize_maybe_undefined(SaveTo)
      };
 
 encode_block(#service_port_trigger_block{ block_id=BlockId
@@ -112,10 +113,10 @@ encode_block(#service_port_trigger_block{ block_id=BlockId
      , <<"message">> => Message
      , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
      , <<"block_type">> => BlockType
-     , <<"save_to">> => SaveTo
+     , <<"save_to">> => ?FORMATTING:serialize_maybe_undefined(SaveTo)
      , <<"expected_value">> => ExpectedValue
-     , <<"key">> => Key
-     , <<"subkey">> => SubKey
+     , <<"key">> => ?FORMATTING:serialize_maybe_undefined(Key)
+     , <<"subkey">> => ?FORMATTING:serialize_maybe_undefined(SubKey)
      };
 
 %% TODO: Add DB migration to avoid the need of this compatibility
@@ -134,10 +135,10 @@ encode_block({service_port_trigger_block
      , <<"message">> => Message
      , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
      , <<"block_type">> => BlockType
-     , <<"save_to">> => SaveTo
+     , <<"save_to">> => ?FORMATTING:serialize_maybe_undefined(SaveTo)
      , <<"expected_value">> => ExpectedValue
-     , <<"key">> => Key
-     , <<"subkey">> => undefined
+     , <<"key">> => ?FORMATTING:serialize_maybe_undefined(Key)
+     , <<"subkey">> => null
      }.
 
 encode_argument(#service_port_block_static_argument{ type=Type

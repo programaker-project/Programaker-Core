@@ -81,7 +81,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
 function get_output_indexes(block: ResolvedCustomBlock): number[] {
     let output_indexes = [];
     if (block.save_to) {
-        if (block.save_to === 'undefined') {
+        if ((block.save_to as any) === 'undefined') {
             console.warn('Serialization error on block.save_to');
         }
         else if (((block.save_to as any).type !== 'argument')
@@ -173,7 +173,7 @@ function get_block_outputs(block: ResolvedCustomBlock): OutputPortDefinition[] {
     if (!block.save_to) {
         return [];
     }
-    if (block.save_to === 'undefined') {
+    if ((block.save_to as any) === 'undefined') {
         console.warn('Serialization error on block.save_to');
         return [];
     }

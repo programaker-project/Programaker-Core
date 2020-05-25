@@ -52,7 +52,7 @@ export interface CustomBlock {
     function_name: string;
     message: string;
     arguments: BlockArgument[];
-    save_to: undefined | string;
+    save_to: undefined | { "type": "argument", "index": number };
 };
 
 export interface ResolvedCustomBlock {
@@ -64,7 +64,7 @@ export interface ResolvedCustomBlock {
     function_name: string;
     message: string;
     arguments: ResolvedBlockArgument[];
-    save_to: undefined | string;
+    save_to: undefined | { "type": "argument", "index": number };
 }
 
 export interface CategorizedCustomBlock {
