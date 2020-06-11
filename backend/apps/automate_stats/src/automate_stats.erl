@@ -234,8 +234,15 @@ update_internal_metrics() ->
     set_metric(gauge, automate_bridges_messages_on_flight_count, NumMessagesOnFlight, []),
 
     %% Program logs
-    {ok, LogCountPerProgram} = automate_storage_stats:get_program_metrics(),
-    ok = set_log_count_metrics(LogCountPerProgram),
+    try
+        automate_storage_stats:get_program_metrics()
+    of
+        {ok, LogCountPerProgram} ->
+            ok = set_log_count_metrics(LogCountPerProgram)
+    catch ErrNS:Err:_ ->
+            automate_logging:log_platform(warning, io_lib:format("Error getting user program logs. Reason: ~p",
+                                                                 [{ErrNS, Err}]))
+    end,
 
     lists:map(fun({Module, Reason}) ->
                       case Reason of
