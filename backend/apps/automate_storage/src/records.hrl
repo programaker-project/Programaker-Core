@@ -7,7 +7,7 @@
 -record(registered_user_entry, { id :: binary() | ?MNESIA_SELECTOR
                                , username :: binary() | ?MNESIA_SELECTOR
                                , canonical_username :: binary() | ?MNESIA_SELECTOR
-                               , password :: binary() | ?MNESIA_SELECTOR
+                               , password :: binary() | string() | ?MNESIA_SELECTOR
                                , email :: binary() | ?MNESIA_SELECTOR
                                , status :: user_status() | ?MNESIA_SELECTOR
                                , registration_time :: time_in_seconds() | ?MNESIA_SELECTOR

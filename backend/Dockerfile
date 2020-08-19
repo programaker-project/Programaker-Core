@@ -7,8 +7,8 @@ RUN mkdir /app
 WORKDIR /app
 
 # Pre-build dependencies
-ADD rebar.config /app
-RUN rebar3 get-deps && rebar3 compile
+ADD rebar.config get-deps.sh /app/
+RUN sh ./get-deps.sh && rebar3 compile
 RUN rebar3 dialyzer
 
 # Add application code

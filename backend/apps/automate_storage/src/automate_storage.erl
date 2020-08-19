@@ -80,9 +80,11 @@
 -define(MAX_LOG_RESULT_LENGTH, 100).
 %% -define(ABSOLUTE_MAX_LOG_RESULT_LENGTH, 10000).
 
+-include("./security_params.hrl").
 -include("./databases.hrl").
 -include("./records.hrl").
 -include("../../automate_bot_engine/src/program_records.hrl").
+-include_lib("./_build/default/lib/eargon2/include/eargon2.hrl").
 
 -define(WAIT_READY_LOOP_TIME, 1000).
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
@@ -138,8 +140,8 @@ login_user(Username, Password) ->
                                    , password=StoredPassword
                                    , status=Status
                                    }} ->
-            case libsodium_crypto_pwhash:str_verify(StoredPassword, Password) =:= 0 of
-                true ->
+            case verify_passwd_hash(StoredPassword, Password) of
+                ok ->
                     case Status of
                         ready ->
                             SessionToken = generate_id(),
@@ -148,7 +150,10 @@ login_user(Username, Password) ->
                         _ ->
                             {error, {user_not_ready, Status}}
                     end;
-                _ ->
+                {error, ?EARGON2_ERROR_CODE_VERIFY_MISMATCH} ->
+                    {error, invalid_user_password};
+                {error, ErrorCode} ->
+                    automate_logging:log_platform(error, io_lib:format("Error verifying user password (id=~p), error code: ~p", [UserId, ErrorCode])),
                     {error, invalid_user_password}
             end;
         {error, no_user_found} ->
@@ -1175,12 +1180,40 @@ register_table(_TableName, _RecordDef) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+gen_salt() ->
+    gen_salt(?PASSWORD_HASHING_SALTLEN).
+gen_salt(SaltLen) ->
+    crypto:strong_rand_bytes(SaltLen).
+
+-spec cipher_password(binary()) -> binary() | string().
 cipher_password(Plaintext) ->
     Password = Plaintext,
-    Opslimit = libsodium_crypto_pwhash:opslimit_interactive(), % Minimal recommended
-    Memlimit = libsodium_crypto_pwhash:memlimit_interactive(), % 64MiB
-    HashedPassword = libsodium_crypto_pwhash:str(Password, Opslimit, Memlimit),
-    HashedPassword.
+    Salt = gen_salt(),
+
+    {ok, HashResult} = eargon2:hash(?PASSWORD_HASHING_OPS_LIMIT, ?PASSWORD_HASHING_MEM_LIMIT, ?PASSWORD_HASHING_PARALLELISM,
+                                    Password, Salt,
+                                    ?PASSWORD_HASHING_HASHLEN,
+                                    ?EARGON2_RESULT_TYPE_ENCODED, ?EARGON2_HASH_TYPE_ARGON2_I, ?EARGON2_VERSION_NUMBER),
+
+    HashResult.
+
+-spec verify_passwd_hash(binary() | string(), binary()) -> ok | {error, number()}.
+verify_passwd_hash(Hash, Password) when is_binary(Hash) ->
+    %% Fix mismatch between libsodium and eargon2
+    verify_passwd_hash(binary:bin_to_list(Hash), Password);
+
+verify_passwd_hash(Hash=("$argon2i$" ++ _), Password) ->
+    %% Handle Argon2 - I
+    eargon2:verify_2i(Hash, Password);
+
+verify_passwd_hash(Hash=("$argon2d$" ++ _), Password) ->
+    %% Handle Argon2 - D
+    eargon2:verify_2d(Hash, Password);
+
+verify_passwd_hash(Hash=("$argon2id$" ++ _), Password) ->
+    %% Handle Argon2 - ID
+    eargon2:verify_2id(Hash, Password).
+
 
 add_token_to_user(UserId, SessionToken) ->
     StartTime = erlang:system_time(second),
