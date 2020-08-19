@@ -44,7 +44,7 @@ function get_paths_between(_graph: FlowGraph,
         const reached = {};
         reached[upper_id] = true;
 
-        function _aux(descending_id: string, followed_conn_id: number, reached: {[key:string]: boolean}) {
+        const aux = (descending_id: string, followed_conn_id: number, reached: {[key:string]: boolean}) => {
             if (descending_id === lower_id) {
                 results.push([top_conn.index, followed_conn_id]);
                 return;
@@ -57,11 +57,11 @@ function get_paths_between(_graph: FlowGraph,
                 }
 
                 reached[conn.to.id] = true;
-                _aux(conn.to.id, conn.index, Object.assign({}, reached));
+                aux(conn.to.id, conn.index, Object.assign({}, reached));
             }
         }
 
-        _aux(top_conn.to.id, top_conn.index, reached);
+        aux(top_conn.to.id, top_conn.index, reached);
     }
 
     return results;
@@ -74,7 +74,7 @@ export function find_downstream(graph: FlowGraph, source_id: string,
     const results = {};
     reached[source_id] = true;
 
-    function _aux(source_id: string) {
+    const aux = (source_id: string) => {
         for (const conn of conn_index[source_id] || []) {
             const next_id = conn.to.id;
             if (reached[next_id]) {
@@ -86,7 +86,7 @@ export function find_downstream(graph: FlowGraph, source_id: string,
 
             const command = controller(next_id, graph.nodes[next_id]);
             if (command === 'continue') {
-                _aux(next_id);
+                aux(next_id);
             }
             else if (command === 'stop') {
                 // Ignore
@@ -100,7 +100,7 @@ export function find_downstream(graph: FlowGraph, source_id: string,
         }
     }
 
-    _aux(source_id);
+    aux(source_id);
     return Object.keys(results);
 }
 
@@ -111,7 +111,7 @@ export function find_upstream(graph: FlowGraph, source_id: string,
     const results = {};
     reached[source_id] = true;
 
-    function _aux(source_id: string) {
+    const aux = (source_id: string) => {
         for (const conn of rev_conn_index[source_id] || []) {
             const next_id = conn.from.id;
             if (reached[next_id]) {
@@ -123,7 +123,7 @@ export function find_upstream(graph: FlowGraph, source_id: string,
 
             const command = controller(next_id, graph.nodes[next_id]);
             if (command === 'continue') {
-                _aux(next_id);
+                aux(next_id);
             }
             else if (command === 'stop') {
                 // Ignore
@@ -137,7 +137,7 @@ export function find_upstream(graph: FlowGraph, source_id: string,
         }
     }
 
-    _aux(source_id);
+    aux(source_id);
     return Object.keys(results);
 }
 
@@ -147,7 +147,7 @@ export function scan_upstream(graph: FlowGraph, source_id: string,
     const reached = {};
     reached[source_id] = true;
 
-    function _aux(source_id: string, path: string[]) {
+    const aux = (source_id: string, path: string[]) => {
         for (const conn of rev_conn_index[source_id] || []) {
             const next_id = conn.from.id;
             if (reached[next_id]) {
@@ -160,7 +160,7 @@ export function scan_upstream(graph: FlowGraph, source_id: string,
             const branch_path = path.concat([conn.from.id]);
             const result = controller(next_id, graph.nodes[next_id], branch_path);
             if (result === 'continue') {
-                let result = _aux(next_id, branch_path);
+                let result = aux(next_id, branch_path);
                 if (result) {
                     return result;
                 }
@@ -178,7 +178,7 @@ export function scan_upstream(graph: FlowGraph, source_id: string,
 
     }
 
-    return _aux(source_id, [source_id]);
+    return aux(source_id, [source_id]);
 }
 
 export function scan_downstream(graph: FlowGraph, source_id: string,
@@ -187,7 +187,7 @@ export function scan_downstream(graph: FlowGraph, source_id: string,
     const reached = {};
     reached[source_id] = true;
 
-    function _aux(source_id: string, path: string[]): string[] {
+    const aux = (source_id: string, path: string[]): string[] => {
         for (const conn of conn_index[source_id] || []) {
             const next_id = conn.to.id;
             if (reached[next_id]) {
@@ -200,7 +200,7 @@ export function scan_downstream(graph: FlowGraph, source_id: string,
             const branch_path = path.concat([conn.to.id]);
             const result = controller(next_id, graph.nodes[next_id], branch_path);
             if (result === 'continue') {
-                let result = _aux(next_id, branch_path);
+                let result = aux(next_id, branch_path);
                 if (result) {
                     return result;
                 }
@@ -218,7 +218,7 @@ export function scan_downstream(graph: FlowGraph, source_id: string,
 
     }
 
-    return _aux(source_id, [source_id]);
+    return aux(source_id, [source_id]);
 }
 
 export function is_pulse_output(block: FlowGraphNode, index: number): boolean {
@@ -255,7 +255,7 @@ export function scan_pulse_upstream(graph: FlowGraph, source_id: string,
     const reached = {};
     reached[source_id] = true;
 
-    function _aux(source_id: string, path: string[]) {
+    const aux = (source_id: string, path: string[]) => {
         for (const conn of rev_conn_index[source_id] || []) {
             const next_id = conn.from.id;
             if (reached[next_id] || (!is_pulse_output(graph.nodes[next_id], conn.from.output_index))) {
@@ -268,7 +268,7 @@ export function scan_pulse_upstream(graph: FlowGraph, source_id: string,
             const branch_path = path.concat([conn.from.id]);
             const result = controller(next_id, graph.nodes[next_id], branch_path);
             if (result === 'continue') {
-                let result = _aux(next_id, branch_path);
+                let result = aux(next_id, branch_path);
                 if (result) {
                     return result;
                 }
@@ -286,7 +286,7 @@ export function scan_pulse_upstream(graph: FlowGraph, source_id: string,
 
     }
 
-    return _aux(source_id, [source_id]);
+    return aux(source_id, [source_id]);
 }
 
 function atomic_find_filter(controller: (node_id: string, node: AtomicFlowBlockData) => FindCommand
