@@ -58,6 +58,7 @@ An updated version of [erlang](http://www.erlang.org/) and [rebar3](http://www.r
 After getting them do the following:
 
 * Go to the backend directory: `cd backend`
+* Get dependencies: `sh ./get-deps.sh`
 * Run a rebar shell (which includes a server): `rebar3 shell`
 
 After this, the backend is available on http://localhost:8888 (although the operation is done normaly through the frontend).

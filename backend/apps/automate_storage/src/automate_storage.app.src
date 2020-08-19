@@ -8,7 +8,7 @@
                    , automate_configuration
                    , mnesia
                    , uuid
-                   , libsodium
+                   , eargon2
     ]},
     {env, [
     ]},
