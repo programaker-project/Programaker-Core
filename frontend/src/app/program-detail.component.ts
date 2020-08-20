@@ -183,8 +183,6 @@ export class ProgramDetailComponent implements OnInit {
         const xml = Blockly.Xml.textToDom(program.orig);
         this.removeNonExistingBlocks(xml, controller);
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
-
-        this.initializeListeners();
     }
 
     initializeListeners() {
@@ -359,6 +357,10 @@ export class ProgramDetailComponent implements OnInit {
         //  of the workspace to 'hidden' until the process has finished.
         setTimeout(() => {
             this.show_workspace(workspaceElement);
+
+            // Listeners have to be started after the whole initialization is
+            // done to avoid capturing the events happening during the start-up.
+            this.initializeListeners();
 
             if (this.portraitMode || this.smallScreen){
                 this.hide_block_menu();
