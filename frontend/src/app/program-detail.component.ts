@@ -2,10 +2,11 @@
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate } from './program';
+import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEvent } from './program';
 import { ProgramService } from './program.service';
 
 import { Toolbox } from './blocks/Toolbox';
+import { BlockSynchronizer, BlocklyEvent } from './blocks/BlockSynchronizer';
 import * as progbar from './ui/progbar';
 /// <reference path="./blocks/blockly-core.d.ts" />
 import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
@@ -28,6 +29,7 @@ import { ConnectionService } from './connection.service';
 import { SessionService } from './session.service';
 import { environment } from '../environments/environment';
 import { unixMsToStr } from './utils';
+import { Synchronizer } from './syncronizer';
 
 @Component({
     selector: 'app-my-program-detail',
@@ -59,6 +61,7 @@ export class ProgramDetailComponent implements OnInit {
     portraitMode: boolean;
     smallScreen: boolean;
     patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
+    eventStream: Synchronizer<ProgramEditorEvent>;
 
     constructor(
         private monitorService: MonitorService,
@@ -185,6 +188,7 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     initializeListeners() {
+        // Initialize log listeners
         this.programService.watchProgramLogs(this.program.owner, this.program.id,
                                              { request_previous_logs: true })
             .subscribe(
@@ -201,6 +205,44 @@ export class ProgramDetailComponent implements OnInit {
                         console.log("No more logs about program", this.programId)
                     }
                 });
+
+        // Initialize editor event listeners
+        // This is used for collaborative editing.
+        this.eventStream = this.programService.getEventStream(this.program.owner, this.program.id);
+        const synchronizer = new BlockSynchronizer();
+
+        const mirrorEvent = (event: BlocklyEvent) => {
+            if (event instanceof Blockly.Events.Ui) {
+                return;  // Don't mirror UI events.
+            }
+
+            if (synchronizer.isDuplicated(event)) {
+                return; // Avoid mirroring events received from the net
+            }
+
+            // Convert event to JSON.  This could then be transmitted across the net.
+            const json = event.toJson();
+            this.eventStream.push({ type: 'editor_event', value: json })
+        }
+
+        this.eventStream.subscribe(
+            {
+                next: (ev: ProgramEditorEvent) => {
+                    const event = Blockly.Events.fromJson(ev.value, this.workspace);
+
+                    synchronizer.receivedEvent(event as BlocklyEvent);
+                    event.run(true);
+                },
+                error: (error: any) => {
+                    console.error("Error obtainig editor events:", error);
+                },
+                complete: () => {
+                    console.warn("No more editor events", this.programId)
+                }
+            }
+        );
+
+        this.workspace.addChangeListener(mirrorEvent);
     }
 
     patch_flyover_area_deletion() {
@@ -475,6 +517,12 @@ export class ProgramDetailComponent implements OnInit {
             this.workspace.dispose();
         } catch(error) {
             console.error("Error disposing workspace:", error);
+        }
+
+        try {
+            this.eventStream.close();
+        } catch(error) {
+            console.error("Error closing event stream:", error);
         }
 
         // Restore the patched function, to cleaup the state.

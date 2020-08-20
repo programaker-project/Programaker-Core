@@ -1,7 +1,6 @@
-
 import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType } from './program';
+import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType, ProgramEditorEvent } from './program';
 
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
@@ -9,6 +8,7 @@ import { SessionService } from './session.service';
 import { ContentType } from './content-type';
 import { toWebsocketUrl } from './utils';
 import { ApiRoot } from './api-config';
+import { Synchronizer } from './syncronizer';
 
 @Injectable()
 export class ProgramService {
@@ -73,9 +73,17 @@ export class ProgramService {
     private async getProgramStreamingLogsUrl(programUserId: string, program_id: string) {
         const token = this.sessionService.getToken();
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
-        return this.addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/communication'),
+        return this.addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/logs-stream'),
                                   token,
                                  );
+    }
+
+    private async getProgramStreamingEventsUrl(programUserId: string, program_id: string) {
+        const token = this.sessionService.getToken();
+        const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
+        return this.addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/editor-events'),
+                                        token,
+                                       );
     }
 
     async getProgramStopThreadsUrl(programUserId: string, program_id: string) {
@@ -319,4 +327,58 @@ export class ProgramService {
         });
     }
 
+    getEventStream(user_id: string, program_id: string): Synchronizer<ProgramEditorEvent> {
+        let websocket: WebSocket | null = null;
+        let sendBuffer = [];
+        let state : 'none_ready' | 'ws_ready' | 'all_ready' | 'closed' = 'none_ready';
+
+        const obs = new Observable<ProgramEditorEvent>((observer) => {
+            this.getProgramStreamingEventsUrl(user_id, program_id).then(streamingUrl => {
+                if (state === 'closed') {
+                    return; // Cancel the opening of websocket if the stream was closed before being established
+                }
+
+                websocket = new WebSocket(streamingUrl)
+
+                websocket.onopen = (() => {
+                    state = 'all_ready';
+                    for (const ev of sendBuffer) {
+                        websocket.send(JSON.stringify(ev));
+                    }
+                    sendBuffer = null;
+                });
+
+                websocket.onmessage = ((ev) => {
+                    observer.next(JSON.parse(ev.data));
+                });
+
+                websocket.onclose = (() => {
+                    observer.complete();
+                });
+
+                websocket.onerror = ((ev) => {
+                    observer.error(ev);
+                    observer.complete();
+                });
+            });
+        });
+
+        return {
+            subscribe: obs.subscribe.bind(obs),
+            close: () => {
+                state = 'closed';
+                if (websocket) {
+                    websocket.close();
+                }
+            },
+            push: (ev: ProgramEditorEvent) => {
+                if (state === 'none_ready') {
+                    sendBuffer.push(ev);
+                }
+                else {
+                    websocket.send(JSON.stringify(ev));
+                }
+            }
+        };
+    }
 }
