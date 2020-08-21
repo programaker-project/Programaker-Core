@@ -185,7 +185,7 @@ export class ProgramDetailComponent implements OnInit {
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
     }
 
-    initializeListeners() {
+    initializeListeners(workspaceElement: HTMLElement) {
         // Initialize log listeners
         this.programService.watchProgramLogs(this.program.owner, this.program.id,
                                              { request_previous_logs: true })
@@ -220,16 +220,21 @@ export class ProgramDetailComponent implements OnInit {
 
             // Convert event to JSON.  This could then be transmitted across the net.
             const json = event.toJson();
-            this.eventStream.push({ type: 'editor_event', value: json })
+            this.eventStream.push({ type: 'editor_event', subtype: 'blockly_event', value: json })
         }
 
         this.eventStream.subscribe(
             {
                 next: (ev: ProgramEditorEvent) => {
-                    const event = Blockly.Events.fromJson(ev.value, this.workspace);
+                    if (ev.subtype === 'blockly_event') {
+                        const event = Blockly.Events.fromJson(ev.value, this.workspace);
 
-                    synchronizer.receivedEvent(event as BlocklyEvent);
-                    event.run(true);
+                        synchronizer.receivedEvent(event as BlocklyEvent);
+                        event.run(true);
+                    }
+                    else if (ev.subtype === 'cursor_event') {
+                        drawPointer(ev.value);
+                    }
                 },
                 error: (error: any) => {
                     console.error("Error obtainig editor events:", error);
@@ -241,6 +246,99 @@ export class ProgramDetailComponent implements OnInit {
         );
 
         this.workspace.addChangeListener(mirrorEvent);
+
+        const testPointer = document.createElement('div');
+        testPointer.style.position = 'absolute';
+        testPointer.style.width = '1em';
+        testPointer.style.height = '1em';
+        testPointer.style.backgroundColor = 'red';
+        testPointer.style.zIndex = '10';
+        testPointer.style.pointerEvents = 'none';
+        document.body.append(testPointer);
+
+        const drawPointer = (pos:{x : number, y: number}) => {
+            const rect = workspaceElement.getBoundingClientRect();
+            const disp = this.getEditorPosition(workspaceElement);
+
+            testPointer.style.left = pos.x * disp.scale + disp.x + rect.left + 'px';
+            testPointer.style.top = pos.y * disp.scale + disp.y + rect.top + 'px';
+        };
+
+        workspaceElement.onmousemove = ((ev: MouseEvent) => {
+            const disp = this.getEditorPosition(workspaceElement);
+
+            const rect = workspaceElement.getBoundingClientRect();
+            const cursorInWorkspace = { x: ev.x - rect.left, y: ev.y - rect.top }
+
+
+            const posInCanvas = {
+                x: (cursorInWorkspace.x - disp.x) / disp.scale,
+                y: (cursorInWorkspace.y - disp.y) / disp.scale,
+            }
+
+            console.log("Ev", cursorInWorkspace, disp, posInCanvas);
+            this.eventStream.push({ type: 'editor_event', subtype: 'cursor_event', value: posInCanvas })
+        });
+    }
+
+    getEditorPosition(workspaceElement: HTMLElement): {x:number, y: number, scale: number} | null {
+
+        const SVG_TRANSFORM_TRANSLATE = 2;
+        const SVG_TRANSFORM_SCALE = 3;
+
+        let reference: HTMLElement | null = workspaceElement.getElementsByClassName('blocklySvg')[0].getElementsByClassName('blocklyBlockCanvas')[0] as HTMLElement;
+
+        // Not dragging, so we can directly use Blockly's canvas as reference
+        if (reference) {
+            const transformations : SVGTransformList = (reference as any).transform.baseVal;
+            let x = 0, y = 0, scale = 1;
+
+            for (let i = 0; i < transformations.numberOfItems; i++) {
+                const t = transformations[i];
+
+                if (t.type === SVG_TRANSFORM_TRANSLATE) {
+                    x = t.matrix.e;
+                    y = t.matrix.f;
+                }
+                else if (t.type === SVG_TRANSFORM_SCALE) {
+                    scale = t.matrix.a;
+                }
+            }
+
+            return { x, y, scale};
+        }
+
+        // If we have to use the drag surface as refernce this is a bit less clean
+        else {
+            reference = workspaceElement.getElementsByClassName('blocklyWsDragSurface')[0] as HTMLElement;
+
+            if (!reference) {
+                console.error("Could not find reference");
+                return null;
+            }
+
+            // Take transformation from the drag surface
+            const result = /translate3d\((-?\d+)px, *(-?\d+)px, *-?\d+px\)/.exec(reference.style.transform);
+
+            const x = parseInt(result[1]), y = parseInt(result[2]);
+
+            // Take scale from it's inner
+            const canvas = reference.getElementsByClassName('blocklyBlockCanvas')[0] as HTMLElement;
+
+            let scale = 1;
+            const transformations : SVGTransformList = (canvas as any).transform.baseVal;
+
+            for (let i = 0; i < transformations.numberOfItems; i++) {
+                const t = transformations[i];
+
+                if (t.type === SVG_TRANSFORM_SCALE) {
+                    scale = t.matrix.a;
+                }
+            }
+
+            return { x, y, scale };
+        }
+
     }
 
     patch_flyover_area_deletion() {
@@ -360,7 +458,7 @@ export class ProgramDetailComponent implements OnInit {
 
             // Listeners have to be started after the whole initialization is
             // done to avoid capturing the events happening during the start-up.
-            this.initializeListeners();
+            this.initializeListeners(workspaceElement);
 
             if (this.portraitMode || this.smallScreen){
                 this.hide_block_menu();

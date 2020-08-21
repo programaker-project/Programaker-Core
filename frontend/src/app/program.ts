@@ -53,4 +53,6 @@ export interface ProgramLogEntry {
 
 export type ProgramInfoUpdate = { type: "program_log", value: ProgramLogEntry };
 
-export type ProgramEditorEvent = { type: "editor_event", value: any };
+export type ProgramEditorEventType = 'blockly_event' | 'cursor_event';
+
+export type ProgramEditorEvent = { type: "editor_event", subtype: ProgramEditorEventType, value: any };
