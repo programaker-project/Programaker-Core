@@ -247,14 +247,20 @@ export class ProgramDetailComponent implements OnInit {
 
         this.workspace.addChangeListener(mirrorEvent);
 
-        const testPointer = document.createElement('div');
+        const testPointer = document.createElement('object');
+        testPointer.type = 'image/svg+xml';
         testPointer.style.position = 'absolute';
-        testPointer.style.width = '1em';
-        testPointer.style.height = '1em';
-        testPointer.style.backgroundColor = 'red';
+        testPointer.style.width = '2.5ex';
+        testPointer.style.height = '2.5ex';
+        testPointer.style.color
         testPointer.style.zIndex = '10';
         testPointer.style.pointerEvents = 'none';
+        testPointer.data = '/assets/cursor.svg';
         document.body.append(testPointer);
+        testPointer.onload = () => {
+            // Give the cursor a random color
+            testPointer.getSVGDocument().getElementById('cursor').style.fill = `hsl(${Math.random() * 255},50%,50%)`;
+        };
 
         const drawPointer = (pos:{x : number, y: number}) => {
             const rect = workspaceElement.getBoundingClientRect();
@@ -264,21 +270,25 @@ export class ProgramDetailComponent implements OnInit {
             testPointer.style.top = pos.y * disp.scale + disp.y + rect.top + 'px';
         };
 
-        workspaceElement.onmousemove = ((ev: MouseEvent) => {
+        const onMouseEvent = ((ev: MouseEvent) => {
+            if (ev.buttons) {
+                return;
+            }
+
             const disp = this.getEditorPosition(workspaceElement);
 
             const rect = workspaceElement.getBoundingClientRect();
             const cursorInWorkspace = { x: ev.x - rect.left, y: ev.y - rect.top }
-
 
             const posInCanvas = {
                 x: (cursorInWorkspace.x - disp.x) / disp.scale,
                 y: (cursorInWorkspace.y - disp.y) / disp.scale,
             }
 
-            console.log("Ev", cursorInWorkspace, disp, posInCanvas);
             this.eventStream.push({ type: 'editor_event', subtype: 'cursor_event', value: posInCanvas })
         });
+        workspaceElement.onmousemove = onMouseEvent;
+        workspaceElement.onmouseup = onMouseEvent;
     }
 
     getEditorPosition(workspaceElement: HTMLElement): {x:number, y: number, scale: number} | null {
