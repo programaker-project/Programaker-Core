@@ -235,6 +235,12 @@ export class ProgramDetailComponent implements OnInit {
                     else if (ev.subtype === 'cursor_event') {
                         drawPointer(ev.value);
                     }
+                    else if (ev.subtype === 'add_editor') {
+                        newPointer(ev.value.id);
+                    }
+                    else if (ev.subtype === 'remove_editor') {
+                        deletePointer(ev.value.id);
+                    }
                 },
                 error: (error: any) => {
                     console.error("Error obtainig editor events:", error);
@@ -247,27 +253,72 @@ export class ProgramDetailComponent implements OnInit {
 
         this.workspace.addChangeListener(mirrorEvent);
 
-        const testPointer = document.createElement('object');
-        testPointer.type = 'image/svg+xml';
-        testPointer.style.position = 'absolute';
-        testPointer.style.width = '2.5ex';
-        testPointer.style.height = '2.5ex';
-        testPointer.style.color
-        testPointer.style.zIndex = '10';
-        testPointer.style.pointerEvents = 'none';
-        testPointer.data = '/assets/cursor.svg';
-        document.body.append(testPointer);
-        testPointer.onload = () => {
-            // Give the cursor a random color
-            testPointer.getSVGDocument().getElementById('cursor').style.fill = `hsl(${Math.random() * 255},50%,50%)`;
-        };
+        const cursorDiv: HTMLElement = document.getElementById('program-cursors');
+        const cursors = {};
 
-        const drawPointer = (pos:{x : number, y: number}) => {
+        const newPointer = (id: string) => {
+            const cursor = document.createElement('object');
+            cursor.type = 'image/svg+xml';
+            cursor.style.position = 'absolute';
+            cursor.style.width = '2.5ex';
+            cursor.style.height = '2.5ex';
+            cursor.style.color
+            cursor.style.zIndex = '10';
+            cursor.style.pointerEvents = 'none';
+            cursor.data = '/assets/cursor.svg';
+            cursor.onload = () => {
+                // Give the cursor a random color
+                cursor.getSVGDocument().getElementById('cursor').style.fill = `hsl(${Math.random() * 255},50%,50%)`;
+            };
+
+            cursorDiv.appendChild(cursor);
+            cursors[id] = cursor;
+
+            return cursor;
+        }
+
+        const getPointer = (id: string) => {
+            if (cursors[id]) {
+                return cursors[id];
+            }
+
+            return newPointer(id);
+        }
+
+        const deletePointer = (id: string) => {
+            const cursor = cursors[id];
+            if (!cursor) {
+                return;
+            }
+            cursorDiv.removeChild(cursor);
+            delete cursors[id];
+        }
+
+        const drawPointer = (pos:{id: string, x : number, y: number}) => {
             const rect = workspaceElement.getBoundingClientRect();
             const disp = this.getEditorPosition(workspaceElement);
+            const cursor = getPointer(pos.id);
 
-            testPointer.style.left = pos.x * disp.scale + disp.x + rect.left + 'px';
-            testPointer.style.top = pos.y * disp.scale + disp.y + rect.top + 'px';
+            const posInScreen = {
+                x: pos.x * disp.scale + disp.x + rect.left,
+                y: pos.y * disp.scale + disp.y + rect.top,
+            }
+            cursor.style.left = posInScreen.x + 'px';
+            cursor.style.top = posInScreen.y + 'px';
+
+            let inEditor = false;
+            if (rect.left <= posInScreen.x && rect.right >= posInScreen.x) {
+                if (rect.top <= posInScreen.y && rect.bottom >= posInScreen.y) {
+                    inEditor = true;
+                }
+            }
+
+            if (inEditor) {
+                cursor.style.display = 'block';
+            }
+            else {
+                cursor.style.display = 'none';
+            }
         };
 
         const onMouseEvent = ((ev: MouseEvent) => {

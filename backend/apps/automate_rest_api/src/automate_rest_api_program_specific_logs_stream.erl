@@ -86,6 +86,6 @@ websocket_info({channel_engine, _ChannelId, Message=#user_program_log_entry{}}, 
             {ok, State}
     end;
 
-websocket_info(Message, State) ->
-    io:fwrite("Got ~p~n", [Message]),
+websocket_info(_Message, State) ->
+    %% io:fwrite("[D: ???]"),
     {ok, State}.

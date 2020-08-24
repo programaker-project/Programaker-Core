@@ -54,6 +54,7 @@ websocket_init(State=#state{ program_id=ProgramId
     {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
 
     io:fwrite("[WS/Program] Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId]),
+    ok = automate_channel_engine:monitor_listeners(ChannelId, self(), node()),
     ok = automate_channel_engine:listen_channel(ChannelId),
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
 
@@ -74,12 +75,35 @@ websocket_handle({_Type, Message}, State=#state{channel_id=ChannelId}) ->
     Decoded = jiffy:decode(Message, [return_maps]),
     case Decoded of
         #{ <<"type">> := <<"editor_event">> } ->
-            automate_channel_engine:send_to_channel(ChannelId, Decoded#{ from_pid => self() });
+            automate_channel_engine:send_to_channel(ChannelId, Decoded#{ from_id => self() });
         _ ->
             ok
     end,
     {ok, State}.
 
+websocket_info({ automate_channel_engine, add_listener, {Pid, _Key, _SubKey}}, State) ->
+    Self = self(),
+    case Pid of
+        Self ->
+            {ok, State};
+        _ ->
+            {reply, {text, jiffy:encode(#{ <<"type">> => <<"editor_event">>
+                                         , <<"subtype">> =>  <<"add_editor">>
+                                         , <<"value">> => #{  <<"id">> => list_to_binary(pid_to_list(Pid)) }
+                                         })}, State}
+    end;
+
+websocket_info({automate_channel_engine,remove_listener, {Pid, _Channel}}, State) ->
+    Self = self(),
+    case Pid of
+        Self ->
+            {ok, State};
+        _ ->
+            {reply, {text, jiffy:encode(#{ <<"type">> => <<"editor_event">>
+                                         , <<"subtype">> =>  <<"remove_editor">>
+                                         , <<"value">> => #{  <<"id">> => list_to_binary(pid_to_list(Pid)) }
+                                         })}, State}
+    end;
 
 websocket_info(ping_interval, State) ->
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
@@ -88,10 +112,19 @@ websocket_info(ping_interval, State) ->
 websocket_info({channel_engine, _ChannelId, Message=#{ <<"type">> := <<"editor_event">> }}, State) ->
     Pid = self(),
     case Message of
-        #{ from_pid := Pid } ->  % Ignore if the message came from this websocket
+        #{ from_id := Pid } ->  % Ignore if the message came from this websocket
             {ok, State};
         _ ->
-            {reply, {text, jiffy:encode(maps:remove(from_pid, Message))}, State}
+            NewMessage = case Message of
+                             #{ from_id := NewPid, <<"value">> := Value} ->
+                                 Clean = maps:remove(from_id, Message),
+                                 Clean#{ <<"value">> => Value#{ <<"id">> => list_to_binary(pid_to_list(NewPid)) }};
+                             #{ <<"value">> := Value } ->
+                                 Message#{  <<"value">> => Value#{ <<"id">> => null }};
+                             _ ->
+                                 Message
+                     end,
+            {reply, {text, jiffy:encode(NewMessage)}, State}
     end;
 
 websocket_info(_Message, State) ->
