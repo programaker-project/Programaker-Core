@@ -33,12 +33,18 @@ start_link() ->
                                   [ { attributes, record_info(fields, listeners_table_entry)}
                                   , { ram_copies, Nodes }
                                   , { record_name, listeners_table_entry }
-                                  , { index, [ #listeners_table_entry.pid ] }
                                   , { type, bag }
                                   ]) of
              { atomic, ok } ->
                  ok;
              { aborted, { already_exists, _ }} ->
+                 ok
+         end,
+
+    ok = case mnesia:add_table_index(?LISTENERS_TABLE, #listeners_table_entry.pid) of
+             { atomic, ok } ->
+                 ok;
+             { aborted, { already_exists, _, _ }} ->
                  ok
          end,
 
