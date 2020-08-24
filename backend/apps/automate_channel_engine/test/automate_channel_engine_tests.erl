@@ -47,7 +47,7 @@ tests(_SetupResult) ->
     [ {"[Channel creation] Create two channels, IDs are different", fun channel_creation_different_names/0}
     , {"[Message sending] Register on a channel, message it", fun simple_listen_send/0}
     , {"[Message sending] Register twice on a channel, message it", fun simple_double_listen_send/0}
-    , {"[Housekeeping] Register on on a channel, then close", fun register_and_close/0}
+    , {"[Monitoring] Monitor listeners added and removed", fun monitor_listeners_added_and_removed/0}
     , {"[Errors] Channel not found on listening", fun channel_not_found_on_listening/0}
     , {"[Errors] Channel not found on sending", fun channel_not_found_on_sending/0}
     ].
@@ -98,18 +98,37 @@ simple_double_listen_send() ->
             ok
     end.
 
-%%%% Housekeeping
-register_and_close() ->
+%% Monitoring
+monitor_listeners_added_and_removed() ->
     {ok, ChannelId} = automate_channel_engine:create_channel(),
     process_flag(trap_exit, true),
 
+    ok = automate_channel_engine:monitor_listeners(ChannelId, self(), node()),
+
     Pid = spawn_link(fun() ->
-                             ok = automate_channel_engine:listen_channel(ChannelId)
+                             ok = automate_channel_engine:listen_channel(ChannelId),
+                             receive disconnect ->
+                                     ok
+                             end
                      end),
+
+    receive { automate_channel_engine, add_listener, {Pid, _Key, _SubKey}} ->
+            ok
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end,
+
+    Pid ! disconnect,
 
     receive {'EXIT', Pid, normal} ->
             ok
     after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end,
+
+    receive { automate_channel_engine, remove_listener, {Pid, ChannelId}} ->
+            ok
+    after ?FAST_RECEIVE_TIMEOUT ->
             ct:fail(timeout)
     end,
 

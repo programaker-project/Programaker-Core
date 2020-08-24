@@ -11,10 +11,12 @@
         , add_listener_to_channel/5
         , get_listeners_on_channel/1
         , add_listener_monitor/3
+        , remove_listener/1
         ]).
 
 -include("records.hrl").
 -include("databases.hrl").
+-define(MSG_PREFIX, automate_channel_engine).
 
 %%====================================================================
 %% API
@@ -31,6 +33,7 @@ start_link() ->
                                   [ { attributes, record_info(fields, listeners_table_entry)}
                                   , { ram_copies, Nodes }
                                   , { record_name, listeners_table_entry }
+                                  , { index, [ #listeners_table_entry.pid ] }
                                   , { type, bag }
                                   ]) of
              { atomic, ok } ->
@@ -105,12 +108,44 @@ add_listener_to_channel(ChannelId, Pid, Node, Key, SubKey) ->
         ok ->
             case get_monitors_on_channel(ChannelId) of
                 {ok, Monitors} ->
-                    [ MonPid ! { automate_channel_engine, add_listener, { Pid, Key, SubKey } }
+                    [ MonPid ! { ?MSG_PREFIX, add_listener, { Pid, Key, SubKey } }
                       || #monitors_table_entry{pid=MonPid} <- Monitors ],
                     ok
             end;
         _ ->
             Result
+    end.
+
+-spec remove_listener(Pid :: pid()) -> ok | {error, any()}.
+remove_listener(Pid) ->
+    T = (fun() ->
+                 %% Obtain entries
+                 PresentInChannels = mnesia:index_read(?LISTENERS_TABLE, Pid, #listeners_table_entry.pid),
+
+                 %% Remove from all entries, obtain the channels
+                 Channels = lists:map(fun(Rec=#listeners_table_entry{live_channel_id=Channel}) ->
+                                              ok = mnesia:delete_object(?LISTENERS_TABLE, Rec, write),
+                                              Channel
+                                      end, PresentInChannels),
+
+                 %% Get the channel's monitors
+                 UniqueChannels = sets:from_list(Channels),
+                 Monitors = sets:fold(fun(Channel, Acc) ->
+                                              Monitors = mnesia:read(?MONITORS_TABLE, Channel),
+                                              lists:map(fun(#monitors_table_entry{pid=MonPid}) -> {MonPid, Channel} end,
+                                                        Monitors) ++ Acc
+                                      end, [], UniqueChannels),
+                 {ok, Monitors}
+         end),
+    case mnesia:transaction(T) of
+        {atomic, {ok, Monitors}} ->
+            [ MonPid ! { ?MSG_PREFIX, remove_listener, { Pid, MonChannel } }
+              || { MonPid, MonChannel } <- Monitors],
+            ok;
+        {atomic, Error} ->
+            Error;
+        Error ->
+            { error, Error }
     end.
 
 -spec get_listeners_on_channel(binary()) -> {ok, [#listeners_table_entry{}]}
@@ -138,10 +173,7 @@ get_listeners_on_channel(ChannelId) ->
 
     case Result of
         {error, Error} -> {error, Error};
-        {ok, Listeners} ->
-            {AliveListeners, DeadListeners} = check_alive_listeners(Listeners),
-            lists:foreach(fun unlink_listener/1, DeadListeners),
-            {ok, AliveListeners}
+        {ok, Listeners} -> {ok, Listeners}
     end.
 
 -spec add_listener_monitor(binary(), pid(), node()) -> ok | {error, channel_not_found}.
@@ -194,23 +226,9 @@ get_monitors_on_channel(ChannelId) ->
             {ok, AliveMonitors}
     end.
 
-
--spec unlink_listener(#listeners_table_entry{}) -> ok.
-unlink_listener(Entry) ->
-    mnesia:dirty_delete(?LISTENERS_TABLE, Entry).
-
 -spec unlink_monitor(#monitors_table_entry{}) -> ok.
 unlink_monitor(Entry) ->
     mnesia:dirty_delete(?MONITORS_TABLE, Entry).
-
--spec check_alive_listeners([#listeners_table_entry{}]) -> { [#listeners_table_entry{}]
-                                                           , [#listeners_table_entry{}]
-                                                           }.
-check_alive_listeners(Connections) ->
-    lists:partition(fun(#listeners_table_entry{pid=Pid, node=Node }) ->
-                            automate_coordination_utils:is_process_alive(Pid, Node)
-                    end,
-                    Connections).
 
 -spec check_alive_monitors([#monitors_table_entry{}]) -> { [#monitors_table_entry{}]
                                                            , [#monitors_table_entry{}]

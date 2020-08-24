@@ -16,6 +16,7 @@
         ]).
 -include("records.hrl").
 -define(LOGGING, automate_logging).
+-define(MONITOR, automate_channel_engine_listener_monitor).
 
 %%====================================================================
 %% API
@@ -36,14 +37,21 @@ delete_channel(ChannelId) ->
 
 -spec listen_channel(binary()) -> ok | {error, channel_not_found}.
 listen_channel(ChannelId) ->
-    automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, self(), node(), undefined, undefined).
+    listen_channel(ChannelId, {undefined, undefined}).
 
--spec listen_channel(binary(), {binary()} | {binary(), binary()}) -> ok | {error, channel_not_found}.
-listen_channel(ChannelId, {Key, SubKey}) ->
-    automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, self(), node(), Key, SubKey);
-
+-spec listen_channel(binary(), {binary()} | {binary() | undefined, binary() | undefined}) -> ok | {error, channel_not_found}.
 listen_channel(ChannelId, {Key}) ->
-    automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, self(), node(), Key, undefined).
+    listen_channel(ChannelId, {Key, undefined});
+
+listen_channel(ChannelId, {Key, SubKey}) ->
+    Pid = self(),
+    Node = node(),
+    case automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, Pid, Node, Key, SubKey) of
+        ok ->
+            ?MONITOR:monitor_listener(Pid);
+        Error ->
+            Error
+    end.
 
 -spec send_to_channel(binary(), any()) -> ok | {error, channel_not_found }.
 send_to_channel(ChannelId, Message) ->
