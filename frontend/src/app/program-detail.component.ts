@@ -62,6 +62,7 @@ export class ProgramDetailComponent implements OnInit {
     smallScreen: boolean;
     patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
     eventStream: Synchronizer<ProgramEditorEventValue>;
+    private workspaceElement: HTMLElement;
 
     constructor(
         private monitorService: MonitorService,
@@ -188,7 +189,7 @@ export class ProgramDetailComponent implements OnInit {
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
     }
 
-    initializeListeners(workspaceElement: HTMLElement) {
+    initializeListeners() {
         // Initialize log listeners
         this.programService.watchProgramLogs(this.program.owner, this.program.id,
                                              { request_previous_logs: true })
@@ -337,8 +338,8 @@ export class ProgramDetailComponent implements OnInit {
         }
 
         const drawPointer = (pos:{id: string, x : number, y: number}) => {
-            const rect = workspaceElement.getBoundingClientRect();
-            const disp = this.getEditorPosition(workspaceElement);
+            const rect = this.workspaceElement.getBoundingClientRect();
+            const disp = ProgramDetailComponent.getEditorPosition(this.workspaceElement);
             const cursor = getPointer(pos.id);
 
             const posInScreen = {
@@ -368,9 +369,9 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const disp = this.getEditorPosition(workspaceElement);
+            const disp = ProgramDetailComponent.getEditorPosition(this.workspaceElement);
 
-            const rect = workspaceElement.getBoundingClientRect();
+            const rect = this.workspaceElement.getBoundingClientRect();
             const cursorInWorkspace = { x: ev.x - rect.left, y: ev.y - rect.top }
 
             const posInCanvas = {
@@ -380,11 +381,11 @@ export class ProgramDetailComponent implements OnInit {
 
             this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
         });
-        workspaceElement.onmousemove = onMouseEvent;
-        workspaceElement.onmouseup = onMouseEvent;
+        this.workspaceElement.onmousemove = onMouseEvent;
+        this.workspaceElement.onmouseup = onMouseEvent;
     }
 
-    getEditorPosition(workspaceElement: HTMLElement): {x:number, y: number, scale: number} | null {
+    static getEditorPosition(workspaceElement: HTMLElement): {x:number, y: number, scale: number} | null {
 
         const SVG_TRANSFORM_TRANSLATE = 2;
         const SVG_TRANSFORM_SCALE = 3;
@@ -494,15 +495,15 @@ export class ProgramDetailComponent implements OnInit {
         }
 
 
-        const workspaceElement = document.getElementById('workspace');
+        this.workspaceElement = document.getElementById('workspace');
         const programHeaderElement = document.getElementById('program-header');
 
-        this.hide_workspace(workspaceElement);
+        this.hide_workspace(this.workspaceElement);
         window.onresize = (() => {
-            this.calculate_size(workspaceElement);
+            this.calculate_size(this.workspaceElement);
             this.calculate_program_header_size(programHeaderElement);
         });
-        this.calculate_size(workspaceElement);
+        this.calculate_size(this.workspaceElement);
         this.calculate_program_header_size(programHeaderElement);
         const rtl = false;
         const soundsEnabled = false;
@@ -557,11 +558,11 @@ export class ProgramDetailComponent implements OnInit {
         //  sidebar would be. To compensate for this we set the visibility
         //  of the workspace to 'hidden' until the process has finished.
         setTimeout(() => {
-            this.show_workspace(workspaceElement);
+            this.show_workspace(this.workspaceElement);
 
             // Listeners have to be started after the whole initialization is
             // done to avoid capturing the events happening during the start-up.
-            this.initializeListeners(workspaceElement);
+            this.initializeListeners();
 
             if (this.portraitMode || this.smallScreen){
                 this.hide_block_menu();
