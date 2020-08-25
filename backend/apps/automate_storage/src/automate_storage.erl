@@ -49,6 +49,8 @@
         , get_tags_program_from_id/1
         , get_logs_from_program_id/1
         , dirty_list_running_programs/0
+        , store_program_event/2
+        , get_program_events/1
 
         , add_user_generated_log/1
         , get_user_generated_logs/1
@@ -828,6 +830,35 @@ get_logs_from_program_id(ProgramId) ->
 
 dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
+
+
+-spec store_program_event(binary(), any()) -> ok | {error, any()}.
+store_program_event(ProgramId, Event) ->
+    Time = erlang:monotonic_time(),
+    UMI = erlang:unique_integer([monotonic]),
+    EventTag = {Time, UMI},
+
+    T = fun() ->
+                mnesia:write(?USER_PROGRAM_EVENTS_TABLE, #user_program_editor_event{ program_id=ProgramId, event=Event, event_tag=EventTag }, write)
+        end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            ok;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+-spec get_program_events(binary()) -> {ok, [#user_program_editor_event{}]} | {error, any()}.
+get_program_events(ProgramId) ->
+    T = fun() ->
+                mnesia:read(?USER_PROGRAM_EVENTS_TABLE, ProgramId)
+        end,
+    case mnesia:transaction(T) of
+        {atomic, Results} ->
+            {ok, Results};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 -spec create_thread(binary(), #program_thread{}) -> {ok, thread_id()}.
 create_thread(ParentProgramId, #program_thread{ program=Instructions

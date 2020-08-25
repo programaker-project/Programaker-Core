@@ -55,4 +55,6 @@ export type ProgramInfoUpdate = { type: "program_log", value: ProgramLogEntry };
 
 export type ProgramEditorEventType = 'blockly_event' | 'cursor_event';
 
-export type ProgramEditorEvent = { type: "editor_event", subtype: ProgramEditorEventType, value: any };
+export type ProgramEditorEventValue = { type: ProgramEditorEventType, value: any, save?: boolean };
+
+export type ProgramEditorEvent = { type: "editor_event", value: ProgramEditorEventValue };

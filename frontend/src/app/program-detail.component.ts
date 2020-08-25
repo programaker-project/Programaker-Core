@@ -2,7 +2,7 @@
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEvent } from './program';
+import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue } from './program';
 import { ProgramService } from './program.service';
 
 import { Toolbox } from './blocks/Toolbox';
@@ -61,7 +61,7 @@ export class ProgramDetailComponent implements OnInit {
     portraitMode: boolean;
     smallScreen: boolean;
     patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
-    eventStream: Synchronizer<ProgramEditorEvent>;
+    eventStream: Synchronizer<ProgramEditorEventValue>;
 
     constructor(
         private monitorService: MonitorService,
@@ -220,25 +220,25 @@ export class ProgramDetailComponent implements OnInit {
 
             // Convert event to JSON.  This could then be transmitted across the net.
             const json = event.toJson();
-            this.eventStream.push({ type: 'editor_event', subtype: 'blockly_event', value: json })
+            this.eventStream.push({ type: 'blockly_event', value: json, save: true })
         }
 
         this.eventStream.subscribe(
             {
-                next: (ev: ProgramEditorEvent) => {
-                    if (ev.subtype === 'blockly_event') {
+                next: (ev: ProgramEditorEventValue) => {
+                    if (ev.type === 'blockly_event') {
                         const event = Blockly.Events.fromJson(ev.value, this.workspace);
 
                         synchronizer.receivedEvent(event as BlocklyEvent);
                         event.run(true);
                     }
-                    else if (ev.subtype === 'cursor_event') {
+                    else if (ev.type === 'cursor_event') {
                         drawPointer(ev.value);
                     }
-                    else if (ev.subtype === 'add_editor') {
+                    else if (ev.type === 'add_editor') {
                         newPointer(ev.value.id);
                     }
-                    else if (ev.subtype === 'remove_editor') {
+                    else if (ev.type === 'remove_editor') {
                         deletePointer(ev.value.id);
                     }
                 },
@@ -336,7 +336,7 @@ export class ProgramDetailComponent implements OnInit {
                 y: (cursorInWorkspace.y - disp.y) / disp.scale,
             }
 
-            this.eventStream.push({ type: 'editor_event', subtype: 'cursor_event', value: posInCanvas })
+            this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
         });
         workspaceElement.onmousemove = onMouseEvent;
         workspaceElement.onmouseup = onMouseEvent;

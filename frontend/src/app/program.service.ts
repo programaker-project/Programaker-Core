@@ -1,6 +1,6 @@
 import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType, ProgramEditorEvent } from './program';
+import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType, ProgramEditorEvent, ProgramEditorEventValue } from './program';
 
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
@@ -327,12 +327,12 @@ export class ProgramService {
         });
     }
 
-    getEventStream(user_id: string, program_id: string): Synchronizer<ProgramEditorEvent> {
+    getEventStream(user_id: string, program_id: string): Synchronizer<ProgramEditorEventValue> {
         let websocket: WebSocket | null = null;
         let sendBuffer = [];
         let state : 'none_ready' | 'ws_ready' | 'all_ready' | 'closed' = 'none_ready';
 
-        const obs = new Observable<ProgramEditorEvent>((observer) => {
+        const obs = new Observable<ProgramEditorEventValue>((observer) => {
             this.getProgramStreamingEventsUrl(user_id, program_id).then(streamingUrl => {
                 if (state === 'closed') {
                     return; // Cancel the opening of websocket if the stream was closed before being established
@@ -349,7 +349,8 @@ export class ProgramService {
                 });
 
                 websocket.onmessage = ((ev) => {
-                    observer.next(JSON.parse(ev.data));
+                    const parsed: ProgramEditorEvent = JSON.parse(ev.data);
+                    observer.next(parsed.value);
                 });
 
                 websocket.onclose = (() => {
@@ -371,12 +372,13 @@ export class ProgramService {
                     websocket.close();
                 }
             },
-            push: (ev: ProgramEditorEvent) => {
+            push: (ev: ProgramEditorEventValue) => {
+                const msg = {type: 'editor_event', value: ev};
                 if (state === 'none_ready') {
-                    sendBuffer.push(ev);
+                    sendBuffer.push(msg);
                 }
                 else {
-                    websocket.send(JSON.stringify(ev));
+                    websocket.send(JSON.stringify(msg));
                 }
             }
         };

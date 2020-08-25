@@ -56,9 +56,19 @@ websocket_init(State=#state{ program_id=ProgramId
     io:fwrite("[WS/Program] Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId]),
     ok = automate_channel_engine:monitor_listeners(ChannelId, self(), node()),
     ok = automate_channel_engine:listen_channel(ChannelId),
+
+    Events = case automate_storage:get_program_events(ProgramId) of
+                 {ok, Evs} ->
+                     lists:map(fun(#user_program_editor_event{ event=Ev }) ->
+                                       {text, jiffy:encode(Ev)}
+                               end, Evs);
+                 _ ->
+                     []
+             end,
+
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
 
-    {ok, State#state{ channel_id=ChannelId }};
+    {reply, Events, State#state{ channel_id=ChannelId }};
 
 websocket_init(State=#state{error=Error}) ->
     io:fwrite("[WS/Program] Closing with error: ~p~n", [Error]),
@@ -71,11 +81,17 @@ websocket_init(State=#state{error=Error}) ->
 
 websocket_handle(pong, State) ->
     {ok, State};
-websocket_handle({_Type, Message}, State=#state{channel_id=ChannelId}) ->
+websocket_handle({_Type, Message}, State=#state{program_id=ProgramId, channel_id=ChannelId}) ->
     Decoded = jiffy:decode(Message, [return_maps]),
     case Decoded of
         #{ <<"type">> := <<"editor_event">> } ->
-            automate_channel_engine:send_to_channel(ChannelId, Decoded#{ from_id => self() });
+            ok = automate_channel_engine:send_to_channel(ChannelId, Decoded#{ from_id => self() }),
+            ok = case Decoded of
+                     #{ <<"value">> := #{ <<"save">> := true } } ->
+                         automate_storage:store_program_event(ProgramId, Decoded);
+                     _ ->
+                         ok
+                 end;
         _ ->
             ok
     end,
@@ -88,8 +104,9 @@ websocket_info({ automate_channel_engine, add_listener, {Pid, _Key, _SubKey}}, S
             {ok, State};
         _ ->
             {reply, {text, jiffy:encode(#{ <<"type">> => <<"editor_event">>
-                                         , <<"subtype">> =>  <<"add_editor">>
-                                         , <<"value">> => #{  <<"id">> => list_to_binary(pid_to_list(Pid)) }
+                                         , <<"value">> => #{ <<"type">> => <<"add_editor">>
+                                                           , <<"value">> => #{  <<"id">> => list_to_binary(pid_to_list(Pid)) }
+                                                           }
                                          })}, State}
     end;
 
@@ -100,8 +117,9 @@ websocket_info({automate_channel_engine,remove_listener, {Pid, _Channel}}, State
             {ok, State};
         _ ->
             {reply, {text, jiffy:encode(#{ <<"type">> => <<"editor_event">>
-                                         , <<"subtype">> =>  <<"remove_editor">>
-                                         , <<"value">> => #{  <<"id">> => list_to_binary(pid_to_list(Pid)) }
+                                         , <<"value">> => #{ <<"type">> =>  <<"remove_editor">>
+                                                           , <<"value">> => #{  <<"id">> => list_to_binary(pid_to_list(Pid)) }
+                                                           }
                                          })}, State}
     end;
 
@@ -116,11 +134,9 @@ websocket_info({channel_engine, _ChannelId, Message=#{ <<"type">> := <<"editor_e
             {ok, State};
         _ ->
             NewMessage = case Message of
-                             #{ from_id := NewPid, <<"value">> := Value} ->
+                             #{ from_id := NewPid, <<"value">> := Value=#{ <<"value">> := InnerValue }} ->
                                  Clean = maps:remove(from_id, Message),
-                                 Clean#{ <<"value">> => Value#{ <<"id">> => list_to_binary(pid_to_list(NewPid)) }};
-                             #{ <<"value">> := Value } ->
-                                 Message#{  <<"value">> => Value#{ <<"id">> => null }};
+                                 Clean#{ <<"value">> => Value#{ <<"value">> => InnerValue#{ <<"id">> => list_to_binary(pid_to_list(NewPid)) }}};
                              _ ->
                                  Message
                      end,
