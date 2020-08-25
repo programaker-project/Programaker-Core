@@ -224,9 +224,9 @@ export class ProgramDetailComponent implements OnInit {
         });
 
         let ready = false;
+        const onCreation = {};
 
         const mirrorEvent = (event: BlocklyEvent) => {
-
             if (event instanceof Blockly.Events.Ui) {
                 return;  // Don't mirror UI events.
             }
@@ -237,6 +237,13 @@ export class ProgramDetailComponent implements OnInit {
 
             // Convert event to JSON.  This could then be transmitted across the net.
             const json = event.toJson();
+
+            // Avoid passing messages about being created outside of this editor
+            if (onCreation[json['blockId']]) {
+                console.debug('Skipping sending message to block on creation');
+                return;
+            }
+
             try {
                 if (ready) {
                     this.eventStream.push({ type: 'blockly_event', value: json, save: true });
@@ -255,6 +262,13 @@ export class ProgramDetailComponent implements OnInit {
                         const event = Blockly.Events.fromJson(ev.value, this.workspace);
 
                         synchronizer.receivedEvent(event as BlocklyEvent);
+                        if (ev.value.type === 'create') {
+                            onCreation[ev.value.blockId] = true;
+                        }
+                        else if (ev.value.type === 'endDrag') {
+                            delete onCreation[ev.value.blockId];
+                        }
+
                         event.run(true);
                     }
                     else if (ev.type === 'cursor_event') {
