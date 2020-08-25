@@ -174,7 +174,6 @@ export class ProgramDetailComponent implements OnInit {
 
                 // Remove top level
                 dom.removeChild(child);
-                console.debug("To replace:", child, 'with', next);
             }
         }
     }
@@ -204,7 +203,7 @@ export class ProgramDetailComponent implements OnInit {
                         console.error("Error reading logs:", error);
                     },
                     complete: () => {
-                        console.log("No more logs about program", this.programId)
+                        console.warn("No more logs about program", this.programId)
                     }
                 });
 
@@ -604,7 +603,7 @@ export class ProgramDetailComponent implements OnInit {
 
         const window_height = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
-        workspace.style.height = (window_height - header_end) + 'px';
+        workspace.style.height = (window_height - header_end - 1) + 'px';
     }
 
     calculate_program_header_size(programHeader: HTMLElement) {
