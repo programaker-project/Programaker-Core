@@ -76,9 +76,15 @@ content_types_provided(Req, State) ->
 to_json(Req, State) ->
     #get_program_seq{username=Username, program_name=ProgramName} = State,
     case automate_rest_api_backend:get_program(Username, ProgramName) of
-        { ok, Program } ->
-            io:fwrite("PROGRAM: ~p~n", [Program]),
-            Output = program_to_json(Program),
+        { ok, Program=#user_program{ id=ProgramId, user_id=UserId } } ->
+
+            Checkpoint = case automate_storage:get_last_checkpoint_content(ProgramId) of
+                             {ok, Content } ->
+                                 Content;
+                             {error, not_found} ->
+                                 null
+                         end,
+            Output = program_to_json(Program, Checkpoint),
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
@@ -94,7 +100,8 @@ program_to_json(#user_program{ id=Id
                              , program_parsed=ProgramParsed
                              , program_orig=ProgramOrig
                              , enabled=Enabled
-                             }) ->
+                             },
+                Checkpoint) ->
     jiffy:encode(#{ <<"id">> => Id
                   , <<"owner">> => UserId
                   , <<"name">> => ProgramName
@@ -102,6 +109,7 @@ program_to_json(#user_program{ id=Id
                   , <<"parsed">> => ProgramParsed
                   , <<"orig">> => ProgramOrig
                   , <<"enabled">> => Enabled
+                  , <<"checkpoint">> => Checkpoint
                   }).
 
 

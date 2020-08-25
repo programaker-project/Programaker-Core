@@ -180,7 +180,11 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     load_program(controller: ToolboxController, program: ProgramContent) {
-        const xml = Blockly.Xml.textToDom(program.orig);
+        let source = program.orig;
+        if (program.checkpoint) {
+            source = program.checkpoint;
+        }
+        const xml = Blockly.Xml.textToDom(source);
         this.removeNonExistingBlocks(xml, controller);
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
     }
@@ -207,7 +211,18 @@ export class ProgramDetailComponent implements OnInit {
         // Initialize editor event listeners
         // This is used for collaborative editing.
         this.eventStream = this.programService.getEventStream(this.program.owner, this.program.id);
-        const synchronizer = new BlockSynchronizer();
+        const synchronizer = new BlockSynchronizer(this.eventStream, () => {
+            const xml = Blockly.Xml.workspaceToDom(this.workspace);
+
+            // Remove comments
+            for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
+                comment.parentNode.removeChild(comment);
+            }
+
+            const content = Blockly.Xml.domToPrettyText(xml);
+
+            return this.programService.checkpointProgram(this.program.id, this.program.owner, content);
+        });
 
         const mirrorEvent = (event: BlocklyEvent) => {
             if (event instanceof Blockly.Events.Ui) {

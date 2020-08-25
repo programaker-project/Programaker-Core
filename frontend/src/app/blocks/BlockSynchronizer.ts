@@ -1,5 +1,12 @@
 /// <reference path="./blockly-core.d.ts" />
 
+import { Synchronizer } from "app/syncronizer";
+import { ProgramEditorEventValue } from "app/program";
+
+const CHECKPOINT_EVENT = 'save_checkpoint';
+const LEADER_WAIT_TIME = 60 * 1000;
+const FOLLOWER_WAIT_TIME = LEADER_WAIT_TIME * 2;
+
 export type BlocklyEvent = (
     Blockly.Events.BlockCreate
         | Blockly.Events.BlockChange
@@ -26,7 +33,12 @@ export class BlockSynchronizer {
     private readonly _recentDeletedVariables: CircularBuffer<string>;
     private readonly _recentRenamedVariables: CircularBuffer<[string, string]>;
 
-    constructor() {
+    private readonly _eventStream: Synchronizer<ProgramEditorEventValue>;
+    private readonly _syncStatus: () => Promise<void>;
+    private hasChanges: boolean = false;
+    private _timeout: NodeJS.Timeout;
+
+    constructor(eventStream: Synchronizer<ProgramEditorEventValue>, syncStatus: () => Promise<void>) {
         this._typeBufferSize = TYPE_BUFFER_SIZE;
         this._recentCreatedBlocks = { values: [], idx: 0 };
         this._recentChangedBlocks = { values: [], idx: 0 };
@@ -36,10 +48,59 @@ export class BlockSynchronizer {
         this._recentCreatedVariables = { values: [], idx: 0 };
         this._recentDeletedVariables = { values: [], idx: 0 };
         this._recentRenamedVariables = { values: [], idx: 0 };
+
+        this._eventStream = eventStream;
+        this._syncStatus = syncStatus;
+
+        this._eventStream.subscribe({
+            next: this.onNewEvent.bind(this),
+            complete: () => {
+                clearTimeout(this._timeout)
+            },
+            error: () => {
+                clearTimeout(this._timeout)
+            },
+        });
+        this._timeout = setTimeout(this.onTimeoutCompleted.bind(this), FOLLOWER_WAIT_TIME);
+    }
+
+    private onNewEvent(ev: ProgramEditorEventValue) {
+        if (ev.type === CHECKPOINT_EVENT) {
+            console.debug("Someone else is syncing...");
+            clearTimeout(this._timeout);
+            this._timeout = setTimeout(this.onTimeoutCompleted.bind(this), FOLLOWER_WAIT_TIME);
+        }
+        else {
+            if (ev.save) {
+                this.hasChanges = true;
+            }
+        }
+    }
+
+    private async onTimeoutCompleted() {
+        console.debug("Syncing...");
+        this._eventStream.push({ type: CHECKPOINT_EVENT, save: false, value: {} });
+
+        if (!this.hasChanges)  {
+            console.debug("Skipping due to no changes");
+
+        }
+        else {
+            try {
+                await this._syncStatus();
+                this.hasChanges = false;
+            }
+            catch(error) {
+                console.error("Sync error:", error);
+            }
+        }
+
+        this._timeout = setTimeout(this.onTimeoutCompleted.bind(this), LEADER_WAIT_TIME);
     }
 
     public receivedEvent(event: BlocklyEvent) {
         const classif = this.classifyEvent(event);
+        this.hasChanges = true;
 
         if (classif === null) {
             return;
@@ -64,6 +125,7 @@ export class BlockSynchronizer {
         else if (!classif) {
             // This shouldn't happen unless this type is not controlled
             console.error(`Unexpected event type: ${event.type}`);
+            this.hasChanges = true;
             return false;
         }
 
@@ -74,6 +136,7 @@ export class BlockSynchronizer {
             }
         }
 
+        this.hasChanges = true;
         return false;
     }
 

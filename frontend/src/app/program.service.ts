@@ -1,4 +1,4 @@
-import {map} from 'rxjs/operators';
+import { map, share} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType, ProgramEditorEvent, ProgramEditorEventValue } from './program';
 
@@ -58,6 +58,11 @@ export class ProgramService {
 
     async getUpdateProgramUrlById(program_id: string) {
         return ApiRoot + '/programs/id/' + program_id;
+    }
+
+    async getProgramCheckpointUrlById(program_id: string, user_id: string) {
+        const userApiRoot = await this.sessionService.getApiRootForUserId(user_id);
+        return `${userApiRoot}/programs/id/${program_id}/checkpoint`;
     }
 
     async getProgramTagsUrl(programUserId: string, program_id: string) {
@@ -265,11 +270,22 @@ export class ProgramService {
     async deleteProgramById(program_id: string): Promise<boolean> {
         const url = await this.getUpdateProgramUrlById(program_id);
         const _response = await(this.http
-                                .delete(url,
-                                        {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
-                                                                                     ContentType.Json)})
-                                .toPromise());
+            .delete(url,
+                    {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                 ContentType.Json)})
+            .toPromise());
         return true;
+    }
+
+    async checkpointProgram(program_id: string, user_id: string, content: any): Promise<void> {
+        const url = await this.getProgramCheckpointUrlById(program_id, user_id);
+        const _response = await(
+            this.http
+                .post(url,
+                      JSON.stringify(content),
+                      {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                   ContentType.Json)})
+                .toPromise());
     }
 
     watchProgramLogs(user_id: string, program_id: string, options: { request_previous_logs?: boolean }): Observable<ProgramInfoUpdate> {
@@ -364,8 +380,9 @@ export class ProgramService {
             });
         });
 
+        const sharedObserver = obs.pipe(share());
         return {
-            subscribe: obs.subscribe.bind(obs),
+            subscribe: sharedObserver.subscribe.bind(sharedObserver),
             close: () => {
                 state = 'closed';
                 if (websocket) {
