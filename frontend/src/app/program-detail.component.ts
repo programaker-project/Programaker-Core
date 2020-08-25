@@ -31,6 +31,8 @@ import { environment } from '../environments/environment';
 import { unixMsToStr } from './utils';
 import { Synchronizer } from './syncronizer';
 
+type NonReadyReason = 'loading' | 'disconnected';
+
 @Component({
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
@@ -63,10 +65,12 @@ export class ProgramDetailComponent implements OnInit {
     patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
     eventStream: Synchronizer<ProgramEditorEventValue>;
     isReady: boolean;
+    connectionLost: boolean;
     private workspaceElement: HTMLElement;
 
     private cursorDiv: HTMLElement;
     private cursorInfo: {};
+    nonReadyReason: NonReadyReason;
 
     constructor(
         private monitorService: MonitorService,
@@ -90,6 +94,7 @@ export class ProgramDetailComponent implements OnInit {
         this.router = router;
         this.serviceService = serviceService
         this.isReady = false;
+        this.nonReadyReason = 'loading';
 
         this.cursorInfo = {};
     }
@@ -291,7 +296,8 @@ export class ProgramDetailComponent implements OnInit {
                     console.error("Error obtainig editor events:", error);
                 },
                 complete: () => {
-                    console.warn("No more editor events", this.programId)
+                    this.nonReadyReason = 'disconnected';
+                    this.isReady = false;
                 }
             }
         );
@@ -318,7 +324,6 @@ export class ProgramDetailComponent implements OnInit {
 
         this.workspaceElement.onmousemove = onMouseEvent;
         this.workspaceElement.onmouseup = onMouseEvent;
-
     }
 
     /* Collaborator pointer management */
@@ -731,6 +736,10 @@ export class ProgramDetailComponent implements OnInit {
         this.dispose();
         this.router.navigate(['/dashboard'])
         return false;
+    }
+
+    force_reload() {
+        location = location;
     }
 
     dispose() {
