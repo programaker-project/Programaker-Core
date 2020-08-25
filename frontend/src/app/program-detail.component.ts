@@ -62,6 +62,7 @@ export class ProgramDetailComponent implements OnInit {
     smallScreen: boolean;
     patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
     eventStream: Synchronizer<ProgramEditorEventValue>;
+    isReady: boolean;
     private workspaceElement: HTMLElement;
 
     constructor(
@@ -85,6 +86,7 @@ export class ProgramDetailComponent implements OnInit {
         this.route = route;
         this.router = router;
         this.serviceService = serviceService
+        this.isReady = false;
     }
 
     ngOnInit(): void {
@@ -189,6 +191,10 @@ export class ProgramDetailComponent implements OnInit {
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
     }
 
+    becomeReady() {
+        this.isReady = true;
+    }
+
     initializeListeners() {
         // Initialize log listeners
         this.programService.watchProgramLogs(this.program.owner, this.program.id,
@@ -224,9 +230,7 @@ export class ProgramDetailComponent implements OnInit {
             return this.programService.checkpointProgram(this.program.id, this.program.owner, content);
         });
 
-        let ready = false;
         const onCreation = {};
-
         const mirrorEvent = (event: BlocklyEvent) => {
             if (event instanceof Blockly.Events.Ui) {
                 return;  // Don't mirror UI events.
@@ -246,7 +250,7 @@ export class ProgramDetailComponent implements OnInit {
             }
 
             try {
-                if (ready) {
+                if (this.isReady) {
                     this.eventStream.push({ type: 'blockly_event', value: json, save: true });
                 }
             }
@@ -282,7 +286,7 @@ export class ProgramDetailComponent implements OnInit {
                         deletePointer(ev.value.id);
                     }
                     else if (ev.type === 'ready') {
-                        ready = true;
+                        this.becomeReady();
                     }
                 },
                 error: (error: any) => {

@@ -79,6 +79,11 @@
         </mat-sidenav>
 
         <div class="viewer">
+            <div id="workspace-read-only-marker" *ngIf="!isReady">
+                <div class="message">
+                    Loading…
+                </div>
+            </div>
             <div id="workspace"></div>
         </div>
     </mat-sidenav-container>
