@@ -65,6 +65,9 @@ export class ProgramDetailComponent implements OnInit {
     isReady: boolean;
     private workspaceElement: HTMLElement;
 
+    private cursorDiv: HTMLElement;
+    private cursorInfo: {};
+
     constructor(
         private monitorService: MonitorService,
         private programService: ProgramService,
@@ -87,6 +90,8 @@ export class ProgramDetailComponent implements OnInit {
         this.router = router;
         this.serviceService = serviceService
         this.isReady = false;
+
+        this.cursorInfo = {};
     }
 
     ngOnInit(): void {
@@ -214,21 +219,14 @@ export class ProgramDetailComponent implements OnInit {
                     }
                 });
 
+        this.initializeEventSynchronization();
+    }
+
+    initializeEventSynchronization() {
         // Initialize editor event listeners
         // This is used for collaborative editing.
         this.eventStream = this.programService.getEventStream(this.program.owner, this.program.id);
-        const synchronizer = new BlockSynchronizer(this.eventStream, () => {
-            const xml = Blockly.Xml.workspaceToDom(this.workspace);
-
-            // Remove comments
-            for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
-                comment.parentNode.removeChild(comment);
-            }
-
-            const content = Blockly.Xml.domToPrettyText(xml);
-
-            return this.programService.checkpointProgram(this.program.id, this.program.owner, content);
-        });
+        const synchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
 
         const onCreation = {};
         const mirrorEvent = (event: BlocklyEvent) => {
@@ -277,13 +275,13 @@ export class ProgramDetailComponent implements OnInit {
                         event.run(true);
                     }
                     else if (ev.type === 'cursor_event') {
-                        drawPointer(ev.value);
+                        this.drawPointer(ev.value);
                     }
                     else if (ev.type === 'add_editor') {
-                        newPointer(ev.value.id);
+                        this.newPointer(ev.value.id);
                     }
                     else if (ev.type === 'remove_editor') {
-                        deletePointer(ev.value.id);
+                        this.deletePointer(ev.value.id);
                     }
                     else if (ev.type === 'ready') {
                         this.becomeReady();
@@ -299,74 +297,6 @@ export class ProgramDetailComponent implements OnInit {
         );
 
         this.workspace.addChangeListener(mirrorEvent);
-
-        const cursorDiv: HTMLElement = document.getElementById('program-cursors');
-        const cursors = {};
-
-        const newPointer = (id: string) => {
-            const cursor = document.createElement('object');
-            cursor.type = 'image/svg+xml';
-            cursor.style.display = 'none';
-            cursor.style.position = 'fixed';
-            cursor.style.height = '2.5ex';
-            cursor.style.color
-            cursor.style.zIndex = '10';
-            cursor.style.pointerEvents = 'none';
-            cursor.data = '/assets/cursor.svg';
-            cursor.onload = () => {
-                // Give the cursor a random color
-                cursor.getSVGDocument().getElementById('cursor').style.fill = `hsl(${Math.random() * 255},50%,50%)`;
-            };
-
-            cursorDiv.appendChild(cursor);
-            cursors[id] = cursor;
-
-            return cursor;
-        }
-
-        const getPointer = (id: string) => {
-            if (cursors[id]) {
-                return cursors[id];
-            }
-
-            return newPointer(id);
-        }
-
-        const deletePointer = (id: string) => {
-            const cursor = cursors[id];
-            if (!cursor) {
-                return;
-            }
-            cursorDiv.removeChild(cursor);
-            delete cursors[id];
-        }
-
-        const drawPointer = (pos:{id: string, x : number, y: number}) => {
-            const rect = this.workspaceElement.getBoundingClientRect();
-            const disp = ProgramDetailComponent.getEditorPosition(this.workspaceElement);
-            const cursor = getPointer(pos.id);
-
-            const posInScreen = {
-                x: pos.x * disp.scale + disp.x + rect.left,
-                y: pos.y * disp.scale + disp.y + rect.top,
-            }
-            cursor.style.left = posInScreen.x + 'px';
-            cursor.style.top = posInScreen.y + 'px';
-
-            let inEditor = false;
-            if (rect.left <= posInScreen.x && rect.right >= posInScreen.x) {
-                if (rect.top <= posInScreen.y && rect.bottom >= posInScreen.y) {
-                    inEditor = true;
-                }
-            }
-
-            if (inEditor) {
-                cursor.style.display = 'block';
-            }
-            else {
-                cursor.style.display = 'none';
-            }
-        };
 
         const onMouseEvent = ((ev: MouseEvent) => {
             if (ev.buttons) {
@@ -385,8 +315,89 @@ export class ProgramDetailComponent implements OnInit {
 
             this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
         });
+
         this.workspaceElement.onmousemove = onMouseEvent;
         this.workspaceElement.onmouseup = onMouseEvent;
+
+    }
+
+    /* Collaborator pointer management */
+    newPointer(id: string): HTMLElement {
+        const cursor = document.createElement('object');
+        cursor.type = 'image/svg+xml';
+        cursor.style.display = 'none';
+        cursor.style.position = 'fixed';
+        cursor.style.height = '2.5ex';
+        cursor.style.color
+        cursor.style.zIndex = '10';
+        cursor.style.pointerEvents = 'none';
+        cursor.data = '/assets/cursor.svg';
+        cursor.onload = () => {
+            // Give the cursor a random color
+            cursor.getSVGDocument().getElementById('cursor').style.fill = `hsl(${Math.random() * 255},50%,50%)`;
+        };
+
+        this.cursorDiv.appendChild(cursor);
+        this.cursorInfo[id] = cursor;
+
+        return cursor;
+    }
+
+    getPointer(id: string): HTMLElement {
+        if (this.cursorInfo[id]) {
+            return this.cursorInfo[id];
+        }
+
+        return this.newPointer(id);
+    }
+
+    deletePointer(id: string) {
+        const cursor = this.cursorInfo[id];
+        if (!cursor) {
+            return;
+        }
+        this.cursorDiv.removeChild(cursor);
+        delete this.cursorInfo[id];
+    }
+
+    drawPointer(pos:{id: string, x : number, y: number}) {
+        const rect = this.workspaceElement.getBoundingClientRect();
+        const disp = ProgramDetailComponent.getEditorPosition(this.workspaceElement);
+        const cursor = this.getPointer(pos.id);
+
+        const posInScreen = {
+            x: pos.x * disp.scale + disp.x + rect.left,
+            y: pos.y * disp.scale + disp.y + rect.top,
+        }
+        cursor.style.left = posInScreen.x + 'px';
+        cursor.style.top = posInScreen.y + 'px';
+
+        let inEditor = false;
+        if (rect.left <= posInScreen.x && rect.right >= posInScreen.x) {
+            if (rect.top <= posInScreen.y && rect.bottom >= posInScreen.y) {
+                inEditor = true;
+            }
+        }
+
+        if (inEditor) {
+            cursor.style.display = 'block';
+        }
+        else {
+            cursor.style.display = 'none';
+        }
+    }
+
+    checkpointProgram() {
+        const xml = Blockly.Xml.workspaceToDom(this.workspace);
+
+        // Remove comments
+        for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
+            comment.parentNode.removeChild(comment);
+        }
+
+        const content = Blockly.Xml.domToPrettyText(xml);
+
+        return this.programService.checkpointProgram(this.program.id, this.program.owner, content);
     }
 
     static getEditorPosition(workspaceElement: HTMLElement): {x:number, y: number, scale: number} | null {
@@ -498,6 +509,8 @@ export class ProgramDetailComponent implements OnInit {
             return;
         }
 
+
+        this.cursorDiv = document.getElementById('program-cursors');
 
         this.workspaceElement = document.getElementById('workspace');
         const programHeaderElement = document.getElementById('program-header');
