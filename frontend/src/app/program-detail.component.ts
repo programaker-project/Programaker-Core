@@ -224,7 +224,10 @@ export class ProgramDetailComponent implements OnInit {
             return this.programService.checkpointProgram(this.program.id, this.program.owner, content);
         });
 
+        let ready = false;
+
         const mirrorEvent = (event: BlocklyEvent) => {
+
             if (event instanceof Blockly.Events.Ui) {
                 return;  // Don't mirror UI events.
             }
@@ -235,8 +238,16 @@ export class ProgramDetailComponent implements OnInit {
 
             // Convert event to JSON.  This could then be transmitted across the net.
             const json = event.toJson();
-            this.eventStream.push({ type: 'blockly_event', value: json, save: true })
+            try {
+                if (ready) {
+                    this.eventStream.push({ type: 'blockly_event', value: json, save: true });
+                }
+            }
+            catch (error) {
+                console.log(error);
+            }
         }
+
 
         this.eventStream.subscribe(
             {
@@ -255,6 +266,9 @@ export class ProgramDetailComponent implements OnInit {
                     }
                     else if (ev.type === 'remove_editor') {
                         deletePointer(ev.value.id);
+                    }
+                    else if (ev.type === 'ready') {
+                        ready = true;
                     }
                 },
                 error: (error: any) => {

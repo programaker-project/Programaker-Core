@@ -68,7 +68,13 @@ websocket_init(State=#state{ program_id=ProgramId
 
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
 
-    {reply, Events, State#state{ channel_id=ChannelId }};
+    EndMarker = jiffy:encode(#{ <<"type">> => <<"editor_event">>
+                              , <<"value">> => #{ <<"type">> => <<"ready">>
+                                                , <<"value">> => #{}
+                                                }
+                              }),
+
+    {reply, Events ++ [{text, EndMarker}], State#state{ channel_id=ChannelId }};
 
 websocket_init(State=#state{error=Error}) ->
     io:fwrite("[WS/Program] Closing with error: ~p~n", [Error]),
