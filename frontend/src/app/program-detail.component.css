@@ -13,11 +13,11 @@
 .program-pad #workspace-read-only-marker .message {
     position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    font-size: xxx-large;
+    transform: translateY(-50%);
+    font-size: 250%;
     color: white;
+    width: 100%;
+    text-align: center;
 }
 
 .program-pad #workspace-read-only-marker .message button .action-icon {
