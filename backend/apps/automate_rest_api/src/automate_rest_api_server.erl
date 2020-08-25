@@ -56,7 +56,11 @@ start_link() ->
 
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
                         , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/communication", automate_rest_api_program_specific_communication, []}
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []}
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/communication", automate_rest_api_program_specific_logs_stream, []}
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
+
                           %% Program operation
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs", automate_rest_api_program_logs, []}
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/tags", automate_rest_api_program_tags, []}

@@ -14,6 +14,7 @@ export class ProgramContent extends ProgramMetadata {
     parsed: any;
     orig: any;
     owner: string;
+    checkpoint?: any;
 
     constructor (metadata: ProgramMetadata, parsed: any, orig: any, type: ProgramType) {
       super();
@@ -52,3 +53,9 @@ export interface ProgramLogEntry {
 };
 
 export type ProgramInfoUpdate = { type: "program_log", value: ProgramLogEntry };
+
+export type ProgramEditorEventType = 'blockly_event' | 'cursor_event' | 'save_checkpoint' | 'add_editor' | 'remove_editor' | 'ready';
+
+export type ProgramEditorEventValue = { type: ProgramEditorEventType, value: any, save?: boolean };
+
+export type ProgramEditorEvent = { type: "editor_event", value: ProgramEditorEventValue };

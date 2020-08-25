@@ -1,7 +1,6 @@
-
-import {map} from 'rxjs/operators';
+import { map, share} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType } from './program';
+import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType, ProgramEditorEvent, ProgramEditorEventValue } from './program';
 
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
@@ -9,6 +8,7 @@ import { SessionService } from './session.service';
 import { ContentType } from './content-type';
 import { toWebsocketUrl } from './utils';
 import { ApiRoot } from './api-config';
+import { Synchronizer } from './syncronizer';
 
 @Injectable()
 export class ProgramService {
@@ -60,6 +60,11 @@ export class ProgramService {
         return ApiRoot + '/programs/id/' + program_id;
     }
 
+    async getProgramCheckpointUrlById(program_id: string, user_id: string) {
+        const userApiRoot = await this.sessionService.getApiRootForUserId(user_id);
+        return `${userApiRoot}/programs/id/${program_id}/checkpoint`;
+    }
+
     async getProgramTagsUrl(programUserId: string, program_id: string) {
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
         return userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/tags';
@@ -73,9 +78,17 @@ export class ProgramService {
     private async getProgramStreamingLogsUrl(programUserId: string, program_id: string) {
         const token = this.sessionService.getToken();
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
-        return this.addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/communication'),
+        return this.addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/logs-stream'),
                                   token,
                                  );
+    }
+
+    private async getProgramStreamingEventsUrl(programUserId: string, program_id: string) {
+        const token = this.sessionService.getToken();
+        const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
+        return this.addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/editor-events'),
+                                        token,
+                                       );
     }
 
     async getProgramStopThreadsUrl(programUserId: string, program_id: string) {
@@ -257,11 +270,22 @@ export class ProgramService {
     async deleteProgramById(program_id: string): Promise<boolean> {
         const url = await this.getUpdateProgramUrlById(program_id);
         const _response = await(this.http
-                                .delete(url,
-                                        {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
-                                                                                     ContentType.Json)})
-                                .toPromise());
+            .delete(url,
+                    {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                 ContentType.Json)})
+            .toPromise());
         return true;
+    }
+
+    async checkpointProgram(program_id: string, user_id: string, content: any): Promise<void> {
+        const url = await this.getProgramCheckpointUrlById(program_id, user_id);
+        const _response = await(
+            this.http
+                .post(url,
+                      JSON.stringify(content),
+                      {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                   ContentType.Json)})
+                .toPromise());
     }
 
     watchProgramLogs(user_id: string, program_id: string, options: { request_previous_logs?: boolean }): Observable<ProgramInfoUpdate> {
@@ -319,4 +343,61 @@ export class ProgramService {
         });
     }
 
+    getEventStream(user_id: string, program_id: string): Synchronizer<ProgramEditorEventValue> {
+        let websocket: WebSocket | null = null;
+        let sendBuffer = [];
+        let state : 'none_ready' | 'ws_ready' | 'all_ready' | 'closed' = 'none_ready';
+
+        const obs = new Observable<ProgramEditorEventValue>((observer) => {
+            this.getProgramStreamingEventsUrl(user_id, program_id).then(streamingUrl => {
+                if (state === 'closed') {
+                    return; // Cancel the opening of websocket if the stream was closed before being established
+                }
+
+                websocket = new WebSocket(streamingUrl)
+
+                websocket.onopen = (() => {
+                    state = 'all_ready';
+                    for (const ev of sendBuffer) {
+                        websocket.send(JSON.stringify(ev));
+                    }
+                    sendBuffer = null;
+                });
+
+                websocket.onmessage = ((ev) => {
+                    const parsed: ProgramEditorEvent = JSON.parse(ev.data);
+                    observer.next(parsed.value);
+                });
+
+                websocket.onclose = (() => {
+                    observer.complete();
+                });
+
+                websocket.onerror = ((ev) => {
+                    observer.error(ev);
+                    observer.complete();
+                });
+            });
+        });
+
+        const sharedObserver = obs.pipe(share());
+        return {
+            subscribe: sharedObserver.subscribe.bind(sharedObserver),
+            close: () => {
+                state = 'closed';
+                if (websocket) {
+                    websocket.close();
+                }
+            },
+            push: (ev: ProgramEditorEventValue) => {
+                const msg = {type: 'editor_event', value: ev};
+                if (state === 'none_ready') {
+                    sendBuffer.push(msg);
+                }
+                else {
+                    websocket.send(JSON.stringify(msg));
+                }
+            }
+        };
+    }
 }

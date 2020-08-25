@@ -31,6 +31,10 @@
         , lists_programs_from_username/1
         , list_programs_from_userid/1
         , update_program/3
+
+        , checkpoint_program/3
+        , get_last_checkpoint_content/1
+
         , update_program_by_id/2
         , update_program_metadata/3
         , update_program_metadata/2
@@ -49,6 +53,8 @@
         , get_tags_program_from_id/1
         , get_logs_from_program_id/1
         , dirty_list_running_programs/0
+        , store_program_event/2
+        , get_program_events/1
 
         , add_user_generated_log/1
         , get_user_generated_logs/1
@@ -579,16 +585,16 @@ update_program_metadata(Username, ProgramName, #editable_user_program_metadata{p
 
 -spec update_program_metadata(binary(), #editable_user_program_metadata{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program_metadata(ProgramId, #editable_user_program_metadata{program_name=NewProgramName})->
-            Transaction = fun() ->
-                                  case get_program_from_id(ProgramId) of
-                                      {ok, ProgramEntry=#user_program_entry{id=ProgramId}} ->
-                                          ok = mnesia:write(?USER_PROGRAMS_TABLE,
-                                                            ProgramEntry#user_program_entry{program_name=NewProgramName}, write),
-                                          {ok, ProgramId};
-                                      X ->
-                                          X
-                                  end
-                          end,
+    Transaction = fun() ->
+                          case get_program_from_id(ProgramId) of
+                              {ok, ProgramEntry=#user_program_entry{id=ProgramId}} ->
+                                  ok = mnesia:write(?USER_PROGRAMS_TABLE,
+                                                    ProgramEntry#user_program_entry{program_name=NewProgramName}, write),
+                                  {ok, ProgramId};
+                              X ->
+                                  X
+                          end
+                  end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
             io:format("Register result: ~p~n", [Result]),
@@ -596,6 +602,42 @@ update_program_metadata(ProgramId, #editable_user_program_metadata{program_name=
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
+    end.
+
+-spec checkpoint_program(binary(), binary(), any()) -> 'ok' | { 'error', any() }.
+checkpoint_program(UserId, ProgramId, Content)->
+    CurrentTime = erlang:system_time(millisecond),
+    Transaction = fun() ->
+                          ok = mnesia:write(?USER_PROGRAM_CHECKPOINTS_TABLE,
+                                            #user_program_checkpoint{ program_id=ProgramId
+                                                                    , user_id=UserId
+                                                                    , event_time=CurrentTime
+                                                                    , content=Content
+                                                                    }, write),
+                          ok = mnesia:delete(?USER_PROGRAM_EVENTS_TABLE, ProgramId, write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            {error, mnesia:error_description(Reason)}
+    end.
+
+-spec get_last_checkpoint_content(binary()) -> {ok, any()} | {error, any()}.
+get_last_checkpoint_content(ProgramId) ->
+    Checkpoints = mnesia:dirty_read(?USER_PROGRAM_CHECKPOINTS_TABLE, ProgramId),
+    Sorted = lists:sort(fun( #user_program_checkpoint{event_time=EventTime1}
+                           , #user_program_checkpoint{event_time=EventTime2}
+                           ) ->
+                                EventTime1 > EventTime2
+                        end,
+                        Checkpoints),
+    case Sorted of
+        [#user_program_checkpoint{content=Content} | _] ->
+            {ok, Content};
+        [] ->
+            {error, not_found}
     end.
 
 -spec delete_program(binary(), binary()) -> { 'ok', binary() } | { 'error', any() }.
@@ -828,6 +870,35 @@ get_logs_from_program_id(ProgramId) ->
 
 dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
+
+
+-spec store_program_event(binary(), any()) -> ok | {error, any()}.
+store_program_event(ProgramId, Event) ->
+    Time = erlang:monotonic_time(),
+    UMI = erlang:unique_integer([monotonic]),
+    EventTag = {Time, UMI},
+
+    T = fun() ->
+                mnesia:write(?USER_PROGRAM_EVENTS_TABLE, #user_program_editor_event{ program_id=ProgramId, event=Event, event_tag=EventTag }, write)
+        end,
+    case mnesia:transaction(T) of
+        {atomic, ok} ->
+            ok;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
+-spec get_program_events(binary()) -> {ok, [#user_program_editor_event{}]} | {error, any()}.
+get_program_events(ProgramId) ->
+    T = fun() ->
+                mnesia:read(?USER_PROGRAM_EVENTS_TABLE, ProgramId)
+        end,
+    case mnesia:transaction(T) of
+        {atomic, Results} ->
+            {ok, Results};
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
 
 -spec create_thread(binary(), #program_thread{}) -> {ok, thread_id()}.
 create_thread(ParentProgramId, #program_thread{ program=Instructions

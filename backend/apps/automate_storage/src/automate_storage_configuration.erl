@@ -420,6 +420,47 @@ get_versioning(Nodes) ->
                         end
                 }
 
+                %% Add user editor events table.
+              , #database_version_transformation
+                { id=14
+                , apply=fun() ->
+                                automate_storage_versioning:create_database(
+                                  #database_version_data
+                                  { database_name=?USER_PROGRAM_EVENTS_TABLE
+                                  , records=[ program_id
+                                            , event
+                                            , event_tag
+                                            ]
+                                  , record_name=user_program_editor_event
+                                  , type=bag
+                                  }, Nodes),
+
+                                ok = mnesia:wait_for_tables([ ?USER_PROGRAM_EVENTS_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
+                        end
+                }
+
+                %% Add program checkpoints table.
+              , #database_version_transformation
+                { id=15
+                , apply=fun() ->
+                                automate_storage_versioning:create_database(
+                                  #database_version_data
+                                  { database_name=?USER_PROGRAM_CHECKPOINTS_TABLE
+                                  , records=[ program_id
+                                            , user_id
+                                            , event_time
+                                            , content
+                                            ]
+                                  , record_name=user_program_checkpoint
+                                  , type=bag
+                                  }, Nodes),
+
+                                ok = mnesia:wait_for_tables([ ?USER_PROGRAM_CHECKPOINTS_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
+                        end
+                }
+
               ]
         }.
 

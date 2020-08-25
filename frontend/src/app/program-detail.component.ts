@@ -2,10 +2,11 @@
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate } from './program';
+import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue } from './program';
 import { ProgramService } from './program.service';
 
 import { Toolbox } from './blocks/Toolbox';
+import { BlockSynchronizer, BlocklyEvent } from './blocks/BlockSynchronizer';
 import * as progbar from './ui/progbar';
 /// <reference path="./blocks/blockly-core.d.ts" />
 import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
@@ -28,6 +29,9 @@ import { ConnectionService } from './connection.service';
 import { SessionService } from './session.service';
 import { environment } from '../environments/environment';
 import { unixMsToStr } from './utils';
+import { Synchronizer } from './syncronizer';
+
+type NonReadyReason = 'loading' | 'disconnected';
 
 @Component({
     selector: 'app-my-program-detail',
@@ -59,6 +63,14 @@ export class ProgramDetailComponent implements OnInit {
     portraitMode: boolean;
     smallScreen: boolean;
     patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
+    eventStream: Synchronizer<ProgramEditorEventValue>;
+    isReady: boolean;
+    connectionLost: boolean;
+    private workspaceElement: HTMLElement;
+
+    private cursorDiv: HTMLElement;
+    private cursorInfo: {};
+    nonReadyReason: NonReadyReason;
 
     constructor(
         private monitorService: MonitorService,
@@ -81,6 +93,10 @@ export class ProgramDetailComponent implements OnInit {
         this.route = route;
         this.router = router;
         this.serviceService = serviceService
+        this.isReady = false;
+        this.nonReadyReason = 'loading';
+
+        this.cursorInfo = {};
     }
 
     ngOnInit(): void {
@@ -171,20 +187,26 @@ export class ProgramDetailComponent implements OnInit {
 
                 // Remove top level
                 dom.removeChild(child);
-                console.debug("To replace:", child, 'with', next);
             }
         }
     }
 
     load_program(controller: ToolboxController, program: ProgramContent) {
-        const xml = Blockly.Xml.textToDom(program.orig);
+        let source = program.orig;
+        if (program.checkpoint) {
+            source = program.checkpoint;
+        }
+        const xml = Blockly.Xml.textToDom(source);
         this.removeNonExistingBlocks(xml, controller);
         (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
+    }
 
-        this.initializeListeners();
+    becomeReady() {
+        this.isReady = true;
     }
 
     initializeListeners() {
+        // Initialize log listeners
         this.programService.watchProgramLogs(this.program.owner, this.program.id,
                                              { request_previous_logs: true })
             .subscribe(
@@ -198,9 +220,249 @@ export class ProgramDetailComponent implements OnInit {
                         console.error("Error reading logs:", error);
                     },
                     complete: () => {
-                        console.log("No more logs about program", this.programId)
+                        console.warn("No more logs about program", this.programId)
                     }
                 });
+
+        this.initializeEventSynchronization();
+    }
+
+    initializeEventSynchronization() {
+        // Initialize editor event listeners
+        // This is used for collaborative editing.
+        this.eventStream = this.programService.getEventStream(this.program.owner, this.program.id);
+        const synchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
+
+        const onCreation = {};
+        const mirrorEvent = (event: BlocklyEvent) => {
+            if (event instanceof Blockly.Events.Ui) {
+                return;  // Don't mirror UI events.
+            }
+
+            if (synchronizer.isDuplicated(event)) {
+                return; // Avoid mirroring events received from the net
+            }
+
+            // Convert event to JSON.  This could then be transmitted across the net.
+            const json = event.toJson();
+
+            // Avoid passing messages about being created outside of this editor
+            if (onCreation[json['blockId']]) {
+                console.debug('Skipping sending message to block on creation');
+                return;
+            }
+
+            try {
+                if (this.isReady) {
+                    this.eventStream.push({ type: 'blockly_event', value: json, save: true });
+                }
+            }
+            catch (error) {
+                console.log(error);
+            }
+        }
+
+
+        this.eventStream.subscribe(
+            {
+                next: (ev: ProgramEditorEventValue) => {
+                    if (ev.type === 'blockly_event') {
+                        const event = Blockly.Events.fromJson(ev.value, this.workspace);
+
+                        synchronizer.receivedEvent(event as BlocklyEvent);
+                        if (ev.value.type === 'create') {
+                            onCreation[ev.value.blockId] = true;
+                        }
+                        else if (ev.value.type === 'endDrag') {
+                            delete onCreation[ev.value.blockId];
+                        }
+
+                        event.run(true);
+                    }
+                    else if (ev.type === 'cursor_event') {
+                        this.drawPointer(ev.value);
+                    }
+                    else if (ev.type === 'add_editor') {
+                        this.newPointer(ev.value.id);
+                    }
+                    else if (ev.type === 'remove_editor') {
+                        this.deletePointer(ev.value.id);
+                    }
+                    else if (ev.type === 'ready') {
+                        this.becomeReady();
+                    }
+                },
+                error: (error: any) => {
+                    console.error("Error obtainig editor events:", error);
+                },
+                complete: () => {
+                    this.nonReadyReason = 'disconnected';
+                    this.isReady = false;
+                }
+            }
+        );
+
+        this.workspace.addChangeListener(mirrorEvent);
+
+        const onMouseEvent = ((ev: MouseEvent) => {
+            if (ev.buttons) {
+                return;
+            }
+
+            const disp = ProgramDetailComponent.getEditorPosition(this.workspaceElement);
+
+            const rect = this.workspaceElement.getBoundingClientRect();
+            const cursorInWorkspace = { x: ev.x - rect.left, y: ev.y - rect.top }
+
+            const posInCanvas = {
+                x: (cursorInWorkspace.x - disp.x) / disp.scale,
+                y: (cursorInWorkspace.y - disp.y) / disp.scale,
+            }
+
+            this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
+        });
+
+        this.workspaceElement.onmousemove = onMouseEvent;
+        this.workspaceElement.onmouseup = onMouseEvent;
+    }
+
+    /* Collaborator pointer management */
+    newPointer(id: string): HTMLElement {
+        const cursor = document.createElement('object');
+        cursor.type = 'image/svg+xml';
+        cursor.style.display = 'none';
+        cursor.style.position = 'fixed';
+        cursor.style.height = '2.5ex';
+        cursor.style.color
+        cursor.style.zIndex = '10';
+        cursor.style.pointerEvents = 'none';
+        cursor.data = '/assets/cursor.svg';
+        cursor.onload = () => {
+            // Give the cursor a random color
+            cursor.getSVGDocument().getElementById('cursor').style.fill = `hsl(${Math.random() * 255},50%,50%)`;
+        };
+
+        this.cursorDiv.appendChild(cursor);
+        this.cursorInfo[id] = cursor;
+
+        return cursor;
+    }
+
+    getPointer(id: string): HTMLElement {
+        if (this.cursorInfo[id]) {
+            return this.cursorInfo[id];
+        }
+
+        return this.newPointer(id);
+    }
+
+    deletePointer(id: string) {
+        const cursor = this.cursorInfo[id];
+        if (!cursor) {
+            return;
+        }
+        this.cursorDiv.removeChild(cursor);
+        delete this.cursorInfo[id];
+    }
+
+    drawPointer(pos:{id: string, x : number, y: number}) {
+        const rect = this.workspaceElement.getBoundingClientRect();
+        const disp = ProgramDetailComponent.getEditorPosition(this.workspaceElement);
+        const cursor = this.getPointer(pos.id);
+
+        const posInScreen = {
+            x: pos.x * disp.scale + disp.x + rect.left,
+            y: pos.y * disp.scale + disp.y + rect.top,
+        }
+        cursor.style.left = posInScreen.x + 'px';
+        cursor.style.top = posInScreen.y + 'px';
+
+        let inEditor = false;
+        if (rect.left <= posInScreen.x && rect.right >= posInScreen.x) {
+            if (rect.top <= posInScreen.y && rect.bottom >= posInScreen.y) {
+                inEditor = true;
+            }
+        }
+
+        if (inEditor) {
+            cursor.style.display = 'block';
+        }
+        else {
+            cursor.style.display = 'none';
+        }
+    }
+
+    checkpointProgram() {
+        const xml = Blockly.Xml.workspaceToDom(this.workspace);
+
+        // Remove comments
+        for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
+            comment.parentNode.removeChild(comment);
+        }
+
+        const content = Blockly.Xml.domToPrettyText(xml);
+
+        return this.programService.checkpointProgram(this.program.id, this.program.owner, content);
+    }
+
+    static getEditorPosition(workspaceElement: HTMLElement): {x:number, y: number, scale: number} | null {
+
+        const SVG_TRANSFORM_TRANSLATE = 2;
+        const SVG_TRANSFORM_SCALE = 3;
+
+        let reference: HTMLElement | null = workspaceElement.getElementsByClassName('blocklySvg')[0].getElementsByClassName('blocklyBlockCanvas')[0] as HTMLElement;
+
+        // Not dragging, so we can directly use Blockly's canvas as reference
+        if (reference) {
+            const transformations : SVGTransformList = (reference as any).transform.baseVal;
+            let x = 0, y = 0, scale = 1;
+
+            for (let i = 0; i < transformations.numberOfItems; i++) {
+                const t = transformations[i];
+
+                if (t.type === SVG_TRANSFORM_TRANSLATE) {
+                    x = t.matrix.e;
+                    y = t.matrix.f;
+                }
+                else if (t.type === SVG_TRANSFORM_SCALE) {
+                    scale = t.matrix.a;
+                }
+            }
+
+            return { x, y, scale};
+        }
+
+        // If we have to use the drag surface as refernce this is a bit less clean
+        else {
+            reference = workspaceElement.getElementsByClassName('blocklyWsDragSurface')[0] as HTMLElement;
+
+            if (!reference) {
+                console.error("Could not find reference");
+                return null;
+            }
+
+            // Take transformation from the drag surface
+            const result = /translate3d\((-?\d+)px, *(-?\d+)px, *-?\d+px\)/.exec(reference.style.transform);
+
+            const x = parseInt(result[1]), y = parseInt(result[2]);
+
+            // Take scale from it's inner
+            const canvas = reference.getElementsByClassName('blocklyBlockCanvas')[0] as HTMLElement;
+
+            let scale = 1;
+            const transformations : SVGTransformList = (canvas as any).transform.baseVal;
+
+            for (let i = 0; i < transformations.numberOfItems; i++) {
+                const t = transformations[i];
+
+                if (t.type === SVG_TRANSFORM_SCALE) {
+                    scale = t.matrix.a;
+                }
+            }
+
+            return { x, y, scale };
+        }
+
     }
 
     patch_flyover_area_deletion() {
@@ -253,15 +515,17 @@ export class ProgramDetailComponent implements OnInit {
         }
 
 
-        const workspaceElement = document.getElementById('workspace');
+        this.cursorDiv = document.getElementById('program-cursors');
+
+        this.workspaceElement = document.getElementById('workspace');
         const programHeaderElement = document.getElementById('program-header');
 
-        this.hide_workspace(workspaceElement);
+        this.hide_workspace(this.workspaceElement);
         window.onresize = (() => {
-            this.calculate_size(workspaceElement);
+            this.calculate_size(this.workspaceElement);
             this.calculate_program_header_size(programHeaderElement);
         });
-        this.calculate_size(workspaceElement);
+        this.calculate_size(this.workspaceElement);
         this.calculate_program_header_size(programHeaderElement);
         const rtl = false;
         const soundsEnabled = false;
@@ -316,7 +580,11 @@ export class ProgramDetailComponent implements OnInit {
         //  sidebar would be. To compensate for this we set the visibility
         //  of the workspace to 'hidden' until the process has finished.
         setTimeout(() => {
-            this.show_workspace(workspaceElement);
+            this.show_workspace(this.workspaceElement);
+
+            // Listeners have to be started after the whole initialization is
+            // done to avoid capturing the events happening during the start-up.
+            this.initializeListeners();
 
             if (this.portraitMode || this.smallScreen){
                 this.hide_block_menu();
@@ -372,7 +640,7 @@ export class ProgramDetailComponent implements OnInit {
 
         const window_height = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
-        workspace.style.height = (window_height - header_end) + 'px';
+        workspace.style.height = (window_height - header_end - 1) + 'px';
     }
 
     calculate_program_header_size(programHeader: HTMLElement) {
@@ -470,11 +738,21 @@ export class ProgramDetailComponent implements OnInit {
         return false;
     }
 
+    force_reload() {
+        location = location;
+    }
+
     dispose() {
         try {
             this.workspace.dispose();
         } catch(error) {
             console.error("Error disposing workspace:", error);
+        }
+
+        try {
+            this.eventStream.close();
+        } catch(error) {
+            console.error("Error closing event stream:", error);
         }
 
         // Restore the patched function, to cleaup the state.

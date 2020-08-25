@@ -57,6 +57,17 @@
                                 , exception_data :: none | {_, _, _}   | ?MNESIA_SELECTOR
                                 }).
 
+-record(user_program_editor_event, { program_id :: binary()
+                                   , event :: any()
+                                   , event_tag :: { integer(), integer() }
+                                   }).
+
+-record(user_program_checkpoint, { program_id :: binary()
+                                 , user_id :: binary()
+                                 , event_time :: time_in_milliseconds()
+                                 , content :: any()
+                                 }).
+
 -record(user_generated_log_entry, { program_id :: binary()               | ?MNESIA_SELECTOR
                                   , block_id :: binary() | undefined     | ?MNESIA_SELECTOR
                                   , severity :: log_entry_severity()     | ?MNESIA_SELECTOR

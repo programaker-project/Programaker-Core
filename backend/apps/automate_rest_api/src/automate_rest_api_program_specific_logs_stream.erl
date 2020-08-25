@@ -2,7 +2,7 @@
 %%% WebSocket endpoint to listen to updates on a program.
 %%% @end
 
--module(automate_rest_api_program_specific_communication).
+-module(automate_rest_api_program_specific_logs_stream).
 -export([init/2]).
 -export([websocket_init/1]).
 -export([websocket_handle/2]).
@@ -77,7 +77,7 @@ websocket_info(ping_interval, State) ->
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
     {reply, ping, State};
 
-websocket_info({channel_engine, _ChannelId, Message}, State) ->
+websocket_info({channel_engine, _ChannelId, Message=#user_program_log_entry{}}, State) ->
     case ?FORMATTING:format_message(Message) of
         {ok, Structured} ->
             {reply, {text, jiffy:encode(Structured)}, State};
@@ -86,6 +86,6 @@ websocket_info({channel_engine, _ChannelId, Message}, State) ->
             {ok, State}
     end;
 
-websocket_info(Message, State) ->
-    io:fwrite("Got ~p~n", [Message]),
+websocket_info(_Message, State) ->
+    %% io:fwrite("[D: ???]"),
     {ok, State}.

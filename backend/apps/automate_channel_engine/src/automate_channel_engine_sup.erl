@@ -29,13 +29,20 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD},
+    {ok, { {rest_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD},
            [ #{ id => automate_channel_engine_mnesia_backend
               , start => {automate_channel_engine_mnesia_backend, start_link, []}
               , restart => permanent
               , shutdown => 2000
               , type => worker
               , modules => [automate_channel_engine_mnesia_backend]
+              }
+           , #{ id => automate_channel_engine_listener_monitor
+              , start => {automate_channel_engine_listener_monitor, start_link, []}
+              , restart => permanent
+              , shutdown => 2000
+              , type => worker
+              , modules => [automate_channel_engine_listener_monitor]
               }
            ]} }.
 
