@@ -310,7 +310,7 @@ notify_trigger_not_matched(_Trigger, { triggered_by_monitor
                            _Program) ->
     ok;
 notify_trigger_not_matched(_Trigger, {tick, _}, _Program) ->
-    io:format(" *tick* ");
+    ok;
 notify_trigger_not_matched(Trigger, Message, _Program) ->
     io:format("Trigger (~p) not matching (~p) ~n", [Message, Trigger]).
 -else.
