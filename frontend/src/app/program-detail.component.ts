@@ -259,8 +259,8 @@ export class ProgramDetailComponent implements OnInit {
         const newPointer = (id: string) => {
             const cursor = document.createElement('object');
             cursor.type = 'image/svg+xml';
-            cursor.style.position = 'absolute';
-            cursor.style.width = '2.5ex';
+            cursor.style.display = 'none';
+            cursor.style.position = 'fixed';
             cursor.style.height = '2.5ex';
             cursor.style.color
             cursor.style.zIndex = '10';
