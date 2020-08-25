@@ -189,8 +189,9 @@ export class BlockSynchronizer {
                     (a === u)
                         && (b === x)
                         && (c === y)
-                        && (d.x === z.x)
-                        && (d.y === z.y)
+                        && ((!d && !z)
+                            || ((d.x === z.x)
+                                && (d.y === z.y)))
                 )
             ]
         }
