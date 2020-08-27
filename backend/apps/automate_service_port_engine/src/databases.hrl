@@ -9,7 +9,3 @@
 %% Connections to bridges
 -define(CONNECTED_BRIDGES_TABLE, automate_service_port_connected_bridges_table).
 -define(ON_FLIGHT_MESSAGES_TABLE, automate_service_port_bridge_on_flight_messages_table).
-
-
-%%%% In process of removal
-%% -define(SERVICE_PORT_USERID_OBFUSCATION_TABLE, automate_service_port_userid_obfuscation_table).

@@ -24,7 +24,7 @@ digraph g {
     live_channels_table_entry[label="*Channel* | <pk> id | stats"];
 
     // LISTENERS_TABLE | automate_channel_engine_listeners_table
-    listeners_table_entry[label="*Listener*| <f0> channel_id | pid | key | subkey"];
+    listeners_table_entry[label="*Listener*| <f0> channel_id | pid | node | key | subkey"];
     listeners_table_entry -> live_channels_table_entry:pk;
 
     // MONITORS_TABLE | automate_channel_engine_monitors_table
@@ -36,26 +36,39 @@ digraph g {
     label="Storage";
 
     // REGISTERED_USERS_TABLE | automate_registered_users
-    registered_user_entry[label="*Registered user* | <pk> id | username | password | email | status | registration_time | is_admin | is_advanced"];
+    registered_user_entry[label="*Registered user* | <pk> id | username | password | email | status | registration_time | is_admin | is_advanced | is_in_preview"];
 
     // USER_SESSIONS_TABLE | automate_user_sessions
     user_session_entry[label="*User session* | <pk> session_id | <f0> user_id | session_start_time | session_last_used_time"];
     user_session_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
 
     // // USER_MONITORS_TABLE | automate_user_monitors
-    // monitor_entry[label="*Monitor entry* | <pk> id | <f0> user_id | type | name | value"];
-
-    // monitor_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+    monitor_entry[color=red,
+                  label="*Monitor entry* | <pk> id | <f0> user_id | type | name | value"];
+    monitor_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
 
     // USER_PROGRAMS_TABLE | automate_user_programs
-    user_program_entry[label="*Program* | <pk> id | <f0> user_id | program_name | program_type | program_parsed | program_orig | enabled | <f1> program_channel"];
+    user_program_entry[label="*Program* | <pk> id | <f0> user_id | program_name | program_type | program_parsed | program_orig | enabled | <f1> program_channel | creation_time | last_upload_time | last_successful_call_time | last_failed_call_time"];
     user_program_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
     user_program_entry:f1 -> live_channels_table_entry:pk;
 
     // USER_PROGRAMS_LOGS_TABLE | automate_user_program_logs
-    user_program_logs_entry[label="*Log line* | <f0> program_id | <f1> thread_id | <f2> user_id | block_id | event_data | event_message | event_time | severity | exception_dat"];
+    user_program_logs_entry[label="*Log line* | <f0> program_id | <f1> thread_id | <f2> user_id | block_id | event_data | event_message | event_time | severity | exception_data"];
     user_program_logs_entry:f0 -> user_program_entry:pk;
     user_program_logs_entry:f2 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+
+    // USER_GENERATED_LOGS_TABLE | automate_user_generated_logs
+    user_generated_log_entry[label="*User generated log* | <f0> program_id | block_id | severity | event_time | event_message"]
+    user_generated_log_entry:f0 -> user_program_entry:pk;
+
+    // USER_PROGRAM_EVENTS_TABLE | automate_user_program_events
+    user_program_editor_event[label="*User editor event* | <f0> program_id | event | event_tag"]
+    user_program_editor_event:f0 -> user_program_entry:pk;
+
+    // USER_PROGRAM_CHECKPOINTS_TABLE | automate_user_program_checkpoints
+    user_program_checkpoint[label="*Program checkpoint* | <f0> program_id | <f1> user_id | event_time | content"]
+    user_program_checkpoint:f0 -> user_program_entry:pk;
+    user_program_checkpoint:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
 
     // PROGRAM_TAGS_TABLE | automate_program_tags
     program_tags_entry[label="*Program tags* | <f0> program_id | tags"];
@@ -75,12 +88,19 @@ digraph g {
     registered_service_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
 
     // PROGRAM_VARIABLE_TABLE | automate_program_variable_table
-    program_variable_table_entry[label="*Program variable* | <f0> program_id + var_name | value"];
+    program_variable_table_entry[label="*Program variable* | {<f0> program_id | var_name} | value"];
     program_variable_table_entry:f0 -> user_program_entry:pk;  // Not sure if user program or running program
 
     // CUSTOM_SIGNALS_TABLE | automate_custom_signals_table
     custom_signal_entry[label="*Custom signal* | <pk> id | name | <f0> owner"];
     custom_signal_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+
+    // INSTALLATION_CONFIGURATION_TABLE | automate_installation_configuration
+    storage_configuration_entry[label="*Installation configuration* | <pk> id | value"];
+
+    // USER_VERIFICATION_TABLE | automate_user_verification_table
+    user_verification_entry[label="*User verification* | <pk> id | <f0> user_id | verification_type"]
+    user_verification_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
   }
 
   subgraph group_coordination {
@@ -117,26 +137,21 @@ digraph g {
     channel_monitor_table_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
     channel_monitor_table_entry:f1 -> service_port_entry:pk
 
-
-    connection_entry[
+    // USER_TO_BRIDGE_CONNECTION_TABLE | automate_service_port_channel_user_to_bridge_connection_table    // Bridge connection
+    user_to_bridge_connection_entry[
                      label="*Connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | name | creation_time"]
-    connection_entry:f0 -> service_port_entry:pk
-    connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
-    connection_entry:f2 -> live_channels_table_entry:pk
+    user_to_bridge_connection_entry:f0 -> service_port_entry:pk
+    user_to_bridge_connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+    user_to_bridge_connection_entry:f2 -> live_channels_table_entry:pk
     // Connection data might store data from the bridges
 
-    pending_connection_entry[label="*Connection establishment* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | creation_time"]
+    pending_connection_entry[label="*Pending connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | creation_time"]
     pending_connection_entry:f0 -> service_port_entry:pk
     pending_connection_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
     pending_connection_entry:f2 -> live_channels_table_entry:pk
-
-    tutorials[color=red,
-              label="*Tutorials | <pk> id | link | <f0> bridges_required | is_public"]
-    tutorials:f0 -> service_port_entry:pk
-
   }
 
-  subgraph group_core_services {
+  subgraph group_registry_services {
     label="Service registry";
     node[style=filled,fillcolor="#bbffbb"]
 
@@ -149,8 +164,8 @@ digraph g {
     user_service_allowance_entry:f1 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
 
     // SERVICE_CONFIGURATION_TABLE | automate_service_registry_service_configuration_table
-    service_configuration_entry[label="*Service configuration* | <pk> service_id + key | value "];
-    service_configuration_entry:pk -> services_table_entry:pk;
+    service_configuration_entry[label="*Service configuration* | { <f0> service_id | key } | value "];
+    service_configuration_entry:f0 -> services_table_entry:pk;
   }
 
   subgraph group_core_template_engine {
@@ -159,6 +174,7 @@ digraph g {
 
     // TEMPLATE_TABLE | automate_template_engine_templates_table
     template_entry[label="*Template* | <pk> id | name | <f0> owner | content"]
-    template_entry:pk -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+    template_entry:f0 -> registered_user_entry:pk[style=dashed,color="#7f7f7f"];
+
   }
 }
