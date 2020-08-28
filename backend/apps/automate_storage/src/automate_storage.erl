@@ -310,10 +310,10 @@ get_session_userid(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
     Result.
 
 -spec create_monitor(binary(), #monitor_entry{}) -> {ok, binary()} | {error, any()}.
-create_monitor(Username, MonitorDescriptor=#monitor_entry{ id=none, user_id=none }) ->
-    {ok, UserId} = get_userid_from_username(Username),
+create_monitor(Username, MonitorDescriptor=#monitor_entry{ id=none, owner=none }) ->
+    {ok, Owner} = get_userid_from_username(Username),
     MonitorId = generate_id(),
-    Monitor = MonitorDescriptor#monitor_entry{ id=MonitorId, user_id=UserId },
+    Monitor = MonitorDescriptor#monitor_entry{ id=MonitorId, owner=Owner },
     case store_new_monitor(Monitor) of
         ok ->
             { ok, MonitorId };
@@ -466,12 +466,12 @@ create_program(Username, ProgramName) ->
     create_program(Username, ProgramName, ?DEFAULT_PROGRAM_TYPE).
 
 create_program(Username, ProgramName, ProgramType) ->
-    {ok, UserId} = get_userid_from_username(Username),
+    {ok, Owner} = get_userid_from_username(Username),
     ProgramId = generate_id(),
     {ok, ProgramChannel} = automate_channel_engine:create_channel(),
     CurrentTime = erlang:system_time(second),
     UserProgram = #user_program_entry{ id=ProgramId
-                                     , owner={user, UserId}
+                                     , owner=Owner
                                      , program_name=ProgramName
                                      , program_type=ProgramType
                                      , program_parsed=undefined
@@ -1136,7 +1136,7 @@ mark_failed_call_to_bridge(ProgramId, _BridgeId) ->
     end.
 
 
--spec get_userid_from_username(binary()) -> {ok, binary()} | {error, no_user_found}.
+-spec get_userid_from_username(binary()) -> {ok, owner_id()} | {error, no_user_found}.
 get_userid_from_username(undefined) ->
     {ok, undefined};
 
@@ -1162,7 +1162,7 @@ get_userid_from_username(Username) ->
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, [Result] } ->
-            {ok, Result};
+            {ok, {user, Result}};
         { atomic, [] } ->
             {error, no_user_found};
         { aborted, Reason } ->
@@ -1213,17 +1213,19 @@ create_custom_signal(Owner, SignalName) ->
     end.
 
 
--spec list_custom_signals_from_user_id(binary()) -> {ok, [#custom_signal_entry{}]}.
-list_custom_signals_from_user_id(UserId) ->
+-spec list_custom_signals_from_user_id(owner_id()) -> {ok, [#custom_signal_entry{}]}.
+list_custom_signals_from_user_id({OwnerType, OwnerId}) ->
     Transaction = fun() ->
                           %% Find userid with that name
                           MatchHead = #custom_signal_entry{ id='_'
                                                           , name='_'
-                                                          , owner='$1'
+                                                          , owner={'$1', '$2'}
                                                           },
-                          Guard = {'==', '$1', UserId},
+                          Guards = [ {'==', '$1', OwnerType}
+                                   , {'==', '$2', OwnerId}
+                                   ],
                           ResultColumn = '$_',
-                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+                          Matcher = [{MatchHead, Guards, [ResultColumn]}],
 
                           {ok, mnesia:select(?CUSTOM_SIGNALS_TABLE, Matcher)}
                   end,
@@ -1481,7 +1483,7 @@ retrieve_monitors_list_from_username(Username) ->
 
                                   %% Find program with userId and name
                                   MonitorMatchHead = #monitor_entry{ id='$1'
-                                                                   , user_id='$2'
+                                                                   , owner={user, '$2'}
                                                                    , name='_'
                                                                    , type='_'
                                                                    , value='_'
@@ -1535,7 +1537,7 @@ retrieve_program(Username, ProgramName) ->
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
                                                                 },
-                          UserGuard = {'==', '$2', {user, automate_storage_utils:canonicalize(Username)}},
+                          UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
                           UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
 
@@ -1546,7 +1548,7 @@ retrieve_program(Username, ProgramName) ->
 
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                        , owner='$2'
+                                                                        , owner={user, '$2'}
                                                                         , program_name='$3'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
@@ -1559,7 +1561,7 @@ retrieve_program(Username, ProgramName) ->
                                                                         , last_failed_call_time='_'
                                                                         },
                                   ProgramGuard = {'andthen'
-                                                 , {'==', '$2', {user, UserId}}
+                                                 , {'==', '$2', UserId}
                                                  , {'==', '$3', ProgramName}},
                                   ProgramResultColumn = '$1',
                                   ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultColumn]}],
@@ -1607,7 +1609,7 @@ retrieve_program_list_from_username(Username) ->
 
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                        , owner='$2'
+                                                                        , owner={user, '$2'}
                                                                         , program_name='_'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
@@ -1619,7 +1621,7 @@ retrieve_program_list_from_username(Username) ->
                                                                         , last_successful_call_time='_'
                                                                         , last_failed_call_time='_'
                                                                         },
-                                  ProgramGuard = {'==', '$2', {user, UserId}},
+                                  ProgramGuard = {'==', '$2', UserId},
                                   ProgramResultsColumn = '$1',
                                   ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultsColumn]}],
 
@@ -1640,7 +1642,7 @@ retrieve_program_list_from_userid(UserId) ->
     Transaction = fun() ->
                           %% Find program with userId and name
                           ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                , owner='$2'
+                                                                , owner={user, '$2'}
                                                                 , program_name='$3'
                                                                 , program_type='_'
                                                                 , program_parsed='_'
@@ -1652,7 +1654,7 @@ retrieve_program_list_from_userid(UserId) ->
                                                                 , last_successful_call_time='_'
                                                                 , last_failed_call_time='_'
                                                                 },
-                          ProgramGuard = {'==', '$2', {user, UserId}},
+                          ProgramGuard = {'==', '$2', UserId},
                           ProgramResultsColumn = '$1',
                           ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultsColumn]}],
 
@@ -1699,7 +1701,7 @@ store_new_program_content(Username, ProgramName,
 
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                        , owner='$2'
+                                                                        , owner={user, '$2'}
                                                                         , program_name='$3'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
@@ -1712,7 +1714,7 @@ store_new_program_content(Username, ProgramName,
                                                                         , last_failed_call_time='_'
                                                                         },
                                   ProgramGuard = {'andthen'
-                                                 , {'==', '$2', {user, UserId}}
+                                                 , {'==', '$2', UserId}
                                                  , {'==', '$3', ProgramName}},
                                   ProgramResultColumn = '$_',
                                   ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultColumn]}],

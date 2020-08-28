@@ -26,8 +26,9 @@ start_link() ->
     ignore.
 
 %% No monitor associated with this service
-get_monitor_id(UserId, [ServicePortId]) ->
-    ?BACKEND:get_or_create_monitor_id(UserId, ServicePortId).
+-spec get_monitor_id(owner_id(), [binary(), ...]) -> {ok, binary} | {error, _, binary()}.
+get_monitor_id(Owner, [ServicePortId]) ->
+    ?BACKEND:get_or_create_monitor_id(Owner, ServicePortId).
 
 -spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()}.
 call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->

@@ -83,7 +83,7 @@ tests(_SetupResult) ->
 owned_private_blocks_appear() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-test-1-owner">>,
     ServicePortName = <<?TEST_ID_PREFIX, "-test-1-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
 
     Configuration = #{ <<"is_public">> => false
                      , <<"service_name">> => ServicePortName
@@ -94,10 +94,9 @@ owned_private_blocks_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, OwnerUserId),
-    ok = ?BACKEND:establish_connection(ServicePortId, OwnerUserId, ConnectionId, undefined),
+    ok = establish_connection(ServicePortId, {user, OwnerUserId}),
 
-    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
 
     check_test_block(CustomBlock).
 
@@ -106,7 +105,7 @@ non_owned_private_blocks_dont_appear() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-test-2-owner">>,
     RequesterUserId = <<?TEST_ID_PREFIX, "-test-2-requester">>,
     ServicePortName = <<?TEST_ID_PREFIX, "-test-2-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
 
     Configuration = #{ <<"is_public">> => false
                      , <<"service_name">> => ServicePortName
@@ -117,22 +116,22 @@ non_owned_private_blocks_dont_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    case ?BACKEND:gen_pending_connection(ServicePortId, RequesterUserId) of
+    case ?BACKEND:gen_pending_connection(ServicePortId, {user, RequesterUserId}) of
         {ok, ConnectionId} ->
             %% TODO This connection should *not* be possible
-            ?BACKEND:establish_connection(ServicePortId, RequesterUserId, ConnectionId, undefined);
+            ?BACKEND:establish_connection(ServicePortId, {user, RequesterUserId}, ConnectionId, undefined);
         _ ->
             ok
     end,
 
-    {ok, Results} = ?APPLICATION:list_custom_blocks(RequesterUserId),
+    {ok, Results} = ?APPLICATION:list_custom_blocks({user, RequesterUserId}),
     ?assertEqual(#{}, Results).
 
 
 owned_public_blocks_appear() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-test-3-owner">>,
     ServicePortName = <<?TEST_ID_PREFIX, "-test-3-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
 
     Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
@@ -143,10 +142,9 @@ owned_public_blocks_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, OwnerUserId),
-    ok = ?BACKEND:establish_connection(ServicePortId, OwnerUserId, ConnectionId, undefined),
+    ok = establish_connection(ServicePortId, {user, OwnerUserId}),
 
-    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
 
     check_test_block(CustomBlock).
 
@@ -154,7 +152,7 @@ non_owned_public_blocks_appear() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-test-4-owner">>,
     RequesterUserId = <<?TEST_ID_PREFIX, "-test-4-requester">>,
     ServicePortName = <<?TEST_ID_PREFIX, "-test-4-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
 
     Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
@@ -165,17 +163,16 @@ non_owned_public_blocks_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, RequesterUserId),
-    ok = ?BACKEND:establish_connection(ServicePortId, RequesterUserId, ConnectionId, undefined),
+    ok = establish_connection(ServicePortId, {user, RequesterUserId}),
 
-    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(RequesterUserId),
+    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks({user, RequesterUserId}),
 
     check_test_block(CustomBlock).
 
 owned_delete_bridge_blocks() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-test-5-owner">>,
     ServicePortName = <<?TEST_ID_PREFIX, "-test-5-service-port">>,
-    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+    {ok, BridgeId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
 
     Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
@@ -186,32 +183,31 @@ owned_delete_bridge_blocks() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(BridgeId, OwnerUserId),
-    ok = ?BACKEND:establish_connection(BridgeId, OwnerUserId, ConnectionId, undefined),
+    ok = establish_connection(BridgeId, {user, OwnerUserId}),
 
-    {ok, #{ BridgeId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    {ok, #{ BridgeId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
     %% Blocks are created
     check_test_block(CustomBlock),
 
     {ok, ServiceId} = automate_service_port_engine_mnesia_backend:get_service_id_for_port(BridgeId),
-    ?assertMatch({ok, _}, automate_service_registry:get_service_by_id(ServiceId, OwnerUserId)),
+    ?assertMatch({ok, _}, automate_service_registry:get_service_by_id(ServiceId)),
 
-    {ok, ResultsOk} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    {ok, ResultsOk} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
     ?assertMatch({ok, _}, maps:find(ServiceId, ResultsOk)),
-    {ok, BeforeDeleteServices} = automate_service_registry:get_all_services_for_user(OwnerUserId),
+    {ok, BeforeDeleteServices} = automate_service_registry:get_all_services_for_user({user, OwnerUserId}),
 
     %% Delete bridge
-    ok = automate_service_port_engine:delete_bridge(OwnerUserId, BridgeId),
+    ok = automate_service_port_engine:delete_bridge({user, OwnerUserId}, BridgeId),
 
     %% Blocks are destroyed
-    {ok, Results} = ?APPLICATION:list_custom_blocks(OwnerUserId),
+    {ok, Results} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
     ?assertEqual(error, maps:find(ServiceId, Results)),
 
     %% Service deregistred
     ?assertEqual({error, not_found}, automate_service_port_engine_mnesia_backend:get_service_id_for_port(BridgeId)),
-    ?assertEqual({error, not_found}, automate_service_registry:get_service_by_id(ServiceId, OwnerUserId)),
+    ?assertEqual({error, not_found}, automate_service_registry:get_service_by_id(ServiceId)),
 
-    {ok, Services} = automate_service_registry:get_all_services_for_user(OwnerUserId),
+    {ok, Services} = automate_service_registry:get_all_services_for_user({user, OwnerUserId}),
     ?assertEqual(error, maps:find(ServiceId, Services)).
 
 %%====================================================================
@@ -256,7 +252,7 @@ check_test_block(Block) ->
 %%====================================================================
 route_notification_targeted_to_owner() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-1-owner">>,
-    TargetUserId = OwnerUserId,
+    TargetUserId = {user, OwnerUserId},
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-1-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -272,8 +268,7 @@ route_notification_targeted_to_owner() ->
                                                       })),
 
     %% Listen on the service port
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
-                                                                              TargetUserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
     ok = establish_connection(ServicePortId, TargetUserId),
@@ -292,7 +287,7 @@ route_notification_targeted_to_owner() ->
 
 route_notification_targeted_to_owner_on_public() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-2-owner">>,
-    TargetUserId = OwnerUserId,
+    TargetUserId = {user, OwnerUserId},
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-2-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -308,8 +303,7 @@ route_notification_targeted_to_owner_on_public() ->
                                                       })),
 
     %% Listen on the service port
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
-                                                                              TargetUserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
     ok = establish_connection(ServicePortId, TargetUserId),
@@ -327,7 +321,7 @@ route_notification_targeted_to_owner_on_public() ->
 
 route_notification_targeted_to_non_owner_on_public() ->
     OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-3-owner">>,
-    TargetUserId = <<?TEST_ID_PREFIX, "-route-test-3-NONowner-TARGET">>,
+    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-3-NONowner-TARGET">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-3-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -343,8 +337,7 @@ route_notification_targeted_to_non_owner_on_public() ->
                                                       })),
 
     %% Listen on the service port
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
-                                                                              TargetUserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
     ok = establish_connection(ServicePortId, TargetUserId),
@@ -379,14 +372,14 @@ route_notification_targeted_to_all_users_on_public() ->
 
     %% Listen on the service port for non-owner
     {ok, #{ module := NonOwnerModule }} = automate_service_registry:get_service_by_id(
-                                            ServicePortId, TargetUserId),
+                                            ServicePortId),
     {ok, NonOwnerChannelId } = automate_service_registry_query:get_monitor_id(
                                  NonOwnerModule, TargetUserId),
     ok = automate_channel_engine:listen_channel(NonOwnerChannelId),
 
     %% Listen on the service port for owner
     {ok, #{ module := OwnerModule }} = automate_service_registry:get_service_by_id(
-                                         ServicePortId, TargetUserId),
+                                         ServicePortId),
     {ok, OwnerChannelId } = automate_service_registry_query:get_monitor_id(
                               OwnerModule, OwnerUserId),
     ok = automate_channel_engine:listen_channel(OwnerChannelId),
@@ -421,10 +414,9 @@ emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
     ToUserId = case TargetUserId of
                    null -> null;
                    _ ->
-                       {ok, ObfuscatedUserId} =
-                           ?APPLICATION:internal_user_id_to_connection_id(TargetUserId,
-                                                                          ServicePortId),
-                       ObfuscatedUserId
+                       {ok, ConnectionId} = ?APPLICATION:internal_user_id_to_connection_id(TargetUserId,
+                                                                                           ServicePortId),
+                       ConnectionId
                end,
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
                                         jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>

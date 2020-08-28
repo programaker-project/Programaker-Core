@@ -3,10 +3,12 @@
 -endif.
 
 -ifndef(COMMON_TYPES).
--type user_id() :: binary().
--type group_id() :: binary().
 
--type owner_id() :: { user, user_id() } | { group, group_id() }.
+%% Defining user_id() and group_id() led to error before.
+%% Better to just use owner_id().
+-type owner_id() :: { user, binary() } | { group, binary() }.
 
 -define(COMMON_TYPES, defined).
+
+-define(OWNER_ID_MNESIA_SELECTOR, { user, ?MNESIA_SELECTOR } | { group, ?MNESIA_SELECTOR } | { ?MNESIA_SELECTOR, ?MNESIA_SELECTOR }).
 -endif.

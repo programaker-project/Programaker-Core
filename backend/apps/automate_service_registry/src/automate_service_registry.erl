@@ -37,9 +37,9 @@
 get_all_public_services() ->
     ?BACKEND:list_all_public().
 
--spec get_all_services_for_user(binary()) -> {ok, service_info_map()} | {error, term(), string()}.
-get_all_services_for_user(UserId) ->
-    ?BACKEND:get_all_services_for_user(UserId).
+-spec get_all_services_for_user(owner_id()) -> {ok, service_info_map()} | {error, term(), string()}.
+get_all_services_for_user(Owner) ->
+    ?BACKEND:get_all_services_for_user(Owner).
 
 -spec get_service_by_id(binary()) -> {ok, service_entry()} | {error, not_found}.
 get_service_by_id(ServiceId) ->
@@ -67,9 +67,9 @@ register_private(ServiceModule) ->
                            Data),
     {ok, Uuid}.
 
--spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
-allow_user(ServiceId, UserId) ->
-    ?BACKEND:allow_user(ServiceId, UserId).
+-spec allow_user(binary(), owner_id()) -> ok | {error, service_not_found}.
+allow_user(ServiceId, Owner) ->
+    ?BACKEND:allow_user(ServiceId, Owner).
 
 -spec get_config_for_service(binary(), atom()) -> {ok, any()} | {error, not_found}.
 get_config_for_service(ServiceId, Property) ->

@@ -101,12 +101,12 @@ list_all_public() ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec allow_user(binary(), user_id()) -> ok | {error, service_not_found}.
-allow_user(ServiceId, OwnerId) ->
+-spec allow_user(binary(), owner_id()) -> ok | {error, service_not_found}.
+allow_user(ServiceId, Owner) ->
     Transaction = fun() ->
                           ok = mnesia:write(?USER_SERVICE_ALLOWANCE_TABLE,
                                             #user_service_allowance_entry{ service_id=ServiceId
-                                                                         , owner={user, OwnerId}
+                                                                         , owner=Owner
                                                                          },
                                             write)
                   end,
@@ -117,8 +117,8 @@ allow_user(ServiceId, OwnerId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_all_services_for_user(binary()) -> {ok, service_info_map()} | {error, term(), string()}.
-get_all_services_for_user(UserId) ->
+-spec get_all_services_for_user(owner_id()) -> {ok, service_info_map()} | {error, term(), string()}.
+get_all_services_for_user({OwnerType, OwnerId}) ->
     MatchHead = #services_table_entry{ id='_'
                                      , public='$1'
                                      , name='_'
@@ -130,8 +130,10 @@ get_all_services_for_user(UserId) ->
     ResultColumn = '$_',
     PublicMatcher = [{MatchHead, Guards, [ResultColumn]}],
 
-    AllowancesMatcherHead = #user_service_allowance_entry{ service_id='$1', owner='$2' },
-    AllowancesGuards = [{'==', '$2', {user, UserId} }],
+    AllowancesMatcherHead = #user_service_allowance_entry{ service_id='$1', owner={'$2', '$3'} },
+    AllowancesGuards = [ {'==', '$2', OwnerType }
+                       , {'==', '$3', OwnerId }
+                       ],
     AllowancesResultColumn = '$1',
     AllowancesMatcher = [{AllowancesMatcherHead, AllowancesGuards, [AllowancesResultColumn]}],
 

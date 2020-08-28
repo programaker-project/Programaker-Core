@@ -355,8 +355,7 @@ wait_for_monitor_signal() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                    ServicePortId, OwnerUserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                          Module, OwnerUserId),
 
@@ -422,8 +421,7 @@ wait_for_monitor_signal_check_key() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                    ServicePortId, OwnerUserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                          Module, OwnerUserId),
 

@@ -2,7 +2,7 @@
 
 -record(service_port_entry, { id    :: binary() | ?MNESIA_SELECTOR
                             , name  :: binary() | ?MNESIA_SELECTOR
-                            , owner :: binary() | ?MNESIA_SELECTOR %% User id
+                            , owner :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
                             , service_id :: binary() | 'undefined' | ?MNESIA_SELECTOR
 %%% Note: This service ID is unused and to be dropped.
 %%% Check the service_port_configuration record.
@@ -68,7 +68,7 @@
 
 -record(service_port_entry_extra, { id    :: binary()
                                   , name  :: binary()
-                                  , owner :: binary() %% User id
+                                  , owner :: owner_id()
                                   , service_id :: binary() | 'undefined'
                                                 % ↓ Extra data
                                   , is_connected :: boolean()
@@ -77,10 +77,10 @@
 
 
 
--record(service_port_metadata, { id    :: binary() | ?MNESIA_SELECTOR
-                               , name  :: binary() | ?MNESIA_SELECTOR
-                               , owner :: binary() | ?MNESIA_SELECTOR %% User id
-                               , icon :: undefined | supported_icon_type() | ?MNESIA_SELECTOR
+-record(service_port_metadata, { id    :: binary()   | ?MNESIA_SELECTOR
+                               , name  :: binary()   | ?MNESIA_SELECTOR
+                               , owner :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
+                               , icon :: undefined   | supported_icon_type() | ?MNESIA_SELECTOR
                                }).
 
 -record(service_port_monitor_channel_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% user id
@@ -107,7 +107,7 @@
 
 -record(user_to_bridge_connection_entry, { id :: binary() | ?MNESIA_SELECTOR
                                          , bridge_id :: binary() | ?MNESIA_SELECTOR
-                                         , owner :: owner_id() | ?MNESIA_SELECTOR
+                                         , owner :: owner_id()   | ?MNESIA_SELECTOR | ?OWNER_ID_MNESIA_SELECTOR
                                          , channel_id :: binary() | ?MNESIA_SELECTOR
                                          , name :: binary() | undefined | ?MNESIA_SELECTOR
                                          , creation_time :: non_neg_integer() | ?MNESIA_SELECTOR
@@ -115,7 +115,7 @@
 
 -record(user_to_bridge_pending_connection_entry, { id :: binary() | ?MNESIA_SELECTOR
                                                  , bridge_id :: binary() | ?MNESIA_SELECTOR
-                                                 , owner :: owner_id() | ?MNESIA_SELECTOR
+                                                 , owner :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
                                                  , channel_id :: binary() | ?MNESIA_SELECTOR
                                                  , creation_time :: non_neg_integer() | ?MNESIA_SELECTOR
                                                  }).

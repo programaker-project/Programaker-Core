@@ -31,17 +31,19 @@ start_link() ->
     ignore.
 
 -spec list_templates_from_user_id(owner_id()) -> {ok, [map()]}.
-list_templates_from_user_id(Owner) ->
+list_templates_from_user_id({OwnerType, OwnerId}) ->
     Transaction = fun() ->
                           %% Find userid with that name
                           MatchHead = #template_entry{ id='_'
                                                      , name='_'
-                                                     , owner='$1'
+                                                     , owner={'$1', '$2'}
                                                      , content='_'
                                                      },
-                          Guard = {'==', '$1', Owner},
+                          Guards = [ {'==', '$1', OwnerType}
+                                   , {'==', '$2', OwnerId}
+                                   ],
                           ResultColumn = '$_',
-                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+                          Matcher = [{MatchHead, Guards, [ResultColumn]}],
 
                           {ok, mnesia:select(?TEMPLATE_TABLE, Matcher)}
                   end,

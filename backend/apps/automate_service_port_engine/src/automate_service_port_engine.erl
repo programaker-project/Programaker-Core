@@ -41,9 +41,9 @@
 %% API
 %%====================================================================
 
--spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, term(), string()}.
-create_service_port(UserId, ServicePortName) ->
-    ?BACKEND:create_service_port(UserId, ServicePortName).
+-spec create_service_port(owner_id(), binary()) -> {ok, binary()} | {error, term(), string()}.
+create_service_port(Owner, ServicePortName) ->
+    ?BACKEND:create_service_port(Owner, ServicePortName).
 
 -spec register_service_port(binary()) -> ok.
 register_service_port(ServicePortId) ->
@@ -80,18 +80,18 @@ send_oauth_return(Qs, ServicePortId) ->
                                         , <<"value">> => #{ <<"query_string">> => Qs }
                                         }).
 
--spec listen_bridge(binary(), binary()) -> ok | {error, term()}.
-listen_bridge(BridgeId, UserId) ->
-    case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
+-spec listen_bridge(binary(), owner_id()) -> ok | {error, term()}.
+listen_bridge(BridgeId, Owner) ->
+    case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId);
         {error, _X, Description} ->
             {error, Description}
     end.
 
--spec listen_bridge(binary(), binary(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
-listen_bridge(BridgeId, UserId, Selector) ->
-    case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
+-spec listen_bridge(binary(), owner_id(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
+listen_bridge(BridgeId, Owner, Selector) ->
+    case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId, Selector);
         {error, _X, Description} ->
@@ -186,6 +186,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
 
                             {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                                                  Module, ToUserInternalId),
+
                             case automate_channel_engine:send_to_channel(MonitorId,
                                                                          #{ <<"key">> => Key
                                                                           , <<"value">> => Value
@@ -208,18 +209,18 @@ from_service_port(ServicePortId, UserId, Msg) ->
             end
     end.
 
--spec list_custom_blocks(binary()) -> {ok, map()}.
-list_custom_blocks(UserId) ->
-    ?BACKEND:list_custom_blocks(UserId).
+-spec list_custom_blocks(owner_id()) -> {ok, map()}.
+list_custom_blocks(Owner) ->
+    ?BACKEND:list_custom_blocks(Owner).
 
 -spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
 internal_user_id_to_connection_id(Owner, ServicePortId) ->
     ?BACKEND:internal_user_id_to_connection_id(Owner, ServicePortId).
 
 
--spec get_user_service_ports(binary()) -> {ok, [#service_port_entry_extra{}]}.
-get_user_service_ports(UserId) ->
-    {ok, Bridges} = ?BACKEND:get_user_service_ports(UserId),
+-spec get_user_service_ports(owner_id()) -> {ok, [#service_port_entry_extra{}]}.
+get_user_service_ports(Owner) ->
+    {ok, Bridges} = ?BACKEND:get_user_service_ports(Owner),
     {ok, lists:map(fun add_service_port_extra/1, Bridges)}.
 
 -spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
@@ -234,13 +235,17 @@ delete_bridge(UserId, BridgeId) ->
 
 
 -spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map()} | {error, term()}.
-callback_bridge(Owner, BridgeId, Callback) ->
-    {ok, BridgeUserId} = internal_user_id_to_connection_id(Owner, BridgeId),
-    ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
-                                   , <<"user_id">> => BridgeUserId
-                                   , <<"value">> => #{ <<"callback">> => Callback
-                                                     }
-                                   }).
+callback_bridge(Owner, BridgeId, CallbackName) ->
+    case internal_user_id_to_connection_id(Owner, BridgeId) of
+        {ok, BridgeUserId} ->
+            ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
+                                           , <<"user_id">> => BridgeUserId
+                                           , <<"value">> => #{ <<"callback">> => CallbackName
+                                                             }
+                                           });
+        {error, Reason} ->
+            {error, Reason}
+    end.
 
 
 -spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
@@ -265,9 +270,9 @@ get_pending_connection_info(ConnectionId) ->
     ?BACKEND:get_pending_connection_info(ConnectionId).
 
 
--spec is_module_connectable_bridge(binary(), module() | {module(), any()}) ->
+-spec is_module_connectable_bridge(owner_id(), module() | {module(), any()}) ->
           false | {boolean(), {#service_port_entry{}, #service_port_configuration{}}}.
-is_module_connectable_bridge(UserId, {automate_service_port_engine_service, [ BridgeId | _ ]}) ->
+is_module_connectable_bridge(Owner, {automate_service_port_engine_service, [ BridgeId | _ ]}) ->
     %% It *is* a bridge. Only remains to check if a new connection can be established.
     case ?BACKEND:get_all_bridge_info(BridgeId) of
         {error, _Reason} ->
@@ -278,7 +283,7 @@ is_module_connectable_bridge(UserId, {automate_service_port_engine_service, [ Br
                                 #service_port_configuration{ allow_multiple_connections=true } ->
                                     true;
                                 #service_port_configuration{ allow_multiple_connections=false } ->
-                                    {ok, Connected} = ?BACKEND:is_user_connected_to_bridge(UserId, BridgeId),
+                                    {ok, Connected} = ?BACKEND:is_user_connected_to_bridge(Owner, BridgeId),
                                     not Connected
                             end,
             {IsConnectable, {BridgeInfo, BridgeConfiguration}}

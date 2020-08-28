@@ -57,7 +57,7 @@ websocket_init(State=#state{ bridge_id=BridgeId
         false ->
             { reply, { close, ErrorCode }, State };
         true ->
-            case automate_service_port_engine:listen_bridge(BridgeId, UserId, {Key}) of
+            case automate_service_port_engine:listen_bridge(BridgeId, {user, UserId}, {Key}) of
                 ok ->
                     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
                     {ok, State};

@@ -64,6 +64,9 @@ send_to_channel(ChannelId, Message) ->
     end),
 
     case get_unique_listener_pids_on_channel(ChannelId) of
+        {ok, []} ->
+            ok;
+
         {ok, UniquePids} ->
             %% io:format("Forwarding ~p to ~p~n", [Message, Listeners]),
             lists:foreach(fun(Pid) ->

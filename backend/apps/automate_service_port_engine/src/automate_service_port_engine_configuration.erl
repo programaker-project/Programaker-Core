@@ -147,7 +147,7 @@ get_versioning(Nodes) ->
 
                   , #database_version_transformation
                     %% Introduce user groups
-                    { id=3
+                    { id=4
                     , apply=fun() ->
                                     {atomic, ok} = mnesia:transform_table(
                                                      ?SERVICE_PORT_TABLE,
@@ -160,6 +160,19 @@ get_versioning(Nodes) ->
                                                      end,
                                                      [ id, name, owner, service_id ],
                                                      service_port_entry
+                                                    ),
+
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?SERVICE_PORT_CHANNEL_TABLE,
+                                                     fun({ service_port_monitor_channel_entry
+                                                         , {UserId, BridgeId}, ChannelId
+                                                         }) ->
+                                                             { service_port_monitor_channel_entry
+                                                             , {{user, UserId}, BridgeId}, ChannelId
+                                                             }
+                                                     end,
+                                                     [ id, channel_id ],
+                                                     service_port_monitor_channel_entry
                                                     ),
 
                                     {atomic, ok} = mnesia:transform_table(

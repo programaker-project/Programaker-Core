@@ -13,13 +13,11 @@
                         , parameters :: [#parameter{}]
                         }).
 
--define(SELECTOR_VALUES, '_' | '$1' | '$2').
-
--record(services_table_entry, { id :: binary()          | ?SELECTOR_VALUES
-                              , public :: boolean()     | ?SELECTOR_VALUES
-                              , name :: binary()        | ?SELECTOR_VALUES
-                              , description :: binary() | ?SELECTOR_VALUES
-                              , module :: module() | {module(), [_]} | ?SELECTOR_VALUES
+-record(services_table_entry, { id :: binary()          | ?MNESIA_SELECTOR
+                              , public :: boolean()     | ?MNESIA_SELECTOR
+                              , name :: binary()        | ?MNESIA_SELECTOR
+                              , description :: binary() | ?MNESIA_SELECTOR
+                              , module :: module() | {module(), [_]} | ?MNESIA_SELECTOR
                               }).
 
 -type service_entry() :: #{ name := binary()
@@ -28,8 +26,8 @@
                           }.
 -type service_info_map() :: #{ binary() := service_entry() }.
 
--record(user_service_allowance_entry, { service_id :: binary() | ?SELECTOR_VALUES
-                                      , owner :: owner_id()    | ?SELECTOR_VALUES
+-record(user_service_allowance_entry, { service_id :: binary() | ?MNESIA_SELECTOR
+                                      , owner :: owner_id()    | ?OWNER_ID_MNESIA_SELECTOR
                                       }).
 
 -record(services_configuration_entry, { configuration_id :: { binary(), atom() } %% Service id, property

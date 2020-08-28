@@ -62,17 +62,17 @@ digraph g {
     // // USER_MONITORS_TABLE | automate_user_monitors
     monitor_entry[color=red, // Deprecated
                   label="*Monitor entry* [Dep] | <pk> id | <f0> owner | type | name | value"];
-    monitor_entry:f0 -> owner:pk[style=normal,color="#ff00ff"];
+    monitor_entry:f0 -> owner:pk[style=normal,color="#0000ff"];
 
     // USER_PROGRAMS_TABLE | automate_user_programs
     user_program_entry[label="*Program* | <pk> id | <f0> owner | program_name | program_type | program_parsed | program_orig | enabled | <f1> program_channel | creation_time | last_upload_time | last_successful_call_time | last_failed_call_time"];
-    user_program_entry:f0 -> owner:pk[style=normal,color="#ff00ff"];
+    user_program_entry:f0 -> owner:pk[style=normal,color="#0000ff"];
     user_program_entry:f1 -> live_channels_table_entry:pk;
 
     // USER_PROGRAMS_LOGS_TABLE | automate_user_program_logs
     user_program_log_entry[label="*Log line* | <f0> program_id | <f1> thread_id | <f2> owner | block_id | event_data | event_message | event_time | severity | exception_data"];
     user_program_log_entry:f0 -> user_program_entry:pk;
-    user_program_log_entry:f2 -> owner:pk[style=normal,color="#ff00ff"];
+    user_program_log_entry:f2 -> owner:pk[style=normal,color="#0000ff"];
 
     // USER_GENERATED_LOGS_TABLE | automate_user_generated_logs
     user_generated_log_entry[label="*User generated log* | <f0> program_id | block_id | severity | event_time | event_message"]
@@ -106,7 +106,7 @@ digraph g {
 
     // CUSTOM_SIGNALS_TABLE | automate_custom_signals_table
     custom_signal_entry[label="*Custom signal* | <pk> id | name | <f0> owner"];
-    custom_signal_entry:f0 -> owner:pk[style=normal,color="#ff00ff"];
+    custom_signal_entry:f0 -> owner:pk[style=normal,color="#0000ff"];
 
     // INSTALLATION_CONFIGURATION_TABLE | automate_installation_configuration
     storage_configuration_entry[label="*Installation configuration* | <pk> id | value"];
@@ -134,7 +134,7 @@ digraph g {
     // USER_SERVICE_ALLOWANCE_TABLE | automate_service_registry_user_service_allowance_table
     user_service_allowance_entry[label="*Allowed service*| <f0> service_id | <f1> user_id"];
     user_service_allowance_entry:f0 -> services_table_entry:pk;
-    user_service_allowance_entry:f1 -> owner:pk[style=normal,color="#ff00ff"];
+    user_service_allowance_entry:f1 -> owner:pk[style=normal,color="#0000ff"];
 
     // SERVICE_CONFIGURATION_TABLE | automate_service_registry_service_configuration_table
     service_configuration_entry[label="*Service configuration* | { <f0> service_id | key } | value "];
@@ -148,7 +148,7 @@ digraph g {
 
     // SERVICE_PORT_TABLE | automate_service_port_table
     service_port_entry[label="*Bridge* | <pk> id | name | <f0> owner | <f1> service_id"]
-    service_port_entry:f0 -> owner:pk[style=normal,color="#ff00ff"];
+    service_port_entry:f0 -> owner:pk[style=normal,color="#0000ff"];
     service_port_entry:f1 -> services_table_entry:pk;
 
     // SERVICE_PORT_CONFIGURATION_TABLE | automate_service_port_configuration_table
@@ -158,9 +158,10 @@ digraph g {
 
 
     // SERVICE_PORT_CHANNEL_TABLE | automate_service_port_channel_table
-    service_port_monitor_channel_entry[label="*Bridge channel* | <pk> id | <f0> channel_id"]
-    service_port_monitor_channel_entry:pk -> service_port_entry:pk;
-    service_port_monitor_channel_entry:f0 -> live_channels_table_entry:pk;
+    service_port_monitor_channel_entry[label="*Bridge channel* | { <f0> owner | <f1> bridge_id } | <f2> channel_id"]
+    service_port_monitor_channel_entry:f0 -> owner:pk[style=normal,color="#0000ff"];
+    service_port_monitor_channel_entry:f1 -> service_port_entry:pk;
+    service_port_monitor_channel_entry:f2 -> live_channels_table_entry:pk;
 
     // SERVICE_PORT_CHANNEL_MONITORS_TABLE | automate_service_port_channel_monitors_table
     channel_monitor_table_entry[label="*Monitor table* | {<f0> bridge_id} | pid | node"]
@@ -170,14 +171,16 @@ digraph g {
     user_to_bridge_connection_entry[
                      label="*Connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | name | creation_time"]
     user_to_bridge_connection_entry:f0 -> service_port_entry:pk
-    user_to_bridge_connection_entry:f1 -> owner:pk[style=normal,color="#ff00ff"];
+    user_to_bridge_connection_entry:f1 -> owner:pk[style=normal,color="#0000ff"];
     user_to_bridge_connection_entry:f2 -> live_channels_table_entry:pk
     // Connection data might store data from the bridges
 
     pending_connection_entry[label="*Pending connection* | <pk> id | <f0> bridge_id | <f1> owner | <f2> channel_id | creation_time"]
     pending_connection_entry:f0 -> service_port_entry:pk
-    pending_connection_entry:f1 -> owner:pk[style=normal,color="#ff00ff"];
+    pending_connection_entry:f1 -> owner:pk[style=normal,color="#0000ff"];
     pending_connection_entry:f2 -> live_channels_table_entry:pk
+
+
   }
 
   subgraph group_core_template_engine {
@@ -186,7 +189,7 @@ digraph g {
 
     // TEMPLATE_TABLE | automate_template_engine_templates_table
     template_entry[label="*Template* | <pk> id | name | <f0> owner | content"]
-    template_entry:f0 -> owner:pk[style=normal,color="#ff00ff"];
+    template_entry:f0 -> owner:pk[style=normal,color="#0000ff"];
 
   }
 }
