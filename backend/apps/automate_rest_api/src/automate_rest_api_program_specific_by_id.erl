@@ -95,15 +95,17 @@ to_json(Req, State=#state{program_id=ProgramId}) ->
 
 
 program_to_json(#user_program{ id=Id
-                             , user_id=UserId
+                             , owner=Owner=#{ id := OwnerId }
                              , program_name=ProgramName
                              , program_type=ProgramType
                              , program_parsed=ProgramParsed
                              , program_orig=ProgramOrig
                              , enabled=Enabled
                              }) ->
+
     jiffy:encode(#{ <<"id">> => Id
-                  , <<"owner">> => UserId
+                  , <<"owner">> => OwnerId
+                  , <<"owner_data">> => Owner
                   , <<"name">> => ProgramName
                   , <<"type">> => ProgramType
                   , <<"parsed">> => ProgramParsed

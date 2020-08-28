@@ -83,14 +83,14 @@ get_versioning(Nodes) ->
                 %%
                 { id=1
                 , apply=fun() ->
-                                automate_storage_versioning:create_database(
-                                  #database_version_data
-                                  { database_name=?INSTALLATION_CONFIGURATION_TABLE
-                                  , records=[ id
-                                            , value
-                                            ]
-                                  , record_name=storage_configuration_entry
-                                  }, Nodes),
+                                ok = automate_storage_versioning:create_database(
+                                       #database_version_data
+                                       { database_name=?INSTALLATION_CONFIGURATION_TABLE
+                                       , records=[ id
+                                                 , value
+                                                 ]
+                                       , record_name=storage_configuration_entry
+                                       }, Nodes),
 
                                 ok = mnesia:wait_for_tables([ ?INSTALLATION_CONFIGURATION_TABLE ],
                                                             automate_configuration:get_table_wait_time())
@@ -104,17 +104,17 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=2
                 , apply=fun() ->
-                                mnesia:transform_table(
-                                  ?USER_PROGRAMS_TABLE,
-                                  fun({user_program_entry, Id, UserId, ProgramName,
-                                       ProgramType, ProgramParsed, ProgramOrig }) ->
-                                          %% Replicate the entry. Just set enabled to true.
-                                          {user_program_entry, Id, UserId, ProgramName,
-                                           ProgramType, ProgramParsed, ProgramOrig, true }
-                                  end,
-                                  [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled],
-                                  user_program_entry
-                                 )
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_PROGRAMS_TABLE,
+                                                 fun({user_program_entry, Id, UserId, ProgramName,
+                                                      ProgramType, ProgramParsed, ProgramOrig }) ->
+                                                         %% Replicate the entry. Just set enabled to true.
+                                                         {user_program_entry, Id, UserId, ProgramName,
+                                                          ProgramType, ProgramParsed, ProgramOrig, true }
+                                                 end,
+                                                 [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled],
+                                                 user_program_entry
+                                                )
                         end
                 }
 
@@ -124,15 +124,15 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=3
                 , apply=fun() ->
-                                automate_storage_versioning:create_database(
-                                  #database_version_data
-                                  { database_name=?CUSTOM_SIGNALS_TABLE
-                                  , records=[ id
-                                            , name
-                                            , owner
-                                            ]
-                                  , record_name=custom_signal_entry
-                                  }, Nodes),
+                                ok = automate_storage_versioning:create_database(
+                                       #database_version_data
+                                       { database_name=?CUSTOM_SIGNALS_TABLE
+                                       , records=[ id
+                                                 , name
+                                                 , owner
+                                                 ]
+                                       , record_name=custom_signal_entry
+                                       }, Nodes),
 
                                 ok = mnesia:wait_for_tables([ ?CUSTOM_SIGNALS_TABLE ],
                                                             automate_configuration:get_table_wait_time())
@@ -145,16 +145,16 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=4
                 , apply=fun() ->
-                                mnesia:transform_table(
-                                  ?REGISTERED_USERS_TABLE,
-                                  fun({registered_user_entry, Id, Username, Password, Email }) ->
-                                          %% Replicate the entry. Set status to ready.
-                                          {registered_user_entry, Id, Username, Password, Email,
-                                           ready }
-                                  end,
-                                  [ id, username, password, email, status ],
-                                  registered_user_entry
-                                 )
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?REGISTERED_USERS_TABLE,
+                                                 fun({registered_user_entry, Id, Username, Password, Email }) ->
+                                                         %% Replicate the entry. Set status to ready.
+                                                         {registered_user_entry, Id, Username, Password, Email,
+                                                          ready }
+                                                 end,
+                                                 [ id, username, password, email, status ],
+                                                 registered_user_entry
+                                                )
                         end
                 }
 
@@ -162,15 +162,15 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=5
                 , apply=fun() ->
-                                automate_storage_versioning:create_database(
-                                  #database_version_data
-                                  { database_name=?USER_VERIFICATION_TABLE
-                                  , records=[ id
-                                            , user_id
-                                            , verification_type
-                                            ]
-                                  , record_name=user_verification_entry
-                                  }, Nodes),
+                                ok = automate_storage_versioning:create_database(
+                                       #database_version_data
+                                       { database_name=?USER_VERIFICATION_TABLE
+                                       , records=[ id
+                                                 , user_id
+                                                 , verification_type
+                                                 ]
+                                       , record_name=user_verification_entry
+                                       }, Nodes),
 
                                 ok = mnesia:wait_for_tables([ ?USER_VERIFICATION_TABLE ],
                                                             automate_configuration:get_table_wait_time())
@@ -204,16 +204,16 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=7
                 , apply=fun() ->
-                                mnesia:transform_table(
-                                  ?USER_SESSIONS_TABLE,
-                                  fun({user_session_entry, SessionId, UserId, SessionStartTime }) ->
-                                          %% Replicate the entry. Set status to ready.
-                                          {user_session_entry, SessionId, UserId, SessionStartTime,
-                                           0 }
-                                  end,
-                                  [ session_id, user_id, session_start_time, session_last_used_time ],
-                                  user_session_entry
-                                 )
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_SESSIONS_TABLE,
+                                                 fun({user_session_entry, SessionId, UserId, SessionStartTime }) ->
+                                                         %% Replicate the entry. Set status to ready.
+                                                         {user_session_entry, SessionId, UserId, SessionStartTime,
+                                                          0 }
+                                                 end,
+                                                 [ session_id, user_id, session_start_time, session_last_used_time ],
+                                                 user_session_entry
+                                                )
                         end
                 }
 
@@ -221,22 +221,22 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=8
                 , apply=fun() ->
-                                automate_storage_versioning:create_database(
-                                  #database_version_data
-                                  { database_name=?USER_PROGRAM_LOGS_TABLE
-                                  , records=[ program_id
-                                            , thread_id
-                                            , user_id
-                                            , block_id
-                                            , event_data
-                                            , event_message
-                                            , event_time
-                                            , severity
-                                            , exception_data
-                                            ]
-                                  , record_name=user_program_log_entry
-                                  , type=bag
-                                  }, Nodes),
+                                ok = automate_storage_versioning:create_database(
+                                       #database_version_data
+                                       { database_name=?USER_PROGRAM_LOGS_TABLE
+                                       , records=[ program_id
+                                                 , thread_id
+                                                 , user_id
+                                                 , block_id
+                                                 , event_data
+                                                 , event_message
+                                                 , event_time
+                                                 , severity
+                                                 , exception_data
+                                                 ]
+                                       , record_name=user_program_log_entry
+                                       , type=bag
+                                       }, Nodes),
 
                                 ok = mnesia:wait_for_tables([ ?USER_PROGRAM_LOGS_TABLE ],
                                                             automate_configuration:get_table_wait_time())
@@ -250,25 +250,25 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=9
                 , apply=fun() ->
-                                mnesia:transform_table(
-                                  automate_user_programs, %% ?USER_PROGRAMS_TABLE
-                                  fun({user_program_entry, Id, UserId, ProgramName,
-                                       ProgramType, ProgramParsed, ProgramOrig, Enabled }) ->
-                                          %% Replicate the entry. Just create an empty program channel.
+                                {atomic, ok} = mnesia:transform_table(
+                                                 automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                                 fun({user_program_entry, Id, UserId, ProgramName,
+                                                      ProgramType, ProgramParsed, ProgramOrig, Enabled }) ->
+                                                         %% Replicate the entry. Just create an empty program channel.
 
-                                          { user_program_entry, Id, UserId, ProgramName,
-                                            ProgramType, ProgramParsed, ProgramOrig, Enabled,
-                                            undefined }
-                                  end,
-                                  [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled
-                                  , program_channel
-                                  ],
-                                  user_program_entry
-                                 ),
+                                                         { user_program_entry, Id, UserId, ProgramName,
+                                                           ProgramType, ProgramParsed, ProgramOrig, Enabled,
+                                                           undefined }
+                                                 end,
+                                                 [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled
+                                                 , program_channel
+                                                 ],
+                                                 user_program_entry
+                                                ),
 
                                 %% After the table is updated, generate the new channels
                                 %% This apparently cannot be done inside the mnesia:transform_table.
-                                db_map(automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                ok = db_map(automate_user_programs, %% ?USER_PROGRAMS_TABLE
                                        fun({user_program_entry, Id, UserId, ProgramName,
                                             ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel }) ->
                                                NewChannel = case ProgramChannel of
@@ -285,35 +285,35 @@ get_versioning(Nodes) ->
                         end
                 , revert=fun() ->
                                 %% Before the table is updated, remove the old channels
-                                %% This apparently cannot be done inside the mnesia:transform_table.
-                                db_map(automate_user_programs, %% ?USER_PROGRAMS_TABLE
-                                       fun({user_program_entry, Id, UserId, ProgramName,
-                                            ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel }) ->
-                                               case ProgramChannel of
-                                                   undefined ->
-                                                       ok;
-                                                   _ ->
-                                                       %% Replicate the entry. Just create a program channel.
+                                 %% This apparently cannot be done inside the mnesia:transform_table.
+                                 ok = db_map(automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                             fun({user_program_entry, Id, UserId, ProgramName,
+                                                  ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel }) ->
+                                                     case ProgramChannel of
+                                                         undefined ->
+                                                             ok;
+                                                         _ ->
+                                                             %% Replicate the entry. Just create a program channel.
 
-                                                       Result = automate_channel_engine:delete_channel(ProgramChannel),
-                                                       io:fwrite("Deleting channel ~p: ~p~n", [ProgramChannel, Result])
-                                               end,
-                                               { user_program_entry, Id, UserId, ProgramName,
-                                                 ProgramType, ProgramParsed, ProgramOrig, Enabled }
-                                       end),
+                                                             Result = automate_channel_engine:delete_channel(ProgramChannel),
+                                                             io:fwrite("Deleting channel ~p: ~p~n", [ProgramChannel, Result])
+                                                     end,
+                                                     { user_program_entry, Id, UserId, ProgramName,
+                                                       ProgramType, ProgramParsed, ProgramOrig, Enabled }
+                                             end),
 
-                                 mnesia:transform_table(
-                                   automate_user_programs, %% ?USER_PROGRAMS_TABLE
-                                   fun({user_program_entry, Id, UserId, ProgramName
-                                       , ProgramType, ProgramParsed, ProgramOrig, Enabled
-                                       , _ProgramChannel }) ->
-                                           { user_program_entry, Id, UserId, ProgramName,
-                                             ProgramType, ProgramParsed, ProgramOrig, Enabled }
-                                   end,
-                                   [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled
-                                   ],
-                                   user_program_entry
-                                  )
+                                 {atomic, ok} = mnesia:transform_table(
+                                                  automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                                  fun({user_program_entry, Id, UserId, ProgramName
+                                                      , ProgramType, ProgramParsed, ProgramOrig, Enabled
+                                                      , _ProgramChannel }) ->
+                                                          { user_program_entry, Id, UserId, ProgramName,
+                                                            ProgramType, ProgramParsed, ProgramOrig, Enabled }
+                                                  end,
+                                                  [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled
+                                                  ],
+                                                  user_program_entry
+                                                 )
                          end
                 }
 
@@ -327,24 +327,24 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=10
                 , apply=fun() ->
-                                mnesia:transform_table(
-                                  automate_user_programs, %% ?USER_PROGRAMS_TABLE
-                                  fun({user_program_entry, Id, UserId, ProgramName,
-                                       ProgramType, ProgramParsed, ProgramOrig,
-                                       Enabled, ProgramChannel }) ->
-                                          %% Replicate the entry. Fill unknown times with '0'
+                                {atomic, ok} = mnesia:transform_table(
+                                                 automate_user_programs, %% ?USER_PROGRAMS_TABLE
+                                                 fun({user_program_entry, Id, UserId, ProgramName,
+                                                      ProgramType, ProgramParsed, ProgramOrig,
+                                                      Enabled, ProgramChannel }) ->
+                                                         %% Replicate the entry. Fill unknown times with '0'
 
-                                          { user_program_entry, Id, UserId, ProgramName
-                                          , ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel
-                                          , 0, 0, 0, 0
-                                          }
+                                                         { user_program_entry, Id, UserId, ProgramName
+                                                         , ProgramType, ProgramParsed, ProgramOrig, Enabled, ProgramChannel
+                                                         , 0, 0, 0, 0
+                                                         }
 
-                                  end,
-                                  [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled, program_channel
-                                  , creation_time, last_upload_time, last_successful_call_time, last_failed_call_time
-                                  ],
-                                  user_program_entry
-                                 )
+                                                 end,
+                                                 [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled, program_channel
+                                                 , creation_time, last_upload_time, last_successful_call_time, last_failed_call_time
+                                                 ],
+                                                 user_program_entry
+                                                )
                         end
                 }
 
@@ -354,19 +354,19 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=11
                 , apply=fun() ->
-                                mnesia:transform_table(
-                                  ?REGISTERED_USERS_TABLE,
-                                  fun({registered_user_entry, Id, Username, Password, Email, Status, RegistrationTime }) ->
-                                          %% Replicate the entry. Set status to ready.
-                                          { registered_user_entry, Id, Username, Password, Email, Status, RegistrationTime
-                                          , false, false, false
-                                          }
-                                  end,
-                                  [ id, username, password, email, status, registration_time
-                                  , is_admin, is_advanced, is_in_preview
-                                  ],
-                                  registered_user_entry
-                                 )
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?REGISTERED_USERS_TABLE,
+                                                 fun({registered_user_entry, Id, Username, Password, Email, Status, RegistrationTime }) ->
+                                                         %% Replicate the entry. Set status to ready.
+                                                         { registered_user_entry, Id, Username, Password, Email, Status, RegistrationTime
+                                                         , false, false, false
+                                                         }
+                                                 end,
+                                                 [ id, username, password, email, status, registration_time
+                                                 , is_admin, is_advanced, is_in_preview
+                                                 ],
+                                                 registered_user_entry
+                                                )
                         end
                 }
 
@@ -402,7 +402,7 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=13
                 , apply=fun() ->
-                                automate_storage_versioning:create_database(
+                                ok = automate_storage_versioning:create_database(
                                   #database_version_data
                                   { database_name=?USER_GENERATED_LOGS_TABLE
                                   , records=[ program_id
@@ -424,16 +424,16 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=14
                 , apply=fun() ->
-                                automate_storage_versioning:create_database(
-                                  #database_version_data
-                                  { database_name=?USER_PROGRAM_EVENTS_TABLE
-                                  , records=[ program_id
-                                            , event
-                                            , event_tag
-                                            ]
-                                  , record_name=user_program_editor_event
-                                  , type=bag
-                                  }, Nodes),
+                                ok = automate_storage_versioning:create_database(
+                                       #database_version_data
+                                       { database_name=?USER_PROGRAM_EVENTS_TABLE
+                                       , records=[ program_id
+                                                 , event
+                                                 , event_tag
+                                                 ]
+                                       , record_name=user_program_editor_event
+                                       , type=bag
+                                       }, Nodes),
 
                                 ok = mnesia:wait_for_tables([ ?USER_PROGRAM_EVENTS_TABLE ],
                                                             automate_configuration:get_table_wait_time())
@@ -444,19 +444,106 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=15
                 , apply=fun() ->
-                                automate_storage_versioning:create_database(
-                                  #database_version_data
-                                  { database_name=?USER_PROGRAM_CHECKPOINTS_TABLE
-                                  , records=[ program_id
-                                            , user_id
-                                            , event_time
-                                            , content
-                                            ]
-                                  , record_name=user_program_checkpoint
-                                  , type=bag
-                                  }, Nodes),
+                                ok = automate_storage_versioning:create_database(
+                                       #database_version_data
+                                       { database_name=?USER_PROGRAM_CHECKPOINTS_TABLE
+                                       , records=[ program_id
+                                                 , user_id
+                                                 , event_time
+                                                 , content
+                                                 ]
+                                       , record_name=user_program_checkpoint
+                                       , type=bag
+                                       }, Nodes),
 
                                 ok = mnesia:wait_for_tables([ ?USER_PROGRAM_CHECKPOINTS_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
+                        end
+                }
+
+                %% Introduce user groups
+              , #database_version_transformation
+                { id=16
+                , apply=fun() ->
+                                ok = automate_storage_versioning:create_database(
+                                       #database_version_data
+                                       { database_name=?USER_GROUPS_TABLE
+                                       , records=[ id
+                                                 , name
+                                                 ]
+                                       , record_name=user_group_checkpoint
+                                       , type=set
+                                       }, Nodes),
+
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_PROGRAM_LOGS_TABLE,
+                                                 fun({ user_program_log_entry
+                                                     , ProgramId, ThreadId, UserId, BlockId, EventData, EventMessage
+                                                     , EventTime, Severity, ExceptionData
+                                                     }) ->
+                                                         { user_program_log_entry
+                                                         , ProgramId, ThreadId, {user, UserId}, BlockId, EventData, EventMessage
+                                                         , EventTime, Severity, ExceptionData
+                                                         }
+                                                 end,
+                                                 [ program_id, thread_id, owner, block_id, event_data
+                                                 , event_message, event_time, severity, exception_data
+                                                 ],
+                                                 user_program_logs_entry
+                                                ),
+
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_PROGRAMS_TABLE,
+                                                 fun({ user_program_entry
+                                                     , Id, UserId, ProgramName, ProgramType
+                                                     , ProgramParsed, ProgramOrig, Enabled, ProgramChannel
+                                                     , CreationTime, LastUploadTime, LastSuccessfulCalltime
+                                                     , LastFailedCallTime
+                                                     }) ->
+                                                         { user_program_entry
+                                                         , Id, {user, UserId}, ProgramName, ProgramType
+                                                         , ProgramParsed, ProgramOrig, Enabled, ProgramChannel
+                                                         , CreationTime, LastUploadTime, LastSuccessfulCalltime
+                                                         , LastFailedCallTime
+                                                         }
+                                                 end,
+                                                 [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled, program_channel
+                                                 , creation_time, last_upload_time, last_successful_call_time, last_failed_call_time
+                                                 ],
+                                                 user_program_entry
+                                                ),
+
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?CUSTOM_SIGNALS_TABLE,
+                                                 fun({ custom_signal_entry
+                                                     , Id, Name, Owner
+                                                     }) ->
+                                                         { custom_signal_entry
+                                                         , Id, Name, {user, Owner}
+                                                         }
+                                                 end,
+                                                 [ id, name, owner
+                                                 ],
+                                                 custom_signal_entry
+                                                ),
+
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_MONITORS_TABLE,
+                                                 fun({ monitor_entry
+                                                     , Id, UserId, Type, Name, Value
+                                                     }) ->
+                                                         { monitor_entry
+                                                         , Id, {user, UserId}, Type, Name, Value
+                                                         }
+                                                 end,
+                                                 [ id, owner, type, name, value
+                                                 ],
+                                                 monitor_entry
+                                                ),
+
+                                ok = mnesia:wait_for_tables([ ?USER_GROUPS_TABLE, ?USER_PROGRAM_LOGS_TABLE
+                                                            , ?USER_PROGRAMS_TABLE, ?CUSTOM_SIGNALS_TABLE, ?USER_MONITORS_TABLE
+                                                            ],
                                                             automate_configuration:get_table_wait_time())
                         end
                 }

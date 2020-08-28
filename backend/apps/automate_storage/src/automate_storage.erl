@@ -471,7 +471,7 @@ create_program(Username, ProgramName, ProgramType) ->
     {ok, ProgramChannel} = automate_channel_engine:create_channel(),
     CurrentTime = erlang:system_time(second),
     UserProgram = #user_program_entry{ id=ProgramId
-                                     , user_id=UserId
+                                     , owner={user, UserId}
                                      , program_name=ProgramName
                                      , program_type=ProgramType
                                      , program_parsed=undefined
@@ -520,7 +520,7 @@ list_programs_from_userid(Userid) ->
     end.
 
 -spec update_program_status(binary(), binary(), boolean()) -> 'ok' | { 'error', any() }.
-update_program_status(Username, ProgramId, Status)->
+update_program_status(_Username, ProgramId, Status)->
     Transaction = fun() ->
                           case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
                               [Program] ->
@@ -530,7 +530,7 @@ update_program_status(Username, ProgramId, Status)->
                           end
                   end,
     case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
+        { atomic, ok } ->
             ok;
         { aborted, Reason } ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
@@ -538,10 +538,10 @@ update_program_status(Username, ProgramId, Status)->
     end.
 
 -spec is_user_allowed(binary(), binary(), read_program|edit_program|delete_program) -> {ok, boolean()} | {error, any()}.
-is_user_allowed(UId, ProgramId, Action) ->
+is_user_allowed(UId, ProgramId, _Action) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
-                              [#user_program_entry{user_id=OwnerId}] ->
+                              [#user_program_entry{owner={user, OwnerId}}] ->
                                   {ok, UId == OwnerId};
                               [] ->
                                   {error, not_found}
@@ -712,7 +712,7 @@ get_program_pid(ProgramId) ->
     end.
 
 
--spec get_user_from_pid(pid()) -> { ok, binary() } | {error, not_found}.
+-spec get_user_from_pid(pid()) -> { ok, owner_id() } | {error, not_found}.
 get_user_from_pid(Pid) ->
     %% Look for it as a program (not running thread)
     ProgMatchHead = #running_program_entry{ program_id = '$1'
@@ -740,13 +740,13 @@ get_user_from_pid(Pid) ->
     Transaction = fun() ->
                           case mnesia:select(?RUNNING_PROGRAMS_TABLE, ProgMatcher) of
                               [ProgramId] ->
-                                  [#user_program_entry{ user_id=UserId }] = mnesia:read(?USER_PROGRAMS_TABLE, ProgramId),
-                                  { ok, UserId};
+                                  [#user_program_entry{ owner=Owner }] = mnesia:read(?USER_PROGRAMS_TABLE, ProgramId),
+                                  { ok, Owner };
                               [] ->
                                   case mnesia:select(?RUNNING_THREADS_TABLE, ThreadMatcher) of
                                       [ ParentProgramId ] ->
-                                          [#user_program_entry{ user_id=UserId }] = mnesia:read(?USER_PROGRAMS_TABLE, ParentProgramId),
-                                          { ok, UserId};
+                                          [#user_program_entry{ owner=Owner }] = mnesia:read(?USER_PROGRAMS_TABLE, ParentProgramId),
+                                          { ok, Owner };
                                       [] ->
                                           {error, not_found}
                                   end
@@ -759,11 +759,11 @@ get_user_from_pid(Pid) ->
             {error, Reason}
     end.
 
--spec get_program_owner(binary()) -> {'ok', binary() | undefined} | {error, not_found}.
+-spec get_program_owner(binary()) -> {'ok', owner_id() | undefined} | {error, not_found}.
 get_program_owner(ProgramId) ->
     case get_program_from_id(ProgramId) of
-        {ok, #user_program_entry{user_id=UserId}} ->
-            {ok, UserId};
+        {ok, #user_program_entry{owner=Owner}} ->
+            {ok, Owner};
         {error, Reason} ->
             {error, Reason}
     end.
@@ -1193,12 +1193,12 @@ update_user_settings(UserId, Settings, Permissions) ->
 
 
 %% Custom signals
--spec create_custom_signal(binary(), binary()) -> {ok, binary()}.
-create_custom_signal(UserId, SignalName) ->
+-spec create_custom_signal(owner_id(), binary()) -> {ok, binary()}.
+create_custom_signal(Owner, SignalName) ->
     {ok, Id} = automate_channel_engine:create_channel(),
     Entry = #custom_signal_entry{ id=Id
                                 , name=SignalName
-                                , owner=UserId
+                                , owner=Owner
                                 },
 
     Transaction = fun() ->
@@ -1535,7 +1535,7 @@ retrieve_program(Username, ProgramName) ->
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
                                                                 },
-                          UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
+                          UserGuard = {'==', '$2', {user, automate_storage_utils:canonicalize(Username)}},
                           UserResultColumn = '$1',
                           UserMatcher = [{UserMatchHead, [UserGuard], [UserResultColumn]}],
 
@@ -1546,7 +1546,7 @@ retrieve_program(Username, ProgramName) ->
 
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                        , user_id='$2'
+                                                                        , owner='$2'
                                                                         , program_name='$3'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
@@ -1559,7 +1559,7 @@ retrieve_program(Username, ProgramName) ->
                                                                         , last_failed_call_time='_'
                                                                         },
                                   ProgramGuard = {'andthen'
-                                                 , {'==', '$2', UserId}
+                                                 , {'==', '$2', {user, UserId}}
                                                  , {'==', '$3', ProgramName}},
                                   ProgramResultColumn = '$1',
                                   ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultColumn]}],
@@ -1607,7 +1607,7 @@ retrieve_program_list_from_username(Username) ->
 
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                        , user_id='$2'
+                                                                        , owner='$2'
                                                                         , program_name='_'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
@@ -1619,7 +1619,7 @@ retrieve_program_list_from_username(Username) ->
                                                                         , last_successful_call_time='_'
                                                                         , last_failed_call_time='_'
                                                                         },
-                                  ProgramGuard = {'==', '$2', UserId},
+                                  ProgramGuard = {'==', '$2', {user, UserId}},
                                   ProgramResultsColumn = '$1',
                                   ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultsColumn]}],
 
@@ -1640,7 +1640,7 @@ retrieve_program_list_from_userid(UserId) ->
     Transaction = fun() ->
                           %% Find program with userId and name
                           ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                , user_id='$2'
+                                                                , owner='$2'
                                                                 , program_name='$3'
                                                                 , program_type='_'
                                                                 , program_parsed='_'
@@ -1652,7 +1652,7 @@ retrieve_program_list_from_userid(UserId) ->
                                                                 , last_successful_call_time='_'
                                                                 , last_failed_call_time='_'
                                                                 },
-                          ProgramGuard = {'==', '$2', UserId},
+                          ProgramGuard = {'==', '$2', {user, UserId}},
                           ProgramResultsColumn = '$1',
                           ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultsColumn]}],
 
@@ -1699,7 +1699,7 @@ store_new_program_content(Username, ProgramName,
 
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                        , user_id='$2'
+                                                                        , owner='$2'
                                                                         , program_name='$3'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
@@ -1712,7 +1712,7 @@ store_new_program_content(Username, ProgramName,
                                                                         , last_failed_call_time='_'
                                                                         },
                                   ProgramGuard = {'andthen'
-                                                 , {'==', '$2', UserId}
+                                                 , {'==', '$2', {user, UserId}}
                                                  , {'==', '$3', ProgramName}},
                                   ProgramResultColumn = '$_',
                                   ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultColumn]}],
@@ -1723,7 +1723,7 @@ store_new_program_content(Username, ProgramName,
 
                                       [Program] ->
                                           ok = mnesia:write(?USER_PROGRAMS_TABLE,
-                                                            Program#user_program_entry{ user_id=UserId
+                                                            Program#user_program_entry{ owner={user, UserId}
                                                                                       , program_name=ProgramName
                                                                                       , program_type=ProgramType
                                                                                       , program_parsed=ProgramParsed

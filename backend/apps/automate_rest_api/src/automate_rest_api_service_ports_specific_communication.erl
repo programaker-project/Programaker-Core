@@ -8,9 +8,11 @@
 -export([websocket_handle/2]).
 -export([websocket_info/2]).
 
+-include("../../automate_common_types/src/types.hrl").
+
 -record(state, { user_id         :: binary()
                , service_port_id :: binary()
-               , user_channels   :: #{ binary() := any() }
+               , user_channels   :: #{ owner_id() := any() }
                }).
 
 init(Req, _Opts) ->
@@ -66,13 +68,13 @@ websocket_info({ automate_service_port_engine, new_channel, {_ServicePortId, Cha
 
 websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, State=#state{service_port_id=ServicePortId}) ->
     case automate_bot_engine:get_user_from_pid(Pid) of
-        {ok, UserId} ->
+        {ok, Owner} ->
             %% TODO: In this instance is probably OK to use a single connection
             %%       as the focus are the values, not the keys of SIGNAL_LISTENERS.
             %% But it can be disambiguated by passing more "properties" on the 'add_listener' message.
-            case automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId) of
+            case automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId) of
                 {ok, ConnectionId} ->
-                    {UserChannels, NewState} = add_to_user_channels(UserId, {Key, SubKey}, State),
+                    {UserChannels, NewState} = add_to_user_channels(Owner, {Key, SubKey}, State),
                     Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_NOTIFICATION">>
                                                , <<"value">> =>
                                                      #{ <<"SIGNAL_LISTENERS">> =>
@@ -113,12 +115,12 @@ fmt_channel_data({ Key, SubKey }) ->
      , <<"subkey">> => SubKey
      }.
 
-add_to_user_channels(UserId, ChannelData, State=#state{user_channels=UserChannels}) ->
+add_to_user_channels(Owner, ChannelData, State=#state{user_channels=UserChannels}) ->
     case UserChannels of
-        #{ UserId := UserData } ->
+        #{ Owner := UserData } ->
             NewUserData = merge_user_data(UserData, ChannelData),
-            { NewUserData, State#state{ user_channels=UserChannels#{ UserId => NewUserData } } };
+            { NewUserData, State#state{ user_channels=UserChannels#{ Owner => NewUserData } } };
         _ ->
             NewUserData = create_user_data(ChannelData),
-            { NewUserData, State#state{ user_channels=UserChannels#{ UserId => NewUserData } } }
+            { NewUserData, State#state{ user_channels=UserChannels#{ Owner => NewUserData } } }
     end.

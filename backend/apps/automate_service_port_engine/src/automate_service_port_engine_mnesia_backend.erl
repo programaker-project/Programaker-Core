@@ -98,7 +98,7 @@ gen_pending_connection(BridgeId, UserId) ->
                           {ok, ChannelId} = automate_channel_engine:create_channel(),
                           Entry = #user_to_bridge_pending_connection_entry{ id=ConnectionId
                                                                           , bridge_id=BridgeId
-                                                                          , user_id=UserId
+                                                                          , owner={user, UserId}
                                                                           , channel_id=ChannelId
                                                                           , creation_time=CurrentTime
                                                                           },
@@ -121,14 +121,14 @@ establish_connection(BridgeId, UserId, ConnectionId, Name) ->
                               [] ->
                                   {error, not_found};
                               [ #user_to_bridge_pending_connection_entry{ bridge_id=BridgeId
-                                                                        , user_id=UserId
+                                                                        , owner={user, UserId}
                                                                         , channel_id=ChannelId
                                                                         } ] ->
                                   ok = mnesia:delete(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId, write),
 
                                   Entry = #user_to_bridge_connection_entry{ id=ConnectionId
                                                                           , bridge_id=BridgeId
-                                                                          , user_id=UserId
+                                                                          , owner={user, UserId}
                                                                           , channel_id=ChannelId
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
@@ -156,14 +156,14 @@ establish_connection(BridgeId, ConnectionId, Name) ->
                               [] ->
                                   {error, not_found};
                               [ #user_to_bridge_pending_connection_entry{ bridge_id=BridgeId
-                                                                        , user_id=UserId
+                                                                        , owner={user, UserId}
                                                                         , channel_id=ChannelId
                                                                         } ] ->
                                   ok = mnesia:delete(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId, write),
 
                                   Entry = #user_to_bridge_connection_entry{ id=ConnectionId
                                                                           , bridge_id=BridgeId
-                                                                          , user_id=UserId
+                                                                          , owner={user, UserId}
                                                                           , channel_id=ChannelId
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
@@ -365,9 +365,9 @@ list_custom_blocks(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
-internal_user_id_to_connection_id(UserId, ServicePortId) ->
-    case get_all_connections(UserId, ServicePortId) of
+-spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
+internal_user_id_to_connection_id(Owner, ServicePortId) ->
+    case get_all_connections(Owner, ServicePortId) of
         {ok, []} ->
             {error, not_found};
         {ok, [H | _]} ->
@@ -379,13 +379,13 @@ internal_user_id_to_connection_id(UserId, ServicePortId) ->
 get_all_connections(UserId, BridgeId) ->
     MatchHead = #user_to_bridge_connection_entry{ id='$1'
                                                 , bridge_id='$2'
-                                                , user_id='$3'
+                                                , owner='$3'
                                                 , channel_id='_'
                                                 , name='_'
                                                 , creation_time='_'
                                                 },
     Guards = [ { '==', '$2', BridgeId }
-             , { '==', '$3', UserId }
+             , { '==', '$3', {user, UserId} }
              ],
     ResultColum = '$1',
     Matcher = [{MatchHead, Guards, [ResultColum]}],
@@ -411,12 +411,12 @@ is_user_connected_to_bridge(UserId, BridgeId) ->
             {error, Reason}
     end.
 
--spec connection_id_to_internal_user_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec connection_id_to_internal_user_id(binary(), binary()) -> {ok, owner_id()} | {error, not_found}.
 connection_id_to_internal_user_id(ConnectionId, ServicePortId) ->
     Transaction = fun() ->
                           MatchHead = #user_to_bridge_connection_entry{ id='$1'
                                                                       , bridge_id='$2'
-                                                                      , user_id='$3'
+                                                                      , owner='$3'
                                                                       , channel_id='_'
                                                                       , name='_'
                                                                       , creation_time='_'
@@ -491,12 +491,12 @@ list_bridge_channels(ServicePortId) ->
 list_established_connections(UserId) ->
     MatchHead = #user_to_bridge_connection_entry{ id='_'
                                                 , bridge_id='_'
-                                                , user_id='$1'
+                                                , owner='$1'
                                                 , channel_id='_'
                                                 , name='_'
                                                 , creation_time='_'
                                                 },
-    Guards = [ { '==', '$1', UserId } ],
+    Guards = [ { '==', '$1', {user, UserId} } ],
     ResultColum = '$_',
     Matcher = [{MatchHead, Guards, [ResultColum]}],
 

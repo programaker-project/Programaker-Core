@@ -37,7 +37,7 @@ change_program_status(Username, ProgramId, Status) ->
             { error, Reason }
     end.
 
--spec get_user_from_pid(pid()) -> { ok, binary() } | {error, not_found}.
+-spec get_user_from_pid(pid()) -> { ok, owner_id() } | {error, not_found}.
 get_user_from_pid(Pid) ->
     automate_storage:get_user_from_pid(Pid).
 

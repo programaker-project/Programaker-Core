@@ -29,11 +29,10 @@ start_link() ->
 get_monitor_id(UserId, [ServicePortId]) ->
     ?BACKEND:get_or_create_monitor_id(UserId, ServicePortId).
 
--spec call(binary(), any(), #program_thread{}, binary(), _) -> {ok, #program_thread{}, any()}.
-call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, UserId, [ServicePortId]) ->
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
-                                                                              UserId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
+-spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()}.
+call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
+    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, Owner),
     LastMonitorValue = case automate_bot_engine_variables:get_last_monitor_value(
                               Thread, MonitorId) of
                            {ok, Value} -> Value;
@@ -44,7 +43,7 @@ call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, UserId,
                        { ok, #{ bridge_connection := #{ ServicePortId := ContextConnectionId } } } ->
                            ContextConnectionId;
                        _ ->
-                           {ok, DefaultConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId),
+                           {ok, DefaultConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId),
                            DefaultConnectionId
                    end,
 

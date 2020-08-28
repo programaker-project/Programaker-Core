@@ -10,7 +10,7 @@
         , list_all_public/0
         , get_all_services_for_user/1
         , allow_user/2
-        , get_service_by_id/2
+        , get_service_by_id/1
         , update_service_module/2
 
         , get_config_for_service/2
@@ -101,12 +101,12 @@ list_all_public() ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
-allow_user(ServiceId, UserId) ->
+-spec allow_user(binary(), user_id()) -> ok | {error, service_not_found}.
+allow_user(ServiceId, OwnerId) ->
     Transaction = fun() ->
                           ok = mnesia:write(?USER_SERVICE_ALLOWANCE_TABLE,
                                             #user_service_allowance_entry{ service_id=ServiceId
-                                                                         , user_id=UserId
+                                                                         , owner={user, OwnerId}
                                                                          },
                                             write)
                   end,
@@ -130,8 +130,8 @@ get_all_services_for_user(UserId) ->
     ResultColumn = '$_',
     PublicMatcher = [{MatchHead, Guards, [ResultColumn]}],
 
-    AllowancesMatcherHead = #user_service_allowance_entry{ service_id='$1', user_id='$2' },
-    AllowancesGuards = [{'==', '$2', UserId }],
+    AllowancesMatcherHead = #user_service_allowance_entry{ service_id='$1', owner='$2' },
+    AllowancesGuards = [{'==', '$2', {user, UserId} }],
     AllowancesResultColumn = '$1',
     AllowancesMatcher = [{AllowancesMatcherHead, AllowancesGuards, [AllowancesResultColumn]}],
 
@@ -156,8 +156,8 @@ get_all_services_for_user(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_service_by_id(binary(), binary()) -> {ok, service_entry()} | {error, not_found}.
-get_service_by_id(ServiceId, _UserId) ->
+-spec get_service_by_id(binary()) -> {ok, service_entry()} | {error, not_found}.
+get_service_by_id(ServiceId) ->
     Transaction = fun() ->
                           %% TODO: Check user permissions
                           case mnesia:read(?SERVICE_REGISTRY_TABLE, ServiceId) of

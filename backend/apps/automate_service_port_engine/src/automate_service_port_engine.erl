@@ -182,8 +182,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
                 _ ->
                     case ?BACKEND:connection_id_to_internal_user_id(ToUser, ServicePortId) of
                         {ok, ToUserInternalId} ->
-                            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                                            ServicePortId, ToUserInternalId),
+                            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
 
                             {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                                                  Module, ToUserInternalId),
@@ -213,9 +212,9 @@ from_service_port(ServicePortId, UserId, Msg) ->
 list_custom_blocks(UserId) ->
     ?BACKEND:list_custom_blocks(UserId).
 
--spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
-internal_user_id_to_connection_id(UserId, ServicePortId) ->
-    ?BACKEND:internal_user_id_to_connection_id(UserId, ServicePortId).
+-spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
+internal_user_id_to_connection_id(Owner, ServicePortId) ->
+    ?BACKEND:internal_user_id_to_connection_id(Owner, ServicePortId).
 
 
 -spec get_user_service_ports(binary()) -> {ok, [#service_port_entry_extra{}]}.
@@ -234,9 +233,9 @@ delete_bridge(UserId, BridgeId) ->
     ?BACKEND:delete_bridge(UserId, BridgeId).
 
 
--spec callback_bridge(binary(), binary(), binary()) -> {ok, map()} | {error, term()}.
-callback_bridge(UserId, BridgeId, Callback) ->
-    {ok, BridgeUserId} = internal_user_id_to_connection_id(UserId, BridgeId),
+-spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map()} | {error, term()}.
+callback_bridge(Owner, BridgeId, Callback) ->
+    {ok, BridgeUserId} = internal_user_id_to_connection_id(Owner, BridgeId),
     ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
                                    , <<"user_id">> => BridgeUserId
                                    , <<"value">> => #{ <<"callback">> => Callback

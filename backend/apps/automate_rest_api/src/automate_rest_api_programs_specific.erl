@@ -72,11 +72,11 @@ content_types_provided(Req, State) ->
      Req, State}.
 
 -spec to_json(cowboy_req:req(), #get_program_seq{})
-             -> {binary(),cowboy_req:req(), #get_program_seq{}}.
+             -> { stop | binary() ,cowboy_req:req(), #get_program_seq{}}.
 to_json(Req, State) ->
     #get_program_seq{username=Username, program_name=ProgramName} = State,
     case automate_rest_api_backend:get_program(Username, ProgramName) of
-        { ok, Program=#user_program{ id=ProgramId, user_id=UserId } } ->
+        { ok, Program=#user_program{ id=ProgramId } } ->
 
             Checkpoint = case automate_storage:get_last_checkpoint_content(ProgramId) of
                              {ok, Content } ->
@@ -89,12 +89,17 @@ to_json(Req, State) ->
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            { Output, Res2, State }
+            { Output, Res2, State };
+        {error, Reason} ->
+            Code = 500,
+            Output = jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }),
+            Res = cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req),
+            { stop, Res, State }
     end.
 
 
 program_to_json(#user_program{ id=Id
-                             , user_id=UserId
+                             , owner=Owner=#{ id := OwnerId}
                              , program_name=ProgramName
                              , program_type=ProgramType
                              , program_parsed=ProgramParsed
@@ -102,8 +107,10 @@ program_to_json(#user_program{ id=Id
                              , enabled=Enabled
                              },
                 Checkpoint) ->
+
     jiffy:encode(#{ <<"id">> => Id
-                  , <<"owner">> => UserId
+                  , <<"owner">> => OwnerId
+                  , <<"owner_data">> => Owner
                   , <<"name">> => ProgramName
                   , <<"type">> => ProgramType
                   , <<"parsed">> => ProgramParsed

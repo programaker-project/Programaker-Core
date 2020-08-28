@@ -14,13 +14,13 @@
         , username
         }).
 
--record(user_program, { id
-                      , user_id
-                      , program_name
-                      , program_type
-                      , program_parsed
-                      , program_orig
-                      , enabled
+-record(user_program, { id :: binary()
+                      , owner :: #{ type => (user | group), id => binary() }
+                      , program_name :: binary()
+                      , program_type :: binary() | atom()
+                      , program_parsed :: any()
+                      , program_orig :: any()
+                      , enabled :: boolean()
                       }).
 
 -record(program_metadata, { id

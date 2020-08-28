@@ -33,15 +33,16 @@ get_how_to_enable({Module, Params}, UserInfo) ->
 get_how_to_enable(Module, UserInfo) ->
     Module:get_how_to_enable(UserInfo).
 
--spec call(module() | {module(), any()}, binary(), any(), #program_thread{}, binary()) -> {ok, #program_thread{}, any()}.
-call({Module, Params}, Action, Values, Thread, UserId) ->
-    Module:call(Action, Values, Thread, UserId, Params);
+-spec call(module() | {module(), any()}, binary(), any(), #program_thread{}, owner_id()) -> {ok, #program_thread{}, any()}.
+call({Module, Params}, Action, Values, Thread, Owner) ->
+    Module:call(Action, Values, Thread, Owner, Params);
 
-call(Module, Action, Values, Thread, UserId) ->
-    Module:call(Action, Values, Thread, UserId).
+call(Module, Action, Values, Thread, Owner) ->
+    Module:call(Action, Values, Thread, Owner).
 
-get_monitor_id({Module, Params}, UserId) ->
-    Module:get_monitor_id(UserId, Params);
+-spec get_monitor_id(module() | {module(), any()}, owner_id()) -> {ok, binary()}.
+get_monitor_id({Module, Params}, Owner) ->
+    Module:get_monitor_id(Owner, Params);
 
 get_monitor_id(Module, UserId) ->
     Module:get_monitor_id(UserId).

@@ -56,8 +56,8 @@
 
 %% Definitions
 -include("./records.hrl").
--include("../../automate_service_registry/src/records.hrl").
 -include("../../automate_storage/src/records.hrl").
+-include("../../automate_service_registry/src/records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 -include("../../automate_template_engine/src/records.hrl").
 
@@ -362,7 +362,7 @@ list_custom_blocks_from_username(Username) ->
 -spec register_service(binary(), binary(), map(), binary()) -> {ok, any} | {error, binary()}.
 register_service(Username, ServiceId, RegistrationData, ConnectionId) ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
     {ok, _Result} = automate_service_registry_query:send_registration_data(Module, UserId, RegistrationData,
                                                                            #{<<"connection_id">> => ConnectionId}).
 
@@ -414,34 +414,34 @@ bridge_function_call(UserId, BridgeId, FunctionName, Arguments) ->
     automate_service_port_engine:call_service_port(BridgeId, FunctionName, Arguments, UserId, #{}).
 
 %% Custom signals
--spec create_custom_signal(binary(), binary()) -> {ok, binary()}.
-create_custom_signal(UserId, SignalName) ->
-    automate_storage:create_custom_signal(UserId, SignalName).
+-spec create_custom_signal(owner_id(), binary()) -> {ok, binary()}.
+create_custom_signal(Owner, SignalName) ->
+    automate_storage:create_custom_signal(Owner, SignalName).
 
 -spec list_custom_signals_from_user_id(binary()) -> {ok, [#custom_signal_entry{}]}.
 list_custom_signals_from_user_id(UserId) ->
     automate_storage:list_custom_signals_from_user_id(UserId).
 
 %% Templates
--spec create_template(binary(), binary(), [any()]) -> {ok, binary()}.
-create_template(UserId, TemplateName, TemplateContent) ->
-    automate_template_engine:create_template(UserId, TemplateName, TemplateContent).
+-spec create_template(owner_id(), binary(), [any()]) -> {ok, binary()}.
+create_template(Owner, TemplateName, TemplateContent) ->
+    automate_template_engine:create_template(Owner, TemplateName, TemplateContent).
 
--spec list_templates_from_user_id(binary()) -> {ok, [#template_entry{}]}.
-list_templates_from_user_id(UserId) ->
-    automate_template_engine:list_templates_from_user_id(UserId).
+-spec list_templates_from_user_id(owner_id()) -> {ok, [#template_entry{}]}.
+list_templates_from_user_id(Owner) ->
+    automate_template_engine:list_templates_from_user_id(Owner).
 
--spec delete_template(binary(), binary()) -> ok | {error, binary()}.
-delete_template(UserId, TemplateId) ->
-    automate_template_engine:delete_template(UserId, TemplateId).
+-spec delete_template(owner_id(), binary()) -> ok | {error, binary()}.
+delete_template(Owner, TemplateId) ->
+    automate_template_engine:delete_template(Owner, TemplateId).
 
--spec update_template(binary(), binary(), binary(), [any()]) -> ok | {error, binary()}.
-update_template(UserId, TemplateId, TemplateName, TemplateContent) ->
-    automate_template_engine:update_template(UserId, TemplateId, TemplateName, TemplateContent).
+-spec update_template(owner_id(), binary(), binary(), [any()]) -> ok | {error, binary()}.
+update_template(Owner, TemplateId, TemplateName, TemplateContent) ->
+    automate_template_engine:update_template(Owner, TemplateId, TemplateName, TemplateContent).
 
--spec get_template(binary(), binary()) -> {ok, #template_entry{}} | {error, binary()}.
-get_template(UserId, TemplateId) ->
-    automate_template_engine:get_template(UserId, TemplateId).
+-spec get_template(owner_id(), binary()) -> {ok, #template_entry{}} | {error, binary()}.
+get_template(Owner, TemplateId) ->
+    automate_template_engine:get_template(Owner, TemplateId).
 
 %%====================================================================
 %% Internal functions
@@ -521,25 +521,33 @@ generate_url_for_service_port(UserId, ServicePortId) ->
 
 
 program_entry_to_program(#user_program_entry{ id=Id
-                                            , user_id=UserId
+                                            , owner=Owner
                                             , program_name=ProgramName
                                             , program_type=ProgramType
                                             , program_parsed=ProgramParsed
                                             , program_orig=ProgramOrig
-                                            , enabled=_Enabled
+                                            , enabled=Enabled
                                             }) ->
+    {OwnerType, OwnerId} = case Owner of
+                               { Type, Id } -> {Type, Id};
+                               Id ->
+                                   automate_logging:log_platform(migration_warning,
+                                                                 io_lib:format("Unfinished migration. Found bare user Id on program: ~p", [Id])),
+                                   { user, Id }
+                           end,
     #user_program{ id=Id
-                 , user_id=UserId
+                 , owner=#{ type => OwnerType, id => OwnerId }
                  , program_name=ProgramName
                  , program_type=ProgramType
                  , program_parsed=ProgramParsed
                  , program_orig=ProgramOrig
+                 , enabled=Enabled
                  }.
 
 -spec get_platform_service_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found}.
 get_platform_service_how_to(Username, ServiceId)  ->
     {ok, UserId} = automate_storage:get_userid_from_username(Username),
-    case automate_service_registry:get_service_by_id(ServiceId, UserId) of
+    case automate_service_registry:get_service_by_id(ServiceId) of
         E = {error, not_found} ->
             E;
         {ok, #{ module := Module }} ->

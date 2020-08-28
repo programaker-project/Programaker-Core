@@ -19,7 +19,6 @@ digraph g {
     label="Channels";
     node[style=filled,fillcolor="#bbffff"];
 
-
     // LIVE_CHANNELS_TABLE | automate_channel_engine_live_channels_table
     live_channels_table_entry[label="*Channel* | <pk> id | stats"];
 
@@ -58,22 +57,22 @@ digraph g {
     // USER_SESSIONS_TABLE | automate_user_sessions
     user_session_entry[style=dashed, // Maybe a permisisons-based model would be interesting
       label="*User session* | <pk> session_id | <f0> user_id | session_start_time | session_last_used_time"];
-    user_session_entry:f0 -> owner:pk[style=dashed,color="#ff00ff"];
+    user_session_entry:f0 -> registered_user_entry:pk[style=dashed,color="#ff0000"];
 
     // // USER_MONITORS_TABLE | automate_user_monitors
     monitor_entry[color=red, // Deprecated
-                  label="*Monitor entry* [Dep] | <pk> id | <f0> user_id | type | name | value"];
+                  label="*Monitor entry* [Dep] | <pk> id | <f0> owner | type | name | value"];
     monitor_entry:f0 -> owner:pk[style=normal,color="#ff00ff"];
 
     // USER_PROGRAMS_TABLE | automate_user_programs
-    user_program_entry[label="*Program* | <pk> id | <f0> user_id | program_name | program_type | program_parsed | program_orig | enabled | <f1> program_channel | creation_time | last_upload_time | last_successful_call_time | last_failed_call_time"];
+    user_program_entry[label="*Program* | <pk> id | <f0> owner | program_name | program_type | program_parsed | program_orig | enabled | <f1> program_channel | creation_time | last_upload_time | last_successful_call_time | last_failed_call_time"];
     user_program_entry:f0 -> owner:pk[style=normal,color="#ff00ff"];
     user_program_entry:f1 -> live_channels_table_entry:pk;
 
     // USER_PROGRAMS_LOGS_TABLE | automate_user_program_logs
-    user_program_logs_entry[label="*Log line* | <f0> program_id | <f1> thread_id | <f2> user_id | block_id | event_data | event_message | event_time | severity | exception_data"];
-    user_program_logs_entry:f0 -> user_program_entry:pk;
-    user_program_logs_entry:f2 -> owner:pk[style=normal,color="#ff00ff"];
+    user_program_log_entry[label="*Log line* | <f0> program_id | <f1> thread_id | <f2> owner | block_id | event_data | event_message | event_time | severity | exception_data"];
+    user_program_log_entry:f0 -> user_program_entry:pk;
+    user_program_log_entry:f2 -> owner:pk[style=normal,color="#ff00ff"];
 
     // USER_GENERATED_LOGS_TABLE | automate_user_generated_logs
     user_generated_log_entry[label="*User generated log* | <f0> program_id | block_id | severity | event_time | event_message"]
@@ -125,6 +124,23 @@ digraph g {
     run_once_tasks_table_entry[label="*Run once tasks* | <pk> task_id | node | pid"]
   }
 
+  subgraph group_registry_services {
+    label="Service registry";
+    node[style=filled,fillcolor="#bbffbb"]
+
+    // SERVICE_REGISTRY_TABLE | automate_service_registry_services_table
+    services_table_entry[label="*Service* | <pk> id | public? | name | description | module"];
+
+    // USER_SERVICE_ALLOWANCE_TABLE | automate_service_registry_user_service_allowance_table
+    user_service_allowance_entry[label="*Allowed service*| <f0> service_id | <f1> user_id"];
+    user_service_allowance_entry:f0 -> services_table_entry:pk;
+    user_service_allowance_entry:f1 -> owner:pk[style=normal,color="#ff00ff"];
+
+    // SERVICE_CONFIGURATION_TABLE | automate_service_registry_service_configuration_table
+    service_configuration_entry[label="*Service configuration* | { <f0> service_id | key } | value "];
+    service_configuration_entry:f0 -> services_table_entry:pk;
+  }
+
   subgraph group_bridges {
     label="Bridge engine";
 
@@ -158,27 +174,10 @@ digraph g {
     user_to_bridge_connection_entry:f2 -> live_channels_table_entry:pk
     // Connection data might store data from the bridges
 
-    pending_connection_entry[label="*Pending connection* | <pk> id | <f0> bridge_id | <f1> user_id | <f2> channel_id | creation_time"]
+    pending_connection_entry[label="*Pending connection* | <pk> id | <f0> bridge_id | <f1> owner | <f2> channel_id | creation_time"]
     pending_connection_entry:f0 -> service_port_entry:pk
     pending_connection_entry:f1 -> owner:pk[style=normal,color="#ff00ff"];
     pending_connection_entry:f2 -> live_channels_table_entry:pk
-  }
-
-  subgraph group_registry_services {
-    label="Service registry";
-    node[style=filled,fillcolor="#bbffbb"]
-
-    // SERVICE_REGISTRY_TABLE | automate_service_registry_services_table
-    services_table_entry[label="*Service* | <pk> id | public? | name | description | module"];
-
-    // USER_SERVICE_ALLOWANCE_TABLE | automate_service_registry_user_service_allowance_table
-    user_service_allowance_entry[label="*Allowed service*| <f0> service_id | <f1> user_id"];
-    user_service_allowance_entry:f0 -> services_table_entry:pk;
-    user_service_allowance_entry:f1 -> owner:pk[style=normal,color="#ff00ff"];
-
-    // SERVICE_CONFIGURATION_TABLE | automate_service_registry_service_configuration_table
-    service_configuration_entry[label="*Service configuration* | { <f0> service_id | key } | value "];
-    service_configuration_entry:f0 -> services_table_entry:pk;
   }
 
   subgraph group_core_template_engine {

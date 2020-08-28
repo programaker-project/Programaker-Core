@@ -89,7 +89,7 @@ to_json(Req, State) ->
 
 to_map(#user_to_bridge_connection_entry{ id=Id
                                        , bridge_id=BridgeId
-                                       , user_id=_
+                                       , owner=_
                                        , channel_id=_
                                        , name=Name
                                        , creation_time=_CreationTime

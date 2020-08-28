@@ -105,7 +105,7 @@
 
 -define(SINGLE_LINE_PROGRAM,
         #user_program_entry{ id=?SINGLE_LINE_PROGRAM_ID
-                           , user_id=?SINGLE_LINE_PROGRAM_USER_ID
+                           , owner={user, ?SINGLE_LINE_PROGRAM_USER_ID}
                            , program_name=?SINGLE_LINE_PROGRAM_NAME
                            , program_type=?SINGLE_LINE_PROGRAM_TYPE
                            , program_parsed=#{ <<"blocks">> => [[ ?SINGLE_LINE_PROGRAM_TRIGGER

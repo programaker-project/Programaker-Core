@@ -18,32 +18,34 @@
 -define(MATCHING, automate_template_engine_matching).
 -define(BACKEND, automate_template_engine_mnesia_backend).
 -include("records.hrl").
+-include("../../automate_bot_engine/src/program_records.hrl").
 
 %%====================================================================
 %% API functions
 %%====================================================================
--spec list_templates_from_user_id(binary()) -> {ok, [#template_entry{}]}.
-list_templates_from_user_id(UserId) ->
-    ?BACKEND:list_templates_from_user_id(UserId).
+-spec list_templates_from_user_id(owner_id()) -> {ok, [#template_entry{}]}.
+list_templates_from_user_id(Owner) ->
+    ?BACKEND:list_templates_from_user_id(Owner).
 
 
--spec create_template(binary(), binary(), [any()]) -> {ok, binary()}.
-create_template(UserId, TemplateName, TemplateContent) ->
-    ?BACKEND:create_template(UserId, TemplateName, TemplateContent).
+-spec create_template(owner_id(), binary(), [any()]) -> {ok, binary()}.
+create_template(Owner, TemplateName, TemplateContent) ->
+    ?BACKEND:create_template(Owner, TemplateName, TemplateContent).
 
 
--spec delete_template(binary(), binary()) -> ok | {error, binary()}.
-delete_template(UserId, TemplateId) ->
-    ?BACKEND:delete_template(UserId, TemplateId).
+-spec delete_template(owner_id(), binary()) -> ok | {error, binary()}.
+delete_template(Owner, TemplateId) ->
+    ?BACKEND:delete_template(Owner, TemplateId).
 
 
--spec update_template(binary(), binary(), binary(), [any()]) -> ok | {error, binary()}.
-update_template(UserId, TemplateId, TemplateName, TemplateContent) ->
-    ?BACKEND:update_template(UserId, TemplateId, TemplateName, TemplateContent).
+-spec update_template(owner_id(), binary(), binary(), [any()]) -> ok | {error, binary()}.
+update_template(Owner, TemplateId, TemplateName, TemplateContent) ->
+    ?BACKEND:update_template(Owner, TemplateId, TemplateName, TemplateContent).
 
--spec get_template(binary(), binary()) -> {ok, #template_entry{}} | {error, binary()}.
-get_template(UserId, TemplateId) ->
-    ?BACKEND:get_template(UserId, TemplateId).
+-spec get_template(owner_id(), binary()) -> {ok, #template_entry{}} | {error, binary()}.
+get_template(Owner, TemplateId) ->
+    ?BACKEND:get_template(Owner, TemplateId).
 
-match(UserId, Thread, TemplateId, InputValue) ->
-    ?MATCHING:match(UserId, Thread, TemplateId, InputValue).
+-spec match(owner_id(), #program_thread{}, binary(), binary()) -> {ok, #program_thread{}, any()} | {error, not_found}.
+match(Owner, Thread, TemplateId, InputValue) ->
+    ?MATCHING:match(Owner, Thread, TemplateId, InputValue).

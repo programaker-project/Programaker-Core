@@ -1,3 +1,5 @@
+-include("../../automate_common_types/src/types.hrl").
+
 -record(program_trigger, { condition  :: map()
                          , subprogram :: [any()]
                          }).
@@ -10,7 +12,7 @@
                         , thread_id :: binary() |undefined % ID of the thread being run
                         }).
 
--record(program_permissions, { owner_user_id :: binary()
+-record(program_permissions, { owner_user_id :: owner_id()
                              }).
 
 -record(program_state, { program_id   :: binary()

@@ -25,7 +25,7 @@ get_versioning(Nodes) ->
                                         , record_name=service_port_configuration
                                         }
 
-                  %% Service port userId obfuscation
+                  %% Service port userId obfuscation (deprecated)
                 , #database_version_data{ database_name=automate_service_port_userid_obfuscation_table
                                         , records=[ id, obfuscated_id ]
                                         , record_name=service_port_user_obfuscation_entry
@@ -55,7 +55,7 @@ get_versioning(Nodes) ->
                     %%    processes that use side-channels, like chats.
                     { id=1
                     , apply=fun() ->
-                                    automate_storage_versioning:create_database(
+                                    ok = automate_storage_versioning:create_database(
                                       #database_version_data
                                       { database_name=?USER_TO_BRIDGE_CONNECTION_TABLE
                                       , records=[ id
@@ -68,7 +68,7 @@ get_versioning(Nodes) ->
                                       , record_name=user_to_bridge_connection_entry
                                       }, Nodes),
 
-                                    automate_storage_versioning:create_database(
+                                    ok = automate_storage_versioning:create_database(
                                       #database_version_data
                                       { database_name=?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE
                                       , records=[ id
@@ -99,7 +99,7 @@ get_versioning(Nodes) ->
                                                             , 0
                                                             }
                                                     end,
-                                                db_map_table_to_table(automate_service_port_userid_obfuscation_table,
+                                                ok = db_map_table_to_table(automate_service_port_userid_obfuscation_table,
                                                                       ?USER_TO_BRIDGE_CONNECTION_TABLE,
                                                                       Conversion)
                                         end,
@@ -113,17 +113,17 @@ get_versioning(Nodes) ->
                     %% Add *icons* to service_configuration
                     { id=2
                     , apply=fun() ->
-                                    mnesia:transform_table(
-                                      ?SERVICE_PORT_CONFIGURATION_TABLE,
-                                      fun({service_port_configuration, Id, ServiceName, ServiceId,
-                                           IsPublic, Blocks }) ->
-                                              %% Replicate the entry. Just set 'icon' to undefined.
-                                              {service_port_configuration, Id, ServiceName, ServiceId,
-                                               IsPublic, Blocks, undefined }
-                                      end,
-                                      [ id, service_name, service_id, is_public, blocks, icon ],
-                                      service_port_configuration
-                                     )
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?SERVICE_PORT_CONFIGURATION_TABLE,
+                                                     fun({service_port_configuration, Id, ServiceName, ServiceId,
+                                                          IsPublic, Blocks }) ->
+                                                             %% Replicate the entry. Just set 'icon' to undefined.
+                                                             {service_port_configuration, Id, ServiceName, ServiceId,
+                                                              IsPublic, Blocks, undefined }
+                                                     end,
+                                                     [ id, service_name, service_id, is_public, blocks, icon ],
+                                                     service_port_configuration
+                                                    )
                             end
                     }
 
@@ -131,17 +131,67 @@ get_versioning(Nodes) ->
                     %% Add *allow_multiple_connection* to service_configuration table
                     { id=3
                     , apply=fun() ->
-                                    mnesia:transform_table(
-                                      ?SERVICE_PORT_CONFIGURATION_TABLE,
-                                      fun({service_port_configuration, Id, ServiceName, ServiceId,
-                                           IsPublic, Blocks, Icon }) ->
-                                              %% Replicate the entry. Just set 'allow_multiple_connections' to false.
-                                              {service_port_configuration, Id, ServiceName, ServiceId,
-                                               IsPublic, Blocks, Icon, false }
-                                      end,
-                                      [ id, service_name, service_id, is_public, blocks, icon, allow_multiple_connections ],
-                                      service_port_configuration
-                                     )
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?SERVICE_PORT_CONFIGURATION_TABLE,
+                                                     fun({service_port_configuration, Id, ServiceName, ServiceId,
+                                                          IsPublic, Blocks, Icon }) ->
+                                                             %% Replicate the entry. Just set 'allow_multiple_connections' to false.
+                                                             {service_port_configuration, Id, ServiceName, ServiceId,
+                                                              IsPublic, Blocks, Icon, false }
+                                                     end,
+                                                     [ id, service_name, service_id, is_public, blocks, icon, allow_multiple_connections ],
+                                                     service_port_configuration
+                                                    )
+                            end
+                    }
+
+                  , #database_version_transformation
+                    %% Introduce user groups
+                    { id=3
+                    , apply=fun() ->
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?SERVICE_PORT_TABLE,
+                                                     fun({service_port_entry
+                                                         , Id, Name, Owner, ServiceId
+                                                         }) ->
+                                                             {service_port_entry
+                                                             , Id, Name, {user, Owner}, ServiceId
+                                                             }
+                                                     end,
+                                                     [ id, name, owner, service_id ],
+                                                     service_port_entry
+                                                    ),
+
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?USER_TO_BRIDGE_CONNECTION_TABLE,
+                                                     fun({user_to_bridge_connection_entry
+                                                         , Id, BridgeId, UserId, ChannelId, Name, CreationTime
+                                                         }) ->
+                                                             {user_to_bridge_connection_entry
+                                                             , Id, BridgeId, {user, UserId}, ChannelId, Name, CreationTime
+                                                             }
+                                                     end,
+                                                     [ id, bridge_id, owner, channel_id, name, creation_time ],
+                                                     user_to_bridge_connection_entry
+                                                    ),
+
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE,
+                                                     fun({user_to_bridge_pending_connection_entry
+                                                         , Id, BridgeId, UserId, ChannelId, CreationTime
+                                                         }) ->
+                                                             {user_to_bridge_pending_connection_entry
+                                                             , Id, BridgeId, {user, UserId}, ChannelId, CreationTime
+                                                             }
+                                                     end,
+                                                     [ id, bridge_id, owner, channel_id, creation_time ],
+                                                     user_to_bridge_pending_connection_entry
+                                                    ),
+
+                                    ok = mnesia:wait_for_tables([ ?SERVICE_PORT_TABLE, ?USER_TO_BRIDGE_CONNECTION_TABLE
+                                                                , ?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE
+                                                                ],
+                                                                automate_configuration:get_table_wait_time())
                             end
                     }
                   ]

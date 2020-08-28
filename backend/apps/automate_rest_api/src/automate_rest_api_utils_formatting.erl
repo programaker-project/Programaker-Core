@@ -25,7 +25,7 @@ serialize_logs(Logs) ->
 
 serialize_log_entry(#user_program_log_entry{ program_id=ProgramId
                                            , thread_id=ThreadId
-                                           , user_id=UserId
+                                           , owner=Owner
                                            , block_id=BlockId
                                            , event_data=EventData
                                            , event_message=EventMessage
@@ -33,9 +33,18 @@ serialize_log_entry(#user_program_log_entry{ program_id=ProgramId
                                            , severity=Severity
                                            , exception_data=_ExceptionData
                                            }) ->
+    {OwnerType, OwnerId} = case Owner of
+                               { Type, Id } -> {Type, Id};
+                               Id ->
+                                   automate_logging:log_platform(migration_warning,
+                                                                 io_lib:format("Unfinished migration. Found bare user Id on program: ~p", [Id])),
+                                   { user, Id }
+                           end,
+
     #{ program_id => ProgramId
      , thread_id => serialize_string_or_none(ThreadId)
-     , user_id => serialize_string_or_none(UserId)
+     , owner => #{ type => OwnerType, id => serialize_string_or_none(OwnerId) }
+     , user_id => serialize_string_or_none(OwnerId)
      , block_id => serialize_string_or_none(BlockId)
      , event_data => serialize_event_error(EventData)
      , event_message => EventMessage

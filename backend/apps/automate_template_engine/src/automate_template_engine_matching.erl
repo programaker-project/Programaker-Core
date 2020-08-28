@@ -15,8 +15,8 @@
 %%====================================================================
 %% API functions
 %%====================================================================
-match(UserId, Thread, TemplateId, InputValue) ->
-    case ?BACKEND:get_template(UserId, TemplateId) of
+match(Owner, Thread, TemplateId, InputValue) ->
+    case ?BACKEND:get_template(Owner, TemplateId) of
         {ok, #template_entry{ content=Content
                             }} ->
             match_content(Thread, Content, InputValue)

@@ -10,76 +10,76 @@
 %%====================================================================
 %% API functions
 %%====================================================================
--spec link_program(program(), binary()) -> {ok, program()}.
+-spec link_program(program(), owner_id()) -> {ok, program()}.
 link_program(Program = #{ <<"blocks">> := Blocks },
-             UserId) ->
-    RelinkedBlocks = [relink_subprogram(Subprogram, UserId) || Subprogram <- Blocks],
+             Owner) ->
+    RelinkedBlocks = [relink_subprogram(Subprogram, Owner) || Subprogram <- Blocks],
     {ok, Program#{ <<"blocks">> => RelinkedBlocks }}.
 
 
-relink_subprogram(Subprogram, UserId) ->
-    [relink_block(Block, UserId) || Block <- Subprogram].
+relink_subprogram(Subprogram, Owner) ->
+    [relink_block(Block, Owner) || Block <- Subprogram].
 
 
 %% Relink service monitor
-relink_block(Block, UserId) ->
-    B1 = relink_block_contents(Block, UserId),
-    B2 = relink_block_args(B1, UserId),
-    B3 = relink_block_args_values(B2, UserId),
-    relink_block_values(B3, UserId).
+relink_block(Block, Owner) ->
+    B1 = relink_block_contents(Block, Owner),
+    B2 = relink_block_args(B1, Owner),
+    B3 = relink_block_args_values(B2, Owner),
+    relink_block_values(B3, Owner).
 
 relink_block_contents(Value = #{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                , ?ARGUMENTS := Arguments
-                               }, UserId) ->
+                               }, Owner) ->
     io:fwrite("Args: ~p~n", [Arguments]),
-    Value#{ ?ARGUMENTS => lists:map(fun(B) -> relink_block(B, UserId) end,
+    Value#{ ?ARGUMENTS => lists:map(fun(B) -> relink_block(B, Owner) end,
                                     Arguments)
           };
 
 relink_block_contents(Block=#{ ?CONTENTS := Contents
-                             }, UserId) when is_list(Contents) ->
-    Block#{ ?CONTENTS => lists:map(fun(B) -> relink_block(B, UserId) end,
+                             }, Owner) when is_list(Contents) ->
+    Block#{ ?CONTENTS => lists:map(fun(B) -> relink_block(B, Owner) end,
                                    Contents)
           };
 
-relink_block_contents(Block, _UserId) ->
+relink_block_contents(Block, _Owner) ->
     Block.
 
 relink_block_args(Block=#{ ?ARGUMENTS := Arguments
-                         }, UserId) when is_map(Arguments) ->
-    B1 = relink_monitor_id(Block, UserId),
+                         }, Owner) when is_map(Arguments) ->
+    B1 = relink_monitor_id(Block, Owner),
     B1;
 
-relink_block_args(Block, _UserId) ->
+relink_block_args(Block, _Owner) ->
     Block.
 
 
 relink_block_args_values(Block=#{ ?ARGUMENTS := Arguments
-                                }, _UserId) when is_list(Arguments) ->
+                                }, _Owner) when is_list(Arguments) ->
     Block#{ ?ARGUMENTS := [ relink_value(Arg) || Arg <- Arguments ] };
 
-relink_block_args_values(Block, _UserId) ->
+relink_block_args_values(Block, _Owner) ->
     Block.
 
 
 relink_monitor_id(Block=#{ ?ARGUMENTS := Args=
                                #{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId } } }
-                 , UserId
+                 , Owner
                  ) ->
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
+    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, Owner),
     Block#{ ?ARGUMENTS := Args#{ ?MONITOR_ID :=  MonitorId } };
 
-relink_monitor_id(Block, _UserId) ->
+relink_monitor_id(Block, _Owner) ->
     Block.
 
 
 %%%% Relink values
 relink_block_values(Block=#{ ?VALUE := Value
-                           }, _UserId) when is_list(Value) ->
+                           }, _Owner) when is_list(Value) ->
     Block#{ ?VALUE => lists:map(fun relink_value/1, Value) };
 
-relink_block_values(Block, _UserId) ->
+relink_block_values(Block, _Owner) ->
     Block.
 
 
