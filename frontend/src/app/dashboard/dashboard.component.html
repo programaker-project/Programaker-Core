@@ -4,9 +4,9 @@
             <h1>My connections </h1>
             <div class="connection-list">
                 <div>
-                    <mat-card role="button" (click)="addConnection()" class="module connection call-to-action">
+                    <button role="button" (click)="addConnection()" class="module connection call-to-action soft cardlike" mat-raised-button>
                         <mat-icon class="action-icon">add</mat-icon>
-                    </mat-card>
+                    </button>
                 </div>
                 <div *ngIf="(connections !== null) && (connections.length == 0)">
                     <div class="integrated-call-to-action call-to-left">
@@ -29,6 +29,45 @@
     </div>
 
     <div class="row public-section">
+        <div class="col col-sm-4">
+            <div *ngIf="userInfo" class="user-profile ">
+                <mat-icon class="user-picture placeholder">account_circle</mat-icon>
+
+                <div class="username">{{ userInfo.name }}</div>
+
+                <section class="groups">
+                    <div class="section-title">Groups</div>
+
+                    <div *ngIf="userInfo.groups.length == 0" class="not-joined-explanation">
+                        You have not joined any <span class="keyword">group</span>.
+                    </div>
+
+                    <div class="section-objects">
+                        <mat-card class="group"
+                            *ngFor="let group of userInfo.groups"
+                            role="button" >
+                            <img class="icon" *ngIf="group.picture" src="{{ group.picture }}" alt="{{ group.name }}" />
+
+                            <span *ngIf="!group.picture" class="group-name">
+                                {{ group.name }}
+                            </span>
+                        </mat-card>
+                    </div>
+
+                    <div class="section-buttons">
+                        <button class="group call-to-action soft" role="button"
+                            (click)="createGroup()"
+                            mat-raised-button>
+                            <mat-icon>add</mat-icon> Create group
+                        </button>
+
+                        <button class="group call-to-action soft" role="button" mat-raised-button>
+                            <mat-icon>explore</mat-icon> Explore groups
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </div>
         <div class="user-programs col col-sm-8">
             <h1>My Programs</h1>
             <div class="section-explanation">
@@ -83,18 +122,6 @@
                     </mat-card>
                 </div>
             </div>
-        </div>
-        <div *ngIf="tutorials && tutorials.length > 0" class="user-examples col col-sm-4">
-            <h1>Program ideas</h1>
-            <div class="section-explanation">
-                Click one to open a build guide.
-            </div>
-            <mat-card *ngFor="let tutorial of tutorials" (click)="openTutorial(tutorial)" role="button" class="module example">
-                <div class="description">{{ tutorial.description }}</div>
-                <div class="connection-icon-list">
-                    <img *ngFor="let icon of tutorial.icons" src="{{ icon }}" />
-                </div>
-            </mat-card>
         </div>
     </div>
 </div>

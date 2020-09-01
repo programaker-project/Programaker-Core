@@ -23,6 +23,7 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { AboutPageComponent } from './info-pages/about-page.component';
+import { NewGroupComponent } from './new/group/new-group.component';
 
 const routes: Routes = [
     { path: '', component: HomeRedirectComponent, pathMatch: 'full' },
@@ -53,6 +54,9 @@ const routes: Routes = [
     // Settings
     { path: 'settings', component: SettingsComponent },
     { path: 'settings/admin', component: AdminSettingsComponent },
+
+    // Element creation
+    { path: 'new/group', component: NewGroupComponent },
 ];
 
 @NgModule({

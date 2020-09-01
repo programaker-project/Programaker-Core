@@ -1,0 +1,54 @@
+section.component {
+    width: 100%;
+    padding-top: 2em;
+    width: max-content;
+    margin: 0 auto 1ex auto;
+}
+
+.title {
+    font-size: 200%;
+}
+
+.config-option .title {
+    font-size: 150%;
+    margin-bottom: 1ex;
+}
+
+.intent {
+    margin-top: 1ex;
+}
+
+.config-option .intent {
+    margin-bottom: 1ex;
+}
+
+mat-form-field {
+    width: 40ex;
+}
+
+button {
+    min-height: 5ex;
+    margin: 0 1ex 0 1ex;
+}
+
+.key-point {
+    text-decoration: underline;
+}
+
+.config-option {
+    margin-top: 1em;
+}
+
+.accept-cancel {
+    margin-top: 2em;
+}
+
+.confirm-button {
+    background-color: #009688;
+    color: white;
+    font-weight: bold;
+}
+
+mat-card {
+    margin-top: 1em;
+}

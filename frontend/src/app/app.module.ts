@@ -62,6 +62,8 @@ import { TemplateCreateDialogComponent } from './templates/create-dialog.compone
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { AboutPageComponent } from './info-pages/about-page.component';
 
+// Creation
+import { NewGroupComponent } from './new/group/new-group.component';
 
 import { AppRoutingModule } from './app-routing.module';
 import { LoginFormComponent } from './login-form/login-form.component';
@@ -97,6 +99,9 @@ import { SelectProgrammingModelDialogComponent } from './programs/select-program
         // Info pages
         HomeRedirectComponent,
         AboutPageComponent,
+
+        // Creation pages
+        NewGroupComponent,
 
         // Dialogs
         BridgeDeleteDialogComponent,

@@ -159,9 +159,14 @@ mat-card[role="button"], .mat-card[role="button"] {
     text-align: center;
 }
 
-.call-to-action {
-    background-color: orange !important;
-    color: white !important;
+mat-card.call-to-action, div.call-to-action, button.call-to-action {
+    background-color: orange;
+    color: white;
+}
+
+.call-to-action.soft {
+    background-color: #fc8;
+    color: #000;
 }
 
 mat-card.call-to-action > h4 {

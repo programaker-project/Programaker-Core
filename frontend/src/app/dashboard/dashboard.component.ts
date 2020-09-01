@@ -41,6 +41,7 @@ export class NewDashboardComponent {
     connections: BridgeConnectionWithIconUrl[] = null;
     bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
     session: Session = null;
+    userInfo: {name: string, groups: {name: string, id: string, picture: string}[]};
     tutorials: TutorialData[] = [
         {
             description: "Create a weather chatbot",
@@ -88,6 +89,21 @@ export class NewDashboardComponent {
                 if (!session.active) {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 } else {
+                    this.userInfo = {
+                        name: session.username,
+                        groups: [
+                            {
+                                name: 'NullHub',
+                                id: '',
+                                picture: 'https://avatars0.githubusercontent.com/u/14182950',
+                            },
+                            {
+                                name: 'PrograMaker',
+                                id: '',
+                                picture: 'https://avatars2.githubusercontent.com/u/48107563',
+                            },
+                        ]
+                    };
                     this.programService.getPrograms()
                         .then(programs => this.programs = programs);
 
@@ -185,5 +201,9 @@ export class NewDashboardComponent {
     openTutorial(tutorial: TutorialData) {
         const win = window.open(tutorial.url, '_blank');
         win.focus();
+    }
+
+    createGroup() {
+        this.router.navigate(['/new/group']);
     }
 }
