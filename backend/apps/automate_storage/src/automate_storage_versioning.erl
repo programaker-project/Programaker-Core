@@ -102,9 +102,20 @@ apply_updates_after_version(OldDatabaseVersion, [#database_version_transformatio
                                                                                  }
                                                  | T], ModuleName)  when Id > OldDatabaseVersion ->
     io:fwrite("[~p] APPLYing update ~p (current: ~p)~n", [ModuleName, Id, OldDatabaseVersion]),
-    Fun(),
-    set_database_version(ModuleName, Id),
-    apply_updates_after_version(Id, T, ModuleName).
+    try Fun() of
+        _ ->
+            set_database_version(ModuleName, Id),
+            apply_updates_after_version(Id, T, ModuleName)
+    catch ErrorNS:Error:StackTrace ->
+            io:fwrite("\033[1;37;41m Stopping due to error on update: ~p. StackTrace: ~n~p\033[0m~n", [{ErrorNS, Error}, StackTrace]),
+            try
+                Message = lists:flatten(["Update error {module=", atom_to_list(ModuleName), ", id=", integer_to_list(Id) , "}"]),
+                erlang:halt(Message, [{flush, false}])
+            of _ -> ok
+            catch  _:_:_ ->
+                    erlang:halt(10, [{flush, false}])
+            end
+    end.
 
 
 check_updates_integrity(Updates) ->
