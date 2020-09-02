@@ -162,18 +162,14 @@ get_versioning(Nodes) ->
                                                      service_port_entry
                                                     ),
 
-                                    {atomic, ok} = mnesia:transform_table(
-                                                     ?SERVICE_PORT_CHANNEL_TABLE,
-                                                     fun({ service_port_monitor_channel_entry
-                                                         , {UserId, BridgeId}, ChannelId
-                                                         }) ->
-                                                             { service_port_monitor_channel_entry
-                                                             , {{user, UserId}, BridgeId}, ChannelId
-                                                             }
-                                                     end,
-                                                     [ id, channel_id ],
-                                                     service_port_monitor_channel_entry
-                                                    ),
+                                    ok = db_update_ids(?SERVICE_PORT_CHANNEL_TABLE,
+                                                       fun({ service_port_monitor_channel_entry
+                                                           , {UserId, BridgeId}, ChannelId
+                                                           }) ->
+                                                               { service_port_monitor_channel_entry
+                                                               , {{user, UserId}, BridgeId}, ChannelId
+                                                               }
+                                                       end),
 
                                     {atomic, ok} = mnesia:transform_table(
                                                      ?USER_TO_BRIDGE_CONNECTION_TABLE,
@@ -232,3 +228,34 @@ db_map_iter_transfer(FromTable, ToTable, Function, Key) ->
 
     ok = mnesia:write(ToTable, NewElement, write),
     db_map_iter_transfer(FromTable, ToTable, Function, mnesia:next(FromTable, Key)).
+
+%% DB map function to allow the conversion of ID columns
+db_update_ids(Database, Function) ->
+    Transaction = fun() ->
+                          ok = mnesia:write_lock_table(Database),
+                          ok = db_update_ids_iter(Database, Function, mnesia:first(Database), [])
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            io:fwrite("[Storage/Migration] Error on ID migration: ~p~n", [Reason]),
+            {error, Reason}
+    end.
+
+db_update_ids_iter(Database, _Function, '$end_of_table', Ops) ->
+    lists:foreach(fun({OldKey, _NewElement}) ->
+                          ok = mnesia:delete(Database, OldKey, write)
+                  end, Ops),
+    lists:foreach(fun({_OldKey, NewElement}) ->
+                          ok = mnesia:write(Database, NewElement, write)
+                  end, Ops),
+    ok;
+db_update_ids_iter(Database, Function, Key, Ops) ->
+    ElementsInKey = mnesia:read(Database, Key),
+    NewOps = lists:map(fun(Element) ->
+                               NewElement = Function(Element),
+                               {Key, NewElement}
+                       end, ElementsInKey),
+    %% Operations (deletions) must be done at the end, to avoid interfering with mnesia:next
+    db_update_ids_iter(Database, Function, mnesia:next(Database, Key), Ops ++ NewOps).

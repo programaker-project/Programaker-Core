@@ -465,6 +465,9 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=16
                 , apply=fun() ->
+                                %% This table might be problematic, so force to load it here
+                                ok = automate_storage_maintenance:wait_table(?USER_PROGRAM_LOGS_TABLE),
+
                                 ok = automate_storage_versioning:create_database(
                                        #database_version_data
                                        { database_name=?USER_GROUPS_TABLE
@@ -489,7 +492,7 @@ get_versioning(Nodes) ->
                                                  [ program_id, thread_id, owner, block_id, event_data
                                                  , event_message, event_time, severity, exception_data
                                                  ],
-                                                 user_program_logs_entry
+                                                 user_program_log_entry
                                                 ),
 
                                 {atomic, ok} = mnesia:transform_table(
