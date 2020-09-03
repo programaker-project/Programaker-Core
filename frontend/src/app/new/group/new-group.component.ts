@@ -33,6 +33,8 @@ export class NewGroupComponent {
     filteredOptions: Observable<{name: string}[]>;
     invitationSearch = new FormControl();
     testSearchOpts = [{name: 'one'}, {name: 'two'}, {name: 'three'}];
+    errorMessage: string = '';
+    groupErrorMessage: string = '';
 
     constructor(
         public sessionService: SessionService,
