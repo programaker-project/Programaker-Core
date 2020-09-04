@@ -40,13 +40,19 @@ digraph g {
     // User group
     user_group[
       color="green",
-      label="*User group* | <pk> id | name"]
+      label="*User group* | <pk> id | name | canonical_name | public"]
 
     // User in group
-    user_in_group[color=green, 
-      label="*User in group* | <f0> group_id | <f1> user_id"]
+    user_in_group[color=green,
+      label="*User in group* | <f0> group_id | <f1> user_id | role"]
     user_in_group:f0 -> user_group:pk
     user_in_group:f1 -> registered_user_entry:pk[style=bold,color="#ff0000"];
+
+    // User in group invitation
+    user_in_group_invitation[color=green, 
+      label="*User in group invitation* | <f0> group_id | <f1> user_id | role"]
+    user_in_group_invitation:f0 -> user_group:pk
+    user_in_group_invitation:f1 -> registered_user_entry:pk[style=bold,color="#ff0000"];
 
     // User or group
     owner[color=green,style=dashed,

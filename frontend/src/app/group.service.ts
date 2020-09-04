@@ -28,6 +28,10 @@ export class GroupService {
         return `${ApiRoot}/utils/autocomplete/users`;
     }
 
+    getCreateGroupUrl(): string {
+        return `${ApiRoot}/groups`;
+    }
+
     async autocompleteUsers(query: string): Promise<UserAutocompleteInfo[]> {
         const url = this.getUserAutocompleteUrl();
 
@@ -37,5 +41,23 @@ export class GroupService {
         }).toPromise();
 
         return result['users'];
+    }
+
+    async createGroup(name: string, options: { 'public': boolean, collaborators: string[] } ): Promise<string> {
+        const url = this.getCreateGroupUrl();
+
+        const result = await this.http.post(url,
+                                            JSON.stringify({
+                                                name: name,
+                                                'public': options['public'],
+                                                collaborators: options.collaborators,
+                                            }),
+                                            {
+                                                headers: this.sessionService.addContentType(
+                                                    this.sessionService.getAuthHeader(),
+                                                    ContentType.Json)
+                                            }).toPromise();
+
+        return result['id'];
     }
 }

@@ -474,7 +474,7 @@ get_versioning(Nodes) ->
                                        , records=[ id
                                                  , name
                                                  ]
-                                       , record_name=user_group_checkpoint
+                                       , record_name=user_group_entry
                                        , type=set
                                        }, Nodes),
 
@@ -546,6 +546,34 @@ get_versioning(Nodes) ->
 
                                 ok = mnesia:wait_for_tables([ ?USER_GROUPS_TABLE, ?USER_PROGRAM_LOGS_TABLE
                                                             , ?USER_PROGRAMS_TABLE, ?CUSTOM_SIGNALS_TABLE, ?USER_MONITORS_TABLE
+                                                            ],
+                                                            automate_configuration:get_table_wait_time())
+                        end
+                }
+
+                %% Add user groups permissions
+              , #database_version_transformation
+                { id=17
+                , apply=fun() ->
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_GROUPS_TABLE,
+                                                 fun( {user_group_entry, Id, Name} ) ->
+                                                         { user_group_entry, Id, Name, automate_storage_utils:canonicalize(Name), false }
+                                                 end,
+                                                 [ id, name, canonical_name, public ],
+                                                 user_group_entry),
+
+                                {atomic, ok} = mnesia:add_table_index(?USER_GROUPS_TABLE, canonical_name),
+
+                                {atomic, ok} = mnesia:create_table(?USER_GROUP_PERMISSIONS_TABLE,
+                                                                   [ { attributes, [group_id, user_id, role] }
+                                                                   , { disc_copies, Nodes }
+                                                                   , { record_name, user_group_permissions_entry }
+                                                                   , { type, bag }
+                                                                   , { index, [ user_id ]  }
+                                                                   ]),
+
+                                ok = mnesia:wait_for_tables([ ?USER_GROUP_PERMISSIONS_TABLE
                                                             ],
                                                             automate_configuration:get_table_wait_time())
                         end

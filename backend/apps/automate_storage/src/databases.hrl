@@ -5,7 +5,6 @@
 -define(REGISTERED_USERS_TABLE, automate_registered_users).
 -define(USER_SESSIONS_TABLE, automate_user_sessions).
 -define(USER_MONITORS_TABLE, automate_user_monitors).
--define(USER_GROUPS_TABLE, automate_user_groups).
 
 -define(USER_PROGRAMS_TABLE, automate_user_programs).
 -define(RUNNING_PROGRAMS_TABLE, automate_running_programs).
@@ -20,3 +19,7 @@
 -define(CUSTOM_SIGNALS_TABLE, automate_custom_signals_table).
 
 -define(USER_VERIFICATION_TABLE, automate_user_verification_table).
+
+%% Groups
+-define(USER_GROUPS_TABLE, automate_user_groups).
+-define(USER_GROUP_PERMISSIONS_TABLE, automate_user_groups_permissions).

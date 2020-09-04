@@ -20,8 +20,12 @@
                     required
                     name="groupName" />
             </mat-form-field>
-            <mat-error *ngIf="groupErrorMessage">
-		        {{ groupErrorMessage }}
+            <mat-error *ngIf="options.controls.groupName.errors">
+                <div *ngIf="options.controls.groupName.errors.required">Group name is required</div>
+                <div *ngIf="options.controls.groupName.errors.minlength">Group name requires at least {{ options.controls.groupName.errors.requiredLength }} characters</div>
+                <div *ngIf="options.controls.groupName.errors.canonicalization">
+                    Group name can only contain letters (a-z, A-Z), numbers (0-9), whitespaces or underscores (_)
+                </div>
 	        </mat-error>
         </div>
 
@@ -71,6 +75,8 @@
 
     <div class="accept-cancel">
         <button class="confirm-button"
+            [disabled]="!options.valid"
+            (click)="createGroup()"
             mat-button mat-raised-button>
             Create group
         </button>
@@ -82,9 +88,4 @@
             Go back
         </button>
     </div>
-
-    <!-- [disabled]="(!validUsername)
-         || (!validEmail)
-         || (!validPassword)
-         || (password != repeatedPassword)" -->
 </section>

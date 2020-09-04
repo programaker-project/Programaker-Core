@@ -134,10 +134,10 @@ update_program(Req, State=#state{program_id=ProgramId}) ->
     Program = decode_program(Parsed),
     case automate_rest_api_backend:update_program_by_id(ProgramId, Program) of
         ok ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
             { true, Req2, State };
         { error, Reason } ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
             { false, Req2, State }
     end.
 
@@ -148,10 +148,10 @@ update_program_metadata(Req, State=#state{program_id=ProgramId}) ->
     Metadata = decode_program_metadata(Parsed),
     case automate_rest_api_backend:update_program_metadata(ProgramId, Metadata) of
         ok ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
             { true, Req2, State };
         { error, Reason } ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
             { false, Req2, State }
     end.
 
@@ -159,10 +159,10 @@ update_program_metadata(Req, State=#state{program_id=ProgramId}) ->
 delete_resource(Req, State=#state{program_id=ProgramId}) ->
     case automate_rest_api_backend:delete_program(ProgramId) of
         ok ->
-            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
+            Req1 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
             { true, Req1, State };
         { error, Reason } ->
-            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req),
+            Req1 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req),
             { false, Req1, State }
     end.
 
@@ -182,9 +182,3 @@ decode_program([#{ <<"type">> := ProgramType
                      , orig=ProgramOrig
                      , parsed=ProgramParsed
                      }.
-
-
-send_json_output(Output, Req) ->
-    Res1 = cowboy_req:set_resp_body(Output, Req),
-    Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
-    cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2).

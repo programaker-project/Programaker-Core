@@ -19,9 +19,17 @@
                                , is_in_preview :: boolean() | ?MNESIA_SELECTOR % Features in beta/preview
                                }).
 
+-type user_in_group_role() :: admin | editor | viewer.
 -record(user_group_entry, { id :: binary() | ?MNESIA_SELECTOR
                           , name :: binary() | ?MNESIA_SELECTOR
+                          , canonical_name :: binary() | ?MNESIA_SELECTOR
+                          , public :: boolean() | ?MNESIA_SELECTOR
                           }).
+
+-record(user_group_permissions_entry, { group_id :: binary() | ?MNESIA_SELECTOR
+                                      , user_id :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
+                                      , role  :: user_in_group_role()
+                                      }).
 
 -type verification_type() :: registration_mail_verification | password_reset_verification.
 

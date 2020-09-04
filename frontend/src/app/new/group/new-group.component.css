@@ -26,6 +26,10 @@ mat-form-field {
     width: 40ex;
 }
 
+mat-error {
+    max-width: 40ex;
+}
+
 button {
     min-height: 5ex;
     margin: 0 1ex 0 1ex;

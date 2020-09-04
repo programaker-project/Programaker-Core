@@ -79,6 +79,8 @@
         , create_custom_signal/2
         , list_custom_signals_from_user_id/1
 
+        , create_group/3
+
         , add_mnesia_node/1
         , register_table/2
         ]).
@@ -1243,6 +1245,36 @@ list_custom_signals_from_user_id({OwnerType, OwnerId}) ->
         { aborted, Reason } ->
             {error, mnesia:error_description(Reason)}
     end.
+
+%% Group management
+-spec create_group(binary(), binary(), boolean()) -> {ok, binary()} | {error, any()}.
+create_group(Name, AdminUserId, Public) ->
+    Canonicalized = automate_storage_utils:canonicalize(Name),
+    Id = generate_id(),
+    Transaction = fun() ->
+                          case mnesia:index_read(?USER_GROUPS_TABLE, Name, #user_group_entry.canonical_name) of
+                              [] ->
+                                  ok = mnesia:write(?USER_GROUPS_TABLE, #user_group_entry{ id=Id
+                                                                                         , name=Name
+                                                                                         , canonical_name=Canonicalized
+                                                                                         , public=Public
+                                                                                         }, write),
+                                  ok = mnesia:write(?USER_GROUP_PERMISSIONS_TABLE, #user_group_permissions_entry{ group_id=Id
+                                                                                                                , user_id={user, AdminUserId}
+                                                                                                                , role=admin
+                                                                                                                }, write),
+                                  {ok, Id};
+                              _ ->
+                                  {error, already_exists}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
 
 %% Exposed startup entrypoint
 start_link() ->

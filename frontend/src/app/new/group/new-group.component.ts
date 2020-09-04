@@ -1,9 +1,9 @@
-import { Component, ViewChild, ElementRef } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
+import { Component, ViewChild } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { MatAutocomplete, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
-import { map, startWith, filter } from 'rxjs/operators';
+import { GroupService, UserAutocompleteInfo } from 'app/group.service';
 import { BridgeService } from '../../bridges/bridge.service';
 import { ConnectionService } from '../../connection.service';
 import { MonitorService } from '../../monitor.service';
@@ -11,9 +11,7 @@ import { ProgramService } from '../../program.service';
 import { ServiceService } from '../../service.service';
 import { Session } from '../../session';
 import { SessionService } from '../../session.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { GroupService, UserAutocompleteInfo } from 'app/group.service';
-import { MatAutocomplete, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { canonicalizableValidator } from './new-group.component.validators';
 
 
 @Component({
@@ -32,8 +30,8 @@ export class NewGroupComponent {
     is_advanced: boolean;
     options: FormGroup;
     publicGroup: boolean = false;
-    errorMessage: string = '';
     groupErrorMessage: string = '';
+    processing = false;
 
     @ViewChild('invitationAutocomplete') invitationAutocomplete: MatAutocomplete;
     invitationSearch = new FormControl();
@@ -46,9 +44,10 @@ export class NewGroupComponent {
         public router: Router,
         public dialog: MatDialog,
         private groupService: GroupService,
+        private formBuilder: FormBuilder,
     ) {
-        this.options = new FormGroup({
-            groupName: new FormControl(),
+        this.options = this.formBuilder.group({
+            groupName: ['', [Validators.required, Validators.minLength(4), canonicalizableValidator()]],
         });
     }
 
@@ -98,13 +97,12 @@ export class NewGroupComponent {
                 }
             })
             .catch(e => {
-                console.log('Error getting session', e);
+                console.error('Error getting session', e);
                 this.router.navigate(['/login'], {replaceUrl:true});
             });
     }
 
     validateGroupName() {
-
     }
 
     displayInvitation(user: {username: string}): string {
@@ -118,5 +116,27 @@ export class NewGroupComponent {
 
     removeCollaborator(user: UserAutocompleteInfo) {
         this.collaborators = this.collaborators.filter(collaborator => collaborator.id !== user.id);
+    }
+
+    createGroup() {
+        const groupName = this.options.controls.groupName.value;
+        const isPublicGroup = this.publicGroup;
+        const collaborators = this.collaborators;
+
+        this.processing = true;
+        this.groupService.createGroup(groupName, { 'public': isPublicGroup, collaborators: collaborators.map(user => user.id) })
+            .then(groupId => {
+                this.router.navigate(['/groups/id/' + groupId]);
+            })
+            .catch(err => {
+                if ((err.name === 'HttpErrorResponse') && (err.status === 409)) {
+                    alert("name already taken"); // TODO: Properly integrate
+                }
+                else {
+                    console.error(err);
+                }
+            });
+        ;
+
     }
 }
