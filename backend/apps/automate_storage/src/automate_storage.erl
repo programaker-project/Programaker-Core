@@ -17,6 +17,7 @@
         , promote_user_to_admin/1
         , admin_list_users/0
         , set_user_in_preview/2
+        , search_users/1
 
         , create_mail_verification_entry/1
         , verify_registration_with_code/1
@@ -220,6 +221,13 @@ set_user_in_preview(UserId, InPreview) when is_boolean(InPreview) ->
         {aborted, Reason} ->
             {error, Reason}
     end.
+
+search_users(Query) ->
+    {ok, QueryRe} = re:compile(query_to_re(Query)),
+    Transaction = fun() ->
+                          {ok, search_users_iter(mnesia:first(?REGISTERED_USERS_TABLE), [], QueryRe)}
+                  end,
+    mnesia:activity(ets, Transaction).
 
 admin_list_users() ->
     Transaction = fun() ->
@@ -1315,6 +1323,52 @@ get_userid_sessions(UserId) ->
                       , [SessionResultColumn]
                       }],
     mnesia:select(?USER_SESSIONS_TABLE, SessionMatcher).
+
+search_users_iter('$end_of_table', Acc, _QueryRe) ->
+    Acc;
+search_users_iter(Key, Acc, QueryRe) ->
+    [Element] = mnesia:read(?REGISTERED_USERS_TABLE, Key),
+    Accumulated = case user_match_query(Element, QueryRe) of
+                      true ->
+                          [Element | Acc];
+                      false ->
+                          Acc
+                  end,
+    search_users_iter(mnesia:next(?REGISTERED_USERS_TABLE, Key), Accumulated, QueryRe).
+
+
+user_match_query(#registered_user_entry{status=mail_not_verified}, _QueryRe) ->
+    false;
+user_match_query(#registered_user_entry{username=Username, email=Email}, QueryRe) ->
+    case re:run(Username, QueryRe) of
+        {match, _} ->
+            true;
+        nomatch ->
+            case re:run(Email, QueryRe) of
+                {match, _} ->
+                    true;
+                nomatch ->
+                    false
+            end
+    end.
+
+
+query_to_re(Query) ->
+    Parts = binary:split(escape_re(Query), [<<" ">>, <<"*">>], [global, trim_all]),
+    join_with([<<"">> | Parts], <<".*">>).
+
+escape_re(Expression) ->
+    %% Note that Whitespaces and Askterisks (*) are NOT escaped
+    re:replace(Expression, "[-[\\]{}()+?.,\\^$|#]", "\\\\&", [{return, binary}, global]).
+
+-spec join_with([binary(), ...], binary()) -> [binary()].
+join_with(Parts, Joiner) when is_list(Parts) and is_binary(Joiner) ->
+    interleave(Parts, Joiner, []).
+
+interleave([], _Joiner, Acc) ->
+    Acc;
+interleave([H|T], Joiner, Acc) ->
+    interleave(T, Joiner, [H | [ Joiner | Acc]]).
 
 get_user_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'

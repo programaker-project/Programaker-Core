@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ElementRef } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { map, startWith, filter } from 'rxjs/operators';
 import { BridgeService } from '../../bridges/bridge.service';
 import { ConnectionService } from '../../connection.service';
 import { MonitorService } from '../../monitor.service';
@@ -12,13 +12,15 @@ import { ServiceService } from '../../service.service';
 import { Session } from '../../session';
 import { SessionService } from '../../session.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { GroupService, UserAutocompleteInfo } from 'app/group.service';
+import { MatAutocomplete, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 
 
 @Component({
     // moduleId: module.id,
     selector: 'app-my-new-group',
     templateUrl: './new-group.component.html',
-    providers: [BridgeService, ConnectionService, MonitorService, ProgramService, SessionService, ServiceService],
+    providers: [BridgeService, ConnectionService, GroupService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'new-group.component.css',
         '../../libs/css/material-icons.css',
@@ -30,17 +32,20 @@ export class NewGroupComponent {
     is_advanced: boolean;
     options: FormGroup;
     publicGroup: boolean = false;
-    filteredOptions: Observable<{name: string}[]>;
-    invitationSearch = new FormControl();
-    testSearchOpts = [{name: 'one'}, {name: 'two'}, {name: 'three'}];
     errorMessage: string = '';
     groupErrorMessage: string = '';
+
+    @ViewChild('invitationAutocomplete') invitationAutocomplete: MatAutocomplete;
+    invitationSearch = new FormControl();
+    userNameQuery: Promise<UserAutocompleteInfo[]> | null = null;
+    filteredOptions: UserAutocompleteInfo[];
+    collaborators: UserAutocompleteInfo[] = [];
 
     constructor(
         public sessionService: SessionService,
         public router: Router,
         public dialog: MatDialog,
-        private _snackBar: MatSnackBar,
+        private groupService: GroupService,
     ) {
         this.options = new FormGroup({
             groupName: new FormControl(),
@@ -58,12 +63,38 @@ export class NewGroupComponent {
                 else {
                     this.is_advanced = this.session.tags.is_advanced;
 
-                    this.filteredOptions = this.invitationSearch.valueChanges
-                        .pipe(
-                            startWith(''),
-                            map(value => typeof value === 'string' ? value : value.name),
-                            map(name => name ? this._filterInvitationName(name) : this.testSearchOpts.slice())
-                        );
+                    // Update user list on invitation section
+                    this.invitationSearch.valueChanges.subscribe({
+                        next: (value) => {
+                            if ((!value) || (typeof value !== 'string')) {
+                                this.filteredOptions = [];
+                            }
+                            else {
+                                const query = this.userNameQuery = this.groupService.autocompleteUsers(value);
+
+                                this.userNameQuery.then((result: UserAutocompleteInfo[]) => {
+                                    if (query !== this.userNameQuery) {
+                                        // No longer applicable
+                                        return;
+                                    }
+
+                                    result = result.filter((user) => {
+                                        if (user.id === this.session.user_id){
+                                            return false; // This is the user creating the group
+                                        }
+                                        if (this.collaborators.find(collaborator => collaborator.id === user.id)) {
+                                            return false; // This user is already on the list
+                                        }
+
+                                        return true;
+                                    });
+
+                                    this.filteredOptions = result;
+                                });
+                            }
+                        }
+                    })
+                    this.invitationAutocomplete.optionSelected.subscribe({ next: this.selectOption.bind(this) });
                 }
             })
             .catch(e => {
@@ -76,20 +107,16 @@ export class NewGroupComponent {
 
     }
 
-    displayInvitation(user: {name: string}): string {
-        return user && user.name ? user.name : '';
+    displayInvitation(user: {username: string}): string {
+        return user && user.username ? user.username : '';
     }
 
-    private _filterInvitationName(name: string): {name: string}[] {
-        const filterValue = name.toLowerCase();
-
-        return this.testSearchOpts.filter(option => option.name.toLowerCase().indexOf(filterValue) === 0);
-    }
-
-    selectOption(opt){
+    selectOption(arg: MatAutocompleteSelectedEvent){
         this.invitationSearch.reset();
-        this._snackBar.open("Selected " + opt.name, 'ok', {
-            duration: 2000,
-        });
+        this.collaborators.push(arg.option.value as UserAutocompleteInfo);
+    }
+
+    removeCollaborator(user: UserAutocompleteInfo) {
+        this.collaborators = this.collaborators.filter(collaborator => collaborator.id !== user.id);
     }
 }

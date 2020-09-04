@@ -49,12 +49,23 @@
                     matInput
                     [formControl]="invitationSearch"
                     [matAutocomplete]="auto">
-                <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayInvitation">
-                    <mat-option *ngFor="let option of filteredOptions | async" [value]="option" (click)="selectOption(option)">
-                        {{option.name}}
+                <mat-autocomplete #invitationAutocomplete #auto="matAutocomplete" [displayWith]="displayInvitation">
+                    <mat-option *ngFor="let option of filteredOptions" [value]="option">
+                        {{option.username}}
                     </mat-option>
                 </mat-autocomplete>
             </mat-form-field>
+
+            <ul class="collaborator-list">
+                <li class="collaborator" *ngFor="let user of collaborators">
+                    <button (click)="removeCollaborator(user)" class="remove-collaborator" >
+                        <mat-icon>clear</mat-icon>
+                    </button>
+                    <span class="name">
+                        {{ user.username }}
+                    </span>
+                </li>
+            </ul>
         </div>
     </mat-card>
 

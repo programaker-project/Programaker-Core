@@ -91,6 +91,9 @@ start_link() ->
 
                           %% Monitor
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}
+
+                          %% Utils
+                        , {"/api/v0/utils/autocomplete/users", automate_rest_api_autocomplete_user, []}
                         ]}
                  ]),
 
