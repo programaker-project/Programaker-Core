@@ -39,7 +39,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[SPProgram]Asking for methods~n", []),
     {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -67,7 +66,6 @@ is_authorized(Req, State) ->
 
 %% Get handler
 content_types_provided(Req, State) ->
-    io:fwrite("User > program > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
@@ -121,7 +119,6 @@ program_to_json(#user_program{ id=Id
 
 
 content_types_accepted(Req, State) ->
-    io:fwrite("[PUT] User > program > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, accept_json_program}],
      Req, State}.
 

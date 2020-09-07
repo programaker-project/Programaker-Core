@@ -22,7 +22,6 @@
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
-    io:format("Added CORS: ok~n", []),
     Res = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Res
     , #registration_seq{ rest_session=undefined
@@ -41,7 +40,6 @@ options(Req, State) ->
 
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
 
 content_types_accepted(Req, State) ->
@@ -77,7 +75,6 @@ accept_json_modify_collection(Req, Session) ->
                             Res1 = ?UTILS:send_json_output(jiffy:encode(#{ success => false
                                                                          , error => ?FORMAT:reason_to_json(Reason)
                                                                          }), Req2),
-                            io:format("Error logging in: ~p~n", [Reason]),
                             {false, Res1, Session}
                     end;
                 { error, _Reason } ->
@@ -96,6 +93,5 @@ to_register_data([#{ <<"email">> := Email
                            , email=Email
                            } };
 
-to_register_data(X) ->
-    io:format("Found on register: ~p~n", [X]),
+to_register_data(_) ->
     { error, "Data structures not matching" }.

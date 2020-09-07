@@ -37,7 +37,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[SPProgram]Asking for methods~n", []),
     {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State=#state{program_id=ProgramId}) ->
@@ -64,7 +63,7 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                                 {ok, false} ->
                                     { { false, <<"Action not authorized">>}, Req1, State };
                                 {error, Reason} ->
-                                    automate_logging:log_api(warn, ?MODULE, {authorization_error, Reason}),
+                                    automate_logging:log_api(warning, ?MODULE, {authorization_error, Reason}),
                                     { { false, <<"Error on authorization">>}, Req1, State }
                             end;
                         false ->
@@ -75,7 +74,6 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
 
 %% Get handler
 content_types_provided(Req, State) ->
-    io:fwrite("User > program > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
@@ -84,7 +82,6 @@ content_types_provided(Req, State) ->
 to_json(Req, State=#state{program_id=ProgramId}) ->
     case automate_rest_api_backend:get_program(ProgramId) of
         { ok, Program } ->
-            io:fwrite("PROGRAM: ~p~n", [Program]),
             Output = program_to_json(Program),
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
@@ -115,7 +112,6 @@ program_to_json(#user_program{ id=Id
 
 
 content_types_accepted(Req, State) ->
-    io:fwrite("[PUT] User > program > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, accept_json_program}],
      Req, State}.
 

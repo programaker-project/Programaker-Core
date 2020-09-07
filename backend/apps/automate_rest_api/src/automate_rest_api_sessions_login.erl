@@ -36,7 +36,6 @@ options(Req, State) ->
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
     Res = automate_rest_api_cors:set_headers(Req),
-    io:fwrite("[Login] Asking for methods~n", []),
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Res, State}.
 
 content_types_accepted(Req, State) ->
@@ -70,7 +69,7 @@ accept_json_modify_collection(Req, Session) ->
                             Res1 = cowboy_req:set_resp_body(jiffy:encode(#{ success => false
                                                                           , error => reason_to_json(Reason)
                                                                           }), Req2),
-                            io:format("Error logging in: ~p~n", [Reason]),
+                            automate_logging:log_api(error, ?MODULE, Reason),
                             { false, Res1, Session}
                     end;
                 { error, _Reason } ->

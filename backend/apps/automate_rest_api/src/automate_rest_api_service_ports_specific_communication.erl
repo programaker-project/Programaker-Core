@@ -49,7 +49,7 @@ websocket_info({automate_service_port_engine_router, _From, { data, MessageId, M
     {reply, {binary, Serialized}, State};
 
 websocket_info({{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken}, State) ->
-    io:fwrite("[Bridge/Comm#~p] Advice taken: ~p~n", [MessageId, AdviceTaken]),
+    automate_logging:log_api(debug, ?MODULE, {advice_taken, MessageId, AdviceTaken}),
     Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_RESPONSE">>
                                , <<"message_id">> => MessageId
                                , <<"value">> => AdviceTaken
@@ -57,7 +57,7 @@ websocket_info({{ automate_service_port_engine, advice_taken}, MessageId, Advice
     {reply, {binary, Serialized}, State};
 
 websocket_info({{ automate_service_port_engine, request_icon}}, State=#state{ service_port_id=ServicePortId }) ->
-    io:fwrite("[Bridge/Comm] Requesting icon to ~p...~n", [ServicePortId]),
+    automate_logging:log_api(debug, ?MODULE, {requesting_icon, ServicePortId}),
     Serialized = jiffy:encode(#{ <<"type">> => <<"ICON_REQUEST">>
                                }),
     {reply, {binary, Serialized}, State};
@@ -85,7 +85,7 @@ websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, Sta
                                                }),
                     {reply, {binary, Serialized}, NewState};
                 {error, Reason} ->
-                    io:fwrite("[Bridge/Comm] Unexpected error: ~p~n", [Reason]),
+                    automate_logging:log_api(error, ?MODULE, {error, Reason}),
                     {ok, State}
             end;
         {error, not_found} ->
@@ -93,7 +93,7 @@ websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, Sta
     end;
 
 websocket_info(Message, State) ->
-    io:fwrite("[Bridge/Comm] Unexpected message ~p~n", [Message]),
+    automate_logging:log_api(warning, ?MODULE, {unexpected_message, Message}),
     {ok, State}.
 
 %% State maintenance

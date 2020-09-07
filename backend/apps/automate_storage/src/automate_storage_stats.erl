@@ -92,7 +92,7 @@ get_user_metrics() ->
                   end,
     mnesia:async_dirty(Transaction).
 
--spec get_program_metrics() -> {ok, #{ program_id() => #{log_entry_severity() => non_neg_integer() }}}.
+-spec get_program_metrics() -> {ok, #{ program_id() => #{log_severity() => non_neg_integer() }}}.
 get_program_metrics() ->
     %% Get programs
     Transaction = fun () ->

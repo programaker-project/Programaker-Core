@@ -46,7 +46,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(), _) -> {[binary()], cowboy_req:req(), _}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -76,7 +75,6 @@ is_authorized(Req, State) ->
 
 %% GET handler
 content_types_provided(Req, State) ->
-    io:fwrite("User > Bridge > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 

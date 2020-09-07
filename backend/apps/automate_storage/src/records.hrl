@@ -58,7 +58,7 @@
                             , last_failed_call_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             }).
 
--type log_entry_severity() :: debug | warning | error.
+-type log_severity() :: debug | info | warning | error.
 -record(user_program_log_entry, { program_id :: binary()               | ?MNESIA_SELECTOR
                                 , thread_id :: binary() | none         | ?MNESIA_SELECTOR
                                 , owner :: owner_id() | none           | ?OWNER_ID_MNESIA_SELECTOR
@@ -66,7 +66,7 @@
                                 , event_data :: _                      | ?MNESIA_SELECTOR
                                 , event_message :: binary()            | ?MNESIA_SELECTOR
                                 , event_time :: time_in_milliseconds() | ?MNESIA_SELECTOR
-                                , severity :: log_entry_severity()     | ?MNESIA_SELECTOR
+                                , severity :: log_severity()           | ?MNESIA_SELECTOR
                                 , exception_data :: none | {_, _, _}   | ?MNESIA_SELECTOR
                                 }).
 
@@ -83,7 +83,7 @@
 
 -record(user_generated_log_entry, { program_id :: binary()               | ?MNESIA_SELECTOR
                                   , block_id :: binary() | undefined     | ?MNESIA_SELECTOR
-                                  , severity :: log_entry_severity()     | ?MNESIA_SELECTOR
+                                  , severity :: log_severity()           | ?MNESIA_SELECTOR
                                   , event_time :: time_in_milliseconds() | ?MNESIA_SELECTOR
                                   , event_message :: binary()            | ?MNESIA_SELECTOR
                                  }).

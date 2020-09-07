@@ -39,7 +39,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[Template] Asking for methods~n", []),
     {[<<"GET">>, <<"PUT">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -67,7 +66,6 @@ is_authorized(Req, State) ->
 
 
 content_types_accepted(Req, State) ->
-    io:fwrite("[PUT] User > Template > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, accept_json_template}],
      Req, State}.
 
@@ -79,7 +77,6 @@ accept_json_template(Req, State) ->
 
 %% Get handler
 content_types_provided(Req, State) ->
-    io:fwrite("[GET] User > Template > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 

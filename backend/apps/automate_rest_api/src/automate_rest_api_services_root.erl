@@ -40,7 +40,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->

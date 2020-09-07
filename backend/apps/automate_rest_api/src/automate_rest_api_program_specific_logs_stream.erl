@@ -34,7 +34,8 @@ init(Req, _Opts) ->
                 {true, UserId} ->
                     none;
                 {true, TokenUserId} -> %% Non matching user_id
-                    io:fwrite("[WS/Program] Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId]),
+                    automate_logging:log_api(warning, ?MODULE,
+                                             io_lib:format("[WS/Program] Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId])),
                     <<"Unauthorized to use this resource">>;
                 false ->
                     <<"Authorization not correct">>
@@ -51,14 +52,15 @@ websocket_init(State=#state{ program_id=ProgramId
 
     {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
 
-    io:fwrite("[WS/Program] Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId]),
+    automate_logging:log_api(debug, ?MODULE,
+                             io_lib:format("[WS/Program] Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId])),
     ok = automate_channel_engine:listen_channel(ChannelId),
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
 
     {ok, State};
 
 websocket_init(State=#state{error=Error}) ->
-    io:fwrite("[WS/Program] Closing with error: ~p~n", [Error]),
+    automate_logging:log_api(warning, ?MODULE, {"[WS/Program] Closing with error", Error}),
     { reply
     , { close, binary:list_to_bin(
                  lists:flatten(io_lib:format("Error: ~s", [Error]))) }
@@ -69,7 +71,7 @@ websocket_init(State=#state{error=Error}) ->
 websocket_handle(pong, State) ->
     {ok, State};
 websocket_handle(Message, State) ->
-    io:fwrite("[WS/Program] Unexpected message: ~p~n", [Message]),
+    automate_logging:log_api(warning, ?MODULE, {unexpected_message, Message}),
     {ok, State}.
 
 
@@ -82,7 +84,7 @@ websocket_info({channel_engine, _ChannelId, Message=#user_program_log_entry{}}, 
         {ok, Structured} ->
             {reply, {text, jiffy:encode(Structured)}, State};
         {error, Reason} ->
-            io:fwrite("[WS/Program]Error formatting: ~p~n~p~n", [Reason, Message]),
+            automate_logging:log_api(error, ?MODULE, {"Error formatting", Reason, Message}),
             {ok, State}
     end;
 

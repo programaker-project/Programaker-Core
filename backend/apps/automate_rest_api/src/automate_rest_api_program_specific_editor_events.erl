@@ -35,7 +35,8 @@ init(Req, _Opts) ->
                 {true, UserId} ->
                     none;
                 {true, TokenUserId} -> %% Non matching user_id
-                    io:fwrite("[WS/Program] Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId]),
+                    automate_logging:log_api(error, ?MODULE,
+                                             io_lib:format("Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId])),
                     <<"Unauthorized to use this resource">>;
                 false ->
                     <<"Authorization not correct">>
@@ -53,7 +54,8 @@ websocket_init(State=#state{ program_id=ProgramId
 
     {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
 
-    io:fwrite("[WS/Program] Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId]),
+    automate_logging:log_api(debug, ?MODULE,
+                             io_lib:format("Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId])),
     ok = automate_channel_engine:monitor_listeners(ChannelId, self(), node()),
     ok = automate_channel_engine:listen_channel(ChannelId),
 
@@ -77,7 +79,8 @@ websocket_init(State=#state{ program_id=ProgramId
     {reply, Events ++ [{text, EndMarker}], State#state{ channel_id=ChannelId }};
 
 websocket_init(State=#state{error=Error}) ->
-    io:fwrite("[WS/Program] Closing with error: ~p~n", [Error]),
+    automate_logging:log_api(warning, ?MODULE,
+                             io_lib:format("Closing with error: ~p~n", [Error])),
     { reply
     , { close, binary:list_to_bin(
                  lists:flatten(io_lib:format("Error: ~s", [Error]))) }

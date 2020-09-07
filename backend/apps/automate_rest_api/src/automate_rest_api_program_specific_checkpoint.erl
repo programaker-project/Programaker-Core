@@ -36,7 +36,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[SPProgram]Asking for methods~n", []),
     {[<<"POST">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->

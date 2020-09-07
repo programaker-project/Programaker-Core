@@ -132,7 +132,7 @@ is_valid_token(Token) when is_binary(Token) ->
         { error, session_not_found } ->
             false;
         { error, Reason } ->
-            io:format("Error getting session: ~p~n", [Reason]),
+            automate_logging:log_api(error, ?MODULE, {error_retrieving_session, Reason}),
             false
     end.
 
@@ -143,7 +143,7 @@ is_valid_token_uid(Token) when is_binary(Token) ->
         { error, session_not_found } ->
             false;
         { error, Reason } ->
-            io:format("Error getting session: ~p~n", [Reason]),
+            automate_logging:log_api(error, ?MODULE, {error_retrieving_session, Reason}),
             false
     end.
 
@@ -341,8 +341,7 @@ get_service_enable_how_to(Username, ServiceId) ->
         {ok, HowTo} ->
             {ok, HowTo};
         {error, not_found} ->
-            %% TODO: Implement user-defined services
-            io:format("Error: non platform service required~n"),
+            automate_logging:log_api(error, ?MODULE, "Unknown platform service required"),
             {error, not_found}
     end.
 
@@ -467,7 +466,6 @@ register_user_require_validation(#registration_rec{ email=Email
                 {ok, MailVerificationCode} ->
                      case automate_mail:send_registration_verification(Username, Email, MailVerificationCode) of
                          { ok, Url } ->
-                             io:format("Url: ~p~n", [Url]),
                              { ok, wait_for_mail_verification };
                          {error, Reason} ->
                              automate_storage:delete_user(UserId),
@@ -502,7 +500,7 @@ get_service_metadata(Id
                              , enabled=Enabled
                              }
     catch X:Y ->
-            io:fwrite("Error getting service metadata ~p:~p~n", [X, Y]),
+            automate_logging:log_api(error, ?MODULE, io_lib:format("Error getting service metadata ~p:~p", [X, Y])),
             none
     end.
 

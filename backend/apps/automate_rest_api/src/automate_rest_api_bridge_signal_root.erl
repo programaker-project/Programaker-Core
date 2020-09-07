@@ -37,7 +37,8 @@ check_is_authorized(Req, UserId) ->
                 {true, UserId} ->
                     { true, none };
                 {true, TokenUserId} -> %% Non matching user_id
-                    io:fwrite("Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId]),
+                    automate_logging:log_api(warning, ?MODULE,
+                                             io_lib:format("[WS/Signal] Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId])),
                     { false, <<"Unauthorized to connect here">> };
                 false ->
                     { false, <<"Authorization not correct">> }
@@ -76,5 +77,5 @@ websocket_info({channel_engine, _From,  Data }, State) ->
     {reply, {binary, Serialized}, State};
 
 websocket_info(Message, State) ->
-    io:fwrite("Unexpected message: ~p~n", [Message]),
+    automate_logging:log_api(warning, ?MODULE, {unexpected_message, Message}),
     {reply, {binary, Message}, State}.

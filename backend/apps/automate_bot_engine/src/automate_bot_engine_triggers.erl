@@ -40,7 +40,7 @@ get_expected_signals_from_triggers(Triggers, Permissions, ProgramId) ->
                                 Result ->
                                     {true, Result}
                             catch ErrorNS:Error:StackTrace ->
-                                    automate_logging:log_platform(error_program, ErrorNS, Error, StackTrace),
+                                    automate_logging:log_platform(error, ErrorNS, Error, StackTrace),
                                     false
                             end
                     end, Triggers).

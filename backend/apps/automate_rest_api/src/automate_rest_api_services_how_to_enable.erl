@@ -34,7 +34,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[SPService]Asking for methods~n", []),
     {[<<"GET">>, <<"PUT">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -62,7 +61,6 @@ is_authorized(Req, State) ->
 
 %% Get handler
 content_types_provided(Req, State) ->
-    io:fwrite("User > service > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 

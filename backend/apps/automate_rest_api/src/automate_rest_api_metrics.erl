@@ -33,7 +33,6 @@ is_authorized(Req, State) ->
                 <<"Bearer ", Secret/binary>> ->
                     { true, Req, State };
                 X ->
-                    io:format("Expected ~p found ~p~n", [Secret, X]),
                     { { false, <<"Authorization not correct">>}, Req, State }
             end
     end.

@@ -55,7 +55,6 @@ options(Req, State) ->
 
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[~p] Asking for methods~n", [?MODULE]),
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 content_types_provided(Req, State) ->
