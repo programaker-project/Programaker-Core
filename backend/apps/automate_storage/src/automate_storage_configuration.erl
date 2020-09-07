@@ -556,9 +556,6 @@ get_versioning(Nodes) ->
                 { id=17
                 , apply=fun() ->
 
-                                {atomic, ok} = mnesia:add_table_index(?USER_GROUPS_TABLE, canonical_name),
-                                {atomic, ok} = mnesia:add_table_index(?USER_PROGRAMS_TABLE, owner),
-
                                 {atomic, ok} = mnesia:transform_table(
                                                  ?USER_GROUPS_TABLE,
                                                  fun( {user_group_entry, Id, Name} ) ->
@@ -566,6 +563,9 @@ get_versioning(Nodes) ->
                                                  end,
                                                  [ id, name, canonical_name, public ],
                                                  user_group_entry),
+
+                                {atomic, ok} = mnesia:add_table_index(?USER_GROUPS_TABLE, canonical_name),
+                                {atomic, ok} = mnesia:add_table_index(?USER_PROGRAMS_TABLE, owner),
 
                                 {atomic, ok} = mnesia:create_table(?USER_GROUP_PERMISSIONS_TABLE,
                                                                    [ { attributes, [group_id, user_id, role] }
