@@ -83,9 +83,9 @@ set_config_for_service(ServiceId, Property, Value) ->
 count_all_services() ->
     ?BACKEND:count_all_services().
 
--spec delete_service(binary(), binary()) -> ok.
-delete_service(UserId, ServiceId) ->
-    ?BACKEND:delete_service(UserId, ServiceId).
+-spec delete_service(owner_id(), binary()) -> ok.
+delete_service(Owner, ServiceId) ->
+    ?BACKEND:delete_service(Owner, ServiceId).
 
 
 

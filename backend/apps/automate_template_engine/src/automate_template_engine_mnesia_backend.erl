@@ -9,7 +9,7 @@
         ]).
 
 %% API
--export([ list_templates_from_user_id/1
+-export([ list_templates/1
         , create_template/3
         , delete_template/2
         , update_template/4
@@ -30,8 +30,8 @@ start_link() ->
 
     ignore.
 
--spec list_templates_from_user_id(owner_id()) -> {ok, [map()]}.
-list_templates_from_user_id({OwnerType, OwnerId}) ->
+-spec list_templates(owner_id()) -> {ok, [map()]}.
+list_templates({OwnerType, OwnerId}) ->
     Transaction = fun() ->
                           %% Find userid with that name
                           MatchHead = #template_entry{ id='_'

@@ -218,8 +218,9 @@ count_all_services() ->
     length(mnesia:dirty_all_keys(?SERVICE_REGISTRY_TABLE)).
 
 
--spec delete_service(binary(), binary()) -> ok.
-delete_service(_UserId, ServiceId) ->
+-spec delete_service(owner_id(), binary()) -> ok.
+delete_service(_Owner, ServiceId) ->
+    %% HACK: Note that service registry table does not capture owners
     Transaction = fun() ->
                           ok = mnesia:delete(?SERVICE_REGISTRY_TABLE, ServiceId, write)
                   end,

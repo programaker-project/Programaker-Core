@@ -62,12 +62,12 @@ is_authorized(Req, State) ->
 %% DELETE handler
 delete_resource(Req, State) ->
     #state{bridge_id=BridgeId, user_id=UserId} = State,
-    case automate_rest_api_backend:delete_bridge(UserId, BridgeId) of
+    case automate_rest_api_backend:delete_bridge({user, UserId}, BridgeId) of
         ok ->
             Req1 = send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
             { true, Req1, State };
         { error, Reason } ->
-            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req),
+            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"debug">> => list_to_binary(io_lib:format("~p", [Reason])) }), Req),
             { false, Req1, State }
     end.
 

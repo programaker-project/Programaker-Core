@@ -94,14 +94,15 @@ to_json(Req, State) ->
 
 to_map(#service_port_entry_extra{ id=Id
                                 , name=Name
-                                , owner=Owner
+                                , owner={OwnerType, OwnerId}
                                 , service_id=ServiceId
                                 , is_connected=IsConnected
                                 , icon=Icon
                                 }) ->
     #{ <<"id">> => Id
      , <<"name">> => Name
-     , <<"owner">> => Owner
+     , <<"owner">> => OwnerId
+     , <<"owner_full">> => #{type => OwnerType, id => OwnerId}
      , <<"service_id">> => ServiceId
      , <<"is_connected">> => IsConnected
      , <<"icon">> => ?FORMATTING:serialize_icon(Icon)

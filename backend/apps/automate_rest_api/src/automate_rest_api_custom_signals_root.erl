@@ -103,11 +103,9 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State) ->
-    #state{user_id=UserId} = State,
-    case automate_rest_api_backend:list_custom_signals_from_user_id(UserId) of
+to_json(Req, State=#state{user_id=UserId}) ->
+    case automate_storage:list_custom_signals({user, UserId}) of
         { ok, Signals } ->
-
             Output = jiffy:encode(lists:map(fun signal_to_map/1, Signals)),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
@@ -117,9 +115,10 @@ to_json(Req, State) ->
 
 signal_to_map(#custom_signal_entry{ id=Id
                                   , name=Name
-                                  , owner=Owner
+                                  , owner={OwnerType, OwnerId}
                                   }) ->
     #{ id => Id
      , name => Name
-     , owner => Owner
+     , owner => OwnerId
+     , owner_full => #{ type => OwnerType, id => OwnerId}
      }.

@@ -57,7 +57,7 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                 X ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UId} ->
-                            case automate_storage:is_user_allowed(UId, ProgramId, Action) of
+                            case automate_storage:is_user_allowed({user, UId}, ProgramId, Action) of
                                 {ok, true} ->
                                     { true, Req1, State };
                                 {ok, false} ->

@@ -531,13 +531,18 @@ get_pending_connection_info(ConnectionId) ->
     end.
 
 
--spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
-delete_bridge(UserId, BridgeId) ->
+-spec delete_bridge(owner_id(), binary()) -> ok | {error, binary()}.
+delete_bridge(Accessor, BridgeId) ->
     Transaction = fun() ->
-                          [#service_port_entry{owner=UserId}] = mnesia:read(?SERVICE_PORT_TABLE, BridgeId),
-                          ok = mnesia:delete(?SERVICE_PORT_TABLE, BridgeId, write),
-                          ok = mnesia:delete(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId, write)
-                          %% TODO: remove connection entries
+                          [#service_port_entry{owner=Owner}] = mnesia:read(?SERVICE_PORT_TABLE, BridgeId),
+                          case automate_storage:can_user_edit_as(Accessor, Owner) of
+                              true ->
+                                  ok = mnesia:delete(?SERVICE_PORT_TABLE, BridgeId, write),
+                                  ok = mnesia:delete(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId, write);
+                              %% TODO: remove connection entries
+                              false ->
+                                  {error, not_authorized}
+                          end
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->

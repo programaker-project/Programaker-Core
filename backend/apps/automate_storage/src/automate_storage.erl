@@ -78,13 +78,15 @@
         , mark_failed_call_to_bridge/2
 
         , create_custom_signal/2
-        , list_custom_signals_from_user_id/1
+        , list_custom_signals/1
 
         , create_group/3
         , get_user_groups/1
         , get_group_by_name/2
         , is_allowed_to_read_in_group/2
         , is_allowed_to_write_in_group/2
+        , can_user_edit_as/2
+        , can_user_view_as/2
 
         , add_mnesia_node/1
         , register_table/2
@@ -566,12 +568,16 @@ update_program_status(_Username, ProgramId, Status)->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec is_user_allowed(binary(), binary(), read_program|edit_program|delete_program) -> {ok, boolean()} | {error, any()}.
-is_user_allowed(UId, ProgramId, _Action) ->
+-spec is_user_allowed(owner_id(), binary(), read_program|edit_program|delete_program) -> {ok, boolean()} | {error, any()}.
+is_user_allowed(Owner, ProgramId, Action) ->
+    Check = case Action of
+                read_program -> fun can_user_view_as/2;
+                _ -> fun can_user_edit_as/2
+            end,
     Transaction = fun() ->
                           case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
-                              [#user_program_entry{owner={user, OwnerId}}] ->
-                                  {ok, UId == OwnerId};
+                              [#user_program_entry{owner=RealOwner}] ->
+                                  {ok, Check(Owner, RealOwner)};
                               [] ->
                                   {error, not_found}
                           end
@@ -1242,8 +1248,8 @@ create_custom_signal(Owner, SignalName) ->
     end.
 
 
--spec list_custom_signals_from_user_id(owner_id()) -> {ok, [#custom_signal_entry{}]}.
-list_custom_signals_from_user_id({OwnerType, OwnerId}) ->
+-spec list_custom_signals(owner_id()) -> {ok, [#custom_signal_entry{}]}.
+list_custom_signals({OwnerType, OwnerId}) ->
     Transaction = fun() ->
                           %% Find userid with that name
                           MatchHead = #custom_signal_entry{ id='_'
@@ -1343,6 +1349,22 @@ is_allowed_to_write_in_group(AccessorId, GroupId) ->
                                     end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId))
                   end,
     wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec can_user_edit_as(owner_id(), owner_id()) -> true | false.
+can_user_edit_as(AccessorId, {group, GroupId}) ->
+    is_allowed_to_write_in_group(AccessorId, GroupId);
+can_user_edit_as({user, UserId}, {user, UserId}) ->
+    true;
+can_user_edit_as({user, _UserId}, {user, _AnotherUser}) ->
+    false.
+
+-spec can_user_view_as(owner_id(), owner_id()) -> true | false.
+can_user_view_as(AccessorId, {group, GroupId}) ->
+    is_allowed_to_read_in_group(AccessorId, GroupId);
+can_user_view_as({user, UserId}, {user, UserId}) ->
+    true;
+can_user_view_as({user, _UserId}, {user, _AnotherUser}) ->
+    false.
 
 %% Exposed startup entrypoint
 start_link() ->

@@ -103,9 +103,8 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State) ->
-    #state{user_id=UserId} = State,
-    case automate_rest_api_backend:list_templates_from_user_id(UserId) of
+to_json(Req, State=#state{user_id=UserId}) ->
+    case automate_template_engine:list_templates({user, UserId}) of
         { ok, Templates } ->
 
             Output = jiffy:encode(lists:map(fun template_to_map/1, Templates)),
@@ -118,10 +117,11 @@ to_json(Req, State) ->
 
 template_to_map(#template_entry{ id=Id
                                , name=Name
-                               , owner=Owner
+                               , owner={OwnerType, OwnerId}
                                , content=_Content
                                }) ->
     #{ id => Id
      , name => Name
-     , owner => Owner
+     , owner => OwnerId
+     , owner_full => #{ type => OwnerType, id => OwnerId }
      }.

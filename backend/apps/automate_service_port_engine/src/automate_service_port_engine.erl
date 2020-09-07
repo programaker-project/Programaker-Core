@@ -223,15 +223,15 @@ get_user_service_ports(Owner) ->
     {ok, Bridges} = ?BACKEND:get_user_service_ports(Owner),
     {ok, lists:map(fun add_service_port_extra/1, Bridges)}.
 
--spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
-delete_bridge(UserId, BridgeId) ->
+-spec delete_bridge(owner_id(), binary()) -> ok | {error, binary()}.
+delete_bridge(Accessor, BridgeId) ->
     ok = case ?BACKEND:get_service_id_for_port(BridgeId) of
              {error, not_found} ->
                  ok;
              {ok, ServiceId} ->
-                 automate_service_registry:delete_service(UserId, ServiceId)
+                 automate_service_registry:delete_service(Accessor, ServiceId)
          end,
-    ?BACKEND:delete_bridge(UserId, BridgeId).
+    ?BACKEND:delete_bridge(Accessor, BridgeId).
 
 
 -spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map()} | {error, term()}.

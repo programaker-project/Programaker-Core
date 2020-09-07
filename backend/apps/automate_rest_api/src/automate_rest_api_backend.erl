@@ -45,10 +45,8 @@
         , bridge_function_call/4
 
         , create_custom_signal/2
-        , list_custom_signals_from_user_id/1
 
         , create_template/3
-        , list_templates_from_user_id/1
         , delete_template/2
         , update_template/4
         , get_template/2
@@ -401,9 +399,9 @@ list_available_connections(Owner) ->
 list_established_connections(UserId) ->
     {ok, _Connections} = automate_service_port_engine:list_established_connections(UserId).
 
--spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
-delete_bridge(UserId, BridgeId) ->
-    automate_service_port_engine:delete_bridge(UserId, BridgeId).
+-spec delete_bridge(owner_id(), binary()) -> ok | {error, binary()}.
+delete_bridge(Owner, BridgeId) ->
+    automate_service_port_engine:delete_bridge(Owner, BridgeId).
 
 callback_bridge(UserId, BridgeId, Callback) ->
     automate_service_port_engine:callback_bridge(UserId, BridgeId, Callback).
@@ -417,18 +415,10 @@ bridge_function_call(UserId, BridgeId, FunctionName, Arguments) ->
 create_custom_signal(Owner, SignalName) ->
     automate_storage:create_custom_signal(Owner, SignalName).
 
--spec list_custom_signals_from_user_id(owner_id()) -> {ok, [#custom_signal_entry{}]}.
-list_custom_signals_from_user_id(Owner) ->
-    automate_storage:list_custom_signals_from_user_id(Owner).
-
 %% Templates
 -spec create_template(owner_id(), binary(), [any()]) -> {ok, binary()}.
 create_template(Owner, TemplateName, TemplateContent) ->
     automate_template_engine:create_template(Owner, TemplateName, TemplateContent).
-
--spec list_templates_from_user_id(owner_id()) -> {ok, [#template_entry{}]}.
-list_templates_from_user_id(Owner) ->
-    automate_template_engine:list_templates_from_user_id(Owner).
 
 -spec delete_template(owner_id(), binary()) -> ok | {error, binary()}.
 delete_template(Owner, TemplateId) ->
@@ -465,7 +455,7 @@ register_user_require_validation(#registration_rec{ email=Email
             case automate_storage:create_mail_verification_entry(UserId) of
                 {ok, MailVerificationCode} ->
                      case automate_mail:send_registration_verification(Username, Email, MailVerificationCode) of
-                         { ok, Url } ->
+                         { ok, _Url } ->
                              { ok, wait_for_mail_verification };
                          {error, Reason} ->
                              automate_storage:delete_user(UserId),
@@ -514,7 +504,7 @@ generate_url_for_program_name(Username, ProgramName) ->
 generate_url_for_monitor_name(Username, MonitorName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/monitors/~s", [Username, MonitorName]))).
 
-generate_url_for_service_port(UserId, ServicePortId) ->
+generate_url_for_service_port({user, UserId}, ServicePortId) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/bridges/id/~s/communication", [UserId, ServicePortId]))).
 
 
@@ -526,13 +516,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                                             , program_orig=ProgramOrig
                                             , enabled=Enabled
                                             }) ->
-    {OwnerType, OwnerId} = case Owner of
-                               { Type, Id } -> {Type, Id};
-                               UId ->
-                                   automate_logging:log_platform(migration_warning,
-                                                                 io_lib:format("Unfinished migration. Found bare user Id on program: ~p", [Id])),
-                                   { user, UId }
-                           end,
+    {OwnerType, OwnerId} = Owner,
     #user_program{ id=Id
                  , owner=#{ type => OwnerType, id => OwnerId }
                  , program_name=ProgramName

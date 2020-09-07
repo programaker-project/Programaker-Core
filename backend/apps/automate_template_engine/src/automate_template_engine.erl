@@ -6,7 +6,7 @@
 -module(automate_template_engine).
 
 %% API
--export([ list_templates_from_user_id/1
+-export([ list_templates/1
         , create_template/3
         , delete_template/2
         , update_template/4
@@ -23,9 +23,9 @@
 %%====================================================================
 %% API functions
 %%====================================================================
--spec list_templates_from_user_id(owner_id()) -> {ok, [#template_entry{}]}.
-list_templates_from_user_id(Owner) ->
-    ?BACKEND:list_templates_from_user_id(Owner).
+-spec list_templates(owner_id()) -> {ok, [#template_entry{}]}.
+list_templates(Owner) ->
+    ?BACKEND:list_templates(Owner).
 
 
 -spec create_template(owner_id(), binary(), [any()]) -> {ok, binary()}.

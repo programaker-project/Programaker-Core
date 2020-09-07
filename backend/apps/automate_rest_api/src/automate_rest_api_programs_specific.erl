@@ -41,7 +41,7 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#get_program_seq{username=Username}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -52,7 +52,6 @@ is_authorized(Req, State) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    #get_program_seq{username=Username} = State,
                     case automate_rest_api_backend:is_valid_token(X) of
                         {true, Username} ->
                             { true, Req1, State };
