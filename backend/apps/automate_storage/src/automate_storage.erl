@@ -1915,7 +1915,7 @@ store_new_program_content(Username, ProgramName,
                                       [] ->
                                           [];
 
-                                      [Program] ->
+                                      [Program=#user_program_entry{id=ProgramId}] ->
                                           ok = mnesia:write(?USER_PROGRAMS_TABLE,
                                                             Program#user_program_entry{ owner={user, UserId}
                                                                                       , program_name=ProgramName
@@ -1924,7 +1924,10 @@ store_new_program_content(Username, ProgramName,
                                                                                       , program_orig=ProgramOrig
                                                                                       , last_upload_time=CurrentTime
                                                                                       }, write),
-                                          { ok, Program#user_program_entry.id }
+
+                                          ok = mnesia:delete(?USER_PROGRAM_EVENTS_TABLE, ProgramId, write),
+
+                                          { ok, ProgramId }
                                   end
                           end
                   end,
