@@ -321,6 +321,8 @@ get_session_userid(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
 
 -spec create_monitor(binary(), #monitor_entry{}) -> {ok, binary()} | {error, any()}.
 create_monitor(Username, MonitorDescriptor=#monitor_entry{ id=none, owner=none }) ->
+    io:fwrite("\033[7m[create_monitor(Username,...)] To be deprecated\033[0m~n"),
+
     {ok, Owner} = get_userid_from_username(Username),
     MonitorId = generate_id(),
     Monitor = MonitorDescriptor#monitor_entry{ id=MonitorId, owner=Owner },
@@ -350,6 +352,7 @@ get_monitor_from_id(MonitorId) ->
 
 -spec lists_monitors_from_username(binary()) -> {'ok', [ { binary(), binary() } ] }.
 lists_monitors_from_username(Username) ->
+    io:fwrite("\033[7m[lists_monitors_from_username] To be deprecated\033[0m~n"),
     case retrieve_monitors_list_from_username(Username) of
         {ok, Monitors} ->
             { ok
@@ -475,7 +478,8 @@ check_password_reset_verification_code(VerificationCode) ->
 create_program(Username, ProgramName) ->
     create_program(Username, ProgramName, ?DEFAULT_PROGRAM_TYPE).
 
-create_program(Username, ProgramName, ProgramType) ->
+create_program(Username, ProgramName, ProgramType) when is_binary(Username) ->
+    io:fwrite("\033[7m[create_program(Username,...)] To be deprecated\033[0m~n"),
     {ok, Owner} = get_userid_from_username(Username),
     ProgramId = generate_id(),
     {ok, ProgramChannel} = automate_channel_engine:create_channel(),
@@ -500,13 +504,13 @@ create_program(Username, ProgramName, ProgramType) ->
             { error, Reason }
     end.
 
-
 get_program(Username, ProgramName) ->
     retrieve_program(Username, ProgramName).
 
 
 -spec lists_programs_from_username(binary()) -> {'ok', [ { binary(), binary(), boolean() } ] }.
 lists_programs_from_username(Username) ->
+    io:fwrite("\033[7m[lists_programs_from_username] To be deprecated\033[0m~n"),
     case retrieve_program_list_from_username(Username) of
         {ok, Programs} ->
             { ok
@@ -1545,6 +1549,7 @@ store_new_monitor(Monitor) ->
     Result.
 
 retrieve_monitors_list_from_username(Username) ->
+    io:fwrite("\033[7m[retrieve_monitors_list_from_username] To be deprecated\033[0m~n"),
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
@@ -1610,6 +1615,7 @@ store_new_thread(UserThread) ->
     Result.
 
 retrieve_program(Username, ProgramName) ->
+    io:fwrite("\033[7m[retrieve_program(Username, ProgramName)] To be deprecated\033[0m~n"),
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
@@ -1671,6 +1677,7 @@ retrieve_program(Username, ProgramName) ->
     end.
 
 retrieve_program_list_from_username(Username) ->
+    io:fwrite("\033[7m[retrieve_program_list_from_username] To be deprecated\033[0m~n"),
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
@@ -1725,6 +1732,7 @@ retrieve_program_list_from_username(Username) ->
     end.
 
 retrieve_program_list_from_userid(UserId) ->
+    io:fwrite("\033[7m[retrieve_program_list_from_userid] To be deprecated\033[0m~n"),
     Transaction = fun() ->
                           %% Find program with userId and name
                           ProgramMatchHead = #user_program_entry{ id='$1'
@@ -1762,6 +1770,8 @@ store_new_program_content(Username, ProgramName,
                                                  , parsed=ProgramParsed
                                                  , type=ProgramType
                                                  })->
+    io:fwrite("\033[7m[store_new_program_content(Username, ProgramName,...)] To be deprecated\033[0m~n"),
+
     CurrentTime = erlang:system_time(second),
     Transaction = fun() ->
                           %% Find userid with that name
