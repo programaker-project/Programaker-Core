@@ -43,6 +43,7 @@ start_link() ->
 
                           %% Miscellaneous
                         , {"/api/v0/users/id/:user_id/custom_signals/", automate_rest_api_custom_signals_root, []}
+                        , {"/api/v0/users/id/:user_id/groups/", automate_rest_api_user_groups_root, []}
 
                         , {"/api/v0/users/id/:user_id/templates/", automate_rest_api_templates_root, []}
                         , {"/api/v0/users/id/:user_id/templates/id/:template_id", automate_rest_api_templates_specific, []}
@@ -91,6 +92,8 @@ start_link() ->
 
                           %% Groups
                         , {"/api/v0/groups", automate_rest_api_groups_root, [] }
+                        , {"/api/v0/groups/by-name/:group_name", automate_rest_api_group_by_name, [] }
+                        , {"/api/v0/groups/by-id/:group_id/programs", automate_rest_api_group_programs, [] }
 
                           %% Monitor
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}

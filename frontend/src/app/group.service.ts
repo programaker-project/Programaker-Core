@@ -7,7 +7,7 @@ import { ContentType } from './content-type';
 import { ProgramContent, ProgramEditorEvent, ProgramEditorEventValue, ProgramInfoUpdate, ProgramLogEntry, ProgramMetadata, ProgramType } from './program';
 import { SessionService } from './session.service';
 import { Synchronizer } from './syncronizer';
-
+import { GroupInfo } from './group';
 
 export interface UserAutocompleteInfo {
     id: string,
@@ -32,6 +32,15 @@ export class GroupService {
         return `${ApiRoot}/groups`;
     }
 
+    getGroupInfoUrl(groupName: string): string {
+        return `${ApiRoot}/groups/by-name/${groupName}`;
+    }
+
+    async getUserGroupsUrl(): Promise<string> {
+        const root = await this.sessionService.getApiRootForUserId()
+        return `${root}/groups`;
+    }
+
     async autocompleteUsers(query: string): Promise<UserAutocompleteInfo[]> {
         const url = this.getUserAutocompleteUrl();
 
@@ -43,7 +52,7 @@ export class GroupService {
         return result['users'];
     }
 
-    async createGroup(name: string, options: { 'public': boolean, collaborators: string[] } ): Promise<string> {
+    async createGroup(name: string, options: { 'public': boolean, collaborators: string[] } ): Promise<GroupInfo> {
         const url = this.getCreateGroupUrl();
 
         const result = await this.http.post(url,
@@ -58,6 +67,25 @@ export class GroupService {
                                                     ContentType.Json)
                                             }).toPromise();
 
-        return result['id'];
+        return result['group'];
     }
+
+    async getUserGroups(): Promise<GroupInfo[]> {
+        const url = await this.getUserGroupsUrl();
+
+        const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
+            .toPromise();
+
+        return result['groups'];
+    }
+
+    async getGroupWithName(groupName: any): Promise<GroupInfo> {
+        const url = await this.getGroupInfoUrl(groupName);
+
+        const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
+            .toPromise();
+
+        return result['group'];
+    }
+
 }

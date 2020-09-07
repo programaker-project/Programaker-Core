@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { GroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
 import { BridgeService } from '../bridges/bridge.service';
@@ -16,13 +16,10 @@ import { AvailableService, ServiceEnableHowTo } from '../service';
 import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
-import { iconDataToUrl } from '../utils';
-
-type TutorialData = { description: string, icons: string[], url: string };
 
 @Component({
     // moduleId: module.id,
-    selector: 'app-my-dashboard',
+    selector: 'app-group-dashboard',
     templateUrl: './dashboard.component.html',
     providers: [BridgeService, ConnectionService, GroupService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
@@ -31,19 +28,12 @@ type TutorialData = { description: string, icons: string[], url: string };
         '../libs/css/bootstrap.min.css',
     ],
 })
-export class NewDashboardComponent {
+export class GroupDashboardComponent {
     programs: ProgramMetadata[] = [];
     connections: BridgeConnectionWithIconUrl[] = null;
     bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
     session: Session = null;
-    userInfo: {name: string, groups: GroupInfo[]};
-    tutorials: TutorialData[] = [
-        {
-            description: "Create a weather chatbot",
-            icons: [ "/assets/icons/telegram_logo.png", "/assets/icons/aemet_logo.png" ],
-            url: "https://docs.programaker.com/tutorials/weather-bot.html",
-        },
-    ];
+    groupInfo: GroupInfo;
 
     constructor(
         private programService: ProgramService,
@@ -52,6 +42,7 @@ export class NewDashboardComponent {
         private connectionService: ConnectionService,
         private groupService: GroupService,
         private router: Router,
+        private route: ActivatedRoute,
         public dialog: MatDialog,
         public bridgeService: BridgeService,
     ) {
@@ -62,25 +53,31 @@ export class NewDashboardComponent {
         this.router = router;
     }
 
-    // tslint:disable-next-line:use-life-cycle-interface
     ngOnInit(): void {
         this.sessionService.getSession()
-            .then(session => {
+            .then(async (session) => {
                 this.session = session;
 
                 if (!session.active) {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 } else {
-                    this.userInfo = {
-                        name: session.username,
-                        groups: null
-                    };
-                    this.groupService.getUserGroups()
-                        .then(groups => this.userInfo.groups = groups);
-                    this.programService.getPrograms()
-                        .then(programs => this.programs = programs);
+                    try {
+                        const params = this.route.params['value'];
+                        const groupName = params.group_name;
 
-                    this.updateConnections();
+                        this.groupInfo = await this.groupService.getGroupWithName(groupName);
+
+                        this.programService.getProgramsOnGroup(this.groupInfo.id)
+                            .then(programs => {
+                                this.programs = programs;
+                                console.log("P", programs);
+                            });
+
+                        this.updateConnections();
+                    }
+                    catch (err) {
+                        console.error(err)
+                    }
                 }
             })
             .catch(e => {
@@ -95,14 +92,14 @@ export class NewDashboardComponent {
 
             dialogRef.afterClosed().subscribe((result: {success: boolean, program_type: ProgramType, program_name: string}) => {
                 if (result && result.success) {
-                    this.programService.createProgram(result.program_type, result.program_name).then(program => {
+                    this.programService.createProgramOnGroup(result.program_type, result.program_name, this.groupInfo.id).then(program => {
                         this.openProgram(program);
                     });
                 }
             });
         }
         else {
-            this.programService.createProgram('scratch_program').then(program => {
+            this.programService.createProgramOnGroup('scratch_program', null, this.groupInfo.id).then(program => {
                 this.openProgram(program);
             });
         }
@@ -119,21 +116,21 @@ export class NewDashboardComponent {
     }
 
     updateConnections(): void {
-        this.connectionService.getConnections()
-            .then(connections => {
-                this.connections = connections.map((v, _i, _a) => {
-                    const icon_url = iconDataToUrl(v.icon, v.bridge_id);
+        // this.connectionService.getConnections(this.groupInfo.id)
+        //     .then(connections => {
+        //         this.connections = connections.map((v, _i, _a) => {
+        //             const icon_url = iconDataToUrl(v.icon, v.bridge_id);
 
-                    return { conn: v, extra: {icon_url: icon_url }};
-                });
+        //             return { conn: v, extra: {icon_url: icon_url }};
+        //         });
 
-                for (const conn of connections){
-                    this.bridgeInfo[conn.bridge_id] = {
-                        icon: iconDataToUrl(conn.icon, conn.bridge_id),
-                        name: conn.bridge_name
-                    };
-                }
-            });
+        //         for (const conn of connections){
+        //             this.bridgeInfo[conn.bridge_id] = {
+        //                 icon: iconDataToUrl(conn.icon, conn.bridge_id),
+        //                 name: conn.bridge_name
+        //             };
+        //         }
+        //     });
     }
 
     async openProgram(program: ProgramMetadata): Promise<void> {
@@ -143,7 +140,7 @@ export class NewDashboardComponent {
         else if ((!program.type) || (program.type === 'scratch_program')) {
             const session = await this.sessionService.getSession();
             this.router.navigate(['/users/' + session.username
-                                  + '/programs/' + encodeURIComponent(program.name)]);
+                + '/programs/' + encodeURIComponent(program.name)]);
         }
     }
 
@@ -166,22 +163,8 @@ export class NewDashboardComponent {
     async enableProgram(program: ProgramMetadata) {
         const session = await this.sessionService.getSession();
         await this.programService.setProgramStatus(JSON.stringify({"enable": true}),
-                                             program.id,
-                                             session.user_id);
+                                                   program.id,
+                                                   session.user_id);
         program.enabled = true;
-    }
-
-    openTutorial(tutorial: TutorialData) {
-        const win = window.open(tutorial.url, '_blank');
-        win.focus();
-    }
-
-    openGroup(group: GroupInfo) {
-        this.router.navigateByUrl(`/groups/${group.canonical_name}`);
-
-    }
-
-    createGroup() {
-        this.router.navigate(['/new/group']);
     }
 }

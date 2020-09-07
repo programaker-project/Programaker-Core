@@ -31,6 +31,7 @@
         , get_program/2
         , lists_programs_from_username/1
         , list_programs_from_userid/1
+        , list_programs/1
         , update_program/3
 
         , checkpoint_program/3
@@ -80,6 +81,10 @@
         , list_custom_signals_from_user_id/1
 
         , create_group/3
+        , get_user_groups/1
+        , get_group_by_name/2
+        , is_allowed_to_read_in_group/2
+        , is_allowed_to_write_in_group/2
 
         , add_mnesia_node/1
         , register_table/2
@@ -481,6 +486,9 @@ create_program(Username, ProgramName) ->
 create_program(Username, ProgramName, ProgramType) when is_binary(Username) ->
     io:fwrite("\033[7m[create_program(Username,...)] To be deprecated\033[0m~n"),
     {ok, Owner} = get_userid_from_username(Username),
+    create_program(Owner, ProgramName, ProgramType);
+
+create_program(Owner, ProgramName, ProgramType) ->
     ProgramId = generate_id(),
     {ok, ProgramChannel} = automate_channel_engine:create_channel(),
     CurrentTime = erlang:system_time(second),
@@ -532,6 +540,13 @@ list_programs_from_userid(Userid) ->
         X ->
             X
     end.
+
+-spec list_programs(owner_id()) -> {ok, [#user_program_entry{}, ...]} | {error, any()}.
+list_programs(Owner) ->
+    Transaction = fun() ->
+                          {ok, mnesia:index_read(?USER_PROGRAMS_TABLE, Owner, #user_program_entry.owner)}
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
 
 -spec update_program_status(binary(), binary(), boolean()) -> 'ok' | { 'error', any() }.
 update_program_status(_Username, ProgramId, Status)->
@@ -1251,23 +1266,24 @@ list_custom_signals_from_user_id({OwnerType, OwnerId}) ->
     end.
 
 %% Group management
--spec create_group(binary(), binary(), boolean()) -> {ok, binary()} | {error, any()}.
+-spec create_group(binary(), binary(), boolean()) -> {ok, #user_group_entry{}} | {error, any()}.
 create_group(Name, AdminUserId, Public) ->
     Canonicalized = automate_storage_utils:canonicalize(Name),
     Id = generate_id(),
     Transaction = fun() ->
                           case mnesia:index_read(?USER_GROUPS_TABLE, Name, #user_group_entry.canonical_name) of
                               [] ->
-                                  ok = mnesia:write(?USER_GROUPS_TABLE, #user_group_entry{ id=Id
-                                                                                         , name=Name
-                                                                                         , canonical_name=Canonicalized
-                                                                                         , public=Public
-                                                                                         }, write),
+                                  Entry = #user_group_entry{ id=Id
+                                                           , name=Name
+                                                           , canonical_name=Canonicalized
+                                                           , public=Public
+                                                           },
+                                  ok = mnesia:write(?USER_GROUPS_TABLE, Entry, write),
                                   ok = mnesia:write(?USER_GROUP_PERMISSIONS_TABLE, #user_group_permissions_entry{ group_id=Id
                                                                                                                 , user_id={user, AdminUserId}
                                                                                                                 , role=admin
                                                                                                                 }, write),
-                                  {ok, Id};
+                                  {ok, Entry};
                               _ ->
                                   {error, already_exists}
                           end
@@ -1279,6 +1295,54 @@ create_group(Name, AdminUserId, Public) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec get_user_groups(owner_id()) -> {ok, [#user_group_entry{}, ...]} | {error, any()}.
+get_user_groups(UserId) ->
+    Transaction = fun() ->
+                          Permissions = mnesia:index_read(?USER_GROUP_PERMISSIONS_TABLE, UserId, #user_group_permissions_entry.user_id),
+                          Groups = lists:map(fun(#user_group_permissions_entry{ group_id=GroupId }) ->
+                                                     [Group] = mnesia:read(?USER_GROUPS_TABLE, GroupId),
+                                                     Group
+                                             end, Permissions),
+                          {ok, Groups}
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec get_group_by_name(binary(), owner_id()) -> {ok, #user_group_entry{}} | {error, any()}.
+get_group_by_name(GroupName, AccessorId) ->
+    CanonicalizedName = automate_storage_utils:canonicalize(GroupName),
+    Transaction = fun() ->
+                          [Group=#user_group_entry{id=GroupId}] = mnesia:index_read(?USER_GROUPS_TABLE
+                                                                                   , CanonicalizedName
+                                                                                   , #user_group_entry.canonical_name),
+
+                          case is_allowed_to_read_in_group(AccessorId, GroupId) of
+                              true ->
+                                  {ok, Group};
+                              false ->
+                                  {error, not_authorized}
+                          end
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec is_allowed_to_read_in_group(owner_id(), binary()) -> true | false.
+is_allowed_to_read_in_group(AccessorId, GroupId) ->
+    Transaction = fun() ->
+                          lists:any(fun(#user_group_permissions_entry{user_id=UserId}) ->
+                                            UserId =:= AccessorId
+                                    end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId))
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec is_allowed_to_write_in_group(owner_id(), binary()) -> true | false.
+is_allowed_to_write_in_group(AccessorId, GroupId) ->
+    Transaction = fun() ->
+                          lists:any(fun(#user_group_permissions_entry{user_id=UserId, role=Role}) ->
+                                            (UserId == AccessorId)
+                                                and
+                                                  ( (Role == admin) or (Role == editor) )
+                                    end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId))
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
 
 %% Exposed startup entrypoint
 start_link() ->
@@ -1297,6 +1361,16 @@ register_table(_TableName, _RecordDef) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+wrap_transaction(TransactionResult) ->
+    case TransactionResult of
+        {aborted, Reason} ->
+            {error, Reason};
+        {atomic, Result} ->
+            Result;
+        Result ->
+            Result
+    end.
+
 gen_salt() ->
     gen_salt(?PASSWORD_HASHING_SALTLEN).
 gen_salt(SaltLen) ->

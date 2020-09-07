@@ -1,7 +1,7 @@
 <section class="component">
     <div class="title">Create a new group</div>
 
-    <span class="intent">Let's create a new user group! We'll be done quick.</span>
+    <span class="intent">Let's create a new user group! We'll be done quickly.</span>
 
     <div class="error-message col-sm-12" *ngIf="!!errorMessage">
         {{ errorMessage }}
@@ -84,6 +84,7 @@
         or
 
         <button
+            (click)="goBack()"
             mat-button mat-raised-button>
             Go back
         </button>

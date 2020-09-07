@@ -1,7 +1,7 @@
 <div class="profile-section">
     <div class="private-section">
         <div class="user-connections">
-            <h1>My connections </h1>
+            <h1>Group connections </h1>
             <div class="connection-list">
                 <div>
                     <button role="button" (click)="addConnection()" class="module connection call-to-action soft cardlike" mat-raised-button>
@@ -29,48 +29,15 @@
     </div>
 
     <div class="row public-section">
-        <div class="col col-sm-4">
-            <div *ngIf="userInfo" class="user-profile ">
+        <div class="">
+            <div *ngIf="groupInfo" class="user-profile ">
                 <mat-icon class="user-picture placeholder">account_circle</mat-icon>
 
-                <div class="username">{{ userInfo.name }}</div>
-
-                <section *ngIf="userInfo.groups" class="groups">
-                    <div class="section-title">Groups</div>
-
-                    <div *ngIf="userInfo.groups.length == 0" class="not-joined-explanation">
-                        You have not joined any <span class="keyword">group</span>.
-                    </div>
-
-                    <div class="section-objects">
-                        <mat-card class="group"
-                            *ngFor="let group of userInfo.groups"
-                            (click)="openGroup(group)"
-                            role="button" >
-                            <img class="icon" *ngIf="group.picture" src="{{ group.picture }}" alt="{{ group.name }}" />
-
-                            <span *ngIf="!group.picture" class="group-name">
-                                {{ group.name }}
-                            </span>
-                        </mat-card>
-                    </div>
-
-                    <div class="section-buttons">
-                        <button class="group call-to-action soft" role="button"
-                            (click)="createGroup()"
-                            mat-raised-button>
-                            <mat-icon>add</mat-icon> Create group
-                        </button>
-
-                        <button class="group call-to-action soft" role="button" mat-raised-button>
-                            <mat-icon>explore</mat-icon> Explore groups
-                        </button>
-                    </div>
-                </section>
+                <div class="username">{{ groupInfo.name }}</div>
             </div>
         </div>
         <div class="user-programs col col-sm-8">
-            <h1>My Programs</h1>
+            <h1>Group Programs</h1>
             <div class="section-explanation">
                 Create a new program or edit the ones you already have.
             </div>

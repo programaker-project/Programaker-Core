@@ -42,6 +42,14 @@ export class ProgramService {
         return userApiRoot + '/programs/';
     }
 
+    private getGroupCreateProgramsUrl(groupId: string) {
+        return `${ApiRoot}/groups/by-id/${groupId}/programs`;
+    }
+
+    private listProgramsOnGroupUrl(groupId: string) {
+        return `${ApiRoot}/groups/by-id/${groupId}/programs`;
+    }
+
     async getRetrieveProgramUrl(_user_id: string, program_name: string) {
         const userApiRoot = await this.sessionService.getUserApiRoot();
         return userApiRoot + '/programs/' + program_name;
@@ -103,9 +111,17 @@ export class ProgramService {
 
     getPrograms(): Promise<ProgramMetadata[]> {
         return this.getListProgramsUrl().then(url =>
-          this.http.get(url, {headers: this.sessionService.getAuthHeader()}).pipe(
-                  map(response => response as ProgramMetadata[]))
-                  .toPromise());
+            this.http.get(url, {headers: this.sessionService.getAuthHeader()}).pipe(
+                map(response => response as ProgramMetadata[]))
+                .toPromise());
+    }
+
+    async getProgramsOnGroup(groupId: string): Promise<ProgramMetadata[]> {
+        const url = this.listProgramsOnGroupUrl(groupId)
+
+        const result = await this.http.get(url, {headers: this.sessionService.getAuthHeader()}).toPromise();
+
+        return result['programs'];
     }
 
     getProgram(user_id: string, program_name: string): Promise<ProgramContent> {
@@ -145,6 +161,22 @@ export class ProgramService {
         }
 
         const url = await this.getCreateProgramsUrl();
+        return await this.http
+            .post(url, JSON.stringify(data), {
+                headers: this.sessionService.addJsonContentType(this.sessionService.getAuthHeader())
+            }).toPromise() as Promise<ProgramMetadata>;
+    }
+
+    public async createProgramOnGroup(program_type: ProgramType, program_name: string | null, groupId: string): Promise<ProgramMetadata> {
+        const data: { type?: string, name?: string } = {};
+        if (program_type) {
+            data.type = program_type;
+        }
+        if (program_name) {
+            data.name = program_name;
+        }
+
+        const url = this.getGroupCreateProgramsUrl(groupId);
         return await this.http
             .post(url, JSON.stringify(data), {
                 headers: this.sessionService.addJsonContentType(this.sessionService.getAuthHeader())

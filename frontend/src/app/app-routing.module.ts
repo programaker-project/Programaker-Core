@@ -24,6 +24,7 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { AboutPageComponent } from './info-pages/about-page.component';
 import { NewGroupComponent } from './new/group/new-group.component';
+import { GroupDashboardComponent } from './group-dashboard/dashboard.component';
 
 const routes: Routes = [
     { path: '', component: HomeRedirectComponent, pathMatch: 'full' },
@@ -39,6 +40,7 @@ const routes: Routes = [
     // General
     { path: 'full-dashboard', component: DashboardComponent },
     { path: 'dashboard', component: NewDashboardComponent },
+    { path: 'groups/:group_name', component: GroupDashboardComponent },
 
     // Programs
     { path: 'users/:user_id/programs/:program_id', component: ProgramDetailComponent },

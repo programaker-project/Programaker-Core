@@ -29,6 +29,7 @@ import { AlertModule } from 'ngx-bootstrap/alert';
 import { AppComponent } from './app.component';
 import { DashboardComponent } from './old-dashboard/dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
+import { GroupDashboardComponent } from './group-dashboard/dashboard.component';
 import { SettingsComponent } from './settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings.component';
 
@@ -82,6 +83,7 @@ import { SelectProgrammingModelDialogComponent } from './programs/select-program
         AppComponent,
         DashboardComponent,
         NewDashboardComponent,
+        GroupDashboardComponent,
         SettingsComponent,
         AdminSettingsComponent,
         ProgramDetailComponent,

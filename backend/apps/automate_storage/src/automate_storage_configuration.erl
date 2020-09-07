@@ -510,7 +510,7 @@ get_versioning(Nodes) ->
                                                          , LastFailedCallTime
                                                          }
                                                  end,
-                                                 [ id, user_id, program_name, program_type, program_parsed, program_orig, enabled, program_channel
+                                                 [ id, owner, program_name, program_type, program_parsed, program_orig, enabled, program_channel
                                                  , creation_time, last_upload_time, last_successful_call_time, last_failed_call_time
                                                  ],
                                                  user_program_entry
@@ -555,6 +555,10 @@ get_versioning(Nodes) ->
               , #database_version_transformation
                 { id=17
                 , apply=fun() ->
+
+                                {atomic, ok} = mnesia:add_table_index(?USER_GROUPS_TABLE, canonical_name),
+                                {atomic, ok} = mnesia:add_table_index(?USER_PROGRAMS_TABLE, owner),
+
                                 {atomic, ok} = mnesia:transform_table(
                                                  ?USER_GROUPS_TABLE,
                                                  fun( {user_group_entry, Id, Name} ) ->
@@ -562,8 +566,6 @@ get_versioning(Nodes) ->
                                                  end,
                                                  [ id, name, canonical_name, public ],
                                                  user_group_entry),
-
-                                {atomic, ok} = mnesia:add_table_index(?USER_GROUPS_TABLE, canonical_name),
 
                                 {atomic, ok} = mnesia:create_table(?USER_GROUP_PERMISSIONS_TABLE,
                                                                    [ { attributes, [group_id, user_id, role] }

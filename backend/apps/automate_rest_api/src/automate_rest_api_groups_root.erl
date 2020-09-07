@@ -13,6 +13,7 @@
 -export([ accept_json/2
         ]).
 -define(UTILS, automate_rest_api_utils).
+-define(FORMATTING, automate_rest_api_utils_formatting).
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
@@ -62,8 +63,10 @@ accept_json(Req, State=#state{ user_id=UserId }) ->
     {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = jiffy:decode(Body, [return_maps]),
     case automate_storage:create_group(maps:get(<<"name">>, Parsed), UserId, maps:get(<<"public">>, Parsed)) of
-        {ok, Id} ->
-            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true, id => Id }), Req),
+        {ok, Group} ->
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ success => true
+                                                         , group => ?FORMATTING:group_to_json(Group)
+                                                         }), Req),
             { true, Req2, State };
         {error, already_exists} ->
 

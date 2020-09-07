@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatAutocomplete, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -12,7 +13,7 @@ import { ServiceService } from '../../service.service';
 import { Session } from '../../session';
 import { SessionService } from '../../session.service';
 import { canonicalizableValidator } from './new-group.component.validators';
-
+import { GroupInfo } from 'app/group';
 
 @Component({
     // moduleId: module.id,
@@ -30,7 +31,7 @@ export class NewGroupComponent {
     is_advanced: boolean;
     options: FormGroup;
     publicGroup: boolean = false;
-    groupErrorMessage: string = '';
+    errorMessage: string = '';
     processing = false;
 
     @ViewChild('invitationAutocomplete') invitationAutocomplete: MatAutocomplete;
@@ -45,6 +46,7 @@ export class NewGroupComponent {
         public dialog: MatDialog,
         private groupService: GroupService,
         private formBuilder: FormBuilder,
+        private _location: Location,
     ) {
         this.options = this.formBuilder.group({
             groupName: ['', [Validators.required, Validators.minLength(4), canonicalizableValidator()]],
@@ -125,18 +127,23 @@ export class NewGroupComponent {
 
         this.processing = true;
         this.groupService.createGroup(groupName, { 'public': isPublicGroup, collaborators: collaborators.map(user => user.id) })
-            .then(groupId => {
-                this.router.navigate(['/groups/id/' + groupId]);
+            .then((group: GroupInfo) => {
+                this.router.navigate(['/groups/' + group.name]);
             })
             .catch(err => {
                 if ((err.name === 'HttpErrorResponse') && (err.status === 409)) {
-                    alert("name already taken"); // TODO: Properly integrate
+                    this.errorMessage = 'A group already exists with this name.';
+                    // TODO: Properly integrate with group name validations
                 }
                 else {
                     console.error(err);
                 }
+                this.processing = false;
             });
         ;
+    }
 
+    goBack() {
+        this._location.back();
     }
 }

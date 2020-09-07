@@ -1,3 +1,5 @@
+-define(DEFAULT_PROGRAM_TYPE, scratch_program).
+
 -record(rest_session,
         { user_id
         , session_id

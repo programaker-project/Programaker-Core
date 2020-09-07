@@ -9,3 +9,8 @@ export interface BridgeConnection {
     bridge_id: string,
     bridge_name: string,
 };
+
+export interface BridgeConnectionWithIconUrl {
+    conn: BridgeConnection,
+    extra: { icon_url?: string},
+};
