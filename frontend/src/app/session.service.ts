@@ -79,7 +79,7 @@ export class SessionService {
     async getApiRootForUserId(user_id?: string): Promise<string> {
         if (!user_id) {
             let session = SessionService.EstablishedSession;
-            if (session === undefined) {
+            if (!session) {
                 session = await this.getSession();
             }
             user_id = session.user_id;

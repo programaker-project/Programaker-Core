@@ -1,4 +1,4 @@
-
+import { Location } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
@@ -73,6 +73,7 @@ export class FlowEditorComponent implements OnInit {
         private customSignalService: CustomSignalService,
         private route: ActivatedRoute,
         private router: Router,
+        private _location: Location,
         private dialog: MatDialog,
         private templateService: TemplateService,
         private serviceService: ServiceService,
@@ -229,7 +230,7 @@ export class FlowEditorComponent implements OnInit {
 
     goBack(): boolean {
         this.dispose();
-        this.router.navigate(['/dashboard'])
+        this._location.back();
         return false;
     }
 

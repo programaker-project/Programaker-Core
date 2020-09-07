@@ -1,4 +1,4 @@
-
+import { Location } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
@@ -50,7 +50,6 @@ type NonReadyReason = 'loading' | 'disconnected';
 export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
     workspace: Blockly.Workspace;
-    programUserName: string;
     programId: string;
     environment: { [key: string]: any };
 
@@ -71,6 +70,8 @@ export class ProgramDetailComponent implements OnInit {
     private cursorDiv: HTMLElement;
     private cursorInfo: {};
     nonReadyReason: NonReadyReason;
+    logCount = 0;
+    streamingLogs = false;
 
     constructor(
         private monitorService: MonitorService,
@@ -79,10 +80,11 @@ export class ProgramDetailComponent implements OnInit {
         private customSignalService: CustomSignalService,
         private route: ActivatedRoute,
         private router: Router,
-        public dialog: MatDialog,
+        private _location: Location,
         private templateService: TemplateService,
         private serviceService: ServiceService,
         private notification: MatSnackBar,
+        public dialog: MatDialog,
         public connectionService: ConnectionService,
         public sessionService: SessionService,
     ) {
@@ -112,15 +114,27 @@ export class ProgramDetailComponent implements OnInit {
         progbar.track(new Promise((resolve) => {
             this.route.params.pipe(
                 switchMap((params: Params) => {
-                    this.programUserName = params['user_id'];
-                    this.programId = params['program_id'];
-                    return this.programService.getProgram(params['user_id'], params['program_id']).catch(err => {
-                        console.error("Error:", err);
-                        this.goBack();
-                        throw Error("Error loading");
-                    });
+                    const user = params['user_id'];
+                    if (user) {
+                        const programName = params['program_id'];
+
+                        return this.programService.getProgram(user, programName).catch(err => {
+                            console.error("Error:", err);
+                            this.goBack();
+                            throw Error("Error loading");
+                        });
+                    }
+                    else {
+                        const programId = params['program_id'];
+                        return this.programService.getProgramById(programId).catch(err => {
+                            console.error("Error:", err);
+                            this.goBack();
+                            throw Error("Error loading");
+                        })
+                    }
                 }))
                 .subscribe(program => {
+                    this.programId = program.id;
                     this.prepareWorkspace().then((controller: ToolboxController) => {
                         this.program = program;
                         this.load_program(controller, program);
@@ -207,6 +221,7 @@ export class ProgramDetailComponent implements OnInit {
 
     initializeListeners() {
         // Initialize log listeners
+        this.streamingLogs = true;
         this.programService.watchProgramLogs(this.program.owner, this.program.id,
                                              { request_previous_logs: true })
             .subscribe(
@@ -214,13 +229,16 @@ export class ProgramDetailComponent implements OnInit {
                     next: (update: ProgramInfoUpdate) => {
                         if (update.type === 'program_log') {
                             this.updateLogsDrawer(update.value);
+                            this.logCount++;
                         }
                     },
                     error: (error: any) => {
                         console.error("Error reading logs:", error);
+                        this.streamingLogs = false;
                     },
                     complete: () => {
                         console.warn("No more logs about program", this.programId)
+                        this.streamingLogs = false;
                     }
                 });
 
@@ -734,7 +752,7 @@ export class ProgramDetailComponent implements OnInit {
 
     goBack(): boolean {
         this.dispose();
-        this.router.navigate(['/dashboard'])
+        this._location.back();
         return false;
     }
 
@@ -789,7 +807,7 @@ export class ProgramDetailComponent implements OnInit {
             button.classList.remove('completed');
         }
 
-        const result = await this.programService.updateProgram(this.programUserName, program);
+        const result = await this.programService.updateProgram(program);
 
         if (button){
             button.classList.remove('started');
@@ -813,7 +831,7 @@ export class ProgramDetailComponent implements OnInit {
             }
 
             await this.sendProgram();
-            const rename = (this.programService.renameProgram(this.programUserName, this.program, programData.name)
+            const rename = (this.programService.renameProgram(this.program, programData.name)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {
@@ -908,7 +926,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const deletion = (this.programService.deleteProgram(this.programUserName, this.program)
+            const deletion = (this.programService.deleteProgram(this.program)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {

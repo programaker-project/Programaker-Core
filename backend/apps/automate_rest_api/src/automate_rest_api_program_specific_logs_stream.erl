@@ -21,24 +21,23 @@
 
 
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
     ProgramId = cowboy_req:binding(program_id, Req),
 
-
     Qs = cowboy_req:parse_qs(Req),
-    Error = case proplists:get_value(<<"token">>, Qs, undefined) of
+    {Error, UserId} = case proplists:get_value(<<"token">>, Qs, undefined) of
         undefined ->
-                     <<"Authorization header not found">>;
+                     {<<"Authorization header not found">>, none};
         X ->
             case automate_rest_api_backend:is_valid_token_uid(X) of
-                {true, UserId} ->
-                    none;
-                {true, TokenUserId} -> %% Non matching user_id
-                    automate_logging:log_api(warning, ?MODULE,
-                                             io_lib:format("[WS/Program] Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId])),
-                    <<"Unauthorized to use this resource">>;
+                {true, TokenUserId} ->
+                    case automate_storage:is_user_allowed({user, TokenUserId}, ProgramId, edit_program) of
+                        {ok, true} -> {none, TokenUserId};
+                        {ok, false} -> automate_logging:log_api(warning, ?MODULE,
+                                             io_lib:format("[WS/Program] Token UID: ~p~n", [TokenUserId])),
+                                       {<<"Unauthorized to use this resource">>, none}
+                    end;
                 false ->
-                    <<"Authorization not correct">>
+                    {<<"Authorization not correct">>, none}
             end
     end,
     {cowboy_websocket, Req, #state{ program_id=ProgramId

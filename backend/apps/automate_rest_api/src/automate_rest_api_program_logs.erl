@@ -18,16 +18,14 @@
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(state, { user_id :: binary(), program_id :: binary() }).
+-record(state, { program_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
     ProgramId = cowboy_req:binding(program_id, Req),
     {cowboy_rest, Req
-    , #state{ user_id=UserId
-                       , program_id=ProgramId
-                       }}.
+    , #state{ program_id=ProgramId
+            }}.
 
 resource_exists(Req, State) ->
     case cowboy_req:method(Req) of
@@ -47,7 +45,7 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#state{program_id=ProgramId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -58,12 +56,14 @@ is_authorized(Req, State) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    #state{user_id=UserId} = State,
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            { true, Req1, State };
-                        {true, _} -> %% Non matching user_id
-                            { { false, <<"Non-matching user id">>}, Req1, State };
+                            case automate_storage:is_user_allowed({user, UserId}, ProgramId, edit_program) of
+                                {ok, true} ->
+                                    { true, Req1, State };
+                                {ok, false} ->
+                                    { { false, <<"Not authorized">> }, Req1, State}
+                            end;
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end

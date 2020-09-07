@@ -45,6 +45,7 @@ const routes: Routes = [
     // Programs
     { path: 'users/:user_id/programs/:program_id', component: ProgramDetailComponent },
     { path: 'programs/:program_id/flow', component: FlowEditorComponent },
+    { path: 'programs/:program_id/scratch', component: ProgramDetailComponent },
 
     // Services
     { path: 'services', component: ServicesComponent },

@@ -26,7 +26,7 @@
             <mat-icon>edit</mat-icon> Rename
         </button>
         <button id="program-logs-button" color="secondary"
-            *ngIf="program !== undefined"
+            *ngIf="program !== undefined && (this.streamingLogs || this.logCount > 0)"
             (click)="toggleLogsPanel()" mat-button>
             <mat-icon>error_outline</mat-icon>
             <span *ngIf="logs_drawer.opened">Hide</span>

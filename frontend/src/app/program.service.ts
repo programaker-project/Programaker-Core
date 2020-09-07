@@ -50,21 +50,15 @@ export class ProgramService {
         return `${ApiRoot}/groups/by-id/${groupId}/programs`;
     }
 
-    async getRetrieveProgramUrl(_user_id: string, program_name: string) {
-        const userApiRoot = await this.sessionService.getUserApiRoot();
-        return userApiRoot + '/programs/' + program_name;
+    private getRetrieveProgramUrl(user_id: string, program_name: string) {
+        return `${ApiRoot}/users/${user_id}/programs/${program_name}`;
     }
 
     private getRetrieveProgramUrlById(program_id: string): string {
         return ApiRoot + '/programs/id/' + program_id;
     }
 
-    async getUpdateProgramUrl(programUserName: string, program_id: string) {
-        const userApiRoot = this.sessionService.getApiRootForUser(programUserName);
-        return userApiRoot + '/programs/' + encodeURIComponent(program_id);
-    }
-
-    async getUpdateProgramUrlById(program_id: string) {
+    async getUpdateProgramUrl(program_id: string) {
         return ApiRoot + '/programs/id/' + program_id;
     }
 
@@ -124,11 +118,12 @@ export class ProgramService {
         return result['programs'];
     }
 
-    getProgram(user_id: string, program_name: string): Promise<ProgramContent> {
-        return this.getRetrieveProgramUrl(user_id, program_name).then(url =>
-            this.http.get(url, {headers: this.sessionService.getAuthHeader()}).pipe(
-                map(response => response as ProgramContent))
-                .toPromise());
+    async getProgram(user_name: string, program_name: string): Promise<ProgramContent> {
+        const url = this.getRetrieveProgramUrl(user_name, program_name)
+
+        const result = await this.http.get(url, {headers: this.sessionService.getAuthHeader()}).toPromise();
+
+        return result as ProgramContent;
     }
 
     async getProgramById(program_id: string): Promise<ProgramContent> {
@@ -183,9 +178,8 @@ export class ProgramService {
             }).toPromise() as Promise<ProgramMetadata>;
     }
 
-    updateProgram(username: string,
-                  program: ProgramContent): Promise<boolean> {
-        return this.getUpdateProgramUrl(username, program.name).then(url =>
+    updateProgram(program: ProgramContent): Promise<boolean> {
+        return this.getUpdateProgramUrl(program.id).then(url =>
             this.http
                 .put(url, JSON.stringify({type: program.type, orig: program.orig, parsed: program.parsed}),
                      {headers: this.sessionService.addContentType(
@@ -200,7 +194,7 @@ export class ProgramService {
     }
 
     async updateProgramById(program: { id: string, type: ProgramType, orig: any, parsed: any }): Promise<boolean> {
-        const url = await this.getUpdateProgramUrlById(program.id);
+        const url = await this.getUpdateProgramUrl(program.id);
 
         try {
             (await
@@ -234,8 +228,8 @@ export class ProgramService {
         );
     }
 
-    renameProgram(username: string, program: ProgramContent, new_name: string): Promise<boolean> {
-        return this.getUpdateProgramUrl(username, program.name).then(
+    renameProgram(program: ProgramContent, new_name: string): Promise<boolean> {
+        return this.getUpdateProgramUrl(program.id).then(
             url => (this.http
                     .patch(url,
                            JSON.stringify({name: new_name}),
@@ -249,7 +243,7 @@ export class ProgramService {
     }
 
     async renameProgramById(program_id: string, new_name: string): Promise<boolean> {
-        const url = await this.getUpdateProgramUrlById(program_id);
+        const url = await this.getUpdateProgramUrl(program_id);
         const _response = await (this.http
                                 .patch(url,
                                        JSON.stringify({name: new_name}),
@@ -286,8 +280,8 @@ export class ProgramService {
                     .toPromise()));
     }
 
-    deleteProgram(username: string, program: ProgramContent): Promise<boolean> {
-        return this.getUpdateProgramUrl(username, program.name).then(
+    deleteProgram(program: ProgramContent): Promise<boolean> {
+        return this.getUpdateProgramUrl(program.id).then(
             url => (this.http
                     .delete(url,
                             {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
@@ -300,7 +294,7 @@ export class ProgramService {
     }
 
     async deleteProgramById(program_id: string): Promise<boolean> {
-        const url = await this.getUpdateProgramUrlById(program_id);
+        const url = await this.getUpdateProgramUrl(program_id);
         const _response = await(this.http
             .delete(url,
                     {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),

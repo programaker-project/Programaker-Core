@@ -134,14 +134,13 @@ export class GroupDashboardComponent {
     }
 
     async openProgram(program: ProgramMetadata): Promise<void> {
+        let programType = 'scratch';
+
         if (program.type === 'flow_program') {
-            this.router.navigate(['/programs/' + program.id + '/flow']);
+            programType = 'flow';
         }
-        else if ((!program.type) || (program.type === 'scratch_program')) {
-            const session = await this.sessionService.getSession();
-            this.router.navigate(['/users/' + session.username
-                + '/programs/' + encodeURIComponent(program.name)]);
-        }
+
+        this.router.navigateByUrl(`/programs/${program.id}/${programType}`);
     }
 
     enableService(service: AvailableService): void {

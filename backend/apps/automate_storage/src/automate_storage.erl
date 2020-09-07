@@ -1953,14 +1953,16 @@ store_new_program_content(ProgramId,
                               [] ->
                                   [];
 
-                              [Program] ->
+                              [Program=#user_program_entry{id=ProgramId}] ->
                                   ok = mnesia:write(?USER_PROGRAMS_TABLE,
                                                     Program#user_program_entry{ program_type=ProgramType
                                                                               , program_parsed=ProgramParsed
                                                                               , program_orig=ProgramOrig
                                                                               , last_upload_time=CurrentTime
                                                                               }, write),
-                                  { ok, Program#user_program_entry.id }
+                                  ok = mnesia:delete(?USER_PROGRAM_EVENTS_TABLE, ProgramId, write),
+
+                                  { ok, ProgramId }
                           end
                   end,
 case mnesia:transaction(Transaction) of
