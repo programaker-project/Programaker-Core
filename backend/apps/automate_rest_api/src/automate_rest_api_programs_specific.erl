@@ -20,7 +20,7 @@
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(get_program_seq, { username, program_name }).
+-record(get_program_seq, { username :: binary(), program_name :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->

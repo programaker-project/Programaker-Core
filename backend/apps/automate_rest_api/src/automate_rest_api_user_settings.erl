@@ -18,7 +18,7 @@
 -include("./records.hrl").
 -include("../../automate_template_engine/src/records.hrl").
 
--record(state, { user_id }).
+-record(state, { user_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->

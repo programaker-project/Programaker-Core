@@ -20,7 +20,7 @@
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(state, { program_id }).
+-record(state, { program_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->

@@ -23,7 +23,7 @@
 -include("../../automate_service_port_engine/src/records.hrl").
 -define(FORMATTING, automate_rest_api_utils_formatting).
 
--record(state, {username}).
+-record(state, {username :: binary()}).
 
 -spec init(_, _) -> {cowboy_rest, _, _}.
 

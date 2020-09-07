@@ -17,7 +17,7 @@
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
--record(state, { user_id, bridge_id, callback }).
+-record(state, { user_id :: binary(), bridge_id :: binary(), callback :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -70,7 +70,7 @@ content_types_provided(Req, State) ->
 
 to_json(Req, State) ->
     #state{bridge_id=BridgeId, callback=Callback, user_id=UserId} = State,
-    case automate_rest_api_backend:callback_bridge(UserId, BridgeId, Callback) of
+    case automate_rest_api_backend:callback_bridge({user, UserId}, BridgeId, Callback) of
         {ok, Result} ->
             Output = jiffy:encode(Result),
             Res = ?UTILS:send_json_format(Req),

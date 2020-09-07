@@ -20,7 +20,7 @@
 -include("./records.hrl").
 -include("../../automate_template_engine/src/records.hrl").
 
--record(state, { user_id }).
+-record(state, { user_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -83,7 +83,7 @@ accept_json_create_template(Req, State) ->
     Template = jiffy:decode(Body, [return_maps]),
     #{ <<"name">> := TemplateName, <<"content">> := TemplateContent } = Template,
 
-    case automate_rest_api_backend:create_template(UserId, TemplateName, TemplateContent) of
+    case automate_rest_api_backend:create_template({user, UserId}, TemplateName, TemplateContent) of
         { ok, TemplateId } ->
 
             Output = jiffy:encode(#{ <<"id">> => TemplateId

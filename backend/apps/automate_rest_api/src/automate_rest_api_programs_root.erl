@@ -21,7 +21,7 @@
 -define(FORMATTING, automate_rest_api_utils_formatting).
 -define(PROGRAMS, automate_rest_api_utils_programs).
 
--record(create_program_seq, { username }).
+-record(create_program_seq, { username :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->

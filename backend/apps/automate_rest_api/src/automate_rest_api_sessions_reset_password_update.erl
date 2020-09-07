@@ -14,15 +14,12 @@
 -define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 
--record(login_seq, { rest_session,
-                     login_data
-                   }).
+-record(state, { }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     {cowboy_rest, Req
-    , #login_seq{ rest_session=undefined
-                , login_data=undefined}}.
+    , #state{}}.
 
 %% CORS
 options(Req, State) ->
@@ -39,7 +36,7 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 %%%% POST
--spec accept_json_modify_collection(cowboy_req:req(),#login_seq{})
+-spec accept_json_modify_collection(cowboy_req:req(),#state{})
                                    -> {'true',cowboy_req:req(),_}.
 accept_json_modify_collection(Req, Session) ->
     case cowboy_req:has_body(Req) of

@@ -20,7 +20,7 @@
 -include("./records.hrl").
 -include("../../automate_template_engine/src/records.hrl").
 
--record(state, { user_id, template_id }).
+-record(state, { user_id :: binary(), template_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -84,7 +84,7 @@ content_types_provided(Req, State) ->
              -> {binary(),cowboy_req:req(), #state{}}.
 to_json(Req, State) ->
     #state{user_id=UserId, template_id=TemplateId} = State,
-    case automate_rest_api_backend:get_template(UserId, TemplateId) of
+    case automate_rest_api_backend:get_template({user, UserId}, TemplateId) of
         { ok, Template } ->
 
             Output = jiffy:encode(template_to_json(Template)),
@@ -109,7 +109,7 @@ update_template(Req, State) ->
     Parsed = jiffy:decode(Body, [return_maps]),
     #{ <<"name">> := TemplateName, <<"content">> := TemplateContent } = Parsed,
 
-    case automate_rest_api_backend:update_template(UserId, TemplateId, TemplateName, TemplateContent) of
+    case automate_rest_api_backend:update_template({user, UserId}, TemplateId, TemplateName, TemplateContent) of
         ok ->
             Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
             { true, Req2, State };
@@ -121,7 +121,7 @@ update_template(Req, State) ->
 %% DELETE handler
 delete_resource(Req, State) ->
     #state{template_id=TemplateId, user_id=UserId} = State,
-    case automate_rest_api_backend:delete_template(UserId, TemplateId) of
+    case automate_rest_api_backend:delete_template({user, UserId}, TemplateId) of
         ok ->
             Req1 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
             { true, Req1, State };

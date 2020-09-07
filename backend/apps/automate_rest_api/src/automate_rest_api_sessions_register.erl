@@ -16,16 +16,13 @@
 -define(FORMAT, automate_rest_api_utils_formatting).
 -include("./records.hrl").
 
--record(registration_seq, { rest_session,
-                            registration_data
-                          }).
+-record(state, {}).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     Res = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Res
-    , #registration_seq{ rest_session=undefined
-                       , registration_data=undefined}}.
+    , #state{}}.
 
 resource_exists(Req, State) ->
     {false, Req, State}.
@@ -48,8 +45,8 @@ content_types_accepted(Req, State) ->
 
 %%%% POST
                                                 %
--spec accept_json_modify_collection(cowboy_req:req(),#registration_seq{})
-                                   -> {'false' | {'true', binary()},cowboy_req:req(),#registration_seq{}}.
+-spec accept_json_modify_collection(cowboy_req:req(),#state{})
+                                   -> {'false' | {'true', binary()},cowboy_req:req(),#state{}}.
 accept_json_modify_collection(Req, Session) ->
     case cowboy_req:has_body(Req) of
         true ->
@@ -69,8 +66,7 @@ accept_json_modify_collection(Req, Session) ->
                             Res1 = cowboy_req:set_resp_body(Output, Req2),
                             Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
                             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
-                            { true, Res3, Session#registration_seq{
-                                            registration_data=RegistrationData} };
+                            { true, Res3, Session};
                         {error, Reason} ->
                             Res1 = ?UTILS:send_json_output(jiffy:encode(#{ success => false
                                                                          , error => ?FORMAT:reason_to_json(Reason)

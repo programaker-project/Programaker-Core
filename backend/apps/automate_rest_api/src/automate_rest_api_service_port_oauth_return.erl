@@ -15,7 +15,7 @@
 
 -include("./records.hrl").
 
--record(state, { service_port_id }).
+-record(state, { service_port_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->

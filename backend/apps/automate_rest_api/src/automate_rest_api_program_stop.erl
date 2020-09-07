@@ -16,7 +16,7 @@
 
 -include("./records.hrl").
 
--record(program_stop_thread_opts, { user_id, program_id }).
+-record(program_stop_thread_opts, { user_id :: binary(), program_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->

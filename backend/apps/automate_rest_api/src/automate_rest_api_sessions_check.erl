@@ -14,12 +14,12 @@
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(check_seq, { userid }).
+-record(check_seq, { user_id :: binary() | undefined }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     {cowboy_rest, Req
-    , #check_seq{ userid=undefined }}.
+    , #check_seq{ user_id=undefined }}.
 
 content_types_provided(Req, State) ->
     {[ {<<"application/json">>, to_json}
@@ -47,7 +47,7 @@ is_authorized(Req, State) ->
                 X ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            { true, Req1, #check_seq{userid=UserId} };
+                            { true, Req1, #check_seq{user_id=UserId} };
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
@@ -56,7 +56,7 @@ is_authorized(Req, State) ->
 
 %% GET handler
 -spec to_json(cowboy_req:req(), #check_seq{}) -> {binary(),cowboy_req:req(),_}.
-to_json(Req, State=#check_seq{userid=UserId}) ->
+to_json(Req, State=#check_seq{user_id=UserId}) ->
     {ok, User} = automate_rest_api_backend:get_user(UserId),
 
     Output = encode_user(User),

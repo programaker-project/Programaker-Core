@@ -19,7 +19,7 @@
 -define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 
--record(state, { username }).
+-record(state, { username :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->

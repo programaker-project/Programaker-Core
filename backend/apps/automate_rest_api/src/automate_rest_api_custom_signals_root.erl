@@ -20,7 +20,7 @@
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(state, { user_id }).
+-record(state, { user_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -83,7 +83,7 @@ accept_json_create_signal(Req, State) ->
     Signal = jiffy:decode(Body, [return_maps]),
     #{ <<"name">> := SignalName } = Signal,
 
-    case automate_rest_api_backend:create_custom_signal(UserId, SignalName) of
+    case automate_rest_api_backend:create_custom_signal({user, UserId}, SignalName) of
         { ok, SignalId } ->
 
             Output = jiffy:encode(#{ <<"id">> => SignalId

@@ -14,7 +14,7 @@
 -define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 
--record(login_seq, { rest_session,
+-record(login_seq, { rest_session :: binary() | undefined,
                      login_data
                    }).
 
