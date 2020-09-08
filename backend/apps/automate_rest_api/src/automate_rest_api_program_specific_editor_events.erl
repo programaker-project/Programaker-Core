@@ -91,6 +91,10 @@ websocket_init(State=#state{error=Error}) ->
     }.
 
 
+websocket_handle(ping, State) ->
+    {ok, State};
+websocket_handle({ping, _}, State) ->
+    {ok, State};
 websocket_handle(pong, State) ->
     {ok, State};
 websocket_handle(_, State=#state{can_edit=false}) ->
