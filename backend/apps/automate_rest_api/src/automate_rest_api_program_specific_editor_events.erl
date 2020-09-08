@@ -55,12 +55,19 @@ websocket_init(State=#state{ program_id=ProgramId
                            , error=none
                            }) ->
 
-    {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
+    {ok, #user_program_entry{ program_channel=ProgramChannelId }} = automate_storage:get_program_from_id(ProgramId),
 
     automate_logging:log_api(debug, ?MODULE,
-                             io_lib:format("Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId])),
+                             io_lib:format("Listening on program ~p; channel: ~p~n", [ProgramId, ProgramChannelId])),
+    {ok, ChannelId} = case automate_channel_engine:listen_channel(ProgramChannelId) of
+                          ok -> {ok, ProgramChannelId};
+                          {error, channel_not_found} ->
+                              automate_logging:log_api(warning, ?MODULE, {fixing, program_channel, ProgramId}),
+                              ok = automate_storage:fix_program_channel(ProgramId),
+                              {ok, #user_program_entry{ program_channel=NewChannelId }} = automate_storage:get_program_from_id(ProgramId),
+                              {automate_channel_engine:listen_channel(NewChannelId), NewChannelId}
+                      end,
     ok = automate_channel_engine:monitor_listeners(ChannelId, self(), node()),
-    ok = automate_channel_engine:listen_channel(ChannelId),
 
     Events = case automate_storage:get_program_events(ProgramId) of
                  {ok, Evs} ->

@@ -33,6 +33,7 @@
         , list_programs_from_userid/1
         , list_programs/1
         , update_program/3
+        , fix_program_channel/1
 
         , checkpoint_program/3
         , get_last_checkpoint_content/1
@@ -595,6 +596,23 @@ is_user_allowed(Owner, ProgramId, Action) ->
 -spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program(Username, ProgramName, Content)->
     store_new_program_content(Username, ProgramName, Content).
+
+-spec fix_program_channel(binary()) -> ok | {error, nothing_to_fix | not_found}.
+fix_program_channel(ProgramId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
+                              [] -> {error, not_found};
+                              [Program=#user_program_entry{program_channel=ChannelId}] ->
+                                  case automate_channel_engine_mnesia_backend:exists_channel(ChannelId) of
+                                      true ->
+                                          {error, nothing_to_fix};
+                                      false ->
+                                          {ok, NewChannel} = automate_channel_engine:create_channel(),
+                                          ok = mnesia:write(?USER_PROGRAMS_TABLE, Program#user_program_entry{program_channel=NewChannel}, write)
+                                  end
+                          end
+                  end,
+    wrap_transaction(mnesia:transaction(Transaction)).
 
 -spec update_program_by_id(binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program_by_id(ProgramId, Content)->
