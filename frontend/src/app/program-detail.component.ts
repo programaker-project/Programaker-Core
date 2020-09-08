@@ -67,6 +67,7 @@ export class ProgramDetailComponent implements OnInit {
     connectionLost: boolean;
     private workspaceElement: HTMLElement;
 
+    canEdit: boolean;
     private cursorDiv: HTMLElement;
     private cursorInfo: {};
     nonReadyReason: NonReadyReason;
@@ -135,6 +136,7 @@ export class ProgramDetailComponent implements OnInit {
                 }))
                 .subscribe(program => {
                     this.programId = program.id;
+                    this.canEdit = !program['readonly'];
                     this.prepareWorkspace().then((controller: ToolboxController) => {
                         this.program = program;
                         this.load_program(controller, program);
@@ -222,25 +224,27 @@ export class ProgramDetailComponent implements OnInit {
     initializeListeners() {
         // Initialize log listeners
         this.streamingLogs = true;
-        this.programService.watchProgramLogs(this.program.owner, this.program.id,
-                                             { request_previous_logs: true })
-            .subscribe(
-                {
-                    next: (update: ProgramInfoUpdate) => {
-                        if (update.type === 'program_log') {
-                            this.updateLogsDrawer(update.value);
-                            this.logCount++;
+        if (!this.program.readonly) {
+            this.programService.watchProgramLogs(this.program.owner, this.program.id,
+                                                 { request_previous_logs: true })
+                .subscribe(
+                    {
+                        next: (update: ProgramInfoUpdate) => {
+                            if (update.type === 'program_log') {
+                                this.updateLogsDrawer(update.value);
+                                this.logCount++;
+                            }
+                        },
+                        error: (error: any) => {
+                            console.error("Error reading logs:", error);
+                            this.streamingLogs = false;
+                        },
+                        complete: () => {
+                            console.warn("No more logs about program", this.programId)
+                            this.streamingLogs = false;
                         }
-                    },
-                    error: (error: any) => {
-                        console.error("Error reading logs:", error);
-                        this.streamingLogs = false;
-                    },
-                    complete: () => {
-                        console.warn("No more logs about program", this.programId)
-                        this.streamingLogs = false;
-                    }
-                });
+                    });
+        }
 
         this.initializeEventSynchronization();
     }
@@ -320,8 +324,6 @@ export class ProgramDetailComponent implements OnInit {
             }
         );
 
-        this.workspace.addChangeListener(mirrorEvent);
-
         const onMouseEvent = ((ev: MouseEvent) => {
             if (ev.buttons) {
                 return;
@@ -340,8 +342,11 @@ export class ProgramDetailComponent implements OnInit {
             this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
         });
 
-        this.workspaceElement.onmousemove = onMouseEvent;
-        this.workspaceElement.onmouseup = onMouseEvent;
+        if (this.canEdit) {
+            this.workspace.addChangeListener(mirrorEvent);
+            this.workspaceElement.onmousemove = onMouseEvent;
+            this.workspaceElement.onmouseup = onMouseEvent;
+        }
     }
 
     /* Collaborator pointer management */
@@ -557,7 +562,7 @@ export class ProgramDetailComponent implements OnInit {
             disable: false,
             collapse: true,
             media: '../assets/scratch-media/',
-            readOnly: false,
+            readOnly: !this.canEdit,
             trashcan: true,
             rtl: rtl,
             scrollbars: true,
@@ -585,7 +590,10 @@ export class ProgramDetailComponent implements OnInit {
 
         this.toolboxController = controller;
         controller.setWorkspace(this.workspace);
-        controller.update();
+
+        if (this.canEdit) {
+            controller.update(); // Setting the toolbox when it can't be shown would generate an error
+        }
 
         // HACK:
         // Defer a hide action, this is to compsensate for (what feels like)

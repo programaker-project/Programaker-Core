@@ -15,6 +15,7 @@ export class ProgramContent extends ProgramMetadata {
     orig: any;
     owner: string;
     checkpoint?: any;
+    "readonly"?: boolean;
 
     constructor (metadata: ProgramMetadata, parsed: any, orig: any, type: ProgramType) {
       super();

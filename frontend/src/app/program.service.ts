@@ -127,7 +127,7 @@ export class ProgramService {
     }
 
     async getProgramById(program_id: string): Promise<ProgramContent> {
-        const url = await this.getRetrieveProgramUrlById(program_id);
+        const url = this.getRetrieveProgramUrlById(program_id);
         return (this.http.get(url, {headers: this.sessionService.getAuthHeader()})
                 .toPromise() as Promise<ProgramContent>);
     }

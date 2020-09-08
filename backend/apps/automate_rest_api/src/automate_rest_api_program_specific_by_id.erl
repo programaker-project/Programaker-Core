@@ -20,7 +20,7 @@
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(state, { program_id :: binary() }).
+-record(state, { program_id :: binary(), user_id :: binary() | undefined }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -28,7 +28,8 @@ init(Req, _Opts) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Req1
     , #state{ program_id=ProgramId
-                      }}.
+            , user_id=undefined
+            }}.
 
 %% CORS
 options(Req, State) ->
@@ -59,7 +60,7 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                         {true, UId} ->
                             case automate_storage:is_user_allowed({user, UId}, ProgramId, Action) of
                                 {ok, true} ->
-                                    { true, Req1, State };
+                                    { true, Req1, State#state{user_id=UId} };
                                 {ok, false} ->
                                     { { false, <<"Action not authorized">>}, Req1, State };
                                 {error, Reason} ->
@@ -72,22 +73,24 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
             end
     end.
 
-%% Get handler
+%% GET handler
 content_types_provided(Req, State) ->
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State=#state{program_id=ProgramId}) ->
+to_json(Req, State=#state{program_id=ProgramId, user_id=UserId}) ->
     case automate_rest_api_backend:get_program(ProgramId) of
         { ok, Program } ->
-            Output = program_to_json(Program),
+            Json = program_to_json(Program),
+            {ok, CanEdit} = automate_storage:is_user_allowed({user, UserId}, ProgramId, edit_program),
+            Output = Json#{ readonly => not CanEdit },
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            { Output, Res2, State }
+            { jiffy:encode(Output), Res2, State }
     end.
 
 
@@ -99,16 +102,15 @@ program_to_json(#user_program{ id=Id
                              , program_orig=ProgramOrig
                              , enabled=Enabled
                              }) ->
-
-    jiffy:encode(#{ <<"id">> => Id
-                  , <<"owner">> => OwnerId
-                  , <<"owner_data">> => Owner
-                  , <<"name">> => ProgramName
-                  , <<"type">> => ProgramType
-                  , <<"parsed">> => ProgramParsed
-                  , <<"orig">> => ProgramOrig
-                  , <<"enabled">> => Enabled
-                  }).
+    #{ <<"id">> => Id
+     , <<"owner">> => OwnerId
+     , <<"owner_data">> => Owner
+     , <<"name">> => ProgramName
+     , <<"type">> => ProgramType
+     , <<"parsed">> => ProgramParsed
+     , <<"orig">> => ProgramOrig
+     , <<"enabled">> => Enabled
+     }.
 
 
 content_types_accepted(Req, State) ->
