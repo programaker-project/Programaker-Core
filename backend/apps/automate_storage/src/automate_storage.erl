@@ -87,6 +87,7 @@
         , is_allowed_to_write_in_group/2
         , can_user_edit_as/2
         , can_user_view_as/2
+        , list_collaborators/1
 
         , add_mnesia_node/1
         , register_table/2
@@ -1365,6 +1366,17 @@ can_user_view_as({user, UserId}, {user, UserId}) ->
     true;
 can_user_view_as({user, _UserId}, {user, _AnotherUser}) ->
     false.
+
+-spec list_collaborators({group, binary()}) -> {ok, [{#user_program_entry{}, user_in_group_role()}, ...]} | {error, any()}.
+list_collaborators({group, GroupId}) ->
+    Transaction = fun() ->
+                          Results = lists:map(fun(#user_group_permissions_entry{user_id={user, UserId}, role=Role}) ->
+                                                      [User] = mnesia:read(?REGISTERED_USERS_TABLE, UserId),
+                                                      {User, Role}
+                                              end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId)),
+                          {ok, Results}
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
 
 %% Exposed startup entrypoint
 start_link() ->

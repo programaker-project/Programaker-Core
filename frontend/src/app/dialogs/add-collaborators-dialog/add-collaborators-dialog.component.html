@@ -1,0 +1,64 @@
+<h2 mat-dialog-title>Add collaborators</h2>
+<div class="intent">
+    Invite some people to the group.
+</div>
+
+<mat-form-field class="collaborator-input">
+    <input type="text"
+        placeholder="Search for users to invite"
+        matInput
+        [formControl]="invitationSearch"
+        [matAutocomplete]="auto">
+    <mat-autocomplete #invitationAutocomplete #auto="matAutocomplete" [displayWith]="displayInvitation">
+        <mat-option *ngFor="let option of filteredOptions" [value]="option">
+            {{option.username}}
+        </mat-option>
+    </mat-autocomplete>
+</mat-form-field>
+
+<ul class="collaborator-list">
+    <li class="collaborator" *ngFor="let user of collaborators">
+        <button (click)="removeCollaborator(user)" class="remove-collaborator" >
+            <mat-icon>clear</mat-icon>
+        </button>
+        <span class="name">
+            {{ user.username }}
+        </span>
+        <span>
+            as
+        </span>
+        <mat-form-field class="role">
+            <mat-label>role</mat-label>
+            <mat-select [(value)]="user.role">
+                <mat-select-trigger>
+                    <mat-icon *ngIf="user.role == 'admin'">flash_on</mat-icon>
+                    <mat-icon *ngIf="user.role == 'editor'">brush</mat-icon>
+                    <mat-icon *ngIf="user.role == 'viewer'">visibility</mat-icon>
+
+                    {{ user.role }}
+                </mat-select-trigger>
+
+                <mat-option value="admin" ><mat-icon>flash_on</mat-icon> admin</mat-option>
+                <mat-option value="editor"><mat-icon>brush</mat-icon> editor</mat-option>
+                <mat-option value="viewer"><mat-icon>visibility</mat-icon> viewer</mat-option>
+            </mat-select>
+        </mat-form-field>
+    </li>
+</ul>
+
+<div class="accept-cancel">
+    <button class="confirm-button"
+        [disabled]="collaborators.length < 1"
+        (click)="confirm()"
+        mat-button mat-raised-button>
+        Send invitations
+    </button>
+
+    or
+
+    <button
+        (click)="onNoClick()"
+        mat-button mat-raised-button>
+        Go back
+    </button>
+</div>

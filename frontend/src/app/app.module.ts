@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
@@ -77,6 +78,7 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
 import { SelectProgrammingModelDialogComponent } from './programs/select-programming-model-dialog/select-programming-model-dialog.component';
+import { AddCollaboratorsDialogComponent } from './dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
 
 @NgModule({
     declarations: [
@@ -115,6 +117,7 @@ import { SelectProgrammingModelDialogComponent } from './programs/select-program
         StopThreadProgramDialogComponent,
         SetProgramTagsDialogComponent,
         AddConnectionDialogComponent,
+        AddCollaboratorsDialogComponent,
 
         // Pipes
         SummarizeJSON,
@@ -140,6 +143,7 @@ import { SelectProgrammingModelDialogComponent } from './programs/select-program
         MatProgressSpinnerModule,
         MatBadgeModule,
         MatTooltipModule,
+        MatSelectModule,
 
         BrowserAnimationsModule,
 

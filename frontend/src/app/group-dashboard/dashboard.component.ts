@@ -3,6 +3,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
+import { Collaborator, CollaboratorRole } from 'app/types/collaborator';
 import { BridgeService } from '../bridges/bridge.service';
 import { BridgeConnectionWithIconUrl } from '../connection';
 import { ConnectionService } from '../connection.service';
@@ -16,6 +17,7 @@ import { AvailableService, ServiceEnableHowTo } from '../service';
 import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
+import { AddCollaboratorsDialogComponent } from 'app/dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
 
 @Component({
     // moduleId: module.id,
@@ -34,6 +36,8 @@ export class GroupDashboardComponent {
     bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
     session: Session = null;
     groupInfo: GroupInfo;
+    collaborators: Collaborator[] = null;
+    userRole: CollaboratorRole = null;
 
     constructor(
         private programService: ProgramService,
@@ -70,8 +74,23 @@ export class GroupDashboardComponent {
                         this.programService.getProgramsOnGroup(this.groupInfo.id)
                             .then(programs => {
                                 this.programs = programs;
-                                console.log("P", programs);
                             });
+
+                        this.groupService.getCollaboratorsOnGroup(this.groupInfo.id)
+                            .then(collaborators => {
+                                this.collaborators = collaborators;
+
+                                // Discover own user role
+                                for (let user of collaborators) {
+                                    if (user.id == session.user_id) {
+                                        if ((!this.userRole) || (user.role === 'admin')
+                                            || (user.role === 'editor' && this.userRole !== 'admin')) {
+
+                                            this.userRole = user.role;
+                                        }
+                                    }
+                                }
+                            })
 
                         this.updateConnections();
                     }
@@ -112,6 +131,16 @@ export class GroupDashboardComponent {
             if (result && result.success) {
                 this.updateConnections();
             }
+        });
+    }
+
+    addCollaborators(): void {
+        const dialogRef = this.dialog.open(AddCollaboratorsDialogComponent, { width: '50%' });
+
+        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+            // if (result && result.success) {
+            //     this.updateCollaborators();
+            // }
         });
     }
 

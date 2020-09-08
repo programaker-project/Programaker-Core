@@ -214,13 +214,13 @@ mat-card.example > .description {
 }
 
 /* User profile */
-.user-profile .user-picture {
+.user-profile .group-picture {
     font-size: 1000% !important;
     text-align: center;
     width: 100%;
 }
 
-.user-profile .username {
+.user-profile .group-name {
     font-size: 200%;
     color: #444;
     text-align: center;
@@ -236,7 +236,16 @@ mat-card.example > .description {
     font-size: 150%;
 }
 
-.user-profile .no-group-joined-explanation {
+.status-ispublic-info {
+    text-align: center;
+    font-style: italic;
+}
+
+.status-ispublic-info mat-icon {
+    vertical-align: bottom;
+}
+
+.user-profile .not-joined-explanation {
     font-style: italic;
     display: inline;
     padding-left: 1em;
@@ -246,26 +255,30 @@ mat-card.example > .description {
     text-decoration: underline;
 }
 
-mat-card.group {
+mat-card.collaborator {
     display: inline-block;
     vertical-align: bottom;
     margin-left: 1ex;
     padding: 0;
 }
 
-mat-card.group img {
+mat-card.collaborator img {
     max-width: 3em;
     max-height: 3em;
     border-radius: 4px;
 }
 
-mat-card.group .group-name {
+mat-card.collaborator .user-name {
     display: block;
     padding: 1ex;
 }
 
 section .section-buttons {
     margin-top: 1ex;
+}
+
+section.edit-configuration {
+    text-align: center;
 }
 
 button.group {

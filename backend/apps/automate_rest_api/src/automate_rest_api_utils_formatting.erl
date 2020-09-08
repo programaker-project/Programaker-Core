@@ -9,6 +9,7 @@
         , group_to_json/1
         , program_to_json/1
         , program_to_json/2
+        , collaborator_to_json/1
         ]).
 
 -include("./records.hrl").
@@ -160,3 +161,13 @@ program_to_json(#program_metadata{ id=Id
 program_to_json(Program, Bridges) ->
     Base = program_to_json(Program),
     Base#{ bridges_in_use => Bridges }.
+
+collaborator_to_json({ #registered_user_entry{ id=Id
+                                             , username=Username
+                                             }
+                     , Role
+                     }) ->
+    #{ id => Id
+     , username => Username
+     , role => Role
+     }.

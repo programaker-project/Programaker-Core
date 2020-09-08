@@ -29,11 +29,55 @@
     </div>
 
     <div class="row public-section">
-        <div class="">
+        <div class="col col-sm-4">
             <div *ngIf="groupInfo" class="user-profile ">
-                <mat-icon class="user-picture placeholder">account_circle</mat-icon>
+                <mat-icon class="group-picture placeholder">account_circle</mat-icon>
 
-                <div class="username">{{ groupInfo.name }}</div>
+                <div class="group-name">{{ groupInfo.name }}</div>
+
+                <div class="status-ispublic-info">
+                    <div *ngIf="groupInfo.public" class="public-group">
+                        <mat-icon>public</mat-icon> public group
+                    </div>
+                    <div *ngIf="!groupInfo.public" class="public-group">
+                        <mat-icon>lock</mat-icon> private group
+                    </div>
+                </div>
+                <section class="edit-configuration"
+                    *ngIf="userRole==='admin'"
+                >
+                    <button mat-raised-button>
+                        Edit configuration (WIP)
+                    </button>
+                </section>
+                <section *ngIf="collaborators" class="collaborators">
+                    <div class="section-title">Collaborators</div>
+
+                    <div *ngIf="collaborators.length == 0" class="not-joined-explanation">
+                        You have not joined any <span class="keyword">group</span>.
+                    </div>
+
+                    <div class="section-objects">
+                        <mat-card class="collaborator"
+                            *ngFor="let user of collaborators"
+                            role="button" >
+                            <img class="icon" *ngIf="user.picture" src="{{ user.picture }}" alt="{{ user.username }}" />
+
+                            <span *ngIf="!user.picture" class="user-name">
+                                {{ user.username }}
+                            </span>
+                        </mat-card>
+                    </div>
+
+                    <div class="section-buttons">
+                        <button class="group call-to-action soft" role="button"
+                            (click)="addCollaborators()"
+                            *ngIf="userRole==='admin'"
+                            mat-raised-button>
+                            <mat-icon>group_add</mat-icon> Add collaborators
+                        </button>
+                    </div>
+                </section>
             </div>
         </div>
         <div class="user-programs col col-sm-8">

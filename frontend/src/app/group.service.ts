@@ -1,13 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map, share } from 'rxjs/operators';
+import { Collaborator } from 'app/types/collaborator';
 import { ApiRoot } from './api-config';
 import { ContentType } from './content-type';
-import { ProgramContent, ProgramEditorEvent, ProgramEditorEventValue, ProgramInfoUpdate, ProgramLogEntry, ProgramMetadata, ProgramType } from './program';
-import { SessionService } from './session.service';
-import { Synchronizer } from './syncronizer';
 import { GroupInfo } from './group';
+import { SessionService } from './session.service';
 
 export interface UserAutocompleteInfo {
     id: string,
@@ -34,6 +31,10 @@ export class GroupService {
 
     getGroupInfoUrl(groupName: string): string {
         return `${ApiRoot}/groups/by-name/${groupName}`;
+    }
+
+    getGroupCollaboratorsUrl(groupId: string): string {
+        return `${ApiRoot}/groups/by-id/${groupId}/collaborators`;
     }
 
     async getUserGroupsUrl(): Promise<string> {
@@ -88,4 +89,12 @@ export class GroupService {
         return result['group'];
     }
 
+    async getCollaboratorsOnGroup(groupId: string): Promise<Collaborator[]> {
+        const url = await this.getGroupCollaboratorsUrl(groupId);
+
+        const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
+            .toPromise();
+
+        return result['collaborators'];
+    }
 }
