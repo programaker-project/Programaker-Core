@@ -29,6 +29,7 @@ export class SessionService {
     static EstablishedSession: Session = null;
     static sessionInfoObservable: Observable<SessionInfoUpdate> = null;
     private static _sessionInfoObserver: Observer<SessionInfoUpdate> = null;
+    static EstablishmentPromise: Promise<Session> = null;
 
     constructor(
         private http: HttpClient,
@@ -126,7 +127,11 @@ export class SessionService {
             return Promise.resolve(SessionService.EstablishedSession);
         }
 
-        return this.forceUpdateSession();
+        if (!SessionService.EstablishmentPromise) {
+            SessionService.EstablishmentPromise = this.forceUpdateSession();
+        }
+
+        return SessionService.EstablishmentPromise;
     }
 
     login(username: string, password: string): Promise<boolean> {
