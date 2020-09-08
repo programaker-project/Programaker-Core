@@ -85,9 +85,11 @@
         , get_group_by_name/2
         , is_allowed_to_read_in_group/2
         , is_allowed_to_write_in_group/2
+        , is_allowed_to_admin_in_group/2
         , can_user_edit_as/2
         , can_user_view_as/2
         , list_collaborators/1
+        , add_collaborators/2
 
         , add_mnesia_node/1
         , register_table/2
@@ -1351,6 +1353,17 @@ is_allowed_to_write_in_group(AccessorId, GroupId) ->
                   end,
     wrap_transaction(mnesia:activity(ets, Transaction)).
 
+-spec is_allowed_to_admin_in_group(owner_id(), binary()) -> true | false.
+is_allowed_to_admin_in_group(AccessorId, GroupId) ->
+    Transaction = fun() ->
+                          lists:any(fun(#user_group_permissions_entry{user_id=UserId, role=Role}) ->
+                                            (UserId == AccessorId)
+                                                and
+                                                  ( Role == admin )
+                                    end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId))
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
 -spec can_user_edit_as(owner_id(), owner_id()) -> true | false.
 can_user_edit_as(AccessorId, {group, GroupId}) ->
     is_allowed_to_write_in_group(AccessorId, GroupId);
@@ -1377,6 +1390,20 @@ list_collaborators({group, GroupId}) ->
                           {ok, Results}
                   end,
     wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec add_collaborators({group, binary()}, [{ Id :: binary(), Role :: user_in_group_role() }]) -> ok | {error, any()}.
+add_collaborators({group, GroupId}, Collaborators) ->
+    Transaction = fun() ->
+                          ok = lists:foreach(fun({ CollaboratorId, CollaboratorRole }) ->
+                                                     ok = mnesia:write(?USER_GROUP_PERMISSIONS_TABLE
+                                                                      , #user_group_permissions_entry{ group_id=GroupId
+                                                                                                     , user_id={user, CollaboratorId}
+                                                                                                     , role=CollaboratorRole
+                                                                                                     }
+                                                                      , write)
+                                             end, Collaborators)
+                  end,
+    wrap_transaction(mnesia:transaction(Transaction)).
 
 %% Exposed startup entrypoint
 start_link() ->

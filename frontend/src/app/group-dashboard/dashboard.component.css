@@ -259,6 +259,7 @@ mat-card.collaborator {
     display: inline-block;
     vertical-align: bottom;
     margin-left: 1ex;
+    margin-top: 1ex;
     padding: 0;
 }
 
@@ -266,11 +267,18 @@ mat-card.collaborator img {
     max-width: 3em;
     max-height: 3em;
     border-radius: 4px;
+    display: inline-block;
 }
 
 mat-card.collaborator .user-name {
-    display: block;
+    display: inline-block;
     padding: 1ex;
+}
+
+mat-card.collaborator mat-icon {
+    vertical-align: middle;
+    margin-left: 1ex;
+    font-size: 140%;
 }
 
 section .section-buttons {

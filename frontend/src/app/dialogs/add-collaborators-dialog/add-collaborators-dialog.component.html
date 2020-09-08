@@ -31,27 +31,27 @@
             <mat-label>role</mat-label>
             <mat-select [(value)]="user.role">
                 <mat-select-trigger>
-                    <mat-icon *ngIf="user.role == 'admin'">flash_on</mat-icon>
-                    <mat-icon *ngIf="user.role == 'editor'">brush</mat-icon>
-                    <mat-icon *ngIf="user.role == 'viewer'">visibility</mat-icon>
+                    <mat-icon>{{ _roleToIcon(user.role) }}</mat-icon>
 
                     {{ user.role }}
                 </mat-select-trigger>
 
-                <mat-option value="admin" ><mat-icon>flash_on</mat-icon> admin</mat-option>
-                <mat-option value="editor"><mat-icon>brush</mat-icon> editor</mat-option>
-                <mat-option value="viewer"><mat-icon>visibility</mat-icon> viewer</mat-option>
+                <mat-option value="admin" ><mat-icon>{{ _roleToIcon('admin') }}</mat-icon> admin</mat-option>
+                <mat-option value="editor"><mat-icon>{{ _roleToIcon('editor') }}</mat-icon> editor</mat-option>
+                <mat-option value="viewer"><mat-icon>{{ _roleToIcon('viewer') }}</mat-icon> viewer</mat-option>
             </mat-select>
         </mat-form-field>
     </li>
 </ul>
 
 <div class="accept-cancel">
-    <button class="confirm-button"
+    <button class="confirm-button" #confirmationButton
         [disabled]="collaborators.length < 1"
         (click)="confirm()"
         mat-button mat-raised-button>
         Send invitations
+
+        <span class="load-bg"></span>
     </button>
 
     or

@@ -5,7 +5,8 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
 import { GroupService, UserAutocompleteInfo } from 'app/group.service';
 import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
-import { Collaborator, CollaboratorRole } from 'app/types/collaborator';
+import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborator';
+import { MatButton } from '@angular/material/button';
 
 const DEFAULT_ROLE : CollaboratorRole = 'editor';
 
@@ -19,6 +20,7 @@ const DEFAULT_ROLE : CollaboratorRole = 'editor';
     providers: [SessionService, GroupService],
 })
 export class AddCollaboratorsDialogComponent {
+    @ViewChild('confirmationButton') confirmationButton: MatButton;
     @ViewChild('invitationAutocomplete') invitationAutocomplete: MatAutocomplete;
     invitationSearch = new FormControl();
     userNameQuery: Promise<UserAutocompleteInfo[]> | null = null;
@@ -26,13 +28,15 @@ export class AddCollaboratorsDialogComponent {
     collaborators: Collaborator[] = [];
     session: Session;
 
+    readonly _roleToIcon = roleToIcon;
+
     constructor(public dialogRef: MatDialogRef<AddCollaboratorsDialogComponent>,
                 private groupService: GroupService,
                 private sessionService: SessionService,
                 private dialog: MatDialog,
 
                 @Inject(MAT_DIALOG_DATA)
-                public data: {  }) {
+                public data: { groupId: string }) {
     }
 
     async ngOnInit() {
@@ -76,7 +80,19 @@ export class AddCollaboratorsDialogComponent {
         this.dialogRef.close({success: false});
     }
 
-    confirm(): void {
+    async confirm(): Promise<void> {
+        // Indicate that the process has started
+        const classList = this.confirmationButton._elementRef.nativeElement.classList;
+        classList.add('started');
+        classList.remove('completed');
+
+        // Perform update
+        await this.groupService.inviteUsers(this.data.groupId, this.collaborators);
+
+        // Indicate that the process has ended
+        classList.remove('started');
+        classList.add('completed');
+
         this.dialogRef.close({success: true});
     }
 

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Collaborator } from 'app/types/collaborator';
+import { Collaborator, CollaboratorRole } from 'app/types/collaborator';
 import { ApiRoot } from './api-config';
 import { ContentType } from './content-type';
 import { GroupInfo } from './group';
@@ -34,6 +34,10 @@ export class GroupService {
     }
 
     getGroupCollaboratorsUrl(groupId: string): string {
+        return `${ApiRoot}/groups/by-id/${groupId}/collaborators`;
+    }
+
+    updateGroupCollaboratorsUrl(groupId: string): string {
         return `${ApiRoot}/groups/by-id/${groupId}/collaborators`;
     }
 
@@ -90,11 +94,26 @@ export class GroupService {
     }
 
     async getCollaboratorsOnGroup(groupId: string): Promise<Collaborator[]> {
-        const url = await this.getGroupCollaboratorsUrl(groupId);
+        const url = this.getGroupCollaboratorsUrl(groupId);
 
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
             .toPromise();
 
         return result['collaborators'];
+    }
+
+    async inviteUsers(groupId: string, userIds: { id: string, role: CollaboratorRole }[]): Promise<void> {
+        const url = this.updateGroupCollaboratorsUrl(groupId);
+
+        await (this.http
+            .post(url,
+                  JSON.stringify(userIds.map(user => {
+                      return {
+                          id: user.id,
+                          role: user.role,
+                      }})),
+                  {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                               ContentType.Json)})
+            .toPromise());
     }
 }

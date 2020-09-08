@@ -7,10 +7,12 @@
 -export([ allowed_methods/2
         , is_authorized/2
         , content_types_provided/2
+        , content_types_accepted/2
         , options/2
         ]).
 
 -export([ to_json/2
+        , accept_json/2
         ]).
 
 -define(UTILS, automate_rest_api_utils).
@@ -36,7 +38,7 @@ is_authorized(Req, State=#state{group_id=GroupId}) ->
         Method ->
             Check = case Method of
                         <<"GET">> -> fun automate_storage:is_allowed_to_read_in_group/2;
-                        _ -> fun automate_storage:is_allowed_to_write_in_group/2
+                        _ -> fun automate_storage:is_allowed_to_admin_in_group/2
                     end,
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
@@ -63,7 +65,7 @@ options(Req, State) ->
 
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    {[<<"GET">>, <<"OPTIONS">>], Req, State}.
+    {[<<"GET">>, <<"POST">>, <<"OPTIONS">>], Req, State}.
 
 %% GET handler
 content_types_provided(Req, State) ->
@@ -80,3 +82,35 @@ to_json(Req, State=#state{user_id=_UserId, group_id=GroupId}) ->
 
             { Output, Res, State }
     end.
+
+
+%% POST handler
+content_types_accepted(Req, State) ->
+    {[{{<<"application">>, <<"json">>, []}, accept_json}],
+     Req, State}.
+
+-spec accept_json(cowboy_req:req(), #state{})
+                 -> {boolean(),cowboy_req:req(), #state{}}.
+accept_json(Req, State=#state{user_id=_UserId, group_id=GroupId}) ->
+    {ok, Body, _} = ?UTILS:read_body(Req),
+    Collaborators = lists:map(fun read_collaborator/1, jiffy:decode(Body, [return_maps])),
+    case automate_storage:add_collaborators({group, GroupId}, Collaborators) of
+        ok ->
+            Output = jiffy:encode(#{ success => true }),
+
+            Res1 = cowboy_req:set_resp_body(Output, Req),
+            Res2 = ?UTILS:send_json_format(Res1),
+
+            { true, Res2, State }
+    end.
+
+
+read_collaborator(#{ <<"id">> := Id
+                   , <<"role">> := Role
+                   }) ->
+    { Id, unwrap_role(Role) }.
+
+-spec unwrap_role(binary()) -> user_in_group_role().
+unwrap_role(<<"admin">>) -> admin;
+unwrap_role(<<"editor">>) -> editor;
+unwrap_role(<<"viewer">>) -> viewer.

@@ -61,6 +61,8 @@
                         <mat-card class="collaborator"
                             *ngFor="let user of collaborators"
                             role="button" >
+                            <mat-icon>{{ _roleToIcon(user.role)  }}</mat-icon>
+
                             <img class="icon" *ngIf="user.picture" src="{{ user.picture }}" alt="{{ user.username }}" />
 
                             <span *ngIf="!user.picture" class="user-name">

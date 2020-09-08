@@ -3,7 +3,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
-import { Collaborator, CollaboratorRole } from 'app/types/collaborator';
+import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborator';
 import { BridgeService } from '../bridges/bridge.service';
 import { BridgeConnectionWithIconUrl } from '../connection';
 import { ConnectionService } from '../connection.service';
@@ -38,6 +38,8 @@ export class GroupDashboardComponent {
     groupInfo: GroupInfo;
     collaborators: Collaborator[] = null;
     userRole: CollaboratorRole = null;
+
+    readonly _roleToIcon = roleToIcon;
 
     constructor(
         private programService: ProgramService,
@@ -76,21 +78,7 @@ export class GroupDashboardComponent {
                                 this.programs = programs;
                             });
 
-                        this.groupService.getCollaboratorsOnGroup(this.groupInfo.id)
-                            .then(collaborators => {
-                                this.collaborators = collaborators;
-
-                                // Discover own user role
-                                for (let user of collaborators) {
-                                    if (user.id == session.user_id) {
-                                        if ((!this.userRole) || (user.role === 'admin')
-                                            || (user.role === 'editor' && this.userRole !== 'admin')) {
-
-                                            this.userRole = user.role;
-                                        }
-                                    }
-                                }
-                            })
+                        this.updateCollaborators();
 
                         this.updateConnections();
                     }
@@ -135,12 +123,14 @@ export class GroupDashboardComponent {
     }
 
     addCollaborators(): void {
-        const dialogRef = this.dialog.open(AddCollaboratorsDialogComponent, { width: '50%' });
+        const dialogRef = this.dialog.open(AddCollaboratorsDialogComponent, { width: '50%',
+                                                                              data: { groupId: this.groupInfo.id },
+                                                                            });
 
         dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
-            // if (result && result.success) {
-            //     this.updateCollaborators();
-            // }
+            if (result && result.success) {
+                this.updateCollaborators();
+            }
         });
     }
 
@@ -160,6 +150,23 @@ export class GroupDashboardComponent {
         //             };
         //         }
         //     });
+    }
+
+    async updateCollaborators() {
+        const collaborators = await this.groupService.getCollaboratorsOnGroup(this.groupInfo.id)
+
+        this.collaborators = collaborators;
+
+        // Discover own user role
+        for (let user of collaborators) {
+            if (user.id == this.session.user_id) {
+                if ((!this.userRole) || (user.role === 'admin')
+                    || (user.role === 'editor' && this.userRole !== 'admin')) {
+
+                    this.userRole = user.role;
+                }
+            }
+        }
     }
 
     async openProgram(program: ProgramMetadata): Promise<void> {
