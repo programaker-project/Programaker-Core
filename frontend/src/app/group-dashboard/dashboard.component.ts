@@ -124,7 +124,9 @@ export class GroupDashboardComponent {
 
     addCollaborators(): void {
         const dialogRef = this.dialog.open(AddCollaboratorsDialogComponent, { width: '50%',
-                                                                              data: { groupId: this.groupInfo.id },
+                                                                              data: { groupId: this.groupInfo.id,
+                                                                                      existingCollaborators: this.collaborators,
+                                                                                    },
                                                                             });
 
         dialogRef.afterClosed().subscribe((result: {success: boolean}) => {

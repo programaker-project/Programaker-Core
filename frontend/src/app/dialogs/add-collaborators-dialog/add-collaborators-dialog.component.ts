@@ -36,7 +36,7 @@ export class AddCollaboratorsDialogComponent {
                 private dialog: MatDialog,
 
                 @Inject(MAT_DIALOG_DATA)
-                public data: { groupId: string }) {
+                public data: { groupId: string, existingCollaborators: { id: string }[] }) {
     }
 
     async ngOnInit() {
@@ -60,6 +60,9 @@ export class AddCollaboratorsDialogComponent {
                         result = result.filter((user) => {
                             if (user.id === this.session.user_id){
                                 return false; // This is the user creating the group
+                            }
+                            if (this.data.existingCollaborators.find(collaborator => collaborator.id === user.id)) {
+                                return false; // Already a collaborator
                             }
                             if (this.collaborators.find(collaborator => collaborator.id === user.id)) {
                                 return false; // This user is already on the list
