@@ -1,4 +1,3 @@
-
 import {map} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import * as API from './api-config';
@@ -6,13 +5,13 @@ import * as API from './api-config';
 
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
-import { ContentType } from './content-type';
 import { CustomBlock, ResolvedCustomBlock, ResolvedBlockArgument, BlockArgument, DynamicBlockArgument, StaticBlockArgument, ResolvedDynamicBlockArgument } from './custom_block';
+import { Observable } from 'rxjs';
 
 
 type CallbackResult = (
     { [key: string]: { name: string } }   // Old style
-        | [ {id: string, name: string} ]  // New style
+    | [{ id: string, name: string }]  // New style
 );
 
 
@@ -20,7 +19,7 @@ type CallbackResult = (
 @Injectable()
 export class CustomBlockService {
     static DataCallbackCachePrefix = "plaza-data-callback";
-    onFlightCallbackQueries: {[key: string]: Promise<[string, string][]>} = {};
+    onFlightCallbackQueries: { [key: string]: Promise<[string, string][]> } = {};
 
     constructor(
         private http: HttpClient,
@@ -36,31 +35,42 @@ export class CustomBlockService {
         return userApiRoot + '/custom-blocks/';
     }
 
-    public async getCustomBlocks(skip_resolve_argument_options?: boolean): Promise<ResolvedCustomBlock[]> {
-        const blocks = await this.getCustomBlocksUrl().then(url =>
-            this.http.get(url,
-                {
-                    headers: this.sessionService.addJsonContentType(
-                        this.sessionService.getAuthHeader())
-                }).pipe(
-                map(response => {
-                    const blocks: CustomBlock[] = [];
-                    for (const service_port_id of Object.keys(response)) {
-                        for (const block of response[service_port_id]) {
-                            block.service_port_id = service_port_id;
-                            block.id = 'services.' + service_port_id + '.' + block.block_id;
+    private getCustomBlocksOnProgramUrl(programId: string) {
+        return `${API.ApiRoot}/programs/by-id/${programId}/custom-blocks`;
+    }
 
-                            blocks.push(block);
-                        }
+    public async getCustomBlocksOnProgram(programId: string, skip_resolve_argument_options?: boolean): Promise<ResolvedCustomBlock[]> {
+        const url = this.getCustomBlocksOnProgramUrl(programId);
+
+        const response = this.http.get(url,
+                                       {
+            headers: this.sessionService.addJsonContentType(
+                this.sessionService.getAuthHeader())
+        });
+
+        return this._resolveCustomBlocksAnswer(programId, response, !!skip_resolve_argument_options);
+    }
+
+    private async _resolveCustomBlocksAnswer(programId: string,
+                                             customBlocksResponse: Observable<Object>,
+                                             skip_resolve_argument_options: boolean): Promise<ResolvedCustomBlock[]> {
+        const blocks = await customBlocksResponse.pipe(
+            map(response => {
+                const blocks: CustomBlock[] = [];
+                for (const service_port_id of Object.keys(response)) {
+                    for (const block of response[service_port_id]) {
+                        block.service_port_id = service_port_id;
+                        block.id = 'services.' + service_port_id + '.' + block.block_id;
+
+                        blocks.push(block);
                     }
+                }
 
-                    console.debug("Blocks:", blocks);
-                    return blocks;
-                }))
-                .toPromise());
+                return blocks;
+            })).toPromise();
 
         const resolvedBlocks = await Promise.all(blocks.map(async (block): Promise<ResolvedCustomBlock> => {
-            return await this._resolveBlock(block, skip_resolve_argument_options === true);
+            return await this._resolveBlock(programId, block, skip_resolve_argument_options === true);
         }));
 
         return resolvedBlocks.filter((v, _i, _a) => {
@@ -73,7 +83,7 @@ export class CustomBlockService {
             const regexp = RegExp(/%\d/g);
 
             let arguments_in_message = 0;
-            let match;
+            let match: RegExpExecArray;
             while ((match = regexp.exec(block.message as any)) !== null) {
                 arguments_in_message++;
             }
@@ -112,14 +122,14 @@ export class CustomBlockService {
         return block;
     }
 
-    private async _resolveBlock(block: CustomBlock, skip_resolve_argument_options: boolean): Promise<ResolvedCustomBlock> {
+    private async _resolveBlock(programId: string, block: CustomBlock, skip_resolve_argument_options: boolean): Promise<ResolvedCustomBlock> {
         // Note that the block is not copied, the resolution is done destructively!
         const resolvedBlock = block as ResolvedCustomBlock;
 
         if (!skip_resolve_argument_options) {
             const newArguments: ResolvedBlockArgument[] = [];
             for (const argument of block.arguments) {
-                newArguments.push(await this._resolveArgument(argument, block));
+                newArguments.push(await this._resolveArgument(programId, argument, block));
             }
 
             resolvedBlock.arguments = newArguments;
@@ -130,7 +140,7 @@ export class CustomBlockService {
         return resolvedBlock;
     }
 
-    private async _resolveArgument(arg: BlockArgument, block: CustomBlock): Promise<ResolvedBlockArgument> {
+    private async _resolveArgument(programId: string, arg: BlockArgument, block: CustomBlock): Promise<ResolvedBlockArgument> {
         // Note that the argument is not copied, the resolution is done destructively!
         if (!(arg as DynamicBlockArgument).callback) {
             return arg as StaticBlockArgument;
@@ -139,11 +149,11 @@ export class CustomBlockService {
         const dynamicArg = arg as DynamicBlockArgument;
         let options : [string, string][];
         try {
-            options = await this.getCachedArgOptions(dynamicArg, block);
+            options = await this.getCachedArgOptions(programId, dynamicArg, block);
             const loading = options[0][1] === '__plaza_internal_loading';
 
             // Reload asynchronously
-            this.getArgOptions(block.service_port_id, dynamicArg.callback).then((result) => {
+            this.getArgOptions(programId, block.service_port_id, dynamicArg.callback).then((result) => {
                 if (result.length === 0){
                     throw Error("No options found for dynamic argument: " + arg);
                 }
@@ -179,17 +189,18 @@ export class CustomBlockService {
         return resolved;
     }
 
-    private getCallbackCacheId(bridge_id: string, callback_name: string): string {
+    private getCallbackCacheId(programId: string, bridgeId: string, callbackName: string): string {
         return (CustomBlockService.DataCallbackCachePrefix
+                + programId
                 + '/'
-                + bridge_id
+                + bridgeId
                 + '/'
-                + callback_name);
+                + callbackName);
     }
 
-    private async getCachedArgOptions(arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
+    private async getCachedArgOptions(programId: string, arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
         const storage = window.localStorage;
-        const results = storage.getItem(this.getCallbackCacheId(block.service_port_id, arg.callback));
+        const results = storage.getItem(this.getCallbackCacheId(programId, block.service_port_id, arg.callback));
 
         if ((results === null) || (results.length == 0)) {
             return [["Loading", "__plaza_internal_loading"]];
@@ -197,22 +208,22 @@ export class CustomBlockService {
         return JSON.parse(results);
     }
 
-    private async cacheArgOptions(bridge_id: string, callback_name: string, result: [string, string][]) {
+    private async cacheArgOptions(programId: string, bridgeId: string, callbackName: string, result: [string, string][]) {
         const storage = window.localStorage;
-        const results = storage.setItem(this.getCallbackCacheId(bridge_id, callback_name),
+        const results = storage.setItem(this.getCallbackCacheId(programId, bridgeId, callbackName),
                                         JSON.stringify(result));
     }
 
-    public async getCallbackOptions(bridge_id: string, callback_name: string): Promise<[string, string][]> {
+    public async getCallbackOptions(programId: string, bridgeId: string, callbackName: string): Promise<[string, string][]> {
         try {
-            const result = await this.getArgOptions(bridge_id, callback_name);
+            const result = await this.getArgOptions(programId, bridgeId, callbackName);
             // Awaited here to catch the error
             return result;
         }
         catch (err) {
             // Pull from disk cache if there's an error on the service
             const storage = window.localStorage;
-            const results = storage.getItem(this.getCallbackCacheId(bridge_id, callback_name));
+            const results = storage.getItem(this.getCallbackCacheId(programId, bridgeId, callbackName));
 
             // Check if it's in cache
             if ((results !== null) && (results.length > 0)) {
@@ -227,9 +238,8 @@ export class CustomBlockService {
         }
     }
 
-    private async getArgOptions(bridge_id: string, callback_name: string): Promise<[string, string][]> {
-        const userApiRoot = await this.sessionService.getApiRootForUserId();
-        const url = userApiRoot + '/bridges/id/' + bridge_id + '/callback/' + callback_name;
+    private async getArgOptions(programId: string, bridgeId: string, callbackName: string): Promise<[string, string][]> {
+        const url = `${API.ApiRoot}/programs/by-id/${programId}/bridges/by-id/${bridgeId}/callbacks/${callbackName}`;
 
         // Already being performed, "attach" to the on flight query
         if (this.onFlightCallbackQueries[url] !== undefined) {
@@ -266,7 +276,7 @@ export class CustomBlockService {
         // Cache result
 
         query.then(result => {
-            this.cacheArgOptions(bridge_id, callback_name, result);
+            this.cacheArgOptions(programId, bridgeId, callbackName, result);
         });
 
 

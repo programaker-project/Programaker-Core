@@ -137,7 +137,7 @@ export class ProgramDetailComponent implements OnInit {
                 .subscribe(program => {
                     this.programId = program.id;
                     this.canEdit = !program['readonly'];
-                    this.prepareWorkspace().then((controller: ToolboxController) => {
+                    this.prepareWorkspace(program).then((controller: ToolboxController) => {
                         this.program = program;
                         this.load_program(controller, program);
                         resolve();
@@ -509,11 +509,12 @@ export class ProgramDetailComponent implements OnInit {
         (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_.orig = this.patchedFunctions.recordDeleteAreas;
     }
 
-    prepareWorkspace(): Promise<ToolboxController> {
+    prepareWorkspace(program: ProgramContent): Promise<ToolboxController> {
         // For consistency and because it affects the positioning of the bottom drawer.
         this.reset_header_scroll();
 
         return new Toolbox(
+            program,
             this.monitorService,
             this.customBlockService,
             this.dialog,

@@ -22,6 +22,7 @@ import { alreadyRegisteredException, createDom } from './utils';
 import { ConnectionService } from '../connection.service';
 import { BridgeConnection } from '../connection';
 import { iconDataToUrl } from '../utils';
+import { ProgramContent } from 'app/program';
 
 
 declare const Blockly;
@@ -45,6 +46,7 @@ export class Toolbox {
     serviceService: ServiceService;
 
     constructor(
+        private program: ProgramContent,
         monitorService: MonitorService,
         customBlockService: CustomBlockService,
         dialog: MatDialog,
@@ -67,7 +69,7 @@ export class Toolbox {
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
         const [monitors, custom_blocks, services, connections] = await Promise.all([
             this.monitorService.getMonitors(),
-            this.customBlockService.getCustomBlocks(),
+            this.customBlockService.getCustomBlocksOnProgram(this.program.id, false),
             this.serviceService.getAvailableServices(),
             this.connectionService.getConnections(),
         ]) as [MonitorMetadata[], ResolvedCustomBlock[], AvailableService[], BridgeConnection[]];

@@ -107,7 +107,7 @@ program_to_json(#user_program{ id=Id
 
     jiffy:encode(#{ <<"id">> => Id
                   , <<"owner">> => OwnerId
-                  , <<"owner_data">> => Owner
+                  , <<"owner_full">> => Owner
                   , <<"name">> => ProgramName
                   , <<"type">> => ProgramType
                   , <<"parsed">> => ProgramParsed

@@ -177,11 +177,12 @@ export class FlowEditorComponent implements OnInit {
         this.toolbox = await fromCustomBlockService(workspaceElement, this.workspace,
                                                     this.customBlockService,
                                                     this.bridgeService,
+                                                    this.program.id,
                                                    );
     }
 
     async getEnumValues(enum_namespace: string, enum_name: string): Promise<EnumValue[]> {
-        const values = await this.customBlockService.getCallbackOptions(enum_namespace, enum_name);
+        const values = await this.customBlockService.getCallbackOptions(this.program.id, enum_namespace, enum_name);
 
         return values.map(v => {
             return {

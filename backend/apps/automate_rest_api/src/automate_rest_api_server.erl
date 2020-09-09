@@ -64,6 +64,8 @@ start_link() ->
 
                         , {"/api/v0/programs/id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
                         , {"/api/v0/programs/by-id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
+                        , {"/api/v0/programs/by-id/:program_id/custom-blocks/", automate_rest_api_program_custom_blocks, []}
+                        , {"/api/v0/programs/by-id/:program_id/bridges/by-id/:bridge_id/callbacks/:callback", automate_rest_api_program_bridge_callback, []}
 
                           %% Program operation
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs", automate_rest_api_program_logs, []} %% DEPR
