@@ -78,6 +78,9 @@ start_link() ->
                         , {"/api/v0/users/id/:user_id/connections/established", automate_rest_api_connections_established_root, []}
                         , {"/api/v0/users/id/:user_id/connections/pending/:connection_id/wait", automate_rest_api_connections_pending_wait, []}
 
+                        , {"/api/v0/groups/by-id/:group_id/connections/established", automate_rest_api_group_connections_established_root, []}
+                        , {"/api/v0/groups/by-id/:group_id/connections/available", automate_rest_api_group_connections_available_root, []}
+
                           %% Bridges
                         , {"/api/v0/users/:user_id/bridges", automate_rest_api_service_ports_root, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []}
@@ -94,6 +97,9 @@ start_link() ->
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}
                         , {"/api/v0/users/:user_id/services/id/:service_id/how-to-enable", automate_rest_api_services_how_to_enable, []}
                         , {"/api/v0/users/:user_id/services/id/:service_id/register", automate_rest_api_services_register, []}
+
+                        , {"/api/v0/services/by-id/:service_id/how-to-enable", automate_rest_api_services_how_to_enable_new, []}
+                        , {"/api/v0/services/by-id/:service_id/register", automate_rest_api_services_register_new, []}
 
                           %% Groups
                         , {"/api/v0/groups", automate_rest_api_groups_root, [] }

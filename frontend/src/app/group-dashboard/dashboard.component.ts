@@ -18,6 +18,7 @@ import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
 import { AddCollaboratorsDialogComponent } from 'app/dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
+import { iconDataToUrl } from 'app/utils';
 
 @Component({
     // moduleId: module.id,
@@ -38,6 +39,7 @@ export class GroupDashboardComponent {
     groupInfo: GroupInfo;
     collaborators: Collaborator[] = null;
     userRole: CollaboratorRole = null;
+    canWriteToGroup: boolean = false;
 
     readonly _roleToIcon = roleToIcon;
 
@@ -113,7 +115,7 @@ export class GroupDashboardComponent {
     }
 
     addConnection(): void {
-        const dialogRef = this.dialog.open(AddConnectionDialogComponent, { width: '90%' });
+        const dialogRef = this.dialog.open(AddConnectionDialogComponent, { width: '90%', data: {groupId: this.groupInfo.id} });
 
         dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
             if (result && result.success) {
@@ -137,21 +139,21 @@ export class GroupDashboardComponent {
     }
 
     updateConnections(): void {
-        // this.connectionService.getConnections(this.groupInfo.id)
-        //     .then(connections => {
-        //         this.connections = connections.map((v, _i, _a) => {
-        //             const icon_url = iconDataToUrl(v.icon, v.bridge_id);
+        this.connectionService.getConnectionsOnGroup(this.groupInfo.id)
+            .then(connections => {
+                this.connections = connections.map((v, _i, _a) => {
+                    const icon_url = iconDataToUrl(v.icon, v.bridge_id);
 
-        //             return { conn: v, extra: {icon_url: icon_url }};
-        //         });
+                    return { conn: v, extra: {icon_url: icon_url }};
+                });
 
-        //         for (const conn of connections){
-        //             this.bridgeInfo[conn.bridge_id] = {
-        //                 icon: iconDataToUrl(conn.icon, conn.bridge_id),
-        //                 name: conn.bridge_name
-        //             };
-        //         }
-        //     });
+                for (const conn of connections){
+                    this.bridgeInfo[conn.bridge_id] = {
+                        icon: iconDataToUrl(conn.icon, conn.bridge_id),
+                        name: conn.bridge_name
+                    };
+                }
+            });
     }
 
     async updateCollaborators() {
@@ -169,6 +171,7 @@ export class GroupDashboardComponent {
                 }
             }
         }
+        this.canWriteToGroup = (this.userRole === 'admin') || (this.userRole === 'editor');
     }
 
     async openProgram(program: ProgramMetadata): Promise<void> {
@@ -179,22 +182,6 @@ export class GroupDashboardComponent {
         }
 
         this.router.navigateByUrl(`/programs/${program.id}/${programType}`);
-    }
-
-    enableService(service: AvailableService): void {
-        this.serviceService.getHowToEnable(service)
-            .then(howToEnable => this.showHowToEnable(howToEnable));
-    }
-
-    showHowToEnable(howTo: ServiceEnableHowTo): void {
-        if ((howTo as any).success === false) {
-            return;
-        }
-        const dialogRef = this.dialog.open(HowToEnableServiceDialogComponent, {
-            data: howTo
-        });
-
-        dialogRef.afterClosed().subscribe(result => { });
     }
 
     async enableProgram(program: ProgramMetadata) {

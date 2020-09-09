@@ -358,9 +358,9 @@ list_custom_blocks_from_username(Username) ->
 
 -spec register_service(binary(), binary(), map(), binary()) -> {ok, any} | {error, binary()}.
 register_service(Username, ServiceId, RegistrationData, ConnectionId) ->
-    {ok, UserId} = automate_storage:get_userid_from_username(Username),
+    {ok, Owner} = automate_storage:get_userid_from_username(Username),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, _Result} = automate_service_registry_query:send_registration_data(Module, UserId, RegistrationData,
+    {ok, _Result} = automate_service_registry_query:send_registration_data(Module, Owner, RegistrationData,
                                                                            #{<<"connection_id">> => ConnectionId}).
 
 -spec send_oauth_return(binary(), binary()) -> ok | {error, term()}.
@@ -397,7 +397,7 @@ list_available_connections(Owner) ->
 
 -spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
 list_established_connections(UserId) ->
-    {ok, _Connections} = automate_service_port_engine:list_established_connections(UserId).
+    automate_service_port_engine:list_established_connections({user, UserId}).
 
 -spec delete_bridge(owner_id(), binary()) -> ok | {error, binary()}.
 delete_bridge(Owner, BridgeId) ->

@@ -34,8 +34,19 @@ export class AddConnectionDialogComponent {
                 public dialog: MatDialog,
 
                 @Inject(MAT_DIALOG_DATA)
-                public data: {  }) {
-        this.connectionService.getAvailableBridgesForNewConnection().then((bridges: BridgeIndexData[]) => {
+                public data: { groupId?: string }) {
+        if (!data) { data = this.data = {}; }
+
+
+        let query: Promise<BridgeIndexData[]>;
+        if (data.groupId) {
+            query = this.connectionService.getAvailableBridgesForNewConnectionOnGroup(data.groupId);
+        }
+        else {
+            query = this.connectionService.getAvailableBridgesForNewConnection();
+        }
+
+        query.then((bridges: BridgeIndexData[]) => {
             this.availableBridges = [];
             console.log("Bridges:", bridges);
             for (let i = 0 ; i < bridges.length; i++){
@@ -64,8 +75,16 @@ export class AddConnectionDialogComponent {
         if (service.state !== 'reading') {
             service.state = 'reading';
             const as_service = await this.connectionService.toAvailableService(service.bridge);
-            this.serviceService.getHowToEnable(as_service)
-                .then(howToEnable => {
+
+            let query: Promise<ServiceEnableHowTo>;
+            if (this.data.groupId) {
+                query = this.serviceService.getHowToEnableOnGroup(as_service, this.data.groupId);
+            }
+            else {
+                query = this.serviceService.getHowToEnable(as_service)
+            }
+
+            query.then(howToEnable => {
                     if (this.selectedIndex === service.index) {
                         service.state = 'selected';
                     }
@@ -92,15 +111,22 @@ export class AddConnectionDialogComponent {
         }
 
         console.log("Connecting to:", this.availableBridges[this.selectedIndex]);
-        this.serviceService.directRegisterService(this.availableBridges[this.selectedIndex].bridge.id)
-            .then((result) => {
-                console.log("Result:", result);
-                if (result.success) {
-                    this.dialogRef.close({success: true});
-                }
-            }).catch((error) => {
-                console.error("Error registering", error);
-            });
+        let query;
+        if (this.data.groupId) {
+            query = this.serviceService.directRegisterServiceOnGroup(this.availableBridges[this.selectedIndex].bridge.id, this.data.groupId)
+        }
+        else {
+            query = this.serviceService.directRegisterService(this.availableBridges[this.selectedIndex].bridge.id)
+        }
+
+        query.then((result) => {
+            console.log("Result:", result);
+            if (result.success) {
+                this.dialogRef.close({success: true});
+            }
+        }).catch((error) => {
+            console.error("Error registering", error);
+        });
     }
 
 

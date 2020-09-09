@@ -47,6 +47,7 @@ get_monitor_id({Module, Params}, Owner) ->
 get_monitor_id(Module, UserId) ->
     Module:get_monitor_id(UserId).
 
+-spec send_registration_data(module() | {module(), any()}, owner_id(), any(), any()) -> {ok, any()}.
 send_registration_data({Module, Params}, UserId, RegistrationData, RegistrationProperties) ->
     Module:send_registration_data(UserId, RegistrationData, Params, RegistrationProperties);
 

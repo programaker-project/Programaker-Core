@@ -2,7 +2,7 @@
 %%% REST endpoint to get available connection points
 %%% @end
 
--module(automate_rest_api_connections_available_root).
+-module(automate_rest_api_group_connections_established_root).
 -export([init/2]).
 -export([ allowed_methods/2
         , options/2
@@ -17,14 +17,19 @@
 
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
+-define(FORMATTING, automate_rest_api_utils_formatting).
 
--record(state, { user_id :: binary() }).
+-record(state, { group_id :: binary()
+               , user_id :: binary() | undefined
+               }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
+    GroupId = cowboy_req:binding(group_id, Req),
     {cowboy_rest, Req
-    , #state{ user_id=UserId }}.
+    , #state{ group_id=GroupId
+            , user_id=undefined
+            }}.
 
 resource_exists(Req, State) ->
     case cowboy_req:method(Req) of
@@ -44,7 +49,7 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#state{group_id=GroupId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -55,12 +60,13 @@ is_authorized(Req, State) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    #state{user_id=UserId} = State,
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            { true, Req1, State };
-                        {true, _} -> %% Non matching user_id
-                            { { false, <<"Unauthorized here">>}, Req1, State };
+                            case automate_storage:is_allowed_to_read_in_group({user, UserId}, GroupId) of
+                                true -> { true, Req1, State#state{ user_id=UserId } };
+                                false ->
+                                    { { false, <<"Operation not allowed">>}, Req1, State }
+                            end;
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
@@ -74,28 +80,37 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State) ->
-    #state{user_id=UserId} = State,
-    case automate_rest_api_backend:list_available_connections({user, UserId}) of
+to_json(Req, State=#state{group_id=GroupId}) ->
+    case automate_service_port_engine:list_established_connections({group, GroupId}) of
         { ok, Connections } ->
 
-            Output = jiffy:encode(lists:map(fun to_map/1, Connections)),
+            Output = jiffy:encode(lists:filtermap(fun to_map/1, Connections)),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
             { Output, Res2, State }
     end.
 
-to_map({#service_port_entry{ id=Id
-                           , name=Name
-                           , owner={OwnerType, OwnerId}
-                           , service_id=ServiceId
-                           }
-       , #service_port_configuration{}
-       }) ->
-    #{ id => Id
-     , name => Name
-     , owner => OwnerId
-     , owner_full => #{ type => OwnerType, id => OwnerId }
-     , service_id => ServiceId
-     }.
+to_map(#user_to_bridge_connection_entry{ id=Id
+                                       , bridge_id=BridgeId
+                                       , owner=_
+                                       , channel_id=_
+                                       , name=Name
+                                       , creation_time=_CreationTime
+                                       }) ->
+    case automate_service_port_engine:get_bridge_info(BridgeId) of
+        {ok, #service_port_metadata{ name=BridgeName, icon=Icon }} ->
+            {true, #{ <<"connection_id">> => Id
+                    , <<"name">> => serialize_string_or_undefined(Name)
+                    , <<"bridge_id">> => BridgeId
+                    , <<"bridge_name">> => serialize_string_or_undefined(BridgeName)
+                    , <<"icon">> => ?FORMATTING:serialize_icon(Icon)
+                    } };
+        {error, _Reason} ->
+            false
+    end.
+
+serialize_string_or_undefined(undefined) ->
+    null;
+serialize_string_or_undefined(String) ->
+    String.

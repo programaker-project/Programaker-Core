@@ -67,23 +67,48 @@ is_enabled_for_user(_Username, _Params) ->
     {ok, true}.
 
 %% No need to enable service
+-spec get_how_to_enable(#{ user_id := binary() } | #{group_id := binary()}, [binary()]) -> {ok, map()}.
 get_how_to_enable(#{ user_id := UserId }, [ServicePortId]) ->
-    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, UserId),
-    {ok, Response} = automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId),
-    case Response of
-        #{ <<"result">> := null } ->
-            {ok, #{ <<"type">> => <<"direct">> } };
-        #{ <<"result">> := Result } ->
-            {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }};
-        _ ->
-            {ok, #{ <<"type">> => <<"direct">> } }
+    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, {user, UserId}),
+    case automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId) of
+        {error, Err} ->
+            {error, Err};
+        {ok, Response} ->
+            case Response of
+                #{ <<"result">> := null } ->
+                    {ok, #{ <<"type">> => <<"direct">> } };
+                #{ <<"result">> := Result } ->
+                    {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }};
+                _ ->
+                    {ok, #{ <<"type">> => <<"direct">> } }
+
+            end
+    end;
+
+get_how_to_enable(#{ group_id := GroupId }, [ServicePortId]) ->
+    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, {group, GroupId}),
+    case automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId) of
+        {error, Err} ->
+            {error, Err};
+        {ok, Response} ->
+            case Response of
+                #{ <<"result">> := null } ->
+                    {ok, #{ <<"type">> => <<"direct">> } };
+                #{ <<"result">> := Result } ->
+                    {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }};
+                _ ->
+                    {ok, #{ <<"type">> => <<"direct">> } }
+
+            end
     end.
 
-send_registration_data(UserId, RegistrationData, [ServicePortId], Properties) ->
+
+-spec send_registration_data(owner_id(), any(), [binary()], map()) -> {ok, any()}.
+send_registration_data(Owner, RegistrationData, [ServicePortId], Properties) ->
     ConnectionId = case Properties of
                        #{ <<"connection_id">> := ConnId } when is_binary(ConnId) -> ConnId;
                        _ ->
-                           {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, UserId),
+                           {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, Owner),
                            TemporaryConnectionId
                    end,
 
@@ -91,14 +116,14 @@ send_registration_data(UserId, RegistrationData, [ServicePortId], Properties) ->
     PassedResult = case Result of
                        #{ <<"success">> := true } ->
                            Name = get_name_from_result(Result),
-                           ok = ?BACKEND:establish_connection(ServicePortId, UserId, ConnectionId, Name),
+                           ok = ?BACKEND:establish_connection(ServicePortId, Owner, ConnectionId, Name),
                            Result;
 
                        #{ <<"success">> := false, <<"error">> := <<"No registerer available">> } ->
                            %% For compatibility with plaza/programaker-bridge library before connections
                            %% where introduced.
                            Name = get_name_from_result(Result),
-                           ok = ?BACKEND:establish_connection(ServicePortId, UserId, ConnectionId, Name),
+                           ok = ?BACKEND:establish_connection(ServicePortId, Owner, ConnectionId, Name),
                            Result#{ <<"success">> => true
                                   , <<"error">> => null
                                   };

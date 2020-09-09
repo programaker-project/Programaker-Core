@@ -60,7 +60,7 @@ call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
                                         , <<"extra_data">> => ExtraData
                                         }).
 
--spec get_how_to_enable(binary(), binary()) -> {ok, any()}.
+-spec get_how_to_enable(binary(), binary()) -> {ok, any()} | {error, atom()}.
 get_how_to_enable(ServicePortId, UserId) ->
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"GET_HOW_TO_SERVICE_REGISTRATION">>
                                         , <<"user_id">> => UserId
@@ -261,9 +261,9 @@ get_channel_origin_bridge(ChannelId) ->
 get_bridge_info(BridgeId) ->
     ?BACKEND:get_bridge_info(BridgeId).
 
--spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
-list_established_connections(UserId) ->
-    {ok, _Connections} = ?BACKEND:list_established_connections(UserId).
+-spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+list_established_connections(Owner) ->
+    ?BACKEND:list_established_connections(Owner).
 
 -spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
 get_pending_connection_info(ConnectionId) ->

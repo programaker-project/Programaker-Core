@@ -490,16 +490,18 @@ list_bridge_channels(ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
-list_established_connections(UserId) ->
+-spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+list_established_connections({OwnerType, OwnerId}) ->
     MatchHead = #user_to_bridge_connection_entry{ id='_'
                                                 , bridge_id='_'
-                                                , owner={user, '$1'}
+                                                , owner={'$1', '$2'}
                                                 , channel_id='_'
                                                 , name='_'
                                                 , creation_time='_'
                                                 },
-    Guards = [ { '==', '$1', UserId } ],
+    Guards = [ { '==', '$1', OwnerType }
+             , { '==', '$2', OwnerId }
+             ],
     ResultColum = '$_',
     Matcher = [{MatchHead, Guards, [ResultColum]}],
 

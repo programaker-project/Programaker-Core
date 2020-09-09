@@ -4,14 +4,18 @@
             <h1>Group connections </h1>
             <div class="connection-list">
                 <div>
-                    <button role="button" (click)="addConnection()" class="module connection call-to-action soft cardlike" mat-raised-button>
+                    <button *ngIf="canWriteToGroup" role="button" (click)="addConnection()" class="module connection call-to-action soft cardlike" mat-raised-button>
                         <mat-icon class="action-icon">add</mat-icon>
                     </button>
                 </div>
                 <div *ngIf="(connections !== null) && (connections.length == 0)">
-                    <div class="integrated-call-to-action call-to-left">
+                    <div *ngIf="canWriteToGroup" class="integrated-call-to-action call-to-left">
                         <mat-icon class="action-icon">arrow_back</mat-icon>
                         To start, connect a service.
+                    </div>
+                    <div *ngIf="!canWriteToGroup" class="no-connection-message">
+                        <mat-icon class="action-icon">sync_disabled</mat-icon>
+                        No connection established
                     </div>
                 </div>
                 <div *ngFor="let connection of connections">
@@ -58,9 +62,8 @@
                     </div>
 
                     <div class="section-objects">
-                        <mat-card class="collaborator"
-                            *ngFor="let user of collaborators"
-                            role="button" >
+                        <mat-card class="collaborator non-clickable"
+                            *ngFor="let user of collaborators">
                             <mat-icon>{{ _roleToIcon(user.role)  }}</mat-icon>
 
                             <img class="icon" *ngIf="user.picture" src="{{ user.picture }}" alt="{{ user.username }}" />
@@ -88,7 +91,7 @@
                 Create a new program or edit the ones you already have.
             </div>
             <div class="row">
-                <div class="col-sm-6">
+                <div *ngIf="canWriteToGroup" class="col-sm-6">
                     <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
                         <div class="program-data">
                             <div class="card-title">Create new program</div>
@@ -129,6 +132,7 @@
                             <button mat-mini-fab
                                 (click)="enableProgram(program)"
                                 color="accent"
+                                *ngIf="canWriteToGroup"
                                 class="enable-program">
                                 <mat-icon>play_arrow</mat-icon>
                             </button>

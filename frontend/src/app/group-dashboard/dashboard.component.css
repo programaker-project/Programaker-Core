@@ -165,9 +165,13 @@ mat-card.program > .program-operation > .enable-program {
 /* Call-to-actions */
 .user-connections .integrated-call-to-action {
     display: inline-block;
-    font-size: 200%;
+    font-size: 120%;
     color: #ff4500;
     font-weight: bold;
+}
+
+.user-connections .integrated-call-to-action mat-icon {
+    vertical-align: text-bottom;
 }
 
 /* Examples & Tutorials */
@@ -301,4 +305,19 @@ button.cardlike {
     padding: 1ex;
     border-radius: 4px;
     display: inline;
+}
+
+
+mat-card.non-clickable {
+    box-shadow: none;
+    border: 1px solid rgba(0,0,0,0.3);
+    cursor: inherit;
+}
+
+.no-connection-message {
+    text-align: center;
+    display: inline-block;
+}
+.no-connection-message mat-icon {
+    vertical-align: bottom;
 }

@@ -1,18 +1,13 @@
-
-import {map} from 'rxjs/operators';
-import { Injectable } from '@angular/core';
-import { Service, AvailableService, ServiceEnableHowTo } from './service';
-import * as API from './api-config';
-
-
-import { SessionService } from './session.service';
 import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { map } from 'rxjs/operators';
+import * as API from './api-config';
 import { ContentType } from './content-type';
+import { AvailableService, ServiceEnableHowTo } from './service';
+import { SessionService } from './session.service';
 
 @Injectable()
 export class ServiceService {
-    private getServicesUrl = API.ApiRoot + '/services/';
-
     constructor(
         private http: HttpClient,
         private sessionService: SessionService,
@@ -30,10 +25,17 @@ export class ServiceService {
         return service.link + '/how-to-enable';
     }
 
+    async getServiceEnableOnGroupHowToUrl(service: AvailableService, groupId: string) {
+        return `${API.ApiRoot}/services/by-id/${service.id}/how-to-enable`;
+    }
+
     async getServiceRegistryUrl(service_id: string) {
         const serviceRoot = await this.getListAvailableServicesUrl();
         return serviceRoot + 'id/' + service_id + '/register';
+    }
 
+    getServiceRegistryUrlOnGroup(service_id: string) {
+        return `${API.ApiRoot}/services/by-id/${service_id}/register`;
     }
 
     getAvailableServices(): Promise<AvailableService[]> {
@@ -49,8 +51,15 @@ export class ServiceService {
                 .toPromise() as Promise<ServiceEnableHowTo>);
     }
 
+    async getHowToEnableOnGroup(service: AvailableService, groupId: string): Promise<ServiceEnableHowTo> {
+        const url = await this.getServiceEnableOnGroupHowToUrl(service, groupId);
+        return (this.http.get(url, { headers: this.sessionService.getAuthHeader(),
+                                     params: { group_id: groupId }
+                                   })
+            .toPromise() as Promise<ServiceEnableHowTo>);
+    }
+
     registerService(data: { [key: string]: string }, service_id: string, connection_id: string): Promise<{success: boolean}> {
-        console.log("data:", data);
         if (connection_id) {
             if (data.metadata === undefined) {
                 (data as any).metadata = {};
@@ -77,6 +86,20 @@ export class ServiceService {
                 headers: this.sessionService.addContentType(
                     this.sessionService.getAuthHeader(),
                     ContentType.Json),
+            }).toPromise()) as Promise<{success: boolean}>;
+    }
+
+    async directRegisterServiceOnGroup(bridgeId: string, groupId: string): Promise<{success: boolean}> {
+        const data = { };
+
+        const url = this.getServiceRegistryUrlOnGroup(bridgeId)
+        return (this.http.post(
+            url, JSON.stringify(data),
+            {
+                headers: this.sessionService.addContentType(
+                    this.sessionService.getAuthHeader(),
+                    ContentType.Json),
+                params: { group_id: groupId }
             }).toPromise()) as Promise<{success: boolean}>;
     }
 }
