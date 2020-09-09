@@ -21,6 +21,10 @@ export class ServiceService {
         return userApiRoot + '/services/';
     }
 
+    private getListAvailableServicesOnProgramUrl(programId: string): string {
+        return `${API.ApiRoot}/programs/by-id/${programId}/services`;
+    }
+
     async getServiceEnableHowToUrl(service: AvailableService) {
         return service.link + '/how-to-enable';
     }
@@ -43,6 +47,14 @@ export class ServiceService {
             url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
                 .pipe(map(response => response as AvailableService[]))
                 .toPromise());
+    }
+
+    async getAvailableServicesOnProgram(programId: string): Promise<AvailableService[]> {
+        const url = this.getListAvailableServicesOnProgramUrl(programId);
+
+        return await this.http.get(url, { headers: this.sessionService.getAuthHeader() })
+            .pipe(map(response => response as AvailableService[]))
+            .toPromise();
     }
 
     async getHowToEnable(service: AvailableService): Promise<ServiceEnableHowTo> {

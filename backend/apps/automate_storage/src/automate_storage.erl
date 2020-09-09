@@ -12,6 +12,7 @@
         , get_monitor_from_id/1
         , dirty_list_monitors/0
         , lists_monitors_from_username/1
+        , list_monitors/1
         , get_userid_from_username/1
         , update_user_settings/3
         , promote_user_to_admin/1
@@ -371,6 +372,14 @@ lists_monitors_from_username(Username) ->
         X ->
             X
     end.
+
+-spec list_monitors(owner_id()) -> {'ok', [ #monitor_entry{} ] }.
+list_monitors(Owner) ->
+    Transaction = fun() ->
+                          {ok, mnesia:index_read(?USER_MONITORS_TABLE, Owner, #monitor_entry.owner)}
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
 
 -spec create_mail_verification_entry(binary()) -> {ok, binary()} | {error, _}.
 create_mail_verification_entry(UserId) ->

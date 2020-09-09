@@ -83,6 +83,8 @@ start_link() ->
                         , {"/api/v0/groups/by-id/:group_id/connections/established", automate_rest_api_group_connections_established_root, []}
                         , {"/api/v0/groups/by-id/:group_id/connections/available", automate_rest_api_group_connections_available_root, []}
 
+                        , {"/api/v0/programs/by-id/:program_id/connections/established", automate_rest_api_program_connections_established_root, []}
+
                           %% Bridges
                         , {"/api/v0/users/:user_id/bridges", automate_rest_api_service_ports_root, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []}
@@ -103,6 +105,8 @@ start_link() ->
                         , {"/api/v0/services/by-id/:service_id/how-to-enable", automate_rest_api_services_how_to_enable_new, []}
                         , {"/api/v0/services/by-id/:service_id/register", automate_rest_api_services_register_new, []}
 
+                        , {"/api/v0/programs/by-id/:program_id/services", automate_rest_api_program_services_root, []}
+
                           %% Groups
                         , {"/api/v0/groups", automate_rest_api_groups_root, [] }
                         , {"/api/v0/groups/by-name/:group_name", automate_rest_api_group_by_name, [] }
@@ -111,6 +115,7 @@ start_link() ->
 
                           %% Monitor
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}
+                        , {"/api/v0/programs/by-id/:program_id/monitors", automate_rest_api_program_monitors_root, []}
 
                           %% Utils
                         , {"/api/v0/utils/autocomplete/users", automate_rest_api_autocomplete_user, []}

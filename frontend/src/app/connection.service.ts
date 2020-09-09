@@ -31,8 +31,12 @@ export class ConnectionService {
         return root + '/connections/established';
     }
 
-    getGroupConnectionsUrl(groupId): string {
+    getGroupConnectionsUrl(groupId: string): string {
         return `${ApiRoot}/groups/by-id/${groupId}/connections/established`;
+    }
+
+    getProgramConnectionsUrl(programId: string): string {
+        return `${ApiRoot}/programs/by-id/${programId}/connections/established`;
     }
 
     async getWaitForConnectionUrl(connection_id: string): Promise<string> {
@@ -65,6 +69,13 @@ export class ConnectionService {
 
     public getConnectionsOnGroup(groupId: string): Promise<BridgeConnection[]> {
         const url = this.getGroupConnectionsUrl(groupId)
+        return (this.http.get(url,
+                              { headers: this.sessionService.getAuthHeader() }
+                             ).toPromise() as Promise<BridgeConnection[]>);
+    }
+
+    public getConnectionsOnProgram(programId: string): Promise<BridgeConnection[]> {
+        const url = this.getProgramConnectionsUrl(programId)
         return (this.http.get(url,
                               { headers: this.sessionService.getAuthHeader() }
                              ).toPromise() as Promise<BridgeConnection[]>);

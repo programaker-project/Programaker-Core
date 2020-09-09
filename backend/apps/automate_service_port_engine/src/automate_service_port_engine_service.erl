@@ -63,7 +63,7 @@ call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, 
     end.
 
 %% Is enabled for all users
-is_enabled_for_user(_Username, _Params) ->
+is_enabled_for_user(_Owner, _Params) ->
     {ok, true}.
 
 %% No need to enable service

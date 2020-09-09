@@ -566,6 +566,7 @@ get_versioning(Nodes) ->
 
                                 {atomic, ok} = mnesia:add_table_index(?USER_GROUPS_TABLE, canonical_name),
                                 {atomic, ok} = mnesia:add_table_index(?USER_PROGRAMS_TABLE, owner),
+                                {atomic, ok} = mnesia:add_table_index(?USER_MONITORS_TABLE, owner),
 
                                 {atomic, ok} = mnesia:create_table(?USER_GROUP_PERMISSIONS_TABLE,
                                                                    [ { attributes, [group_id, user_id, role] }
@@ -580,7 +581,6 @@ get_versioning(Nodes) ->
                                                             automate_configuration:get_table_wait_time())
                         end
                 }
-
               ]
         }.
 

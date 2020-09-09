@@ -24,6 +24,10 @@ export class MonitorService {
         return userApiRoot + '/monitors/';
     }
 
+    public async getListMonitorsOnProgramUrl(programId: string) {
+        return `${API.ApiRoot}/programs/by-id/${programId}/monitors`;
+    }
+
     public async getRetrieveMonitorUrl(_user_id: string, Monitor_id: string) {
       const userApiRoot = await this.sessionService.getUserApiRoot();
       return userApiRoot + '/monitors/' + Monitor_id;
@@ -41,5 +45,15 @@ export class MonitorService {
                       return response as MonitorMetadata[]
                   }))
                   .toPromise());
+    }
+
+    public async getMonitorsOnProgram(programId: string): Promise<MonitorMetadata[]> {
+        const url = await this.getListMonitorsOnProgramUrl(programId);
+
+        return this.http.get(url, { headers: this.sessionService.getAuthHeader() }).pipe(
+            map((response) => {
+                return response as MonitorMetadata[];
+            }))
+            .toPromise();
     }
 }

@@ -26,6 +26,7 @@
         , update_program/3
         , update_program_by_id/2
         , list_services_from_username/1
+        , get_services_metadata/2
         , get_service_enable_how_to/2
 
         , update_program_metadata/3
@@ -327,10 +328,17 @@ list_services_from_username(Username) ->
     {ok, Owner} = automate_storage:get_userid_from_username(Username),
     case automate_service_registry:get_all_services_for_user(Owner) of
         {ok, Services} ->
-            {ok, get_services_metadata(Services, Username)};
+            {ok, get_services_metadata(Services, Owner)};
         E = {error, _, _} ->
             E
     end.
+
+get_services_metadata(Services, Owner) ->
+    lists:filter(fun (V) ->
+                         V =/= none
+                 end,
+                 lists:map(fun ({K, V}) -> get_service_metadata(K, V, Owner) end,
+                           maps:to_list(Services))).
 
 
 -spec get_service_enable_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found}.
@@ -469,24 +477,17 @@ register_user_require_validation(#registration_rec{ email=Email
             { error, Reason }
     end.
 
-get_services_metadata(Services, Username) ->
-    lists:filter(fun (V) ->
-                         V =/= none
-                 end,
-                 lists:map(fun ({K, V}) -> get_service_metadata(K, V, Username) end,
-                           maps:to_list(Services))).
-
 get_service_metadata(Id
                     , #{ name := Name
                        , description := _Description
                        , module := Module
                        }
-                    , Username) ->
-    try automate_service_registry_query:is_enabled_for_user(Module, Username) of
+                    , Owner) ->
+    try automate_service_registry_query:is_enabled_for_user(Module, Owner) of
         {ok, Enabled} ->
             #service_metadata{ id=Id
                              , name=Name
-                             , link=generate_url_for_service_id(Username, Id)
+                             , link=generate_url_for_service_id(Owner, Id)
                              , enabled=Enabled
                              }
     catch X:Y ->
@@ -494,10 +495,10 @@ get_service_metadata(Id
             none
     end.
 
-generate_url_for_service_id(Username, ServiceId) ->
-    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/services/id/~s", [Username, ServiceId]))).
 
-%% *TODO* generate more interesting names.
+generate_url_for_service_id(_Owner, ServiceId) ->
+    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/services/by-id/~s", [ServiceId]))).
+
 generate_url_for_program_name(Username, ProgramName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/programs/~s", [Username, ProgramName]))).
 

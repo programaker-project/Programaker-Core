@@ -68,10 +68,10 @@ export class Toolbox {
 
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
         const [monitors, custom_blocks, services, connections] = await Promise.all([
-            this.monitorService.getMonitors(),
+            this.monitorService.getMonitorsOnProgram(this.program.id),
             this.customBlockService.getCustomBlocksOnProgram(this.program.id, false),
-            this.serviceService.getAvailableServices(),
-            this.connectionService.getConnections(),
+            this.serviceService.getAvailableServicesOnProgram(this.program.id),
+            this.connectionService.getConnectionsOnProgram(this.program.id),
         ]) as [MonitorMetadata[], ResolvedCustomBlock[], AvailableService[], BridgeConnection[]];
 
         this.controller.addCustomBlocks(custom_blocks);

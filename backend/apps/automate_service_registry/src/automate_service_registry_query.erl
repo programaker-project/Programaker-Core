@@ -21,8 +21,9 @@
 %%====================================================================
 %% API functions
 %%====================================================================
-is_enabled_for_user({Module, Params}, Username) ->
-    Module:is_enabled_for_user(Username, Params);
+-spec is_enabled_for_user(module() | {module(), any()}, owner_id()) -> {ok, boolean()}.
+is_enabled_for_user({Module, Params}, Owner) ->
+    Module:is_enabled_for_user(Owner, Params);
 
 is_enabled_for_user(Module, Username) ->
     Module:is_enabled_for_user(Username).
