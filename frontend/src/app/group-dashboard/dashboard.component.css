@@ -267,24 +267,37 @@ mat-card.collaborator {
     padding: 0;
 }
 
+.collaborator .collaborator-role {
+    height: 3em;
+    display: inline-block;
+    vertical-align: inherit;
+    padding-left: 1ex;
+    padding-right: 1ex;
+
+    background-color: #27212e;
+    color: #fff;
+    border-radius: 4px 0 0 4px;
+}
+
+mat-card.collaborator .collaborator-role mat-icon {
+    vertical-align: middle;
+    font-size: 140%;
+    margin-top: 1ex;
+}
+
 mat-card.collaborator img {
     max-width: 3em;
-    max-height: 3em;
+    height: 3em;
     border-radius: 0 4px 4px 0;
     display: inline-block;
-    margin-left: 1ex;
 }
 
 mat-card.collaborator .user-name {
     display: inline-block;
     padding: 1ex;
+    height: 3em;
 }
 
-mat-card.collaborator mat-icon {
-    vertical-align: middle;
-    margin-left: 1ex;
-    font-size: 140%;
-}
 
 section .section-buttons {
     margin-top: 1ex;
