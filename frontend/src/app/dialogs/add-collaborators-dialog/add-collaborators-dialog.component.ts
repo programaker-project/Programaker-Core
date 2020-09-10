@@ -41,7 +41,10 @@ export class AddCollaboratorsDialogComponent {
 
     async ngOnInit() {
         this.session = await this.sessionService.getSession();
+        this._setupAutocomplete();
+    }
 
+    _setupAutocomplete() {
         // Update user list on invitation section
         this.invitationSearch.valueChanges.subscribe({
             next: (value) => {

@@ -93,8 +93,18 @@ content_types_accepted(Req, State) ->
                  -> {boolean(),cowboy_req:req(), #state{}}.
 accept_json(Req, State=#state{user_id=_UserId, group_id=GroupId}) ->
     {ok, Body, _} = ?UTILS:read_body(Req),
-    Collaborators = lists:map(fun read_collaborator/1, jiffy:decode(Body, [return_maps])),
-    case automate_storage:add_collaborators({group, GroupId}, Collaborators) of
+    #{ <<"action">> := Action, <<"collaborators">> := SerializedCollaborators } = jiffy:decode(Body, [return_maps]),
+
+    Collaborators = lists:map(fun read_collaborator/1, SerializedCollaborators),
+
+    Result = case Action of
+                 <<"invite">> ->
+                     automate_storage:add_collaborators({group, GroupId}, Collaborators);
+                 <<"update">> ->
+                     automate_storage:update_collaborators({group, GroupId}, Collaborators)
+             end,
+
+    case Result of
         ok ->
             Output = jiffy:encode(#{ success => true }),
 

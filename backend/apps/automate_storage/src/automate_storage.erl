@@ -92,6 +92,7 @@
         , can_user_view_as/2
         , list_collaborators/1
         , add_collaborators/2
+        , update_collaborators/2
 
         , add_mnesia_node/1
         , register_table/2
@@ -1429,6 +1430,16 @@ add_collaborators({group, GroupId}, Collaborators) ->
                                                                                                      }
                                                                       , write)
                                              end, Collaborators)
+                  end,
+    wrap_transaction(mnesia:transaction(Transaction)).
+
+-spec update_collaborators({group, binary()}, [{ Id :: binary(), Role :: user_in_group_role() }]) -> ok | {error, any()}.
+update_collaborators({group, GroupId}, Collaborators) ->
+    Transaction = fun() ->
+                          %% Delete all collaborators
+                          ok = mnesia:delete(?USER_GROUP_PERMISSIONS_TABLE, GroupId, write),
+                          %% And add new ones
+                          add_collaborators({group, GroupId}, Collaborators)
                   end,
     wrap_transaction(mnesia:transaction(Transaction)).
 

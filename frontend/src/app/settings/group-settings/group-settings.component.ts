@@ -1,19 +1,23 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { MatAutocomplete, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BridgeService } from 'app/bridges/bridge.service';
 import { ConnectionService } from 'app/connection.service';
 import { GroupInfo } from 'app/group';
+import { GroupService, UserAutocompleteInfo } from 'app/group.service';
 import { MonitorService } from 'app/monitor.service';
 import { ProgramService } from 'app/program.service';
 import { ServiceService } from 'app/service.service';
 import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
+import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborator';
 import { getGroupPictureUrl } from 'app/utils';
-import { GroupService } from 'app/group.service';
 
+const DEFAULT_ROLE : CollaboratorRole = 'editor';
 
 @Component({
     // moduleId: module.id,
@@ -37,7 +41,16 @@ export class GroupSettingsComponent {
     @ViewChild('imgFileInput') imgFileInput: ElementRef<HTMLInputElement>;
     @ViewChild('saveAvatarButton') saveAvatarButton: MatButton;
 
-    _getGroupPicture = getGroupPictureUrl;
+    @ViewChild('invitationAutocomplete') invitationAutocomplete: MatAutocomplete;
+    @ViewChild('saveCollaboratorsButton') saveCollaboratorsButton: MatButton;
+
+    invitationSearch = new FormControl();
+    userNameQuery: Promise<UserAutocompleteInfo[]> | null = null;
+    filteredOptions: UserAutocompleteInfo[];
+    collaborators: Collaborator[];
+
+    readonly _getGroupPicture = getGroupPictureUrl;
+    readonly _roleToIcon = roleToIcon;
 
     constructor(
         public sessionService: SessionService,
@@ -58,10 +71,17 @@ export class GroupSettingsComponent {
                 }
                 else {
                     this.is_advanced = this.session.tags.is_advanced;
-
                     const params = this.route.params['value'];
                     const groupName = params['group_name'];
-                    this.groupService.getGroupWithName(groupName).then(groupInfo => this.groupInfo = groupInfo);
+                    this.groupService.getGroupWithName(groupName).then((groupInfo) => {
+                        this.groupInfo = groupInfo;
+                    }).then(() => {
+                        this.groupService.getCollaboratorsOnGroup(this.groupInfo.id).then(collaborators => {
+                            this.collaborators = collaborators
+                            this._setupAutocomplete()
+                        });
+
+                    });
                 }
             })
             .catch(e => {
@@ -70,26 +90,54 @@ export class GroupSettingsComponent {
             });
     }
 
+    private _setupAutocomplete() {
+        // Update user list on invitation section
+        this.invitationSearch.valueChanges.subscribe({
+            next: (value) => {
+                if ((!value) || (typeof value !== 'string')) {
+                    this.filteredOptions = [];
+                }
+                else {
+                    const query = this.userNameQuery = this.groupService.autocompleteUsers(value);
+
+                    this.userNameQuery.then((result: UserAutocompleteInfo[]) => {
+                        if (query !== this.userNameQuery) {
+                            // No longer applicable
+                            return;
+                        }
+
+                        result = result.filter((user) => {
+                            if (user.id === this.session.user_id){
+                                return false; // This is the user creating the group
+                            }
+                            if (this.collaborators.find(collaborator => collaborator.id === user.id)) {
+                                return false; // This user is already on the list
+                            }
+
+                            return true;
+                        });
+
+                        this.filteredOptions = result;
+                    });
+                }
+            }
+        })
+        this.invitationAutocomplete.optionSelected.subscribe({ next: this.selectOption.bind(this) });
+    }
+
     onChangeAdvancedSettings(event: MatSlideToggleChange) {
         this.is_advanced = event.checked;
     }
 
-    async saveSettings() {
-        // Send update
-        const button = document.getElementById('user-settings-save-button');
-        if (button){
-            button.classList.add('started');
-            button.classList.remove('completed');
-        }
+    async saveCollaborators() {
+        const buttonClass = this.saveCollaboratorsButton._elementRef.nativeElement.classList;
+        buttonClass.add('started');
+        buttonClass.remove('completed');
 
-        // const success = await this.sessionService.updateUserSettings({
-        //     is_advanced: this.is_advanced,
-        // });
+        await this.groupService.updateGroupCollaboratorList(this.groupInfo.id, this.collaborators)
 
-        if (button){
-            button.classList.remove('started');
-            button.classList.add('completed');
-        }
+        buttonClass.remove('started');
+        buttonClass.add('completed');
     }
 
     previewImage(event: KeyboardEvent) {
@@ -117,4 +165,22 @@ export class GroupSettingsComponent {
         buttonClass.remove('started');
         buttonClass.add('completed');
     }
+
+
+    displayInvitation(user: {username: string}): string {
+        return user && user.username ? user.username : '';
+    }
+
+    selectOption(arg: MatAutocompleteSelectedEvent){
+        this.invitationSearch.reset();
+        const collaborator = arg.option.value as Collaborator;
+        collaborator.role = DEFAULT_ROLE;
+
+        this.collaborators.push(collaborator);
+    }
+
+    removeCollaborator(user: UserAutocompleteInfo) {
+        this.collaborators = this.collaborators.filter(collaborator => collaborator.id !== user.id);
+    }
+
 }

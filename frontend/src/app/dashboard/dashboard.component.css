@@ -258,6 +258,7 @@ mat-card.group {
     display: inline-block;
     vertical-align: bottom;
     margin-left: 1ex;
+    margin-top: 1ex;
     padding: 0;
     height: 3em;
 }

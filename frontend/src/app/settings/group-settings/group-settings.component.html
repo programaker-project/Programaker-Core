@@ -33,17 +33,61 @@
         <div class="user-settings settings-group">
             <div class="title">Collaborators</div>
 
-            <div class="save-section">
-                <button mat-button mat-raised-button
-                    id="user-settings-save-button"
-                    class="save-button"
-                    color="primary"
-                    (click)="saveCollaborators()">
-                    <span class="load-bg"></span>
-                    <mat-icon class="action-icon">cloud_upload</mat-icon>
-                    Save
-                </button>
+            <div class="description">
+                Update the collaborator list:
             </div>
+            <mat-form-field class="collaborator-input">
+                <input type="text"
+                    placeholder="Search for users to invite"
+                    matInput
+                    [formControl]="invitationSearch"
+                    [matAutocomplete]="auto">
+                <mat-autocomplete #invitationAutocomplete #auto="matAutocomplete" [displayWith]="displayInvitation">
+                    <mat-option *ngFor="let option of filteredOptions" [value]="option">
+                        {{option.username}}
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <ul class="collaborator-list" *ngIf="collaborators">
+                <li class="collaborator" *ngFor="let user of collaborators">
+                    <button (click)="removeCollaborator(user)" class="remove-collaborator" [disabled]="user.id === session.user_id">
+                        <mat-icon>clear</mat-icon>
+                    </button>
+                    <span class="name">
+                        {{ user.username }}
+                    </span>
+                    <span>
+                        as
+                    </span>
+                    <mat-form-field class="role">
+                        <mat-label>role</mat-label>
+                        <mat-select [(value)]="user.role" [disabled]="user.id === session.user_id">
+                            <mat-select-trigger>
+                                <mat-icon>{{ _roleToIcon(user.role) }}</mat-icon>
+
+                                {{ user.role }}
+                            </mat-select-trigger>
+
+                            <mat-option value="admin" ><mat-icon>{{ _roleToIcon('admin') }}</mat-icon> admin</mat-option>
+                            <mat-option value="editor"><mat-icon>{{ _roleToIcon('editor') }}</mat-icon> editor</mat-option>
+                            <mat-option value="viewer"><mat-icon>{{ _roleToIcon('viewer') }}</mat-icon> viewer</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </li>
+            </ul>
+
+
+            <button mat-button mat-raised-button
+                id="user-settings-save-button"
+                class="save-button"
+                color="primary"
+                #saveCollaboratorsButton
+                (click)="saveCollaborators()">
+                <span class="load-bg"></span>
+                <mat-icon class="action-icon">cloud_upload</mat-icon>
+                Save
+            </button>
         </div>
     </div>
 </div>

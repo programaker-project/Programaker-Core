@@ -119,11 +119,40 @@ export class GroupService {
 
         await (this.http
             .post(url,
-                  JSON.stringify(userIds.map(user => {
-                      return {
-                          id: user.id,
-                          role: user.role,
-                      }})),
+                  JSON.stringify({
+                      action: 'invite',
+                      collaborators: userIds.map(user => {
+                          return {
+                              id: user.id,
+                              role: user.role,
+                          }}),
+                  }),
+                  {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                               ContentType.Json)})
+            .toPromise());
+    }
+
+    async updateGroupCollaboratorList(groupId: string, userIds: { id: string, role: CollaboratorRole }[]): Promise<void> {
+        const url = this.updateGroupCollaboratorsUrl(groupId);
+        const operatorId = (await this.sessionService.getSession()).user_id;
+
+        const safeCollaborators: { id: string, role: CollaboratorRole }[] = (userIds
+            .map((user) => {
+                return {
+                    id: user.id,
+                    role: user.role,
+                }})
+            .filter((user) => user.id !== operatorId));
+        // Make sure that the operator will always be left as admin to be able
+        // to correct potential configuration errors
+        safeCollaborators.push({ id: operatorId, role: 'admin'});
+
+        await (this.http
+            .post(url,
+                  JSON.stringify({
+                      action: 'update',
+                      collaborators: safeCollaborators
+                  }),
                   {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
                                                                ContentType.Json)})
             .toPromise());
