@@ -16,6 +16,7 @@ import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
 import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborator';
 import { getGroupPictureUrl } from 'app/utils';
+import { ConfirmDeleteDialogComponent } from 'app/dialogs/confirm-delete-dialog/confirm-delete-dialog.component';
 
 const DEFAULT_ROLE : CollaboratorRole = 'editor';
 
@@ -36,6 +37,7 @@ export class GroupSettingsComponent {
     groupInfo: GroupInfo;
 
     loadedImage: File = null;
+    setToPublicGroup = null;
 
     @ViewChild('imgPreview') imgPreview: ElementRef<HTMLImageElement>;
     @ViewChild('imgFileInput') imgFileInput: ElementRef<HTMLInputElement>;
@@ -43,6 +45,8 @@ export class GroupSettingsComponent {
 
     @ViewChild('invitationAutocomplete') invitationAutocomplete: MatAutocomplete;
     @ViewChild('saveCollaboratorsButton') saveCollaboratorsButton: MatButton;
+    @ViewChild('saveAdminButton') saveAdminButton: MatButton;
+    @ViewChild('deletegroupButton') deletegroupButton: MatButton;
 
     invitationSearch = new FormControl();
     userNameQuery: Promise<UserAutocompleteInfo[]> | null = null;
@@ -75,6 +79,7 @@ export class GroupSettingsComponent {
                     const groupName = params['group_name'];
                     this.groupService.getGroupWithName(groupName).then((groupInfo) => {
                         this.groupInfo = groupInfo;
+                        this.setToPublicGroup = this.groupInfo.public;
                     }).then(() => {
                         this.groupService.getCollaboratorsOnGroup(this.groupInfo.id).then(collaborators => {
                             this.collaborators = collaborators
@@ -161,6 +166,25 @@ export class GroupSettingsComponent {
         buttonClass.remove('completed');
 
         await this.groupService.updateGroupAvatar(this.groupInfo.id, this.loadedImage);
+        this.loadedImage = null;
+
+        buttonClass.remove('started');
+        buttonClass.add('completed');
+    }
+
+    async saveAdminSettings() {
+        const buttonClass = this.saveAdminButton._elementRef.nativeElement.classList;
+        buttonClass.add('started');
+        buttonClass.remove('completed');
+
+        const tasks: Promise<any>[] = [];
+        if (this.groupInfo.public !== this.setToPublicGroup) {
+            tasks.push(this.groupService.setPublicStatus(this.groupInfo.id, this.setToPublicGroup).then(() => {
+                this.groupInfo.public = this.setToPublicGroup;
+            }));
+        }
+
+        await Promise.all(tasks);
 
         buttonClass.remove('started');
         buttonClass.add('completed');
@@ -181,6 +205,26 @@ export class GroupSettingsComponent {
 
     removeCollaborator(user: UserAutocompleteInfo) {
         this.collaborators = this.collaborators.filter(collaborator => collaborator.id !== user.id);
+    }
+
+
+    startDeleteGroup() {
+        const programData = { name: this.groupInfo.name };
+
+        const dialogRef = this.dialog.open(ConfirmDeleteDialogComponent, {
+            data: programData
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            const deletion = (this.groupService.deleteGroup(this.groupInfo.id)
+                .then(() => this.router.navigateByUrl("/"))
+                .catch(() => { return false; }));
+        });
     }
 
 }

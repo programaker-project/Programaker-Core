@@ -83,6 +83,8 @@
         , list_custom_signals/1
 
         , create_group/3
+        , delete_group/1
+        , update_group_metadata/2
         , get_user_groups/1
         , get_group_by_name/2
         , is_allowed_to_read_in_group/2
@@ -1332,6 +1334,24 @@ create_group(Name, AdminUserId, Public) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+
+-spec delete_group(binary()) -> ok | {error, any()}.
+delete_group(GroupId) ->
+    T = fun() ->
+                ok = mnesia:delete(?USER_GROUPS_TABLE, GroupId, write),
+                ok = mnesia:delete(?USER_GROUP_PERMISSIONS_TABLE, GroupId, write)
+        end,
+    wrap_transaction(mnesia:transaction(T)).
+
+-spec update_group_metadata(binary(), group_metadata_edition()) -> ok | {error, any()}.
+update_group_metadata(GroupId, MetadataChanges) ->
+    T = fun() ->
+                [Group] = mnesia:read(?USER_GROUPS_TABLE, GroupId),
+                NewGroup = apply_group_metadata_changes(Group, MetadataChanges),
+                mnesia:write(?USER_GROUPS_TABLE, NewGroup, write)
+        end,
+    wrap_transaction(mnesia:transaction(T)).
+
 -spec get_user_groups(owner_id()) -> {ok, [#user_group_entry{}, ...]} | {error, any()}.
 get_user_groups(UserId) ->
     Transaction = fun() ->
@@ -2121,6 +2141,16 @@ set_program_variable(ProgramId, Key, Value) ->
             io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
+
+
+-spec apply_group_metadata_changes(#user_group_entry{}, group_metadata_edition()) -> #user_group_entry{}.
+apply_group_metadata_changes(Group, MetadataChanges) ->
+    apply_group_metadata_public_changes(Group, MetadataChanges).
+
+apply_group_metadata_public_changes(Group=#user_group_entry{}, #{ public := IsPublic }) ->
+    Group#user_group_entry{ public=IsPublic };
+apply_group_metadata_public_changes(Group, _) ->
+    Group.
 
 
 %%====================================================================

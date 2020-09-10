@@ -107,7 +107,7 @@ mat-card.program > .program-operation > .enable-program {
 }
 
 .public-section > .user-programs {
-    margin: 0 auto;
+     /* margin: 0 auto; */
     padding-bottom: 3em;
 }
 

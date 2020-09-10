@@ -45,6 +45,14 @@ export class GroupService {
         return `${ApiRoot}/groups/by-id/${groupId}/picture`;
     }
 
+    getUpdateGroupUrl(groupId: string): string {
+        return `${ApiRoot}/groups/by-id/${groupId}`;
+    }
+
+    getDeleteGroupUrl(groupId: string): string {
+        return `${ApiRoot}/groups/by-id/${groupId}`;
+    }
+
     async getUserGroupsUrl(): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId()
         return `${root}/groups`;
@@ -167,4 +175,25 @@ export class GroupService {
         await this.http.post(url, formData, { headers: this.sessionService.getAuthHeader() }).toPromise()
     }
 
+    async setPublicStatus(groupId: string, newStatus: boolean): Promise<void> {
+        const url = this.getUpdateGroupUrl(groupId);
+
+        await (this.http
+            .patch(url,
+                   JSON.stringify({
+                       'public': newStatus
+                   }),
+                   {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                ContentType.Json)})
+            .toPromise());
+    }
+
+    async deleteGroup(groupId: string): Promise<void> {
+        const url = this.getDeleteGroupUrl(groupId);
+
+        await (this.http
+            .delete(url,
+                   {headers: this.sessionService.getAuthHeader()})
+            .toPromise());
+    }
 }

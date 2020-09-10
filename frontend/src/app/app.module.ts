@@ -33,32 +33,32 @@ import { NewDashboardComponent } from './dashboard/dashboard.component';
 import { GroupDashboardComponent } from './group-dashboard/dashboard.component';
 import { SettingsComponent } from './settings/user-settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
+import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
 
 // Programs
 import { ProgramDetailComponent } from './program-detail.component';
 import { FlowEditorComponent } from './flow-editor/flow-editor.component';
+
+// Dialogs
 import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
 import { SetProgramTagsDialogComponent } from './program_tags/SetProgramTagsDialogComponent';
+import { ConfirmDeleteDialogComponent } from './dialogs/confirm-delete-dialog/confirm-delete-dialog.component';
+import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
+import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
+import { AddConnectionDialogComponent } from './connections/add-connection-dialog.component';
+import { CustomSignalCreateDialogComponent } from './custom_signals/create-dialog.component';
+import { TemplateCreateDialogComponent } from './templates/create-dialog.component';
+import { SelectProgrammingModelDialogComponent } from './programs/select-programming-model-dialog/select-programming-model-dialog.component';
+import { AddCollaboratorsDialogComponent } from './dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
 
 // Services
 import { ServicesComponent } from './services.component';
-import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
 
 // Bridges
 import { BridgeIndexComponent } from './bridges/index.component';
 import { BridgeAddComponent } from './bridges/add.component';
-import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
-
-// Connections
-import { AddConnectionDialogComponent } from './connections/add-connection-dialog.component';
-
-// Custom signals
-import { CustomSignalCreateDialogComponent } from './custom_signals/create-dialog.component';
-
-// Templates
-import { TemplateCreateDialogComponent } from './templates/create-dialog.component';
 
 // Info
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
@@ -77,9 +77,6 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
-import { SelectProgrammingModelDialogComponent } from './programs/select-programming-model-dialog/select-programming-model-dialog.component';
-import { AddCollaboratorsDialogComponent } from './dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
-import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
 
 @NgModule({
     declarations: [
@@ -120,6 +117,7 @@ import { GroupSettingsComponent } from './settings/group-settings/group-settings
         SetProgramTagsDialogComponent,
         AddConnectionDialogComponent,
         AddCollaboratorsDialogComponent,
+        ConfirmDeleteDialogComponent,
 
         // Pipes
         SummarizeJSON,
