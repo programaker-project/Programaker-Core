@@ -5,6 +5,8 @@
         , stream_body_to_file/3
         , user_picture_path/1
         , user_has_picture/1
+        , group_picture_path/1
+        , group_has_picture/1
         ]).
 
 read_body(Req0) ->
@@ -53,6 +55,17 @@ user_picture_path(UserId) ->
       lists:flatten(io_lib:format("~s/~s", [automate_configuration:asset_directory("public/users/")
                                            , UserId
                                            ]))).
+
+group_has_picture(GroupId) ->
+    filelib:is_file(group_picture_path(GroupId)).
+
+-spec group_picture_path(binary()) -> binary().
+group_picture_path(GroupId) ->
+    binary:list_to_bin(
+      lists:flatten(io_lib:format("~s/~s", [automate_configuration:asset_directory("public/groups/")
+                                           , GroupId
+                                           ]))).
+
 
 
 %% Auxiliary

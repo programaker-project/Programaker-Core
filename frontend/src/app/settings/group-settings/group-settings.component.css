@@ -14,12 +14,11 @@
 
 .settings-group {
     background-color: #fff;
-    border: 1px solid #88a;
-    border-radius: 3px;
+    border-radius: 4px;
     padding: 1ex;
     margin-top: 1ex;
     overflow: auto;
-    box-shadow: 0px 0px 2px 1px rgba(0,0,0,0.3);
+    box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3);
 }
 
 .settings-group > .title {

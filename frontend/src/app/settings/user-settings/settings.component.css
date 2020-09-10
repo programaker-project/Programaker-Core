@@ -1,0 +1,90 @@
+.settings-section {
+    width: 100%;
+    padding-bottom: 2em;
+}
+
+.save-button {
+    padding: 1ex;
+    border-radius: 5px;
+
+    /* Right align */
+    margin: 1ex 0 auto auto;
+    display: block;
+}
+
+.settings-group {
+    background-color: #fff;
+    border-radius: 4px;
+    padding: 1ex;
+    margin-top: 1ex;
+    overflow: auto;
+    box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3);
+}
+
+.settings-group > .title {
+    font-size: 1.5rem;
+    margin-bottom: 1ex;
+    border-bottom: 1px solid #aaa;
+}
+
+.value:not(.code) {
+    float: right;
+}
+
+.value.code {
+    margin-left: 1ex;
+    word-break: keep-all;
+}
+
+.code {
+    padding: 1ex;
+    border-radius: 3px;
+    border: 1px solid #222;
+}
+
+.toggle-setting {
+    margin-bottom: 5ex;
+}
+
+.row {
+    margin: 0 !important;
+}
+
+/* Avatar */
+div.avatar {
+    padding: 0;
+    height: 10em;
+    width: 10em;
+    display: block;
+    margin: 1em auto;
+    box-sizing: content-box;
+    border: 1px dashed transparent;
+}
+
+.edited div.avatar {
+    border: 1px dashed rgba(0,0,0,0.3);
+}
+
+.avatar > img {
+    height: 10em;
+    width: 10em;
+    border-radius: 4px;
+}
+
+.avatar-edit-section {
+    text-align: center;
+}
+
+.avatar-edit-section > mat-icon {
+    vertical-align: bottom;
+}
+
+.picture-upload-button {
+    padding: 1ex;
+    border-radius: 5px;
+}
+
+.avatar-edit-section .save-button {
+    display: inline-block;
+    margin-left: 1em;
+}

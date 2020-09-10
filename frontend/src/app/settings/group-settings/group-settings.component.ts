@@ -1,37 +1,35 @@
-import * as progbar from '../ui/progbar';
-
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { Router } from '@angular/router';
-
-import { ProgramService } from '../program.service';
-
-import { Session } from '../session';
-import { SessionService } from '../session.service';
-
-import { ServiceService } from '../service.service';
+import { Component, ElementRef, ViewChild } from '@angular/core';
+import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
+import { Router, ActivatedRoute } from '@angular/router';
+import { BridgeService } from 'app/bridges/bridge.service';
+import { ConnectionService } from 'app/connection.service';
+import { GroupInfo } from 'app/group';
+import { MonitorService } from 'app/monitor.service';
+import { ProgramService } from 'app/program.service';
+import { ServiceService } from 'app/service.service';
+import { Session } from 'app/session';
+import { SessionService } from 'app/session.service';
+import { getGroupPictureUrl } from 'app/utils';
+import { GroupService } from 'app/group.service';
 
-import { MonitorService } from '../monitor.service';
-import { ConnectionService } from '../connection.service';
-import { BridgeService } from '../bridges/bridge.service';
-import { MatButton } from '@angular/material/button';
-import { getUserPictureUrl } from 'app/utils';
 
 @Component({
     // moduleId: module.id,
-    selector: 'app-my-settings',
-    templateUrl: './settings.component.html',
-    providers: [BridgeService, ConnectionService, MonitorService, ProgramService, SessionService, ServiceService],
+    selector: 'app-my-group-settings',
+    templateUrl: './group-settings.component.html',
+    providers: [BridgeService, ConnectionService, GroupService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
-        'settings.component.css',
-        '../libs/css/material-icons.css',
-        '../libs/css/bootstrap.min.css',
+        'group-settings.component.css',
+        '../../libs/css/material-icons.css',
+        '../../libs/css/bootstrap.min.css',
     ],
 })
-export class SettingsComponent {
+export class GroupSettingsComponent {
     session: Session;
     is_advanced: boolean;
+    groupInfo: GroupInfo;
 
     loadedImage: File = null;
 
@@ -39,12 +37,14 @@ export class SettingsComponent {
     @ViewChild('imgFileInput') imgFileInput: ElementRef<HTMLInputElement>;
     @ViewChild('saveAvatarButton') saveAvatarButton: MatButton;
 
-    _getUserPicture = getUserPictureUrl;
+    _getGroupPicture = getGroupPictureUrl;
 
     constructor(
         public sessionService: SessionService,
+        private route: ActivatedRoute,
         public router: Router,
         public dialog: MatDialog,
+        private groupService: GroupService,
     ) {
     }
 
@@ -58,6 +58,10 @@ export class SettingsComponent {
                 }
                 else {
                     this.is_advanced = this.session.tags.is_advanced;
+
+                    const params = this.route.params['value'];
+                    const groupName = params['group_name'];
+                    this.groupService.getGroupWithName(groupName).then(groupInfo => this.groupInfo = groupInfo);
                 }
             })
             .catch(e => {
@@ -70,7 +74,7 @@ export class SettingsComponent {
         this.is_advanced = event.checked;
     }
 
-    async saveUserSettings() {
+    async saveSettings() {
         // Send update
         const button = document.getElementById('user-settings-save-button');
         if (button){
@@ -78,13 +82,9 @@ export class SettingsComponent {
             button.classList.remove('completed');
         }
 
-        const success = await this.sessionService.updateUserSettings({
-            is_advanced: this.is_advanced,
-        });
-
-        if (success) {
-            this.session = await this.sessionService.forceUpdateSession();
-        }
+        // const success = await this.sessionService.updateUserSettings({
+        //     is_advanced: this.is_advanced,
+        // });
 
         if (button){
             button.classList.remove('started');
@@ -107,12 +107,12 @@ export class SettingsComponent {
         }
     }
 
-    async saveUserAvatar() {
+    async saveAvatar() {
         const buttonClass = this.saveAvatarButton._elementRef.nativeElement.classList;
         buttonClass.add('started');
         buttonClass.remove('completed');
 
-        await this.sessionService.updateUserAvatar(this.loadedImage);
+        await this.groupService.updateGroupAvatar(this.groupInfo.id, this.loadedImage);
 
         buttonClass.remove('started');
         buttonClass.add('completed');

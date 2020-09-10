@@ -41,9 +41,21 @@ export class GroupService {
         return `${ApiRoot}/groups/by-id/${groupId}/collaborators`;
     }
 
+    getUpdateGroupAvatarUrl(groupId: string): string {
+        return `${ApiRoot}/groups/by-id/${groupId}/picture`;
+    }
+
     async getUserGroupsUrl(): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId()
         return `${root}/groups`;
+    }
+
+    private _ground(obj: any, field: string){
+        if (obj[field] && obj[field].startsWith('/')) {
+            obj[field] = ApiRoot + obj[field];
+        }
+
+        return obj;
     }
 
     async autocompleteUsers(query: string): Promise<UserAutocompleteInfo[]> {
@@ -81,7 +93,7 @@ export class GroupService {
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
             .toPromise();
 
-        return result['groups'];
+        return result['groups'].map((group: GroupInfo) => this._ground(group, 'picture'));
     }
 
     async getGroupWithName(groupName: any): Promise<GroupInfo> {
@@ -99,13 +111,7 @@ export class GroupService {
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
             .toPromise();
 
-        return result['collaborators'].map(collaborator => {
-            if (collaborator.picture && collaborator.picture.startsWith('/')) {
-                collaborator.picture = ApiRoot + collaborator.picture;
-            }
-
-            return collaborator;
-        });
+        return result['collaborators'].map(collaborator => this._ground(collaborator, 'picture'));
     }
 
     async inviteUsers(groupId: string, userIds: { id: string, role: CollaboratorRole }[]): Promise<void> {
@@ -122,4 +128,14 @@ export class GroupService {
                                                                ContentType.Json)})
             .toPromise());
     }
+
+    async updateGroupAvatar(groupId: string, image: File): Promise<void> {
+        const formData = new FormData();
+        formData.append('file', image);
+
+        const url = this.getUpdateGroupAvatarUrl(groupId);
+
+        await this.http.post(url, formData, { headers: this.sessionService.getAuthHeader() }).toPromise()
+    }
+
 }

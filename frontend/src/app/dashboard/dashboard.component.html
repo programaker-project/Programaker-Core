@@ -51,7 +51,8 @@
                             *ngFor="let group of userInfo.groups"
                             (click)="openGroup(group)"
                             role="button" >
-                            <img class="icon" *ngIf="group.picture" src="{{ group.picture }}" alt="{{ group.name }}" />
+                            <img class="icon" *ngIf="group.picture" src="{{ group.picture }}" alt="{{ group.name }}"
+                                matTooltip="{{ group.name }}">
 
                             <span *ngIf="!group.picture" class="group-name">
                                 {{ group.name }}

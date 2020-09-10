@@ -1,9 +1,9 @@
-<div class="settings-section row">
+<div class="settings-section row" *ngIf="groupInfo">
     <div class="avatar-settings-col col-sm-4">
         <div [ngClass]="'settings-group ' + (loadedImage ? 'edited' : '')">
             <div class="avatar">
                 <img *ngIf="session" #imgPreview
-                    src="{{_getUserPicture(session.user_id)}}"
+                    src="{{_getGroupPicture(groupInfo.id)}}"
                     onError="this.src='/assets/profile-not-set.png'" />
             </div>
             <div class="avatar-edit-section">
@@ -20,7 +20,7 @@
                     class="save-button"
                     color="primary"
                     *ngIf="loadedImage"
-                    (click)="saveUserAvatar()">
+                    (click)="saveAvatar()">
                     <span class="load-bg"></span>
                     <mat-icon class="action-icon">cloud_upload</mat-icon>
                     Save
@@ -30,49 +30,19 @@
     </div>
 
     <div class="general-settings col-sm-8">
-        <div *ngIf="session && session.tags.is_admin"
-            class="admin-settings settings-group">
-            <div class="title">
-                <a routerLink="/settings/admin">Admin panel</a>
-            </div>
-            <a routerLink="/settings/admin">Click here to open the panel</a>
-        </div>
-
         <div class="user-settings settings-group">
-            <div class="title">User settings</div>
-
-            <div class="advanced-user toggle-setting">
-                <label for="advanced-user-toggle">Advanced controls</label>
-
-                <mat-slide-toggle
-                    class="value"
-                    color="accent"
-                    [checked]=is_advanced
-                    (change)="onChangeAdvancedSettings($event)">
-                    <span>{{ is_advanced ? 'Enabled' : 'Disabled' }}</span>
-                </mat-slide-toggle>
-            </div>
+            <div class="title">Collaborators</div>
 
             <div class="save-section">
                 <button mat-button mat-raised-button
                     id="user-settings-save-button"
                     class="save-button"
                     color="primary"
-                    (click)="saveUserSettings()">
+                    (click)="saveCollaborators()">
                     <span class="load-bg"></span>
                     <mat-icon class="action-icon">cloud_upload</mat-icon>
                     Save
                 </button>
-            </div>
-        </div>
-
-        <div class="debug-info settings-group"
-            *ngIf="session && session.tags.is_advanced">
-            <div class="title">Debug info</div>
-
-            <div class="user-id setting-view">
-                <label for="user-id">User ID: </label>
-                <span name="user-id" class="code value">{{session.user_id}}</span>
             </div>
         </div>
     </div>

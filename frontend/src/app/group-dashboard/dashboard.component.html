@@ -35,7 +35,11 @@
     <div class="row public-section">
         <div class="col col-sm-4">
             <div *ngIf="groupInfo" class="user-profile ">
-                <mat-icon class="group-picture placeholder">account_circle</mat-icon>
+                <div class="avatar">
+                    <img src="{{ _getGroupPicture(groupInfo.id)  }}"
+                        onError="this.src='/assets/profile-not-set.png'"
+                    />
+                </div>
 
                 <div class="group-name">{{ groupInfo.name }}</div>
 
@@ -50,9 +54,11 @@
                 <section class="edit-configuration"
                     *ngIf="userRole==='admin'"
                 >
-                    <button mat-raised-button>
-                        Edit configuration (WIP)
-                    </button>
+                    <a routerLink="./settings" class="settings-link" role="button"
+                        matRipple>
+                        <mat-icon>settings</mat-icon>
+                        Edit configuration
+                    </a>
                 </section>
                 <section *ngIf="collaborators" class="collaborators">
                     <div class="section-title">Collaborators</div>

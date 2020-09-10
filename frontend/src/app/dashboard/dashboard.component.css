@@ -259,17 +259,19 @@ mat-card.group {
     vertical-align: bottom;
     margin-left: 1ex;
     padding: 0;
+    height: 3em;
 }
 
 mat-card.group img {
     max-width: 3em;
-    max-height: 3em;
+    height: 3em;
     border-radius: 4px;
 }
 
 mat-card.group .group-name {
     display: block;
     padding: 1ex;
+    margin-top: 0.5ex;
 }
 
 section .section-buttons {

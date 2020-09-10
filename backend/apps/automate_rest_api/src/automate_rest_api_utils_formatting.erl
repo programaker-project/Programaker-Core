@@ -131,10 +131,16 @@ group_to_json(#user_group_entry{ id=Id
                                , canonical_name=CanonicalName
                                , public=IsPublic
                                }) ->
+    Picture = case ?UTILS:group_has_picture(Id) of
+                  false -> null;
+                  true ->
+                      <<"/groups/by-id/", Id/binary, "/picture">>
+              end,
     #{ id => Id
      , name => Name
      , public => IsPublic
      , canonical_name => CanonicalName
+     , picture => Picture
      }.
 
 program_to_json(#user_program_entry{ id=Id

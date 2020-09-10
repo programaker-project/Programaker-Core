@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { AdminService, PlatformStatsInfo, UserAdminData } from '../admin.service';
-import { Session } from '../session';
-import { SessionService } from '../session.service';
-import { unixMsToStr } from '../utils';
+import { AdminService, PlatformStatsInfo, UserAdminData } from 'app/admin.service';
+import { Session } from 'app/session';
+import { SessionService } from 'app/session.service';
+import { unixMsToStr } from 'app/utils';
 
 interface Note {
     icon: string;
@@ -20,8 +20,8 @@ const SYSTEM_STAT_RELOAD_TIME = 15000; // 15 seconds
     providers: [AdminService, SessionService],
     styleUrls: [
         'admin-settings.component.css',
-        '../libs/css/material-icons.css',
-        '../libs/css/bootstrap.min.css',
+        '../../libs/css/material-icons.css',
+        '../../libs/css/bootstrap.min.css',
     ],
 })
 export class AdminSettingsComponent {

@@ -18,7 +18,7 @@ import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
 import { AddCollaboratorsDialogComponent } from 'app/dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
-import { iconDataToUrl } from 'app/utils';
+import { iconDataToUrl, getGroupPictureUrl } from 'app/utils';
 
 @Component({
     // moduleId: module.id,
@@ -42,6 +42,7 @@ export class GroupDashboardComponent {
     canWriteToGroup: boolean = false;
 
     readonly _roleToIcon = roleToIcon;
+    readonly _getGroupPicture = getGroupPictureUrl;
 
     constructor(
         private programService: ProgramService,

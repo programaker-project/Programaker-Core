@@ -224,6 +224,16 @@ mat-card.example > .description {
     width: 100%;
 }
 
+.user-profile .avatar {
+    text-align: center;
+}
+
+.user-profile .avatar img {
+    height: 10em;
+    width: 10em;
+    border-radius: 4px;
+}
+
 .user-profile .group-name {
     font-size: 200%;
     color: #444;
@@ -276,7 +286,7 @@ mat-card.collaborator {
 
     background-color: #27212e;
     color: #fff;
-    border-radius: 4px 0 0 4px;
+    border-radius: 3px 0 0 3px;
 }
 
 mat-card.collaborator .collaborator-role mat-icon {
@@ -305,6 +315,21 @@ section .section-buttons {
 
 section.edit-configuration {
     text-align: center;
+}
+
+section.edit-configuration .settings-link {
+    background-color: #fc8;
+    color: #000;
+    padding: 1ex;
+    box-shadow: 0px 2px 3px 0px rgba(0,0,0,0.3);
+}
+
+section.edit-configuration .settings-link:hover {
+    text-decoration: none;
+}
+
+section.edit-configuration .settings-link mat-icon {
+    vertical-align: bottom;
 }
 
 button.group {

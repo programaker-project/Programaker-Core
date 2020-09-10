@@ -31,8 +31,8 @@ import { AppComponent } from './app.component';
 import { DashboardComponent } from './old-dashboard/dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
 import { GroupDashboardComponent } from './group-dashboard/dashboard.component';
-import { SettingsComponent } from './settings/settings.component';
-import { AdminSettingsComponent } from './settings/admin-settings.component';
+import { SettingsComponent } from './settings/user-settings/settings.component';
+import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
 
 // Programs
 import { ProgramDetailComponent } from './program-detail.component';
@@ -79,6 +79,7 @@ import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
 import { SelectProgrammingModelDialogComponent } from './programs/select-programming-model-dialog/select-programming-model-dialog.component';
 import { AddCollaboratorsDialogComponent } from './dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
+import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
 
 @NgModule({
     declarations: [
@@ -88,6 +89,7 @@ import { AddCollaboratorsDialogComponent } from './dialogs/add-collaborators-dia
         GroupDashboardComponent,
         SettingsComponent,
         AdminSettingsComponent,
+        GroupSettingsComponent,
         ProgramDetailComponent,
         FlowEditorComponent,
         BridgeIndexComponent,
