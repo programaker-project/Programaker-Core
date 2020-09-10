@@ -29,9 +29,13 @@
     </div>
 
     <div class="row public-section">
-        <div class="col col-sm-4">
+        <div class="">
             <div *ngIf="userInfo" class="user-profile ">
-                <mat-icon class="user-picture placeholder">account_circle</mat-icon>
+                <div class="avatar">
+                    <img src="{{ _getUserPicture(userInfo.id)  }}"
+                        onError="this.src='/assets/profile-not-set.png'"
+                        />
+                </div>
 
                 <div class="username">{{ userInfo.name }}</div>
 

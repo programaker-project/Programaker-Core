@@ -16,6 +16,8 @@
 -include("../../automate_storage/src/records.hrl").
 -include("../../automate_bot_engine/src/program_records.hrl").
 
+-define(UTILS, automate_rest_api_utils).
+
 format_message(Log=#user_program_log_entry{}) ->
     {ok, #{ type => program_log
           , value => serialize_log_entry(Log)
@@ -167,7 +169,13 @@ collaborator_to_json({ #registered_user_entry{ id=Id
                                              }
                      , Role
                      }) ->
+    Picture = case ?UTILS:user_has_picture(Id) of
+                  false -> null;
+                  true ->
+                      <<"/users/by-id/", Id/binary, "/picture">>
+              end,
     #{ id => Id
      , username => Username
      , role => Role
+     , picture => Picture
      }.

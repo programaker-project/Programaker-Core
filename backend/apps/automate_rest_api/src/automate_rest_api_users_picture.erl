@@ -9,6 +9,7 @@
         , options/2
         , is_authorized/2
         , content_types_accepted/2
+        , resource_exists/2
         ]).
 -export([ accept_file/2
         , retrieve_file/2
@@ -25,6 +26,9 @@ init(Req, _Opts) ->
     {cowboy_rest, Req
     , #state{ user_id=UserId }}.
 
+
+resource_exists(Req, State=#state{user_id=UserId}) ->
+    {?UTILS:user_has_picture(UserId), Req, State}.
 
 %% CORS
 options(Req, State) ->
@@ -65,7 +69,7 @@ content_types_accepted(Req, State) ->
 
 -spec accept_file(cowboy_req:req(), #state{}) -> {boolean(),cowboy_req:req(), #state{}}.
 accept_file(Req, State=#state{user_id=UserId}) ->
-    Path = user_picture_path(UserId),
+    Path = ?UTILS:user_picture_path(UserId),
     {ok, _Data, Req1} = ?UTILS:stream_body_to_file(Req, Path, <<"file">>),
     {true, Req1, State}.
 
@@ -75,20 +79,11 @@ content_types_provided(Req, State) ->
     {[{{<<"octet">>, <<"stream">>, []}, retrieve_file}],
      Req, State}.
 
--spec retrieve_file(cowboy_req:req(), #state{}) -> {boolean(),cowboy_req:req(), #state{}}.
+-spec retrieve_file(cowboy_req:req(), #state{}) -> {stop | boolean(),cowboy_req:req(), #state{}}.
 retrieve_file(Req, State=#state{user_id=UserId}) ->
-    Path = user_picture_path(UserId),
+    Path = ?UTILS:user_picture_path(UserId),
     FileSize = filelib:file_size(Path),
 
     Res = cowboy_req:reply(200, #{ %% <<"content-type">> => "image/png"
                                  }, {sendfile, 0, FileSize, Path}, Req),
     {true, Res, State}.
-
-
-%% Auxiliary
--spec user_picture_path(binary()) -> binary().
-user_picture_path(UserId) ->
-    binary:list_to_bin(
-      lists:flatten(io_lib:format("~s/~s", [automate_configuration:asset_directory("public/users/")
-                                           , UserId
-                                           ]))).

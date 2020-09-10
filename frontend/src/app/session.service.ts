@@ -11,7 +11,6 @@ export type SessionInfoUpdate = { session: Session };
 
 @Injectable()
 export class SessionService {
-
     readonly checkSessionUrl = API.ApiRoot + '/sessions/check';
     readonly loginUrl = API.ApiRoot + '/sessions/login';
     readonly registerUrl = API.ApiRoot + '/sessions/register';

@@ -69,6 +69,7 @@ div.avatar {
 .avatar > img {
     height: 10em;
     width: 10em;
+    border-radius: 4px;
 }
 
 .avatar-edit-section {

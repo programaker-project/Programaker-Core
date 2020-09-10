@@ -16,6 +16,7 @@ import { MonitorService } from '../monitor.service';
 import { ConnectionService } from '../connection.service';
 import { BridgeService } from '../bridges/bridge.service';
 import { MatButton } from '@angular/material/button';
+import { getUserPictureUrl } from 'app/utils';
 
 @Component({
     // moduleId: module.id,
@@ -38,6 +39,8 @@ export class SettingsComponent {
     @ViewChild('imgFileInput') imgFileInput: ElementRef<HTMLInputElement>;
     @ViewChild('saveAvatarButton') saveAvatarButton: MatButton;
 
+    _getUserPicture = getUserPictureUrl;
+
     constructor(
         public sessionService: SessionService,
         public router: Router,
@@ -50,10 +53,6 @@ export class SettingsComponent {
         this.sessionService.getSession()
             .then(session => {
                 this.session = session;
-                this.sessionService.getUserAvatarUrl().then(
-                    url => this.imgPreview.nativeElement.src = url
-                );
-
                 if (!session.active) {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 }

@@ -5,6 +5,7 @@ import { Session } from './session';
 import { Subscription } from 'rxjs';
 import { BridgeService, BridgeInfoUpdate } from './bridges/bridge.service';
 import { MatSidenav } from '@angular/material/sidenav';
+import { getUserPictureUrl } from './utils';
 
 @Component({
     selector: 'app-my-app',
@@ -22,9 +23,9 @@ export class AppComponent {
     bridgeCount = 0;
     session: Session;
 
-
     @ViewChild('sidenav', { static: false })
     private sidenav: ElementRef<MatSidenav>;
+    _getUserPicture = getUserPictureUrl;
 
     constructor(
         private router: Router,

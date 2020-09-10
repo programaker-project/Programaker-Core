@@ -8,6 +8,10 @@ function toWebsocketUrl(url: string): string {
     return url.replace(/^http/, 'ws');
 }
 
+function getUserPictureUrl(userId: string): string {
+    return `${ApiRoot}/users/by-id/${userId}/picture`;
+}
+
 function iconDataToUrl(icon: IconReference, bridge_id: string): string | undefined {
     if (!icon) { return undefined; }
     if ((icon as {url: string}).url) {
@@ -48,6 +52,7 @@ function unixMsToStr(ms_timestamp: number, options?: { ms_precision?: boolean })
 
 export {
     toWebsocketUrl,
+    getUserPictureUrl,
     iconDataToUrl,
     unixMsToStr,
 };

@@ -3,6 +3,8 @@
         , send_json_output/2
         , send_json_format/1
         , stream_body_to_file/3
+        , user_picture_path/1
+        , user_has_picture/1
         ]).
 
 read_body(Req0) ->
@@ -41,6 +43,16 @@ stream_body_to_file(Req, Path, FileName) ->
                 ok
         end
     end.
+
+user_has_picture(UserId) ->
+    filelib:is_file(user_picture_path(UserId)).
+
+-spec user_picture_path(binary()) -> binary().
+user_picture_path(UserId) ->
+    binary:list_to_bin(
+      lists:flatten(io_lib:format("~s/~s", [automate_configuration:asset_directory("public/users/")
+                                           , UserId
+                                           ]))).
 
 
 %% Auxiliary

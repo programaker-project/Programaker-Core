@@ -64,9 +64,13 @@
                     <div class="section-objects">
                         <mat-card class="collaborator non-clickable"
                             *ngFor="let user of collaborators">
-                            <mat-icon>{{ _roleToIcon(user.role)  }}</mat-icon>
+                            <mat-icon matTooltip="{{ user.role }}">{{ _roleToIcon(user.role)  }}</mat-icon>
 
-                            <img class="icon" *ngIf="user.picture" src="{{ user.picture }}" alt="{{ user.username }}" />
+                            <img class="icon" *ngIf="user.picture"
+                                src="{{ user.picture }}"
+                                alt="{{ user.username }}"
+                                matTooltip="@{{ user.username }}"
+                            />
 
                             <span *ngIf="!user.picture" class="user-name">
                                 {{ user.username }}

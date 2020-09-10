@@ -99,7 +99,13 @@ export class GroupService {
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
             .toPromise();
 
-        return result['collaborators'];
+        return result['collaborators'].map(collaborator => {
+            if (collaborator.picture && collaborator.picture.startsWith('/')) {
+                collaborator.picture = ApiRoot + collaborator.picture;
+            }
+
+            return collaborator;
+        });
     }
 
     async inviteUsers(groupId: string, userIds: { id: string, role: CollaboratorRole }[]): Promise<void> {

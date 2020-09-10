@@ -8,7 +8,9 @@
                     (click)="gotoSettings()"
                     *ngIf="session.active"
                     class="account-menu">
-                    <mat-icon>account_circle</mat-icon>
+                    <img class="account-picture"
+                        src="{{ _getUserPicture(session.user_id) }}"
+                        onError="this.src='/assets/profile-not-set.png'" />
                 </button>
                 <div class="login-button" *ngIf="!session.active">
                     <a class="action-link" (click)="gotoLogin()">Login</a>

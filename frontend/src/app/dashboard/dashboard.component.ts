@@ -16,7 +16,7 @@ import { AvailableService, ServiceEnableHowTo } from '../service';
 import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
-import { iconDataToUrl } from '../utils';
+import { iconDataToUrl, getUserPictureUrl } from '../utils';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -36,7 +36,7 @@ export class NewDashboardComponent {
     connections: BridgeConnectionWithIconUrl[] = null;
     bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
     session: Session = null;
-    userInfo: {name: string, groups: GroupInfo[]};
+    userInfo: {id: string, name: string, groups: GroupInfo[]};
     tutorials: TutorialData[] = [
         {
             description: "Create a weather chatbot",
@@ -44,6 +44,8 @@ export class NewDashboardComponent {
             url: "https://docs.programaker.com/tutorials/weather-bot.html",
         },
     ];
+
+    _getUserPicture = getUserPictureUrl;
 
     constructor(
         private programService: ProgramService,
@@ -72,6 +74,7 @@ export class NewDashboardComponent {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 } else {
                     this.userInfo = {
+                        id: session.user_id,
                         name: session.username,
                         groups: null
                     };

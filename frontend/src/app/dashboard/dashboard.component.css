@@ -214,10 +214,18 @@ mat-card.example > .description {
 }
 
 /* User profile */
-.user-profile .user-picture {
-    font-size: 1000% !important;
+.user-profile {
+    width: 40ex;
+}
+
+.user-profile .avatar {
     text-align: center;
-    width: 100%;
+}
+
+.user-profile .avatar img {
+    height: 10em;
+    width: 10em;
+    border-radius: 4px;
 }
 
 .user-profile .username {
