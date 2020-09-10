@@ -40,6 +40,7 @@ start_link() ->
                           %% Users
                         , {"/api/v0/users", automate_rest_api_users_root, []}
                         , {"/api/v0/users/:user_id", automate_rest_api_users_specific, []}
+                        , {"/api/v0/users/by-id/:user_id/picture", automate_rest_api_users_picture, []}
 
                           %% Miscellaneous
                         , {"/api/v0/users/id/:user_id/custom_signals/", automate_rest_api_custom_signals_root, []}

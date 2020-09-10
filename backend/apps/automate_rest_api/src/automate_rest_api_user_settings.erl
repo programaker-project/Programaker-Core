@@ -16,7 +16,6 @@
 
 -define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
--include("../../automate_template_engine/src/records.hrl").
 
 -record(state, { user_id :: binary() }).
 

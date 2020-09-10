@@ -1,15 +1,30 @@
 <div class="settings-section row">
     <div class="avatar-settings-col col-sm-4">
-        <!-- Not yet implemented.
-        <div class="settings-group ">
+        <div [ngClass]="'settings-group ' + (loadedImage ? 'edited' : '')">
             <div class="avatar">
-                <img src="/assets/profile-not-set.png" />
+                <img #imgPreview src="/assets/profile-not-set.png" />
             </div>
             <div class="avatar-edit-section">
-                <mat-icon>edit</mat-icon> Upload picture
+                <button color="primary" class="picture-upload-button"
+                    (click)="imgFileInput.click()"
+                    mat-raised-button>
+                    <mat-icon>edit</mat-icon> Upload {{ loadedImage ? ' new ' : '' }} picture
+                </button>
+                <input hidden accept="image/*" type="file" #imgFileInput (change)="previewImage($event)"/>
+
+                <button mat-button mat-raised-button
+                    #saveAvatarButton
+                    id="avatar-save-button"
+                    class="save-button"
+                    color="primary"
+                    *ngIf="loadedImage"
+                    (click)="saveUserAvatar()">
+                    <span class="load-bg"></span>
+                    <mat-icon class="action-icon">cloud_upload</mat-icon>
+                    Save
+                </button>
             </div>
         </div>
-        -->
     </div>
 
     <div class="general-settings col-sm-8">
