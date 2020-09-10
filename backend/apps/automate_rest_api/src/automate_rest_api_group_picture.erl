@@ -93,4 +93,4 @@ retrieve_file(Req, State=#state{group_id=GroupId}) ->
 
     Res = cowboy_req:reply(200, #{ %% <<"content-type">> => "image/png"
                                  }, {sendfile, 0, FileSize, Path}, Req),
-    {true, Res, State}.
+    {stop, Res, State}.
