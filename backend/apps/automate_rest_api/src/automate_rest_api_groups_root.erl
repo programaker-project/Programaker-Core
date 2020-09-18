@@ -62,8 +62,13 @@ content_types_accepted(Req, State) ->
 accept_json(Req, State=#state{ user_id=UserId }) ->
     {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = jiffy:decode(Body, [return_maps]),
+    Collaborators = case Parsed of
+                        #{ <<"collaborators">> := Collabs } -> Collabs;
+                        _ -> []
+                    end,
     case automate_storage:create_group(maps:get(<<"name">>, Parsed), UserId, maps:get(<<"public">>, Parsed)) of
-        {ok, Group} ->
+        {ok, Group=#user_group_entry{ id=GroupId }} ->
+            ok = automate_storage:add_collaborators({ group, GroupId }, lists:map(fun(UId) -> {UId, editor} end, Collaborators)),
             Req2 = ?UTILS:send_json_output(jiffy:encode(#{ success => true
                                                          , group => ?FORMATTING:group_to_json(Group)
                                                          }), Req),
