@@ -8,7 +8,7 @@ TMP_FILE="${3:-OPTIMIZED_IMAGE.dockerfile}"
 [ ! -f "${TMP_FILE}" ] # Check that TMP_FILE does not exist
 
 # Check base image of erlang:alpine
-TEMPLATE="FROM alpine:3.9 as final
+TEMPLATE="FROM alpine:3.12 as final
 
 RUN apk add ncurses libstdc++ erlang
 
