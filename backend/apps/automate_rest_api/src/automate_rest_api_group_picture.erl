@@ -58,7 +58,7 @@ is_authorized(Req, State=#state{group_id=GroupId}) ->
                 X ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            case automate_storage:is_allowed_to_write_in_group({user, UserId}, GroupId) of
+                            case automate_storage:is_allowed_to_admin_in_group({user, UserId}, GroupId) of
                                 true -> { true, Req1, State };
                                 false ->
                                     { { false, <<"Operation not allowed">>}, Req1, State }

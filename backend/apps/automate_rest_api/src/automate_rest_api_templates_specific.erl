@@ -132,11 +132,12 @@ delete_resource(Req, State) ->
 
 template_to_json(#template_entry{ id=Id
                                 , name=Name
-                                , owner=Owner
+                                , owner={OwnerType, OwnerId}
                                 , content=Content
                                 }) ->
     #{ id => Id
      , name => Name
-     , owner => Owner
+     , owner => OwnerId
+     , owner_full => #{ type => OwnerType, id => OwnerId }
      , content => Content
      }.

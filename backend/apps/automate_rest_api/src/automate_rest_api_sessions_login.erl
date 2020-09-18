@@ -36,14 +36,13 @@ options(Req, State) ->
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
     Res = automate_rest_api_cors:set_headers(Req),
-    {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Res, State}.
+    {[<<"POST">>, <<"OPTIONS">>], Res, State}.
 
 content_types_accepted(Req, State) ->
     {[{{<<"application">>, <<"json">>, []}, accept_json_modify_collection}],
      Req, State}.
 
 %%%% POST
-                                                %
 -spec accept_json_modify_collection(cowboy_req:req(),#login_seq{})
                                    -> {'true',cowboy_req:req(),_}.
 accept_json_modify_collection(Req, Session) ->

@@ -29,13 +29,13 @@ start_link() ->
                           %% Registration
                         , {"/api/v0/sessions/register", automate_rest_api_sessions_register, []}
                         , {"/api/v0/sessions/register/verify", automate_rest_api_sessions_register_verify, []}
+                        , {"/api/v0/sessions/login/reset", automate_rest_api_sessions_reset_password, []}
+                        , {"/api/v0/sessions/login/reset/validate", automate_rest_api_sessions_reset_password_validate, []}
+                        , {"/api/v0/sessions/login/reset/update", automate_rest_api_sessions_reset_password_update, []}
 
                           %% Session management
                         , {"/api/v0/sessions/check", automate_rest_api_sessions_check, []}
                         , {"/api/v0/sessions/login", automate_rest_api_sessions_login, []}
-                        , {"/api/v0/sessions/login/reset", automate_rest_api_sessions_reset_password, []}
-                        , {"/api/v0/sessions/login/reset/validate", automate_rest_api_sessions_reset_password_validate, []}
-                        , {"/api/v0/sessions/login/reset/update", automate_rest_api_sessions_reset_password_update, []}
 
                           %% Users
                         , {"/api/v0/users", automate_rest_api_users_root, []}
@@ -54,7 +54,7 @@ start_link() ->
                         , {"/api/v0/users/id/:user_id/settings", automate_rest_api_user_settings, []}
 
                           %% Programs
-                        , {"/api/v0/programs/id/:program_id", automate_rest_api_program_specific_by_id, []}
+                        , {"/api/v0/programs/id/:program_id", automate_rest_api_program_specific_by_id, []} %% DUP with /by-id/ form
 
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
                         , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
@@ -63,7 +63,8 @@ start_link() ->
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []} % DEPR
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []} % DEPR
 
-                        , {"/api/v0/programs/id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
+                        , {"/api/v0/programs/by-id/:program_id", automate_rest_api_program_specific_by_id, []}
+                        , {"/api/v0/programs/by-id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
                         , {"/api/v0/programs/by-id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
                         , {"/api/v0/programs/by-id/:program_id/custom-blocks/", automate_rest_api_program_custom_blocks, []}
                         , {"/api/v0/programs/by-id/:program_id/bridges/by-id/:bridge_id/callbacks/:callback", automate_rest_api_program_bridge_callback, []}
