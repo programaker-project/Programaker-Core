@@ -64,7 +64,7 @@
                     <div class="section-title">Collaborators</div>
 
                     <div *ngIf="collaborators.length == 0" class="not-joined-explanation">
-                        You have not joined any <span class="keyword">group</span>.
+                        This group has no public collaborator.
                     </div>
 
                     <div class="section-objects">
@@ -93,6 +93,40 @@
                             *ngIf="userRole==='admin'"
                             mat-raised-button>
                             <mat-icon>group_add</mat-icon> Add collaborators
+                        </button>
+                    </div>
+                </section>
+
+                <section *ngIf="bridges" class="bridges">
+                    <div class="section-title">Bridges</div>
+
+                    <div *ngIf="bridges.length == 0" class="not-joined-explanation">
+                        This group does not own any bridge.
+                    </div>
+
+                    <div class="section-objects">
+                        <mat-card *ngFor="let bridge of bridges"
+                            class="bridge connected-{{bridge.is_connected}}"
+                            role="button"
+                        >
+                            <div class="bridge-name" *ngIf="bridge.name">{{bridge.name}}</div>
+                            <!-- <h4 *ngIf="!bridge.name">No name</h4>
+                                 <div *ngIf="bridge.id === expandedBridgeId">
+                                 <button id="bridge-delete-button" color="warn"
+                                 (click)="deleteBridge(bridge)" mat-button>
+                                 <mat-icon>delete_forever</mat-icon> Delete bridge
+                                 </button>
+                                 </div> -->
+                            <!-- <div class="warning no_connection_warning" *ngIf="!bridge.is_connected">Service bridge not connected</div> -->
+                        </mat-card>
+                    </div>
+
+                    <div class="section-buttons">
+                        <button class="group call-to-action soft" role="button"
+                            (click)="addBridge()"
+                            *ngIf="userRole==='admin'"
+                            mat-raised-button>
+                            <mat-icon>add</mat-icon> Add bridge
                         </button>
                     </div>
                 </section>

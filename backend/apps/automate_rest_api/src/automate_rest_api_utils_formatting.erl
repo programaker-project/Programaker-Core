@@ -10,11 +10,13 @@
         , program_to_json/1
         , program_to_json/2
         , collaborator_to_json/1
+        , bridge_to_json/1
         ]).
 
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 -include("../../automate_bot_engine/src/program_records.hrl").
+-include("../../automate_service_port_engine/src/records.hrl").
 
 -define(UTILS, automate_rest_api_utils).
 
@@ -184,4 +186,21 @@ collaborator_to_json({ #registered_user_entry{ id=Id
      , username => Username
      , role => Role
      , picture => Picture
+     }.
+
+
+bridge_to_json(#service_port_entry_extra{ id=Id
+                                        , name=Name
+                                        , owner={OwnerType, OwnerId}
+                                        , service_id=ServiceId
+                                        , is_connected=IsConnected
+                                        , icon=Icon
+                                        }) ->
+    #{ <<"id">> => Id
+     , <<"name">> => Name
+     , <<"owner">> => OwnerId
+     , <<"owner_full">> => #{type => OwnerType, id => OwnerId}
+     , <<"service_id">> => ServiceId
+     , <<"is_connected">> => IsConnected
+     , <<"icon">> => serialize_icon(Icon)
      }.

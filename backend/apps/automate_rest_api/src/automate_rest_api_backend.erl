@@ -60,6 +60,8 @@
 -include("../../automate_service_port_engine/src/records.hrl").
 -include("../../automate_template_engine/src/records.hrl").
 
+-define(URLS, automate_rest_api_utils_urls).
+
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -487,17 +489,13 @@ get_service_metadata(Id
         {ok, Enabled} ->
             #service_metadata{ id=Id
                              , name=Name
-                             , link=generate_url_for_service_id(Owner, Id)
+                             , link=?URLS:service_id_url(Id)
                              , enabled=Enabled
                              }
     catch X:Y ->
             automate_logging:log_api(error, ?MODULE, io_lib:format("Error getting service metadata ~p:~p", [X, Y])),
             none
     end.
-
-
-generate_url_for_service_id(_Owner, ServiceId) ->
-    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/services/by-id/~s", [ServiceId]))).
 
 generate_url_for_program_name(Username, ProgramName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/programs/~s", [Username, ProgramName]))).

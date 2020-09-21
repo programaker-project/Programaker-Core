@@ -269,6 +269,22 @@ mat-card.example > .description {
     text-decoration: underline;
 }
 
+section.bridges {
+    border-top: 1px solid rgba(0,0,0,0.3);
+}
+
+mat-card.bridge {
+    display: inline-block;
+    vertical-align: bottom;
+    margin-left: 1ex;
+    margin-top: 1ex;
+    padding: 0;
+}
+
+mat-card.bridge .bridge-name {
+    padding: 1ex;
+}
+
 mat-card.collaborator {
     display: inline-block;
     vertical-align: bottom;

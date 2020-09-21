@@ -1,12 +1,18 @@
 import { IconReference, HashedIcon } from './connection';
-import { ApiRoot } from './api-config';
+import { ApiRoot, ApiHost } from './api-config';
 
 function toWebsocketUrl(url: string): string {
+    let baseServerPath = document.location.origin;
+    if (ApiHost != '') {
+        baseServerPath = ApiHost;
+    }
+
     if (url.startsWith('/')) { // We need an absolute address for this
-        url = document.location.protocol + '//' + document.location.host + url;
+        url = baseServerPath + url;
     }
     return url.replace(/^http/, 'ws');
 }
+
 
 function getUserPictureUrl(userId: string): string {
     return `${ApiRoot}/users/by-id/${userId}/picture`;

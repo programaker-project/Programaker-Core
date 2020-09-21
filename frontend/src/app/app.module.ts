@@ -77,6 +77,7 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
+import { AddBridgeDialogComponent } from './dialogs/add-bridge-dialog/add-bridge-dialog.component';
 
 @NgModule({
     declarations: [
@@ -117,6 +118,7 @@ import { SelectFromJSON } from './select_from_json.filter';
         SetProgramTagsDialogComponent,
         AddConnectionDialogComponent,
         AddCollaboratorsDialogComponent,
+        AddBridgeDialogComponent,
         ConfirmDeleteDialogComponent,
 
         // Pipes

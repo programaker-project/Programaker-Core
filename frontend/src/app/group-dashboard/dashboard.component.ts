@@ -1,24 +1,24 @@
 import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
+import { BridgeIndexData } from 'app/bridges/bridge';
+import { AddCollaboratorsDialogComponent } from 'app/dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
 import { GroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
 import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborator';
+import { getGroupPictureUrl, iconDataToUrl } from 'app/utils';
 import { BridgeService } from '../bridges/bridge.service';
 import { BridgeConnectionWithIconUrl } from '../connection';
 import { ConnectionService } from '../connection.service';
 import { AddConnectionDialogComponent } from '../connections/add-connection-dialog.component';
-import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
 import { MonitorService } from '../monitor.service';
 import { ProgramMetadata, ProgramType } from '../program';
 import { ProgramService } from '../program.service';
 import { SelectProgrammingModelDialogComponent } from '../programs/select-programming-model-dialog/select-programming-model-dialog.component';
-import { AvailableService, ServiceEnableHowTo } from '../service';
 import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
-import { AddCollaboratorsDialogComponent } from 'app/dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
-import { iconDataToUrl, getGroupPictureUrl } from 'app/utils';
+import { AddBridgeDialogComponent } from 'app/dialogs/add-bridge-dialog/add-bridge-dialog.component';
 
 @Component({
     // moduleId: module.id,
@@ -39,6 +39,8 @@ export class GroupDashboardComponent {
     groupInfo: GroupInfo;
     collaborators: Collaborator[] = null;
     userRole: CollaboratorRole = null;
+    bridges: BridgeIndexData[] = null;
+
     canWriteToGroup: boolean = false;
 
     readonly _roleToIcon = roleToIcon;
@@ -82,7 +84,7 @@ export class GroupDashboardComponent {
                             });
 
                         this.updateCollaborators();
-
+                        this.updateBridges();
                         this.updateConnections();
                     }
                     catch (err) {
@@ -139,6 +141,19 @@ export class GroupDashboardComponent {
         });
     }
 
+    addBridge(): void {
+        const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '50%',
+                                                                       data: { groupId: this.groupInfo.id,
+                                                                             },
+                                                                     });
+
+        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+            if (result && result.success) {
+                this.updateBridges();
+            }
+        });
+    }
+
     updateConnections(): void {
         this.connectionService.getConnectionsOnGroup(this.groupInfo.id)
             .then(connections => {
@@ -157,9 +172,43 @@ export class GroupDashboardComponent {
             });
     }
 
+    async updateBridges() {
+        this.bridges = await this.bridgeService.listGroupBridges(this.groupInfo.id);
+    }
+
+    openBridgePanel(bridge: BridgeIndexData) {
+        // TODO
+    }
+
     async updateCollaborators() {
         const collaborators = await this.groupService.getCollaboratorsOnGroup(this.groupInfo.id)
 
+        collaborators.sort((a, b) => {
+            // First try to sort by role
+            if ((a.role === 'admin'  && b.role !== 'admin') ||
+                (a.role === 'editor' && b.role === 'viewer')) {
+                return -1;
+            }
+
+            if ((b.role === 'admin'  && a.role !== 'admin') ||
+                (b.role === 'editor' && a.role === 'viewer')) {
+                return 1;
+            }
+
+            // Else, sort alphabetically by username
+            const nameA = a.username.toUpperCase();
+            const nameB = b.username.toUpperCase();
+
+            if (nameA < nameB) {
+                return -1;
+            }
+            if (nameB < nameA) {
+                return 1;
+            }
+
+            // Equal name and role
+            return 0;
+        });
         this.collaborators = collaborators;
 
         // Discover own user role

@@ -2,7 +2,9 @@
     <div class="avatar-settings-col col-sm-4">
         <div [ngClass]="'settings-group ' + (loadedImage ? 'edited' : '')">
             <div class="avatar">
-                <img *ngIf="session" #imgPreview src="{{_getUserPicture(session.user_id)}}" />
+                <img *ngIf="session" #imgPreview
+                    src="{{_getUserPicture(session.user_id)}}"
+                    onError="this.src='/assets/profile-not-set.png'" />
             </div>
             <div class="avatar-edit-section">
                 <button color="primary" class="picture-upload-button"

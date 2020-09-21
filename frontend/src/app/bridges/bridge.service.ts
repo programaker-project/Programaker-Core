@@ -38,6 +38,10 @@ export class BridgeService {
         return userApiRoot + '/bridges/';
     }
 
+    getGroupBridgeIndexUrl(groupId: string): string {
+        return `${API.ApiRoot}/groups/by-id/${groupId}/bridges`;
+    }
+
     async getSpecificBridgeUrl(user_id: string, bridge_id: string): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId(user_id);
 
@@ -65,7 +69,7 @@ export class BridgeService {
         const url = await this.getBridgeIndexUrl();
         const response = (await this.http.get(url,
                                               { headers: this.sessionService.getAuthHeader()})
-                          .toPromise());
+            .toPromise());
 
         const bridgeData = response as BridgeIndexData[];
         BridgeService.bridgeCount = bridgeData.length;
@@ -74,6 +78,26 @@ export class BridgeService {
             bridges: bridgeData,
             monitor: BridgeService.bridgeInfoObservable,
         };
+    }
+
+    async createGroupBridge(name: string, groupId: string): Promise<BridgeMetadata> {
+        const url = this.getGroupBridgeIndexUrl(groupId);
+
+        const response = (await this.http.post(url, JSON.stringify({ name: name }),
+                                               { headers: this.sessionService.addJsonContentType(
+                                                   this.sessionService.getAuthHeader())
+                                               }).toPromise());
+
+        return response as BridgeMetadata;
+    }
+
+    async listGroupBridges(groupId: string): Promise<BridgeIndexData[]> {
+        const url = this.getGroupBridgeIndexUrl(groupId);
+        const response = (await this.http.get(url,
+                                              { headers: this.sessionService.getAuthHeader()})
+                          .toPromise());
+
+        return response as BridgeIndexData[];
     }
 
     async deleteBridge(user_id: string, bridge_id: string): Promise<boolean> {

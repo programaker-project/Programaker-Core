@@ -2,7 +2,7 @@
 %%% REST endpoint to manage knowledge collections.
 %%% @end
 
--module(automate_rest_api_service_ports_root).
+-module(automate_rest_api_group_bridge_root).
 
 -export([init/2]).
 
@@ -22,15 +22,19 @@
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 -define(FORMATTING, automate_rest_api_utils_formatting).
+-define(URLS, automate_rest_api_utils_urls).
 
--record(state, {username :: binary()}).
+-record(state, { group_id :: binary()
+               , user_id :: binary() | undefined
+               }).
 
 -spec init(_, _) -> {cowboy_rest, _, _}.
 
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
+    GroupId = cowboy_req:binding(group_id, Req),
     {cowboy_rest, Req,
-     #state{username = UserId}}.
+     #state{ group_id=GroupId
+           , user_id=undefined}}.
 
 resource_exists(Req, State) ->
     case cowboy_req:method(Req) of
@@ -48,27 +52,29 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#state{group_id=GroupId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> -> {true, Req1, State};
-        _ ->
-            case cowboy_req:header(<<"authorization">>, Req,
-                                   undefined)
-            of
+        Method ->
+            Check = case Method of
+                        <<"GET">> -> fun automate_storage:is_allowed_to_read_in_group/2;
+                        _ -> fun automate_storage:is_allowed_to_write_in_group/2
+                    end,
+            case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
-                    {{false, <<"Authorization header not found">>}, Req1,
-                     State};
+                    { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    #state{username = Username} = State,
-                    case automate_rest_api_backend:is_valid_token(X) of
-                        {true, Username} -> {true, Req1, State};
-                        {true, _} -> %% Non matching username
-                            {{false, <<"Unauthorized to create a program here">>},
-                             Req1, State};
+                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                        {true, UserId} ->
+                            case Check({user, UserId}, GroupId) of
+                                true -> { true, Req1, State#state{ user_id=UserId } };
+                                false ->
+                                    { { false, <<"Operation not allowed">>}, Req1, State }
+                            end;
                         false ->
-                            {{false, <<"Authorization not correct">>}, Req1, State}
+                            { { false, <<"Authorization not correct">>}, Req1, State }
                     end
             end
     end.
@@ -80,9 +86,8 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State) ->
-    #state{username=Username} = State,
-    case automate_rest_api_backend:list_bridges(Username) of
+to_json(Req, State=#state{group_id=GroupId}) ->
+    case automate_service_port_engine:get_user_service_ports({group, GroupId}) of
         { ok, Bridges } ->
             Output = jiffy:encode(lists:map(fun ?FORMATTING:bridge_to_json/1, Bridges)),
 
@@ -103,19 +108,19 @@ content_types_accepted(Req, State) ->
                                                      binary()},
                                                     cowboy_req:req(),
                                                     #state{}}.
-
-accept_json_create_service_port(Req, State) ->
-    #state{username = Username} = State,
+accept_json_create_service_port(Req, State=#state{group_id=GroupId}) ->
     {ok, Body, Req1} = ?UTILS:read_body(Req),
     #{ <<"name">> := ServicePortName } = jiffy:decode(Body, [return_maps]),
 
-    case automate_rest_api_backend:create_service_port(Username, ServicePortName) of
-        {ok, ServicePortUrl} ->
-            Output = jiffy:encode(#{<<"control_url">> => ServicePortUrl}),
+    case {ok, ServicePortId } = automate_service_port_engine:create_service_port({group, GroupId}, ServicePortName) of
+        {ok, ServicePortId} ->
+            Url = ?URLS:service_id_url(ServicePortId),
+
+            Output = jiffy:encode(#{<<"control_url">> => Url}),
             Res2 = cowboy_req:set_resp_body(Output, Req1),
             Res3 = cowboy_req:delete_resp_header(<<"content-type">>,
                                                  Res2),
             Res4 = cowboy_req:set_resp_header(<<"content-type">>,
                                               <<"application/json">>, Res3),
-            {{true, ServicePortUrl}, Res4, State}
+            {{true, Url}, Res4, State}
     end.
