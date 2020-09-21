@@ -89,15 +89,20 @@ start_link() ->
 
                           %% Bridges
                         , {"/api/v0/users/:user_id/bridges", automate_rest_api_service_ports_root, []}
-                        , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []} %% DEPR
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/callback/:callback", automate_rest_api_bridge_callback, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/functions/:function", automate_rest_api_bridge_function_specific, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/signals", automate_rest_api_bridge_signal_root, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/signals/:key", automate_rest_api_bridge_signal_specific, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/communication"
-                          , automate_rest_api_service_ports_specific_communication, []}
+                          , automate_rest_api_service_ports_specific_communication, []} %% DEPR
                         , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/oauth_return"
                           , automate_rest_api_service_port_oauth_return, []}
+
+                          %% New bridges API
+                        , {"/api/v0/bridges/by-id/:bridge_id", automate_rest_api_service_ports_specific, []}
+                        , {"/api/v0/bridges/by-id/:service_port_id/communication"
+                          , automate_rest_api_service_ports_specific_communication, []}
 
                           %% Services
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}

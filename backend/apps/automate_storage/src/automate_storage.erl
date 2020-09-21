@@ -90,6 +90,7 @@
         , is_allowed_to_read_in_group/2
         , is_allowed_to_write_in_group/2
         , is_allowed_to_admin_in_group/2
+        , can_user_admin_as/2
         , can_user_edit_as/2
         , can_user_view_as/2
         , list_collaborators/1
@@ -98,6 +99,10 @@
 
         , add_mnesia_node/1
         , register_table/2
+
+
+          %% Utils
+        , wrap_transaction/1
         ]).
 -export([start_link/0]).
 -define(SERVER, ?MODULE).
@@ -1383,6 +1388,8 @@ get_group_by_name(GroupName, AccessorId) ->
     wrap_transaction(mnesia:activity(ets, Transaction)).
 
 -spec is_allowed_to_read_in_group(owner_id(), binary()) -> true | false.
+is_allowed_to_read_in_group({group, GroupId}, GroupId) ->
+    true;
 is_allowed_to_read_in_group(AccessorId, GroupId) ->
     Transaction = fun() ->
                           lists:any(fun(#user_group_permissions_entry{user_id=UserId}) ->
@@ -1392,6 +1399,8 @@ is_allowed_to_read_in_group(AccessorId, GroupId) ->
     wrap_transaction(mnesia:activity(ets, Transaction)).
 
 -spec is_allowed_to_write_in_group(owner_id(), binary()) -> true | false.
+is_allowed_to_write_in_group({group, GroupId}, GroupId) ->
+    true;
 is_allowed_to_write_in_group(AccessorId, GroupId) ->
     Transaction = fun() ->
                           lists:any(fun(#user_group_permissions_entry{user_id=UserId, role=Role}) ->
@@ -1403,6 +1412,8 @@ is_allowed_to_write_in_group(AccessorId, GroupId) ->
     wrap_transaction(mnesia:activity(ets, Transaction)).
 
 -spec is_allowed_to_admin_in_group(owner_id(), binary()) -> true | false.
+is_allowed_to_admin_in_group({group, GroupId}, GroupId) ->
+    true;
 is_allowed_to_admin_in_group(AccessorId, GroupId) ->
     Transaction = fun() ->
                           lists:any(fun(#user_group_permissions_entry{user_id=UserId, role=Role}) ->
@@ -1412,6 +1423,14 @@ is_allowed_to_admin_in_group(AccessorId, GroupId) ->
                                     end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId))
                   end,
     wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec can_user_admin_as(owner_id(), owner_id()) -> true | false.
+can_user_admin_as(AccessorId, {group, GroupId}) ->
+    is_allowed_to_admin_in_group(AccessorId, GroupId);
+can_user_admin_as({user, UserId}, {user, UserId}) ->
+    true;
+can_user_admin_as({user, _UserId}, {user, _AnotherUser}) ->
+    false.
 
 -spec can_user_edit_as(owner_id(), owner_id()) -> true | false.
 can_user_edit_as(AccessorId, {group, GroupId}) ->

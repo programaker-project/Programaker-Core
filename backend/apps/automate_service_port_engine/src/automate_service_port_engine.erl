@@ -22,6 +22,7 @@
         , callback_bridge/3
         , get_channel_origin_bridge/1
         , get_bridge_info/1
+        , get_bridge_owner/1
 
         , listen_bridge/2
         , listen_bridge/3
@@ -98,8 +99,8 @@ listen_bridge(BridgeId, Owner, Selector) ->
             {error, Description}
     end.
 
--spec from_service_port(binary(), binary(), binary()) -> ok.
-from_service_port(ServicePortId, UserId, Msg) ->
+-spec from_service_port(binary(), owner_id(), binary()) -> ok.
+from_service_port(ServicePortId, Owner, Msg) ->
     Unpacked = jiffy:decode(Msg, [return_maps]),
     automate_stats:log_observation(counter,
                                    automate_bridge_engine_messages_from_bridge,
@@ -117,7 +118,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
         #{ <<"type">> := <<"CONFIGURATION">>
          , <<"value">> := Configuration
          } ->
-            {ok, Todo} = set_service_port_configuration(ServicePortId, Configuration, UserId),
+            {ok, Todo} = set_service_port_configuration(ServicePortId, Configuration, Owner),
             %% TODO: Check that it really exists, don't trust the DB
             case lists:member(request_icon, Todo) of
                 false -> ok;
@@ -261,6 +262,10 @@ get_channel_origin_bridge(ChannelId) ->
 get_bridge_info(BridgeId) ->
     ?BACKEND:get_bridge_info(BridgeId).
 
+-spec get_bridge_owner(binary()) -> {ok, owner_id()} | {error, not_found}.
+get_bridge_owner(BridgeId) ->
+    ?BACKEND:get_bridge_owner(BridgeId).
+
 -spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
 list_established_connections(Owner) ->
     ?BACKEND:list_established_connections(Owner).
@@ -319,9 +324,9 @@ add_service_port_extra({#service_port_entry{ id=Id
                              , icon=BridgeIcon
                              }.
 
-set_service_port_configuration(ServicePortId, Configuration, UserId) ->
+set_service_port_configuration(ServicePortId, Configuration, Owner) ->
     SPConfiguration = parse_configuration_map(ServicePortId, Configuration),
-    ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, UserId).
+    ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, Owner).
 
 parse_configuration_map(ServicePortId,
                         Config=#{ <<"blocks">> := Blocks

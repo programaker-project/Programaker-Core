@@ -13,16 +13,17 @@
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
--record(state, { user_id :: binary(), bridge_id :: binary() }).
+-record(state, { bridge_id :: binary()
+               , permissions :: owner_id() | undefined
+               }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
     BridgeId = cowboy_req:binding(bridge_id, Req),
     Req1 = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Req1
-    , #state{ user_id=UserId
-            , bridge_id=BridgeId
+    , #state{ bridge_id=BridgeId
+            , permissions=undefined
             }}.
 
 %% CORS
@@ -34,24 +35,29 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#state{bridge_id=BridgeId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
+        Method ->
+            Check = case Method of
+                        <<"DELETE">> -> fun automate_storage:can_user_admin_as/2
+            end,
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    #state{user_id=UserId} = State,
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            { true, Req1, State };
-                        {true, TokenUserId} -> %% Non matching user_id
-                            automate_logging:log_api(warning, ?MODULE, io_lib:format("Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId])),
-                            { { false, <<"Unauthorized to create a program here">>}, Req1, State };
+                            {ok, Owner} = automate_service_port_engine:get_bridge_owner(BridgeId),
+                            case Check({user, UserId}, Owner) of
+                                true -> { true, Req1, State#state{ permissions=Owner } };
+                                _ ->
+                                    automate_logging:log_api(warning, ?MODULE, io_lib:format("Resource owner: ~p | Token UID: ~p~n", [Owner, UserId])),
+                                    { { false, <<"Unauthorized operation">>}, Req1, State }
+                            end;
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
@@ -60,9 +66,8 @@ is_authorized(Req, State) ->
 
 
 %% DELETE handler
-delete_resource(Req, State) ->
-    #state{bridge_id=BridgeId, user_id=UserId} = State,
-    case automate_rest_api_backend:delete_bridge({user, UserId}, BridgeId) of
+delete_resource(Req, State=#state{bridge_id=BridgeId, permissions=Owner}) ->
+    case automate_service_port_engine:delete_bridge(Owner, BridgeId) of
         ok ->
             Req1 = send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
             { true, Req1, State };

@@ -26,6 +26,7 @@
 
         , get_service_id_for_port/1
         , get_bridge_info/1
+        , get_bridge_owner/1
         , get_all_bridge_info/1
         , delete_bridge/2
 
@@ -217,6 +218,18 @@ get_bridge_info(BridgeId) ->
             {error, Reason}
     end.
 
+-spec get_bridge_owner(binary()) -> {ok, owner_id()} | {error, not_found}.
+get_bridge_owner(BridgeId) ->
+    T = fun() ->
+                case mnesia:read(?SERVICE_PORT_TABLE, BridgeId) of
+                    [] ->
+                        {error, not_found};
+                    [#service_port_entry{ owner=Owner }] ->
+                        {ok, Owner}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
+
 -spec get_all_bridge_info(binary()) -> {ok, #service_port_entry{}, undefined | #service_port_configuration{}} | {error, _}.
 get_all_bridge_info(BridgeId) ->
     Transaction = fun() ->
@@ -260,7 +273,7 @@ as_module(#service_port_configuration{ id=Id
      , module => {automate_service_port_engine_service, [Id]}
      }.
 
--spec set_service_port_configuration(binary(), #service_port_configuration{}, binary()) -> {ok, [ request_icon ]}.
+-spec set_service_port_configuration(binary(), #service_port_configuration{}, owner_id()) -> {ok, [ request_icon ]}.
 set_service_port_configuration(ServicePortId, Configuration=#service_port_configuration{ icon=NewIcon }, OwnerId) ->
     io:fwrite("Setting configuration: ~p~n", [Configuration]),
 

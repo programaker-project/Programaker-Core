@@ -10,17 +10,16 @@
 
 -include("../../automate_common_types/src/types.hrl").
 
--record(state, { user_id         :: binary()
+-record(state, { owner           :: owner_id()
                , service_port_id :: binary()
                , user_channels   :: #{ owner_id() := any() }
                }).
 
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
     ServicePortId = cowboy_req:binding(service_port_id, Req),
-
+    {ok, Owner} = automate_service_port_engine:get_bridge_owner(ServicePortId),
     {cowboy_websocket, Req, #state{ service_port_id=ServicePortId
-                                  , user_id=UserId
+                                  , owner=Owner
                                   , user_channels=#{}
                                   }}.
 
@@ -30,15 +29,15 @@ websocket_init(State=#state{ service_port_id=ServicePortId
     {ok, State}.
 
 websocket_handle({text, Msg}, State=#state{ service_port_id=ServicePortId
-                                          , user_id=UserId
+                                          , owner=Owner
                                           }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, UserId, Msg),
+    automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg),
     {ok, State};
 
 websocket_handle({binary, Msg}, State=#state{ service_port_id=ServicePortId
-                                            , user_id=UserId
+                                            , owner=Owner
                                             }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, UserId, Msg),
+    automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg),
     {ok, State};
 
 websocket_handle(_Message, State) ->

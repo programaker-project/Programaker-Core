@@ -41,7 +41,6 @@
         , list_bridges/1
         , list_available_connections/1
         , list_established_connections/1
-        , delete_bridge/2
         , callback_bridge/3
         , bridge_function_call/4
 
@@ -358,7 +357,7 @@ get_service_enable_how_to(Username, ServiceId) ->
 create_service_port(Username, ServicePortName) ->
     {ok, Owner} = automate_storage:get_userid_from_username(Username),
     {ok, ServicePortId } = automate_service_port_engine:create_service_port(Owner, ServicePortName),
-    {ok, generate_url_for_service_port(Owner, ServicePortId)}.
+    {ok, ?URLS:bridge_control_url(ServicePortId)}.
 
 -spec list_custom_blocks_from_username(binary()) -> {ok, map()}.
 list_custom_blocks_from_username(Username) ->
@@ -408,10 +407,6 @@ list_available_connections(Owner) ->
 -spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
 list_established_connections(UserId) ->
     automate_service_port_engine:list_established_connections({user, UserId}).
-
--spec delete_bridge(owner_id(), binary()) -> ok | {error, binary()}.
-delete_bridge(Owner, BridgeId) ->
-    automate_service_port_engine:delete_bridge(Owner, BridgeId).
 
 callback_bridge(UserId, BridgeId, Callback) ->
     automate_service_port_engine:callback_bridge(UserId, BridgeId, Callback).
@@ -502,10 +497,6 @@ generate_url_for_program_name(Username, ProgramName) ->
 
 generate_url_for_monitor_name(Username, MonitorName) ->
     binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/~s/monitors/~s", [Username, MonitorName]))).
-
-generate_url_for_service_port({user, UserId}, ServicePortId) ->
-    binary:list_to_bin(lists:flatten(io_lib:format("/api/v0/users/id/~s/bridges/id/~s/communication", [UserId, ServicePortId]))).
-
 
 program_entry_to_program(#user_program_entry{ id=Id
                                             , owner=Owner
