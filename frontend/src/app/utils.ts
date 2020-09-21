@@ -60,10 +60,21 @@ function unixMsToStr(ms_timestamp: number, options?: { ms_precision?: boolean })
     return result;
 }
 
+function addTokenQueryString(url: string, token: string): string {
+    if (url.indexOf('?') === -1) {
+        return url + '?token=' + token;
+    }
+    else {
+        return url + '&token=' + token;
+    }
+}
+
+
 export {
     toWebsocketUrl,
     getUserPictureUrl,
     getGroupPictureUrl,
     iconDataToUrl,
     unixMsToStr,
+    addTokenQueryString,
 };

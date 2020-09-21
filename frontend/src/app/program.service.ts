@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
-import { toWebsocketUrl } from './utils';
+import { toWebsocketUrl, addTokenQueryString } from './utils';
 import { ApiRoot } from './api-config';
 import { Synchronizer } from './syncronizer';
 
@@ -21,15 +21,6 @@ export class ProgramService {
     ) {
         this.http = http;
         this.sessionService = sessionService;
-    }
-
-    private addTokenQueryString(url: string, token: string): string {
-        if (url.indexOf('?') === -1) {
-            return url + '?token=' + token;
-        }
-        else {
-            return url + '&token=' + token;
-        }
     }
 
     async getListProgramsUrl() {
@@ -80,7 +71,7 @@ export class ProgramService {
     private async getProgramStreamingLogsUrl(programUserId: string, program_id: string) {
         const token = this.sessionService.getToken();
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
-        return this.addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/logs-stream'),
+        return addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/logs-stream'),
                                   token,
                                  );
     }
@@ -88,7 +79,7 @@ export class ProgramService {
     private async getProgramStreamingEventsUrl(programUserId: string, program_id: string) {
         const token = this.sessionService.getToken();
         const userApiRoot = await this.sessionService.getApiRootForUserId(programUserId);
-        return this.addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/editor-events'),
+        return addTokenQueryString(toWebsocketUrl(userApiRoot + '/programs/id/' + encodeURIComponent(program_id) + '/editor-events'),
                                         token,
                                        );
     }

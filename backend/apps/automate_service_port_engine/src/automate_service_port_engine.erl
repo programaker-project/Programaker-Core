@@ -185,8 +185,7 @@ from_service_port(ServicePortId, Owner, Msg) ->
                         {ok, ToUserInternalId} ->
                             {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
 
-                            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
-                                                 Module, ToUserInternalId),
+                            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, ToUserInternalId),
 
                             case automate_channel_engine:send_to_channel(MonitorId,
                                                                          #{ <<"key">> => Key

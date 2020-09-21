@@ -9,44 +9,58 @@
 -export([websocket_info/2]).
 
 -define(PING_INTERVAL_MILLISECONDS, 15000).
+-include("../../automate_storage/src/records.hrl").
 
--record(state, { user_id    :: binary()
+-record(state, { owner :: owner_id()
                , bridge_id  :: binary()
                , authorized :: boolean()
                , errorCode  :: binary() | none
                }).
 
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
     BridgeId = cowboy_req:binding(bridge_id, Req),
-    {IsAuthorized, ErrorCode} = check_is_authorized(Req, UserId),
+    {IsAuthorized, ErrorCode, Owner} = check_is_authorized(Req),
 
     {cowboy_websocket, Req, #state{ bridge_id=BridgeId
-                                  , user_id=UserId
+                                  , owner=Owner
                                   , authorized=IsAuthorized
                                   , errorCode=ErrorCode
                                   }}.
 
 
-check_is_authorized(Req, UserId) ->
-    case cowboy_req:header(<<"authorization">>, Req, undefined) of
+check_is_authorized(Req) ->
+    Qs = cowboy_req:parse_qs(Req),
+    Token = case cowboy_req:header(<<"authorization">>, Req, undefined) of
+                undefined ->
+                    proplists:get_value(<<"token">>, Qs, undefined);
+                Tok -> Tok
+            end,
+
+
+    case Token of
         undefined ->
-            { false, <<"Authorization header not found">> };
+            { false, <<"Authorization data not found">>, undefined };
         X ->
             case automate_rest_api_backend:is_valid_token_uid(X) of
                 {true, UserId} ->
-                    { true, none };
-                {true, TokenUserId} -> %% Non matching user_id
-                    automate_logging:log_api(warning, ?MODULE,
-                                             io_lib:format("[WS/Signal] Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId])),
-                    { false, <<"Unauthorized to connect here">> };
+                    case proplists:get_value(<<"as_group">>, Qs, undefined) of
+                        undefined ->
+                            { true, none, {user, UserId} };
+                        GroupId ->
+                            case automate_storage:can_user_edit_as({user, UserId}, {group, GroupId}) of
+                                true ->
+                                    { true, none, {group, GroupId} };
+                                false ->
+                                    { false, <<"Unauthorized operation">>, undefined }
+                            end
+                    end;
                 false ->
-                    { false, <<"Authorization not correct">> }
+                    { false, <<"Authorization not correct">>, undefined }
             end
     end.
 
 websocket_init(State=#state{ bridge_id=BridgeId
-                           , user_id=UserId
+                           , owner=Owner
                            , authorized=IsAuthorized
                            , errorCode=ErrorCode
                            }) ->
@@ -54,7 +68,7 @@ websocket_init(State=#state{ bridge_id=BridgeId
         false ->
             { reply, { close, ErrorCode }, State };
         true ->
-            case automate_service_port_engine:listen_bridge(BridgeId, {user, UserId}) of
+            case automate_service_port_engine:listen_bridge(BridgeId, Owner) of
                 ok ->
                     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
                     {ok, State};

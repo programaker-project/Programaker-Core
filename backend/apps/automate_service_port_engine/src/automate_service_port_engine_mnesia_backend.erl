@@ -156,14 +156,14 @@ establish_connection(BridgeId, ConnectionId, Name) ->
                               [] ->
                                   {error, not_found};
                               [ #user_to_bridge_pending_connection_entry{ bridge_id=BridgeId
-                                                                        , owner={user, UserId}
+                                                                        , owner=Owner
                                                                         , channel_id=ChannelId
                                                                         } ] ->
                                   ok = mnesia:delete(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId, write),
 
                                   Entry = #user_to_bridge_connection_entry{ id=ConnectionId
                                                                           , bridge_id=BridgeId
-                                                                          , owner={user, UserId}
+                                                                          , owner=Owner
                                                                           , channel_id=ChannelId
                                                                           , name=Name
                                                                           , creation_time=CurrentTime

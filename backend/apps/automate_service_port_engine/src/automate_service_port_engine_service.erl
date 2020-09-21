@@ -27,7 +27,7 @@ start_link() ->
 
 %% No monitor associated with this service
 -spec get_monitor_id(owner_id(), [binary(), ...]) -> {ok, binary} | {error, _, binary()}.
-get_monitor_id(Owner, [ServicePortId]) ->
+get_monitor_id(Owner, [ServicePortId]) when is_binary(ServicePortId) ->
     ?BACKEND:get_or_create_monitor_id(Owner, ServicePortId).
 
 -spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()}.

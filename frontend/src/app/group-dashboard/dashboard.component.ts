@@ -19,6 +19,7 @@ import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
 import { AddBridgeDialogComponent } from 'app/dialogs/add-bridge-dialog/add-bridge-dialog.component';
+import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
 
 @Component({
     // moduleId: module.id,
@@ -45,6 +46,7 @@ export class GroupDashboardComponent {
 
     readonly _roleToIcon = roleToIcon;
     readonly _getGroupPicture = getGroupPictureUrl;
+    readonly _iconDataToUrl = iconDataToUrl;
 
     constructor(
         private programService: ProgramService,
@@ -177,7 +179,18 @@ export class GroupDashboardComponent {
     }
 
     openBridgePanel(bridge: BridgeIndexData) {
-        // TODO
+        const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
+                                                                          maxHeight: '100vh',
+                                                                          data: { bridgeInfo: bridge,
+                                                                                  asGroup: this.groupInfo.id,
+                                                                                },
+                                                                        });
+
+        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+            if (result && result.success) {
+                this.updateBridges();
+            }
+        });
     }
 
     async updateCollaborators() {

@@ -103,6 +103,8 @@ start_link() ->
                         , {"/api/v0/bridges/by-id/:bridge_id", automate_rest_api_service_ports_specific, []}
                         , {"/api/v0/bridges/by-id/:service_port_id/communication"
                           , automate_rest_api_service_ports_specific_communication, []}
+                        , {"/api/v0/bridges/by-id/:bridge_id/signals"
+                          , automate_rest_api_bridge_signal_root, []}
 
                           %% Services
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}

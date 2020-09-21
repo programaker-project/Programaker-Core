@@ -1,0 +1,46 @@
+h2 mat-icon {
+    vertical-align: sub;
+    margin-right: 1ex;
+}
+
+.bridge-name {
+    text-decoration: underline;
+}
+
+.accept-cancel {
+    margin-top: 2em;
+}
+
+.accept-cancel button {
+    margin-right: 1ex;
+}
+
+.confirm-button {
+    background-color: #009688;
+    color: white;
+    font-weight: bold;
+}
+
+.signal-terminal {
+    box-shadow: 0 0 2px 1px rgba(0,0,0,0.3) inset;
+    max-height: 50vh;
+    overflow: auto;
+}
+
+.signal-terminal .signal-message {
+    border-bottom: 1px solid rgba(0,0,0,0.3);
+    margin: 1ex 0 1ex 0;
+    padding: 1ex;
+}
+
+.signal-terminal .signal-message:last-child {
+    border: none;
+    padding: none;
+}
+
+.signal-terminal:empty::after {
+    content: "No messages yet";
+    font-style: italic;
+    display: inline-block;
+    padding: 1ex;
+}

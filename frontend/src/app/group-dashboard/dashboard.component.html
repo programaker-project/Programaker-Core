@@ -106,18 +106,22 @@
 
                     <div class="section-objects">
                         <mat-card *ngFor="let bridge of bridges"
-                            class="bridge connected-{{bridge.is_connected}}"
+                            class="bridge"
                             role="button"
+                            (click)="openBridgePanel(bridge)"
                         >
-                            <div class="bridge-name" *ngIf="bridge.name">{{bridge.name}}</div>
-                            <!-- <h4 *ngIf="!bridge.name">No name</h4>
-                                 <div *ngIf="bridge.id === expandedBridgeId">
-                                 <button id="bridge-delete-button" color="warn"
-                                 (click)="deleteBridge(bridge)" mat-button>
-                                 <mat-icon>delete_forever</mat-icon> Delete bridge
-                                 </button>
-                                 </div> -->
-                            <!-- <div class="warning no_connection_warning" *ngIf="!bridge.is_connected">Service bridge not connected</div> -->
+                            <span class="bridge-status connected-{{bridge.is_connected}}"
+                                matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
+                                <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
+                                <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
+                            </span>
+
+
+                            <img class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
+
+                            <div *ngIf="!bridge.icon" class="bridge-name">
+                                {{bridge.name || "unnamed bridge"}}
+                            </div>
                         </mat-card>
                     </div>
 
