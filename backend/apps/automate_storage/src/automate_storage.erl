@@ -361,7 +361,7 @@ get_monitor_from_id(MonitorId) ->
         { atomic, [Result] } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -423,7 +423,7 @@ verify_registration_with_code(RegistrationCode) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -490,7 +490,7 @@ reset_password(VerificationCode, Password) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -580,7 +580,7 @@ update_program_status(_Username, ProgramId, Status)->
         { atomic, ok } ->
             ok;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -644,7 +644,7 @@ update_program_metadata(Username, ProgramName, #editable_user_program_metadata{p
                     io:format("Register result: ~p~n", [Result]),
                     Result;
                 { aborted, Reason } ->
-                    io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+                    io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
                     {error, mnesia:error_description(Reason)}
             end;
         X ->
@@ -668,7 +668,7 @@ update_program_metadata(ProgramId, #editable_user_program_metadata{program_name=
             io:format("Register result: ~p~n", [Result]),
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -688,7 +688,8 @@ checkpoint_program(UserId, ProgramId, Content)->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
+
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -725,7 +726,7 @@ delete_program(Username, ProgramName)->
                 { atomic, Result } ->
                     Result;
                 { aborted, Reason } ->
-                    io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+                    io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
                     {error, mnesia:error_description(Reason)}
             end;
         X ->
@@ -751,7 +752,7 @@ delete_program(ProgramId)->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -764,7 +765,7 @@ delete_running_process(ProcessId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -856,7 +857,7 @@ register_program_runner(ProgramId, Pid) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -873,7 +874,7 @@ get_program_from_id(ProgramId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -897,7 +898,7 @@ register_program_tags(ProgramId, Tags) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -914,7 +915,7 @@ get_tags_program_from_id(ProgramId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -1087,7 +1088,7 @@ get_thread_from_id(ThreadId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -1122,7 +1123,7 @@ log_program_error(LogEntry) when is_record(LogEntry, user_program_log_entry) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -1137,7 +1138,7 @@ add_user_generated_log(LogEntry) when is_record(LogEntry, user_generated_log_ent
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -1705,7 +1706,7 @@ create_verification_entry(UserId, VerificationType) ->
         { atomic, ok } ->
             {ok, VerificationId};
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -1728,7 +1729,7 @@ check_verification_code(VerificationCode, VerificationType) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -2138,7 +2139,7 @@ set_program_variable(ProgramId, Key, Value) ->
         { atomic, ok } ->
             ok;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
