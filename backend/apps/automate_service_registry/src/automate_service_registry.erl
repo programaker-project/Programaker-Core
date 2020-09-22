@@ -13,6 +13,7 @@
         , register_private/1
         , update_service_module/3
         , allow_user/2
+        , update_visibility/2
 
         , get_config_for_service/2
         , set_config_for_service/3
@@ -70,6 +71,10 @@ register_private(ServiceModule) ->
 -spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
 allow_user(ServiceId, UserId) ->
     ?BACKEND:allow_user(ServiceId, UserId).
+
+-spec update_visibility(binary(), boolean()) -> ok | {error, service_not_found}.
+update_visibility(ServiceId, IsPublic) ->
+    ?BACKEND:update_visibility(ServiceId, IsPublic).
 
 -spec get_config_for_service(binary(), atom()) -> {ok, any()} | {error, not_found}.
 get_config_for_service(ServiceId, Property) ->

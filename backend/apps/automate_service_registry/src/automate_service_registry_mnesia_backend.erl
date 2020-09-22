@@ -11,6 +11,7 @@
         , get_all_services_for_user/1
         , allow_user/2
         , get_service_by_id/2
+        , update_visibility/2
         , update_service_module/2
 
         , get_config_for_service/2
@@ -116,6 +117,26 @@ allow_user(ServiceId, UserId) ->
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
+
+-spec update_visibility(binary(), boolean()) -> ok | {error, service_not_found}.
+update_visibility(ServiceId, IsPublic) ->
+    Transaction = fun() ->
+                          case mnesia:read(?SERVICE_REGISTRY_TABLE, ServiceId) of
+                              [Entry] ->
+                                  ok = mnesia:write(?SERVICE_REGISTRY_TABLE,
+                                                    Entry#services_table_entry{ public=IsPublic
+                                                                              }, write);
+                              [] ->
+                                  {error, service_not_found}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Reason} ->
+            {error, Reason}
+    end.
+
 
 -spec get_all_services_for_user(binary()) -> {ok, service_info_map()} | {error, term(), string()}.
 get_all_services_for_user(UserId) ->
