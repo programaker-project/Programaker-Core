@@ -75,11 +75,17 @@ tests(_SetupResult) ->
       , fun route_notification_targeted_to_all_users_on_public/0
       }
       %% Configuration
-    , { "[Service port - Configuration] A public bridge can be later set to private"
-      , fun set_public_bridge_to_private/0
+    , { "[Service port - Configuration - Owner] A public bridge can be later set to private"
+      , fun set_public_bridge_to_private_owner/0
       }
-    , { "[Service port - Configuration] A private bridge can be later set to public"
-      , fun set_private_bridge_to_public/0
+    , { "[Service port - Configuration - User] A public bridge can be later set to private"
+      , fun set_public_bridge_to_private_user/0
+      }
+    , { "[Service port - Configuration - Owner] A private bridge can be later set to public"
+      , fun set_private_bridge_to_public_owner/0
+      }
+    , { "[Service port - Configuration - User] A private bridge can be later set to public"
+      , fun set_private_bridge_to_public_user/0
       }
     ].
 
@@ -411,10 +417,39 @@ route_notification_targeted_to_all_users_on_public() ->
 %%====================================================================
 %% Configuration
 %%====================================================================
-set_public_bridge_to_private() ->
+set_public_bridge_to_private_owner() ->
     OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-5-owner">>},
-    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-5-NONowner-TARGET">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-5-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+
+    %% Configure service port
+    Configuration = #{ <<"is_public">> => true
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ ]
+                     },
+
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)),
+
+    %% Set to private
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => #{ <<"is_public">> => false
+                                                                        , <<"service_name">> => ServicePortName
+                                                                        , <<"blocks">> => [ ]
+                                                                        }
+                                                      })),
+    %% Still found
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)).
+
+
+set_public_bridge_to_private_user() ->
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-6-owner">>},
+    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-6-NONowner-TARGET">>},
+    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-6-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     %% Configure service port
@@ -437,14 +472,42 @@ set_public_bridge_to_private() ->
                                                                         , <<"blocks">> => [ ]
                                                                         }
                                                       })),
+
+    %% No longer found
     ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)).
 
+set_private_bridge_to_public_owner() ->
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-7-owner">>},
+    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-7-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
+    %% Configure service port
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ ]
+                     },
 
-set_private_bridge_to_public() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-6-owner">>},
-    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-6-NONowner-TARGET">>},
-    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-6-service-port">>,
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)),
+
+    %% Set to public
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => #{ <<"is_public">> => true
+                                                                        , <<"service_name">> => ServicePortName
+                                                                        , <<"blocks">> => [ ]
+                                                                        }
+                                                      })),
+    %% Still found
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)).
+
+set_private_bridge_to_public_user() ->
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-8-owner">>},
+    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-8-NONowner-TARGET">>},
+    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-8-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     %% Configure service port
@@ -467,6 +530,8 @@ set_private_bridge_to_public() ->
                                                                         , <<"blocks">> => [ ]
                                                                         }
                                                       })),
+
+    %% Found now
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)).
 
 

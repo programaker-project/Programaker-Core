@@ -253,7 +253,7 @@ get_all_bridge_info(BridgeId) ->
     end.
 
 
-
+-spec create_service_for_port(#service_port_configuration{}, owner_id()) -> {ok, binary()}.
 create_service_for_port(Configuration, OwnerId) ->
     case Configuration of
         #service_port_configuration{ is_public=true } ->
@@ -279,19 +279,24 @@ set_service_port_configuration(ServicePortId, Configuration=#service_port_config
                                                                                        }, OwnerId) ->
     io:fwrite("Setting configuration: ~p~n", [Configuration]),
 
-    ServiceId = case get_service_id_for_port(ServicePortId) of
-                    {ok, FoundServiceId} ->
-                        ok = automate_service_registry:update_service_module(as_module(Configuration),
-                                                                             FoundServiceId,
-                                                                             OwnerId),
-                        ok = automate_service_registry:update_visibility(FoundServiceId, IsPublic),
-                        FoundServiceId;
-                    {error, not_found} ->
-                        {ok, NewServiceId} = create_service_for_port(Configuration, OwnerId),
-                        NewServiceId
-                end,
-
     Transaction = fun() ->
+                          ServiceId = case get_service_id_for_port(ServicePortId) of
+                                          {ok, FoundServiceId} ->
+                                              ok = automate_service_registry:update_service_module(as_module(Configuration),
+                                                                                                   FoundServiceId,
+                                                                                                   OwnerId),
+                                              ok = automate_service_registry:update_visibility(FoundServiceId, IsPublic),
+                                              case IsPublic of
+                                                  false ->  %% In case the service is not not public, make sure the owner is allowed
+                                                      ok = automate_service_registry:allow_user(FoundServiceId, OwnerId);
+                                                  _ -> ok
+                                              end,
+                                              FoundServiceId;
+                                          {error, not_found} ->
+                                              {ok, NewServiceId} = create_service_for_port(Configuration, OwnerId),
+                                              NewServiceId
+                                      end,
+
                           Previous = mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, ServicePortId),
                           ok = mnesia:write(?SERVICE_PORT_CONFIGURATION_TABLE
                                            , Configuration#service_port_configuration{ service_id=ServiceId }

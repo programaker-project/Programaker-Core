@@ -55,7 +55,7 @@ register_public(ServiceModule) ->
     {ok, Uuid}.
 
 -spec update_service_module(module() | ?MODULE_MAP,
-                            binary(), binary()) -> ok.
+                            binary(), owner_id()) -> ok.
 update_service_module(Module, _ServiceId, _OwnerId) ->
     {Uuid, Data} = module_to_map(Module),
     ?BACKEND:update_service_module(Uuid, Data).
