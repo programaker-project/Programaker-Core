@@ -19,3 +19,7 @@
 -define(CUSTOM_SIGNALS_TABLE, automate_custom_signals_table).
 
 -define(USER_VERIFICATION_TABLE, automate_user_verification_table).
+
+%% Groups
+-define(USER_GROUPS_TABLE, automate_user_groups).
+-define(USER_GROUP_PERMISSIONS_TABLE, automate_user_groups_permissions).

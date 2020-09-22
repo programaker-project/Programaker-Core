@@ -7,8 +7,8 @@
 
 -define(APPLICATION, automate_service_registry).
 -define(TEST_NODES, [node()]).
--define(ALLOWED_USER, <<"allowed user">>).
--define(UNAUTHORISED_USER, <<"unauthorised user">>).
+-define(ALLOWED_USER, {user, <<"allowed user">>}).
+-define(UNAUTHORISED_USER, {user, <<"unauthorised user">>}).
 
 %%====================================================================
 %% Test API

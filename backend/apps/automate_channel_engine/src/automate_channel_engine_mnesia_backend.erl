@@ -12,6 +12,7 @@
         , get_listeners_on_channel/1
         , add_listener_monitor/3
         , remove_listener/1
+        , exists_channel/1
         ]).
 
 -include("records.hrl").
@@ -153,6 +154,16 @@ remove_listener(Pid) ->
         Error ->
             { error, Error }
     end.
+
+-spec exists_channel(binary()) -> true | false.
+exists_channel(ChannelId) ->
+    T = fun() ->
+                case mnesia:read(?LIVE_CHANNELS_TABLE, ChannelId) of
+                    [] -> false;
+                    [ _ ] -> true
+                end
+        end,
+    mnesia:activity(ets, T).
 
 -spec get_listeners_on_channel(binary()) -> {ok, [#listeners_table_entry{}]}
                                                 | {error, channel_not_found}.

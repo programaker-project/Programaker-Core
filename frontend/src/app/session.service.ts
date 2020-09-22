@@ -11,7 +11,6 @@ export type SessionInfoUpdate = { session: Session };
 
 @Injectable()
 export class SessionService {
-
     readonly checkSessionUrl = API.ApiRoot + '/sessions/check';
     readonly loginUrl = API.ApiRoot + '/sessions/login';
     readonly registerUrl = API.ApiRoot + '/sessions/register';
@@ -29,11 +28,57 @@ export class SessionService {
     static EstablishedSession: Session = null;
     static sessionInfoObservable: Observable<SessionInfoUpdate> = null;
     private static _sessionInfoObserver: Observer<SessionInfoUpdate> = null;
+    static EstablishmentPromise: Promise<Session> = null;
 
     constructor(
         private http: HttpClient,
     ) {
         this.http = http;
+    }
+
+    async getUserApiRoot(): Promise<string> {
+        let session = SessionService.EstablishedSession;
+        if (session === null) {
+            session = await this.getSession();
+        }
+
+        return this.getApiRootForUser(session.username);
+    }
+
+    getApiRootForUser(username: string): string {
+        return API.ApiRoot + '/users/' + username;
+    }
+
+    async getApiRootForUserId(user_id?: string): Promise<string> {
+        if (!user_id) {
+            let session = SessionService.EstablishedSession;
+            if (!session) {
+                session = await this.getSession();
+            }
+            user_id = session.user_id;
+        }
+        return API.ApiRoot + '/users/id/' + user_id;
+    }
+
+    async getApiRootForUserIdNew(user_id?: string): Promise<string> {
+        if (!user_id) {
+            let session = SessionService.EstablishedSession;
+            if (!session) {
+                session = await this.getSession();
+            }
+            user_id = session.user_id;
+        }
+        return API.ApiRoot + '/users/by-id/' + user_id;
+    }
+
+    async getUserAvatarUrl(): Promise<string> {
+        const root = await this.getApiRootForUserIdNew();
+
+        return `${root}/picture`;
+    }
+
+    getUpdateUserAvatarUrl(): Promise<string> {
+        return this.getUserAvatarUrl();
     }
 
     storeToken(token: string) {
@@ -53,15 +98,6 @@ export class SessionService {
         return token;
     }
 
-    async getUserApiRoot(): Promise<string> {
-        let session = SessionService.EstablishedSession;
-        if (session === null) {
-            session = await this.getSession();
-        }
-
-        return this.getApiRootForUser(session.username);
-    }
-
     async updateUserSettings(user_settings_update : { is_advanced?: boolean }): Promise<boolean> {
         const url = (await this.getApiRootForUserId()) + '/settings';
         const response = await (this.http
@@ -70,21 +106,6 @@ export class SessionService {
                                 .toPromise());
 
         return (response as { success: boolean }).success;
-    }
-
-    getApiRootForUser(username: string): string {
-        return API.ApiRoot + '/users/' + username;
-    }
-
-    async getApiRootForUserId(user_id?: string): Promise<string> {
-        if (!user_id) {
-            let session = SessionService.EstablishedSession;
-            if (session === undefined) {
-                session = await this.getSession();
-            }
-            user_id = session.user_id;
-        }
-        return API.ApiRoot + '/users/id/' + user_id;
     }
 
     getAuthHeader(): HttpHeaders {
@@ -126,7 +147,11 @@ export class SessionService {
             return Promise.resolve(SessionService.EstablishedSession);
         }
 
-        return this.forceUpdateSession();
+        if (!SessionService.EstablishmentPromise) {
+            SessionService.EstablishmentPromise = this.forceUpdateSession();
+        }
+
+        return SessionService.EstablishmentPromise;
     }
 
     login(username: string, password: string): Promise<boolean> {
@@ -237,6 +262,15 @@ export class SessionService {
                              .then(_response => {
                                  return;
                              }));
+    }
+
+    async updateUserAvatar(image: File): Promise<void> {
+        const formData = new FormData();
+        formData.append('file', image);
+
+        const url = await this.getUpdateUserAvatarUrl();
+
+        await this.http.post(url, formData, { headers: this.getAuthHeader() }).toPromise()
     }
 
     private _monitorSession() {

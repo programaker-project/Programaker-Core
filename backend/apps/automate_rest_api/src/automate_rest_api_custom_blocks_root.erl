@@ -16,7 +16,7 @@
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
--record(state, { username }).
+-record(state, { username :: binary() }).
 -define(FORMATTING, automate_rest_api_utils_formatting).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
@@ -33,7 +33,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -66,11 +65,9 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State) ->
-    #state{username=Username} = State,
+to_json(Req, State=#state{username=Username}) ->
     case automate_rest_api_backend:list_custom_blocks_from_username(Username) of
         { ok, CustomBlocks } ->
-
             Output = jiffy:encode(maps:map(fun encode_blocks/2, CustomBlocks)),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),

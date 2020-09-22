@@ -6,8 +6,8 @@
 -module(automate_bot_engine).
 
 %% Application callbacks
--export([ stop_program_threads/2
-        , change_program_status/3
+-export([ stop_program_threads/1
+        , change_program_status/2
         , get_user_from_pid/1
         , get_bridges_on_program/1
         , get_user_generated_logs/1
@@ -15,8 +15,8 @@
 
 -include("../../automate_storage/src/records.hrl").
 
--spec stop_program_threads(binary(),binary()) -> ok | {error, any()}.
-stop_program_threads(_UserId, ProgramId) ->
+-spec stop_program_threads(binary()) -> ok | {error, any()}.
+stop_program_threads(ProgramId) ->
     case automate_storage:get_threads_from_program(ProgramId) of
         { ok, Threads } ->
             lists:foreach(fun (ThreadId) ->
@@ -27,9 +27,9 @@ stop_program_threads(_UserId, ProgramId) ->
             { error, Reason }
     end.
 
--spec change_program_status(binary(),binary(),boolean()) -> ok | {error, any()}.
-change_program_status(Username, ProgramId, Status) ->
-    case automate_storage:update_program_status(Username, ProgramId, Status) of
+-spec change_program_status(binary(),boolean()) -> ok | {error, any()}.
+change_program_status(ProgramId, Status) ->
+    case automate_storage:update_program_status(ProgramId, Status) of
         ok ->
             ok = automate_bot_engine_launcher:update_program(ProgramId),
             ok;
@@ -37,7 +37,7 @@ change_program_status(Username, ProgramId, Status) ->
             { error, Reason }
     end.
 
--spec get_user_from_pid(pid()) -> { ok, binary() } | {error, not_found}.
+-spec get_user_from_pid(pid()) -> { ok, owner_id() } | {error, not_found}.
 get_user_from_pid(Pid) ->
     automate_storage:get_user_from_pid(Pid).
 

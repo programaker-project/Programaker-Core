@@ -11,6 +11,7 @@ import { SessionService } from '../session.service';
 import { BridgeService } from './bridge.service';
 import { BridgeIndexData } from './bridge';
 import { BridgeDeleteDialogComponent } from './delete-dialog.component';
+import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
 
 
 @Component({
@@ -66,35 +67,16 @@ export class BridgeIndexComponent {
     }
 
     showBridgeDetail(bridge: BridgeIndexData): void {
-        if (this.expandedBridgeId === bridge.id) {
-            this.expandedBridgeId = null;
-        }
-        else {
-            this.expandedBridgeId = bridge.id;
-        }
-    }
+        const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
+                                                                          maxHeight: '100vh',
+                                                                          data: { bridgeInfo: bridge,
+                                                                                },
+                                                                        });
 
-    deleteBridge(bridge: BridgeIndexData): void {
-        const dialogRef = this.dialog.open(BridgeDeleteDialogComponent, {
-            data: { bridge }
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (!result) {
-                console.log("Cancelled");
-                return;
+        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+            if (result && result.success) {
+                this.refresh_bridge_list();
             }
-
-            const deletion = (this.bridgeService.deleteBridge(this.session.user_id, bridge.id)
-                .catch(() => { return false; })
-                .then(success => {
-                    if (!success) {
-                        return;
-                    }
-
-                    this.refresh_bridge_list();
-                }));
-            progbar.track(deletion);
         });
     }
 }

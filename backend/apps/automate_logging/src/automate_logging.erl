@@ -105,9 +105,11 @@ log_program_error(LogEntry=#user_program_log_entry{ severity=Severity, program_i
     automate_storage:log_program_error(LogEntry).
 
 
--spec log_platform(atom(), _, _, _) -> ok.
+-spec log_platform(log_severity(), _, _, _) -> ok.
 log_platform(warning, ErrorNS, Error, _StackTrace) ->
     io:fwrite("[~p] ~p:~p~n", [warning, ErrorNS, Error]);
+log_platform(debug, _ErrorNS, _Error, _StackTrace) ->
+    ok; %% Ignored for now
 
 log_platform(Severity, ErrorNS, Error, StackTrace) ->
     io:fwrite("[~p] ~p:~p || ~p~n", [Severity, ErrorNS, Error, StackTrace]).
@@ -118,7 +120,9 @@ log_platform(Severity, Msg) when is_list(Msg) ->
 log_platform(Severity, Msg) ->
     io:fwrite("[~p] ~p~n", [Severity, Msg]).
 
--spec log_api(atom(), _, _) -> ok.
+-spec log_api(log_severity(), _, _) -> ok.
+log_api(debug, _, _) ->
+    ok; %% Ignored for now
 log_api(Severity, Endpoint, Error) ->
     io:fwrite("[~p@~p] ~p~n", [Severity, Endpoint, Error]).
 

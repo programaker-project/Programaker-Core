@@ -57,9 +57,10 @@ undefined_program_dont_crash() ->
     ProgramId = <<"9a3f3d55-0393-4d0b-bfe8-08a7715230f8">>,
     R = automate_bot_engine_program_decoder:initialize_program(ProgramId,
                                                                #user_program_entry
-                                                               { user_id=undefined
+                                                               { owner=undefined
                                                                , program_parsed=undefined
-                                                               , enabled=true}),
+                                                               , enabled=true
+                                                               }),
 
     ?assertMatch({ ok, #program_state{ program_id=ProgramId
                                      , variables=[]

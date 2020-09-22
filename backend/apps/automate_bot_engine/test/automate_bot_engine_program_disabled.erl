@@ -102,7 +102,7 @@ start_program_launch_thread_and_disable_program_it_continues() ->
     ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
     ok = wait_for_check_ok(fun() ->
                                    case automate_storage:get_threads_from_program(ProgramId) of
-                                       {ok, [ThreadId]} -> 
+                                       {ok, [ThreadId]} ->
                                            case automate_storage:get_thread_from_id(ThreadId) of
                                                {ok, #running_program_thread_entry{runner_pid=undefined}} ->
                                                    io:fwrite("UNDEF~n"),
@@ -120,7 +120,7 @@ start_program_launch_thread_and_disable_program_it_continues() ->
     ?assert(is_process_alive(ThreadRunnerId)),
 
     %% Disable program
-    ok = automate_bot_engine:change_program_status(Username,ProgramId,false),
+    ok = automate_bot_engine:change_program_status(ProgramId, false),
 
     %% Check that program is alive
     {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),
@@ -174,7 +174,7 @@ start_program_and_disable_it_no_commands() ->
     ?assert(is_process_alive(ProgramPid)),
 
     %% Disable program
-    ok = automate_bot_engine:change_program_status(Username,ProgramId,false),
+    ok = automate_bot_engine:change_program_status(ProgramId, false),
 
     %% Check that program is alive
     {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),
@@ -214,19 +214,19 @@ start_program_disable_enable_and_launch_command()->
     ?assert(is_process_alive(ProgramPid)),
 
     %% Disable program
-    ok = automate_bot_engine:change_program_status(Username,ProgramId,false),
+    ok = automate_bot_engine:change_program_status(ProgramId, false),
 
     %% Check that program is alive
     {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),
     ?assert(is_process_alive(ProgramPid2)),
 
-    ok = automate_bot_engine:change_program_status(Username,ProgramId,true),
+    ok = automate_bot_engine:change_program_status(ProgramId, true),
 
     %% Trigger sent, thread is spawned
     ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
     ok = wait_for_check_ok(fun() ->
                                    case automate_storage:get_threads_from_program(ProgramId) of
-                                       {ok, [ThreadId]} -> 
+                                       {ok, [ThreadId]} ->
                                            case automate_storage:get_thread_from_id(ThreadId) of
                                                {ok, #running_program_thread_entry{runner_pid=undefined}} ->
                                                    false;
@@ -291,4 +291,4 @@ wait_for_check_ok(Check, TestTimes, SleepTime) ->
         false ->
             timer:sleep(SleepTime),
             wait_for_check_ok(Check, TestTimes - 1, SleepTime)
-    end. 
+    end.

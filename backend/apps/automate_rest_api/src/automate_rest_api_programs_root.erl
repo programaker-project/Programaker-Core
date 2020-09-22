@@ -18,9 +18,10 @@
 
 -include("./records.hrl").
 -define(UTILS, automate_rest_api_utils).
--define(DEFAULT_PROGRAM_TYPE, scratch_program).
+-define(FORMATTING, automate_rest_api_utils_formatting).
+-define(PROGRAMS, automate_rest_api_utils_programs).
 
--record(create_program_seq, { username }).
+-record(create_program_seq, { username :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -44,7 +45,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
     {[<<"GET">>, <<"POST">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -80,17 +80,8 @@ content_types_accepted(Req, State) ->
 accept_json_create_program(Req, State) ->
     #create_program_seq{username=Username} = State,
 
-    {Type, Name} = try
-                       {ok, Body, _} = ?UTILS:read_body(Req),
-                       jiffy:decode(Body, [return_maps])
-                   of
-                       Map ->
-                           { get_program_type_from_options(Map)
-                           , get_program_name_from_options(Map)
-                           }
-                   catch _:_ ->
-                           { ?DEFAULT_PROGRAM_TYPE, generate_program_name() }
-             end,
+    {ok, Body, _} = ?UTILS:read_body(Req),
+    {Type, Name} = ?PROGRAMS:get_metadata_from_body(Body),
     case automate_rest_api_backend:create_program(Username, Name, Type) of
         { ok, {ProgramId, ProgramName, ProgramUrl, ProgramType} } ->
 
@@ -127,50 +118,12 @@ to_json(Req, State) ->
 
 
 encode_program_list(Programs) ->
-    lists:map(fun(#program_metadata{ id=Id
-                                   , name=Name
-                                   , link=Link
-                                   , enabled=Enabled
-                                   , type=Type
-                                   }) ->
-                      #{ <<"id">> => Id
-                       , <<"name">> => Name
-                       , <<"link">> =>  Link
-                       , <<"enabled">> => Enabled
-                       , <<"type">> => Type
-                       , <<"bridges_in_use">> => try get_bridges_on_program_id(Id) of
-                                                     Bridges -> Bridges
-                                                 catch ErrNS:Error:StackTrace ->
-                                                         automate_logging:log_platform(error, ErrNS, Error, StackTrace),
-                                                         []
-                                                 end
-                       }
+    lists:map(fun(Program=#program_metadata{id=Id}) ->
+                      ProgramBridges = try ?UTILS:get_bridges_on_program_id(Id) of
+                                           Bridges -> Bridges
+                                       catch ErrNS:Error:StackTrace ->
+                                               automate_logging:log_platform(error, ErrNS, Error, StackTrace),
+                                               []
+                                       end,
+                      ?FORMATTING:program_listing_to_json(Program, ProgramBridges)
               end, Programs).
-
-get_bridges_on_program_id(ProgramId) ->
-    {ok, Program} = automate_storage:get_program_from_id(ProgramId),
-    {ok, Bridges} = automate_bot_engine:get_bridges_on_program(Program),
-    Bridges.
-
-% Util functions
-get_program_type_from_options(#{ <<"type">> := <<"scratch_program">> }) ->
-    scratch_program;
-get_program_type_from_options(#{ <<"type">> := <<"flow_program">> }) ->
-    flow_program;
-get_program_type_from_options(#{ <<"type">> := Type }) when is_binary(Type) ->
-    Type;
-get_program_type_from_options(_) ->
-    ?DEFAULT_PROGRAM_TYPE.
-
-get_program_name_from_options(#{ <<"name">> := Name }) when is_binary(Name) ->
-    case size(Name) < 4 of
-        true ->
-            generate_program_name();
-        false ->
-            Name
-    end;
-get_program_name_from_options(_) ->
-    generate_program_name().
-
-generate_program_name() ->
-    binary:list_to_bin(uuid:to_string(uuid:uuid4())).

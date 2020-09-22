@@ -13,7 +13,7 @@
         <!-- Basic functions -->
         <button mat-button mat-raised-button
             id="program-start-button" color="primary"
-            *ngIf="program !== undefined"
+            *ngIf="this.canEdit && program !== undefined"
             (click)="sendProgram()">
 
             <span class="load-bg"></span>
@@ -21,12 +21,12 @@
             Upload
         </button>
         <button id="program-rename-button" color="secondary"
-            *ngIf="program !== undefined"
+            *ngIf="this.canEdit && program !== undefined"
             (click)="renameProgram()" mat-button>
             <mat-icon>edit</mat-icon> Rename
         </button>
         <button id="program-logs-button" color="secondary"
-            *ngIf="program !== undefined"
+            *ngIf="this.canEdit && program !== undefined && (this.streamingLogs || this.logCount > 0)"
             (click)="toggleLogsPanel()" mat-button>
             <mat-icon>error_outline</mat-icon>
             <span *ngIf="logs_drawer.opened">Hide</span>
@@ -34,17 +34,18 @@
             logs
         </button>
         <button id="program-stop-button" color="warn"
-            *ngIf="program !== undefined"
+            *ngIf="this.canEdit && program !== undefined"
             (click)="stopThreadsProgram()" mat-button>
             <mat-icon>stop</mat-icon> Stop all
         </button>
         <!-- Advanced functions, on a menu -->
-        <button id="advancedProgramControls" color="secondary"
+        <button id="advanced-program-controls-button" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
-            *ngIf="program !== undefined" mat-button>
+            *ngIf="this.canEdit && program !== undefined"
+            mat-button>
             <mat-icon>more_vert</mat-icon> Advanced
         </button>
-        <mat-menu #advancedProgramControls="matMenu">
+        <mat-menu  #advancedProgramControls="matMenu">
             <button mat-menu-item
                 (click)="setProgramTags()">
                 <mat-icon class="example-tab-icon">label</mat-icon>
@@ -55,7 +56,7 @@
 
         <!-- Dangerous stuff, on its own -->
         <button id="program-delete-button" color="warn"
-            *ngIf="program !== undefined"
+            *ngIf="this.canEdit && program !== undefined"
             (click)="deleteProgram()" mat-button>
             <mat-icon>delete_forever</mat-icon> Delete program
         </button>

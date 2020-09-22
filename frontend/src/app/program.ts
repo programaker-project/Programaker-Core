@@ -8,13 +8,16 @@ export class ProgramMetadata {
 }
 
 export type ProgramType = 'scratch_program' | 'flow_program';
+export type OwnerType = 'user' | 'group';
 
 export class ProgramContent extends ProgramMetadata {
     type: ProgramType;
     parsed: any;
     orig: any;
     owner: string;
+    owner_full: { type: OwnerType, id: string};
     checkpoint?: any;
+    "readonly"?: boolean;
 
     constructor (metadata: ProgramMetadata, parsed: any, orig: any, type: ProgramType) {
       super();

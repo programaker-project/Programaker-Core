@@ -8,8 +8,8 @@ import { BridgeAddComponent } from './bridges/add.component';
 
 import { DashboardComponent } from './old-dashboard/dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
-import { SettingsComponent } from './settings/settings.component';
-import { AdminSettingsComponent } from './settings/admin-settings.component';
+import { SettingsComponent } from './settings/user-settings/settings.component';
+import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
 
 import { ProgramDetailComponent } from './program-detail.component';
 import { FlowEditorComponent } from './flow-editor/flow-editor.component';
@@ -23,6 +23,9 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { AboutPageComponent } from './info-pages/about-page.component';
+import { NewGroupComponent } from './new/group/new-group.component';
+import { GroupDashboardComponent } from './group-dashboard/dashboard.component';
+import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
 
 const routes: Routes = [
     { path: '', component: HomeRedirectComponent, pathMatch: 'full' },
@@ -38,10 +41,13 @@ const routes: Routes = [
     // General
     { path: 'full-dashboard', component: DashboardComponent },
     { path: 'dashboard', component: NewDashboardComponent },
+    { path: 'groups/:group_name', component: GroupDashboardComponent },
+    { path: 'groups/:group_name/settings', component: GroupSettingsComponent },
 
     // Programs
     { path: 'users/:user_id/programs/:program_id', component: ProgramDetailComponent },
     { path: 'programs/:program_id/flow', component: FlowEditorComponent },
+    { path: 'programs/:program_id/scratch', component: ProgramDetailComponent },
 
     // Services
     { path: 'services', component: ServicesComponent },
@@ -53,6 +59,9 @@ const routes: Routes = [
     // Settings
     { path: 'settings', component: SettingsComponent },
     { path: 'settings/admin', component: AdminSettingsComponent },
+
+    // Element creation
+    { path: 'new/group', component: NewGroupComponent },
 ];
 
 @NgModule({

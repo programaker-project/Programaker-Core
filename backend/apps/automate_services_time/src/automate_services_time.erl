@@ -77,7 +77,7 @@ day_of_week_to_id(6) -> <<"sat">>;
 day_of_week_to_id(7) -> <<"sun">>.
 
 %% Is enabled for all users
-is_enabled_for_user(_Username) ->
+is_enabled_for_user(_Owner) ->
     {ok, true}.
 
 %% No need to enable service

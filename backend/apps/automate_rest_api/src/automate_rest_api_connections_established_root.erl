@@ -19,7 +19,7 @@
 -include("../../automate_service_port_engine/src/records.hrl").
 -define(FORMATTING, automate_rest_api_utils_formatting).
 
--record(state, { user_id }).
+-record(state, { user_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -89,7 +89,7 @@ to_json(Req, State) ->
 
 to_map(#user_to_bridge_connection_entry{ id=Id
                                        , bridge_id=BridgeId
-                                       , user_id=_
+                                       , owner=_
                                        , channel_id=_
                                        , name=Name
                                        , creation_time=_CreationTime

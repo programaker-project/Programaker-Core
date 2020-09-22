@@ -1,4 +1,4 @@
-
+import { Location } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
@@ -73,6 +73,7 @@ export class FlowEditorComponent implements OnInit {
         private customSignalService: CustomSignalService,
         private route: ActivatedRoute,
         private router: Router,
+        private _location: Location,
         private dialog: MatDialog,
         private templateService: TemplateService,
         private serviceService: ServiceService,
@@ -134,7 +135,7 @@ export class FlowEditorComponent implements OnInit {
     }
 
     initializeListeners() {
-        this.programService.watchProgramLogs(this.program.owner, this.program.id,
+        this.programService.watchProgramLogs(this.program.id,
                                              { request_previous_logs: true })
             .subscribe(
                 {
@@ -176,11 +177,12 @@ export class FlowEditorComponent implements OnInit {
         this.toolbox = await fromCustomBlockService(workspaceElement, this.workspace,
                                                     this.customBlockService,
                                                     this.bridgeService,
+                                                    this.program.id,
                                                    );
     }
 
     async getEnumValues(enum_namespace: string, enum_name: string): Promise<EnumValue[]> {
-        const values = await this.customBlockService.getCallbackOptions(enum_namespace, enum_name);
+        const values = await this.customBlockService.getCallbackOptions(this.program.id, enum_namespace, enum_name);
 
         return values.map(v => {
             return {
@@ -229,7 +231,7 @@ export class FlowEditorComponent implements OnInit {
 
     goBack(): boolean {
         this.dispose();
-        this.router.navigate(['/dashboard'])
+        this._location.back();
         return false;
     }
 
@@ -313,7 +315,7 @@ export class FlowEditorComponent implements OnInit {
                 return;
             }
 
-            const update = (this.programService.updateProgramTags(this.program.owner, this.program.id, data.tags)
+            const update = (this.programService.updateProgramTags(this.program.id, data.tags)
                             .then((success) => {
                                 if (!success) {
                                     return;
@@ -346,7 +348,7 @@ export class FlowEditorComponent implements OnInit {
                 return;
             }
 
-            const stopThreads = (this.programService.stopThreadsProgram(this.program.owner, this.program.id)
+            const stopThreads = (this.programService.stopThreadsProgram(this.program.id)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {

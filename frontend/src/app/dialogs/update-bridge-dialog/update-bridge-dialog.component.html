@@ -1,0 +1,31 @@
+<h2 mat-dialog-title>
+    <mat-icon>leak_add</mat-icon>
+    <span class="bridge-name">{{ data.bridgeInfo.name }}</span>
+</h2>
+
+<section *ngIf="signalStream" class="signals">
+    <h4>Signals</h4>
+
+    <div class="signal-terminal">
+        <div *ngFor="let signal of signalStream | async" class="signal-message">
+            {{ _stringify(signal, null, 4) }}
+        </div>
+    </div>
+
+</section>
+
+<div class="config-option">
+    <div class="accept-cancel">
+        <button color="warn"
+            (click)="deleteBridge()"
+            mat-button mat-raised-button>
+            Delete bridge
+        </button>
+
+        <button
+            (click)="onBack()"
+            mat-button mat-raised-button>
+            Go back
+        </button>
+    </div>
+</div>

@@ -40,7 +40,8 @@ check_is_authorized(Req, UserId) ->
                 {true, UserId} ->
                     { true, none };
                 {true, TokenUserId} -> %% Non matching user_id
-                    io:fwrite("Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId]),
+                    automate_logging:log_api(warning, ?MODULE,
+                                             io_lib:format("[WS/SignalSpecific] Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId])),
                     { false, <<"Unauthorized to connect here">> };
                 false ->
                     { false, <<"Authorization not correct">> }
@@ -57,7 +58,7 @@ websocket_init(State=#state{ bridge_id=BridgeId
         false ->
             { reply, { close, ErrorCode }, State };
         true ->
-            case automate_service_port_engine:listen_bridge(BridgeId, UserId, {Key}) of
+            case automate_service_port_engine:listen_bridge(BridgeId, {user, UserId}, {Key}) of
                 ok ->
                     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
                     {ok, State};
@@ -86,5 +87,5 @@ websocket_info({channel_engine, _From,  #{ <<"key">> := _AnotherKey } },
     {ok, State};
 
 websocket_info(Message, State) ->
-    io:fwrite("Unexpected message: ~p~n", [Message]),
+    automate_logging:log_api(warning, ?MODULE, {unexpected_message, Message}),
     {reply, {binary, Message}, State}.

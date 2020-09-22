@@ -17,7 +17,7 @@
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
--record(state, { user_id, bridge_id, callback }).
+-record(state, { user_id :: binary(), bridge_id :: binary(), callback :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -38,7 +38,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[Bridge callback] Asking for methods~n", []),
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -56,8 +55,7 @@ is_authorized(Req, State) ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
                             { true, Req1, State };
-                        {true, TokenUserId} -> %% Non matching user_id
-                            io:fwrite("Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId]),
+                        {true, _TokenUserId} -> %% Non matching user_id
                             { { false, <<"Unauthorized to create a program here">>}, Req1, State };
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
@@ -67,13 +65,12 @@ is_authorized(Req, State) ->
 
 %% GET handler
 content_types_provided(Req, State) ->
-    io:fwrite("Bridge callback: ~p~n", [State]),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
 to_json(Req, State) ->
     #state{bridge_id=BridgeId, callback=Callback, user_id=UserId} = State,
-    case automate_rest_api_backend:callback_bridge(UserId, BridgeId, Callback) of
+    case automate_rest_api_backend:callback_bridge({user, UserId}, BridgeId, Callback) of
         {ok, Result} ->
             Output = jiffy:encode(Result),
             Res = ?UTILS:send_json_format(Req),

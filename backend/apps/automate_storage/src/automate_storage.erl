@@ -12,11 +12,13 @@
         , get_monitor_from_id/1
         , dirty_list_monitors/0
         , lists_monitors_from_username/1
+        , list_monitors/1
         , get_userid_from_username/1
         , update_user_settings/3
         , promote_user_to_admin/1
         , admin_list_users/0
         , set_user_in_preview/2
+        , search_users/1
 
         , create_mail_verification_entry/1
         , verify_registration_with_code/1
@@ -30,7 +32,9 @@
         , get_program/2
         , lists_programs_from_username/1
         , list_programs_from_userid/1
+        , list_programs/1
         , update_program/3
+        , fix_program_channel/1
 
         , checkpoint_program/3
         , get_last_checkpoint_content/1
@@ -41,7 +45,7 @@
         , delete_program/2
         , delete_program/1
         , delete_running_process/1
-        , update_program_status/3
+        , update_program_status/2
         , is_user_allowed/3
 
         , get_program_owner/1
@@ -76,10 +80,29 @@
         , mark_failed_call_to_bridge/2
 
         , create_custom_signal/2
-        , list_custom_signals_from_user_id/1
+        , list_custom_signals/1
+
+        , create_group/3
+        , delete_group/1
+        , update_group_metadata/2
+        , get_user_groups/1
+        , get_group_by_name/2
+        , is_allowed_to_read_in_group/2
+        , is_allowed_to_write_in_group/2
+        , is_allowed_to_admin_in_group/2
+        , can_user_admin_as/2
+        , can_user_edit_as/2
+        , can_user_view_as/2
+        , list_collaborators/1
+        , add_collaborators/2
+        , update_collaborators/2
 
         , add_mnesia_node/1
         , register_table/2
+
+
+          %% Utils
+        , wrap_transaction/1
         ]).
 -export([start_link/0]).
 -define(SERVER, ?MODULE).
@@ -221,6 +244,13 @@ set_user_in_preview(UserId, InPreview) when is_boolean(InPreview) ->
             {error, Reason}
     end.
 
+search_users(Query) ->
+    {ok, QueryRe} = re:compile(query_to_re(Query)),
+    Transaction = fun() ->
+                          {ok, search_users_iter(mnesia:first(?REGISTERED_USERS_TABLE), [], QueryRe)}
+                  end,
+    mnesia:activity(ets, Transaction).
+
 admin_list_users() ->
     Transaction = fun() ->
                           Result = lists:map(fun(UserId) ->
@@ -310,10 +340,12 @@ get_session_userid(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
     Result.
 
 -spec create_monitor(binary(), #monitor_entry{}) -> {ok, binary()} | {error, any()}.
-create_monitor(Username, MonitorDescriptor=#monitor_entry{ id=none, user_id=none }) ->
-    {ok, UserId} = get_userid_from_username(Username),
+create_monitor(Username, MonitorDescriptor=#monitor_entry{ id=none, owner=none }) ->
+    io:fwrite("\033[7m[create_monitor(Username,...)] To be deprecated\033[0m~n"),
+
+    {ok, Owner} = get_userid_from_username(Username),
     MonitorId = generate_id(),
-    Monitor = MonitorDescriptor#monitor_entry{ id=MonitorId, user_id=UserId },
+    Monitor = MonitorDescriptor#monitor_entry{ id=MonitorId, owner=Owner },
     case store_new_monitor(Monitor) of
         ok ->
             { ok, MonitorId };
@@ -334,12 +366,13 @@ get_monitor_from_id(MonitorId) ->
         { atomic, [Result] } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
 -spec lists_monitors_from_username(binary()) -> {'ok', [ { binary(), binary() } ] }.
 lists_monitors_from_username(Username) ->
+    io:fwrite("\033[7m[lists_monitors_from_username] To be deprecated\033[0m~n"),
     case retrieve_monitors_list_from_username(Username) of
         {ok, Monitors} ->
             { ok
@@ -347,6 +380,14 @@ lists_monitors_from_username(Username) ->
         X ->
             X
     end.
+
+-spec list_monitors(owner_id()) -> {'ok', [ #monitor_entry{} ] }.
+list_monitors(Owner) ->
+    Transaction = fun() ->
+                          {ok, mnesia:index_read(?USER_MONITORS_TABLE, Owner, #monitor_entry.owner)}
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
 
 -spec create_mail_verification_entry(binary()) -> {ok, binary()} | {error, _}.
 create_mail_verification_entry(UserId) ->
@@ -387,7 +428,7 @@ verify_registration_with_code(RegistrationCode) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -454,7 +495,7 @@ reset_password(VerificationCode, Password) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -465,13 +506,17 @@ check_password_reset_verification_code(VerificationCode) ->
 create_program(Username, ProgramName) ->
     create_program(Username, ProgramName, ?DEFAULT_PROGRAM_TYPE).
 
-create_program(Username, ProgramName, ProgramType) ->
-    {ok, UserId} = get_userid_from_username(Username),
+create_program(Username, ProgramName, ProgramType) when is_binary(Username) ->
+    io:fwrite("\033[7m[create_program(Username,...)] To be deprecated\033[0m~n"),
+    {ok, Owner} = get_userid_from_username(Username),
+    create_program(Owner, ProgramName, ProgramType);
+
+create_program(Owner, ProgramName, ProgramType) ->
     ProgramId = generate_id(),
     {ok, ProgramChannel} = automate_channel_engine:create_channel(),
     CurrentTime = erlang:system_time(second),
     UserProgram = #user_program_entry{ id=ProgramId
-                                     , user_id=UserId
+                                     , owner=Owner
                                      , program_name=ProgramName
                                      , program_type=ProgramType
                                      , program_parsed=undefined
@@ -490,13 +535,13 @@ create_program(Username, ProgramName, ProgramType) ->
             { error, Reason }
     end.
 
-
 get_program(Username, ProgramName) ->
     retrieve_program(Username, ProgramName).
 
 
 -spec lists_programs_from_username(binary()) -> {'ok', [ { binary(), binary(), boolean() } ] }.
 lists_programs_from_username(Username) ->
+    io:fwrite("\033[7m[lists_programs_from_username] To be deprecated\033[0m~n"),
     case retrieve_program_list_from_username(Username) of
         {ok, Programs} ->
             { ok
@@ -519,8 +564,15 @@ list_programs_from_userid(Userid) ->
             X
     end.
 
--spec update_program_status(binary(), binary(), boolean()) -> 'ok' | { 'error', any() }.
-update_program_status(Username, ProgramId, Status)->
+-spec list_programs(owner_id()) -> {ok, [#user_program_entry{}, ...]} | {error, any()}.
+list_programs(Owner) ->
+    Transaction = fun() ->
+                          {ok, mnesia:index_read(?USER_PROGRAMS_TABLE, Owner, #user_program_entry.owner)}
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec update_program_status(binary(), boolean()) -> 'ok' | { 'error', any() }.
+update_program_status(ProgramId, Status)->
     Transaction = fun() ->
                           case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
                               [Program] ->
@@ -530,19 +582,23 @@ update_program_status(Username, ProgramId, Status)->
                           end
                   end,
     case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
+        { atomic, ok } ->
             ok;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
--spec is_user_allowed(binary(), binary(), read_program|edit_program|delete_program) -> {ok, boolean()} | {error, any()}.
-is_user_allowed(UId, ProgramId, Action) ->
+-spec is_user_allowed(owner_id(), binary(), read_program|edit_program|delete_program) -> {ok, boolean()} | {error, any()}.
+is_user_allowed(Owner, ProgramId, Action) ->
+    Check = case Action of
+                read_program -> fun can_user_view_as/2;
+                _ -> fun can_user_edit_as/2
+            end,
     Transaction = fun() ->
                           case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
-                              [#user_program_entry{user_id=OwnerId}] ->
-                                  {ok, UId == OwnerId};
+                              [#user_program_entry{owner=RealOwner}] ->
+                                  {ok, Check(Owner, RealOwner)};
                               [] ->
                                   {error, not_found}
                           end
@@ -557,6 +613,23 @@ is_user_allowed(UId, ProgramId, Action) ->
 -spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program(Username, ProgramName, Content)->
     store_new_program_content(Username, ProgramName, Content).
+
+-spec fix_program_channel(binary()) -> ok | {error, nothing_to_fix | not_found}.
+fix_program_channel(ProgramId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
+                              [] -> {error, not_found};
+                              [Program=#user_program_entry{program_channel=ChannelId}] ->
+                                  case automate_channel_engine_mnesia_backend:exists_channel(ChannelId) of
+                                      true ->
+                                          {error, nothing_to_fix};
+                                      false ->
+                                          {ok, NewChannel} = automate_channel_engine:create_channel(),
+                                          ok = mnesia:write(?USER_PROGRAMS_TABLE, Program#user_program_entry{program_channel=NewChannel}, write)
+                                  end
+                          end
+                  end,
+    wrap_transaction(mnesia:transaction(Transaction)).
 
 -spec update_program_by_id(binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program_by_id(ProgramId, Content)->
@@ -576,7 +649,7 @@ update_program_metadata(Username, ProgramName, #editable_user_program_metadata{p
                     io:format("Register result: ~p~n", [Result]),
                     Result;
                 { aborted, Reason } ->
-                    io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+                    io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
                     {error, mnesia:error_description(Reason)}
             end;
         X ->
@@ -600,7 +673,7 @@ update_program_metadata(ProgramId, #editable_user_program_metadata{program_name=
             io:format("Register result: ~p~n", [Result]),
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -620,7 +693,8 @@ checkpoint_program(UserId, ProgramId, Content)->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
+
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -657,7 +731,7 @@ delete_program(Username, ProgramName)->
                 { atomic, Result } ->
                     Result;
                 { aborted, Reason } ->
-                    io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+                    io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
                     {error, mnesia:error_description(Reason)}
             end;
         X ->
@@ -683,7 +757,7 @@ delete_program(ProgramId)->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -696,7 +770,7 @@ delete_running_process(ProcessId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -712,7 +786,7 @@ get_program_pid(ProgramId) ->
     end.
 
 
--spec get_user_from_pid(pid()) -> { ok, binary() } | {error, not_found}.
+-spec get_user_from_pid(pid()) -> { ok, owner_id() } | {error, not_found}.
 get_user_from_pid(Pid) ->
     %% Look for it as a program (not running thread)
     ProgMatchHead = #running_program_entry{ program_id = '$1'
@@ -740,13 +814,13 @@ get_user_from_pid(Pid) ->
     Transaction = fun() ->
                           case mnesia:select(?RUNNING_PROGRAMS_TABLE, ProgMatcher) of
                               [ProgramId] ->
-                                  [#user_program_entry{ user_id=UserId }] = mnesia:read(?USER_PROGRAMS_TABLE, ProgramId),
-                                  { ok, UserId};
+                                  [#user_program_entry{ owner=Owner }] = mnesia:read(?USER_PROGRAMS_TABLE, ProgramId),
+                                  { ok, Owner };
                               [] ->
                                   case mnesia:select(?RUNNING_THREADS_TABLE, ThreadMatcher) of
                                       [ ParentProgramId ] ->
-                                          [#user_program_entry{ user_id=UserId }] = mnesia:read(?USER_PROGRAMS_TABLE, ParentProgramId),
-                                          { ok, UserId};
+                                          [#user_program_entry{ owner=Owner }] = mnesia:read(?USER_PROGRAMS_TABLE, ParentProgramId),
+                                          { ok, Owner };
                                       [] ->
                                           {error, not_found}
                                   end
@@ -759,11 +833,11 @@ get_user_from_pid(Pid) ->
             {error, Reason}
     end.
 
--spec get_program_owner(binary()) -> {'ok', binary() | undefined} | {error, not_found}.
+-spec get_program_owner(binary()) -> {'ok', owner_id() | undefined} | {error, not_found}.
 get_program_owner(ProgramId) ->
     case get_program_from_id(ProgramId) of
-        {ok, #user_program_entry{user_id=UserId}} ->
-            {ok, UserId};
+        {ok, #user_program_entry{owner=Owner}} ->
+            {ok, Owner};
         {error, Reason} ->
             {error, Reason}
     end.
@@ -788,10 +862,11 @@ register_program_runner(ProgramId, Pid) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec get_program_from_id(binary()) -> {ok, #user_program_entry{}} | {error, not_found}.
 get_program_from_id(ProgramId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
@@ -805,7 +880,7 @@ get_program_from_id(ProgramId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -829,7 +904,7 @@ register_program_tags(ProgramId, Tags) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -846,7 +921,7 @@ get_tags_program_from_id(ProgramId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -1019,7 +1094,7 @@ get_thread_from_id(ThreadId) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
 
@@ -1054,7 +1129,7 @@ log_program_error(LogEntry) when is_record(LogEntry, user_program_log_entry) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -1069,7 +1144,7 @@ add_user_generated_log(LogEntry) when is_record(LogEntry, user_generated_log_ent
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -1136,7 +1211,7 @@ mark_failed_call_to_bridge(ProgramId, _BridgeId) ->
     end.
 
 
--spec get_userid_from_username(binary()) -> {ok, binary()} | {error, no_user_found}.
+-spec get_userid_from_username(binary()) -> {ok, owner_id()} | {error, no_user_found}.
 get_userid_from_username(undefined) ->
     {ok, undefined};
 
@@ -1162,7 +1237,7 @@ get_userid_from_username(Username) ->
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, [Result] } ->
-            {ok, Result};
+            {ok, {user, Result}};
         { atomic, [] } ->
             {error, no_user_found};
         { aborted, Reason } ->
@@ -1193,12 +1268,12 @@ update_user_settings(UserId, Settings, Permissions) ->
 
 
 %% Custom signals
--spec create_custom_signal(binary(), binary()) -> {ok, binary()}.
-create_custom_signal(UserId, SignalName) ->
+-spec create_custom_signal(owner_id(), binary()) -> {ok, binary()}.
+create_custom_signal(Owner, SignalName) ->
     {ok, Id} = automate_channel_engine:create_channel(),
     Entry = #custom_signal_entry{ id=Id
                                 , name=SignalName
-                                , owner=UserId
+                                , owner=Owner
                                 },
 
     Transaction = fun() ->
@@ -1213,17 +1288,19 @@ create_custom_signal(UserId, SignalName) ->
     end.
 
 
--spec list_custom_signals_from_user_id(binary()) -> {ok, [#custom_signal_entry{}]}.
-list_custom_signals_from_user_id(UserId) ->
+-spec list_custom_signals(owner_id()) -> {ok, [#custom_signal_entry{}]}.
+list_custom_signals({OwnerType, OwnerId}) ->
     Transaction = fun() ->
                           %% Find userid with that name
                           MatchHead = #custom_signal_entry{ id='_'
                                                           , name='_'
-                                                          , owner='$1'
+                                                          , owner={'$1', '$2'}
                                                           },
-                          Guard = {'==', '$1', UserId},
+                          Guards = [ {'==', '$1', OwnerType}
+                                   , {'==', '$2', OwnerId}
+                                   ],
                           ResultColumn = '$_',
-                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+                          Matcher = [{MatchHead, Guards, [ResultColumn]}],
 
                           {ok, mnesia:select(?CUSTOM_SIGNALS_TABLE, Matcher)}
                   end,
@@ -1233,6 +1310,179 @@ list_custom_signals_from_user_id(UserId) ->
         { aborted, Reason } ->
             {error, mnesia:error_description(Reason)}
     end.
+
+%% Group management
+-spec create_group(binary(), binary(), boolean()) -> {ok, #user_group_entry{}} | {error, any()}.
+create_group(Name, AdminUserId, Public) ->
+    Canonicalized = automate_storage_utils:canonicalize(Name),
+    Id = generate_id(),
+    Transaction = fun() ->
+                          case mnesia:index_read(?USER_GROUPS_TABLE, Name, #user_group_entry.canonical_name) of
+                              [] ->
+                                  Entry = #user_group_entry{ id=Id
+                                                           , name=Name
+                                                           , canonical_name=Canonicalized
+                                                           , public=Public
+                                                           },
+                                  ok = mnesia:write(?USER_GROUPS_TABLE, Entry, write),
+                                  ok = mnesia:write(?USER_GROUP_PERMISSIONS_TABLE, #user_group_permissions_entry{ group_id=Id
+                                                                                                                , user_id={user, AdminUserId}
+                                                                                                                , role=admin
+                                                                                                                }, write),
+                                  {ok, Entry};
+                              _ ->
+                                  {error, already_exists}
+                          end
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, Result } ->
+            Result;
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
+
+
+-spec delete_group(binary()) -> ok | {error, any()}.
+delete_group(GroupId) ->
+    T = fun() ->
+                ok = mnesia:delete(?USER_GROUPS_TABLE, GroupId, write),
+                ok = mnesia:delete(?USER_GROUP_PERMISSIONS_TABLE, GroupId, write)
+        end,
+    wrap_transaction(mnesia:transaction(T)).
+
+-spec update_group_metadata(binary(), group_metadata_edition()) -> ok | {error, any()}.
+update_group_metadata(GroupId, MetadataChanges) ->
+    T = fun() ->
+                [Group] = mnesia:read(?USER_GROUPS_TABLE, GroupId),
+                NewGroup = apply_group_metadata_changes(Group, MetadataChanges),
+                mnesia:write(?USER_GROUPS_TABLE, NewGroup, write)
+        end,
+    wrap_transaction(mnesia:transaction(T)).
+
+-spec get_user_groups(owner_id()) -> {ok, [#user_group_entry{}, ...]} | {error, any()}.
+get_user_groups(UserId) ->
+    Transaction = fun() ->
+                          Permissions = mnesia:index_read(?USER_GROUP_PERMISSIONS_TABLE, UserId, #user_group_permissions_entry.user_id),
+                          Groups = lists:map(fun(#user_group_permissions_entry{ group_id=GroupId }) ->
+                                                     [Group] = mnesia:read(?USER_GROUPS_TABLE, GroupId),
+                                                     Group
+                                             end, Permissions),
+                          {ok, Groups}
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec get_group_by_name(binary(), owner_id()) -> {ok, #user_group_entry{}} | {error, any()}.
+get_group_by_name(GroupName, AccessorId) ->
+    CanonicalizedName = automate_storage_utils:canonicalize(GroupName),
+    Transaction = fun() ->
+                          [Group=#user_group_entry{id=GroupId}] = mnesia:index_read(?USER_GROUPS_TABLE
+                                                                                   , CanonicalizedName
+                                                                                   , #user_group_entry.canonical_name),
+
+                          case is_allowed_to_read_in_group(AccessorId, GroupId) of
+                              true ->
+                                  {ok, Group};
+                              false ->
+                                  {error, not_authorized}
+                          end
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec is_allowed_to_read_in_group(owner_id(), binary()) -> true | false.
+is_allowed_to_read_in_group({group, GroupId}, GroupId) ->
+    true;
+is_allowed_to_read_in_group(AccessorId, GroupId) ->
+    Transaction = fun() ->
+                          lists:any(fun(#user_group_permissions_entry{user_id=UserId}) ->
+                                            UserId =:= AccessorId
+                                    end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId))
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec is_allowed_to_write_in_group(owner_id(), binary()) -> true | false.
+is_allowed_to_write_in_group({group, GroupId}, GroupId) ->
+    true;
+is_allowed_to_write_in_group(AccessorId, GroupId) ->
+    Transaction = fun() ->
+                          lists:any(fun(#user_group_permissions_entry{user_id=UserId, role=Role}) ->
+                                            (UserId == AccessorId)
+                                                and
+                                                  ( (Role == admin) or (Role == editor) )
+                                    end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId))
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec is_allowed_to_admin_in_group(owner_id(), binary()) -> true | false.
+is_allowed_to_admin_in_group({group, GroupId}, GroupId) ->
+    true;
+is_allowed_to_admin_in_group(AccessorId, GroupId) ->
+    Transaction = fun() ->
+                          lists:any(fun(#user_group_permissions_entry{user_id=UserId, role=Role}) ->
+                                            (UserId == AccessorId)
+                                                and
+                                                  ( Role == admin )
+                                    end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId))
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec can_user_admin_as(owner_id(), owner_id()) -> true | false.
+can_user_admin_as(AccessorId, {group, GroupId}) ->
+    is_allowed_to_admin_in_group(AccessorId, GroupId);
+can_user_admin_as({user, UserId}, {user, UserId}) ->
+    true;
+can_user_admin_as({user, _UserId}, {user, _AnotherUser}) ->
+    false.
+
+-spec can_user_edit_as(owner_id(), owner_id()) -> true | false.
+can_user_edit_as(AccessorId, {group, GroupId}) ->
+    is_allowed_to_write_in_group(AccessorId, GroupId);
+can_user_edit_as({user, UserId}, {user, UserId}) ->
+    true;
+can_user_edit_as({user, _UserId}, {user, _AnotherUser}) ->
+    false.
+
+-spec can_user_view_as(owner_id(), owner_id()) -> true | false.
+can_user_view_as(AccessorId, {group, GroupId}) ->
+    is_allowed_to_read_in_group(AccessorId, GroupId);
+can_user_view_as({user, UserId}, {user, UserId}) ->
+    true;
+can_user_view_as({user, _UserId}, {user, _AnotherUser}) ->
+    false.
+
+-spec list_collaborators({group, binary()}) -> {ok, [{#user_program_entry{}, user_in_group_role()}, ...]} | {error, any()}.
+list_collaborators({group, GroupId}) ->
+    Transaction = fun() ->
+                          Results = lists:map(fun(#user_group_permissions_entry{user_id={user, UserId}, role=Role}) ->
+                                                      [User] = mnesia:read(?REGISTERED_USERS_TABLE, UserId),
+                                                      {User, Role}
+                                              end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId)),
+                          {ok, Results}
+                  end,
+    wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec add_collaborators({group, binary()}, [{ Id :: binary(), Role :: user_in_group_role() }]) -> ok | {error, any()}.
+add_collaborators({group, GroupId}, Collaborators) ->
+    Transaction = fun() ->
+                          ok = lists:foreach(fun({ CollaboratorId, CollaboratorRole }) ->
+                                                     ok = mnesia:write(?USER_GROUP_PERMISSIONS_TABLE
+                                                                      , #user_group_permissions_entry{ group_id=GroupId
+                                                                                                     , user_id={user, CollaboratorId}
+                                                                                                     , role=CollaboratorRole
+                                                                                                     }
+                                                                      , write)
+                                             end, Collaborators)
+                  end,
+    wrap_transaction(mnesia:transaction(Transaction)).
+
+-spec update_collaborators({group, binary()}, [{ Id :: binary(), Role :: user_in_group_role() }]) -> ok | {error, any()}.
+update_collaborators({group, GroupId}, Collaborators) ->
+    Transaction = fun() ->
+                          %% Delete all collaborators
+                          ok = mnesia:delete(?USER_GROUP_PERMISSIONS_TABLE, GroupId, write),
+                          %% And add new ones
+                          add_collaborators({group, GroupId}, Collaborators)
+                  end,
+    wrap_transaction(mnesia:transaction(Transaction)).
 
 %% Exposed startup entrypoint
 start_link() ->
@@ -1251,6 +1501,16 @@ register_table(_TableName, _RecordDef) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+wrap_transaction(TransactionResult) ->
+    case TransactionResult of
+        {aborted, Reason} ->
+            {error, Reason};
+        {atomic, Result} ->
+            Result;
+        Result ->
+            Result
+    end.
+
 gen_salt() ->
     gen_salt(?PASSWORD_HASHING_SALTLEN).
 gen_salt(SaltLen) ->
@@ -1313,6 +1573,52 @@ get_userid_sessions(UserId) ->
                       , [SessionResultColumn]
                       }],
     mnesia:select(?USER_SESSIONS_TABLE, SessionMatcher).
+
+search_users_iter('$end_of_table', Acc, _QueryRe) ->
+    Acc;
+search_users_iter(Key, Acc, QueryRe) ->
+    [Element] = mnesia:read(?REGISTERED_USERS_TABLE, Key),
+    Accumulated = case user_match_query(Element, QueryRe) of
+                      true ->
+                          [Element | Acc];
+                      false ->
+                          Acc
+                  end,
+    search_users_iter(mnesia:next(?REGISTERED_USERS_TABLE, Key), Accumulated, QueryRe).
+
+
+user_match_query(#registered_user_entry{status=mail_not_verified}, _QueryRe) ->
+    false;
+user_match_query(#registered_user_entry{username=Username, email=Email}, QueryRe) ->
+    case re:run(Username, QueryRe) of
+        {match, _} ->
+            true;
+        nomatch ->
+            case re:run(Email, QueryRe) of
+                {match, _} ->
+                    true;
+                nomatch ->
+                    false
+            end
+    end.
+
+
+query_to_re(Query) ->
+    Parts = binary:split(escape_re(Query), [<<" ">>, <<"*">>], [global, trim_all]),
+    join_with([<<"">> | Parts], <<".*">>).
+
+escape_re(Expression) ->
+    %% Note that Whitespaces and Askterisks (*) are NOT escaped
+    re:replace(Expression, "[-[\\]{}()+?.,\\^$|#]", "\\\\&", [{return, binary}, global]).
+
+-spec join_with([binary(), ...], binary()) -> [binary()].
+join_with(Parts, Joiner) when is_list(Parts) and is_binary(Joiner) ->
+    interleave(Parts, Joiner, []).
+
+interleave([], _Joiner, Acc) ->
+    Acc;
+interleave([H|T], Joiner, Acc) ->
+    interleave(T, Joiner, [H | [ Joiner | Acc]]).
 
 get_user_from_username(Username) ->
     MatchHead = #registered_user_entry{ id='$1'
@@ -1420,7 +1726,7 @@ create_verification_entry(UserId, VerificationType) ->
         { atomic, ok } ->
             {ok, VerificationId};
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -1443,7 +1749,7 @@ check_verification_code(VerificationCode, VerificationType) ->
         { atomic, Result } ->
             Result;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, Reason}
     end.
 
@@ -1457,6 +1763,7 @@ store_new_monitor(Monitor) ->
     Result.
 
 retrieve_monitors_list_from_username(Username) ->
+    io:fwrite("\033[7m[retrieve_monitors_list_from_username] To be deprecated\033[0m~n"),
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
@@ -1481,7 +1788,7 @@ retrieve_monitors_list_from_username(Username) ->
 
                                   %% Find program with userId and name
                                   MonitorMatchHead = #monitor_entry{ id='$1'
-                                                                   , user_id='$2'
+                                                                   , owner={user, '$2'}
                                                                    , name='_'
                                                                    , type='_'
                                                                    , value='_'
@@ -1522,6 +1829,7 @@ store_new_thread(UserThread) ->
     Result.
 
 retrieve_program(Username, ProgramName) ->
+    io:fwrite("\033[7m[retrieve_program(Username, ProgramName)] To be deprecated\033[0m~n"),
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
@@ -1546,7 +1854,7 @@ retrieve_program(Username, ProgramName) ->
 
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                        , user_id='$2'
+                                                                        , owner={user, '$2'}
                                                                         , program_name='$3'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
@@ -1583,6 +1891,7 @@ retrieve_program(Username, ProgramName) ->
     end.
 
 retrieve_program_list_from_username(Username) ->
+    io:fwrite("\033[7m[retrieve_program_list_from_username] To be deprecated\033[0m~n"),
     Transaction = fun() ->
                           %% Find userid with that name
                           UserMatchHead = #registered_user_entry{ id='$1'
@@ -1607,7 +1916,7 @@ retrieve_program_list_from_username(Username) ->
 
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                        , user_id='$2'
+                                                                        , owner={user, '$2'}
                                                                         , program_name='_'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
@@ -1637,10 +1946,11 @@ retrieve_program_list_from_username(Username) ->
     end.
 
 retrieve_program_list_from_userid(UserId) ->
+    io:fwrite("\033[7m[retrieve_program_list_from_userid] To be deprecated\033[0m~n"),
     Transaction = fun() ->
                           %% Find program with userId and name
                           ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                , user_id='$2'
+                                                                , owner={user, '$2'}
                                                                 , program_name='$3'
                                                                 , program_type='_'
                                                                 , program_parsed='_'
@@ -1674,6 +1984,8 @@ store_new_program_content(Username, ProgramName,
                                                  , parsed=ProgramParsed
                                                  , type=ProgramType
                                                  })->
+    io:fwrite("\033[7m[store_new_program_content(Username, ProgramName,...)] To be deprecated\033[0m~n"),
+
     CurrentTime = erlang:system_time(second),
     Transaction = fun() ->
                           %% Find userid with that name
@@ -1699,7 +2011,7 @@ store_new_program_content(Username, ProgramName,
 
                                   %% Find program with userId and name
                                   ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                        , user_id='$2'
+                                                                        , owner={user, '$2'}
                                                                         , program_name='$3'
                                                                         , program_type='_'
                                                                         , program_parsed='_'
@@ -1721,16 +2033,19 @@ store_new_program_content(Username, ProgramName,
                                       [] ->
                                           [];
 
-                                      [Program] ->
+                                      [Program=#user_program_entry{id=ProgramId}] ->
                                           ok = mnesia:write(?USER_PROGRAMS_TABLE,
-                                                            Program#user_program_entry{ user_id=UserId
+                                                            Program#user_program_entry{ owner={user, UserId}
                                                                                       , program_name=ProgramName
                                                                                       , program_type=ProgramType
                                                                                       , program_parsed=ProgramParsed
                                                                                       , program_orig=ProgramOrig
                                                                                       , last_upload_time=CurrentTime
                                                                                       }, write),
-                                          { ok, Program#user_program_entry.id }
+
+                                          ok = mnesia:delete(?USER_PROGRAM_EVENTS_TABLE, ProgramId, write),
+
+                                          { ok, ProgramId }
                                   end
                           end
                   end,
@@ -1756,14 +2071,16 @@ store_new_program_content(ProgramId,
                               [] ->
                                   [];
 
-                              [Program] ->
+                              [Program=#user_program_entry{id=ProgramId}] ->
                                   ok = mnesia:write(?USER_PROGRAMS_TABLE,
                                                     Program#user_program_entry{ program_type=ProgramType
                                                                               , program_parsed=ProgramParsed
                                                                               , program_orig=ProgramOrig
                                                                               , last_upload_time=CurrentTime
                                                                               }, write),
-                                  { ok, Program#user_program_entry.id }
+                                  ok = mnesia:delete(?USER_PROGRAM_EVENTS_TABLE, ProgramId, write),
+
+                                  { ok, ProgramId }
                           end
                   end,
 case mnesia:transaction(Transaction) of
@@ -1842,9 +2159,19 @@ set_program_variable(ProgramId, Key, Value) ->
         { atomic, ok } ->
             ok;
         { aborted, Reason } ->
-            io:format("Error: ~p~n", [mnesia:error_description(Reason)]),
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
+
+
+-spec apply_group_metadata_changes(#user_group_entry{}, group_metadata_edition()) -> #user_group_entry{}.
+apply_group_metadata_changes(Group, MetadataChanges) ->
+    apply_group_metadata_public_changes(Group, MetadataChanges).
+
+apply_group_metadata_public_changes(Group=#user_group_entry{}, #{ public := IsPublic }) ->
+    Group#user_group_entry{ public=IsPublic };
+apply_group_metadata_public_changes(Group, _) ->
+    Group.
 
 
 %%====================================================================

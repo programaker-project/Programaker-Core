@@ -20,7 +20,7 @@
 -include("./records.hrl").
 -include("../../automate_template_engine/src/records.hrl").
 
--record(state, { user_id }).
+-record(state, { user_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -44,7 +44,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
     {[<<"GET">>, <<"POST">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -84,7 +83,7 @@ accept_json_create_template(Req, State) ->
     Template = jiffy:decode(Body, [return_maps]),
     #{ <<"name">> := TemplateName, <<"content">> := TemplateContent } = Template,
 
-    case automate_rest_api_backend:create_template(UserId, TemplateName, TemplateContent) of
+    case automate_rest_api_backend:create_template({user, UserId}, TemplateName, TemplateContent) of
         { ok, TemplateId } ->
 
             Output = jiffy:encode(#{ <<"id">> => TemplateId
@@ -104,9 +103,8 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State) ->
-    #state{user_id=UserId} = State,
-    case automate_rest_api_backend:list_templates_from_user_id(UserId) of
+to_json(Req, State=#state{user_id=UserId}) ->
+    case automate_template_engine:list_templates({user, UserId}) of
         { ok, Templates } ->
 
             Output = jiffy:encode(lists:map(fun template_to_map/1, Templates)),
@@ -119,10 +117,11 @@ to_json(Req, State) ->
 
 template_to_map(#template_entry{ id=Id
                                , name=Name
-                               , owner=Owner
+                               , owner={OwnerType, OwnerId}
                                , content=_Content
                                }) ->
     #{ id => Id
      , name => Name
-     , owner => Owner
+     , owner => OwnerId
+     , owner_full => #{ type => OwnerType, id => OwnerId }
      }.

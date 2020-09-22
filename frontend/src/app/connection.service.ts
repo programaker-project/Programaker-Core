@@ -1,11 +1,10 @@
-import { Injectable } from '@angular/core';
-import { AvailableService } from './service';
-import { BridgeIndexData } from './bridges/bridge';
-
-import { BridgeConnection } from './connection';
-
-import { SessionService } from './session.service';
 import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { ApiRoot } from './api-config';
+import { BridgeIndexData } from './bridges/bridge';
+import { BridgeConnection } from './connection';
+import { AvailableService } from './service';
+import { SessionService } from './session.service';
 import { toWebsocketUrl } from './utils';
 
 
@@ -14,10 +13,7 @@ export class ConnectionService {
     constructor(
         private http: HttpClient,
         private sessionService: SessionService
-    ) {
-        this.http = http;
-        this.sessionService = sessionService;
-    }
+    ) { }
 
     async getAvailableConnectionsUrl(): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId();
@@ -25,10 +21,22 @@ export class ConnectionService {
         return root + '/connections/available/';
     }
 
+    getGroupAvailableConnectionsUrl(groupId: string): string {
+        return `${ApiRoot}/groups/by-id/${groupId}/connections/available`;
+    }
+
     async getUserConnectionsUrl(): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId();
 
         return root + '/connections/established';
+    }
+
+    getGroupConnectionsUrl(groupId: string): string {
+        return `${ApiRoot}/groups/by-id/${groupId}/connections/established`;
+    }
+
+    getProgramConnectionsUrl(programId: string): string {
+        return `${ApiRoot}/programs/by-id/${programId}/connections/established`;
     }
 
     async getWaitForConnectionUrl(connection_id: string): Promise<string> {
@@ -45,8 +53,29 @@ export class ConnectionService {
                              ).toPromise() as Promise<BridgeIndexData[]>);
     }
 
+    public getAvailableBridgesForNewConnectionOnGroup(groupId: string): Promise<BridgeIndexData[]> {
+        const url = this.getGroupAvailableConnectionsUrl(groupId);
+        return (this.http.get(url,
+                              { headers: this.sessionService.getAuthHeader() }
+                             ).toPromise() as Promise<BridgeIndexData[]>);
+    }
+
     async getConnections(): Promise<BridgeConnection[]> {
         const url = await this.getUserConnectionsUrl()
+        return (this.http.get(url,
+                              { headers: this.sessionService.getAuthHeader() }
+                             ).toPromise() as Promise<BridgeConnection[]>);
+    }
+
+    public getConnectionsOnGroup(groupId: string): Promise<BridgeConnection[]> {
+        const url = this.getGroupConnectionsUrl(groupId)
+        return (this.http.get(url,
+                              { headers: this.sessionService.getAuthHeader() }
+                             ).toPromise() as Promise<BridgeConnection[]>);
+    }
+
+    public getConnectionsOnProgram(programId: string): Promise<BridgeConnection[]> {
+        const url = this.getProgramConnectionsUrl(programId)
         return (this.http.get(url,
                               { headers: this.sessionService.getAuthHeader() }
                              ).toPromise() as Promise<BridgeConnection[]>);

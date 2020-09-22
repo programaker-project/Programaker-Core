@@ -1,0 +1,63 @@
+<h2 mat-dialog-title>Add bridge</h2>
+<div class="intent">
+    Add a new bridge to the group.
+</div>
+
+<div [formGroup]="options" class="config-option">
+    <mat-form-field class="bridge-name-input">
+        <input matInput required
+            id="bridgeName"
+            name="bridgeName"
+            placeholder="Name of the bridge"
+            formControlName="bridgeName">
+    </mat-form-field>
+    <mat-error *ngIf="options.controls.bridgeName.errors">
+        <div *ngIf="options.controls.bridgeName.errors.required">Bridge name is required</div>
+        <div *ngIf="options.controls.bridgeName.errors.minlength">Bridge name requires at least {{ options.controls.bridgeName.errors.minlength.requiredLength }} characters</div>
+	</mat-error>
+
+    <div *ngIf="bridgeControlUrl">
+        <mat-form-field class="bridge-url-field">
+            <input matInput
+                editable
+                id="bridgeControlUrl"
+                name="bridgeControlUrl"
+                placeholder="Bridge control URL"
+                readonly="readonly"
+                [value]="bridgeControlUrl"
+            />
+        </mat-form-field>
+    </div>
+
+
+    <div class="accept-cancel">
+        <button class="confirm-button" #confirmationButton
+            [disabled]="!options.valid || bridgeCreated"
+            (click)="create()"
+            mat-button mat-raised-button>
+            <span *ngIf="!bridgeCreated">
+                Create
+            </span>
+            <span *ngIf="bridgeCreated">
+                Done!
+            </span>
+
+            <span class="load-bg"></span>
+        </button>
+
+        <span *ngIf="!bridgeCreated">
+            or
+        </span>
+
+        <button
+            (click)="onBack()"
+            mat-button mat-raised-button>
+            <span *ngIf="!bridgeCreated">
+                Go back
+            </span>
+            <span *ngIf="bridgeCreated">
+                OK
+            </span>
+        </button>
+    </div>
+</div>

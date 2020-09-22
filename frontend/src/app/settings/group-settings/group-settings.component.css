@@ -1,0 +1,152 @@
+.settings-section {
+    width: 100%;
+    padding-bottom: 2em;
+}
+
+.save-button, .delete-group-button {
+    padding: 1ex;
+    border-radius: 5px;
+
+    /* Right align */
+    margin: 1ex 0 auto auto;
+    display: block;
+}
+
+.delete-group-button {
+    padding: 1ex;
+    border-radius: 5px;
+    margin: 0 auto;
+    margin-top: 2em;
+}
+
+.settings-group {
+    background-color: #fff;
+    border-radius: 4px;
+    padding: 1ex;
+    margin-top: 1ex;
+    overflow: auto;
+    box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3);
+}
+
+.key-point {
+    text-decoration: underline;
+}
+
+.settings-group > .title {
+    font-size: 1.5rem;
+    margin-bottom: 3ex;
+    border-bottom: 1px solid #aaa;
+}
+
+.value:not(.code) {
+    float: right;
+}
+
+.value.code {
+    margin-left: 1ex;
+    word-break: keep-all;
+}
+
+.code {
+    padding: 1ex;
+    border-radius: 3px;
+    border: 1px solid #222;
+}
+
+.toggle-setting {
+    margin-bottom: 5ex;
+}
+
+.row {
+    margin: 0 !important;
+}
+
+/* Avatar */
+div.avatar {
+    padding: 0;
+    height: 10em;
+    width: 10em;
+    display: block;
+    margin: 1em auto;
+    box-sizing: content-box;
+    border: 1px dashed transparent;
+}
+
+.edited div.avatar {
+    border: 1px dashed rgba(0,0,0,0.3);
+}
+
+.avatar > img {
+    height: 10em;
+    width: 10em;
+    border-radius: 4px;
+}
+
+.avatar-edit-section {
+    text-align: center;
+}
+
+.avatar-edit-section > mat-icon {
+    vertical-align: bottom;
+}
+
+.picture-upload-button {
+    padding: 1ex;
+    border-radius: 5px;
+}
+
+.avatar-edit-section .save-button {
+    display: inline-block;
+    margin-left: 1em;
+}
+
+/* Collaborator list */
+mat-form-field.collaborator-input {
+    width: 100%;
+    margin-top: 1ex;
+}
+
+ul.collaborator-list {
+    padding: 0;
+    max-width: 90vw;
+}
+
+li.collaborator {
+    margin: 0.5ex;
+    font-size: small;
+    border-radius: 4px;
+}
+
+button.remove-collaborator {
+    padding: 0;
+    margin: 0;
+    border-right: 1px solid rgba(0,0,0,0.5);
+    border: none;
+    border-radius: 4px;
+    min-height: 3ex;
+    vertical-align: sub;
+    background-color: #fa0;
+}
+
+button.remove-collaborator:disabled {
+    color: transparent;
+    background-color: transparent;
+}
+
+button.remove-collaborator mat-icon {
+    vertical-align: bottom;
+}
+
+li.collaborator .name {
+    margin: 0 0.5ex 0 0.5ex;
+    font-weight: bold;
+}
+
+mat-form-field.role {
+    margin-left: 1em;
+}
+
+mat-select-trigger mat-icon {
+    font-size: 140%;
+    vertical-align: text-top;
+}

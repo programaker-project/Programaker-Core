@@ -17,7 +17,7 @@
 -spec initialize_program(binary(), #user_program_entry{}) -> {ok, #program_state{}}.
 initialize_program(ProgramId,
                    #user_program_entry
-                   { user_id=OwnerUserId
+                   { owner=OwnerUserId
                    , program_parsed=Parsed
                    , enabled=Enabled}) ->
 
@@ -59,7 +59,7 @@ initialize_program(ProgramId,
 -spec update_program(#program_state{}, #user_program_entry{}) -> {ok, #program_state{}}.
 update_program(State,
                #user_program_entry
-               { user_id=OwnerUserId
+               { owner=OwnerUserId
                , program_parsed=Parsed
                , enabled=Enabled}) ->
     {ok, #{ <<"variables">> := Variables
@@ -74,7 +74,7 @@ update_program(State,
 -spec get_bridges_on_program(#user_program_entry{}) -> { ok, [binary()] } | {error, not_found}.
 get_bridges_on_program(#user_program_entry{ program_parsed=undefined}) ->
     {ok, []};
-get_bridges_on_program(#user_program_entry{ user_id=OwnerUserId, program_parsed=Parsed}) ->
+get_bridges_on_program(#user_program_entry{ owner=OwnerUserId, program_parsed=Parsed}) ->
     {ok, #{ <<"blocks">> := Columns } } = automate_program_linker:link_program(Parsed, OwnerUserId),
     {ok, get_bridges_on_columns(Columns, OwnerUserId)}.
 
@@ -150,8 +150,8 @@ get_bridge_on_block_call(#{ ?TYPE := <<"services.", ServiceCall/binary>>
 get_bridge_on_block_call(_, _) ->
     {error, not_found}.
 
-service_id_to_bridge_id(ServiceId, OwnerUserId) ->
-    case automate_service_registry:get_service_by_id(ServiceId, OwnerUserId) of
+service_id_to_bridge_id(ServiceId, _OwnerUserId) ->
+    case automate_service_registry:get_service_by_id(ServiceId) of
         {ok, #{ module := Module }} ->
             case Module of
                 {automate_service_port_engine_service, [BridgeId]} ->

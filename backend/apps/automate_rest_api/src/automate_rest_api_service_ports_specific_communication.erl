@@ -8,17 +8,18 @@
 -export([websocket_handle/2]).
 -export([websocket_info/2]).
 
--record(state, { user_id         :: binary()
+-include("../../automate_common_types/src/types.hrl").
+
+-record(state, { owner           :: owner_id()
                , service_port_id :: binary()
-               , user_channels   :: #{ binary() := any() }
+               , user_channels   :: #{ owner_id() := any() }
                }).
 
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
     ServicePortId = cowboy_req:binding(service_port_id, Req),
-
+    {ok, Owner} = automate_service_port_engine:get_bridge_owner(ServicePortId),
     {cowboy_websocket, Req, #state{ service_port_id=ServicePortId
-                                  , user_id=UserId
+                                  , owner=Owner
                                   , user_channels=#{}
                                   }}.
 
@@ -28,15 +29,15 @@ websocket_init(State=#state{ service_port_id=ServicePortId
     {ok, State}.
 
 websocket_handle({text, Msg}, State=#state{ service_port_id=ServicePortId
-                                          , user_id=UserId
+                                          , owner=Owner
                                           }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, UserId, Msg),
+    automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg),
     {ok, State};
 
 websocket_handle({binary, Msg}, State=#state{ service_port_id=ServicePortId
-                                            , user_id=UserId
+                                            , owner=Owner
                                             }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, UserId, Msg),
+    automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg),
     {ok, State};
 
 websocket_handle(_Message, State) ->
@@ -47,7 +48,7 @@ websocket_info({automate_service_port_engine_router, _From, { data, MessageId, M
     {reply, {binary, Serialized}, State};
 
 websocket_info({{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken}, State) ->
-    io:fwrite("[Bridge/Comm#~p] Advice taken: ~p~n", [MessageId, AdviceTaken]),
+    automate_logging:log_api(debug, ?MODULE, {advice_taken, MessageId, AdviceTaken}),
     Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_RESPONSE">>
                                , <<"message_id">> => MessageId
                                , <<"value">> => AdviceTaken
@@ -55,7 +56,7 @@ websocket_info({{ automate_service_port_engine, advice_taken}, MessageId, Advice
     {reply, {binary, Serialized}, State};
 
 websocket_info({{ automate_service_port_engine, request_icon}}, State=#state{ service_port_id=ServicePortId }) ->
-    io:fwrite("[Bridge/Comm] Requesting icon to ~p...~n", [ServicePortId]),
+    automate_logging:log_api(debug, ?MODULE, {requesting_icon, ServicePortId}),
     Serialized = jiffy:encode(#{ <<"type">> => <<"ICON_REQUEST">>
                                }),
     {reply, {binary, Serialized}, State};
@@ -66,13 +67,13 @@ websocket_info({ automate_service_port_engine, new_channel, {_ServicePortId, Cha
 
 websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, State=#state{service_port_id=ServicePortId}) ->
     case automate_bot_engine:get_user_from_pid(Pid) of
-        {ok, UserId} ->
+        {ok, Owner} ->
             %% TODO: In this instance is probably OK to use a single connection
             %%       as the focus are the values, not the keys of SIGNAL_LISTENERS.
             %% But it can be disambiguated by passing more "properties" on the 'add_listener' message.
-            case automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId) of
+            case automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId) of
                 {ok, ConnectionId} ->
-                    {UserChannels, NewState} = add_to_user_channels(UserId, {Key, SubKey}, State),
+                    {UserChannels, NewState} = add_to_user_channels(Owner, {Key, SubKey}, State),
                     Serialized = jiffy:encode(#{ <<"type">> => <<"ADVICE_NOTIFICATION">>
                                                , <<"value">> =>
                                                      #{ <<"SIGNAL_LISTENERS">> =>
@@ -83,7 +84,7 @@ websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, Sta
                                                }),
                     {reply, {binary, Serialized}, NewState};
                 {error, Reason} ->
-                    io:fwrite("[Bridge/Comm] Unexpected error: ~p~n", [Reason]),
+                    automate_logging:log_api(error, ?MODULE, {error, Reason}),
                     {ok, State}
             end;
         {error, not_found} ->
@@ -91,7 +92,7 @@ websocket_info({ automate_channel_engine, add_listener, {Pid, Key, SubKey}}, Sta
     end;
 
 websocket_info(Message, State) ->
-    io:fwrite("[Bridge/Comm] Unexpected message ~p~n", [Message]),
+    automate_logging:log_api(warning, ?MODULE, {unexpected_message, Message}),
     {ok, State}.
 
 %% State maintenance
@@ -113,12 +114,12 @@ fmt_channel_data({ Key, SubKey }) ->
      , <<"subkey">> => SubKey
      }.
 
-add_to_user_channels(UserId, ChannelData, State=#state{user_channels=UserChannels}) ->
+add_to_user_channels(Owner, ChannelData, State=#state{user_channels=UserChannels}) ->
     case UserChannels of
-        #{ UserId := UserData } ->
+        #{ Owner := UserData } ->
             NewUserData = merge_user_data(UserData, ChannelData),
-            { NewUserData, State#state{ user_channels=UserChannels#{ UserId => NewUserData } } };
+            { NewUserData, State#state{ user_channels=UserChannels#{ Owner => NewUserData } } };
         _ ->
             NewUserData = create_user_data(ChannelData),
-            { NewUserData, State#state{ user_channels=UserChannels#{ UserId => NewUserData } } }
+            { NewUserData, State#state{ user_channels=UserChannels#{ Owner => NewUserData } } }
     end.

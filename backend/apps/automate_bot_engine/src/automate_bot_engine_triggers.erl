@@ -40,7 +40,7 @@ get_expected_signals_from_triggers(Triggers, Permissions, ProgramId) ->
                                 Result ->
                                     {true, Result}
                             catch ErrorNS:Error:StackTrace ->
-                                    automate_logging:log_platform(error_program, ErrorNS, Error, StackTrace),
+                                    automate_logging:log_platform(error, ErrorNS, Error, StackTrace),
                                     false
                             end
                     end, Triggers).
@@ -58,7 +58,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
                                                              }},
                                  #program_permissions{owner_user_id=UserId}, ProgramId) ->
     [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
-    case automate_service_registry:get_service_by_id(ServiceId, UserId) of
+    case automate_service_registry:get_service_by_id(ServiceId) of
         {ok, #{ module := Module }} ->
             {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
 
@@ -76,7 +76,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
             automate_logging:log_program_error(
               #user_program_log_entry{ program_id=ProgramId
                                      , thread_id=none
-                                     , user_id=UserId
+                                     , owner=UserId
                                      , block_id=undefined
                                      , event_data={error, Reason}
                                      , event_message=binary:list_to_bin(
@@ -216,7 +216,7 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
         false ->
             false;
         true ->
-            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
             {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
             {MatchingContent, Thread2} = case MonitorArgs of
                                   #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->

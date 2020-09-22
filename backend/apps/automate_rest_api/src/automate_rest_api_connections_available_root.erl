@@ -18,7 +18,7 @@
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
--record(state, { user_id }).
+-record(state, { user_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -76,7 +76,7 @@ content_types_provided(Req, State) ->
              -> {binary(),cowboy_req:req(), #state{}}.
 to_json(Req, State) ->
     #state{user_id=UserId} = State,
-    case automate_rest_api_backend:list_available_connections(UserId) of
+    case automate_rest_api_backend:list_available_connections({user, UserId}) of
         { ok, Connections } ->
 
             Output = jiffy:encode(lists:map(fun to_map/1, Connections)),
@@ -88,13 +88,14 @@ to_json(Req, State) ->
 
 to_map({#service_port_entry{ id=Id
                            , name=Name
-                           , owner=Owner
+                           , owner={OwnerType, OwnerId}
                            , service_id=ServiceId
                            }
        , #service_port_configuration{}
        }) ->
-    #{ <<"id">> => Id
-     , <<"name">> => Name
-     , <<"owner">> => Owner
-     , <<"service_id">> => ServiceId
+    #{ id => Id
+     , name => Name
+     , owner => OwnerId
+     , owner_full => #{ type => OwnerType, id => OwnerId }
+     , service_id => ServiceId
      }.

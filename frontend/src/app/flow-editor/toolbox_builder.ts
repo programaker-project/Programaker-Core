@@ -37,6 +37,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                                              workspace: FlowWorkspace,
                                              customBlockService: CustomBlockService,
                                              bridgeService: BridgeService,
+                                             programId: string,
                                             ): Promise<Toolbox> {
     const base = buildBaseToolbox(baseElement, workspace);
 
@@ -51,7 +52,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
     }
 
     const skip_resolve_argument_options = true; // Enum options will be filled when needed
-    const blocks = await customBlockService.getCustomBlocks(skip_resolve_argument_options);
+    const blocks = await customBlockService.getCustomBlocksOnProgram(programId, skip_resolve_argument_options);
     for (const block of blocks) {
         let icon = null;
 

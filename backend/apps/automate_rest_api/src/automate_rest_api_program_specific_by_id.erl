@@ -16,11 +16,12 @@
         , accept_json_program/2
         ]).
 
--define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
+-define(UTILS, automate_rest_api_utils).
+-define(FORMATTING, automate_rest_api_utils_formatting).
 
--record(state, { program_id }).
+-record(state, { program_id :: binary(), user_id :: binary() | undefined }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -28,7 +29,8 @@ init(Req, _Opts) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Req1
     , #state{ program_id=ProgramId
-                      }}.
+            , user_id=undefined
+            }}.
 
 %% CORS
 options(Req, State) ->
@@ -37,7 +39,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[SPProgram]Asking for methods~n", []),
     {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State=#state{program_id=ProgramId}) ->
@@ -58,13 +59,13 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                 X ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UId} ->
-                            case automate_storage:is_user_allowed(UId, ProgramId, Action) of
+                            case automate_storage:is_user_allowed({user, UId}, ProgramId, Action) of
                                 {ok, true} ->
-                                    { true, Req1, State };
+                                    { true, Req1, State#state{user_id=UId} };
                                 {ok, false} ->
                                     { { false, <<"Action not authorized">>}, Req1, State };
                                 {error, Reason} ->
-                                    automate_logging:log_api(warn, ?MODULE, {authorization_error, Reason}),
+                                    automate_logging:log_api(warning, ?MODULE, {authorization_error, Reason}),
                                     { { false, <<"Error on authorization">>}, Req1, State }
                             end;
                         false ->
@@ -73,47 +74,33 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
             end
     end.
 
-%% Get handler
+%% GET handler
 content_types_provided(Req, State) ->
-    io:fwrite("User > program > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State=#state{program_id=ProgramId}) ->
+to_json(Req, State=#state{program_id=ProgramId, user_id=UserId}) ->
     case automate_rest_api_backend:get_program(ProgramId) of
         { ok, Program } ->
-            io:fwrite("PROGRAM: ~p~n", [Program]),
-            Output = program_to_json(Program),
+
+            Checkpoint = case automate_storage:get_last_checkpoint_content(ProgramId) of
+                             {ok, Content } ->
+                                 Content;
+                             {error, not_found} ->
+                                 null
+                         end,
+            Json = ?FORMATTING:program_data_to_json(Program, Checkpoint),
+            {ok, CanEdit} = automate_storage:is_user_allowed({user, UserId}, ProgramId, edit_program),
+            Output = Json#{ readonly => not CanEdit },
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            { Output, Res2, State }
+            { jiffy:encode(Output), Res2, State }
     end.
-
-
-program_to_json(#user_program{ id=Id
-                             , user_id=UserId
-                             , program_name=ProgramName
-                             , program_type=ProgramType
-                             , program_parsed=ProgramParsed
-                             , program_orig=ProgramOrig
-                             , enabled=Enabled
-                             }) ->
-    jiffy:encode(#{ <<"id">> => Id
-                  , <<"owner">> => UserId
-                  , <<"name">> => ProgramName
-                  , <<"type">> => ProgramType
-                  , <<"parsed">> => ProgramParsed
-                  , <<"orig">> => ProgramOrig
-                  , <<"enabled">> => Enabled
-                  }).
-
-
 content_types_accepted(Req, State) ->
-    io:fwrite("[PUT] User > program > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, accept_json_program}],
      Req, State}.
 
@@ -132,10 +119,10 @@ update_program(Req, State=#state{program_id=ProgramId}) ->
     Program = decode_program(Parsed),
     case automate_rest_api_backend:update_program_by_id(ProgramId, Program) of
         ok ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
             { true, Req2, State };
         { error, Reason } ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
             { false, Req2, State }
     end.
 
@@ -146,10 +133,10 @@ update_program_metadata(Req, State=#state{program_id=ProgramId}) ->
     Metadata = decode_program_metadata(Parsed),
     case automate_rest_api_backend:update_program_metadata(ProgramId, Metadata) of
         ok ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
             { true, Req2, State };
         { error, Reason } ->
-            Req2 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
+            Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req1),
             { false, Req2, State }
     end.
 
@@ -157,10 +144,10 @@ update_program_metadata(Req, State=#state{program_id=ProgramId}) ->
 delete_resource(Req, State=#state{program_id=ProgramId}) ->
     case automate_rest_api_backend:delete_program(ProgramId) of
         ok ->
-            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
+            Req1 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),
             { true, Req1, State };
         { error, Reason } ->
-            Req1 = send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req),
+            Req1 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }), Req),
             { false, Req1, State }
     end.
 
@@ -180,9 +167,3 @@ decode_program([#{ <<"type">> := ProgramType
                      , orig=ProgramOrig
                      , parsed=ProgramParsed
                      }.
-
-
-send_json_output(Output, Req) ->
-    Res1 = cowboy_req:set_resp_body(Output, Req),
-    Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
-    cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2).

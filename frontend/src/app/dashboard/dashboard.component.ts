@@ -1,8 +1,10 @@
 import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
+import { GroupInfo } from 'app/group';
+import { GroupService } from 'app/group.service';
 import { BridgeService } from '../bridges/bridge.service';
-import { BridgeConnection } from '../connection';
+import { BridgeConnectionWithIconUrl } from '../connection';
 import { ConnectionService } from '../connection.service';
 import { AddConnectionDialogComponent } from '../connections/add-connection-dialog.component';
 import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
@@ -14,22 +16,15 @@ import { AvailableService, ServiceEnableHowTo } from '../service';
 import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
-import { iconDataToUrl } from '../utils';
+import { iconDataToUrl, getUserPictureUrl } from '../utils';
 
-
-
-
-
-
-
-type BridgeConnectionWithIconUrl = { conn: BridgeConnection, extra: { icon_url?: string}};
 type TutorialData = { description: string, icons: string[], url: string };
 
 @Component({
     // moduleId: module.id,
     selector: 'app-my-dashboard',
     templateUrl: './dashboard.component.html',
-    providers: [BridgeService, ConnectionService, MonitorService, ProgramService, SessionService, ServiceService],
+    providers: [BridgeService, ConnectionService, GroupService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'dashboard.component.css',
         '../libs/css/material-icons.css',
@@ -41,33 +36,23 @@ export class NewDashboardComponent {
     connections: BridgeConnectionWithIconUrl[] = null;
     bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
     session: Session = null;
+    userInfo: {id: string, name: string, groups: GroupInfo[]};
     tutorials: TutorialData[] = [
         {
             description: "Create a weather chatbot",
             icons: [ "/assets/icons/telegram_logo.png", "/assets/icons/aemet_logo.png" ],
             url: "https://docs.programaker.com/tutorials/weather-bot.html",
         },
-        // // Example data
-        // {
-        //     description: "Greet when followed",
-        //     icons: [ "/assets/icons/instagram_logo.png" ],
-        //     url: "https://docs.programaker.com",
-        // },
-        // {
-        //     description: "Add saved messages to Google Sheets",
-        //     icons: [
-        //         "/assets/icons/twitter_logo.png",
-        //         "/assets/icons/google_sheets_logo.svg",
-        //     ],
-        //     url: "https://docs.programaker.com",
-        // },
     ];
+
+    _getUserPicture = getUserPictureUrl;
 
     constructor(
         private programService: ProgramService,
         private sessionService: SessionService,
         private serviceService: ServiceService,
         private connectionService: ConnectionService,
+        private groupService: GroupService,
         private router: Router,
         public dialog: MatDialog,
         public bridgeService: BridgeService,
@@ -88,6 +73,13 @@ export class NewDashboardComponent {
                 if (!session.active) {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 } else {
+                    this.userInfo = {
+                        id: session.user_id,
+                        name: session.username,
+                        groups: null
+                    };
+                    this.groupService.getUserGroups()
+                        .then(groups => this.userInfo.groups = groups);
                     this.programService.getPrograms()
                         .then(programs => this.programs = programs);
 
@@ -177,13 +169,21 @@ export class NewDashboardComponent {
     async enableProgram(program: ProgramMetadata) {
         const session = await this.sessionService.getSession();
         await this.programService.setProgramStatus(JSON.stringify({"enable": true}),
-                                             program.id,
-                                             session.user_id);
+                                                   program.id);
         program.enabled = true;
     }
 
     openTutorial(tutorial: TutorialData) {
         const win = window.open(tutorial.url, '_blank');
         win.focus();
+    }
+
+    openGroup(group: GroupInfo) {
+        this.router.navigateByUrl(`/groups/${group.canonical_name}`);
+
+    }
+
+    createGroup() {
+        this.router.navigate(['/new/group']);
     }
 }

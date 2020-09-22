@@ -26,14 +26,14 @@ start_link() ->
     ignore.
 
 %% No monitor associated with this service
-get_monitor_id(UserId, [ServicePortId]) ->
-    ?BACKEND:get_or_create_monitor_id(UserId, ServicePortId).
+-spec get_monitor_id(owner_id(), [binary(), ...]) -> {ok, binary} | {error, _, binary()}.
+get_monitor_id(Owner, [ServicePortId]) when is_binary(ServicePortId) ->
+    ?BACKEND:get_or_create_monitor_id(Owner, ServicePortId).
 
--spec call(binary(), any(), #program_thread{}, binary(), _) -> {ok, #program_thread{}, any()}.
-call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, UserId, [ServicePortId]) ->
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId,
-                                                                              UserId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
+-spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()}.
+call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
+    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, Owner),
     LastMonitorValue = case automate_bot_engine_variables:get_last_monitor_value(
                               Thread, MonitorId) of
                            {ok, Value} -> Value;
@@ -44,7 +44,7 @@ call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, UserId,
                        { ok, #{ bridge_connection := #{ ServicePortId := ContextConnectionId } } } ->
                            ContextConnectionId;
                        _ ->
-                           {ok, DefaultConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(UserId, ServicePortId),
+                           {ok, DefaultConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId),
                            DefaultConnectionId
                    end,
 
@@ -63,27 +63,52 @@ call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, UserId,
     end.
 
 %% Is enabled for all users
-is_enabled_for_user(_Username, _Params) ->
+is_enabled_for_user(_Owner, _Params) ->
     {ok, true}.
 
 %% No need to enable service
+-spec get_how_to_enable(#{ user_id := binary() } | #{group_id := binary()}, [binary()]) -> {ok, map()}.
 get_how_to_enable(#{ user_id := UserId }, [ServicePortId]) ->
-    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, UserId),
-    {ok, Response} = automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId),
-    case Response of
-        #{ <<"result">> := null } ->
-            {ok, #{ <<"type">> => <<"direct">> } };
-        #{ <<"result">> := Result } ->
-            {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }};
-        _ ->
-            {ok, #{ <<"type">> => <<"direct">> } }
+    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, {user, UserId}),
+    case automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId) of
+        {error, Err} ->
+            {error, Err};
+        {ok, Response} ->
+            case Response of
+                #{ <<"result">> := null } ->
+                    {ok, #{ <<"type">> => <<"direct">> } };
+                #{ <<"result">> := Result } ->
+                    {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }};
+                _ ->
+                    {ok, #{ <<"type">> => <<"direct">> } }
+
+            end
+    end;
+
+get_how_to_enable(#{ group_id := GroupId }, [ServicePortId]) ->
+    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, {group, GroupId}),
+    case automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId) of
+        {error, Err} ->
+            {error, Err};
+        {ok, Response} ->
+            case Response of
+                #{ <<"result">> := null } ->
+                    {ok, #{ <<"type">> => <<"direct">> } };
+                #{ <<"result">> := Result } ->
+                    {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }};
+                _ ->
+                    {ok, #{ <<"type">> => <<"direct">> } }
+
+            end
     end.
 
-send_registration_data(UserId, RegistrationData, [ServicePortId], Properties) ->
+
+-spec send_registration_data(owner_id(), any(), [binary()], map()) -> {ok, any()}.
+send_registration_data(Owner, RegistrationData, [ServicePortId], Properties) ->
     ConnectionId = case Properties of
                        #{ <<"connection_id">> := ConnId } when is_binary(ConnId) -> ConnId;
                        _ ->
-                           {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, UserId),
+                           {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, Owner),
                            TemporaryConnectionId
                    end,
 
@@ -91,14 +116,14 @@ send_registration_data(UserId, RegistrationData, [ServicePortId], Properties) ->
     PassedResult = case Result of
                        #{ <<"success">> := true } ->
                            Name = get_name_from_result(Result),
-                           ok = ?BACKEND:establish_connection(ServicePortId, UserId, ConnectionId, Name),
+                           ok = ?BACKEND:establish_connection(ServicePortId, Owner, ConnectionId, Name),
                            Result;
 
                        #{ <<"success">> := false, <<"error">> := <<"No registerer available">> } ->
                            %% For compatibility with plaza/programaker-bridge library before connections
                            %% where introduced.
                            Name = get_name_from_result(Result),
-                           ok = ?BACKEND:establish_connection(ServicePortId, UserId, ConnectionId, Name),
+                           ok = ?BACKEND:establish_connection(ServicePortId, Owner, ConnectionId, Name),
                            Result#{ <<"success">> => true
                                   , <<"error">> => null
                                   };

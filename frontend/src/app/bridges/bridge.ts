@@ -12,3 +12,5 @@ export interface BridgeIndexData {
     is_connected: boolean;
     icon: IconReference;
 }
+
+export type BridgeSignal = any;

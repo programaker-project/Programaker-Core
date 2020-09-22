@@ -23,7 +23,7 @@
 -include("../../automate_service_port_engine/src/records.hrl").
 -define(FORMATTING, automate_rest_api_utils_formatting).
 
--record(state, {username}).
+-record(state, {username :: binary()}).
 
 -spec init(_, _) -> {cowboy_rest, _, _}.
 
@@ -46,7 +46,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(), _) -> {[binary()], cowboy_req:req(), _}.
 allowed_methods(Req, State) ->
-    io:fwrite("Asking for methods~n", []),
     {[<<"POST">>, <<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -76,7 +75,6 @@ is_authorized(Req, State) ->
 
 %% GET handler
 content_types_provided(Req, State) ->
-    io:fwrite("User > Bridge > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
@@ -86,28 +84,13 @@ to_json(Req, State) ->
     #state{username=Username} = State,
     case automate_rest_api_backend:list_bridges(Username) of
         { ok, Bridges } ->
-            Output = jiffy:encode(lists:map(fun to_map/1, Bridges)),
+            Output = jiffy:encode(lists:map(fun ?FORMATTING:bridge_to_json/1, Bridges)),
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
             { Output, Res2, State }
     end.
-
-to_map(#service_port_entry_extra{ id=Id
-                                , name=Name
-                                , owner=Owner
-                                , service_id=ServiceId
-                                , is_connected=IsConnected
-                                , icon=Icon
-                                }) ->
-    #{ <<"id">> => Id
-     , <<"name">> => Name
-     , <<"owner">> => Owner
-     , <<"service_id">> => ServiceId
-     , <<"is_connected">> => IsConnected
-     , <<"icon">> => ?FORMATTING:serialize_icon(Icon)
-     }.
 
 %% POST handler
 content_types_accepted(Req, State) ->

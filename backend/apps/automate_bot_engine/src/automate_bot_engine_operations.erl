@@ -61,7 +61,7 @@ get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
 
     {ok, UserId} = automate_storage:get_program_owner(ProgramId),
 
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
 
     Args = case Listened of
@@ -234,7 +234,7 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
 
                     automate_logging:log_program_error(#user_program_log_entry{ program_id=ProgramId
                                                                               , thread_id=ThreadId
-                                                                              , user_id=UserId
+                                                                              , owner=UserId
                                                                               , block_id=FailedBlockId
                                                                               , event_data=EventData
                                                                               , event_time=erlang:system_time(millisecond)
@@ -520,7 +520,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
 
     {Values, Thread2} = eval_args(Arguments, Thread, Op),
 
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
     {ok, Thread3, _Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
     {ran_this_tick, increment_position(Thread3)};
 
@@ -536,7 +536,7 @@ run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
     {Values, Thread2} = eval_args(ReadArguments, Thread, Operation),
 
     [ServiceId, Action] = binary:split(ServiceCall, <<".">>),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
     {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
 
     {ok, Thread4} = case SaveTo of
@@ -763,7 +763,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
 
     {ok, UserId} = automate_storage:get_program_owner(ProgramId),
 
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
     {ok, ReceivedMonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
 
     case ReceivedMonitorId of
@@ -1231,7 +1231,7 @@ get_block_result(Op=#{ ?TYPE := <<"services.", ServiceCall/binary>>
     {Values, Thread2} = eval_args(Arguments, Thread, Op),
 
     [ServiceId, Action] = binary:split(ServiceCall, <<".">>),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
     {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
     {ok, Value, Thread3};
 
@@ -1245,9 +1245,9 @@ get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
                                    }
                   }, Thread=#program_thread{ program_id=PID }) ->
 
-    {ok, #user_program_entry{ user_id=UserId }} = automate_storage:get_program_from_id(PID),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId, UserId),
-    {ok, Thread2, Value} = automate_service_registry_query:call(Module, Action, Values, Thread, UserId),
+    {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(PID),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
+    {ok, Thread2, Value} = automate_service_registry_query:call(Module, Action, Values, Thread, Owner),
     {ok, Value, Thread2};
 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_LIST_GET_CONTENTS

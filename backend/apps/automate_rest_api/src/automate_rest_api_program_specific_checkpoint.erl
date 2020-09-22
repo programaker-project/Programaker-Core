@@ -17,17 +17,18 @@
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(get_program_seq, { user_id, program_id }).
+-record(state, { program_id :: binary()
+               , user_id :: binary() | undefined
+               }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
     ProgramId = cowboy_req:binding(program_id, Req),
     Req1 = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Req1
-    , #get_program_seq{ user_id=UserId
-                      , program_id=ProgramId
-                      }}.
+    , #state{ program_id=ProgramId
+            , user_id=undefined
+            }}.
 
 %% CORS
 options(Req, State) ->
@@ -36,10 +37,9 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[SPProgram]Asking for methods~n", []),
     {[<<"POST">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#state{program_id=ProgramId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -50,12 +50,14 @@ is_authorized(Req, State) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    #get_program_seq{user_id=UserId} = State,
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            { true, Req1, State };
-                        {true, _} -> %% Non matching username
-                            { { false, <<"Unauthorized to create a program here">>}, Req1, State };
+                            case automate_storage:is_user_allowed({user, UserId}, ProgramId, edit_program) of
+                                {ok, true} ->
+                                    { true, Req1, State#state{user_id=UserId} };
+                                {ok, false} ->
+                                    { { false, <<"Unauthorized">>}, Req1, State }
+                            end;
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
@@ -73,7 +75,7 @@ accept_json_program(Req, State) ->
     end.
 
 %% POST handler
-checkpoint_program(Req, State=#get_program_seq{program_id=ProgramId, user_id=UserId}) ->
+checkpoint_program(Req, State=#state{program_id=ProgramId, user_id=UserId}) ->
 
     {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = jiffy:decode(Body, [return_maps]),

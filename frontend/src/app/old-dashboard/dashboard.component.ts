@@ -110,7 +110,7 @@ export class DashboardComponent {
         program.enabled = ob.checked;
         console.log(ob.checked);
       this.sessionService.getSession().then(session =>
-          this.programService.setProgramStatus(JSON.stringify({"enable":ob.checked}), program.id, session.user_id));
+          this.programService.setProgramStatus(JSON.stringify({"enable":ob.checked}), program.id));
       let matSlideToggle: MatSlideToggle = ob.source;
     }
 }

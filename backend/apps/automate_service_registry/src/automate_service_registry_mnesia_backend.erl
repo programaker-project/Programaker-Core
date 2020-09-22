@@ -10,7 +10,7 @@
         , list_all_public/0
         , get_all_services_for_user/1
         , allow_user/2
-        , get_service_by_id/2
+        , get_service_by_id/1
         , update_visibility/2
         , update_service_module/2
 
@@ -102,12 +102,12 @@ list_all_public() ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
-allow_user(ServiceId, UserId) ->
+-spec allow_user(binary(), owner_id()) -> ok | {error, service_not_found}.
+allow_user(ServiceId, Owner) ->
     Transaction = fun() ->
                           ok = mnesia:write(?USER_SERVICE_ALLOWANCE_TABLE,
                                             #user_service_allowance_entry{ service_id=ServiceId
-                                                                         , user_id=UserId
+                                                                         , owner=Owner
                                                                          },
                                             write)
                   end,
@@ -137,9 +137,8 @@ update_visibility(ServiceId, IsPublic) ->
             {error, Reason}
     end.
 
-
--spec get_all_services_for_user(binary()) -> {ok, service_info_map()} | {error, term(), string()}.
-get_all_services_for_user(UserId) ->
+-spec get_all_services_for_user(owner_id()) -> {ok, service_info_map()} | {error, term(), string()}.
+get_all_services_for_user({OwnerType, OwnerId}) ->
     MatchHead = #services_table_entry{ id='_'
                                      , public='$1'
                                      , name='_'
@@ -151,8 +150,10 @@ get_all_services_for_user(UserId) ->
     ResultColumn = '$_',
     PublicMatcher = [{MatchHead, Guards, [ResultColumn]}],
 
-    AllowancesMatcherHead = #user_service_allowance_entry{ service_id='$1', user_id='$2' },
-    AllowancesGuards = [{'==', '$2', UserId }],
+    AllowancesMatcherHead = #user_service_allowance_entry{ service_id='$1', owner={'$2', '$3'} },
+    AllowancesGuards = [ {'==', '$2', OwnerType }
+                       , {'==', '$3', OwnerId }
+                       ],
     AllowancesResultColumn = '$1',
     AllowancesMatcher = [{AllowancesMatcherHead, AllowancesGuards, [AllowancesResultColumn]}],
 
@@ -177,8 +178,8 @@ get_all_services_for_user(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_service_by_id(binary(), binary()) -> {ok, service_entry()} | {error, not_found}.
-get_service_by_id(ServiceId, _UserId) ->
+-spec get_service_by_id(binary()) -> {ok, service_entry()} | {error, not_found}.
+get_service_by_id(ServiceId) ->
     Transaction = fun() ->
                           %% TODO: Check user permissions
                           case mnesia:read(?SERVICE_REGISTRY_TABLE, ServiceId) of
@@ -237,8 +238,9 @@ count_all_services() ->
     length(mnesia:dirty_all_keys(?SERVICE_REGISTRY_TABLE)).
 
 
--spec delete_service(binary(), binary()) -> ok.
-delete_service(_UserId, ServiceId) ->
+-spec delete_service(owner_id(), binary()) -> ok.
+delete_service(_Owner, ServiceId) ->
+    %% HACK: Note that service registry table does not capture owners
     Transaction = fun() ->
                           ok = mnesia:delete(?SERVICE_REGISTRY_TABLE, ServiceId, write)
                   end,

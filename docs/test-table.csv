@@ -1,0 +1,109 @@
+Operations,Requires,Generates,,Users,,,,,,
+,,,,,,,,,,
+Misc,,,,Admin,User,Anonymous,,,,
+"/metrics [skip]",,,,GET,,,,,,
+/ping,,,,GET,GET,GET,,,,
+/utils/autocomplete/users,,,,IGNORE,GET,,,,,
+,,,,,,,,,,
+Assets,,,,Admin,User,Anonymous,,,,
+"/assets/icons/ [skip]",,,,GET,GET,,,,,
+,,,,,,,,,,
+Administration,,,,Admin,User,Anonymous,,,,
+/admin/stats,,,,GET,,,,,,
+,,,,,,,,,,
+Registration,,,,Admin,User,Anonymous,,,,
+/sessions/register,,UserData,,,,POST,,,,
+"/sessions/register/verify [skip]",UserToken,User,,,,POST,,,,
+"/sessions/login/reset  [skip]",,ResetToken,,POST,POST,POST,,,,
+"/sessions/login/reset/validate  [skip]",ResetToken,,,POST,POST,POST,,,,
+"/sessions/login/reset/update  [skip]",ResetToken,,,POST,POST,POST,,,,
+,,,,,,,,,,
+"Session management",,,,Admin,User,Anonymous,,,,
+/sessions/check,,,,IGNORE,GET,,,,,
+/sessions/login,UserData,"User, Login",,IGNORE,IGNORE,POST,,,,
+,,,,,,,,,,
+Users,,,,Admin,User,Anonymous,,,,
+/users,,,,GET,,,,,,
+"/users/:user_id [skip]",User,,,,,,,,,
+"/users/by-id/:user_id/picture [skip]",User,Picture,,GET,"GET, POST",GET,,,,
+,,,,,,,,,,
+Items,,,,Admin,User,Anonymous,,,,
+/users/id/:user_id/custom_signals,User,Signal,,,"GET, POST",,,,,
+/users/id/:user_id/groups,User,,,,GET,,,,,
+/users/id/:user_id/templates,User,Template,,,"GET, POST",,,,,
+/users/id/:user_id/templates/id/:template_id,User,,,,"GET, PUT, DELETE",,,,,
+/users/:user_name/custom-blocks,User,,,,GET,,,,,
+/users/id/:user_id/settings,User,,,,POST,,,,,
+,,,,,,,,,,
+"Old Programs Section",,,,Admin,User,Anonymous,,,,
+/users/:user_name/programs,User,Program,,,"GET, POST",,,,,
+/users/id/:user_id/programs/id/:program_id/checkpoint,"User, Program",,,,POST,,,,,
+/users/id/:user_id/programs/id/:program_id/communication,"User, Program",,,,READ,,,,,
+/users/id/:user_id/programs/id/:program_id/logs-stream,"User, Program",,,,READ,,,,,
+/users/id/:user_id/programs/id/:program_id/editor-events,"User, Program",,,,"READ, WRITE",,,,,
+/users/id/:user_id/programs/id/:program_id/logs,"User, Program",,,,GET,,,,,
+/users/id/:user_id/programs/id/:program_id/tags,"User, Program",,,,"GET, POST",,,,,
+/users/id/:user_id/programs/id/:program_id/stop-threads,"User, Program",,,,POST,,,,,
+/users/id/:user_id/programs/id/:program_id/status,"User, Program",,,,POST,,,,,
+,,,,,,,,,,
+Programs,,,,Admin,User,Anonymous,,"G. Admin","G. Editor","G. Viewer"
+/programs/by-id/:program_id,Program,,,,"GET, PUT, PATCH, DELETE",,,"GET, PUT, PATCH, DELETE","GET, PUT, PATCH, DELETE",GET
+/programs/by-id/:program_id/checkpoint,Program,,,,POST,,,POST,POST,
+/programs/by-id/:program_id/logs-stream,Program,,,,READ,,,READ,READ,
+/programs/by-id/:program_id/editor-events,Program,,,,"READ, WRITE",,,"READ, WRITE","READ, WRITE",READ
+/programs/by-id/:program_id/custom-blocks,Program,,,,GET,,,GET,GET,GET
+/programs/by-id/:program_id/bridges/by-id/:bridge_id/callbacks/:callback,Program,,,,GET,,,GET,GET,GET
+/programs/by-id/:program_id/logs,Program,,,,GET,,,GET,GET,
+/programs/by-id/:program_id/tags,Program,,,,"GET, POST",,,"GET, POST","GET, POST",GET
+"/programs/by-id/:program_id/stop-threads ",Program,,,,POST,,,POST,POST,
+/programs/by-id/:program_id/status,Program,,,,POST,,,POST,POST,
+,,,,,,,,,,
+,,,,,,,,,,
+Connections,,,,Admin,User,Anonymous,,"G. Admin","G. Editor","G. Viewer"
+/users/id/:user_id/connections/available,User,,,,GET,,,IGNORE,IGNORE,IGNORE
+"/users/id/:user_id/connections/established [skip]",User,,,,"GET, POST",,,IGNORE,IGNORE,IGNORE
+/users/id/:user_id/connections/pending/:connection_id/wait,"User, Connection",,,,READ,,,IGNORE,IGNORE,IGNORE
+,,,,,,,,,,
+/groups/by-id/:group_id/connections/available,Group,,,,IGNORE,,,GET,GET,
+/groups/by-id/:group_id/connections/established,Group,,,,IGNORE,,,GET,GET,GET
+/groups/by-id/:group_id/connections/pending/:connection_id/wait,"Group, Connection",,,,IGNORE,,,READ,READ,
+,,,,,,,,,,
+"/programs/by-id/:program_id/connections/established [skip]",Program,,,,GET,,,GET,GET,GET
+,,,,,,,,,,
+Bridges,,,,Admin,User,Anonymous,,,,
+/users/:user_name/bridges,User,Bridge,,,"GET, POST",,,,,
+/users/id/:user_id/bridges,User,Bridge,,,"GET, POST",,,,,
+/users/id/:user_id/bridges/id/:bridge_id,"User, Bridge",,,,DELETE,,,,,
+/users/id/:user_id/bridges/id/:bridge_id/callback/:callback,"User, Bridge, Callback",,,,GET,,,,,
+/users/id/:user_id/bridges/id/:bridge_id/functions/:function,"User, Bridge, Function",,,,POST,,,,,
+/users/id/:user_id/bridges/id/:bridge_id/signals,"User, Bridge",,,,READ,,,,,
+/users/id/:user_id/bridges/id/:bridge_id/signals/:key,"User, Bridge",,,,READ,,,,,
+,,,,,,,,,,
+/users/id/:user_id/bridges/id/:bridge_id/communication,"User, Bridge",,,,,,,,,
+/users/id/:user_id/bridges/id/:bridge_id/oauth_return,"User, Bridge",,,,,,,,,
+,,,,,,,,,,
+"Old Services section",,,,Admin,User,Anonymous,,,,
+/users/:user_name/services,User,,,,GET,,,,,
+/users/:user_name/services/id/:service_id/how-to-enable,"User, Service",,,,GET,,,,,
+/users/:user_name/services/id/:service_id/register,"User, Service",,,,POST,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+Services,,,,Admin,User,Anonymous,,"G. Admin","G. Editor","G. Viewer"
+/services/by-id/:service_id/how-to-enable,Service,,,,GET,,,GET,GET,
+/services/by-id/:service_id/register,Service,,,,POST,,,POST,POST,
+,,,,,,,,,,
+/programs/by-id/:program_id/services,Program,,,,GET,,,GET,GET,GET
+,,,,,,,,,,
+Groups,,,,Admin,User,Anonymous,,"G. Admin","G. Editor","G. Viewer"
+/groups,,Group,,IGNORE,POST,,,IGNORE,IGNORE,IGNORE
+/groups/by-name/:group_name,Group,,,,IGNORE,,,GET,GET,GET
+/groups/by-id/:group_id,Group,,,,IGNORE,,,"PATCH, DELETE",,
+/groups/by-id/:group_id/programs,Group,Program,,,IGNORE,,,"GET, POST","GET, POST",GET
+"/groups/by-id/:group_id/collaborators [skip]",Group,,,,IGNORE,,,"GET, POST",GET,GET
+/groups/by-id/:group_id/bridges,Group,,,,IGNORE,,,"GET, POST","GET, POST",GET
+/groups/by-id/:group_id/picture,Group,GroupPicture,,,IGNORE,,,POST,IGNORE,IGNORE
+/groups/by-id/:group_id/picture,"Group, GroupPicture",,,IGNORE,IGNORE,GET,,"POST, GET",GET,GET
+,,,,,,,,,,
+Monitors,,,,Admin,User,Anonymous,,"G. Admin","G. Editor","G. Viewer"
+/users/:user_name/monitors,User,,,,"GET, POST",,,IGNORE,IGNORE,IGNORE
+/programs/by-id/:program_id/monitors,Program,,,,IGNORE,,,GET,GET,GET

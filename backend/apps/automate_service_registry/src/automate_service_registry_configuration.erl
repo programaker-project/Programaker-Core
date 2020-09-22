@@ -35,20 +35,41 @@ get_versioning(_Nodes) ->
                     %% Fix old registry record name
                     { id=1
                     , apply=fun() ->
-                                    mnesia:transform_table(
-                                      ?SERVICE_CONFIGURATION_TABLE,
-                                      fun(Old) ->
-                                              case Old of
-                                                  %% If record name was set incorrectly, fix it
-                                                  {service_configuration_entry, ConfigId, Value} ->
-                                                      {services_configuration_entry, ConfigId, Value};
-                                                  _ ->
-                                                      Old %% Keep old record
-                                              end
-                                      end,
-                                      [ configuration_id, value ],
-                                      services_configuration_entry
-                                     )
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?SERVICE_CONFIGURATION_TABLE,
+                                                     fun(Old) ->
+                                                             case Old of
+                                                                 %% If record name was set incorrectly, fix it
+                                                                 {service_configuration_entry, ConfigId, Value} ->
+                                                                     {services_configuration_entry, ConfigId, Value};
+                                                                 _ ->
+                                                                     Old %% Keep old record
+                                                             end
+                                                     end,
+                                                     [ configuration_id, value ],
+                                                     services_configuration_entry
+                                                    )
+                            end
+                    }
+                    %% Introduce user groups
+                  , #database_version_transformation
+                    { id=2
+                    , apply=fun() ->
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?USER_SERVICE_ALLOWANCE_TABLE,
+                                                     fun({ user_service_allowance_entry
+                                                         , ServiceId, UserId
+                                                         }) ->
+                                                             { user_service_allowance_entry
+                                                             , ServiceId, {user, UserId}
+                                                             }
+                                                     end,
+                                                     [ sevice_id, owner ],
+                                                     user_service_allowance_entry
+                                                    ),
+
+                                    ok = mnesia:wait_for_tables([ ?USER_SERVICE_ALLOWANCE_TABLE ],
+                                                                automate_configuration:get_table_wait_time())
                             end
                     }
                   ]

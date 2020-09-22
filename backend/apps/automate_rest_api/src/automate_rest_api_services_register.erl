@@ -16,7 +16,7 @@
 -define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 
--record(state, { username, service_id }).
+-record(state, { username :: binary(), service_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -35,7 +35,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[Service] Asking for methods~n", []),
     {[<<"POST">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->

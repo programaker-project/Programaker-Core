@@ -22,6 +22,7 @@
         , callback_bridge/3
         , get_channel_origin_bridge/1
         , get_bridge_info/1
+        , get_bridge_owner/1
 
         , listen_bridge/2
         , listen_bridge/3
@@ -41,9 +42,9 @@
 %% API
 %%====================================================================
 
--spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, term(), string()}.
-create_service_port(UserId, ServicePortName) ->
-    ?BACKEND:create_service_port(UserId, ServicePortName).
+-spec create_service_port(owner_id(), binary()) -> {ok, binary()} | {error, term(), string()}.
+create_service_port(Owner, ServicePortName) when is_tuple(Owner) ->
+    ?BACKEND:create_service_port(Owner, ServicePortName).
 
 -spec register_service_port(binary()) -> ok.
 register_service_port(ServicePortId) ->
@@ -60,7 +61,7 @@ call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
                                         , <<"extra_data">> => ExtraData
                                         }).
 
--spec get_how_to_enable(binary(), binary()) -> {ok, any()}.
+-spec get_how_to_enable(binary(), binary()) -> {ok, any()} | {error, atom()}.
 get_how_to_enable(ServicePortId, UserId) ->
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"GET_HOW_TO_SERVICE_REGISTRATION">>
                                         , <<"user_id">> => UserId
@@ -80,26 +81,26 @@ send_oauth_return(Qs, ServicePortId) ->
                                         , <<"value">> => #{ <<"query_string">> => Qs }
                                         }).
 
--spec listen_bridge(binary(), binary()) -> ok | {error, term()}.
-listen_bridge(BridgeId, UserId) ->
-    case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
+-spec listen_bridge(binary(), owner_id()) -> ok | {error, term()}.
+listen_bridge(BridgeId, Owner) when is_tuple(Owner) ->
+    case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId);
         {error, _X, Description} ->
             {error, Description}
     end.
 
--spec listen_bridge(binary(), binary(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
-listen_bridge(BridgeId, UserId, Selector) ->
-    case ?BACKEND:get_or_create_monitor_id(UserId, BridgeId) of
+-spec listen_bridge(binary(), owner_id(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
+listen_bridge(BridgeId, Owner, Selector) when is_tuple(Owner) ->
+    case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId, Selector);
         {error, _X, Description} ->
             {error, Description}
     end.
 
--spec from_service_port(binary(), binary(), binary()) -> ok.
-from_service_port(ServicePortId, UserId, Msg) ->
+-spec from_service_port(binary(), owner_id(), binary()) -> ok.
+from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
     Unpacked = jiffy:decode(Msg, [return_maps]),
     automate_stats:log_observation(counter,
                                    automate_bridge_engine_messages_from_bridge,
@@ -117,7 +118,7 @@ from_service_port(ServicePortId, UserId, Msg) ->
         #{ <<"type">> := <<"CONFIGURATION">>
          , <<"value">> := Configuration
          } ->
-            {ok, Todo} = set_service_port_configuration(ServicePortId, Configuration, UserId),
+            {ok, Todo} = set_service_port_configuration(ServicePortId, Configuration, Owner),
             %% TODO: Check that it really exists, don't trust the DB
             case lists:member(request_icon, Todo) of
                 false -> ok;
@@ -182,11 +183,10 @@ from_service_port(ServicePortId, UserId, Msg) ->
                 _ ->
                     case ?BACKEND:connection_id_to_internal_user_id(ToUser, ServicePortId) of
                         {ok, ToUserInternalId} ->
-                            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                                            ServicePortId, ToUserInternalId),
+                            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
 
-                            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
-                                                 Module, ToUserInternalId),
+                            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, ToUserInternalId),
+
                             case automate_channel_engine:send_to_channel(MonitorId,
                                                                          #{ <<"key">> => Key
                                                                           , <<"value">> => Value
@@ -209,39 +209,43 @@ from_service_port(ServicePortId, UserId, Msg) ->
             end
     end.
 
--spec list_custom_blocks(binary()) -> {ok, map()}.
-list_custom_blocks(UserId) ->
-    ?BACKEND:list_custom_blocks(UserId).
+-spec list_custom_blocks(owner_id()) -> {ok, map()}.
+list_custom_blocks(Owner) when is_tuple(Owner) ->
+    ?BACKEND:list_custom_blocks(Owner).
 
--spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
-internal_user_id_to_connection_id(UserId, ServicePortId) ->
-    ?BACKEND:internal_user_id_to_connection_id(UserId, ServicePortId).
+-spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
+internal_user_id_to_connection_id(Owner, ServicePortId) when is_tuple(Owner) ->
+    ?BACKEND:internal_user_id_to_connection_id(Owner, ServicePortId).
 
 
--spec get_user_service_ports(binary()) -> {ok, [#service_port_entry_extra{}]}.
-get_user_service_ports(UserId) ->
-    {ok, Bridges} = ?BACKEND:get_user_service_ports(UserId),
+-spec get_user_service_ports(owner_id()) -> {ok, [#service_port_entry_extra{}]}.
+get_user_service_ports(Owner) when is_tuple(Owner) ->
+    {ok, Bridges} = ?BACKEND:get_user_service_ports(Owner),
     {ok, lists:map(fun add_service_port_extra/1, Bridges)}.
 
--spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
-delete_bridge(UserId, BridgeId) ->
+-spec delete_bridge(owner_id(), binary()) -> ok | {error, binary()}.
+delete_bridge(Accessor, BridgeId) when is_tuple(Accessor) ->
     ok = case ?BACKEND:get_service_id_for_port(BridgeId) of
              {error, not_found} ->
                  ok;
              {ok, ServiceId} ->
-                 automate_service_registry:delete_service(UserId, ServiceId)
+                 automate_service_registry:delete_service(Accessor, ServiceId)
          end,
-    ?BACKEND:delete_bridge(UserId, BridgeId).
+    ?BACKEND:delete_bridge(Accessor, BridgeId).
 
 
--spec callback_bridge(binary(), binary(), binary()) -> {ok, map()} | {error, term()}.
-callback_bridge(UserId, BridgeId, Callback) ->
-    {ok, BridgeUserId} = internal_user_id_to_connection_id(UserId, BridgeId),
-    ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
-                                   , <<"user_id">> => BridgeUserId
-                                   , <<"value">> => #{ <<"callback">> => Callback
-                                                     }
-                                   }).
+-spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map()} | {error, term()}.
+callback_bridge(Owner, BridgeId, CallbackName) when is_tuple(Owner) ->
+    case internal_user_id_to_connection_id(Owner, BridgeId) of
+        {ok, BridgeUserId} ->
+            ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
+                                           , <<"user_id">> => BridgeUserId
+                                           , <<"value">> => #{ <<"callback">> => CallbackName
+                                                             }
+                                           });
+        {error, Reason} ->
+            {error, Reason}
+    end.
 
 
 -spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
@@ -257,18 +261,22 @@ get_channel_origin_bridge(ChannelId) ->
 get_bridge_info(BridgeId) ->
     ?BACKEND:get_bridge_info(BridgeId).
 
--spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
-list_established_connections(UserId) ->
-    {ok, _Connections} = ?BACKEND:list_established_connections(UserId).
+-spec get_bridge_owner(binary()) -> {ok, owner_id()} | {error, not_found}.
+get_bridge_owner(BridgeId) ->
+    ?BACKEND:get_bridge_owner(BridgeId).
+
+-spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+list_established_connections(Owner) when is_tuple(Owner) ->
+    ?BACKEND:list_established_connections(Owner).
 
 -spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
 get_pending_connection_info(ConnectionId) ->
     ?BACKEND:get_pending_connection_info(ConnectionId).
 
 
--spec is_module_connectable_bridge(binary(), module() | {module(), any()}) ->
+-spec is_module_connectable_bridge(owner_id(), module() | {module(), any()}) ->
           false | {boolean(), {#service_port_entry{}, #service_port_configuration{}}}.
-is_module_connectable_bridge(UserId, {automate_service_port_engine_service, [ BridgeId | _ ]}) ->
+is_module_connectable_bridge(Owner, {automate_service_port_engine_service, [ BridgeId | _ ]}) when is_tuple(Owner) ->
     %% It *is* a bridge. Only remains to check if a new connection can be established.
     case ?BACKEND:get_all_bridge_info(BridgeId) of
         {error, _Reason} ->
@@ -279,7 +287,7 @@ is_module_connectable_bridge(UserId, {automate_service_port_engine_service, [ Br
                                 #service_port_configuration{ allow_multiple_connections=true } ->
                                     true;
                                 #service_port_configuration{ allow_multiple_connections=false } ->
-                                    {ok, Connected} = ?BACKEND:is_user_connected_to_bridge(UserId, BridgeId),
+                                    {ok, Connected} = ?BACKEND:is_user_connected_to_bridge(Owner, BridgeId),
                                     not Connected
                             end,
             {IsConnectable, {BridgeInfo, BridgeConfiguration}}
@@ -315,9 +323,9 @@ add_service_port_extra({#service_port_entry{ id=Id
                              , icon=BridgeIcon
                              }.
 
-set_service_port_configuration(ServicePortId, Configuration, UserId) ->
+set_service_port_configuration(ServicePortId, Configuration, Owner) ->
     SPConfiguration = parse_configuration_map(ServicePortId, Configuration),
-    ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, UserId).
+    ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, Owner).
 
 parse_configuration_map(ServicePortId,
                         Config=#{ <<"blocks">> := Blocks

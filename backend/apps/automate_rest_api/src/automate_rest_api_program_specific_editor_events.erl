@@ -14,29 +14,32 @@
 
 -include("../../automate_storage/src/records.hrl").
 
--record(state, { user_id    :: binary()
+-record(state, { user_id    :: binary() | none
                , program_id :: binary()
                , error :: none | binary()
                , channel_id :: none | binary()
+               , can_edit :: boolean()
                }).
 
 
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
     ProgramId = cowboy_req:binding(program_id, Req),
 
-
     Qs = cowboy_req:parse_qs(Req),
-    Error = case proplists:get_value(<<"token">>, Qs, undefined) of
+    {Error, UserId, CanEdit} = case proplists:get_value(<<"token">>, Qs, undefined) of
         undefined ->
-                     <<"Authorization header not found">>;
+                     {<<"Authorization header not found">>, none, false};
         X ->
             case automate_rest_api_backend:is_valid_token_uid(X) of
-                {true, UserId} ->
-                    none;
-                {true, TokenUserId} -> %% Non matching user_id
-                    io:fwrite("[WS/Program] Url UID: ~p | Token UID: ~p~n", [UserId, TokenUserId]),
-                    <<"Unauthorized to use this resource">>;
+                {true, TokenUserId} ->
+                    {ok, UserCanView} = automate_storage:is_user_allowed({user, TokenUserId}, ProgramId, read_program),
+                    {ok, UserCanEdit} = automate_storage:is_user_allowed({user, TokenUserId}, ProgramId, edit_program),
+                    case UserCanView of
+                        true -> {none, TokenUserId, UserCanEdit};
+                        false ->
+                            automate_logging:log_api(error, ?MODULE, {not_authorized, TokenUserId}),
+                            {<<"Unauthorized to use this resource">>, TokenUserId, false}
+                    end;
                 false ->
                     <<"Authorization not correct">>
             end
@@ -45,17 +48,26 @@ init(Req, _Opts) ->
                                   , user_id=UserId
                                   , error=Error
                                   , channel_id=none
+                                  , can_edit=CanEdit
                                   }}.
 
 websocket_init(State=#state{ program_id=ProgramId
                            , error=none
                            }) ->
 
-    {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
+    {ok, #user_program_entry{ program_channel=ProgramChannelId }} = automate_storage:get_program_from_id(ProgramId),
 
-    io:fwrite("[WS/Program] Listening on program ~p; channel: ~p~n", [ProgramId, ChannelId]),
+    automate_logging:log_api(debug, ?MODULE,
+                             io_lib:format("Listening on program ~p; channel: ~p~n", [ProgramId, ProgramChannelId])),
+    {ok, ChannelId} = case automate_channel_engine:listen_channel(ProgramChannelId) of
+                          ok -> {ok, ProgramChannelId};
+                          {error, channel_not_found} ->
+                              automate_logging:log_api(warning, ?MODULE, {fixing, program_channel, ProgramId}),
+                              ok = automate_storage:fix_program_channel(ProgramId),
+                              {ok, #user_program_entry{ program_channel=NewChannelId }} = automate_storage:get_program_from_id(ProgramId),
+                              {automate_channel_engine:listen_channel(NewChannelId), NewChannelId}
+                      end,
     ok = automate_channel_engine:monitor_listeners(ChannelId, self(), node()),
-    ok = automate_channel_engine:listen_channel(ChannelId),
 
     Events = case automate_storage:get_program_events(ProgramId) of
                  {ok, Evs} ->
@@ -77,7 +89,8 @@ websocket_init(State=#state{ program_id=ProgramId
     {reply, Events ++ [{text, EndMarker}], State#state{ channel_id=ChannelId }};
 
 websocket_init(State=#state{error=Error}) ->
-    io:fwrite("[WS/Program] Closing with error: ~p~n", [Error]),
+    automate_logging:log_api(warning, ?MODULE,
+                             io_lib:format("Closing with error: ~p~n", [Error])),
     { reply
     , { close, binary:list_to_bin(
                  lists:flatten(io_lib:format("Error: ~s", [Error]))) }
@@ -85,8 +98,17 @@ websocket_init(State=#state{error=Error}) ->
     }.
 
 
+websocket_handle(ping, State) ->
+    {ok, State};
+websocket_handle({ping, _}, State) ->
+    {ok, State};
 websocket_handle(pong, State) ->
     {ok, State};
+websocket_handle(_, State=#state{can_edit=false}) ->
+    {reply
+    , { close, <<"Not authorized to send events">> }
+    , State
+    };
 websocket_handle({_Type, Message}, State=#state{program_id=ProgramId, channel_id=ChannelId}) ->
     Decoded = jiffy:decode(Message, [return_maps]),
     case Decoded of

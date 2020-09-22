@@ -1,0 +1,15 @@
+.bridge-name-input, .bridge-url-field {
+    width: 100%;
+}
+
+
+.accept-cancel {
+    margin-top: 2em;
+}
+
+.confirm-button {
+    background-color: #009688;
+    color: white;
+    font-weight: bold;
+    margin-right: 1ex;
+}

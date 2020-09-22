@@ -16,11 +16,12 @@
         , accept_json_program/2
         ]).
 
--define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
+-define(UTILS, automate_rest_api_utils).
+-define(FORMATTING, automate_rest_api_utils_formatting).
 
--record(get_program_seq, { username, program_name }).
+-record(get_program_seq, { username :: binary(), program_name :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -39,10 +40,9 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[SPProgram]Asking for methods~n", []),
     {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#get_program_seq{username=Username}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -53,7 +53,6 @@ is_authorized(Req, State) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    #get_program_seq{username=Username} = State,
                     case automate_rest_api_backend:is_valid_token(X) of
                         {true, Username} ->
                             { true, Req1, State };
@@ -67,16 +66,15 @@ is_authorized(Req, State) ->
 
 %% Get handler
 content_types_provided(Req, State) ->
-    io:fwrite("User > program > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
 -spec to_json(cowboy_req:req(), #get_program_seq{})
-             -> {binary(),cowboy_req:req(), #get_program_seq{}}.
+             -> { stop | binary() ,cowboy_req:req(), #get_program_seq{}}.
 to_json(Req, State) ->
     #get_program_seq{username=Username, program_name=ProgramName} = State,
     case automate_rest_api_backend:get_program(Username, ProgramName) of
-        { ok, Program=#user_program{ id=ProgramId, user_id=UserId } } ->
+        { ok, Program=#user_program{ id=ProgramId } } ->
 
             Checkpoint = case automate_storage:get_last_checkpoint_content(ProgramId) of
                              {ok, Content } ->
@@ -84,37 +82,22 @@ to_json(Req, State) ->
                              {error, not_found} ->
                                  null
                          end,
-            Output = program_to_json(Program, Checkpoint),
+            Output = ?FORMATTING:program_data_to_json(Program, Checkpoint),
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            { Output, Res2, State }
+            { jiffy:encode(Output), Res2, State };
+        {error, Reason} ->
+            Code = 500,
+            Output = jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }),
+            Res = cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req),
+            { stop, Res, State }
     end.
 
 
-program_to_json(#user_program{ id=Id
-                             , user_id=UserId
-                             , program_name=ProgramName
-                             , program_type=ProgramType
-                             , program_parsed=ProgramParsed
-                             , program_orig=ProgramOrig
-                             , enabled=Enabled
-                             },
-                Checkpoint) ->
-    jiffy:encode(#{ <<"id">> => Id
-                  , <<"owner">> => UserId
-                  , <<"name">> => ProgramName
-                  , <<"type">> => ProgramType
-                  , <<"parsed">> => ProgramParsed
-                  , <<"orig">> => ProgramOrig
-                  , <<"enabled">> => Enabled
-                  , <<"checkpoint">> => Checkpoint
-                  }).
-
 
 content_types_accepted(Req, State) ->
-    io:fwrite("[PUT] User > program > ID~n", []),
     {[{{<<"application">>, <<"json">>, []}, accept_json_program}],
      Req, State}.
 

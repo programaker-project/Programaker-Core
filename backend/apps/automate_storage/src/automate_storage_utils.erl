@@ -2,10 +2,23 @@
 
 -export([ canonicalize/1
         , validate_username/1
+        , validate_canonicalizable/1
         ]).
 
 
 -define(VALID_CHARACTERS, "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789").
+
+
+validate_canonicalizable(String) when is_binary(String) ->
+    case string:take(binary_to_list(String), ?VALID_CHARACTERS) of
+        { _, [] } ->
+            true;
+        _ ->
+            false
+    end;
+validate_canonicalizable(_String) ->
+    false.
+
 
 -spec validate_username(binary()) -> boolean().
 validate_username(String)
@@ -14,12 +27,7 @@ validate_username(String)
     false;
 
 validate_username(String) when is_binary(String) ->
-    case string:take(binary_to_list(String), ?VALID_CHARACTERS) of
-        { _, [] } ->
-            true;
-        _ ->
-            false
-    end;
+    validate_canonicalizable(String);
 
 validate_username(_) ->
     false.

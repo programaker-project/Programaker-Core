@@ -8,7 +8,7 @@
 %% API
 -export([ get_all_public_services/0
         , get_all_services_for_user/1
-        , get_service_by_id/2
+        , get_service_by_id/1
         , register_public/1
         , register_private/1
         , update_service_module/3
@@ -38,13 +38,13 @@
 get_all_public_services() ->
     ?BACKEND:list_all_public().
 
--spec get_all_services_for_user(binary()) -> {ok, service_info_map()} | {error, term(), string()}.
-get_all_services_for_user(UserId) ->
-    ?BACKEND:get_all_services_for_user(UserId).
+-spec get_all_services_for_user(owner_id()) -> {ok, service_info_map()} | {error, term(), string()}.
+get_all_services_for_user(Owner) ->
+    ?BACKEND:get_all_services_for_user(Owner).
 
--spec get_service_by_id(binary(), binary()) -> {ok, service_entry()} | {error, not_found}.
-get_service_by_id(ServiceId, UserId) ->
-    ?BACKEND:get_service_by_id(ServiceId, UserId).
+-spec get_service_by_id(binary()) -> {ok, service_entry()} | {error, not_found}.
+get_service_by_id(ServiceId) ->
+    ?BACKEND:get_service_by_id(ServiceId).
 
 -spec register_public(module() | ?MODULE_MAP) -> {ok, binary()}.
 register_public(ServiceModule) ->
@@ -55,7 +55,7 @@ register_public(ServiceModule) ->
     {ok, Uuid}.
 
 -spec update_service_module(module() | ?MODULE_MAP,
-                            binary(), binary()) -> ok.
+                            binary(), owner_id()) -> ok.
 update_service_module(Module, _ServiceId, _OwnerId) ->
     {Uuid, Data} = module_to_map(Module),
     ?BACKEND:update_service_module(Uuid, Data).
@@ -68,9 +68,9 @@ register_private(ServiceModule) ->
                            Data),
     {ok, Uuid}.
 
--spec allow_user(binary(), binary()) -> ok | {error, service_not_found}.
-allow_user(ServiceId, UserId) ->
-    ?BACKEND:allow_user(ServiceId, UserId).
+-spec allow_user(binary(), owner_id()) -> ok | {error, service_not_found}.
+allow_user(ServiceId, Owner) ->
+    ?BACKEND:allow_user(ServiceId, Owner).
 
 -spec update_visibility(binary(), boolean()) -> ok | {error, service_not_found}.
 update_visibility(ServiceId, IsPublic) ->
@@ -88,9 +88,9 @@ set_config_for_service(ServiceId, Property, Value) ->
 count_all_services() ->
     ?BACKEND:count_all_services().
 
--spec delete_service(binary(), binary()) -> ok.
-delete_service(UserId, ServiceId) ->
-    ?BACKEND:delete_service(UserId, ServiceId).
+-spec delete_service(owner_id(), binary()) -> ok.
+delete_service(Owner, ServiceId) ->
+    ?BACKEND:delete_service(Owner, ServiceId).
 
 
 

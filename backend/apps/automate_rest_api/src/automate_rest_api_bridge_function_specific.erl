@@ -18,7 +18,7 @@
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
--record(state, { user_id, bridge_id, function_name }).
+-record(state, { user_id :: binary(), bridge_id :: binary(), function_name :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -47,7 +47,6 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[Bridge function call] Asking for methods~n", []),
     {[<<"POST">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State) ->
@@ -75,7 +74,6 @@ is_authorized(Req, State) ->
 
 %% POST handler
 content_types_accepted(Req, State) ->
-    io:fwrite("Bridge function call: ~p~n", [State]),
     {[{{<<"application">>, <<"json">>, []}, accept_function_call}],
      Req, State}.
 

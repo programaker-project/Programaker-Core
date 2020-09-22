@@ -1,0 +1,407 @@
+.profile-section {
+    width: 100%;
+}
+
+mat-card.not-enabled {
+    background-color: grey;
+    color: white;
+}
+
+
+div.letter-call-to-action {
+    background-color: darkorange;
+    font-size: small;
+    padding: 1ex;
+    border-radius: 2px;
+    margin-top: 1ex;
+}
+
+mat-card.module > h4 {
+    overflow: hidden;
+    font-size: 1.15rem;
+    cursor: pointer;
+}
+
+/* Program styling */
+mat-card.program {
+    padding: 0;
+}
+
+.program-data {
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: max-content 1fr;
+}
+
+.program-data > .program-type {
+    grid-row: 1;
+    grid-column: 1;
+    width: max-content;
+}
+
+.program-data > .program-type > img {
+    padding: 1ex;
+    max-width: 8ex;
+    max-height: 8ex;
+}
+
+mat-card.program > .program-data > .connection-icon-list {
+    background-color: rgba(0, 48, 150,0.05);
+    border-top: 1px solid rgba(0, 48, 150,0.25);
+
+    text-align: left;
+    padding: 1ex;
+
+    grid-row: 2;
+
+    grid-column-start: 1;
+    grid-column-end: 3;
+}
+
+mat-card.program > .program-data > .card-title {
+    grid-row: 1;
+    grid-column: 2;
+    word-break: break-word;
+
+    padding: 1ex;
+    font-weight: 600;
+}
+
+mat-card.call-to-action > .program-data > .card-title {
+    color: #fff;
+    padding: 2em 1em 2em 1em;
+
+    grid-row: 1;
+    grid-column: 2;
+}
+
+mat-card.program > .program-operation {
+    float: right;
+    margin-top: -1.5ex;
+    margin-bottom: 1ex;
+    margin-right: -1ex;
+}
+
+mat-card.program > .program-operation > .enable-program {
+    border-radius: 999ex; /* Inifinity, round shape */
+    color: white;
+    z-index: 1;
+}
+
+/* Public section */
+.public-section {
+    width: 100%;
+    padding-top: 1em;
+}
+
+.col > h1 {
+    text-align: center;
+}
+
+.section-explanation {
+    padding: 1ex;
+    background-color: rgba(0,0,0,0.1);
+    margin-bottom: 1ex;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.public-section > .user-programs {
+     /* margin: 0 auto; */
+    padding-bottom: 3em;
+}
+
+
+/* Private section. Mostly, connections upper "bar" */
+.private-section {
+    background: repeating-linear-gradient(45deg,#fafafa,#fafafa 10px,#f3f3f3 10px, #f3f3f3 20px);
+    box-shadow: 0px 0px 2px 1px rgba(0,0,0,0.3);
+    overflow-x: auto;
+    padding: 1em 0 1em 0;
+}
+
+.user-connections {
+    margin: 0 auto;
+    width: max-content;
+}
+
+.user-connections > h1 {
+    display: block;
+    font-size: 150%;
+    width: 100%;
+    max-width: 100vw;
+    text-align: center;
+}
+
+.user-connections > .connection-list {
+    padding: 0 1em 0 1em;
+}
+
+.user-connections > .connection-list > div {
+    display: inline;
+    margin-right: 1ex;
+}
+
+.user-connections > .connection-list > div > mat-card {
+    display: inline-block;
+    padding: 1ex;
+}
+
+.user-connections > .connection-list > div > mat-card > mat-icon {
+    vertical-align: bottom;
+}
+
+.user-connections > .connection-list > div > mat-card > .connection-name {
+    display: inline-block;
+    min-height: 3ex;
+}
+
+
+.connection > img.icon {
+    height: 3ex;
+    max-width: 10ex;
+}
+
+/* Call-to-actions */
+.user-connections .integrated-call-to-action {
+    display: inline-block;
+    font-size: 120%;
+    color: #ff4500;
+    font-weight: bold;
+}
+
+.user-connections .integrated-call-to-action mat-icon {
+    vertical-align: text-bottom;
+}
+
+/* Examples & Tutorials */
+mat-card.example {
+    background-color: #3798e2;
+    color: #fff;
+    font-weight: 600;
+
+    padding: 0; /* Moved into child elements */
+}
+
+mat-card.example > .description {
+    padding: 1ex;
+}
+
+.connection-icon-list {
+    border-radius: 0 0 4px 4px;
+    background-color: rgba(255,255,255,0.95);
+    text-align: left;
+    padding: 1ex;
+}
+
+.connection-icon-list > img {
+    height: 3ex;
+    max-width: 10ex;
+    margin-left: 1ex;
+}
+
+.connection-icon-list > span > img {
+    height: 3ex;
+    max-width: 10ex;
+    margin-left: 1ex;
+}
+
+
+.connection-icon-list > span > .nametag {
+    margin-left: 1ex;
+    padding: 0 1ex 0 1ex;
+    display: inline-block;
+    background-color: #fff;
+    box-shadow: 0px 1px 1px 0px rgba(0,0,0,0.3);
+    border-radius: 3px;
+    min-height: 3ex;
+}
+
+/* User profile */
+.user-profile .group-picture {
+    font-size: 1000% !important;
+    text-align: center;
+    width: 100%;
+}
+
+.user-profile .avatar {
+    text-align: center;
+}
+
+.user-profile .avatar img {
+    height: 10em;
+    width: 10em;
+    border-radius: 4px;
+}
+
+.user-profile .group-name {
+    font-size: 200%;
+    color: #444;
+    text-align: center;
+}
+
+.user-profile section {
+    padding-left: 1em;
+    padding-top: 1em;
+    margin: 1em;
+}
+
+.user-profile .section-title {
+    font-size: 150%;
+}
+
+.status-ispublic-info {
+    text-align: center;
+    font-style: italic;
+}
+
+.status-ispublic-info mat-icon {
+    vertical-align: bottom;
+}
+
+.user-profile .not-joined-explanation {
+    font-style: italic;
+    display: inline;
+    padding-left: 1em;
+}
+
+.keyword {
+    text-decoration: underline;
+}
+
+section.bridges {
+    border-top: 1px solid rgba(0,0,0,0.3);
+}
+
+mat-card.bridge {
+    display: inline-block;
+    vertical-align: bottom;
+    margin-left: 1ex;
+    margin-top: 1ex;
+    padding: 0;
+    height: 3em;
+}
+
+mat-card.bridge .bridge-name {
+    padding: 1ex;
+    display: inline-block;
+}
+
+mat-card.bridge img {
+    max-width: 10ex;
+    height: 3em;
+}
+
+mat-card.bridge .bridge-status {
+    height: 3em;
+    display: inline-block;
+    vertical-align: inherit;
+    padding-left: 1ex;
+    padding-right: 1ex;
+
+    color: #fff;
+    border-radius: 3px 0 0 3px;
+}
+
+mat-card.bridge .bridge-status.connected-true {
+    background-color: #279f27;
+}
+mat-card.bridge .bridge-status.connected-false {
+    background-color: #9f2727;
+}
+
+mat-card.bridge .bridge-status mat-icon {
+    padding-top: 1ex;
+}
+
+mat-card.collaborator {
+    display: inline-block;
+    vertical-align: bottom;
+    margin-left: 1ex;
+    margin-top: 1ex;
+    padding: 0;
+}
+
+.collaborator .collaborator-role {
+    height: 3em;
+    display: inline-block;
+    vertical-align: inherit;
+    padding-left: 1ex;
+    padding-right: 1ex;
+
+    background-color: #27212e;
+    color: #fff;
+    border-radius: 3px 0 0 3px;
+}
+
+mat-card.collaborator .collaborator-role mat-icon {
+    vertical-align: middle;
+    font-size: 140%;
+    margin-top: 1ex;
+}
+
+mat-card.collaborator img {
+    max-width: 3em;
+    height: 3em;
+    border-radius: 0 4px 4px 0;
+    display: inline-block;
+}
+
+mat-card.collaborator .user-name {
+    display: inline-block;
+    padding: 1ex;
+    height: 3em;
+}
+
+
+section .section-buttons {
+    margin-top: 1ex;
+}
+
+section.edit-configuration {
+    text-align: center;
+}
+
+section.edit-configuration .settings-link {
+    background-color: #fc8;
+    color: #000;
+    padding: 1ex;
+    box-shadow: 0px 2px 3px 0px rgba(0,0,0,0.3);
+}
+
+section.edit-configuration .settings-link:hover {
+    text-decoration: none;
+}
+
+section.edit-configuration .settings-link mat-icon {
+    vertical-align: bottom;
+}
+
+button.group {
+    padding: 1ex;
+    margin-left: 1ex;
+    margin-top: 1ex;
+}
+
+button.cardlike {
+    height: 5ex;
+    min-width: auto;
+    padding: 1ex;
+    border-radius: 4px;
+    display: inline;
+}
+
+
+mat-card.non-clickable {
+    box-shadow: none;
+    border: 1px solid rgba(0,0,0,0.3);
+    cursor: inherit;
+}
+
+.no-connection-message {
+    text-align: center;
+    display: inline-block;
+}
+.no-connection-message mat-icon {
+    vertical-align: bottom;
+}

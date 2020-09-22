@@ -1,0 +1,91 @@
+section.component {
+    width: 100%;
+    padding-top: 2em;
+    width: max-content;
+    margin: 0 auto 2ex auto;
+}
+
+.title {
+    font-size: 200%;
+}
+
+.config-option .title {
+    font-size: 150%;
+    margin-bottom: 1ex;
+}
+
+.intent {
+    margin-top: 1ex;
+}
+
+.config-option .intent {
+    margin-bottom: 1ex;
+}
+
+mat-form-field {
+    width: 40ex;
+}
+
+mat-error {
+    max-width: 40ex;
+}
+
+button {
+    min-height: 5ex;
+    margin: 0 1ex 0 1ex;
+}
+
+.key-point {
+    text-decoration: underline;
+}
+
+.config-option {
+    margin-top: 1em;
+}
+
+.accept-cancel {
+    margin-top: 2em;
+}
+
+.confirm-button {
+    background-color: #009688;
+    color: white;
+    font-weight: bold;
+}
+
+mat-card {
+    margin-top: 1em;
+}
+
+ul.collaborator-list {
+    padding: 0;
+    max-width: 90vw;
+}
+
+li.collaborator {
+    display: inline-block;
+    background-color: #27212e;
+    margin: 0.5ex;
+    color: #fff;
+    font-size: small;
+    border-radius: 4px;
+}
+
+button.remove-collaborator {
+    padding: 0;
+    margin: 0;
+    border-right: 1px solid rgba(0,0,0,0.5);
+    border: none;
+    background-color: rgba(255,255,255,0.3);
+    color: #fff;
+    border-radius: 4px 0 0 4px;
+    min-height: 3ex;
+}
+
+button.remove-collaborator mat-icon {
+    vertical-align: bottom;
+}
+
+li.collaborator .name {
+    margin: 0 0.5ex 0 0.5ex;
+}

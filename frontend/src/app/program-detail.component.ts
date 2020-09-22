@@ -1,4 +1,4 @@
-
+import { Location } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
@@ -30,6 +30,7 @@ import { SessionService } from './session.service';
 import { environment } from '../environments/environment';
 import { unixMsToStr } from './utils';
 import { Synchronizer } from './syncronizer';
+import { MatMenu } from '@angular/material/menu';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -50,7 +51,6 @@ type NonReadyReason = 'loading' | 'disconnected';
 export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
     workspace: Blockly.Workspace;
-    programUserName: string;
     programId: string;
     environment: { [key: string]: any };
 
@@ -68,9 +68,15 @@ export class ProgramDetailComponent implements OnInit {
     connectionLost: boolean;
     private workspaceElement: HTMLElement;
 
+    canEdit: boolean;
     private cursorDiv: HTMLElement;
     private cursorInfo: {};
     nonReadyReason: NonReadyReason;
+    logCount = 0;
+    streamingLogs = false;
+
+    // HACK: Prevent the MatMenu import for being removed
+    private _pinRequiredMatMenuLibrary: MatMenu;
 
     constructor(
         private monitorService: MonitorService,
@@ -79,10 +85,11 @@ export class ProgramDetailComponent implements OnInit {
         private customSignalService: CustomSignalService,
         private route: ActivatedRoute,
         private router: Router,
-        public dialog: MatDialog,
+        private _location: Location,
         private templateService: TemplateService,
         private serviceService: ServiceService,
         private notification: MatSnackBar,
+        public dialog: MatDialog,
         public connectionService: ConnectionService,
         public sessionService: SessionService,
     ) {
@@ -112,16 +119,29 @@ export class ProgramDetailComponent implements OnInit {
         progbar.track(new Promise((resolve) => {
             this.route.params.pipe(
                 switchMap((params: Params) => {
-                    this.programUserName = params['user_id'];
-                    this.programId = params['program_id'];
-                    return this.programService.getProgram(params['user_id'], params['program_id']).catch(err => {
-                        console.error("Error:", err);
-                        this.goBack();
-                        throw Error("Error loading");
-                    });
+                    const user = params['user_id'];
+                    if (user) {
+                        const programName = params['program_id'];
+
+                        return this.programService.getProgram(user, programName).catch(err => {
+                            console.error("Error:", err);
+                            this.goBack();
+                            throw Error("Error loading");
+                        });
+                    }
+                    else {
+                        const programId = params['program_id'];
+                        return this.programService.getProgramById(programId).catch(err => {
+                            console.error("Error:", err);
+                            this.goBack();
+                            throw Error("Error loading");
+                        })
+                    }
                 }))
                 .subscribe(program => {
-                    this.prepareWorkspace().then((controller: ToolboxController) => {
+                    this.programId = program.id;
+                    this.canEdit = !program['readonly'];
+                    this.prepareWorkspace(program).then((controller: ToolboxController) => {
                         this.program = program;
                         this.load_program(controller, program);
                         resolve();
@@ -207,22 +227,28 @@ export class ProgramDetailComponent implements OnInit {
 
     initializeListeners() {
         // Initialize log listeners
-        this.programService.watchProgramLogs(this.program.owner, this.program.id,
-                                             { request_previous_logs: true })
-            .subscribe(
-                {
-                    next: (update: ProgramInfoUpdate) => {
-                        if (update.type === 'program_log') {
-                            this.updateLogsDrawer(update.value);
+        this.streamingLogs = true;
+        if (!this.program.readonly) {
+            this.programService.watchProgramLogs(this.program.id,
+                                                 { request_previous_logs: true })
+                .subscribe(
+                    {
+                        next: (update: ProgramInfoUpdate) => {
+                            if (update.type === 'program_log') {
+                                this.updateLogsDrawer(update.value);
+                                this.logCount++;
+                            }
+                        },
+                        error: (error: any) => {
+                            console.error("Error reading logs:", error);
+                            this.streamingLogs = false;
+                        },
+                        complete: () => {
+                            console.warn("No more logs about program", this.programId)
+                            this.streamingLogs = false;
                         }
-                    },
-                    error: (error: any) => {
-                        console.error("Error reading logs:", error);
-                    },
-                    complete: () => {
-                        console.warn("No more logs about program", this.programId)
-                    }
-                });
+                    });
+        }
 
         this.initializeEventSynchronization();
     }
@@ -230,7 +256,7 @@ export class ProgramDetailComponent implements OnInit {
     initializeEventSynchronization() {
         // Initialize editor event listeners
         // This is used for collaborative editing.
-        this.eventStream = this.programService.getEventStream(this.program.owner, this.program.id);
+        this.eventStream = this.programService.getEventStream(this.program.id);
         const synchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
 
         const onCreation = {};
@@ -302,8 +328,6 @@ export class ProgramDetailComponent implements OnInit {
             }
         );
 
-        this.workspace.addChangeListener(mirrorEvent);
-
         const onMouseEvent = ((ev: MouseEvent) => {
             if (ev.buttons) {
                 return;
@@ -322,8 +346,11 @@ export class ProgramDetailComponent implements OnInit {
             this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
         });
 
-        this.workspaceElement.onmousemove = onMouseEvent;
-        this.workspaceElement.onmouseup = onMouseEvent;
+        if (this.canEdit) {
+            this.workspace.addChangeListener(mirrorEvent);
+            this.workspaceElement.onmousemove = onMouseEvent;
+            this.workspaceElement.onmouseup = onMouseEvent;
+        }
     }
 
     /* Collaborator pointer management */
@@ -402,7 +429,7 @@ export class ProgramDetailComponent implements OnInit {
 
         const content = Blockly.Xml.domToPrettyText(xml);
 
-        return this.programService.checkpointProgram(this.program.id, this.program.owner, content);
+        return this.programService.checkpointProgram(this.program.id, content);
     }
 
     static getEditorPosition(workspaceElement: HTMLElement): {x:number, y: number, scale: number} | null {
@@ -486,11 +513,12 @@ export class ProgramDetailComponent implements OnInit {
         (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_.orig = this.patchedFunctions.recordDeleteAreas;
     }
 
-    prepareWorkspace(): Promise<ToolboxController> {
+    prepareWorkspace(program: ProgramContent): Promise<ToolboxController> {
         // For consistency and because it affects the positioning of the bottom drawer.
         this.reset_header_scroll();
 
         return new Toolbox(
+            program,
             this.monitorService,
             this.customBlockService,
             this.dialog,
@@ -539,7 +567,7 @@ export class ProgramDetailComponent implements OnInit {
             disable: false,
             collapse: true,
             media: '../assets/scratch-media/',
-            readOnly: false,
+            readOnly: !this.canEdit,
             trashcan: true,
             rtl: rtl,
             scrollbars: true,
@@ -567,7 +595,10 @@ export class ProgramDetailComponent implements OnInit {
 
         this.toolboxController = controller;
         controller.setWorkspace(this.workspace);
-        controller.update();
+
+        if (this.canEdit) {
+            controller.update(); // Setting the toolbox when it can't be shown would generate an error
+        }
 
         // HACK:
         // Defer a hide action, this is to compsensate for (what feels like)
@@ -734,7 +765,7 @@ export class ProgramDetailComponent implements OnInit {
 
     goBack(): boolean {
         this.dispose();
-        this.router.navigate(['/dashboard'])
+        this._location.back();
         return false;
     }
 
@@ -789,7 +820,7 @@ export class ProgramDetailComponent implements OnInit {
             button.classList.remove('completed');
         }
 
-        const result = await this.programService.updateProgram(this.programUserName, program);
+        const result = await this.programService.updateProgram(program);
 
         if (button){
             button.classList.remove('started');
@@ -813,7 +844,7 @@ export class ProgramDetailComponent implements OnInit {
             }
 
             await this.sendProgram();
-            const rename = (this.programService.renameProgram(this.programUserName, this.program, programData.name)
+            const rename = (this.programService.renameProgram(this.program, programData.name)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {
@@ -848,7 +879,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const update = (this.programService.updateProgramTags(this.program.owner, this.program.id, data.tags)
+            const update = (this.programService.updateProgramTags(this.program.id, data.tags)
                             .then((success) => {
                                 if (!success) {
                                     return;
@@ -881,7 +912,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const stopThreads = (this.programService.stopThreadsProgram(this.program.owner, this.program.id)
+            const stopThreads = (this.programService.stopThreadsProgram(this.program.id)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {
@@ -908,7 +939,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const deletion = (this.programService.deleteProgram(this.programUserName, this.program)
+            const deletion = (this.programService.deleteProgram(this.program)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {

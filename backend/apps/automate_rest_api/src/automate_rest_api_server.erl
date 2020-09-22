@@ -29,20 +29,22 @@ start_link() ->
                           %% Registration
                         , {"/api/v0/sessions/register", automate_rest_api_sessions_register, []}
                         , {"/api/v0/sessions/register/verify", automate_rest_api_sessions_register_verify, []}
-
-                          %% Session management
-                        , {"/api/v0/sessions/check", automate_rest_api_sessions_check, []}
-                        , {"/api/v0/sessions/login", automate_rest_api_sessions_login, []}
                         , {"/api/v0/sessions/login/reset", automate_rest_api_sessions_reset_password, []}
                         , {"/api/v0/sessions/login/reset/validate", automate_rest_api_sessions_reset_password_validate, []}
                         , {"/api/v0/sessions/login/reset/update", automate_rest_api_sessions_reset_password_update, []}
 
+                          %% Session management
+                        , {"/api/v0/sessions/check", automate_rest_api_sessions_check, []}
+                        , {"/api/v0/sessions/login", automate_rest_api_sessions_login, []}
+
                           %% Users
                         , {"/api/v0/users", automate_rest_api_users_root, []}
                         , {"/api/v0/users/:user_id", automate_rest_api_users_specific, []}
+                        , {"/api/v0/users/by-id/:user_id/picture", automate_rest_api_users_picture, []}
 
                           %% Miscellaneous
                         , {"/api/v0/users/id/:user_id/custom_signals/", automate_rest_api_custom_signals_root, []}
+                        , {"/api/v0/users/id/:user_id/groups/", automate_rest_api_user_groups_root, []}
 
                         , {"/api/v0/users/id/:user_id/templates/", automate_rest_api_templates_root, []}
                         , {"/api/v0/users/id/:user_id/templates/id/:template_id", automate_rest_api_templates_specific, []}
@@ -52,45 +54,88 @@ start_link() ->
                         , {"/api/v0/users/id/:user_id/settings", automate_rest_api_user_settings, []}
 
                           %% Programs
-                        , {"/api/v0/programs/id/:program_id", automate_rest_api_program_specific_by_id, []}
+                        , {"/api/v0/programs/id/:program_id", automate_rest_api_program_specific_by_id, []} %% DUP with /by-id/ form
 
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
                         , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/communication", automate_rest_api_program_specific_logs_stream, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/communication", automate_rest_api_program_specific_logs_stream, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []} %% DEPR
+
+                        , {"/api/v0/programs/by-id/:program_id", automate_rest_api_program_specific_by_id, []}
+                        , {"/api/v0/programs/by-id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []}
+                        , {"/api/v0/programs/by-id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
+                        , {"/api/v0/programs/by-id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
+                        , {"/api/v0/programs/by-id/:program_id/custom-blocks", automate_rest_api_program_custom_blocks, []}
+                        , {"/api/v0/programs/by-id/:program_id/bridges/by-id/:bridge_id/callbacks/:callback", automate_rest_api_program_bridge_callback, []}
 
                           %% Program operation
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs", automate_rest_api_program_logs, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/tags", automate_rest_api_program_tags, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/stop-threads", automate_rest_api_program_stop, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/status", automate_rest_api_program_status, []}
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs", automate_rest_api_program_logs, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/tags", automate_rest_api_program_tags, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/stop-threads", automate_rest_api_program_stop, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/status", automate_rest_api_program_status, []} %% DEPR
+
+                        , {"/api/v0/programs/by-id/:program_id/logs", automate_rest_api_program_logs, []}
+                        , {"/api/v0/programs/by-id/:program_id/tags", automate_rest_api_program_tags, []}
+                        , {"/api/v0/programs/by-id/:program_id/stop-threads", automate_rest_api_program_stop, []}
+                        , {"/api/v0/programs/by-id/:program_id/status", automate_rest_api_program_status, []}
 
                           %% Connection management
                         , {"/api/v0/users/id/:user_id/connections/available", automate_rest_api_connections_available_root, []}
                         , {"/api/v0/users/id/:user_id/connections/established", automate_rest_api_connections_established_root, []}
                         , {"/api/v0/users/id/:user_id/connections/pending/:connection_id/wait", automate_rest_api_connections_pending_wait, []}
 
+                        , {"/api/v0/groups/by-id/:group_id/connections/established", automate_rest_api_group_connections_established_root, []}
+                        , {"/api/v0/groups/by-id/:group_id/connections/available", automate_rest_api_group_connections_available_root, []}
+
+                        , {"/api/v0/programs/by-id/:program_id/connections/established", automate_rest_api_program_connections_established_root, []}
+
                           %% Bridges
                         , {"/api/v0/users/:user_id/bridges", automate_rest_api_service_ports_root, []}
-                        , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []}
+                        , {"/api/v0/users/id/:user_id/bridges", automate_rest_api_user_bridges_root, []}
+                        , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []} %% DEPR
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/callback/:callback", automate_rest_api_bridge_callback, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/functions/:function", automate_rest_api_bridge_function_specific, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/signals", automate_rest_api_bridge_signal_root, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/signals/:key", automate_rest_api_bridge_signal_specific, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/communication"
-                          , automate_rest_api_service_ports_specific_communication, []}
+                          , automate_rest_api_service_ports_specific_communication, []} %% DEPR
                         , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/oauth_return"
                           , automate_rest_api_service_port_oauth_return, []}
+
+                          %% New bridges API
+                        , {"/api/v0/bridges/by-id/:bridge_id", automate_rest_api_service_ports_specific, []}
+                        , {"/api/v0/bridges/by-id/:service_port_id/communication"
+                          , automate_rest_api_service_ports_specific_communication, []}
+                        , {"/api/v0/bridges/by-id/:bridge_id/signals"
+                          , automate_rest_api_bridge_signal_root, []}
 
                           %% Services
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}
                         , {"/api/v0/users/:user_id/services/id/:service_id/how-to-enable", automate_rest_api_services_how_to_enable, []}
                         , {"/api/v0/users/:user_id/services/id/:service_id/register", automate_rest_api_services_register, []}
 
+                        , {"/api/v0/services/by-id/:service_id/how-to-enable", automate_rest_api_services_how_to_enable_new, []}
+                        , {"/api/v0/services/by-id/:service_id/register", automate_rest_api_services_register_new, []}
+
+                        , {"/api/v0/programs/by-id/:program_id/services", automate_rest_api_program_services_root, []}
+
+                          %% Groups
+                        , {"/api/v0/groups", automate_rest_api_groups_root, [] }
+                        , {"/api/v0/groups/by-name/:group_name", automate_rest_api_group_by_name, [] }
+                        , {"/api/v0/groups/by-id/:group_id", automate_rest_api_group_specific, [] }
+                        , {"/api/v0/groups/by-id/:group_id/programs", automate_rest_api_group_programs, [] }
+                        , {"/api/v0/groups/by-id/:group_id/collaborators", automate_rest_api_group_collaborators, [] }
+                        , {"/api/v0/groups/by-id/:group_id/picture", automate_rest_api_group_picture, [] }
+                        , {"/api/v0/groups/by-id/:group_id/bridges", automate_rest_api_group_bridge_root, [] }
+
                           %% Monitor
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}
+                        , {"/api/v0/programs/by-id/:program_id/monitors", automate_rest_api_program_monitors_root, []}
+
+                          %% Utils
+                        , {"/api/v0/utils/autocomplete/users", automate_rest_api_autocomplete_user, []}
                         ]}
                  ]),
 

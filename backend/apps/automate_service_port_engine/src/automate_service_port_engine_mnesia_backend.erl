@@ -26,6 +26,7 @@
 
         , get_service_id_for_port/1
         , get_bridge_info/1
+        , get_bridge_owner/1
         , get_all_bridge_info/1
         , delete_bridge/2
 
@@ -69,13 +70,12 @@ uninstall() ->
     {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_CHANNEL_TABLE),
     ok.
 
-
--spec create_service_port(binary(), binary()) -> {ok, binary()} | {error, _, string()}.
-create_service_port(UserId, ServicePortName) ->
+-spec create_service_port(owner_id(), binary()) -> {ok, binary()} | {error, _, string()}.
+create_service_port(Owner, ServicePortName) ->
     ServicePortId = generate_id(),
     Entry = #service_port_entry{ id=ServicePortId
                                , name=ServicePortName
-                               , owner=UserId
+                               , owner=Owner
                                },
 
     Transaction = fun() ->
@@ -89,8 +89,8 @@ create_service_port(UserId, ServicePortName) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec gen_pending_connection(binary(), binary()) -> {ok, binary()}.
-gen_pending_connection(BridgeId, UserId) ->
+-spec gen_pending_connection(binary(), owner_id()) -> {ok, binary()}.
+gen_pending_connection(BridgeId, Owner) ->
     ConnectionId = generate_id(),
     CurrentTime = erlang:system_time(second),
 
@@ -98,7 +98,7 @@ gen_pending_connection(BridgeId, UserId) ->
                           {ok, ChannelId} = automate_channel_engine:create_channel(),
                           Entry = #user_to_bridge_pending_connection_entry{ id=ConnectionId
                                                                           , bridge_id=BridgeId
-                                                                          , user_id=UserId
+                                                                          , owner=Owner
                                                                           , channel_id=ChannelId
                                                                           , creation_time=CurrentTime
                                                                           },
@@ -113,22 +113,22 @@ gen_pending_connection(BridgeId, UserId) ->
     end.
 
 %% Establish connection confirming Bridge and User id
--spec establish_connection(binary(), binary(), binary(), binary()) -> ok | {error, not_found}.
-establish_connection(BridgeId, UserId, ConnectionId, Name) ->
+-spec establish_connection(binary(), owner_id(), binary(), binary()) -> ok | {error, not_found}.
+establish_connection(BridgeId, Owner, ConnectionId, Name) ->
     CurrentTime = erlang:system_time(second),
     Transaction = fun() ->
                           case mnesia:read(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId) of
                               [] ->
                                   {error, not_found};
                               [ #user_to_bridge_pending_connection_entry{ bridge_id=BridgeId
-                                                                        , user_id=UserId
+                                                                        , owner=Owner
                                                                         , channel_id=ChannelId
                                                                         } ] ->
                                   ok = mnesia:delete(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId, write),
 
                                   Entry = #user_to_bridge_connection_entry{ id=ConnectionId
                                                                           , bridge_id=BridgeId
-                                                                          , user_id=UserId
+                                                                          , owner=Owner
                                                                           , channel_id=ChannelId
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
@@ -156,14 +156,14 @@ establish_connection(BridgeId, ConnectionId, Name) ->
                               [] ->
                                   {error, not_found};
                               [ #user_to_bridge_pending_connection_entry{ bridge_id=BridgeId
-                                                                        , user_id=UserId
+                                                                        , owner=Owner
                                                                         , channel_id=ChannelId
                                                                         } ] ->
                                   ok = mnesia:delete(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId, write),
 
                                   Entry = #user_to_bridge_connection_entry{ id=ConnectionId
                                                                           , bridge_id=BridgeId
-                                                                          , user_id=UserId
+                                                                          , owner=Owner
                                                                           , channel_id=ChannelId
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
@@ -218,6 +218,18 @@ get_bridge_info(BridgeId) ->
             {error, Reason}
     end.
 
+-spec get_bridge_owner(binary()) -> {ok, owner_id()} | {error, not_found}.
+get_bridge_owner(BridgeId) ->
+    T = fun() ->
+                case mnesia:read(?SERVICE_PORT_TABLE, BridgeId) of
+                    [] ->
+                        {error, not_found};
+                    [#service_port_entry{ owner=Owner }] ->
+                        {ok, Owner}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
+
 -spec get_all_bridge_info(binary()) -> {ok, #service_port_entry{}, undefined | #service_port_configuration{}} | {error, _}.
 get_all_bridge_info(BridgeId) ->
     Transaction = fun() ->
@@ -241,7 +253,7 @@ get_all_bridge_info(BridgeId) ->
     end.
 
 
-
+-spec create_service_for_port(#service_port_configuration{}, owner_id()) -> {ok, binary()}.
 create_service_for_port(Configuration, OwnerId) ->
     case Configuration of
         #service_port_configuration{ is_public=true } ->
@@ -261,25 +273,30 @@ as_module(#service_port_configuration{ id=Id
      , module => {automate_service_port_engine_service, [Id]}
      }.
 
--spec set_service_port_configuration(binary(), #service_port_configuration{}, binary()) -> {ok, [ request_icon ]}.
+-spec set_service_port_configuration(binary(), #service_port_configuration{}, owner_id()) -> {ok, [ request_icon ]}.
 set_service_port_configuration(ServicePortId, Configuration=#service_port_configuration{ icon=NewIcon
                                                                                        , is_public=IsPublic
                                                                                        }, OwnerId) ->
     io:fwrite("Setting configuration: ~p~n", [Configuration]),
 
-    ServiceId = case get_service_id_for_port(ServicePortId) of
-                    {ok, FoundServiceId} ->
-                        ok = automate_service_registry:update_service_module(as_module(Configuration),
-                                                                             FoundServiceId,
-                                                                             OwnerId),
-                        ok = automate_service_registry:update_visibility(FoundServiceId, IsPublic),
-                        FoundServiceId;
-                    {error, not_found} ->
-                        {ok, NewServiceId} = create_service_for_port(Configuration, OwnerId),
-                        NewServiceId
-                end,
-
     Transaction = fun() ->
+                          ServiceId = case get_service_id_for_port(ServicePortId) of
+                                          {ok, FoundServiceId} ->
+                                              ok = automate_service_registry:update_service_module(as_module(Configuration),
+                                                                                                   FoundServiceId,
+                                                                                                   OwnerId),
+                                              ok = automate_service_registry:update_visibility(FoundServiceId, IsPublic),
+                                              case IsPublic of
+                                                  false ->  %% In case the service is not not public, make sure the owner is allowed
+                                                      ok = automate_service_registry:allow_user(FoundServiceId, OwnerId);
+                                                  _ -> ok
+                                              end,
+                                              FoundServiceId;
+                                          {error, not_found} ->
+                                              {ok, NewServiceId} = create_service_for_port(Configuration, OwnerId),
+                                              NewServiceId
+                                      end,
+
                           Previous = mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, ServicePortId),
                           ok = mnesia:write(?SERVICE_PORT_CONFIGURATION_TABLE
                                            , Configuration#service_port_configuration{ service_id=ServiceId }
@@ -344,15 +361,15 @@ get_signal_listeners(_Content, BridgeId) ->
                                Listeners
                        end, Channels )}.
 
--spec list_custom_blocks(binary()) -> {ok, map()}.
-list_custom_blocks(UserId) ->
+-spec list_custom_blocks(owner_id()) -> {ok, map()}.
+list_custom_blocks(Owner) ->
     Transaction = fun() ->
-                          Services = list_userid_ports(UserId) ++ list_public_ports(),
+                          Services = list_userid_ports(Owner) ++ list_public_ports(),
                           {ok
                           , maps:from_list(
                               lists:filter(fun (X) -> X =/= none end,
                                            lists:map(fun (PortId) ->
-                                                             case is_user_connected_to_bridge(UserId, PortId) of
+                                                             case is_user_connected_to_bridge(Owner, PortId) of
                                                                  {ok, false} ->
                                                                      none;
                                                                  _ ->
@@ -368,9 +385,9 @@ list_custom_blocks(UserId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec internal_user_id_to_connection_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
-internal_user_id_to_connection_id(UserId, ServicePortId) ->
-    case get_all_connections(UserId, ServicePortId) of
+-spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
+internal_user_id_to_connection_id(Owner, ServicePortId) ->
+    case get_all_connections(Owner, ServicePortId) of
         {ok, []} ->
             {error, not_found};
         {ok, [H | _]} ->
@@ -379,16 +396,18 @@ internal_user_id_to_connection_id(UserId, ServicePortId) ->
             {error, Reason}
     end.
 
-get_all_connections(UserId, BridgeId) ->
+-spec get_all_connections(owner_id(), binary()) -> {ok, [binary()]} | {error, binary()}.
+get_all_connections({OwnerType, OwnerId}, BridgeId) ->
     MatchHead = #user_to_bridge_connection_entry{ id='$1'
                                                 , bridge_id='$2'
-                                                , user_id='$3'
+                                                , owner={'$3', '$4'}
                                                 , channel_id='_'
                                                 , name='_'
                                                 , creation_time='_'
                                                 },
     Guards = [ { '==', '$2', BridgeId }
-             , { '==', '$3', UserId }
+             , { '==', '$3', OwnerType }
+             , { '==', '$4', OwnerId }
              ],
     ResultColum = '$1',
     Matcher = [{MatchHead, Guards, [ResultColum]}],
@@ -400,12 +419,12 @@ get_all_connections(UserId, BridgeId) ->
         {atomic, Result} ->
             Result;
         {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+            {error, Reason}
     end.
 
--spec is_user_connected_to_bridge(binary(), binary()) -> {ok, boolean()} | {error, not_found}.
-is_user_connected_to_bridge(UserId, BridgeId) ->
-    case get_all_connections(UserId, BridgeId) of
+-spec is_user_connected_to_bridge(owner_id(), binary()) -> {ok, boolean()} | {error, not_found}.
+is_user_connected_to_bridge(Owner, BridgeId) ->
+    case get_all_connections(Owner, BridgeId) of
         {ok, []} ->
             {ok, false};
         {ok, List} when is_list(List) ->
@@ -414,12 +433,12 @@ is_user_connected_to_bridge(UserId, BridgeId) ->
             {error, Reason}
     end.
 
--spec connection_id_to_internal_user_id(binary(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec connection_id_to_internal_user_id(binary(), binary()) -> {ok, owner_id()} | {error, not_found}.
 connection_id_to_internal_user_id(ConnectionId, ServicePortId) ->
     Transaction = fun() ->
                           MatchHead = #user_to_bridge_connection_entry{ id='$1'
                                                                       , bridge_id='$2'
-                                                                      , user_id='$3'
+                                                                      , owner='$3'
                                                                       , channel_id='_'
                                                                       , name='_'
                                                                       , creation_time='_'
@@ -442,17 +461,19 @@ connection_id_to_internal_user_id(ConnectionId, ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec get_user_service_ports(binary()) -> {ok, [{#service_port_entry{}, #service_port_configuration{}}]}.
-get_user_service_ports(UserId) ->
+-spec get_user_service_ports(owner_id()) -> {ok, [{#service_port_entry{}, #service_port_configuration{}}]}.
+get_user_service_ports({OwnerType, OwnerName}) ->
     Transaction = fun() ->
                           MatchHead = #service_port_entry{ id='_'
                                                          , name='_'
-                                                         , owner='$1'
+                                                         , owner={'$1', '$2'}
                                                          , service_id='_'
                                                          },
-                          Guard = {'==', '$1', UserId},
+                          Guards = [ {'==', '$1', OwnerType}
+                                   , {'==', '$2', OwnerName}
+                                   ],
                           ResultColumn = '$_',
-                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+                          Matcher = [{MatchHead, Guards, [ResultColumn]}],
 
 
 
@@ -490,16 +511,18 @@ list_bridge_channels(ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
-list_established_connections(UserId) ->
+-spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+list_established_connections({OwnerType, OwnerId}) ->
     MatchHead = #user_to_bridge_connection_entry{ id='_'
                                                 , bridge_id='_'
-                                                , user_id='$1'
+                                                , owner={'$1', '$2'}
                                                 , channel_id='_'
                                                 , name='_'
                                                 , creation_time='_'
                                                 },
-    Guards = [ { '==', '$1', UserId } ],
+    Guards = [ { '==', '$1', OwnerType }
+             , { '==', '$2', OwnerId }
+             ],
     ResultColum = '$_',
     Matcher = [{MatchHead, Guards, [ResultColum]}],
 
@@ -531,13 +554,18 @@ get_pending_connection_info(ConnectionId) ->
     end.
 
 
--spec delete_bridge(binary(), binary()) -> ok | {error, binary()}.
-delete_bridge(UserId, BridgeId) ->
+-spec delete_bridge(owner_id(), binary()) -> ok | {error, binary()}.
+delete_bridge(Accessor, BridgeId) ->
     Transaction = fun() ->
-                          [#service_port_entry{owner=UserId}] = mnesia:read(?SERVICE_PORT_TABLE, BridgeId),
-                          ok = mnesia:delete(?SERVICE_PORT_TABLE, BridgeId, write),
-                          ok = mnesia:delete(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId, write)
-                          %% TODO: remove connection entries
+                          [#service_port_entry{owner=Owner}] = mnesia:read(?SERVICE_PORT_TABLE, BridgeId),
+                          case automate_storage:can_user_edit_as(Accessor, Owner) of
+                              true ->
+                                  ok = mnesia:delete(?SERVICE_PORT_TABLE, BridgeId, write),
+                                  ok = mnesia:delete(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId, write);
+                              %% TODO: remove connection entries
+                              false ->
+                                  {error, not_authorized}
+                          end
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
@@ -546,9 +574,9 @@ delete_bridge(UserId, BridgeId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec get_or_create_monitor_id(binary(), binary()) -> {ok, binary()} | {error, term(), binary()}.
-get_or_create_monitor_id(UserId, ServicePortId) ->
-    Id = {UserId, ServicePortId},
+-spec get_or_create_monitor_id(owner_id(), binary()) -> {ok, binary()} | {error, term(), binary()}.
+get_or_create_monitor_id(Owner, ServicePortId) ->
+    Id = {Owner, ServicePortId},
     case mnesia:dirty_read(?SERVICE_PORT_CHANNEL_TABLE, Id) of
         [#service_port_monitor_channel_entry{channel_id=ChannelId}] ->
             {ok, ChannelId};
@@ -601,15 +629,17 @@ get_channel_origin_bridge(ChannelId) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-list_userid_ports(UserId) ->
+list_userid_ports({OwnerType, OwnerId}) ->
     MatchHead = #service_port_entry{ id='$1'
                                    , name='_'
-                                   , owner='$2'
+                                   , owner={'$2', '$3'}
                                    , service_id='_'
                                    },
-    Guard = {'==', '$2', UserId},
+    Guards = [ {'==', '$2', OwnerType}
+             , {'==', '$3', OwnerId}
+             ],
     ResultColumn = '$1',
-    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+    Matcher = [{MatchHead, Guards, [ResultColumn]}],
 
     mnesia:select(?SERVICE_PORT_TABLE, Matcher).
 

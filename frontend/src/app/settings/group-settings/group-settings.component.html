@@ -1,0 +1,128 @@
+<div class="settings-section row" *ngIf="groupInfo">
+    <div class="avatar-settings-col col-sm-4">
+        <div [ngClass]="'settings-group ' + (loadedImage ? 'edited' : '')">
+            <div class="avatar">
+                <img *ngIf="session" #imgPreview
+                    src="{{_getGroupPicture(groupInfo.id)}}"
+                    onError="this.src='/assets/profile-not-set.png'" />
+            </div>
+            <div class="avatar-edit-section">
+                <button color="primary" class="picture-upload-button"
+                    (click)="imgFileInput.click()"
+                    mat-raised-button>
+                    <mat-icon>edit</mat-icon> Upload {{ loadedImage ? ' new ' : '' }} picture
+                </button>
+                <input hidden accept="image/*" type="file" #imgFileInput (change)="previewImage($event)"/>
+
+                <button mat-button mat-raised-button
+                    #saveAvatarButton
+                    class="save-button"
+                    color="primary"
+                    *ngIf="loadedImage"
+                    (click)="saveAvatar()">
+                    <span class="load-bg"></span>
+                    <mat-icon class="action-icon">cloud_upload</mat-icon>
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="general-settings col-sm-8">
+        <div class="user-settings settings-group">
+            <div class="title">Collaborators</div>
+
+            <div class="description">
+                Update the collaborator list:
+            </div>
+            <mat-form-field class="collaborator-input">
+                <input type="text"
+                    placeholder="Search for users to invite"
+                    matInput
+                    [formControl]="invitationSearch"
+                    [matAutocomplete]="auto">
+                <mat-autocomplete #invitationAutocomplete #auto="matAutocomplete" [displayWith]="displayInvitation">
+                    <mat-option *ngFor="let option of filteredOptions" [value]="option">
+                        {{option.username}}
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <ul class="collaborator-list" *ngIf="collaborators">
+                <li class="collaborator" *ngFor="let user of collaborators">
+                    <button (click)="removeCollaborator(user)" class="remove-collaborator" [disabled]="user.id === session.user_id">
+                        <mat-icon>clear</mat-icon>
+                    </button>
+                    <span class="name">
+                        {{ user.username }}
+                    </span>
+                    <span>
+                        as
+                    </span>
+                    <mat-form-field class="role">
+                        <mat-label>role</mat-label>
+                        <mat-select [(value)]="user.role" [disabled]="user.id === session.user_id">
+                            <mat-select-trigger>
+                                <mat-icon>{{ _roleToIcon(user.role) }}</mat-icon>
+
+                                {{ user.role }}
+                            </mat-select-trigger>
+
+                            <mat-option value="admin" ><mat-icon>{{ _roleToIcon('admin') }}</mat-icon> admin</mat-option>
+                            <mat-option value="editor"><mat-icon>{{ _roleToIcon('editor') }}</mat-icon> editor</mat-option>
+                            <mat-option value="viewer"><mat-icon>{{ _roleToIcon('viewer') }}</mat-icon> viewer</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </li>
+            </ul>
+
+
+            <button mat-button mat-raised-button
+                class="save-button"
+                color="primary"
+                #saveCollaboratorsButton
+                (click)="saveCollaborators()">
+                <span class="load-bg"></span>
+                <mat-icon class="action-icon">cloud_upload</mat-icon>
+                Save
+            </button>
+        </div>
+
+        <div class="admin-settings settings-group">
+            <div class="title">Administration</div>
+
+            <div class="config-option">
+                <mat-slide-toggle
+                    name="isPublicGroup"
+                    checked="groupInfo.public"
+                    [disabled]="(!groupInfo.public) && (!this.is_advanced)"
+                    [(ngModel)]="setToPublicGroup">
+                    <span class="explanation" *ngIf="publicGroup">Public group (<span class="key-point">non-members</span> can see the group)</span>
+                    <span class="explanation" *ngIf="!publicGroup">Private group (<span class="key-point">only members</span> can see the group)</span>
+                </mat-slide-toggle>
+
+                <button mat-button mat-raised-button
+                    class="save-button"
+                    color="primary"
+                    #saveAdminButton
+                    (click)="saveAdminSettings()">
+                    <span class="load-bg"></span>
+                    <mat-icon class="action-icon">cloud_upload</mat-icon>
+                    Save
+                </button>
+
+                <button color="warn"
+                    *ngIf="this.canEdit && program !== undefined"
+                    (click)="deleteProgram()" mat-button>
+                </button>
+            </div>
+            <div class="config-option">
+                <button mat-button mat-raised-button color="warn"
+                    class="delete-group-button"
+                    #deleteGroupButton
+                    (click)="startDeleteGroup()">
+                    <mat-icon>delete_forever</mat-icon> Delete group
+                </button>
+            </div>
+        </div>
+</div>

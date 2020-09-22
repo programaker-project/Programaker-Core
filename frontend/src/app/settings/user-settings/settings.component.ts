@@ -1,20 +1,22 @@
-import * as progbar from '../ui/progbar';
+import * as progbar from 'app/ui/progbar';
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { ProgramService } from '../program.service';
+import { ProgramService } from 'app/program.service';
 
-import { Session } from '../session';
-import { SessionService } from '../session.service';
+import { Session } from 'app/session';
+import { SessionService } from 'app/session.service';
 
-import { ServiceService } from '../service.service';
+import { ServiceService } from 'app/service.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
-import { MonitorService } from '../monitor.service';
-import { ConnectionService } from '../connection.service';
-import { BridgeService } from '../bridges/bridge.service';
+import { MonitorService } from 'app/monitor.service';
+import { ConnectionService } from 'app/connection.service';
+import { BridgeService } from 'app/bridges/bridge.service';
+import { MatButton } from '@angular/material/button';
+import { getUserPictureUrl } from 'app/utils';
 
 @Component({
     // moduleId: module.id,
@@ -23,13 +25,21 @@ import { BridgeService } from '../bridges/bridge.service';
     providers: [BridgeService, ConnectionService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'settings.component.css',
-        '../libs/css/material-icons.css',
-        '../libs/css/bootstrap.min.css',
+        '../../libs/css/material-icons.css',
+        '../../libs/css/bootstrap.min.css',
     ],
 })
 export class SettingsComponent {
     session: Session;
     is_advanced: boolean;
+
+    loadedImage: File = null;
+
+    @ViewChild('imgPreview') imgPreview: ElementRef<HTMLImageElement>;
+    @ViewChild('imgFileInput') imgFileInput: ElementRef<HTMLInputElement>;
+    @ViewChild('saveAvatarButton') saveAvatarButton: MatButton;
+
+    _getUserPicture = getUserPictureUrl;
 
     constructor(
         public sessionService: SessionService,
@@ -80,5 +90,31 @@ export class SettingsComponent {
             button.classList.remove('started');
             button.classList.add('completed');
         }
+    }
+
+    previewImage(event: KeyboardEvent) {
+        const input: HTMLInputElement = event.target as HTMLInputElement;
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                this.loadedImage = input.files[0];
+                this.imgPreview.nativeElement.src = e.target.result as string;
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    async saveUserAvatar() {
+        const buttonClass = this.saveAvatarButton._elementRef.nativeElement.classList;
+        buttonClass.add('started');
+        buttonClass.remove('completed');
+
+        await this.sessionService.updateUserAvatar(this.loadedImage);
+
+        buttonClass.remove('started');
+        buttonClass.add('completed');
     }
 }

@@ -15,7 +15,7 @@
 
 -include("./records.hrl").
 
--record(state, { service_port_id }).
+-record(state, { service_port_id :: binary() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -32,12 +32,10 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    io:fwrite("[SPService] Returning OAuth~n", []),
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 %% GET handler
 content_types_provided(Req, State) ->
-    io:fwrite("User > service-port > oauth-return~n", []),
     {[ {{<<"application">>, <<"json">>, []}, to_json}
      , {{<<"text">>, <<"html">>, []}, to_html}
      ],

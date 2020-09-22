@@ -22,6 +22,7 @@ import { alreadyRegisteredException, createDom } from './utils';
 import { ConnectionService } from '../connection.service';
 import { BridgeConnection } from '../connection';
 import { iconDataToUrl } from '../utils';
+import { ProgramContent } from 'app/program';
 
 
 declare const Blockly;
@@ -45,6 +46,7 @@ export class Toolbox {
     serviceService: ServiceService;
 
     constructor(
+        private program: ProgramContent,
         monitorService: MonitorService,
         customBlockService: CustomBlockService,
         dialog: MatDialog,
@@ -66,10 +68,10 @@ export class Toolbox {
 
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
         const [monitors, custom_blocks, services, connections] = await Promise.all([
-            this.monitorService.getMonitors(),
-            this.customBlockService.getCustomBlocks(),
-            this.serviceService.getAvailableServices(),
-            this.connectionService.getConnections(),
+            this.monitorService.getMonitorsOnProgram(this.program.id),
+            this.customBlockService.getCustomBlocksOnProgram(this.program.id, false),
+            this.serviceService.getAvailableServicesOnProgram(this.program.id),
+            this.connectionService.getConnectionsOnProgram(this.program.id),
         ]) as [MonitorMetadata[], ResolvedCustomBlock[], AvailableService[], BridgeConnection[]];
 
         this.controller.addCustomBlocks(custom_blocks);
@@ -308,7 +310,7 @@ export class Toolbox {
 
                 this.jsonInit({
                     'id': 'operator_select_connection',
-                    'message0': 'On bridge %1 use conection %2',
+                    'message0': 'On bridge %1 use connection %2',
                     'args0': [
                         {
                             'type': 'field_dropdown',

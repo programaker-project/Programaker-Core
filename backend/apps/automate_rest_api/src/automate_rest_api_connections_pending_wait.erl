@@ -30,7 +30,6 @@ websocket_init(State=#state{ connection_id=ConnectionId
 
     {ok, #user_to_bridge_pending_connection_entry{ channel_id=ChannelId }} = automate_service_port_engine:get_pending_connection_info(ConnectionId),
 
-    io:fwrite("[WS/Pending Connection] Listening on connection ~p; channel: ~p~n", [ConnectionId, ChannelId]),
     ok = automate_channel_engine:listen_channel(ChannelId),
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
 
@@ -39,7 +38,7 @@ websocket_init(State=#state{ connection_id=ConnectionId
 websocket_handle(pong, State) ->
     {ok, State};
 websocket_handle(Message, State) ->
-    io:fwrite("[WS/Pending Connection] Unexpected message: ~p~n", [Message]),
+    automate_logging:log_api(warning, ?MODULE, {unexpected_message, Message, websocket}),
     {ok, State}.
 
 
@@ -53,5 +52,5 @@ websocket_info({channel_engine, _ChannelId, connection_established}, State) ->
             ], State};
 
 websocket_info(Message, State) ->
-    io:fwrite("Got ~p~n", [Message]),
+    automate_logging:log_api(warning, ?MODULE, {unexpected_message, Message, internal}),
     {ok, State}.

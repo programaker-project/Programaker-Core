@@ -6,11 +6,20 @@
         , serialize_icon/1
         , serialize_maybe_undefined/1
         , reason_to_json/1
+        , group_to_json/1
+        , program_listing_to_json/1
+        , program_listing_to_json/2
+        , program_data_to_json/2
+        , collaborator_to_json/1
+        , bridge_to_json/1
         ]).
 
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 -include("../../automate_bot_engine/src/program_records.hrl").
+-include("../../automate_service_port_engine/src/records.hrl").
+
+-define(UTILS, automate_rest_api_utils).
 
 format_message(Log=#user_program_log_entry{}) ->
     {ok, #{ type => program_log
@@ -25,7 +34,7 @@ serialize_logs(Logs) ->
 
 serialize_log_entry(#user_program_log_entry{ program_id=ProgramId
                                            , thread_id=ThreadId
-                                           , user_id=UserId
+                                           , owner=Owner
                                            , block_id=BlockId
                                            , event_data=EventData
                                            , event_message=EventMessage
@@ -33,9 +42,18 @@ serialize_log_entry(#user_program_log_entry{ program_id=ProgramId
                                            , severity=Severity
                                            , exception_data=_ExceptionData
                                            }) ->
+    {OwnerType, OwnerId} = case Owner of
+                               { Type, Id } -> {Type, Id};
+                               Id ->
+                                   automate_logging:log_platform(migration_warning,
+                                                                 io_lib:format("Unfinished migration. Found bare user Id on program: ~p", [Id])),
+                                   { user, Id }
+                           end,
+
     #{ program_id => ProgramId
      , thread_id => serialize_string_or_none(ThreadId)
-     , user_id => serialize_string_or_none(UserId)
+     , owner => #{ type => OwnerType, id => serialize_string_or_none(OwnerId) }
+     , user_id => serialize_string_or_none(OwnerId)
      , block_id => serialize_string_or_none(BlockId)
      , event_data => serialize_event_error(EventData)
      , event_message => EventMessage
@@ -109,4 +127,103 @@ reason_to_json({Type, Subtype}) ->
      };
 reason_to_json(Type) ->
     #{ type => Type
+     }.
+
+group_to_json(#user_group_entry{ id=Id
+                               , name=Name
+                               , canonical_name=CanonicalName
+                               , public=IsPublic
+                               }) ->
+    Picture = case ?UTILS:group_has_picture(Id) of
+                  false -> null;
+                  true ->
+                      <<"/groups/by-id/", Id/binary, "/picture">>
+              end,
+    #{ id => Id
+     , name => Name
+     , public => IsPublic
+     , canonical_name => CanonicalName
+     , picture => Picture
+     }.
+
+program_listing_to_json(#user_program_entry{ id=Id
+                                           , program_name=Name
+                                           , enabled=Enabled
+                                           , program_type=Type
+                                           }) ->
+    #{ id => Id
+     , name => Name
+     , enabled => Enabled
+     , type => Type
+     };
+program_listing_to_json(#program_metadata{ id=Id
+                                         , name=Name
+                                         , link=Link
+                                         , enabled=Enabled
+                                         , type=Type
+                                         }) ->
+    #{ id => Id
+     , name => Name
+     , link =>  Link
+     , enabled => Enabled
+     , type => Type
+     }.
+
+program_listing_to_json(Program, Bridges) ->
+    Base = program_listing_to_json(Program),
+    Base#{ bridges_in_use => Bridges }.
+
+
+program_data_to_json(#user_program{ id=Id
+                                  , owner=Owner=#{ id := OwnerId}
+                                  , program_name=ProgramName
+                                  , program_type=ProgramType
+                                  , program_parsed=ProgramParsed
+                                  , program_orig=ProgramOrig
+                                  , enabled=Enabled
+                                  },
+                     Checkpoint) ->
+    #{ <<"id">> => Id
+     , <<"owner">> => OwnerId
+     , <<"owner_full">> => Owner
+     , <<"name">> => ProgramName
+     , <<"type">> => ProgramType
+     , <<"parsed">> => ProgramParsed
+     , <<"orig">> => ProgramOrig
+     , <<"enabled">> => Enabled
+     , <<"checkpoint">> => Checkpoint
+     }.
+
+
+collaborator_to_json({ #registered_user_entry{ id=Id
+                                             , username=Username
+                                             }
+                     , Role
+                     }) ->
+    Picture = case ?UTILS:user_has_picture(Id) of
+                  false -> null;
+                  true ->
+                      <<"/users/by-id/", Id/binary, "/picture">>
+              end,
+    #{ id => Id
+     , username => Username
+     , role => Role
+     , picture => Picture
+     }.
+
+
+bridge_to_json(#service_port_entry_extra{ id=Id
+                                        , name=Name
+                                        , owner={OwnerType, OwnerId}
+                                        , service_id=ServiceId
+                                        , is_connected=IsConnected
+                                        , icon=Icon
+                                        }) ->
+    #{ <<"id">> => Id
+     , <<"name">> => Name
+     , <<"owner">> => OwnerId
+     , <<"owner_full">> => #{type => OwnerType, id => OwnerId}
+     , <<"service_id">> => ServiceId
+     , <<"is_connected">> => IsConnected
+     , <<"icon">> => serialize_icon(Icon)
      }.

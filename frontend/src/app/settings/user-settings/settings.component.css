@@ -1,5 +1,6 @@
 .settings-section {
     width: 100%;
+    padding-bottom: 2em;
 }
 
 .save-button {
@@ -13,11 +14,11 @@
 
 .settings-group {
     background-color: #fff;
-    border: 1px solid #88a;
-    border-radius: 3px;
+    border-radius: 4px;
     padding: 1ex;
     margin-top: 1ex;
     overflow: auto;
+    box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3);
 }
 
 .settings-group > .title {
@@ -51,13 +52,23 @@
 
 /* Avatar */
 div.avatar {
-    padding-top: 1ex;
+    padding: 0;
+    height: 10em;
+    width: 10em;
+    display: block;
+    margin: 1em auto;
+    box-sizing: content-box;
+    border: 1px dashed transparent;
+}
+
+.edited div.avatar {
+    border: 1px dashed rgba(0,0,0,0.3);
 }
 
 .avatar > img {
-    height: 7ex;
-    display: block;
-    margin: 0 auto;
+    height: 10em;
+    width: 10em;
+    border-radius: 4px;
 }
 
 .avatar-edit-section {
@@ -66,4 +77,14 @@ div.avatar {
 
 .avatar-edit-section > mat-icon {
     vertical-align: bottom;
+}
+
+.picture-upload-button {
+    padding: 1ex;
+    border-radius: 5px;
+}
+
+.avatar-edit-section .save-button {
+    display: inline-block;
+    margin-left: 1em;
 }

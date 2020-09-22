@@ -21,5 +21,29 @@ get_versioning(_Nodes) ->
 
     #database_version_progression
         { base=Version_1
-        , updates=[]
+        , updates=
+              %% Introduce user groups
+              [ #database_version_transformation
+                { id=1
+                , apply=fun() ->
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?TEMPLATE_TABLE,
+                                                 fun({ template_entry
+                                                     , Id, Name, Owner, Content
+                                                     }) ->
+                                                         { template_entry
+                                                         , Id, Name, {user, Owner}, Content
+                                                         }
+                                                 end,
+                                                 [ id, name, owner, content
+                                                 ],
+                                                 template_entry
+                                                ),
+
+                                ok = mnesia:wait_for_tables([ ?TEMPLATE_TABLE ],
+                                                            automate_configuration:get_table_wait_time())
+
+                        end
+                }
+              ]
         }.

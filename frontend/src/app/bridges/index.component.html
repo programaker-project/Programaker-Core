@@ -8,12 +8,6 @@
               <mat-card role="button" (click)="showBridgeDetail(bridge)" class="module bridge mat-card connected-{{bridge.is_connected}}">
                   <h4 *ngIf="bridge.name">{{bridge.name}}</h4>
                   <h4 *ngIf="!bridge.name">No name</h4>
-                  <div *ngIf="bridge.id === expandedBridgeId">
-                      <button id="bridge-delete-button" color="warn"
-                              (click)="deleteBridge(bridge)" mat-button>
-                          <mat-icon>delete_forever</mat-icon> Delete bridge
-                      </button>
-                  </div>
                   <div class="warning no_connection_warning" *ngIf="!bridge.is_connected">Service bridge not connected</div>
               </mat-card>
           </div>

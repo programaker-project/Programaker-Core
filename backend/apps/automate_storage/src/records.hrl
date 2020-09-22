@@ -19,7 +19,21 @@
                                , is_in_preview :: boolean() | ?MNESIA_SELECTOR % Features in beta/preview
                                }).
 
+-type user_in_group_role() :: admin | editor | viewer.
+-type group_metadata_edition() :: #{ public => boolean() }.
+-record(user_group_entry, { id :: binary() | ?MNESIA_SELECTOR
+                          , name :: binary() | ?MNESIA_SELECTOR
+                          , canonical_name :: binary() | ?MNESIA_SELECTOR
+                          , public :: boolean() | ?MNESIA_SELECTOR
+                          }).
+
+-record(user_group_permissions_entry, { group_id :: binary() | ?MNESIA_SELECTOR
+                                      , user_id :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
+                                      , role  :: user_in_group_role()
+                                      }).
+
 -type verification_type() :: registration_mail_verification | password_reset_verification.
+
 -record(user_verification_entry, { verification_id :: binary() | ?MNESIA_SELECTOR
                                  , user_id :: binary() | ?MNESIA_SELECTOR
                                  , verification_type :: verification_type() | ?MNESIA_SELECTOR
@@ -32,8 +46,8 @@
                             }).
 
 -record(user_program_entry, { id :: binary()            | ?MNESIA_SELECTOR
-                            , user_id ::binary()        | ?MNESIA_SELECTOR
-                            , program_name ::binary()   | ?MNESIA_SELECTOR
+                            , owner :: owner_id()       | ?OWNER_ID_MNESIA_SELECTOR
+                            , program_name :: binary()  | ?MNESIA_SELECTOR
                             , program_type :: atom()    | ?MNESIA_SELECTOR
                             , program_parsed :: any()   | ?MNESIA_SELECTOR
                             , program_orig :: any()     | ?MNESIA_SELECTOR
@@ -45,15 +59,15 @@
                             , last_failed_call_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             }).
 
--type log_entry_severity() :: debug | warning | error.
+-type log_severity() :: debug | info | warning | error.
 -record(user_program_log_entry, { program_id :: binary()               | ?MNESIA_SELECTOR
                                 , thread_id :: binary() | none         | ?MNESIA_SELECTOR
-                                , user_id :: binary() | none           | ?MNESIA_SELECTOR
+                                , owner :: owner_id() | none           | ?OWNER_ID_MNESIA_SELECTOR
                                 , block_id :: binary() | undefined     | ?MNESIA_SELECTOR
                                 , event_data :: _                      | ?MNESIA_SELECTOR
                                 , event_message :: binary()            | ?MNESIA_SELECTOR
                                 , event_time :: time_in_milliseconds() | ?MNESIA_SELECTOR
-                                , severity :: log_entry_severity()     | ?MNESIA_SELECTOR
+                                , severity :: log_severity()           | ?MNESIA_SELECTOR
                                 , exception_data :: none | {_, _, _}   | ?MNESIA_SELECTOR
                                 }).
 
@@ -70,7 +84,7 @@
 
 -record(user_generated_log_entry, { program_id :: binary()               | ?MNESIA_SELECTOR
                                   , block_id :: binary() | undefined     | ?MNESIA_SELECTOR
-                                  , severity :: log_entry_severity()     | ?MNESIA_SELECTOR
+                                  , severity :: log_severity()           | ?MNESIA_SELECTOR
                                   , event_time :: time_in_milliseconds() | ?MNESIA_SELECTOR
                                   , event_message :: binary()            | ?MNESIA_SELECTOR
                                  }).
@@ -83,7 +97,7 @@
                                         }).
 
 -record(monitor_entry, { id :: binary() | 'none'      | ?MNESIA_SELECTOR
-                       , user_id :: binary() | 'none' | ?MNESIA_SELECTOR
+                       , owner :: owner_id() | 'none' | ?OWNER_ID_MNESIA_SELECTOR
                        , type :: binary()             | ?MNESIA_SELECTOR
                        , name :: binary()             | ?MNESIA_SELECTOR
                        , value :: any()               | ?MNESIA_SELECTOR
@@ -124,9 +138,9 @@
                                       , value :: any()
                                       }).
 
--record(custom_signal_entry, { id    :: binary() | ?MNESIA_SELECTOR
-                             , name  :: binary() | ?MNESIA_SELECTOR
-                             , owner :: binary() | ?MNESIA_SELECTOR %% User id
+-record(custom_signal_entry, { id    :: binary()   | ?MNESIA_SELECTOR
+                             , name  :: binary()   | ?MNESIA_SELECTOR
+                             , owner :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
                              }).
 
 

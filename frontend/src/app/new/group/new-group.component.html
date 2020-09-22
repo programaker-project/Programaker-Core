@@ -1,0 +1,93 @@
+<section class="component">
+    <div class="title">Create a new group</div>
+
+    <span class="intent">Let's create a new user group! We'll be done quickly.</span>
+
+    <div class="error-message col-sm-12" *ngIf="!!errorMessage">
+        {{ errorMessage }}
+    </div>
+
+    <mat-card>
+        <div [formGroup]="options" class="config-option">
+            <div class="title">Group data</div>
+
+            <mat-form-field>
+                <input matInput
+                    id="groupName"
+                    formControlName="groupName"
+                    (focusout)="validateGroupName()"
+                    placeholder="Group name"
+                    required
+                    name="groupName" />
+            </mat-form-field>
+            <mat-error *ngIf="options.controls.groupName.errors">
+                <div *ngIf="options.controls.groupName.errors.required">Group name is required</div>
+                <div *ngIf="options.controls.groupName.errors.minlength">Group name requires at least {{ options.controls.groupName.errors.minlength.requiredLength }} characters</div>
+                <div *ngIf="options.controls.groupName.errors.canonicalization">
+                    Group name can only contain letters (a-z, A-Z), numbers (0-9), whitespaces or underscores (_)
+                </div>
+	        </mat-error>
+        </div>
+
+        <div class="config-option">
+            <mat-slide-toggle
+                name="isPublicGroup"
+                [disabled]="!this.is_advanced"
+                [(ngModel)]="publicGroup">
+                <span class="explanation" *ngIf="publicGroup">Public group (<span class="key-point">non-members</span> can see the group)</span>
+                <span class="explanation" *ngIf="!publicGroup">Private group (<span class="key-point">only members</span> can see the group)</span>
+            </mat-slide-toggle>
+        </div>
+    </mat-card>
+
+
+    <mat-card>
+        <div class="config-option">
+            <div class="title">Collaborators</div>
+            <div class="intent">
+                Invite some people to the group (you can do this later).
+            </div>
+
+            <mat-form-field>
+                <input type="text"
+                    placeholder="Search for users to invite"
+                    matInput
+                    [formControl]="invitationSearch"
+                    [matAutocomplete]="auto">
+                <mat-autocomplete #invitationAutocomplete #auto="matAutocomplete" [displayWith]="displayInvitation">
+                    <mat-option *ngFor="let option of filteredOptions" [value]="option">
+                        {{option.username}}
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <ul class="collaborator-list">
+                <li class="collaborator" *ngFor="let user of collaborators">
+                    <button (click)="removeCollaborator(user)" class="remove-collaborator" >
+                        <mat-icon>clear</mat-icon>
+                    </button>
+                    <span class="name">
+                        {{ user.username }}
+                    </span>
+                </li>
+            </ul>
+        </div>
+    </mat-card>
+
+    <div class="accept-cancel">
+        <button class="confirm-button"
+            [disabled]="!options.valid"
+            (click)="createGroup()"
+            mat-button mat-raised-button>
+            Create group
+        </button>
+
+        or
+
+        <button
+            (click)="goBack()"
+            mat-button mat-raised-button>
+            Go back
+        </button>
+    </div>
+</section>

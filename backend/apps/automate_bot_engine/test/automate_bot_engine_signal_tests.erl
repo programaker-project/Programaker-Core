@@ -66,7 +66,7 @@ tests(_SetupResult) ->
 %%%% Operations
 simple_wait_for_signal() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = iolist_to_binary([Prefix,"-test-1-owner"]),
+    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
@@ -130,7 +130,7 @@ simple_wait_for_signal() ->
 
 wait_for_signal_check_key() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = iolist_to_binary([Prefix,"-test-1-owner"]),
+    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
@@ -211,7 +211,7 @@ wait_for_signal_check_key() ->
 
 wait_for_signal_check_subkey() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = iolist_to_binary([Prefix,"-test-1-owner"]),
+    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
@@ -341,7 +341,7 @@ simple_wait_for_variable() ->
 
 wait_for_monitor_signal() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = iolist_to_binary([Prefix,"-test-1-owner"]),
+    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
@@ -355,8 +355,7 @@ wait_for_monitor_signal() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                    ServicePortId, OwnerUserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                          Module, OwnerUserId),
 
@@ -408,7 +407,7 @@ wait_for_monitor_signal() ->
 
 wait_for_monitor_signal_check_key() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = iolist_to_binary([Prefix,"-test-1-owner"]),
+    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
@@ -422,8 +421,7 @@ wait_for_monitor_signal_check_key() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(
-                                    ServicePortId, OwnerUserId),
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                          Module, OwnerUserId),
 
