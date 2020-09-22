@@ -274,7 +274,9 @@ as_module(#service_port_configuration{ id=Id
      }.
 
 -spec set_service_port_configuration(binary(), #service_port_configuration{}, owner_id()) -> {ok, [ request_icon ]}.
-set_service_port_configuration(ServicePortId, Configuration=#service_port_configuration{ icon=NewIcon }, OwnerId) ->
+set_service_port_configuration(ServicePortId, Configuration=#service_port_configuration{ icon=NewIcon
+                                                                                       , is_public=IsPublic
+                                                                                       }, OwnerId) ->
     io:fwrite("Setting configuration: ~p~n", [Configuration]),
 
     ServiceId = case get_service_id_for_port(ServicePortId) of
@@ -282,6 +284,7 @@ set_service_port_configuration(ServicePortId, Configuration=#service_port_config
                         ok = automate_service_registry:update_service_module(as_module(Configuration),
                                                                              FoundServiceId,
                                                                              OwnerId),
+                        ok = automate_service_registry:update_visibility(FoundServiceId, IsPublic),
                         FoundServiceId;
                     {error, not_found} ->
                         {ok, NewServiceId} = create_service_for_port(Configuration, OwnerId),

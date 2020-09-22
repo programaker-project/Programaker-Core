@@ -74,6 +74,13 @@ tests(_SetupResult) ->
     , { "[Service port - Notifications] Route notifications to all users on public"
       , fun route_notification_targeted_to_all_users_on_public/0
       }
+      %% Configuration
+    , { "[Service port - Configuration] A public bridge can be later set to private"
+      , fun set_public_bridge_to_private/0
+      }
+    , { "[Service port - Configuration] A private bridge can be later set to public"
+      , fun set_private_bridge_to_public/0
+      }
     ].
 
 
@@ -399,6 +406,69 @@ route_notification_targeted_to_all_users_on_public() ->
     after ?RECEIVE_TIMEOUT ->
             ct:fail(notif_to_all_users_owner_not_received)
     end.
+
+
+%%====================================================================
+%% Configuration
+%%====================================================================
+set_public_bridge_to_private() ->
+    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-5-owner">>,
+    TargetUserId = <<?TEST_ID_PREFIX, "-route-test-5-NONowner-TARGET">>,
+    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-5-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
+
+    %% Configure service port
+    Configuration = #{ <<"is_public">> => true
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ ]
+                     },
+
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user({user, TargetUserId})),
+
+    %% Set to private
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => #{ <<"is_public">> => false
+                                                                        , <<"service_name">> => ServicePortName
+                                                                        , <<"blocks">> => [ ]
+                                                                        }
+                                                      })),
+    ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user({user, TargetUserId})).
+
+
+
+set_private_bridge_to_public() ->
+    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-6-owner">>,
+    TargetUserId = <<?TEST_ID_PREFIX, "-route-test-6-NONowner-TARGET">>,
+    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-6-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
+
+    %% Configure service port
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ ]
+                     },
+
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+    ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user({user, TargetUserId})),
+
+    %% Set to public
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => #{ <<"is_public">> => true
+                                                                        , <<"service_name">> => ServicePortName
+                                                                        , <<"blocks">> => [ ]
+                                                                        }
+                                                      })),
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user({user, TargetUserId})).
+
 
 %%====================================================================
 %% Notification routing tests - Internal functions
