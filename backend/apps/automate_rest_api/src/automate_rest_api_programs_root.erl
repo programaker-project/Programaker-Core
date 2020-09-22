@@ -125,5 +125,5 @@ encode_program_list(Programs) ->
                                                automate_logging:log_platform(error, ErrNS, Error, StackTrace),
                                                []
                                        end,
-                      ?FORMATTING:program_to_json(Program, ProgramBridges)
+                      ?FORMATTING:program_listing_to_json(Program, ProgramBridges)
               end, Programs).

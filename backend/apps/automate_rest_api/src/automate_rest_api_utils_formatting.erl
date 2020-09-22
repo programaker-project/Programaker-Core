@@ -7,8 +7,9 @@
         , serialize_maybe_undefined/1
         , reason_to_json/1
         , group_to_json/1
-        , program_to_json/1
-        , program_to_json/2
+        , program_listing_to_json/1
+        , program_listing_to_json/2
+        , program_data_to_json/2
         , collaborator_to_json/1
         , bridge_to_json/1
         ]).
@@ -145,22 +146,22 @@ group_to_json(#user_group_entry{ id=Id
      , picture => Picture
      }.
 
-program_to_json(#user_program_entry{ id=Id
-                                   , program_name=Name
-                                   , enabled=Enabled
-                                   , program_type=Type
-                                   }) ->
+program_listing_to_json(#user_program_entry{ id=Id
+                                           , program_name=Name
+                                           , enabled=Enabled
+                                           , program_type=Type
+                                           }) ->
     #{ id => Id
      , name => Name
      , enabled => Enabled
      , type => Type
      };
-program_to_json(#program_metadata{ id=Id
-                                 , name=Name
-                                 , link=Link
-                                 , enabled=Enabled
-                                 , type=Type
-                                 }) ->
+program_listing_to_json(#program_metadata{ id=Id
+                                         , name=Name
+                                         , link=Link
+                                         , enabled=Enabled
+                                         , type=Type
+                                         }) ->
     #{ id => Id
      , name => Name
      , link =>  Link
@@ -168,9 +169,31 @@ program_to_json(#program_metadata{ id=Id
      , type => Type
      }.
 
-program_to_json(Program, Bridges) ->
-    Base = program_to_json(Program),
+program_listing_to_json(Program, Bridges) ->
+    Base = program_listing_to_json(Program),
     Base#{ bridges_in_use => Bridges }.
+
+
+program_data_to_json(#user_program{ id=Id
+                                  , owner=Owner=#{ id := OwnerId}
+                                  , program_name=ProgramName
+                                  , program_type=ProgramType
+                                  , program_parsed=ProgramParsed
+                                  , program_orig=ProgramOrig
+                                  , enabled=Enabled
+                                  },
+                     Checkpoint) ->
+    #{ <<"id">> => Id
+     , <<"owner">> => OwnerId
+     , <<"owner_full">> => Owner
+     , <<"name">> => ProgramName
+     , <<"type">> => ProgramType
+     , <<"parsed">> => ProgramParsed
+     , <<"orig">> => ProgramOrig
+     , <<"enabled">> => Enabled
+     , <<"checkpoint">> => Checkpoint
+     }.
+
 
 collaborator_to_json({ #registered_user_entry{ id=Id
                                              , username=Username

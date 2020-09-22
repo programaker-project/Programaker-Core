@@ -16,9 +16,10 @@
         , accept_json_program/2
         ]).
 
--define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
+-define(UTILS, automate_rest_api_utils).
+-define(FORMATTING, automate_rest_api_utils_formatting).
 
 -record(state, { program_id :: binary(), user_id :: binary() | undefined }).
 
@@ -83,7 +84,14 @@ content_types_provided(Req, State) ->
 to_json(Req, State=#state{program_id=ProgramId, user_id=UserId}) ->
     case automate_rest_api_backend:get_program(ProgramId) of
         { ok, Program } ->
-            Json = program_to_json(Program),
+
+            Checkpoint = case automate_storage:get_last_checkpoint_content(ProgramId) of
+                             {ok, Content } ->
+                                 Content;
+                             {error, not_found} ->
+                                 null
+                         end,
+            Json = ?FORMATTING:program_data_to_json(Program, Checkpoint),
             {ok, CanEdit} = automate_storage:is_user_allowed({user, UserId}, ProgramId, edit_program),
             Output = Json#{ readonly => not CanEdit },
 
@@ -92,27 +100,6 @@ to_json(Req, State=#state{program_id=ProgramId, user_id=UserId}) ->
 
             { jiffy:encode(Output), Res2, State }
     end.
-
-
-program_to_json(#user_program{ id=Id
-                             , owner=Owner=#{ id := OwnerId }
-                             , program_name=ProgramName
-                             , program_type=ProgramType
-                             , program_parsed=ProgramParsed
-                             , program_orig=ProgramOrig
-                             , enabled=Enabled
-                             }) ->
-    #{ <<"id">> => Id
-     , <<"owner">> => OwnerId
-     , <<"owner_full">> => Owner
-     , <<"name">> => ProgramName
-     , <<"type">> => ProgramType
-     , <<"parsed">> => ProgramParsed
-     , <<"orig">> => ProgramOrig
-     , <<"enabled">> => Enabled
-     }.
-
-
 content_types_accepted(Req, State) ->
     {[{{<<"application">>, <<"json">>, []}, accept_json_program}],
      Req, State}.

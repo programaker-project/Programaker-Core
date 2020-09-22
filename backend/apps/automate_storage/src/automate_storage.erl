@@ -866,6 +866,7 @@ register_program_runner(ProgramId, Pid) ->
             {error, mnesia:error_description(Reason)}
     end.
 
+-spec get_program_from_id(binary()) -> {ok, #user_program_entry{}} | {error, not_found}.
 get_program_from_id(ProgramId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of

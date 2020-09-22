@@ -16,9 +16,10 @@
         , accept_json_program/2
         ]).
 
--define(UTILS, automate_rest_api_utils).
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
+-define(UTILS, automate_rest_api_utils).
+-define(FORMATTING, automate_rest_api_utils_formatting).
 
 -record(get_program_seq, { username :: binary(), program_name :: binary() }).
 
@@ -81,12 +82,12 @@ to_json(Req, State) ->
                              {error, not_found} ->
                                  null
                          end,
-            Output = program_to_json(Program, Checkpoint),
+            Output = ?FORMATTING:program_data_to_json(Program, Checkpoint),
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            { Output, Res2, State };
+            { jiffy:encode(Output), Res2, State };
         {error, Reason} ->
             Code = 500,
             Output = jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }),
@@ -94,27 +95,6 @@ to_json(Req, State) ->
             { stop, Res, State }
     end.
 
-
-program_to_json(#user_program{ id=Id
-                             , owner=Owner=#{ id := OwnerId}
-                             , program_name=ProgramName
-                             , program_type=ProgramType
-                             , program_parsed=ProgramParsed
-                             , program_orig=ProgramOrig
-                             , enabled=Enabled
-                             },
-                Checkpoint) ->
-
-    jiffy:encode(#{ <<"id">> => Id
-                  , <<"owner">> => OwnerId
-                  , <<"owner_full">> => Owner
-                  , <<"name">> => ProgramName
-                  , <<"type">> => ProgramType
-                  , <<"parsed">> => ProgramParsed
-                  , <<"orig">> => ProgramOrig
-                  , <<"enabled">> => Enabled
-                  , <<"checkpoint">> => Checkpoint
-                  }).
 
 
 content_types_accepted(Req, State) ->

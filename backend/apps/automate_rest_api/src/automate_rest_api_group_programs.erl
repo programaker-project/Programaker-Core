@@ -87,7 +87,7 @@ to_json(Req, State=#state{user_id=_UserId, group_id=GroupId}) ->
                                                                           automate_logging:log_platform(error, ErrNS, Error, StackTrace),
                                                                           []
                                                                   end,
-                                                        ?FORMATTING:program_to_json(Program, Bridges)
+                                                        ?FORMATTING:program_listing_to_json(Program, Bridges)
                                                 end, Programs)}),
             Res = ?UTILS:send_json_format(Req),
 
@@ -107,7 +107,7 @@ accept_json(Req, State=#state{user_id=_UserId, group_id=GroupId}) ->
     case automate_storage:create_program({group, GroupId}, Name, Type) of
         { ok, ProgramId } ->
             {ok, Program} = automate_storage:get_program_from_id(ProgramId),
-            Output = jiffy:encode(?FORMATTING:program_to_json(Program)),
+            Output = jiffy:encode(?FORMATTING:program_listing_to_json(Program)),
 
             Res1 = cowboy_req:set_resp_body(Output, Req),
             Res2 = ?UTILS:send_json_format(Res1),
