@@ -310,7 +310,7 @@ export class Toolbox {
 
                 this.jsonInit({
                     'id': 'operator_select_connection',
-                    'message0': 'On bridge %1 use conection %2',
+                    'message0': 'On bridge %1 use connection %2',
                     'args0': [
                         {
                             'type': 'field_dropdown',

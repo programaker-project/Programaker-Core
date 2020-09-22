@@ -30,6 +30,7 @@ import { SessionService } from './session.service';
 import { environment } from '../environments/environment';
 import { unixMsToStr } from './utils';
 import { Synchronizer } from './syncronizer';
+import { MatMenu } from '@angular/material/menu';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -73,6 +74,9 @@ export class ProgramDetailComponent implements OnInit {
     nonReadyReason: NonReadyReason;
     logCount = 0;
     streamingLogs = false;
+
+    // HACK: Prevent the MatMenu import for being removed
+    private _pinRequiredMatMenuLibrary: MatMenu;
 
     constructor(
         private monitorService: MonitorService,

@@ -39,15 +39,13 @@
             <mat-icon>stop</mat-icon> Stop all
         </button>
         <!-- Advanced functions, on a menu -->
-        <button id="advancedProgramControls" color="secondary"
+        <button id="advanced-program-controls-button" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
             *ngIf="this.canEdit && program !== undefined"
             mat-button>
             <mat-icon>more_vert</mat-icon> Advanced
         </button>
-        <mat-menu  #advancedProgramControls="matMenu"
-            *ngIf="this.canEdit && program !== undefined"
-        >
+        <mat-menu  #advancedProgramControls="matMenu">
             <button mat-menu-item
                 (click)="setProgramTags()">
                 <mat-icon class="example-tab-icon">label</mat-icon>
