@@ -119,16 +119,11 @@ to_json(Req, State) ->
 
 encode_program_list(Programs) ->
     lists:map(fun(Program=#program_metadata{id=Id}) ->
-                      ProgramBridges = try get_bridges_on_program_id(Id) of
-                                    Bridges -> Bridges
-                                catch ErrNS:Error:StackTrace ->
-                                        automate_logging:log_platform(error, ErrNS, Error, StackTrace),
-                                        []
-                                end,
+                      ProgramBridges = try ?UTILS:get_bridges_on_program_id(Id) of
+                                           Bridges -> Bridges
+                                       catch ErrNS:Error:StackTrace ->
+                                               automate_logging:log_platform(error, ErrNS, Error, StackTrace),
+                                               []
+                                       end,
                       ?FORMATTING:program_to_json(Program, ProgramBridges)
               end, Programs).
-
-get_bridges_on_program_id(ProgramId) ->
-    {ok, Program} = automate_storage:get_program_from_id(ProgramId),
-    {ok, Bridges} = automate_bot_engine:get_bridges_on_program(Program),
-    Bridges.

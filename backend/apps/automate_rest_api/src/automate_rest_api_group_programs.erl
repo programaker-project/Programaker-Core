@@ -77,12 +77,22 @@ content_types_provided(Req, State) ->
 to_json(Req, State=#state{user_id=_UserId, group_id=GroupId}) ->
     case automate_storage:list_programs({group, GroupId}) of
         { ok, Programs } ->
-            Output = jiffy:encode(#{ success => true, programs => lists:map(fun ?FORMATTING:program_to_json/1 , Programs)}),
+            Output = jiffy:encode(
+                       #{ success => true
+                        , programs => lists:map(fun (Program) ->
+                                                        Bridges = try automate_bot_engine:get_bridges_on_program(Program) of
+                                                                      {ok, Result} ->
+                                                                          Result
+                                                                  catch ErrNS:Error:StackTrace ->
+                                                                          automate_logging:log_platform(error, ErrNS, Error, StackTrace),
+                                                                          []
+                                                                  end,
+                                                        ?FORMATTING:program_to_json(Program, Bridges)
+                                                end, Programs)}),
             Res = ?UTILS:send_json_format(Req),
 
             { Output, Res, State }
     end.
-
 
 %% POST handler
 content_types_accepted(Req, State) ->

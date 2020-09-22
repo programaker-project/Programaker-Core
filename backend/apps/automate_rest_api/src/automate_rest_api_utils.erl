@@ -7,6 +7,7 @@
         , user_has_picture/1
         , group_picture_path/1
         , group_has_picture/1
+        , get_bridges_on_program_id/1
         ]).
 
 read_body(Req0) ->
@@ -101,3 +102,8 @@ stream_body_content_to_file(Req0, File, Size) ->
             ok = file:write(File, Data),
             stream_body_content_to_file(Req, File, Size + size(Data))
     end.
+
+get_bridges_on_program_id(ProgramId) ->
+    {ok, Program} = automate_storage:get_program_from_id(ProgramId),
+    {ok, Bridges} = automate_bot_engine:get_bridges_on_program(Program),
+    Bridges.
