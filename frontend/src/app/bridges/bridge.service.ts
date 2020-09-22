@@ -35,8 +35,8 @@ export class BridgeService {
     }
 
     private async getBridgeIndexUrl(): Promise<string> {
-        const userApiRoot = await this.sessionService.getUserApiRoot();
-        return userApiRoot + '/bridges/';
+        const userId = (await this.sessionService.getSession()).user_id;
+        return `${API.ApiRoot}/users/id/${userId}/bridges`;
     }
 
 

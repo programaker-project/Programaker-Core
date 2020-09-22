@@ -169,8 +169,7 @@ export class NewDashboardComponent {
     async enableProgram(program: ProgramMetadata) {
         const session = await this.sessionService.getSession();
         await this.programService.setProgramStatus(JSON.stringify({"enable": true}),
-                                             program.id,
-                                             session.user_id);
+                                                   program.id);
         program.enabled = true;
     }
 

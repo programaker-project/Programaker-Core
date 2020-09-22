@@ -229,7 +229,7 @@ export class ProgramDetailComponent implements OnInit {
         // Initialize log listeners
         this.streamingLogs = true;
         if (!this.program.readonly) {
-            this.programService.watchProgramLogs(this.program.owner, this.program.id,
+            this.programService.watchProgramLogs(this.program.id,
                                                  { request_previous_logs: true })
                 .subscribe(
                     {
@@ -256,7 +256,7 @@ export class ProgramDetailComponent implements OnInit {
     initializeEventSynchronization() {
         // Initialize editor event listeners
         // This is used for collaborative editing.
-        this.eventStream = this.programService.getEventStream(this.program.owner, this.program.id);
+        this.eventStream = this.programService.getEventStream(this.program.id);
         const synchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
 
         const onCreation = {};
@@ -429,7 +429,7 @@ export class ProgramDetailComponent implements OnInit {
 
         const content = Blockly.Xml.domToPrettyText(xml);
 
-        return this.programService.checkpointProgram(this.program.id, this.program.owner, content);
+        return this.programService.checkpointProgram(this.program.id, content);
     }
 
     static getEditorPosition(workspaceElement: HTMLElement): {x:number, y: number, scale: number} | null {
@@ -879,7 +879,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const update = (this.programService.updateProgramTags(this.program.owner, this.program.id, data.tags)
+            const update = (this.programService.updateProgramTags(this.program.id, data.tags)
                             .then((success) => {
                                 if (!success) {
                                     return;
@@ -912,7 +912,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;
             }
 
-            const stopThreads = (this.programService.stopThreadsProgram(this.program.owner, this.program.id)
+            const stopThreads = (this.programService.stopThreadsProgram(this.program.id)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {

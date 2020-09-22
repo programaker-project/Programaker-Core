@@ -15,8 +15,8 @@ Registration,,,,Admin,User,Anonymous,,,,
 /sessions/register,,UserData,,,,POST,,,,
 "/sessions/register/verify [skip]",UserToken,User,,,,POST,,,,
 "/sessions/login/reset  [skip]",,ResetToken,,POST,POST,POST,,,,
-"/sessions/login/reset/validate  [skip]",ResetToken,,,"POST ",POST,POST,,,,
-"/sessions/login/reset/update  [skip]",ResetToken,,,"POST ",POST,POST,,,,
+"/sessions/login/reset/validate  [skip]",ResetToken,,,POST,POST,POST,,,,
+"/sessions/login/reset/update  [skip]",ResetToken,,,POST,POST,POST,,,,
 ,,,,,,,,,,
 "Session management",,,,Admin,User,Anonymous,,,,
 /sessions/check,,,,IGNORE,GET,,,,,
@@ -48,15 +48,15 @@ Items,,,,Admin,User,Anonymous,,,,
 ,,,,,,,,,,
 Programs,,,,Admin,User,Anonymous,,"G. Admin","G. Editor","G. Viewer"
 /programs/by-id/:program_id,Program,,,,"GET, PUT, PATCH, DELETE",,,"GET, PUT, PATCH, DELETE","GET, PUT, PATCH, DELETE",GET
-"/programs/by-id/:program_id/checkpoint  [skip]",Program,,,,POST,,,POST,POST,
+/programs/by-id/:program_id/checkpoint,Program,,,,POST,,,POST,POST,
 /programs/by-id/:program_id/logs-stream,Program,,,,READ,,,READ,READ,
 /programs/by-id/:program_id/editor-events,Program,,,,"READ, WRITE",,,"READ, WRITE","READ, WRITE",READ
 /programs/by-id/:program_id/custom-blocks,Program,,,,GET,,,GET,GET,GET
 /programs/by-id/:program_id/bridges/by-id/:bridge_id/callbacks/:callback,Program,,,,GET,,,GET,GET,GET
-"/programs/by-id/:program_id/logs  [skip]",Program,,,,GET,,,GET,GET,
-"/programs/by-id/:program_id/tags  [skip]",Program,,,,"GET, POST",,,"GET, POST","GET, POST",GET
-"/programs/by-id/:program_id/stop-threads  [skip]",Program,,,,POST,,,POST,POST,
-"/programs/by-id/:program_id/status [skip]",Program,,,,POST,,,POST,POST,
+/programs/by-id/:program_id/logs,Program,,,,GET,,,GET,GET,
+/programs/by-id/:program_id/tags,Program,,,,"GET, POST",,,"GET, POST","GET, POST",GET
+"/programs/by-id/:program_id/stop-threads ",Program,,,,POST,,,POST,POST,
+/programs/by-id/:program_id/status,Program,,,,POST,,,POST,POST,
 ,,,,,,,,,,
 ,,,,,,,,,,
 Connections,,,,Admin,User,Anonymous,,"G. Admin","G. Editor","G. Viewer"
@@ -71,7 +71,8 @@ Connections,,,,Admin,User,Anonymous,,"G. Admin","G. Editor","G. Viewer"
 "/programs/by-id/:program_id/connections/established [skip]",Program,,,,GET,,,GET,GET,GET
 ,,,,,,,,,,
 Bridges,,,,Admin,User,Anonymous,,,,
-,,,,,,,,,,
+/users/:user_name/bridges,User,Bridge,,,"GET, POST",,,,,
+/users/id/:user_id/bridges,User,Bridge,,,"GET, POST",,,,,
 /users/id/:user_id/bridges/id/:bridge_id,"User, Bridge",,,,DELETE,,,,,
 /users/id/:user_id/bridges/id/:bridge_id/callback/:callback,"User, Bridge, Callback",,,,GET,,,,,
 /users/id/:user_id/bridges/id/:bridge_id/functions/:function,"User, Bridge, Function",,,,POST,,,,,

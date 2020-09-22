@@ -45,7 +45,7 @@
         , delete_program/2
         , delete_program/1
         , delete_running_process/1
-        , update_program_status/3
+        , update_program_status/2
         , is_user_allowed/3
 
         , get_program_owner/1
@@ -571,8 +571,8 @@ list_programs(Owner) ->
                   end,
     wrap_transaction(mnesia:activity(ets, Transaction)).
 
--spec update_program_status(binary(), binary(), boolean()) -> 'ok' | { 'error', any() }.
-update_program_status(_Username, ProgramId, Status)->
+-spec update_program_status(binary(), boolean()) -> 'ok' | { 'error', any() }.
+update_program_status(ProgramId, Status)->
     Transaction = fun() ->
                           case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
                               [Program] ->

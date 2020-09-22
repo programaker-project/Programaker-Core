@@ -115,7 +115,7 @@ start_thread_and_stop_threads_continues() ->
     ?assert(is_process_alive(ThreadRunnerId)),
 
     %% Stop threads
-    ok = automate_rest_api_backend:stop_program_threads(undefined, ProgramId),
+    ok = automate_bot_engine:stop_program_threads(ProgramId),
 
     %% Check that program is alive
     {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),
@@ -169,7 +169,7 @@ start_program_and_stop_threads_nothing() ->
     ?assert(is_process_alive(ProgramPid)),
 
     %% Stop threads
-    ok = automate_rest_api_backend:stop_program_threads(undefined, ProgramId),
+    ok = automate_bot_engine:stop_program_threads(ProgramId),
 
     %% Check that program is alive
     {ok, ProgramPid2} = automate_storage:get_program_pid(ProgramId),

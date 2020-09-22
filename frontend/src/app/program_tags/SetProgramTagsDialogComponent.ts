@@ -54,7 +54,7 @@ export class SetProgramTagsDialogComponent {
         this.programService = programService;
 
         data.tags = this.tags;
-        this.programService.getProgramTags(this.programUserId, this.program.id).then((tags) => {
+        this.programService.getProgramTags(this.program.id).then((tags) => {
             // Bind data.tags again now that this.tags has changed
             data.tags = this.tags = tags;
         });

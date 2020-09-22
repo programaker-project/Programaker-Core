@@ -22,7 +22,6 @@ import { AddBridgeDialogComponent } from 'app/dialogs/add-bridge-dialog/add-brid
 import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
 
 @Component({
-    // moduleId: module.id,
     selector: 'app-group-dashboard',
     templateUrl: './dashboard.component.html',
     providers: [BridgeService, ConnectionService, GroupService, MonitorService, ProgramService, SessionService, ServiceService],
@@ -250,8 +249,7 @@ export class GroupDashboardComponent {
     async enableProgram(program: ProgramMetadata) {
         const session = await this.sessionService.getSession();
         await this.programService.setProgramStatus(JSON.stringify({"enable": true}),
-                                                   program.id,
-                                                   session.user_id);
+                                                   program.id);
         program.enabled = true;
     }
 }

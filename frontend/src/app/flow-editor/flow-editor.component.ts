@@ -135,7 +135,7 @@ export class FlowEditorComponent implements OnInit {
     }
 
     initializeListeners() {
-        this.programService.watchProgramLogs(this.program.owner, this.program.id,
+        this.programService.watchProgramLogs(this.program.id,
                                              { request_previous_logs: true })
             .subscribe(
                 {
@@ -315,7 +315,7 @@ export class FlowEditorComponent implements OnInit {
                 return;
             }
 
-            const update = (this.programService.updateProgramTags(this.program.owner, this.program.id, data.tags)
+            const update = (this.programService.updateProgramTags(this.program.id, data.tags)
                             .then((success) => {
                                 if (!success) {
                                     return;
@@ -348,7 +348,7 @@ export class FlowEditorComponent implements OnInit {
                 return;
             }
 
-            const stopThreads = (this.programService.stopThreadsProgram(this.program.owner, this.program.id)
+            const stopThreads = (this.programService.stopThreadsProgram(this.program.id)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {

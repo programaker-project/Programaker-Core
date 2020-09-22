@@ -17,11 +17,7 @@
         , create_program/3
         , get_program/1
         , get_program/2
-        , update_program_tags/3
-        , update_program_status/3
-        , get_program_tags/2
         , get_program_logs/1
-        , stop_program_threads/2
         , lists_programs_from_username/1
         , update_program/3
         , update_program_by_id/2
@@ -196,44 +192,12 @@ get_program(ProgramId) ->
             X
     end.
 
-update_program_tags(_Username, ProgramName, Tags) ->
-    case automate_storage:register_program_tags(ProgramName, Tags) of
-        ok ->
-            ok;
-        { error, Reason } ->
-            {error, Reason}
-    end.
-
-update_program_status(Username, ProgramName, Status) ->
-    case automate_bot_engine:change_program_status(Username, ProgramName, Status) of
-        ok ->
-            ok;
-        { error, Reason } ->
-            { error , Reason }
-    end.
-
-get_program_tags(_Username, ProgramId) ->
-    case automate_storage:get_tags_program_from_id(ProgramId) of
-        {ok, Tags} ->
-            {ok, Tags};
-        X ->
-            X
-    end.
-
 get_program_logs(ProgramId) ->
     case automate_storage:get_logs_from_program_id(ProgramId) of
         {ok, Logs} ->
             {ok, Logs};
         X ->
             X
-    end.
-
-stop_program_threads(UserId, ProgramId) ->
-    case automate_bot_engine:stop_program_threads(UserId, ProgramId) of
-        ok ->
-            ok;
-        { error, Reason } ->
-            {error, Reason}
     end.
 
 -spec lists_programs_from_username(binary()) -> {'ok', [ #program_metadata{} ] }.

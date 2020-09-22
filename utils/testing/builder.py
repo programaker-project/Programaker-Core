@@ -46,7 +46,8 @@ def build_data_for_query(verb, endpoint, ctx):
             "name": id,
         }
 
-    elif endpoint == '/users/id/:user_id/programs/id/:program_id/tags':
+    elif endpoint in ('/users/id/:user_id/programs/id/:program_id/tags',
+                      '/programs/by-id/:program_id/tags'):
         tags = [gen_rand() for _ in range(4)]
         ctx['program_tags'] = tags
         return {
@@ -61,7 +62,8 @@ def build_data_for_query(verb, endpoint, ctx):
             "public": False,
         }
 
-    elif endpoint == '/users/:user_name/bridges':
+    elif endpoint in ('/users/:user_name/bridges',
+                      '/users/id/:user_id/bridges'):
         bridge_name = 'bridge' + gen_rand()
         ctx['bridge_name'] = bridge_name
         return {
@@ -90,7 +92,8 @@ def build_data_for_query(verb, endpoint, ctx):
             'file': open(SAMPLE_PICTURE, 'rb'),
         })
 
-    elif endpoint == '/users/id/:user_id/programs/id/:program_id/status':
+    elif endpoint in ('/users/id/:user_id/programs/id/:program_id/status',
+                      '/programs/by-id/:program_id/status'):
         return {
             'enable': True,
         }
@@ -124,7 +127,8 @@ def update_ctx(verb, endpoint, res, ctx):
         data = res.json()
         ctx['program_id'] = data['id']
 
-    elif verb == 'post' and endpoint == '/users/:user_name/bridges':
+    elif verb == 'post' and endpoint in ('/users/:user_name/bridges',
+                                         '/users/id/:user_id/bridges'):
         data = res.json()
         bridge_id = data['control_url'].rstrip('/').split('/')[-2]
         ctx['bridge_id'] = bridge_id

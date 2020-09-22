@@ -58,24 +58,28 @@ start_link() ->
 
                         , {"/api/v0/users/:user_id/programs", automate_rest_api_programs_root, []}
                         , {"/api/v0/users/:user_id/programs/:program_id", automate_rest_api_programs_specific, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/communication", automate_rest_api_program_specific_logs_stream, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []} % DEPR
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []} % DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/communication", automate_rest_api_program_specific_logs_stream, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []} %% DEPR
 
                         , {"/api/v0/programs/by-id/:program_id", automate_rest_api_program_specific_by_id, []}
+                        , {"/api/v0/programs/by-id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []}
                         , {"/api/v0/programs/by-id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
                         , {"/api/v0/programs/by-id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
-                        , {"/api/v0/programs/by-id/:program_id/custom-blocks/", automate_rest_api_program_custom_blocks, []}
+                        , {"/api/v0/programs/by-id/:program_id/custom-blocks", automate_rest_api_program_custom_blocks, []}
                         , {"/api/v0/programs/by-id/:program_id/bridges/by-id/:bridge_id/callbacks/:callback", automate_rest_api_program_bridge_callback, []}
 
                           %% Program operation
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs", automate_rest_api_program_logs, []} %% DEPR
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/tags", automate_rest_api_program_tags, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/stop-threads", automate_rest_api_program_stop, []}
-                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/status", automate_rest_api_program_status, []}
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/tags", automate_rest_api_program_tags, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/stop-threads", automate_rest_api_program_stop, []} %% DEPR
+                        , {"/api/v0/users/id/:user_id/programs/id/:program_id/status", automate_rest_api_program_status, []} %% DEPR
 
-                        , {"/api/v0/programs/id/:program_id/logs", automate_rest_api_program_logs, []}
+                        , {"/api/v0/programs/by-id/:program_id/logs", automate_rest_api_program_logs, []}
+                        , {"/api/v0/programs/by-id/:program_id/tags", automate_rest_api_program_tags, []}
+                        , {"/api/v0/programs/by-id/:program_id/stop-threads", automate_rest_api_program_stop, []}
+                        , {"/api/v0/programs/by-id/:program_id/status", automate_rest_api_program_status, []}
 
                           %% Connection management
                         , {"/api/v0/users/id/:user_id/connections/available", automate_rest_api_connections_available_root, []}
@@ -89,6 +93,7 @@ start_link() ->
 
                           %% Bridges
                         , {"/api/v0/users/:user_id/bridges", automate_rest_api_service_ports_root, []}
+                        , {"/api/v0/users/id/:user_id/bridges", automate_rest_api_user_bridges_root, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id", automate_rest_api_service_ports_specific, []} %% DEPR
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/callback/:callback", automate_rest_api_bridge_callback, []}
                         , {"/api/v0/users/id/:user_id/bridges/id/:bridge_id/functions/:function", automate_rest_api_bridge_function_specific, []}
