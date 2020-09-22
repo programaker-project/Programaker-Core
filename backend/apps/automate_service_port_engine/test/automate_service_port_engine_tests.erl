@@ -88,9 +88,9 @@ tests(_SetupResult) ->
 %% Custom block tests
 %%====================================================================
 owned_private_blocks_appear() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-test-1-owner">>,
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-1-owner">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-test-1-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     Configuration = #{ <<"is_public">> => false
                      , <<"service_name">> => ServicePortName
@@ -101,18 +101,18 @@ owned_private_blocks_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    ok = establish_connection(ServicePortId, {user, OwnerUserId}),
+    ok = establish_connection(ServicePortId, OwnerUserId),
 
-    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
+    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
 
     check_test_block(CustomBlock).
 
 
 non_owned_private_blocks_dont_appear() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-test-2-owner">>,
-    RequesterUserId = <<?TEST_ID_PREFIX, "-test-2-requester">>,
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-2-owner">>},
+    RequesterUserId = {user, <<?TEST_ID_PREFIX, "-test-2-requester">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-test-2-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     Configuration = #{ <<"is_public">> => false
                      , <<"service_name">> => ServicePortName
@@ -123,22 +123,22 @@ non_owned_private_blocks_dont_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    case ?BACKEND:gen_pending_connection(ServicePortId, {user, RequesterUserId}) of
+    case ?BACKEND:gen_pending_connection(ServicePortId, RequesterUserId) of
         {ok, ConnectionId} ->
             %% TODO This connection should *not* be possible
-            ?BACKEND:establish_connection(ServicePortId, {user, RequesterUserId}, ConnectionId, undefined);
+            ?BACKEND:establish_connection(ServicePortId, RequesterUserId, ConnectionId, undefined);
         _ ->
             ok
     end,
 
-    {ok, Results} = ?APPLICATION:list_custom_blocks({user, RequesterUserId}),
+    {ok, Results} = ?APPLICATION:list_custom_blocks(RequesterUserId),
     ?assertEqual(#{}, Results).
 
 
 owned_public_blocks_appear() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-test-3-owner">>,
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-3-owner">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-test-3-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
@@ -149,17 +149,17 @@ owned_public_blocks_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    ok = establish_connection(ServicePortId, {user, OwnerUserId}),
+    ok = establish_connection(ServicePortId, OwnerUserId),
 
-    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
+    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
 
     check_test_block(CustomBlock).
 
 non_owned_public_blocks_appear() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-test-4-owner">>,
-    RequesterUserId = <<?TEST_ID_PREFIX, "-test-4-requester">>,
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-4-owner">>},
+    RequesterUserId = {user, <<?TEST_ID_PREFIX, "-test-4-requester">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-test-4-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
@@ -170,16 +170,16 @@ non_owned_public_blocks_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    ok = establish_connection(ServicePortId, {user, RequesterUserId}),
+    ok = establish_connection(ServicePortId, RequesterUserId),
 
-    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks({user, RequesterUserId}),
+    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(RequesterUserId),
 
     check_test_block(CustomBlock).
 
 owned_delete_bridge_blocks() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-test-5-owner">>,
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-5-owner">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-test-5-service-port">>,
-    {ok, BridgeId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
@@ -190,31 +190,31 @@ owned_delete_bridge_blocks() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    ok = establish_connection(BridgeId, {user, OwnerUserId}),
+    ok = establish_connection(BridgeId, OwnerUserId),
 
-    {ok, #{ BridgeId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
+    {ok, #{ BridgeId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
     %% Blocks are created
     check_test_block(CustomBlock),
 
     {ok, ServiceId} = automate_service_port_engine_mnesia_backend:get_service_id_for_port(BridgeId),
     ?assertMatch({ok, _}, automate_service_registry:get_service_by_id(ServiceId)),
 
-    {ok, ResultsOk} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
+    {ok, ResultsOk} = ?APPLICATION:list_custom_blocks(OwnerUserId),
     ?assertMatch({ok, _}, maps:find(ServiceId, ResultsOk)),
-    {ok, BeforeDeleteServices} = automate_service_registry:get_all_services_for_user({user, OwnerUserId}),
+    {ok, BeforeDeleteServices} = automate_service_registry:get_all_services_for_user(OwnerUserId),
 
     %% Delete bridge
-    ok = automate_service_port_engine:delete_bridge({user, OwnerUserId}, BridgeId),
+    ok = automate_service_port_engine:delete_bridge(OwnerUserId, BridgeId),
 
     %% Blocks are destroyed
-    {ok, Results} = ?APPLICATION:list_custom_blocks({user, OwnerUserId}),
+    {ok, Results} = ?APPLICATION:list_custom_blocks(OwnerUserId),
     ?assertEqual(error, maps:find(ServiceId, Results)),
 
     %% Service deregistred
     ?assertEqual({error, not_found}, automate_service_port_engine_mnesia_backend:get_service_id_for_port(BridgeId)),
     ?assertEqual({error, not_found}, automate_service_registry:get_service_by_id(ServiceId)),
 
-    {ok, Services} = automate_service_registry:get_all_services_for_user({user, OwnerUserId}),
+    {ok, Services} = automate_service_registry:get_all_services_for_user(OwnerUserId),
     ?assertEqual(error, maps:find(ServiceId, Services)).
 
 %%====================================================================
@@ -258,8 +258,8 @@ check_test_block(Block) ->
 %% Notification routing tests
 %%====================================================================
 route_notification_targeted_to_owner() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-1-owner">>,
-    TargetUserId = {user, OwnerUserId},
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-1-owner">>},
+    TargetUserId = OwnerUserId,
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-1-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -293,8 +293,8 @@ route_notification_targeted_to_owner() ->
 
 
 route_notification_targeted_to_owner_on_public() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-2-owner">>,
-    TargetUserId = {user, OwnerUserId},
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-2-owner">>},
+    TargetUserId = OwnerUserId,
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-2-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -327,7 +327,7 @@ route_notification_targeted_to_owner_on_public() ->
     end.
 
 route_notification_targeted_to_non_owner_on_public() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-3-owner">>,
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-3-owner">>},
     TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-3-NONowner-TARGET">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-3-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
@@ -361,8 +361,8 @@ route_notification_targeted_to_non_owner_on_public() ->
     end.
 
 route_notification_targeted_to_all_users_on_public() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-4-owner">>,
-    TargetUserId = <<?TEST_ID_PREFIX, "-route-test-4-NONowner-TARGET">>,
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-4-owner">>},
+    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-4-NONowner-TARGET">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-4-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -412,10 +412,10 @@ route_notification_targeted_to_all_users_on_public() ->
 %% Configuration
 %%====================================================================
 set_public_bridge_to_private() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-5-owner">>,
-    TargetUserId = <<?TEST_ID_PREFIX, "-route-test-5-NONowner-TARGET">>,
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-5-owner">>},
+    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-5-NONowner-TARGET">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-5-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     %% Configure service port
     Configuration = #{ <<"is_public">> => true
@@ -427,7 +427,7 @@ set_public_bridge_to_private() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
-    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user({user, TargetUserId})),
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)),
 
     %% Set to private
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
@@ -437,15 +437,15 @@ set_public_bridge_to_private() ->
                                                                         , <<"blocks">> => [ ]
                                                                         }
                                                       })),
-    ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user({user, TargetUserId})).
+    ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)).
 
 
 
 set_private_bridge_to_public() ->
-    OwnerUserId = <<?TEST_ID_PREFIX, "-route-test-6-owner">>,
-    TargetUserId = <<?TEST_ID_PREFIX, "-route-test-6-NONowner-TARGET">>,
+    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-6-owner">>},
+    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-6-NONowner-TARGET">>},
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-6-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port({user, OwnerUserId}, ServicePortName),
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     %% Configure service port
     Configuration = #{ <<"is_public">> => false
@@ -457,7 +457,7 @@ set_private_bridge_to_public() ->
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                       , <<"value">> => Configuration
                                                       })),
-    ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user({user, TargetUserId})),
+    ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)),
 
     %% Set to public
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
@@ -467,7 +467,7 @@ set_private_bridge_to_public() ->
                                                                         , <<"blocks">> => [ ]
                                                                         }
                                                       })),
-    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user({user, TargetUserId})).
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)).
 
 
 %%====================================================================

@@ -63,7 +63,7 @@ tests(_SetupResult) ->
 save_to_test() ->
     %% Create service port
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = iolist_to_binary([Prefix,"-test-1-owner"]),
+    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
 
