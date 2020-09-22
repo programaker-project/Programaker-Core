@@ -1,0 +1,8 @@
+plan.svg
+plan.gv
+results.svg
+
+api_test_logs.txt
+
+.mypy_cache
+__pycache__

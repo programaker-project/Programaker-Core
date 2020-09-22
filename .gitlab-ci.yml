@@ -3,6 +3,7 @@ image: docker:19.03.5-dind
 stages:
   - test
   - build
+  - e2e-test
   - push-commit
   - push-branch  # To avoid duplicating the upload do it sequentially
 
@@ -36,6 +37,7 @@ build-prod-frontend:
   before_script:
     - mkdir -p tmp_docker_images/ || true
     - cd frontend
+  needs: []
   artifacts:
     paths:
       - tmp_docker_images/
@@ -46,6 +48,8 @@ build-prod-frontend:
 
 push-frontend:
   stage: push-commit
+  needs:
+    - build-prod-frontend
   dependencies:
     - build-prod-frontend
   before_script:
@@ -61,6 +65,8 @@ push-frontend:
 
 tag-frontend-branch:
   stage: push-branch
+  needs:
+    - build-prod-frontend
   dependencies:
     - build-prod-frontend
   before_script:
@@ -80,6 +86,7 @@ build-programaker-frontend:
   before_script:
     - mkdir -p tmp_docker_images/ || true
     - cd frontend
+  needs: []
   artifacts:
     paths:
       - tmp_docker_images/
@@ -91,6 +98,8 @@ build-programaker-frontend:
 push-programaker-frontend:
   stage: push-commit
   dependencies:
+    - build-programaker-frontend
+  needs:
     - build-programaker-frontend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -106,6 +115,8 @@ push-programaker-frontend:
 tag-programaker-frontend-branch:
   stage: push-branch
   dependencies:
+    - build-programaker-frontend
+  needs:
     - build-programaker-frontend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -139,6 +150,7 @@ dialyze-backend:
 
 build-backend:
   stage: build
+  needs: []
   artifacts:
     paths:
       - tmp_docker_images_optimized/
@@ -154,9 +166,24 @@ build-backend:
     - docker run -t --rm $DOCKER_IMAGE_BACKEND_OPTIMIZED /app/release/bin/automate escript ../scripts/sanity_check.erl
     - docker save $DOCKER_IMAGE_BACKEND_OPTIMIZED -o ../tmp_docker_images_optimized/backend-optimized.tar
 
+api-test-backend:
+  stage: e2e-test
+  dependencies:
+    - build-backend
+  needs:
+    - build-backend
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images_optimized/backend-optimized.tar
+  script:
+    - apk add --no-cache curl py3-pip graphviz-dev gcc musl-dev
+    - CI_TYPE=gitlab sh utils/testing/run-api-test.sh $DOCKER_IMAGE_BACKEND_OPTIMIZED
+
 push-backend:
   stage: push-commit
   dependencies:
+    - build-backend
+  needs:
     - build-backend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -172,6 +199,8 @@ push-backend:
 tag-backend-branch:
   stage: push-branch
   dependencies:
+    - build-backend
+  needs:
     - build-backend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
