@@ -261,6 +261,8 @@ mat-card.group {
     margin-top: 1ex;
     padding: 0;
     height: 3em;
+    min-width: 3em;
+    text-align: center;
 }
 
 mat-card.group img {

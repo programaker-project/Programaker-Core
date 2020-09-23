@@ -290,6 +290,7 @@ mat-card.bridge .bridge-name {
 mat-card.bridge img {
     max-width: 10ex;
     height: 3em;
+    padding: 0 0.5ex 0 0.5ex
 }
 
 mat-card.bridge .bridge-status {
@@ -341,7 +342,9 @@ mat-card.collaborator .collaborator-role mat-icon {
 }
 
 mat-card.collaborator img {
-    max-width: 3em;
+    max-width: 10ex;
+    width: 3em;
+    text-align: center;
     height: 3em;
     border-radius: 0 4px 4px 0;
     display: inline-block;

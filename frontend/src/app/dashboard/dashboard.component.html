@@ -17,7 +17,7 @@
                 <div *ngFor="let connection of connections">
                     <mat-card class="module connection"
                         role="button" (click)="openConnection(connection.conn)">
-                        <img class="icon" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
+                        <img class="icon" role="avatar" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
 
                         <span *ngIf="!connection.extra.icon_url" class="connection-name">
                             {{ connection.conn.bridge_name }}
@@ -32,7 +32,7 @@
         <div class="">
             <div *ngIf="userInfo" class="user-profile ">
                 <div class="avatar">
-                    <img src="{{ _getUserPicture(userInfo.id)  }}"
+                    <img role="avatar" src="{{ _getUserPicture(userInfo.id)  }}"
                         onError="this.src='/assets/profile-not-set.png'"
                         />
                 </div>
@@ -51,7 +51,7 @@
                             *ngFor="let group of userInfo.groups"
                             (click)="openGroup(group)"
                             role="button" >
-                            <img class="icon" *ngIf="group.picture" src="{{ group.picture }}" alt="{{ group.name }}"
+                            <img role="avatar" class="icon" *ngIf="group.picture" src="{{ group.picture }}" alt="{{ group.name }}"
                                 matTooltip="{{ group.name }}">
 
                             <span *ngIf="!group.picture" class="group-name">
@@ -104,7 +104,7 @@
                             <div class="card-title">{{program.name}}</div>
                             <div class="connection-icon-list">
                                 <span *ngFor="let bridge of program.bridges_in_use">
-                                    <img class="icon" *ngIf="bridgeInfo[bridge] && bridgeInfo[bridge].icon" src="{{ bridgeInfo[bridge].icon }}"
+                                    <img role="avatar" class="icon" *ngIf="bridgeInfo[bridge] && bridgeInfo[bridge].icon" src="{{ bridgeInfo[bridge].icon }}"
                                         data-toggle="tooltip" title="{{bridgeInfo[bridge].name}} bridge"/>
                                     <span class="nametag" *ngIf="bridgeInfo[bridge] && (!bridgeInfo[bridge].icon) && bridgeInfo[bridge].name">
                                         {{ bridgeInfo[bridge].name }}
