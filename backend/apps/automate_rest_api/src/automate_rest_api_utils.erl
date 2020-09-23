@@ -35,7 +35,7 @@ stream_body_to_file(Req, Path, FileName) ->
     try multipart(Req, File, #{}, FileName) of
         Res ->
             ok = filelib:ensure_dir(Path),
-            ok = file:rename(TmpPath, Path),
+            ok = movefile(TmpPath, Path),
             Res
     after
         case filelib:is_file(TmpPath) of
@@ -70,6 +70,15 @@ group_picture_path(GroupId) ->
 
 
 %% Auxiliary
+movefile(Source, Target) ->
+    case file:rename(Source, Target) of
+        ok ->
+            ok;
+        {error, exdev} -> %% Source and target on different devices
+            {ok, _BytesCopied} = file:copy(Source, Target),
+            ok = file:delete(Source)
+    end.
+
 tmp_path() ->
     BackupName = atom_to_list(?MODULE) ++ "/" ++ integer_to_list(erlang:phash2(make_ref())),
     BackupDir = filename:basedir(user_cache, "automate"),
