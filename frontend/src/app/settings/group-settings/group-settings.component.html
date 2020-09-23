@@ -97,8 +97,8 @@
                     checked="groupInfo.public"
                     [disabled]="(!groupInfo.public) && (!this.is_advanced)"
                     [(ngModel)]="setToPublicGroup">
-                    <span class="explanation" *ngIf="publicGroup">Public group (<span class="key-point">non-members</span> can see the group)</span>
-                    <span class="explanation" *ngIf="!publicGroup">Private group (<span class="key-point">only members</span> can see the group)</span>
+                    <span class="explanation" *ngIf="setToPublicGroup">Public group (<span class="key-point">non-members</span> can see the group)</span>
+                    <span class="explanation" *ngIf="!setToPublicGroup">Private group (<span class="key-point">only members</span> can see the group)</span>
                 </mat-slide-toggle>
 
                 <button mat-button mat-raised-button
