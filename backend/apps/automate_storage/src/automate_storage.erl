@@ -1143,10 +1143,32 @@ log_program_error(LogEntry=#user_program_log_entry{ program_id=ProgramId }) ->
 
 
 -spec add_user_generated_log(#user_generated_log_entry{}) -> ok | {error, atom()}.
-add_user_generated_log(LogEntry) when is_record(LogEntry, user_generated_log_entry) ->
+add_user_generated_log(LogEntry=#user_generated_log_entry{program_id=ProgramId}) ->
+    {LowWatermark, HighWatermark} = automate_configuration:get_program_logs_watermarks(),
     Transaction = fun() ->
-                          %% TODO: Prune logs if ABSOLUTE_MAX_LOG_RESULT_LENGHT is surpassed
-                          ok = mnesia:write(?USER_GENERATED_LOGS_TABLE, LogEntry, write)
+                          ok = mnesia:write(?USER_GENERATED_LOGS_TABLE, LogEntry, write),
+
+                          ProgramEntries = mnesia:read(?USER_GENERATED_LOGS_TABLE, ProgramId),
+                          case length(ProgramEntries) > HighWatermark of
+                              false -> ok;
+                              true ->
+                                  %% Start prunning logs
+                                  Sorted = lists:sort(fun( #user_generated_log_entry{ event_time=Time1 }
+                                                         , #user_generated_log_entry{ event_time=Time2 }
+                                                         ) ->
+                                                              Time1 >= Time2
+                                                      end, ProgramEntries),
+                                  {Kept, _} = lists:split(LowWatermark, Sorted),
+
+                                  %% Delete old values
+                                  ok = mnesia:delete(?USER_GENERATED_LOGS_TABLE, ProgramId, write),
+
+                                  %% Write new values
+                                  lists:foreach(fun(Element) ->
+                                                        ok = mnesia:write(?USER_GENERATED_LOGS_TABLE, Element, write)
+                                                end, Kept)
+                          end
+
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
@@ -1159,21 +1181,9 @@ add_user_generated_log(LogEntry) when is_record(LogEntry, user_generated_log_ent
 -spec get_user_generated_logs(binary()) -> {ok, [#user_generated_log_entry{}]}.
 get_user_generated_logs(ProgramId) ->
     Transaction = fun() ->
-                          Results = mnesia:read(?USER_GENERATED_LOGS_TABLE, ProgramId),
-                          case length(Results) > ?MAX_LOG_RESULT_LENGTH of
-                              false ->
-                                  {ok, Results};
-                              true ->
-                                  {ok, lists:sublist(Results, length(Results) - ?MAX_LOG_RESULT_LENGTH, length(Results))}
-                          end
+                          {ok, mnesia:read(?USER_GENERATED_LOGS_TABLE, ProgramId)}
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, Reason}
-    end.
-
+    wrap_transaction(mnesia:activity(ets, Transaction)).
 
 
 -spec mark_successful_call_to_bridge(binary(), binary()) -> ok.
