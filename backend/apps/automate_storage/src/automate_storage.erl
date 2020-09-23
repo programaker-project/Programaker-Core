@@ -2217,7 +2217,12 @@ start_coordinator() ->
                                              lists:foreach(fun (Node) ->
                                                                    ok = add_mnesia_node(Node)
                                                            end, NonPrimaryList),
-                                             mnesia:info(),
+
+                                             %% This might fail when some nodes are blocked.
+                                             %% It is handled as the information itself is not needed.
+                                             try mnesia:info() of _ -> ok
+                                             catch _:_:_ -> io:fwrite("Error getting mnesia info~n")
+                                             end,
                                              io:fwrite("SP: ~p~n", [SyncPeers]),
                                              ok = build_tables(SyncPeers),
 
