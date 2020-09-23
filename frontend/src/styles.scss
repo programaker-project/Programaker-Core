@@ -22,6 +22,15 @@ body {
     height: auto;
 }
 
+img[role="avatar"] {
+    object-fit: scale-down;
+    // @COMPATIBILITY@ Note that this is not supported on IE, in that case the
+    // avatar will be stretched, which is a reasonable result.
+
+    // Another alternative would be to set 'max-width' and 'max-height' to the
+    // desired image size, and 'width' and 'height' to auto.
+}
+
 .mat-drawer-inner-container {
     padding-top: 1em;
 }

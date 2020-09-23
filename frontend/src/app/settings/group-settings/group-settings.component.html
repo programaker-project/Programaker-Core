@@ -2,7 +2,7 @@
     <div class="avatar-settings-col col-sm-4">
         <div [ngClass]="'settings-group ' + (loadedImage ? 'edited' : '')">
             <div class="avatar">
-                <img *ngIf="session" #imgPreview
+                <img role="avatar" *ngIf="session" #imgPreview
                     src="{{_getGroupPicture(groupInfo.id)}}"
                     onError="this.src='/assets/profile-not-set.png'" />
             </div>
