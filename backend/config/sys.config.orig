@@ -4,6 +4,13 @@
                  %% Uncomment the following configuration for development environments
                  %%  where the frontend is on port 4200 and the REST API in port 8888 .
                  %% , { frontend_root_url, <<"http://localhost:4200">> }
+
+                 %% Uncomment the following to set the watermarks of the user program logs.
+                 %% When the HIGH watermark is reached for a single log, the logs will be
+                 %% drained, starting with the older one, until the LOW watermark is reached.
+                 %% , { user_program_logs_count_low_watermark, 1000 }
+                 %% , { user_program_logs_count_high_watermark, 2000 }
+
                ] }
 ,  { automate_rest_api, [ { port, 8888}
                           %% Commenting the following line removes the authentication on /metrics
