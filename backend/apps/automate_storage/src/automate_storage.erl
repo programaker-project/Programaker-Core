@@ -106,8 +106,6 @@
         ]).
 -export([start_link/0]).
 -define(SERVER, ?MODULE).
--define(MAX_LOG_RESULT_LENGTH, 100).
-%% -define(ABSOLUTE_MAX_LOG_RESULT_LENGTH, 10000).
 
 -include("./security_params.hrl").
 -include("./databases.hrl").
@@ -928,20 +926,9 @@ get_tags_program_from_id(ProgramId) ->
 -spec get_logs_from_program_id(binary()) -> {ok, [#user_program_log_entry{}]} | {error, atom()}.
 get_logs_from_program_id(ProgramId) ->
     Transaction = fun() ->
-                          Results = mnesia:read(?USER_PROGRAM_LOGS_TABLE, ProgramId),
-                          case length(Results) > ?MAX_LOG_RESULT_LENGTH of
-                              false ->
-                                  {ok, Results};
-                              true ->
-                                  {ok, lists:sublist(Results, length(Results) - ?MAX_LOG_RESULT_LENGTH, length(Results))}
-                          end
+                          {ok, mnesia:read(?USER_PROGRAM_LOGS_TABLE, ProgramId)}
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, Reason}
-    end.
+    wrap_transaction(mnesia:activity(ets, Transaction)).
 
 dirty_list_running_programs() ->
     {ok, mnesia:dirty_all_keys(?RUNNING_PROGRAMS_TABLE)}.
@@ -1120,10 +1107,31 @@ get_program_variable(ProgramId, Key) ->
     end.
 
 -spec log_program_error(#user_program_log_entry{}) -> ok | {error, atom()}.
-log_program_error(LogEntry) when is_record(LogEntry, user_program_log_entry) ->
+log_program_error(LogEntry=#user_program_log_entry{ program_id=ProgramId }) ->
+    {LowWatermark, HighWatermark} = automate_configuration:get_program_logs_watermarks(),
     Transaction = fun() ->
-                          %% TODO: Prune logs if ABSOLUTE_MAX_LOG_RESULT_LENGHT is surpassed
-                          ok = mnesia:write(?USER_PROGRAM_LOGS_TABLE, LogEntry, write)
+                          ok = mnesia:write(?USER_PROGRAM_LOGS_TABLE, LogEntry, write),
+
+                          ProgramEntries = mnesia:read(?USER_PROGRAM_LOGS_TABLE, ProgramId),
+                          case length(ProgramEntries) > HighWatermark of
+                              false -> ok;
+                              true ->
+                                  %% Start prunning logs
+                                  Sorted = lists:sort(fun( #user_program_log_entry{ event_time=Time1 }
+                                                         , #user_program_log_entry{ event_time=Time2 }
+                                                         ) ->
+                                                              Time1 >= Time2
+                                                      end, ProgramEntries),
+                                  {Kept, _} = lists:split(LowWatermark, Sorted),
+
+                                  %% Delete old values
+                                  ok = mnesia:delete(?USER_PROGRAM_LOGS_TABLE, ProgramId, write),
+
+                                  %% Write new values
+                                  lists:foreach(fun(Element) ->
+                                                        ok = mnesia:write(?USER_PROGRAM_LOGS_TABLE, Element, write)
+                                                end, Kept)
+                              end
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->

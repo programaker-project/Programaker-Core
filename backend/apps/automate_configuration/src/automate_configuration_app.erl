@@ -15,6 +15,8 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
+    %% Check that configuration assertions are valid
+    check_assertions(),
     automate_configuration_sup:start_link().
 
 %%--------------------------------------------------------------------
@@ -24,3 +26,5 @@ stop(_State) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+check_assertions() ->
+    automate_configuration:get_program_logs_watermarks().
