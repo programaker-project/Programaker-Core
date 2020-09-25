@@ -125,11 +125,7 @@ establish_connection(ServicePortId, Owner) ->
                    end),
 
     {ok, #{module := Module}} = automate_service_registry:get_service_by_id(ServicePortId),
-    {ok, HowTo } = automate_service_registry_query:get_how_to_enable(Module,
-                                                                     case Owner of
-                                                                         {user, UserId} -> #{ user_id => UserId };
-                                                                         {group, GroupId} -> #{ group_id => GroupId }
-                                                                     end),
+    {ok, HowTo } = automate_service_registry_query:get_how_to_enable(Module, Owner),
 
     case HowTo of
         #{ <<"type">> := <<"message">>, <<"connection_id">> := ConnectionId } ->

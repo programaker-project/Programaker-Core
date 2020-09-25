@@ -97,7 +97,7 @@ get_how_to(GroupId, ServiceId) ->
         E = {error, _} ->
             E;
         {ok, #{ module := Module }} ->
-            automate_service_registry_query:get_how_to_enable(Module, #{ group_id => GroupId })
+            automate_service_registry_query:get_how_to_enable(Module, {group, GroupId })
     end.
 
 extend_how_to(HowTo=#{ <<"type">> := <<"form">>
