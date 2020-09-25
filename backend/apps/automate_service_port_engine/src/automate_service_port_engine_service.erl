@@ -67,26 +67,9 @@ is_enabled_for_user(_Owner, _Params) ->
     {ok, true}.
 
 %% No need to enable service
--spec get_how_to_enable(#{ user_id := binary() } | #{group_id := binary()}, [binary()]) -> {ok, map()}.
-get_how_to_enable(#{ user_id := UserId }, [ServicePortId]) ->
-    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, {user, UserId}),
-    case automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId) of
-        {error, Err} ->
-            {error, Err};
-        {ok, Response} ->
-            case Response of
-                #{ <<"result">> := null } ->
-                    {ok, #{ <<"type">> => <<"direct">> } };
-                #{ <<"result">> := Result } ->
-                    {ok, Result#{ <<"connection_id">> => TemporaryConnectionId }};
-                _ ->
-                    {ok, #{ <<"type">> => <<"direct">> } }
-
-            end
-    end;
-
-get_how_to_enable(#{ group_id := GroupId }, [ServicePortId]) ->
-    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, {group, GroupId}),
+-spec get_how_to_enable(owner_id(), [binary()]) -> {ok, map()} | {error, not_found}.
+get_how_to_enable(Owner, [ServicePortId]) ->
+    {ok, TemporaryConnectionId} = ?BACKEND:gen_pending_connection(ServicePortId, Owner),
     case automate_service_port_engine:get_how_to_enable(ServicePortId, TemporaryConnectionId) of
         {error, Err} ->
             {error, Err};
@@ -101,7 +84,6 @@ get_how_to_enable(#{ group_id := GroupId }, [ServicePortId]) ->
 
             end
     end.
-
 
 -spec send_registration_data(owner_id(), any(), [binary()], map()) -> {ok, any()}.
 send_registration_data(Owner, RegistrationData, [ServicePortId], Properties) ->

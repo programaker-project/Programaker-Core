@@ -28,6 +28,7 @@ is_enabled_for_user({Module, Params}, Owner) ->
 is_enabled_for_user(Module, Username) ->
     Module:is_enabled_for_user(Username).
 
+-spec get_how_to_enable(module() | {module(), [_]}, owner_id()) -> {ok, map()} | {error, not_found}.
 get_how_to_enable({Module, Params}, UserInfo) ->
     Module:get_how_to_enable(UserInfo, Params);
 
