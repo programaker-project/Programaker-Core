@@ -185,6 +185,7 @@ push-backend:
     - build-backend
   needs:
     - build-backend
+    - api-test-backend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images_optimized/backend-optimized.tar
@@ -202,6 +203,7 @@ tag-backend-branch:
     - build-backend
   needs:
     - build-backend
+    - api-test-backend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images_optimized/backend-optimized.tar
