@@ -3,6 +3,28 @@
     <span class="bridge-name">{{ data.bridgeInfo.name }}</span>
 </h2>
 
+<section *ngIf="resources" class="resources">
+    <h4>Resources</h4>
+
+    <div class="resource-entry" *ngFor="let resource of resources">
+        <div class="resource-name">{{ resource.name }}</div>
+
+        <ul class="resource-options" *ngFor="let entry of resource.values">
+            <li>
+                <span class="entry-name">{{ entry.name }}</span>
+
+                <button mat-raised-button (click)="openShare(resource, entry)" class="share-button">
+                    <div class="annotated-icon">
+                        <label>Share</label>
+                        <mat-icon>share</mat-icon>
+                    </div>
+                </button>
+            </li>
+        </ul>
+    </div>
+
+</section>
+
 <section *ngIf="signalStream" class="signals">
     <h4>Signals</h4>
 

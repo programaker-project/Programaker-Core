@@ -19,7 +19,7 @@
                     </div>
                 </div>
                 <div *ngFor="let connection of connections">
-                    <mat-card class="module connection"
+                    <mat-card class="module connection non-clickable"
                         role="button" (click)="openConnection(connection.conn)">
                         <img role="avatar" class="icon" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
 

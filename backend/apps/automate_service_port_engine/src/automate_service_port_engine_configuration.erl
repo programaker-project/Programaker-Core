@@ -203,6 +203,24 @@ get_versioning(Nodes) ->
                                                                 automate_configuration:get_table_wait_time())
                             end
                     }
+
+                  , #database_version_transformation
+                    %% Introduce resources
+                    { id=5
+                    , apply=fun() ->
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?SERVICE_PORT_CONFIGURATION_TABLE,
+                                                     fun({service_port_configuration, Id, ServiceName, ServiceId,
+                                                          IsPublic, Blocks, Icon, AllowMultipleConnections }) ->
+                                                             %% Replicate the entry. Just set 'resources' to empty list.
+                                                             {service_port_configuration, Id, ServiceName, ServiceId,
+                                                              IsPublic, Blocks, Icon, AllowMultipleConnections, [] }
+                                                     end,
+                                                     [ id, service_name, service_id, is_public, blocks, icon, allow_multiple_connections, resources ],
+                                                     service_port_configuration
+                                                    )
+                            end
+                    }
                   ]
         }.
 

@@ -290,7 +290,7 @@ mat-card.bridge .bridge-name {
 mat-card.bridge img {
     max-width: 10ex;
     height: 3em;
-    padding: 0 0.5ex 0 0.5ex
+    padding: 0.5ex
 }
 
 mat-card.bridge .bridge-status {

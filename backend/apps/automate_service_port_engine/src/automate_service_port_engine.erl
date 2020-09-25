@@ -20,13 +20,16 @@
         , get_user_service_ports/1
         , delete_bridge/2
         , callback_bridge/3
+        , callback_bridge_through_connection/3
         , get_channel_origin_bridge/1
         , get_bridge_info/1
         , get_bridge_owner/1
+        , get_bridge_configuration/1
 
         , listen_bridge/2
         , listen_bridge/3
         , list_established_connections/1
+        , list_established_connections/2
         , get_pending_connection_info/1
         , is_module_connectable_bridge/2
         ]).
@@ -50,11 +53,20 @@ create_service_port(Owner, ServicePortName) when is_tuple(Owner) ->
 register_service_port(ServicePortId) ->
     ?ROUTER:connect_bridge(ServicePortId).
 
--spec call_service_port(binary(), binary(), any(), binary(), map()) -> {ok, map()} | {error, ?ROUTER_ERROR_CLASSES}.
-call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
-    ?LOGGING:log_call_to_bridge(ServicePortId,FunctionName,Arguments,UserId,ExtraData),
+-spec call_service_port(binary(), binary(), any(), owner_id() | binary(), map()) -> {ok, map()} | {error, ?ROUTER_ERROR_CLASSES}.
+call_service_port(ServicePortId, FunctionName, Arguments, Owner, ExtraData) when is_tuple(Owner) ->
+    case internal_user_id_to_connection_id(Owner, ServicePortId) of
+        {ok, ConnectionId} ->
+            call_service_port(ServicePortId, FunctionName, Arguments, ConnectionId, ExtraData);
+        {error, Reason} ->
+            {error, Reason}
+    end;
+
+call_service_port(ServicePortId, FunctionName, Arguments, ConnectionId, ExtraData) ->
+    ?LOGGING:log_call_to_bridge(ServicePortId, FunctionName, Arguments, ConnectionId, ExtraData),
+
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
-                                        , <<"user_id">> => UserId
+                                        , <<"user_id">> => ConnectionId
                                         , <<"value">> => #{ <<"function_name">> => FunctionName
                                                           , <<"arguments">> => Arguments
                                                           }
@@ -62,16 +74,16 @@ call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
                                         }).
 
 -spec get_how_to_enable(binary(), binary()) -> {ok, any()} | {error, atom()}.
-get_how_to_enable(ServicePortId, UserId) ->
+get_how_to_enable(ServicePortId, ConnectionId) ->
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"GET_HOW_TO_SERVICE_REGISTRATION">>
-                                        , <<"user_id">> => UserId
+                                        , <<"user_id">> => ConnectionId
                                         , <<"value">> => #{}
                                         }).
 
 -spec send_registration_data(binary(), map(), binary()) -> {ok, map()}.
-send_registration_data(ServicePortId, Data, UserId) ->
+send_registration_data(ServicePortId, Data, ConnectionId) ->
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"REGISTRATION">>
-                                        , <<"user_id">> => UserId
+                                        , <<"user_id">> => ConnectionId
                                         , <<"value">> => #{ <<"form">> => Data }
                                         }).
 
@@ -237,15 +249,18 @@ delete_bridge(Accessor, BridgeId) when is_tuple(Accessor) ->
 -spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map()} | {error, term()}.
 callback_bridge(Owner, BridgeId, CallbackName) when is_tuple(Owner) ->
     case internal_user_id_to_connection_id(Owner, BridgeId) of
-        {ok, BridgeUserId} ->
-            ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
-                                           , <<"user_id">> => BridgeUserId
-                                           , <<"value">> => #{ <<"callback">> => CallbackName
-                                                             }
-                                           });
+        {ok, ConnectionId} ->
+            callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName);
         {error, Reason} ->
             {error, Reason}
     end.
+
+-spec callback_bridge_through_connection(binary(), binary(), binary()) -> {ok, map()} | {error, term()}.
+callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName) ->
+    ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
+                                   , <<"user_id">> => ConnectionId
+                                   , <<"value">> => #{ <<"callback">> => CallbackName }
+                                   }).
 
 
 -spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
@@ -265,9 +280,18 @@ get_bridge_info(BridgeId) ->
 get_bridge_owner(BridgeId) ->
     ?BACKEND:get_bridge_owner(BridgeId).
 
+-spec get_bridge_configuration(binary()) -> {ok, #service_port_configuration{}} | {error, not_found}.
+get_bridge_configuration(BridgeId) ->
+    ?BACKEND:get_bridge_configuration(BridgeId).
+
+
 -spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
 list_established_connections(Owner) when is_tuple(Owner) ->
     ?BACKEND:list_established_connections(Owner).
+
+-spec list_established_connections(owner_id(), binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+list_established_connections(Owner, BridgeId) when is_tuple(Owner) ->
+    ?BACKEND:list_established_connections(Owner, BridgeId).
 
 -spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
 get_pending_connection_info(ConnectionId) ->
@@ -332,14 +356,32 @@ parse_configuration_map(ServicePortId,
                                 , <<"is_public">> := IsPublic
                                 , <<"service_name">> := ServiceName
                                 }) ->
+    Resources = parse_resources(Config),
     #service_port_configuration{ id=ServicePortId
-                               , is_public=IsPublic
-                               , service_id=undefined
-                               , service_name=ServiceName
-                               , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
-                               , icon=get_icon_from_config(Config)
-                               , allow_multiple_connections=get_allow_multiple_connections_from_config(Config)
-                               }.
+                                 , is_public=IsPublic
+                                 , service_id=undefined
+                                 , service_name=ServiceName
+                                 , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
+                                 , icon=get_icon_from_config(Config)
+                                 , allow_multiple_connections=get_allow_multiple_connections_from_config(Config)
+                                 , resources=lists:map(fun({Name, _Lockable}) -> Name end, Resources)
+                                 }.
+
+%% Find lockabel resources in configuration
+-spec parse_resources(map()) -> [{ Name :: binary(), Lockable :: boolean() }].
+parse_resources(#{ <<"resources">> := Resources }) ->
+    lists:map(fun(Resource=#{ <<"name">> := Name }) ->
+                      case Resource of
+                          #{ <<"properties">> := #{  <<"lockable">> := true }
+                           } ->
+                              {Name, true};
+                          _ ->  %% Not declared as lockable
+                              {Name, false}
+                      end
+              end, Resources);
+
+parse_resources(_) ->
+    [].
 
 
 -spec get_icon_from_config(map()) -> undefined | supported_icon_type().
@@ -436,6 +478,11 @@ parse_argument(#{ <<"type">> := <<"variable">>
                                        , default=undefined
                                        , class=undefined
                                        };
+parse_argument(#{ <<"type">> := _Type
+                , <<"values">> := #{ <<"collection">> := Collection
+                                   }
+                }) ->
+    #service_port_block_collection_argument{ name=Collection };
 
 parse_argument(#{ <<"type">> := Type
                 , <<"values">> := #{ <<"callback">> := Callback

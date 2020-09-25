@@ -24,8 +24,12 @@
                                              , callback :: binary()
                                              }).
 
+-record(service_port_block_collection_argument, { name :: binary()
+                                                }).
+
 -type service_port_block_argument() :: #service_port_block_static_argument{}
-                                     | #service_port_block_dynamic_argument{}.
+                                     | #service_port_block_dynamic_argument{}
+                                     | #service_port_block_collection_argument{} .
 
 -type block_save_to() :: null | #{ binary() => any()}.
 -type block_subkey() :: null | #{ binary() => any()}.
@@ -64,6 +68,7 @@
                                     , blocks :: [#service_port_block{}] | ?MNESIA_SELECTOR
                                     , icon :: undefined | supported_icon_type() | ?MNESIA_SELECTOR
                                     , allow_multiple_connections :: boolean() | ?MNESIA_SELECTOR
+                                    , resources :: [binary()] | ?MNESIA_SELECTOR
                                     }).
 
 -record(service_port_entry_extra, { id    :: binary()

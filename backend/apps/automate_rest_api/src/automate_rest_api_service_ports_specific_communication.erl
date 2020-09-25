@@ -28,17 +28,22 @@ websocket_init(State=#state{ service_port_id=ServicePortId
     automate_service_port_engine:register_service_port(ServicePortId),
     {ok, State}.
 
-websocket_handle({text, Msg}, State=#state{ service_port_id=ServicePortId
+websocket_handle({_, Msg}, State=#state{ service_port_id=ServicePortId
                                           , owner=Owner
                                           }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg),
-    {ok, State};
-
-websocket_handle({binary, Msg}, State=#state{ service_port_id=ServicePortId
-                                            , owner=Owner
-                                            }) ->
-    automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg),
-    {ok, State};
+    try automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg) of
+        _ ->
+            {ok, State}
+    catch ErrorNs:Error:StackTrace ->
+            automate_logging:log_api(error, ?MODULE, binary:list_to_bin(
+                                                       lists:flatten(io_lib:format("~p:~p~n~p", [ErrorNs, Error, StackTrace])))),
+            { reply
+            , { close
+              , binary:list_to_bin(
+                 lists:flatten(io_lib:format("~p~p", [ErrorNs, Error])))}
+            , State
+            }
+    end;
 
 websocket_handle(_Message, State) ->
     {ok, State}.

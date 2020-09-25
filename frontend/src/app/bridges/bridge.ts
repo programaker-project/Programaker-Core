@@ -13,4 +13,12 @@ export interface BridgeIndexData {
     icon: IconReference;
 }
 
+export type BridgeResourceMap = {[key: string]: {[key: string]: string}[]};
+
+export interface BridgeResourceEntry{
+    name: string,
+    id: string,
+};
+export type BridgeResource = { name: string, values: BridgeResourceEntry[] };
+
 export type BridgeSignal = any;

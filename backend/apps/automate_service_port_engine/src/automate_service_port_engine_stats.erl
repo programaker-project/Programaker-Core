@@ -22,6 +22,7 @@ get_bridge_metrics() ->
                                                                        , blocks='_'
                                                                        , icon='_'
                                                                        , allow_multiple_connections='_'
+                                                                       , resources='_'
                                                                        },
                           PublicMatcher = [{ PublicMatchHead
                                            , [{ '==', '$1', true }]

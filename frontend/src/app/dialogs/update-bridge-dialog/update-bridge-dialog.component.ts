@@ -1,12 +1,13 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { BridgeIndexData, BridgeSignal } from 'app/bridges/bridge';
+import { BridgeIndexData, BridgeResource, BridgeResourceEntry, BridgeSignal } from 'app/bridges/bridge';
 import { BridgeService } from 'app/bridges/bridge.service';
 import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
 import { Observable } from 'rxjs';
 import { ConfirmDeleteDialogComponent } from '../confirm-delete-dialog/confirm-delete-dialog.component';
 import { slidingWindow } from './sliding-window.operator';
+import { GroupService } from 'app/group.service';
 
 @Component({
     selector: 'app-update-bridge-dialog',
@@ -15,16 +16,18 @@ import { slidingWindow } from './sliding-window.operator';
         'update-bridge-dialog.component.css',
         '../../libs/css/material-icons.css',
     ],
-    providers: [BridgeService, SessionService],
+    providers: [BridgeService, GroupService, SessionService],
 })
 export class UpdateBridgeDialogComponent {
     session: Session;
     signalStream: Observable<BridgeSignal[]>;
+    resources: BridgeResource[];
     _stringify = JSON.stringify;
 
     constructor(public dialogRef: MatDialogRef<UpdateBridgeDialogComponent>,
                 private bridgeService: BridgeService,
                 private sessionService: SessionService,
+                private groupService: GroupService,
                 private dialog: MatDialog,
 
                 @Inject(MAT_DIALOG_DATA)
@@ -35,13 +38,13 @@ export class UpdateBridgeDialogComponent {
 
         this.sessionService.getSession().then(session => {
             this.session = session;
-            if (this.session.tags.is_advanced) {
-                const stream = this.bridgeService.getBridgeSignals(data.bridgeInfo.id, data.asGroup);
 
-                this.signalStream = stream.pipe(
-                    slidingWindow(10)
-                );
-            }
+            this.bridgeService.getBridgeResources(data.bridgeInfo.id, data.asGroup).then(resources => this.resources = resources);
+            const stream = this.bridgeService.getBridgeSignals(data.bridgeInfo.id, data.asGroup);
+
+            this.signalStream = stream.pipe(
+                slidingWindow(10)
+            );
         });
     }
 
@@ -50,6 +53,12 @@ export class UpdateBridgeDialogComponent {
 
     onBack(): void {
         this.dialogRef.close({success: true});
+    }
+
+    async openShare(resource: BridgeResource, entry: BridgeResourceEntry) {
+        const groups = await this.groupService.getUserGroups();
+        console.log("Sharing", resource, entry);
+        console.log("With some of", groups)
     }
 
     deleteBridge() {

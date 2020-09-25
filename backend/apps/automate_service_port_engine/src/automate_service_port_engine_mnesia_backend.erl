@@ -18,6 +18,7 @@
         , get_user_service_ports/1
         , list_bridge_channels/1
         , list_established_connections/1
+        , list_established_connections/2
         , get_pending_connection_info/1
 
         , gen_pending_connection/2
@@ -27,6 +28,7 @@
         , get_service_id_for_port/1
         , get_bridge_info/1
         , get_bridge_owner/1
+        , get_bridge_configuration/1
         , get_all_bridge_info/1
         , delete_bridge/2
 
@@ -229,6 +231,20 @@ get_bridge_owner(BridgeId) ->
                 end
         end,
     automate_storage:wrap_transaction(mnesia:activity(ets, T)).
+
+
+-spec get_bridge_configuration(binary()) -> {ok, #service_port_configuration{}} | {error, not_found}.
+get_bridge_configuration(BridgeId) ->
+    T = fun() ->
+                case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId) of
+                    [] ->
+                        {error, not_found};
+                    [Entry] ->
+                        {ok, Entry}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
+
 
 -spec get_all_bridge_info(binary()) -> {ok, #service_port_entry{}, undefined | #service_port_configuration{}} | {error, _}.
 get_all_bridge_info(BridgeId) ->
@@ -511,7 +527,7 @@ list_bridge_channels(ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+-spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]} | {error, not_found}.
 list_established_connections({OwnerType, OwnerId}) ->
     MatchHead = #user_to_bridge_connection_entry{ id='_'
                                                 , bridge_id='_'
@@ -529,14 +545,20 @@ list_established_connections({OwnerType, OwnerId}) ->
     Transaction = fun() ->
                           {ok, mnesia:select(?USER_TO_BRIDGE_CONNECTION_TABLE, Matcher)}
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            Result;
-        {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+    mnesia:activity(ets, Transaction).
+
+-spec list_established_connections(owner_id(), binary()) -> {ok, [#user_to_bridge_connection_entry{}]} | {error, not_found}.
+list_established_connections(Owner, BridgeId) ->
+    case list_established_connections(Owner) of
+        {ok, Results} ->
+            {ok, lists:filter(fun(#user_to_bridge_connection_entry{ bridge_id=ConnBridgeId }) ->
+                                      ConnBridgeId == BridgeId
+                              end, Results)};
+        X ->
+            X
     end.
 
--spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
+-spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}} | {error, not_found}.
 get_pending_connection_info(ConnectionId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId) of
@@ -651,6 +673,7 @@ list_public_ports() ->
                                            , blocks='_'
                                            , icon='_'
                                            , allow_multiple_connections='_'
+                                           , resources='_'
                                            },
     Guard = {'==', '$2', true},
     ResultColumn = '$1',

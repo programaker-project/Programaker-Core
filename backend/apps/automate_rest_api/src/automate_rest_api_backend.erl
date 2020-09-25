@@ -375,7 +375,7 @@ list_established_connections(UserId) ->
 callback_bridge(UserId, BridgeId, Callback) ->
     automate_service_port_engine:callback_bridge(UserId, BridgeId, Callback).
 
--spec bridge_function_call(binary(), binary(), binary(), any()) -> {ok, map()} |{ error, term()}.
+-spec bridge_function_call(owner_id(), binary(), binary(), any()) -> {ok, map()} |{ error, term()}.
 bridge_function_call(UserId, BridgeId, FunctionName, Arguments) ->
     automate_service_port_engine:call_service_port(BridgeId, FunctionName, Arguments, UserId, #{}).
 

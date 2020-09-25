@@ -123,6 +123,8 @@ log_platform(Severity, Msg) ->
 -spec log_api(log_severity(), _, _) -> ok.
 log_api(debug, _, _) ->
     ok; %% Ignored for now
+log_api(Severity, Endpoint, Error) when is_binary(Error) ->
+    io:fwrite("[~p@~p] ~s~n", [Severity, Endpoint, Error]);
 log_api(Severity, Endpoint, Error) ->
     io:fwrite("[~p@~p] ~p~n", [Severity, Endpoint, Error]).
 

@@ -21,6 +21,43 @@ h2 mat-icon {
     font-weight: bold;
 }
 
+section.resources {
+    border-bottom: 1px solid rgba(0,0,0,0.3);
+}
+
+.resource-entry {
+    padding-left: 1ex;
+    border-left: 1px solid rgba(0,0,0,0.3);
+}
+
+.resource-name {
+    font-size: 120%;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+.resource-options {
+    margin-top: 1ex;
+}
+
+.entry-name {
+    vertical-align: middle;
+}
+
+.annotated-icon mat-icon {
+    vertical-align: inherit;
+}
+
+.annotated-icon label {
+    font-size: small;
+    margin: 0 0.5ex 0 0.5ex;
+}
+
+section.resources li .share-button {
+    margin: 0 1ex 0 1ex;
+    padding: 0.5ex
+}
+
 .signal-terminal {
     box-shadow: 0 0 2px 1px rgba(0,0,0,0.3) inset;
     max-height: 50vh;

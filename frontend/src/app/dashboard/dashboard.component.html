@@ -15,7 +15,7 @@
                     </div>
                 </div>
                 <div *ngFor="let connection of connections">
-                    <mat-card class="module connection"
+                    <mat-card class="module connection non-clickable"
                         role="button" (click)="openConnection(connection.conn)">
                         <img class="icon" role="avatar" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
 
@@ -68,6 +68,45 @@
                         </button>
                     </div>
                 </section>
+
+                <section *ngIf="bridges && bridges.length > 0" class="bridges">
+                    <div class="section-title">Bridges</div>
+
+                    <div *ngIf="bridges.length == 0" class="not-joined-explanation">
+                        You don't maintain any bridge.
+                    </div>
+
+                    <div class="section-objects">
+                        <mat-card *ngFor="let bridge of bridges"
+                            class="bridge"
+                            role="button"
+                            (click)="openBridgePanel(bridge)"
+                        >
+                            <span class="bridge-status connected-{{bridge.is_connected}}"
+                                matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
+                                <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
+                                <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
+                            </span>
+
+
+                            <img role="avatar" class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
+
+                            <div *ngIf="!bridge.icon" class="bridge-name">
+                                {{bridge.name || "unnamed bridge"}}
+                            </div>
+                        </mat-card>
+                    </div>
+
+                    <div class="section-buttons">
+                        <button class="group call-to-action soft" role="button"
+                            (click)="addBridge()"
+                            *ngIf="userRole==='admin'"
+                            mat-raised-button>
+                            <mat-icon>add</mat-icon> Add bridge
+                        </button>
+                    </div>
+                                </section>
+
             </div>
         </div>
         <div class="user-programs col col-sm-8">
@@ -103,11 +142,11 @@
                             </div>
                             <div class="card-title">{{program.name}}</div>
                             <div class="connection-icon-list">
-                                <span *ngFor="let bridge of program.bridges_in_use">
-                                    <img role="avatar" class="icon" *ngIf="bridgeInfo[bridge] && bridgeInfo[bridge].icon" src="{{ bridgeInfo[bridge].icon }}"
-                                        data-toggle="tooltip" title="{{bridgeInfo[bridge].name}} bridge"/>
-                                    <span class="nametag" *ngIf="bridgeInfo[bridge] && (!bridgeInfo[bridge].icon) && bridgeInfo[bridge].name">
-                                        {{ bridgeInfo[bridge].name }}
+                                <span *ngFor="let bridgeId of program.bridges_in_use">
+                                    <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ _iconDataToUrl(bridgeInfo[bridgeId].icon,  bridgeId ) }}"
+                                        data-toggle="tooltip" title="{{bridgeInfo[bridgeId].name}} bridge"/>
+                                    <span class="nametag" *ngIf="bridgeInfo[bridgeId] && (!bridgeInfo[bridgeId].icon) && bridgeInfo[bridgeId].name">
+                                        {{ bridgeInfo[bridgeId].name }}
                                     </span>
                                 </span>
                             </div>
