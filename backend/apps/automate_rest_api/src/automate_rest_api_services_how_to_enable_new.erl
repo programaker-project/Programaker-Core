@@ -89,15 +89,7 @@ to_json(Req, State=#state{group_id=GroupId, service_id=ServiceId}) ->
 
             %% TODO: Return 404
             { jiffy:encode(#{ <<"success">> => false, <<"message">> => <<"Service not found">> }),
-              Res2, State };
-        {error, Reason} ->
-                Res = cowboy_req:reply(503,
-                                       #{ <<"content-type">> => <<"application/json">> },
-                                       jiffy:encode(#{ <<"success">> => false
-                                                     , <<"error">> => Reason
-                                                     }),
-                                       Req),
-            { stop, Res, State }
+              Res2, State }
     end.
 
 get_how_to(GroupId, ServiceId) ->
