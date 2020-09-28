@@ -8,6 +8,8 @@ import { Observable } from 'rxjs';
 import { ConfirmDeleteDialogComponent } from '../confirm-delete-dialog/confirm-delete-dialog.component';
 import { slidingWindow } from './sliding-window.operator';
 import { GroupService } from 'app/group.service';
+import { UserGroupInfo } from 'app/group';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
     selector: 'app-update-bridge-dialog',
@@ -22,13 +24,20 @@ export class UpdateBridgeDialogComponent {
     session: Session;
     signalStream: Observable<BridgeSignal[]>;
     resources: BridgeResource[];
+    adminGroups: UserGroupInfo[];
+    groupsById: {[key: string]: UserGroupInfo[]};
+    groups: UserGroupInfo[];
+    expandedResources: {[key:string]: {[key: string]: boolean}} = {};
+
     _stringify = JSON.stringify;
+    private groupsReady: Promise<void>;
 
     constructor(public dialogRef: MatDialogRef<UpdateBridgeDialogComponent>,
                 private bridgeService: BridgeService,
                 private sessionService: SessionService,
                 private groupService: GroupService,
                 private dialog: MatDialog,
+                private notification: MatSnackBar,
 
                 @Inject(MAT_DIALOG_DATA)
                 public data: {
@@ -41,6 +50,23 @@ export class UpdateBridgeDialogComponent {
 
             this.bridgeService.getBridgeResources(data.bridgeInfo.id, data.asGroup).then(resources => this.resources = resources);
             const stream = this.bridgeService.getBridgeSignals(data.bridgeInfo.id, data.asGroup);
+            this.groupsReady = this.groupService.getUserGroups().then(groups => {
+                const acceptedGroups: UserGroupInfo[] = [];
+                for (const group of groups) {
+                    if (group.role === 'admin') {
+                        acceptedGroups.push(group);
+                    }
+                }
+
+                const groupsById = {};
+                for (const group of groups) {
+                    groupsById[group.id] = group;
+                }
+
+                this.groups = groups;
+                this.groupsById = groupsById;
+                this.adminGroups = acceptedGroups;
+            })
 
             this.signalStream = stream.pipe(
                 slidingWindow(10)
@@ -55,10 +81,59 @@ export class UpdateBridgeDialogComponent {
         this.dialogRef.close({success: true});
     }
 
+    toggleFold(resource: BridgeResource, entry: BridgeResourceEntry) {
+        if (!this.expandedResources[resource.name]) {
+            this.expandedResources[resource.name] = {};
+        }
+
+        this.expandedResources[resource.name][entry.id] = !this.expandedResources[resource.name][entry.id];
+    }
+
+    openFold(resource: BridgeResource, entry: BridgeResourceEntry) {
+        if (!this.expandedResources[resource.name]) {
+            this.expandedResources[resource.name] = {};
+        }
+
+        this.expandedResources[resource.name][entry.id] = true;
+    }
+
     async openShare(resource: BridgeResource, entry: BridgeResourceEntry) {
-        const groups = await this.groupService.getUserGroups();
-        console.log("Sharing", resource, entry);
-        console.log("With some of", groups)
+        await this.groupsReady;
+
+        if (this.adminGroups.length === 0) {
+            this.notification.open('You need to be admin of a group to share a resource with it', 'ok', {
+                duration: 5000
+            });
+        }
+        if (!entry.shared_with) {
+            entry.shared_with = [];
+        }
+
+        // Find the first group, which doesn't have this resource shared already
+        const remainingGroups: UserGroupInfo[] = this.adminGroups.concat([]);
+        while (remainingGroups.length > 0){
+            const group = remainingGroups.shift();
+            remainingGroups.unshift();
+
+            if (!entry.shared_with.find((share) => share.id === group.id)) {
+                entry.shared_with.push({type: 'group', id: group.id});
+
+                this.openFold(resource, entry);
+
+                return;
+            }
+        }
+
+        if (remainingGroups.length === 0) {
+            this.notification.open('You are already sharing this resource with all your groups.' , 'ok', {
+                duration: 5000
+            });
+        }
+
+    }
+
+    removeShare(_resource: BridgeResource, entry: BridgeResourceEntry, index: number) {
+        entry.shared_with.splice(index, 1);
     }
 
     deleteBridge() {

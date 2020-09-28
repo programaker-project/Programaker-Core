@@ -7,6 +7,7 @@
         , serialize_maybe_undefined/1
         , reason_to_json/1
         , group_to_json/1
+        , group_and_role_to_json/1
         , program_listing_to_json/1
         , program_listing_to_json/2
         , program_data_to_json/2
@@ -145,6 +146,11 @@ group_to_json(#user_group_entry{ id=Id
      , canonical_name => CanonicalName
      , picture => Picture
      }.
+
+
+group_and_role_to_json({Group, Role}) ->
+    GroupJson = group_to_json(Group),
+    GroupJson#{ role => Role }.
 
 program_listing_to_json(#user_program_entry{ id=Id
                                            , program_name=Name

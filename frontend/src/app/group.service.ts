@@ -95,7 +95,7 @@ export class GroupService {
         return result['group'];
     }
 
-    async getUserGroups(): Promise<GroupInfo[]> {
+    async getUserGroups(): Promise<UserGroupInfo[]> {
         const url = await this.getUserGroupsUrl();
 
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})

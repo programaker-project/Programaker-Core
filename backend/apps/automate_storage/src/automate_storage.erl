@@ -1377,13 +1377,13 @@ update_group_metadata(GroupId, MetadataChanges) ->
         end,
     wrap_transaction(mnesia:transaction(T)).
 
--spec get_user_groups(owner_id()) -> {ok, [#user_group_entry{}, ...]} | {error, any()}.
+-spec get_user_groups(owner_id()) -> {ok, [{#user_group_entry{}, user_in_group_role()}, ...]} | {error, any()}.
 get_user_groups(UserId) ->
     Transaction = fun() ->
                           Permissions = mnesia:index_read(?USER_GROUP_PERMISSIONS_TABLE, UserId, #user_group_permissions_entry.user_id),
-                          Groups = lists:map(fun(#user_group_permissions_entry{ group_id=GroupId }) ->
+                          Groups = lists:map(fun(#user_group_permissions_entry{ group_id=GroupId, role=Role }) ->
                                                      [Group] = mnesia:read(?USER_GROUPS_TABLE, GroupId),
-                                                     Group
+                                                     {Group, Role}
                                              end, Permissions),
                           {ok, Groups}
                   end,

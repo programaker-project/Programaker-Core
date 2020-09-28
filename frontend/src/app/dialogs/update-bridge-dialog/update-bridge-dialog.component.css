@@ -21,8 +21,20 @@ h2 mat-icon {
     font-weight: bold;
 }
 
-section.resources {
-    border-bottom: 1px solid rgba(0,0,0,0.3);
+button.toggle-fold {
+    min-width: 5ex;
+}
+
+li.expanded-true button.toggle-fold .fold-open {
+    display: none;
+}
+
+li.expanded-false button.toggle-fold .fold-close {
+    display: none;
+}
+
+li.expanded-false .shares {
+    display: none;
 }
 
 .resource-entry {
@@ -36,8 +48,23 @@ section.resources {
     text-transform: capitalize;
 }
 
-.resource-options {
+.resource-options li {
     margin-top: 1ex;
+}
+
+button.remove-share {
+    padding: 0;
+    margin: 0;
+    border-right: 1px solid rgba(0,0,0,0.5);
+    border: none;
+    border-radius: 4px;
+    min-height: 3ex;
+    vertical-align: sub;
+    background-color: #fa0;
+}
+
+button.remove-share mat-icon {
+    vertical-align: inherit;
 }
 
 .entry-name {

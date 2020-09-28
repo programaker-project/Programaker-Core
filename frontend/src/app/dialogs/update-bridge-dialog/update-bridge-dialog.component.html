@@ -3,22 +3,48 @@
     <span class="bridge-name">{{ data.bridgeInfo.name }}</span>
 </h2>
 
-<section *ngIf="resources" class="resources">
+<section *ngIf="resources && resources.length > 0" class="resources">
     <h4>Resources</h4>
 
     <div class="resource-entry" *ngFor="let resource of resources">
         <div class="resource-name">{{ resource.name }}</div>
 
-        <ul class="resource-options" *ngFor="let entry of resource.values">
-            <li>
+        <ul class="resource-options">
+            <li *ngFor="let entry of resource.values"
+                class="expanded-{{ (!!expandedResources[resource.name]) && (!!expandedResources[resource.name][entry.id]) }}">
+                <button mat-button class="toggle-fold" (click)="toggleFold(resource, entry)">
+                    <mat-icon class="fold-open">unfold_more</mat-icon>
+                    <mat-icon class="fold-close">unfold_less</mat-icon>
+                </button>
+
                 <span class="entry-name">{{ entry.name }}</span>
 
-                <button mat-raised-button (click)="openShare(resource, entry)" class="share-button">
+                <button mat-button mat-raised-button class="share-button"
+                    (click)="openShare(resource, entry)" matBadge="{{  (!!entry.shared_with && entry.shared_with.length) || 0 }}" >
                     <div class="annotated-icon">
                         <label>Share</label>
                         <mat-icon>share</mat-icon>
                     </div>
                 </button>
+
+                <ul class="shares" *ngIf="entry.shared_with && groupsById">
+                    <li *ngFor="let share of entry.shared_with;let shareIndex=index;">
+                        <button (click)="removeShare(resource, entry, shareIndex)" class="remove-share">
+                            <mat-icon>clear</mat-icon>
+                        </button>
+                        <span>
+                            Shared with
+                        </span>
+                        <mat-form-field class="role">
+                            <mat-label>group</mat-label>
+                            <mat-select [(value)]="share.id">
+                                <mat-option *ngFor="let group of adminGroups" [value]="group.id" >
+                                    {{ group.name }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </li>
+                </ul>
             </li>
         </ul>
     </div>
