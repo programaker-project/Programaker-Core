@@ -15,10 +15,17 @@ export interface BridgeIndexData {
 
 export type BridgeResourceMap = {[key: string]: {[key: string]: string}[]};
 
+
+export interface FullOwnerId {
+    type: 'group' | 'user',
+    id: string,
+};
+
 export interface BridgeResourceEntry{
     name: string,
     id: string,
-    shared_with?: {type: 'group' | 'user', id: string}[],
+    connection_id: string,
+    shared_with?: FullOwnerId[],
 };
 export type BridgeResource = { name: string, values: BridgeResourceEntry[] };
 

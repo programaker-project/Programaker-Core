@@ -48,23 +48,48 @@ li.expanded-false .shares {
     text-transform: capitalize;
 }
 
+ul.resource-options {
+    padding-left: 0;
+}
+
 .resource-options li {
     margin-top: 1ex;
 }
 
-button.remove-share {
-    padding: 0;
-    margin: 0;
-    border-right: 1px solid rgba(0,0,0,0.5);
-    border: none;
+.confirm-cancel-shares {
+    padding: 1ex;
+    background-color: #eff;
     border-radius: 4px;
-    min-height: 3ex;
-    vertical-align: sub;
+    border: 1px solid #055;
+    margin-bottom: 1em;
+}
+
+.save-share-button {
+    margin: 1ex;
+    background-color: #009688;
+    color: white;
+    font-weight: bold;
+}
+
+button.remove-share {
     background-color: #fa0;
+    min-height: 3ex;
+    min-width: 4ex;
+
+    padding: 0;
+    vertical-align: super;
 }
 
 button.remove-share mat-icon {
-    vertical-align: inherit;
+    vertical-align: middle;
+}
+
+.shares .connector-text {
+    vertical-align: text-bottom;
+}
+
+.shares mat-form-field.shared-with {
+    vertical-align: middle;
 }
 
 .entry-name {

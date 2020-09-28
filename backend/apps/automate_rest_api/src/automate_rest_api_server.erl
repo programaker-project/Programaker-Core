@@ -110,6 +110,7 @@ start_link() ->
                           , automate_rest_api_service_ports_specific_communication, []}
                         , {"/api/v0/bridges/by-id/:bridge_id/signals", automate_rest_api_bridge_signal_root, []}
                         , {"/api/v0/bridges/by-id/:bridge_id/resources", automate_rest_api_bridge_resources_root, []}
+                        , {"/api/v0/connections/by-id/:connection_id/resources/by-name/:resource_name", automate_rest_api_connection_resource_by_name_root, []}
 
 
                           %% Services

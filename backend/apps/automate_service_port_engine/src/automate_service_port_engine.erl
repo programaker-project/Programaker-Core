@@ -30,8 +30,11 @@
         , listen_bridge/3
         , list_established_connections/1
         , list_established_connections/2
+        , get_connection_owner/1
         , get_pending_connection_info/1
         , is_module_connectable_bridge/2
+
+        , set_shared_resource/4
         ]).
 
 -include("records.hrl").
@@ -293,6 +296,10 @@ list_established_connections(Owner) when is_tuple(Owner) ->
 list_established_connections(Owner, BridgeId) when is_tuple(Owner) ->
     ?BACKEND:list_established_connections(Owner, BridgeId).
 
+-spec get_connection_owner(binary()) -> {ok, owner_id()} | {error, not_found}.
+get_connection_owner(ConnectionId) ->
+    ?BACKEND:get_connection_owner(ConnectionId).
+
 -spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
 get_pending_connection_info(ConnectionId) ->
     ?BACKEND:get_pending_connection_info(ConnectionId).
@@ -321,6 +328,10 @@ is_module_connectable_bridge(_, _) ->
     %% Is not a bridge
     false.
 
+
+-spec set_shared_resource(ConnectionId :: binary(), Owner :: owner_id(), ResourceName :: binary(), Shares :: map()) -> ok.
+set_shared_resource(ConnectionId, Owner, ResourceName, Shares) ->
+    ?BACKEND:set_shared_resource(ConnectionId, Owner, ResourceName, Shares).
 
 
 %%====================================================================

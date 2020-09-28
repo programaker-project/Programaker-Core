@@ -19,6 +19,7 @@
         , list_bridge_channels/1
         , list_established_connections/1
         , list_established_connections/2
+        , get_connection_owner/1
         , get_pending_connection_info/1
 
         , gen_pending_connection/2
@@ -35,6 +36,8 @@
         , get_or_create_monitor_id/2
         , uninstall/0
         , get_channel_origin_bridge/1
+
+        , set_shared_resource/4
         ]).
 
 -include("records.hrl").
@@ -558,6 +561,19 @@ list_established_connections(Owner, BridgeId) ->
             X
     end.
 
+
+-spec get_connection_owner(binary()) -> {ok, owner_id()} | {error, not_found}.
+get_connection_owner(ConnectionId) ->
+    T = fun() ->
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [#user_to_bridge_connection_entry{owner=Owner}] ->
+                        {ok, Owner};
+                    [] ->
+                        {error, not_found}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
+
 -spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}} | {error, not_found}.
 get_pending_connection_info(ConnectionId) ->
     Transaction = fun() ->
@@ -647,6 +663,32 @@ get_channel_origin_bridge(ChannelId) ->
         {aborted, Reason} ->
             {error, mnesia:error_description(Reason)}
     end.
+
+-spec set_shared_resource(ConnectionId :: binary(), Owner :: owner_id(), ResourceName :: binary(), Shares :: map()) -> ok.
+set_shared_resource(ConnectionId, Owner, ResourceName, Shares) ->
+    T = fun() ->
+                Existing = mnesia:read(?SERVICE_PORT_SHARED_RESOURCES_TABLE, ConnectionId),
+                AboutResource = lists:filter(fun(#bridge_resource_share_entry{resource=Resource}) ->
+                                                     Resource == ResourceName
+                                             end, Existing),
+                ok = lists:foreach(fun(R) ->
+                                           ok = mnesia:delete_object(?SERVICE_PORT_SHARED_RESOURCES_TABLE, R, write)
+                                   end, AboutResource),
+                ok = lists:foreach(fun({ValueId, Allowed}) ->
+                                           ok = lists:foreach(fun(#{ <<"type">> := OwnerType
+                                                                   , <<"id">> := OwnerId
+                                                                   }) ->
+                                                                      ok = mnesia:write( ?SERVICE_PORT_SHARED_RESOURCES_TABLE
+                                                                                       , #bridge_resource_share_entry{ connection_id=ConnectionId
+                                                                                                                     , resource=ResourceName
+                                                                                                                     , value=ValueId
+                                                                                                                     , shared_with={OwnerType, OwnerId}
+                                                                                                                     }
+                                                                                       , write)
+                                                              end, Allowed)
+                                   end, maps:to_list(Shares))
+        end,
+    automate_storage:wrap_transaction(mnesia:transaction(T)).
 
 %%====================================================================
 %% Internal functions

@@ -20,7 +20,7 @@
                 <span class="entry-name">{{ entry.name }}</span>
 
                 <button mat-button mat-raised-button class="share-button"
-                    (click)="openShare(resource, entry)" matBadge="{{  (!!entry.shared_with && entry.shared_with.length) || 0 }}" >
+                    (click)="addShare(resource, entry)" matBadge="{{  (!!entry.shared_with && entry.shared_with.length) || 0 }}" >
                     <div class="annotated-icon">
                         <label>Share</label>
                         <mat-icon>share</mat-icon>
@@ -29,13 +29,13 @@
 
                 <ul class="shares" *ngIf="entry.shared_with && groupsById">
                     <li *ngFor="let share of entry.shared_with;let shareIndex=index;">
-                        <button (click)="removeShare(resource, entry, shareIndex)" class="remove-share">
+                        <button mat-button mat-raised-button (click)="removeShare(resource, entry, shareIndex)" class="remove-share">
                             <mat-icon>clear</mat-icon>
                         </button>
-                        <span>
+                        <span class="connector-text">
                             Shared with
                         </span>
-                        <mat-form-field class="role">
+                        <mat-form-field class="shared-with">
                             <mat-label>group</mat-label>
                             <mat-select [(value)]="share.id">
                                 <mat-option *ngFor="let group of adminGroups" [value]="group.id" >
@@ -47,6 +47,25 @@
                 </ul>
             </li>
         </ul>
+    </div>
+
+    <div *ngIf="dirtyShares"  class="confirm-cancel-shares">
+        <span class="explanation">
+            You've prepared some changes for the resource sharing.
+        </span>
+
+        <button #resetShareChanges mat-button mat-raised-button  class="reset-share-button reset-button" (click)="resetShares()">
+            <mat-icon>clear</mat-icon>
+            Cancel
+        </button>
+
+        <button #applyShareChanges mat-button mat-raised-button  class="save-share-button confirm-button"
+            (click)="applyShares()">
+            <mat-icon>save</mat-icon>
+            Apply changes
+
+            <span class="load-bg"></span>
+        </button>
     </div>
 
 </section>
@@ -64,16 +83,16 @@
 
 <div class="config-option">
     <div class="accept-cancel">
-        <button color="warn"
-            (click)="deleteBridge()"
-            mat-button mat-raised-button>
-            Delete bridge
-        </button>
-
         <button
             (click)="onBack()"
             mat-button mat-raised-button>
             Go back
+        </button>
+
+        <button color="warn"
+            (click)="deleteBridge()"
+            mat-button mat-raised-button>
+            Delete bridge
         </button>
     </div>
 </div>

@@ -218,7 +218,19 @@ get_versioning(Nodes) ->
                                                      end,
                                                      [ id, service_name, service_id, is_public, blocks, icon, allow_multiple_connections, resources ],
                                                      service_port_configuration
-                                                    )
+                                                    ),
+
+                                        ok = automate_storage_versioning:create_database(
+                                               #database_version_data
+                                               { database_name=?SERVICE_PORT_SHARED_RESOURCES_TABLE
+                                               , records=[ connection_id
+                                                         , resource
+                                                         , value
+                                                         , shared_with
+                                                         ]
+                                               , record_name=bridge_resource_share_entry
+                                               , type=bag
+                                               }, Nodes)
                             end
                     }
                   ]

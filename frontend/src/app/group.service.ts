@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Collaborator, CollaboratorRole } from 'app/types/collaborator';
 import { ApiRoot } from './api-config';
 import { ContentType } from './content-type';
-import { GroupInfo } from './group';
+import { GroupInfo, UserGroupInfo } from './group';
 import { SessionService } from './session.service';
 
 export interface UserAutocompleteInfo {

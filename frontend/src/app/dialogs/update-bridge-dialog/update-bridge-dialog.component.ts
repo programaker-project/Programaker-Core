@@ -1,15 +1,16 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ViewChild } from '@angular/core';
+import { MatButton } from '@angular/material/button';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { BridgeIndexData, BridgeResource, BridgeResourceEntry, BridgeSignal } from 'app/bridges/bridge';
 import { BridgeService } from 'app/bridges/bridge.service';
+import { UserGroupInfo } from 'app/group';
+import { GroupService } from 'app/group.service';
 import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
 import { Observable } from 'rxjs';
 import { ConfirmDeleteDialogComponent } from '../confirm-delete-dialog/confirm-delete-dialog.component';
 import { slidingWindow } from './sliding-window.operator';
-import { GroupService } from 'app/group.service';
-import { UserGroupInfo } from 'app/group';
-import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
     selector: 'app-update-bridge-dialog',
@@ -28,9 +29,12 @@ export class UpdateBridgeDialogComponent {
     groupsById: {[key: string]: UserGroupInfo[]};
     groups: UserGroupInfo[];
     expandedResources: {[key:string]: {[key: string]: boolean}} = {};
+    dirtyShares = false;
 
     _stringify = JSON.stringify;
     private groupsReady: Promise<void>;
+    @ViewChild('applyShareChanges') applyShareChanges: MatButton;
+    @ViewChild('resetShareChanges') resetShareChanges: MatButton;
 
     constructor(public dialogRef: MatDialogRef<UpdateBridgeDialogComponent>,
                 private bridgeService: BridgeService,
@@ -48,7 +52,7 @@ export class UpdateBridgeDialogComponent {
         this.sessionService.getSession().then(session => {
             this.session = session;
 
-            this.bridgeService.getBridgeResources(data.bridgeInfo.id, data.asGroup).then(resources => this.resources = resources);
+            this.resetShares();
             const stream = this.bridgeService.getBridgeSignals(data.bridgeInfo.id, data.asGroup);
             this.groupsReady = this.groupService.getUserGroups().then(groups => {
                 const acceptedGroups: UserGroupInfo[] = [];
@@ -97,7 +101,15 @@ export class UpdateBridgeDialogComponent {
         this.expandedResources[resource.name][entry.id] = true;
     }
 
-    async openShare(resource: BridgeResource, entry: BridgeResourceEntry) {
+    resetShares() {
+        this.bridgeService.getBridgeResources(this.data.bridgeInfo.id, this.data.asGroup).then(resources => {
+            this.resources = resources;
+            this.dirtyShares = false;
+        });
+        this.expandedResources = {};
+    }
+
+    async addShare(resource: BridgeResource, entry: BridgeResourceEntry) {
         await this.groupsReady;
 
         if (this.adminGroups.length === 0) {
@@ -118,6 +130,7 @@ export class UpdateBridgeDialogComponent {
                 entry.shared_with.push({type: 'group', id: group.id});
 
                 this.openFold(resource, entry);
+                this.dirtyShares = true;
 
                 return;
             }
@@ -133,6 +146,44 @@ export class UpdateBridgeDialogComponent {
 
     removeShare(_resource: BridgeResource, entry: BridgeResourceEntry, index: number) {
         entry.shared_with.splice(index, 1);
+        this.dirtyShares = true;
+    }
+
+
+    async applyShares() {
+        // Set state to in-progress
+        this.resetShareChanges.disabled = true;
+        const buttonClassList = this.applyShareChanges._elementRef.nativeElement.classList;
+        buttonClassList.add('started');
+        buttonClassList.remove('completed');
+
+        const operations : Promise<void>[] = [];
+        for (const resource of this.resources) {
+            const connections = {};
+            for(const value of resource.values) {
+                if (!connections[value.connection_id]) {
+                    connections[value.connection_id] = {};
+                }
+
+                connections[value.connection_id][value.id] = value.shared_with;
+            }
+
+            for (const connectionId of Object.keys(connections)) {
+                const op = this.bridgeService.setShares(connectionId, resource.name, connections[connectionId], { asGroup: this.data.asGroup });
+                operations.push(op);
+            }
+        }
+
+        try {
+            await Promise.all(operations);
+            this.dirtyShares = false;
+        }
+        finally {
+            // Set state to "ready"
+            buttonClassList.remove('started');
+            buttonClassList.add('completed');
+            this.resetShareChanges.disabled = false;
+        }
     }
 
     deleteBridge() {

@@ -73,7 +73,7 @@ to_json(Req, State=#state{ bridge_id=BridgeId, owner=Owner }) ->
             ResourceList = merge_to_map(lists:flatmap(fun(#user_to_bridge_connection_entry{id=ConnectionId}) ->
                                                                 lists:map(fun(ResourceName) ->
                                                                                   {ok, #{ <<"result">> := Values }} = automate_service_port_engine:callback_bridge_through_connection(ConnectionId, BridgeId, ResourceName),
-                                                                                  {ResourceName, Values}
+                                                                                  {ResourceName, maps:map(fun(_K, V) -> V#{ connection_id => ConnectionId } end, Values)}
                                                                           end, Resources)
                                                         end, Results)),
 

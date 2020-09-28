@@ -4,7 +4,7 @@ import { addTokenQueryString, toWebsocketUrl } from 'app/utils';
 import { Observable, Observer } from 'rxjs';
 import * as API from '../api-config';
 import { SessionService } from '../session.service';
-import { BridgeIndexData, BridgeMetadata, BridgeResourceMap, BridgeSignal, BridgeResource } from './bridge';
+import { BridgeIndexData, BridgeMetadata, BridgeResource, BridgeResourceEntry, BridgeResourceMap, BridgeSignal, FullOwnerId } from './bridge';
 
 
 
@@ -16,7 +16,7 @@ export class BridgeService {
     // While not strtictly following the Singleton pattern, as class instances
     //   are obtained through Dependency Injection, it allows for every instance
     //   of the class to share the relevant state.
-    // The shared state is theestablished session, it's Observable and Observer.
+    // The shared state is the established session, it's Observable and Observer.
     static bridgeInfoObservable: Observable<BridgeInfoUpdate> = null;
     private static _bridgeInfoObserver: Observer<BridgeInfoUpdate> = null;
     private static bridgeCount: number = null;
@@ -54,6 +54,10 @@ export class BridgeService {
 
     private getBridgeResourcesUrl(bridgeId: string): string {
         return `${API.ApiRoot}/bridges/by-id/${bridgeId}/resources`;
+    }
+
+    private updateConnectionResourceUrl(connectionId: string, resourceName: string): string {
+        return `${API.ApiRoot}/connections/by-id/${connectionId}/resources/by-name/${resourceName}`;
     }
 
     async createServicePort(name: string): Promise<BridgeMetadata> {
@@ -126,6 +130,18 @@ export class BridgeService {
         return (response as { success: boolean }).success;
     }
 
+    async setShares(connectionId: string, resourceName: string, shares: {[key:string]: FullOwnerId[]}, options?: { asGroup?: string; }) {
+        let url = this.updateConnectionResourceUrl(connectionId, resourceName);
+        if (options && options.asGroup) {
+            url += '&as_group=' + options.asGroup;
+        }
+
+        const response = (await this.http.patch(url, { shared: shares },
+                                                { headers: this.sessionService.addJsonContentType(
+                                                    this.sessionService.getAuthHeader())
+                                                }).toPromise());
+    }
+
     async getBridgeResources(bridgeId: string, asGroup?: string): Promise<BridgeResource[]> {
         let url = this.getBridgeResourcesUrl(bridgeId);
         if (asGroup) {
@@ -139,10 +155,11 @@ export class BridgeService {
         const resources: BridgeResource[] = [];
 
         for (const resource of Object.keys(response)) {
-            const values: {id:  string, name: string}[] = [];
+            const values: BridgeResourceEntry[] = [];
 
             for (const valId of Object.keys(response[resource])) {
-                values.push({ id: valId, name: response[resource][valId].name })
+                const value = response[resource][valId];
+                values.push({ id: valId, name: value.name, connection_id: value.connection_id })
             }
 
             resources.push({ name: resource, values: values });
