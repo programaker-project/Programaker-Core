@@ -113,7 +113,6 @@ export class UpdateBridgeDialogComponent {
         const remainingGroups: UserGroupInfo[] = this.adminGroups.concat([]);
         while (remainingGroups.length > 0){
             const group = remainingGroups.shift();
-            remainingGroups.unshift();
 
             if (!entry.shared_with.find((share) => share.id === group.id)) {
                 entry.shared_with.push({type: 'group', id: group.id});
