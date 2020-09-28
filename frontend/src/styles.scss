@@ -336,6 +336,10 @@ button > .mat-button-wrapper > .load-bg {
     top: 0;
 }
 
+button.mat-button .load-bg {
+    border-radius: 4px;
+}
+
 button.started > span > .load-bg {
     animation-name: button-load-started;
     animation-duration: 0.2s;
