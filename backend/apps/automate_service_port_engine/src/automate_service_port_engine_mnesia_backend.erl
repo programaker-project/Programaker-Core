@@ -386,7 +386,8 @@ get_signal_listeners(_Content, BridgeId) ->
 -spec list_custom_blocks(owner_id()) -> {ok, map()}.
 list_custom_blocks(Owner) ->
     Transaction = fun() ->
-                          Services = list_userid_ports(Owner) ++ list_public_ports(),
+                          Services = list_userid_ports(Owner) ++ list_public_ports() ++ list_shared_ports(Owner),
+
                           {ok
                           , maps:from_list(
                               lists:filter(fun (X) -> X =/= none end,
@@ -400,12 +401,7 @@ list_custom_blocks(Owner) ->
                                                      end,
                                                      Services)))}
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            Result;
-        {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
-    end.
+    automate_storage:wrap_transaction(mnesia:activity(ets, Transaction)).
 
 -spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
 internal_user_id_to_connection_id(Owner, ServicePortId) ->
@@ -448,7 +444,7 @@ get_all_connections({OwnerType, OwnerId}, BridgeId) ->
 is_user_connected_to_bridge(Owner, BridgeId) ->
     case get_all_connections(Owner, BridgeId) of
         {ok, []} ->
-            {ok, false};
+            with_shared_connection(Owner, BridgeId);
         {ok, List} when is_list(List) ->
             {ok, true};
         {error, Reason} ->
@@ -754,6 +750,17 @@ list_public_ports() ->
     Matcher = [{MatchHead, [Guard], [ResultColumn]}],
 
     mnesia:select(?SERVICE_PORT_CONFIGURATION_TABLE, Matcher).
+
+list_shared_ports(Owner) ->
+    {ok, Shares} = get_resources_shared_with(Owner),
+    lists:map(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
+                      {ok, BridgeId} = automate_service_port_engine:get_connection_bridge(ConnectionId),
+                      BridgeId
+              end, Shares).
+
+with_shared_connection(Owner, BridgeId) ->
+    SharedBridges = automate_storage:wrap_transaction(mnesia:activity(ets, fun()  -> list_shared_ports(Owner) end)),
+    {ok, lists:any(fun(Id) -> Id == BridgeId end, SharedBridges)}.
 
 list_blocks_for_port(PortId) ->
     case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, PortId) of

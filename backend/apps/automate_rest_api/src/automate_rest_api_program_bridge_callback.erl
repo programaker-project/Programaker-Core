@@ -77,9 +77,9 @@ content_types_provided(Req, State) ->
      Req, State}.
 
 to_json(Req, State=#state{bridge_id=BridgeId, callback=Callback, owner=Owner}) ->
-    case automate_rest_api_backend:callback_bridge(Owner, BridgeId, Callback) of
+    case automate_service_port_engine:callback_bridge(Owner, BridgeId, Callback) of
         {ok, Result} ->
-            Output = jiffy:encode(Result),
+            Output = jiffy:encode(#{ success => true, result => Result }),
             Res = ?UTILS:send_json_format(Req),
 
             { Output, Res, State };

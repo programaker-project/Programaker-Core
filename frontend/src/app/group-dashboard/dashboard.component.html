@@ -30,7 +30,7 @@
                 </div>
                 <div *ngFor="let resource of sharedResources">
                     <mat-card class="module shared-resource non-clickable" role="button">
-                        <div class="connection-type" matTooltip="Shared by an user"><mat-icon>account_circle</mat-icon></div>
+                        <div class="connection-type" matTooltip="Shared by a collaborator"><mat-icon>account_circle</mat-icon></div>
 
                         <div class="connection-identifier">
                             <img role="avatar" class="icon" *ngIf="resource.icon" src="{{ _iconDataToUrl(resource.icon, resource.bridge_id) }}" alt="{{ resource.name }}" matTooltip="{{ resource.name }}" />

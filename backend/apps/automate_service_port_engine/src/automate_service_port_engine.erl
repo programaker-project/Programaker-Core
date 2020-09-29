@@ -231,7 +231,7 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
 list_custom_blocks(Owner) when is_tuple(Owner) ->
     ?BACKEND:list_custom_blocks(Owner).
 
--spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found} | {error, _}.
 internal_user_id_to_connection_id(Owner, ServicePortId) when is_tuple(Owner) ->
     ?BACKEND:internal_user_id_to_connection_id(Owner, ServicePortId).
 
@@ -252,11 +252,40 @@ delete_bridge(Accessor, BridgeId) when is_tuple(Accessor) ->
     ?BACKEND:delete_bridge(Accessor, BridgeId).
 
 
--spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map()} | {error, term()}.
+-spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map() | [#{ id => binary(), name => binary() }]} | {error, term()}.
 callback_bridge(Owner, BridgeId, CallbackName) when is_tuple(Owner) ->
     case internal_user_id_to_connection_id(Owner, BridgeId) of
         {ok, ConnectionId} ->
-            callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName);
+            case callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName) of
+                #{ <<"result">> := Result } ->
+                    {ok, Result}
+            end;
+        {error, not_found} ->
+            case ?BACKEND:is_user_connected_to_bridge(Owner, BridgeId) of
+                {ok, false} ->
+                    {error, not_found};
+                {ok, true} ->
+                    %% No direct connection, but still connected (via shared connection)
+                    %% We can pull the values from the share
+                    {ok, Shares} = ?BACKEND:get_resources_shared_with(Owner),
+                    Values = lists:filtermap(fun(#bridge_resource_share_entry{ connection_id=ConnectionId
+                                                                             , resource=Resource
+                                                                             , value=Value
+                                                                             }) ->
+                                                     case Resource of
+                                                         CallbackName ->
+                                                             case get_connection_bridge(ConnectionId) of
+                                                                 {ok, BridgeId} ->
+                                                                     {true, #{ id => Value, name => Value}};
+                                                                 _ ->
+                                                                     false
+                                                             end;
+                                                         _ ->
+                                                             false
+                                                     end
+                                             end, Shares),
+                    {ok, Values}
+            end;
         {error, Reason} ->
             {error, Reason}
     end.
