@@ -23,6 +23,7 @@
                       , program_parsed :: any()
                       , program_orig :: any()
                       , enabled :: boolean()
+                      , last_upload_time :: integer()
                       }).
 
 -record(program_metadata, { id
