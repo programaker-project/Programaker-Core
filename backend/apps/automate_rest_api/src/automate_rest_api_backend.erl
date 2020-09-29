@@ -469,6 +469,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                                             , program_parsed=ProgramParsed
                                             , program_orig=ProgramOrig
                                             , enabled=Enabled
+                                            , last_upload_time=LastUploadTime
                                             }) ->
     {OwnerType, OwnerId} = Owner,
     #user_program{ id=Id
@@ -478,6 +479,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , program_parsed=ProgramParsed
                  , program_orig=ProgramOrig
                  , enabled=Enabled
+                 , last_upload_time=LastUploadTime
                  }.
 
 -spec get_platform_service_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found}.

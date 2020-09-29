@@ -73,12 +73,17 @@ content_types_provided(Req, State) ->
              -> { stop | binary() ,cowboy_req:req(), #get_program_seq{}}.
 to_json(Req, State) ->
     #get_program_seq{username=Username, program_name=ProgramName} = State,
-    case automate_rest_api_backend:get_program(Username, ProgramName) of
-        { ok, Program=#user_program{ id=ProgramId } } ->
 
+    case automate_rest_api_backend:get_program(Username, ProgramName) of
+        { ok, Program=#user_program{ id=ProgramId, last_upload_time=ProgramTime } } ->
             Checkpoint = case automate_storage:get_last_checkpoint_content(ProgramId) of
-                             {ok, Content } ->
-                                 Content;
+                             {ok, #user_program_checkpoint{event_time=CheckpointTime, content=Content} } ->
+                                 case ProgramTime < (CheckpointTime / 1000) of
+                                     true ->
+                                         Content;
+                                     false ->
+                                         null
+                                 end;
                              {error, not_found} ->
                                  null
                          end,

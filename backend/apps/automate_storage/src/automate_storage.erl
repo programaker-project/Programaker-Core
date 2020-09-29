@@ -696,7 +696,7 @@ checkpoint_program(UserId, ProgramId, Content)->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec get_last_checkpoint_content(binary()) -> {ok, any()} | {error, any()}.
+-spec get_last_checkpoint_content(binary()) -> {ok, #user_program_checkpoint{}} | {error, any()}.
 get_last_checkpoint_content(ProgramId) ->
     Checkpoints = mnesia:dirty_read(?USER_PROGRAM_CHECKPOINTS_TABLE, ProgramId),
     Sorted = lists:sort(fun( #user_program_checkpoint{event_time=EventTime1}
@@ -706,8 +706,8 @@ get_last_checkpoint_content(ProgramId) ->
                         end,
                         Checkpoints),
     case Sorted of
-        [#user_program_checkpoint{content=Content} | _] ->
-            {ok, Content};
+        [Checkpoint | _] ->
+            {ok, Checkpoint};
         [] ->
             {error, not_found}
     end.
