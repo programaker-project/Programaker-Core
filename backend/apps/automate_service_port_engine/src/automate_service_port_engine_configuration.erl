@@ -226,6 +226,7 @@ get_versioning(Nodes) ->
                                                , records=[ connection_id
                                                          , resource
                                                          , value
+                                                         , name
                                                          , shared_with
                                                          ]
                                                , record_name=bridge_resource_share_entry

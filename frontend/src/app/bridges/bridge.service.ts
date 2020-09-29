@@ -130,7 +130,7 @@ export class BridgeService {
         return (response as { success: boolean }).success;
     }
 
-    async setShares(connectionId: string, resourceName: string, shares: {[key:string]: FullOwnerId[]}, options?: { asGroup?: string; }) {
+    async setShares(connectionId: string, resourceName: string, shares: BridgeResourceEntry[], options?: { asGroup?: string; }) {
         let url = this.updateConnectionResourceUrl(connectionId, resourceName);
         if (options && options.asGroup) {
             url += '&as_group=' + options.asGroup;

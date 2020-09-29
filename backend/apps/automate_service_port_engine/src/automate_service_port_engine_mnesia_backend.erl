@@ -403,7 +403,7 @@ list_custom_blocks(Owner) ->
                   end,
     automate_storage:wrap_transaction(mnesia:activity(ets, Transaction)).
 
--spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found} | { error, any() }.
 internal_user_id_to_connection_id(Owner, ServicePortId) ->
     case get_all_connections(Owner, ServicePortId) of
         {ok, []} ->
@@ -673,7 +673,7 @@ set_shared_resource(ConnectionId, ResourceName, Shares) ->
                 ok = lists:foreach(fun(R) ->
                                            ok = mnesia:delete_object(?SERVICE_PORT_SHARED_RESOURCES_TABLE, R, write)
                                    end, AboutResource),
-                ok = lists:foreach(fun({ValueId, Allowed}) ->
+                ok = lists:foreach(fun({ValueId, #{ <<"name">> := ValueName, <<"shared_with">> := Allowed } }) ->
                                            ok = lists:foreach(fun(#{ <<"type">> := OwnerType
                                                                    , <<"id">> := OwnerId
                                                                    }) ->
@@ -681,6 +681,7 @@ set_shared_resource(ConnectionId, ResourceName, Shares) ->
                                                                                        , #bridge_resource_share_entry{ connection_id=ConnectionId
                                                                                                                      , resource=ResourceName
                                                                                                                      , value=ValueId
+                                                                                                                     , name=ValueName
                                                                                                                      , shared_with={map_owner_type(OwnerType), OwnerId}
                                                                                                                      }
                                                                                        , write)

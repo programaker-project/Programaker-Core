@@ -165,7 +165,12 @@ export class UpdateBridgeDialogComponent {
                     connections[value.connection_id] = {};
                 }
 
-                connections[value.connection_id][value.id] = value.shared_with;
+                const val = {
+                    name: value.name,
+                    shared_with: value.shared_with,
+                };
+
+                connections[value.connection_id][value.id] = val;
             }
 
             for (const connectionId of Object.keys(connections)) {
