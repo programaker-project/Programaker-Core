@@ -8,7 +8,7 @@
                         <mat-icon class="action-icon">add</mat-icon>
                     </button>
                 </div>
-                <div *ngIf="(connections !== null) && (connections.length == 0)">
+                <div *ngIf="(connections !== null) && (connections.length === 0) && (sharedResources !== null) && (sharedResources.length === 0)">
                     <div *ngIf="canWriteToGroup" class="integrated-call-to-action call-to-left">
                         <mat-icon class="action-icon">arrow_back</mat-icon>
                         To start, connect a service.
@@ -20,12 +20,25 @@
                 </div>
                 <div *ngFor="let connection of connections">
                     <mat-card class="module connection non-clickable"
-                        role="button" (click)="openConnection(connection.conn)">
+                        role="button">
                         <img role="avatar" class="icon" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
 
                         <span *ngIf="!connection.extra.icon_url" class="connection-name">
                             {{ connection.conn.bridge_name }}
                         </span>
+                    </mat-card>
+                </div>
+                <div *ngFor="let resource of sharedResources">
+                    <mat-card class="module shared-resource non-clickable" role="button">
+                        <div class="connection-type" matTooltip="Shared by an user"><mat-icon>account_circle</mat-icon></div>
+
+                        <div class="connection-identifier">
+                            <img role="avatar" class="icon" *ngIf="resource.icon" src="{{ _iconDataToUrl(resource.icon, resource.bridge_id) }}" alt="{{ resource.name }}" matTooltip="{{ resource.name }}" />
+
+                            <span *ngIf="!resource.icon" class="connection-name">
+                                {{ resource.name }}
+                            </span>
+                        </div>
                     </mat-card>
                 </div>
             </div>

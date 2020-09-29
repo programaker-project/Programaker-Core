@@ -131,6 +131,7 @@ start_link() ->
                         , {"/api/v0/groups/by-id/:group_id/collaborators", automate_rest_api_group_collaborators, [] }
                         , {"/api/v0/groups/by-id/:group_id/picture", automate_rest_api_group_picture, [] }
                         , {"/api/v0/groups/by-id/:group_id/bridges", automate_rest_api_group_bridge_root, [] }
+                        , {"/api/v0/groups/by-id/:group_id/shared-resources", automate_rest_api_group_shared_resources, [] }
 
                           %% Monitor
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}

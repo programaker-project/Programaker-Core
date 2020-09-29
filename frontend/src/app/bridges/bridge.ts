@@ -21,6 +21,15 @@ export interface FullOwnerId {
     id: string,
 };
 
+export interface SharedResource {
+    bridge_id: string,
+    icon: IconReference,
+    name: string,
+    resource: string,
+    value_id: string,
+    shared_by: FullOwnerId
+};
+
 export interface BridgeResourceEntry{
     name: string,
     id: string,

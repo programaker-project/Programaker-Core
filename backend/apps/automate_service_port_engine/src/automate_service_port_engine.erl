@@ -30,12 +30,14 @@
         , listen_bridge/3
         , list_established_connections/1
         , list_established_connections/2
-        , get_connection_owner/1
         , get_pending_connection_info/1
         , is_module_connectable_bridge/2
 
         , set_shared_resource/3
+        , get_connection_owner/1
         , get_connection_shares/1
+        , get_connection_bridge/1
+        , get_resources_shared_with/1
         ]).
 
 -include("records.hrl").
@@ -337,6 +339,14 @@ set_shared_resource(ConnectionId, ResourceName, Shares) ->
 -spec get_connection_shares(ConnectionId :: binary()) -> {ok, #{ binary() => #{ binary() => [ owner_id() ] } } }.
 get_connection_shares(ConnectionId) ->
     ?BACKEND:get_connection_shares(ConnectionId).
+
+-spec get_connection_bridge(ConnectionId :: binary()) -> {ok, binary()}.
+get_connection_bridge(ConnectionId) ->
+    ?BACKEND:get_connection_bridge(ConnectionId).
+
+-spec get_resources_shared_with(Owner :: owner_id()) -> {ok, [#bridge_resource_share_entry{}]}.
+get_resources_shared_with(Owner) ->
+    ?BACKEND:get_resources_shared_with(Owner).
 
 
 %%====================================================================

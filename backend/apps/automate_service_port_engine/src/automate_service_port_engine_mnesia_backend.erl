@@ -39,6 +39,8 @@
 
         , set_shared_resource/3
         , get_connection_shares/1
+        , get_resources_shared_with/1
+        , get_connection_bridge/1
         ]).
 
 -include("records.hrl").
@@ -683,7 +685,7 @@ set_shared_resource(ConnectionId, ResourceName, Shares) ->
                                                                                        , #bridge_resource_share_entry{ connection_id=ConnectionId
                                                                                                                      , resource=ResourceName
                                                                                                                      , value=ValueId
-                                                                                                                     , shared_with={OwnerType, OwnerId}
+                                                                                                                     , shared_with={map_owner_type(OwnerType), OwnerId}
                                                                                                                      }
                                                                                        , write)
                                                               end, Allowed)
@@ -699,6 +701,26 @@ get_connection_shares(ConnectionId) ->
     Permissions = automate_storage:wrap_transaction(mnesia:transaction(T)),
     {ok, shares_list_to_map(Permissions)}.
 
+
+-spec get_resources_shared_with(Owner :: owner_id()) -> {ok, [#bridge_resource_share_entry{}]}.
+get_resources_shared_with(Owner) ->
+    T = fun() ->
+                mnesia:index_read(?SERVICE_PORT_SHARED_RESOURCES_TABLE, Owner, shared_with)
+        end,
+    {ok, automate_storage:wrap_transaction(mnesia:activity(ets, T))}.
+
+
+-spec get_connection_bridge(ConnectionId :: binary()) -> {ok, binary()}.
+get_connection_bridge(ConnectionId) ->
+    T = fun() ->
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [#user_to_bridge_connection_entry{bridge_id=BridgeId}] ->
+                        {ok, BridgeId};
+                    [] ->
+                        {error, not_found}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
 
 %%====================================================================
 %% Internal functions
@@ -768,3 +790,13 @@ shares_list_to_map( [ #bridge_resource_share_entry{ resource=Resource
                         Acc#{ Resource => #{ Value => sets:from_list([Owner]) } }
                 end,
     shares_list_to_map(T, WithShare).
+
+map_owner_type(Type) when is_binary(Type) ->
+    case Type of
+        <<"group">> ->
+            group;
+        <<"user">> ->
+            user
+    end;
+map_owner_type(Type) when is_atom(Type) ->
+    Type.

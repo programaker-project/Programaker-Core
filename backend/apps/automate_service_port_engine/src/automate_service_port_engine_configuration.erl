@@ -230,7 +230,9 @@ get_versioning(Nodes) ->
                                                          ]
                                                , record_name=bridge_resource_share_entry
                                                , type=bag
-                                               }, Nodes)
+                                               }, Nodes),
+
+                                        {atomic, ok} = mnesia:add_table_index(?SERVICE_PORT_SHARED_RESOURCES_TABLE, shared_with)
                             end
                     }
                   ]

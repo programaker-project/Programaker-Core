@@ -5,6 +5,7 @@ import { ApiRoot } from './api-config';
 import { ContentType } from './content-type';
 import { GroupInfo, UserGroupInfo } from './group';
 import { SessionService } from './session.service';
+import { SharedResource } from './bridges/bridge';
 
 export interface UserAutocompleteInfo {
     id: string,
@@ -51,6 +52,10 @@ export class GroupService {
 
     getDeleteGroupUrl(groupId: string): string {
         return `${ApiRoot}/groups/by-id/${groupId}`;
+    }
+
+    getGroupSharedResourcesUrl(groupId: string): string {
+        return `${ApiRoot}/groups/by-id/${groupId}/shared-resources`;
     }
 
     async getUserGroupsUrl(): Promise<string> {
@@ -195,5 +200,16 @@ export class GroupService {
             .delete(url,
                    {headers: this.sessionService.getAuthHeader()})
             .toPromise());
+    }
+
+    async getSharedResources(groupId: string): Promise<SharedResource[]> {
+        const url = this.getGroupSharedResourcesUrl(groupId);
+
+        const response = await (this.http
+            .get(url,
+                 {headers: this.sessionService.getAuthHeader()})
+            .toPromise());
+
+        return response['resources'] as SharedResource[];
     }
 }
