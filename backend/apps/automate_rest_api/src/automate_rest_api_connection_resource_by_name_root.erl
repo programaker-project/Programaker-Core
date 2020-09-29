@@ -81,11 +81,11 @@ accept_json(Req, State) ->
             patch_json(Req, State)
     end.
 
-patch_json(Req, State=#state{ connection_id=ConnectionId, owner=Owner, resource_name=ResourceName }) ->
+patch_json(Req, State=#state{ connection_id=ConnectionId, resource_name=ResourceName }) ->
     {ok, Body, _} = ?UTILS:read_body(Req),
     Data = jiffy:decode(Body, [return_maps]),
     case Data of
         #{ <<"shared">> := Shares } when is_map(Shares) ->
-            ok = automate_service_port_engine:set_shared_resource(ConnectionId, Owner, ResourceName, Shares)
+            ok = automate_service_port_engine:set_shared_resource(ConnectionId, ResourceName, Shares)
     end,
     {true, Req, State}.

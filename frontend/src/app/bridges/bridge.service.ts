@@ -159,7 +159,7 @@ export class BridgeService {
 
             for (const valId of Object.keys(response[resource])) {
                 const value = response[resource][valId];
-                values.push({ id: valId, name: value.name, connection_id: value.connection_id })
+                values.push({ id: valId, name: value.name, connection_id: value.connection_id, shared_with: value.shared_with })
             }
 
             resources.push({ name: resource, values: values });

@@ -37,7 +37,8 @@
         , uninstall/0
         , get_channel_origin_bridge/1
 
-        , set_shared_resource/4
+        , set_shared_resource/3
+        , get_connection_shares/1
         ]).
 
 -include("records.hrl").
@@ -664,8 +665,8 @@ get_channel_origin_bridge(ChannelId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec set_shared_resource(ConnectionId :: binary(), Owner :: owner_id(), ResourceName :: binary(), Shares :: map()) -> ok.
-set_shared_resource(ConnectionId, Owner, ResourceName, Shares) ->
+-spec set_shared_resource(ConnectionId :: binary(), ResourceName :: binary(), Shares :: map()) -> ok.
+set_shared_resource(ConnectionId, ResourceName, Shares) ->
     T = fun() ->
                 Existing = mnesia:read(?SERVICE_PORT_SHARED_RESOURCES_TABLE, ConnectionId),
                 AboutResource = lists:filter(fun(#bridge_resource_share_entry{resource=Resource}) ->
@@ -689,6 +690,15 @@ set_shared_resource(ConnectionId, Owner, ResourceName, Shares) ->
                                    end, maps:to_list(Shares))
         end,
     automate_storage:wrap_transaction(mnesia:transaction(T)).
+
+-spec get_connection_shares(ConnectionId :: binary()) -> {ok, #{ binary() => #{ binary() => [ owner_id() ] } } }.
+get_connection_shares(ConnectionId) ->
+    T = fun() ->
+                mnesia:read(?SERVICE_PORT_SHARED_RESOURCES_TABLE, ConnectionId)
+        end,
+    Permissions = automate_storage:wrap_transaction(mnesia:transaction(T)),
+    {ok, shares_list_to_map(Permissions)}.
+
 
 %%====================================================================
 %% Internal functions
@@ -734,3 +744,27 @@ list_blocks_for_port(PortId) ->
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
+
+-spec shares_list_to_map([#bridge_resource_share_entry{}]) -> #{ binary() => #{ binary() => [ owner_id() ] } }.
+shares_list_to_map(Permissions) ->
+    shares_list_to_map(Permissions, #{}).
+
+shares_list_to_map([], Acc) ->
+    maps:map(fun(_K, Values) ->
+                     maps:map(fun(_K2, Shares) ->
+                                      sets:to_list(Shares)
+                              end, Values)
+             end, Acc);
+shares_list_to_map( [ #bridge_resource_share_entry{ resource=Resource
+                                                  , value=Value
+                                                  , shared_with=Owner } | T ]
+                  , Acc) ->
+    WithShare = case Acc of
+                    #{ Resource := ResourceVal=#{ Value := Shares } } ->
+                        Acc#{ Resource => ResourceVal#{ Value => sets:add_element(Owner, Shares) } };
+                    #{ Resource := ResourceVal } ->
+                        Acc#{ Resource => ResourceVal#{ Value => sets:from_list([Owner]) } };
+                    _ ->
+                        Acc#{ Resource => #{ Value => sets:from_list([Owner]) } }
+                end,
+    shares_list_to_map(T, WithShare).

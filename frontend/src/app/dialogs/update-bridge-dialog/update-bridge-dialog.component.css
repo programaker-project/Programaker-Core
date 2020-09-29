@@ -103,6 +103,7 @@ button.remove-share mat-icon {
 .annotated-icon label {
     font-size: small;
     margin: 0 0.5ex 0 0.5ex;
+    pointer-events: none;
 }
 
 section.resources li .share-button {
