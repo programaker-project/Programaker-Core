@@ -22,6 +22,7 @@
 %% Note, if waiting per instruction takes too much time consider adding a method
 %% which checks periodically.
 -define(UTILS, automate_bot_engine_test_utils).
+-define(BRIDGE_UTILS, automate_service_port_engine_test_utils).
 
 %%====================================================================
 %% Test API
@@ -67,9 +68,6 @@ save_to_test() ->
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
 
-    %% Program creation
-    {Username, ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
-
     Configuration = #{ <<"is_public">> => true
                      , <<"service_name">> => ServicePortName
                      , <<"blocks">> => [ ]
@@ -78,6 +76,10 @@ save_to_test() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
+    {ok, _} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
+
+    %% Program creation
+    {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
 
     %% Launch program
     Blocks = [ #{ <<"type">> => iolist_to_binary([ "services."
@@ -108,14 +110,13 @@ save_to_test() ->
              ],
 
     ?assertMatch({ok, ProgramId},
-                 automate_storage:update_program(
-                   Username, ProgramName,
-                   #stored_program_content{ type= <<"scratch_program">>
-                                          , parsed=#{ <<"blocks">> => [ Blocks ]
-                                                    , <<"variables">> => []
-                                                    }
-                                          , orig=undefined
-                                          })),
+                 automate_storage:update_program_by_id(
+                   ProgramId, #stored_program_content{ type= <<"scratch_program">>
+                                                     , parsed=#{ <<"blocks">> => [ Blocks ]
+                                                               , <<"variables">> => []
+                                                               }
+                                                     , orig=undefined
+                                                     })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
 

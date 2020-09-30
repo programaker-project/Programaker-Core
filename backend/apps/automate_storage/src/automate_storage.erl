@@ -501,8 +501,8 @@ reset_password(VerificationCode, Password) ->
 check_password_reset_verification_code(VerificationCode) ->
     check_verification_code(VerificationCode, password_reset_verification).
 
-create_program(Username, ProgramName) ->
-    create_program(Username, ProgramName, ?DEFAULT_PROGRAM_TYPE).
+create_program(User, ProgramName) ->
+    create_program(User, ProgramName, ?DEFAULT_PROGRAM_TYPE).
 
 create_program(Username, ProgramName, ProgramType) when is_binary(Username) ->
     io:fwrite("\033[7m[create_program(Username,...)] To be deprecated\033[0m~n"),

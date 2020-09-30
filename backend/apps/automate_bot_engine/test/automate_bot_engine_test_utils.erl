@@ -3,6 +3,7 @@
 -export([ build_ast/1
         , block_val/1
         , create_anonymous_program/0
+        , create_user_program/1
         , wait_for_program_alive/3
         , wait_for_check_ok/3
         ]).
@@ -44,6 +45,11 @@ create_anonymous_program() ->
     ProgramName = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
     {ok, ProgramId} = automate_storage:create_program(Username, ProgramName),
     {Username, ProgramName, ProgramId}.
+
+create_user_program(UserId) ->
+    ProgramName = binary:list_to_bin(uuid:to_string(uuid:uuid4())),
+    {ok, ProgramId} = automate_storage:create_program(UserId, ProgramName),
+    {ok, ProgramId}.
 
 create_random_user() ->
     Username = binary:list_to_bin(uuid:to_string(uuid:uuid4())),

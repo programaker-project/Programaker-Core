@@ -12,6 +12,7 @@
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
 -define(TEST_ID_PREFIX, "automate_service_port_engine_custom_blocks_tests").
 -define(RECEIVE_TIMEOUT, 100).
+-define(UTILS, automate_service_port_engine_test_utils).
 
 %%====================================================================
 %% Test API
@@ -38,7 +39,7 @@ setup() ->
 
 %% @doc App infrastructure teardown.
 %% @end
-stop({NodeName}) ->
+stop({_NodeName}) ->
     %% ?BACKEND:uninstall(),
     ok = application:stop(?APPLICATION),
 
@@ -107,7 +108,7 @@ owned_private_blocks_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    ok = establish_connection(ServicePortId, OwnerUserId),
+    {ok, _} = ?UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
 
@@ -155,7 +156,7 @@ owned_public_blocks_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    ok = establish_connection(ServicePortId, OwnerUserId),
+    {ok, _} = ?UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
 
@@ -176,7 +177,7 @@ non_owned_public_blocks_appear() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    ok = establish_connection(ServicePortId, RequesterUserId),
+    {ok, _} = ?UTILS:establish_connection(ServicePortId, RequesterUserId),
 
     {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(RequesterUserId),
 
@@ -196,7 +197,7 @@ owned_delete_bridge_blocks() ->
                                                       , <<"value">> => Configuration
                                                       })),
 
-    ok = establish_connection(BridgeId, OwnerUserId),
+    {ok, _} = ?UTILS:establish_connection(BridgeId, OwnerUserId),
 
     {ok, #{ BridgeId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerUserId),
     %% Blocks are created
@@ -281,10 +282,11 @@ route_notification_targeted_to_owner() ->
                                                       })),
 
     %% Listen on the service port
+    {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
+
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
-    ok = establish_connection(ServicePortId, TargetUserId),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
@@ -316,10 +318,11 @@ route_notification_targeted_to_owner_on_public() ->
                                                       })),
 
     %% Listen on the service port
+    {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
+
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
-    ok = establish_connection(ServicePortId, TargetUserId),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
@@ -350,10 +353,11 @@ route_notification_targeted_to_non_owner_on_public() ->
                                                       })),
 
     %% Listen on the service port
+    {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
+
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
     ok = automate_channel_engine:listen_channel(ChannelId),
-    ok = establish_connection(ServicePortId, TargetUserId),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
@@ -384,6 +388,8 @@ route_notification_targeted_to_all_users_on_public() ->
                                                       })),
 
     %% Listen on the service port for non-owner
+    {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
+
     {ok, #{ module := NonOwnerModule }} = automate_service_registry:get_service_by_id(
                                             ServicePortId),
     {ok, NonOwnerChannelId } = automate_service_registry_query:get_monitor_id(
@@ -391,6 +397,8 @@ route_notification_targeted_to_all_users_on_public() ->
     ok = automate_channel_engine:listen_channel(NonOwnerChannelId),
 
     %% Listen on the service port for owner
+    {ok, _} = ?UTILS:establish_connection(ServicePortId, OwnerUserId),
+
     {ok, #{ module := OwnerModule }} = automate_service_registry:get_service_by_id(
                                          ServicePortId),
     {ok, OwnerChannelId } = automate_service_registry_query:get_monitor_id(
@@ -538,10 +546,6 @@ set_private_bridge_to_public_user() ->
 %%====================================================================
 %% Notification routing tests - Internal functions
 %%====================================================================
-establish_connection(BridgeId, UserId) ->
-    {ok, ConnectionId} = ?BACKEND:gen_pending_connection(BridgeId, UserId),
-    ok = ?BACKEND:establish_connection(BridgeId, UserId, ConnectionId, <<"test connection">>).
-
 emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
     Key = binary:list_to_bin(atom_to_list(?MODULE)),
     Value = Content, %% For simplicity

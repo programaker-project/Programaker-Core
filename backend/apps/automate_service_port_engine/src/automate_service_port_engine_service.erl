@@ -129,7 +129,7 @@ get_name_from_result(_) ->
 %%====================================================================
 %% Internal
 %%====================================================================
--spec get_connection(Owner :: owner_id(), ServicePortId :: binary()) -> {ok, binary()}.
+-spec get_connection(Owner :: owner_id(), ServicePortId :: binary()) -> {ok, binary()} | {error, not_found}.
 get_connection(Owner, ServicePortId) ->
     case automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId) of
         {ok, DefaultConnectionId} ->
@@ -138,6 +138,8 @@ get_connection(Owner, ServicePortId) ->
             case automate_service_port_engine:get_resources_shared_with_on_bridge(Owner, ServicePortId) of
                 {ok, [#bridge_resource_share_entry{ connection_id=SharedConnectionId } | _]} ->
                     %% TODO: Capture the connection which is really needed, and if it's allowed
-                    {ok, SharedConnectionId}
+                    {ok, SharedConnectionId};
+                {ok, [] }->
+                    {error, not_found}
             end
     end.

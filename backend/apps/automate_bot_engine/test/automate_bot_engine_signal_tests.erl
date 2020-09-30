@@ -18,6 +18,7 @@
 %% Note, if waiting per instruction takes too much time consider adding a method
 %% which checks periodically.
 -define(UTILS, automate_bot_engine_test_utils).
+-define(BRIDGE_UTILS, automate_service_port_engine_test_utils).
 
 %%====================================================================
 %% Test API
@@ -39,6 +40,7 @@ setup() ->
     net_kernel:start([testing, shortnames]),
 
     {ok, _} = application:ensure_all_started(?APPLICATION),
+    {ok, _} = application:ensure_all_started(automate_service_port_engine),
     {ok, _} = application:ensure_all_started(automate_services_time),
 
     {NodeName}.
@@ -46,7 +48,9 @@ setup() ->
 %% @doc App infrastructure teardown.
 %% @end
 stop({_NodeName}) ->
-    application:stop(?APPLICATION),
+    ok = application:stop(automate_services_time),
+    ok = application:stop(automate_service_port_engine),
+    ok = application:stop(?APPLICATION),
 
     ok.
 
@@ -79,8 +83,9 @@ simple_wait_for_signal() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
+    {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
-    {_Username, _ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+    {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
                             , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
                                                        , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
@@ -143,8 +148,9 @@ wait_for_signal_check_key() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
+    {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
-    {_Username, _ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+    {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
                             , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
                                                        , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
@@ -224,8 +230,9 @@ wait_for_signal_check_subkey() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
+    {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
-    {_Username, _ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+    {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
                             , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
                                                        , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
@@ -355,11 +362,14 @@ wait_for_monitor_signal() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
+    {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
+
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                          Module, OwnerUserId),
 
-    {_Username, _ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+
+    {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
                             , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
                                                        , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
@@ -421,11 +431,14 @@ wait_for_monitor_signal_check_key() ->
                                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
                                                                       , <<"value">> => Configuration
                                                                       })),
+    {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
+
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
     {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
                          Module, OwnerUserId),
 
-    {_Username, _ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+
+    {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
                             , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
                                                        , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
