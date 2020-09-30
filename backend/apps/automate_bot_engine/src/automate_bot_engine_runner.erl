@@ -138,7 +138,7 @@ loop(State = #state{ check_next_action=CheckContinue
                                 io:format("\033[47;30mIgnoring (app stopped)\033[0m~n", []),
                                 State;
                             X ->
-                                io:format("\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [X]),
+                                io:format("[~p:~p]\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [?MODULE, ?LINE, X]),
                                 State
                         end,
             loop(NextState);

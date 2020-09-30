@@ -102,7 +102,7 @@ loop(State = #state{ check_next_action = CheckContinue
                             continue ->
                                 run_tick(State, {Signal, Message});
                             X ->
-                                io:format("\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [X]),
+                                io:format("[~p:~p]\033[47;30mIgnoring ~p (not applicable)\033[0m~n", [?MODULE, ?LINE, X]),
                                 State
                         end,
             loop(NextState);

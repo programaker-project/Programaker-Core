@@ -16,6 +16,7 @@
 
 -define(BACKEND, automate_service_port_engine_mnesia_backend).
 -include("../../automate_bot_engine/src/program_records.hrl").
+-include("./records.hrl").
 
 %%====================================================================
 %% Service API
@@ -26,9 +27,11 @@ start_link() ->
     ignore.
 
 %% No monitor associated with this service
--spec get_monitor_id(owner_id(), [binary(), ...]) -> {ok, binary} | {error, _, binary()}.
+-spec get_monitor_id(owner_id(), [binary(), ...]) -> {ok, binary()} | {error, _, binary()}.
 get_monitor_id(Owner, [ServicePortId]) when is_binary(ServicePortId) ->
-    ?BACKEND:get_or_create_monitor_id(Owner, ServicePortId).
+    {ok, ConnectionId} = get_connection(Owner, ServicePortId),
+    {ok, ConnectionOwner} = ?BACKEND:get_connection_owner(ConnectionId),
+    ?BACKEND:get_or_create_monitor_id(ConnectionOwner, ServicePortId).
 
 -spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()}.
 call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->
@@ -44,8 +47,10 @@ call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, 
                        { ok, #{ bridge_connection := #{ ServicePortId := ContextConnectionId } } } ->
                            ContextConnectionId;
                        _ ->
-                           {ok, DefaultConnectionId} = automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId),
-                           DefaultConnectionId
+                           case get_connection(Owner, ServicePortId) of
+                               {ok, AvailableConnection} ->
+                                   AvailableConnection
+                               end
                    end,
 
     case automate_service_port_engine:call_service_port(
@@ -119,3 +124,20 @@ get_name_from_result(#{ <<"data">> := #{ <<"name">> := Name } }) ->
     Name;
 get_name_from_result(_) ->
     undefined.
+
+
+%%====================================================================
+%% Internal
+%%====================================================================
+-spec get_connection(Owner :: owner_id(), ServicePortId :: binary()) -> {ok, binary()}.
+get_connection(Owner, ServicePortId) ->
+    case automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId) of
+        {ok, DefaultConnectionId} ->
+            {ok, DefaultConnectionId};
+        {error, not_found} ->
+            case automate_service_port_engine:get_resources_shared_with_on_bridge(Owner, ServicePortId) of
+                {ok, [#bridge_resource_share_entry{ connection_id=SharedConnectionId } | _]} ->
+                    %% TODO: Capture the connection which is really needed, and if it's allowed
+                    {ok, SharedConnectionId}
+            end
+    end.

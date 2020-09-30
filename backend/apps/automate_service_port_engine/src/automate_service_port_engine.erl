@@ -38,6 +38,7 @@
         , get_connection_shares/1
         , get_connection_bridge/1
         , get_resources_shared_with/1
+        , get_resources_shared_with_on_bridge/2
         ]).
 
 -include("records.hrl").
@@ -379,6 +380,14 @@ get_connection_bridge(ConnectionId) ->
 -spec get_resources_shared_with(Owner :: owner_id()) -> {ok, [#bridge_resource_share_entry{}]}.
 get_resources_shared_with(Owner) ->
     ?BACKEND:get_resources_shared_with(Owner).
+
+-spec get_resources_shared_with_on_bridge(Owner :: owner_id(), BridgeId :: binary()) -> {ok, [#bridge_resource_share_entry{}]}.
+get_resources_shared_with_on_bridge(Owner, BridgeId) ->
+    {ok, Shares} = get_resources_shared_with(Owner),
+    {ok, lists:filter(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
+                              {ok, SharedBridgeId} = automate_service_port_engine:get_connection_bridge(ConnectionId),
+                              SharedBridgeId == BridgeId
+                      end, Shares)}.
 
 
 %%====================================================================
