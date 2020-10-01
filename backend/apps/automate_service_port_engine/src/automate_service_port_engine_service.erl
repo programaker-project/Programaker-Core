@@ -26,21 +26,19 @@
 start_link() ->
     ignore.
 
-%% No monitor associated with this service
--spec get_monitor_id(owner_id(), [binary(), ...]) -> {ok, binary()} | {error, _}.
-get_monitor_id(Owner, [ServicePortId]) when is_binary(ServicePortId) ->
-    {ok, ConnectionId} = get_connection(Owner, ServicePortId),
-    {ok, ConnectionOwner} = ?BACKEND:get_connection_owner(ConnectionId),
-    ?BACKEND:get_or_create_monitor_id(ConnectionOwner, ServicePortId).
-
--spec listen_service(owner_id(), {binary() | undefined, binary() | undefined}, [binary(), ...]) -> ok | {error, _}.
+-spec listen_service(owner_id(), {binary() | undefined, binary() | undefined}, [binary(), ...]) -> ok | {error, no_valid_connection}.
 listen_service(Owner, {Key, SubKey}, [ServicePortId]) ->
-    {ok, ChannelId} = get_monitor_id(Owner, [ServicePortId]),
-    %% TODO: Add resource permissions check
-    automate_channel_engine:listen_channel(ChannelId).
+    case get_connection(Owner, ServicePortId, {Key, SubKey}) of
+        {ok, ConnectionId} ->
+            {ok, ConnectionOwner} = ?BACKEND:get_connection_owner(ConnectionId),
+            {ok, ChannelId} = ?BACKEND:get_or_create_monitor_id(ConnectionOwner, ServicePortId),
+            automate_channel_engine:listen_channel(ChannelId, {Key, SubKey});
+        {error, not_found} ->
+            {error, no_valid_connection}
+    end.
 
 -spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()}.
-call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->
+call(FunctionId, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->
     {ok, MonitorId } = ?BACKEND:get_or_create_monitor_id(Owner, ServicePortId),
     LastMonitorValue = case automate_bot_engine_variables:get_last_monitor_value(
                               Thread, MonitorId) of
@@ -52,7 +50,14 @@ call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, 
                        { ok, #{ bridge_connection := #{ ServicePortId := ContextConnectionId } } } ->
                            ContextConnectionId;
                        _ ->
-                           case get_connection(Owner, ServicePortId) of
+                           {ok, BlockInfo} = ?BACKEND:get_block_definition(ServicePortId, FunctionId),
+                           {Key, SubKey} = case get_block_resource(BlockInfo, Values) of
+                               {ok, {Resource, ResourceValue}} ->
+                                   {Resource, ResourceValue};
+                               {error, not_found} ->
+                                   {undefined, undefined}
+                           end,
+                           case get_connection(Owner, ServicePortId, {Key, SubKey}) of
                                {ok, AvailableConnection} ->
                                    AvailableConnection
                                end
@@ -60,7 +65,7 @@ call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, 
 
     case automate_service_port_engine:call_service_port(
            ServicePortId,
-           FunctionName,
+           FunctionId,
            Values,
            ConnectionId,
            #{ <<"last_monitor_value">> => LastMonitorValue}) of
@@ -134,17 +139,36 @@ get_name_from_result(_) ->
 %%====================================================================
 %% Internal
 %%====================================================================
--spec get_connection(Owner :: owner_id(), ServicePortId :: binary()) -> {ok, binary()} | {error, not_found}.
-get_connection(Owner, ServicePortId) ->
+-spec get_connection(Owner :: owner_id(), ServicePortId :: binary(), { binary() | undefined, binary() | undefined })
+                    -> {ok, binary()} | {error, not_found}.
+get_connection(Owner, ServicePortId, {Resource, ResourceValue}) ->
     case automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId) of
         {ok, DefaultConnectionId} ->
             {ok, DefaultConnectionId};
         {error, not_found} ->
-            case automate_service_port_engine:get_resources_shared_with_on_bridge(Owner, ServicePortId) of
-                {ok, [#bridge_resource_share_entry{ connection_id=SharedConnectionId } | _]} ->
-                    %% TODO: Capture the connection which is really needed, and if it's allowed
+            {ok, Shares} = automate_service_port_engine:get_resources_shared_with_on_bridge(Owner, ServicePortId),
+            MatchingConnections = lists:filter(fun(#bridge_resource_share_entry{ connection_id=SharedConnectionId
+                                                                               , resource=SharedResource
+                                                                               , value=SharedResourceValue
+                                                                               }) ->
+                                                       (Resource == SharedResource) and (ResourceValue == SharedResourceValue)
+                                               end, Shares),
+            case MatchingConnections of
+                [#bridge_resource_share_entry{ connection_id=SharedConnectionId } | _] ->
                     {ok, SharedConnectionId};
-                {ok, [] }->
+                [] ->
                     {error, not_found}
             end
     end.
+
+-spec get_block_resource(BlockInfo :: #service_port_block{}, Values :: [ any() ])
+                        -> {ok, { binary(), binary()}} | {error, not_found}.
+get_block_resource(BlockInfo=#service_port_block{ arguments=Args }, Values) ->
+    get_block_resource_aux(Args, Values).
+
+get_block_resource_aux([ #service_port_block_collection_argument{ name=Name } | _ ], [ Value | _ ]) ->
+    {ok, {Name, Value}};
+get_block_resource_aux([], []) ->
+    {error, not_found};
+get_block_resource_aux([ _ | TArg ], [ _ | TValue ]) ->
+    get_block_resource_aux(TArg, TValue).

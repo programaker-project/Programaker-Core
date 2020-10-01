@@ -60,6 +60,9 @@ tests(_SetupResult) ->
     , { "[Bridge - Shared resources] Allow to share resources, blocks that require a non-shared resource don't appear"
       , fun non_shared_resources_negate_custom_blocks/0
       }
+    , { "[Bridge - Shared resources] Allow to share resources, blocks that don't require resources don't appear"
+      , fun shared_block_with_no_resources_dont_appear/0
+      }
       %% TODO: Should it show blocks with NO required resources?
       %% Execution test
     , { "[Bridge - Shared resources] Allow to make calls on shared resource values"
@@ -147,6 +150,43 @@ non_shared_resources_negate_custom_blocks() ->
     Configuration = #{ <<"is_public">> => false
                      , <<"service_name">> => BridgeName
                      , <<"blocks">> => [ get_test_block([{resource, ResourceNameNotShared}]) ]
+                     },
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceNameShared
+                                                         , #{ SharedValue =>
+                                                                  #{ <<"name">> => SharedValueName
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+
+    ?assertMatch({ok, #{ BridgeId := [] } }, automate_service_port_engine:list_custom_blocks({group, GroupId})).
+
+
+shared_block_with_no_resources_dont_appear() ->
+    OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-21-owner">>},
+    ReaderUserId = <<?TEST_ID_PREFIX, "-test-21-reader">>,
+    ReaderUser = {user, ReaderUserId},
+    GroupName = <<?TEST_ID_PREFIX, "-test-21-group">>,
+    ResourceNameShared = <<"channels">>,
+    SharedValue = <<"shared-val-id">>,
+    SharedValueName = <<"shared-val-name">>,
+
+    {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
+    ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
+
+    BridgeName = <<?TEST_ID_PREFIX, "-test-2-service-port">>,
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUser, BridgeName),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => BridgeName
+                     , <<"blocks">> => [ get_test_block([]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
                                         jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
@@ -307,22 +347,9 @@ disallow_calls_on_non_shared_resource_values() ->
                             , thread_id=undefined
                             },
 
-    spawn(fun() ->
-                  try automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined) of
-                      {ran_this_tick, NewThreadState} ->
-                          Orig ! {fail, "Should not have run"}
-                  catch ErrorNs:Error:StackTrace ->
-                          Orig ! pass
-                  end
-          end
-         ),
-    receive
-        pass ->
-            Bridge ! done;
-        {fail, Reason} ->
-            Bridge ! done,
-            ct:fail(Reason)
-    end.
+    Ret = automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined),
+    Bridge ! done,
+    ?assertMatch({stopped, _}, Ret).
 
 allow_to_listen_on_shared_resource_values() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-5-owner">>},
@@ -451,7 +478,7 @@ disallow_to_listen_on_non_shared_resources() ->
     case automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, undefined }) of
         ok ->
             ct:fail("Should not be allowed");
-        {error, not_connected} ->
+        {error, no_valid_connection} ->
             ok
     end.
 
@@ -461,6 +488,7 @@ disallow_to_listen_on_shared_resource_different_subkey() ->
     ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-7-group">>,
     ResourceName = <<"channels">>,
+    NonSharedValue = <<"non-shared-val-id">>,
     SharedValue = <<"shared-val-id">>,
     SharedValueName = <<"shared-val-name">>,
     ReturnMessage = #{ <<"result">> => <<"ok">>} ,
@@ -512,7 +540,7 @@ disallow_to_listen_on_shared_resource_different_subkey() ->
     case automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, NonSharedValue }) of
         ok ->
             ct:fail("Should not be allowed");
-        {error, not_connected} ->
+        {error, no_valid_connection} ->
             ok
     end.
 

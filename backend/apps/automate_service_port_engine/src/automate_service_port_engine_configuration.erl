@@ -220,20 +220,23 @@ get_versioning(Nodes) ->
                                                      service_port_configuration
                                                     ),
 
-                                        ok = automate_storage_versioning:create_database(
-                                               #database_version_data
-                                               { database_name=?SERVICE_PORT_SHARED_RESOURCES_TABLE
-                                               , records=[ connection_id
-                                                         , resource
-                                                         , value
-                                                         , name
-                                                         , shared_with
-                                                         ]
-                                               , record_name=bridge_resource_share_entry
-                                               , type=bag
-                                               }, Nodes),
+                                    ok = automate_storage_versioning:create_database(
+                                           #database_version_data
+                                           { database_name=?SERVICE_PORT_SHARED_RESOURCES_TABLE
+                                           , records=[ connection_id
+                                                     , resource
+                                                     , value
+                                                     , name
+                                                     , shared_with
+                                                     ]
+                                           , record_name=bridge_resource_share_entry
+                                           , type=bag
+                                           }, Nodes),
 
-                                        {atomic, ok} = mnesia:add_table_index(?SERVICE_PORT_SHARED_RESOURCES_TABLE, shared_with)
+                                    ok = mnesia:wait_for_tables([ ?SERVICE_PORT_SHARED_RESOURCES_TABLE
+                                                                ], automate_configuration:get_table_wait_time()),
+
+                                    {atomic, ok} = mnesia:add_table_index(?SERVICE_PORT_SHARED_RESOURCES_TABLE, shared_with)
                             end
                     }
                   ]

@@ -268,9 +268,10 @@ callback_bridge(Owner, BridgeId, CallbackName) when is_tuple(Owner) ->
             case ?BACKEND:is_user_connected_to_bridge(Owner, BridgeId) of
                 {ok, false} ->
                     {error, not_found};
-                {ok, true} ->
+                {ok, true, _Values} ->
                     %% No direct connection, but still connected (via shared connection)
                     %% We can pull the values from the share
+                    %% TODO: Reformat values from the _Values already returned
                     {ok, Shares} = ?BACKEND:get_resources_shared_with(Owner),
                     Values = lists:filtermap(fun(#bridge_resource_share_entry{ connection_id=ConnectionId
                                                                              , resource=Resource
