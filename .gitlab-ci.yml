@@ -50,6 +50,8 @@ push-frontend:
   stage: push-commit
   needs:
     - build-prod-frontend
+    - test-frontend-logic
+    - test-frontend-on-browser
   dependencies:
     - build-prod-frontend
   before_script:
@@ -67,6 +69,8 @@ tag-frontend-branch:
   stage: push-branch
   needs:
     - build-prod-frontend
+    - test-frontend-logic
+    - test-frontend-on-browser
   dependencies:
     - build-prod-frontend
   before_script:
@@ -101,6 +105,8 @@ push-programaker-frontend:
     - build-programaker-frontend
   needs:
     - build-programaker-frontend
+    - test-frontend-logic
+    - test-frontend-on-browser
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images/programaker-frontend.tar
@@ -118,6 +124,8 @@ tag-programaker-frontend-branch:
     - build-programaker-frontend
   needs:
     - build-programaker-frontend
+    - test-frontend-logic
+    - test-frontend-on-browser
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images/programaker-frontend.tar
@@ -186,6 +194,8 @@ push-backend:
   needs:
     - build-backend
     - api-test-backend
+    - test-backend
+    - dialyze-backend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images_optimized/backend-optimized.tar
@@ -204,6 +214,8 @@ tag-backend-branch:
   needs:
     - build-backend
     - api-test-backend
+    - test-backend
+    - dialyze-backend
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker load -i tmp_docker_images_optimized/backend-optimized.tar
