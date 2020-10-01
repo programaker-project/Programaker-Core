@@ -411,8 +411,13 @@ get_block_definition(BridgeId, FunctionId) ->
         end,
     case mnesia:activity(ets, T) of
         [ #service_port_configuration{ blocks=Blocks } ] ->
-            case lists:filter(fun(#service_port_block{ block_id=BlockFunId }) ->
-                                      BlockFunId == FunctionId
+            case lists:filter(fun(Block) ->
+                                      case Block of
+                                          #service_port_block{ block_id=BlockFunId } ->
+                                              BlockFunId == FunctionId;
+                                          _ ->
+                                              false
+                                      end
                               end, Blocks) of
                 [] -> {error, not_found};
                 %% Note that the case for multiple matches is not handled!
@@ -867,7 +872,8 @@ map_owner_type(Type) when is_atom(Type) ->
     Type.
 
 
-get_block_resources(#service_port_block{ arguments=Arguments }) ->
+get_block_resources(Block) ->
+    Arguments = get_block_arguments(Block),
     Res = lists:filtermap(fun(Arg) ->
                                   case Arg of
                                       #service_port_block_collection_argument{ name=Resource } ->
@@ -877,3 +883,8 @@ get_block_resources(#service_port_block{ arguments=Arguments }) ->
                                   end
                           end, Arguments ),
     sets:to_list(sets:from_list(Res)).
+
+get_block_arguments(#service_port_block{ arguments=Arguments }) ->
+    Arguments;
+get_block_arguments(#service_port_trigger_block{ arguments=Arguments }) ->
+    Arguments.
