@@ -181,7 +181,13 @@ export class GroupDashboardComponent {
 
     async updateSharedResources() {
         this.sharedResources = await this.groupService.getSharedResources(this.groupInfo.id);
-        console.log("Shared", this.sharedResources);
+
+        for (const conn of this.sharedResources){
+            this.bridgeInfo[conn.bridge_id] = {
+                icon: iconDataToUrl(conn.icon, conn.bridge_id),
+                name: conn.name
+            };
+        }
     }
 
     openBridgePanel(bridge: BridgeIndexData) {
