@@ -144,12 +144,11 @@ get_connection(Owner, ServicePortId, Resources) ->
             {ok, Shares} = automate_service_port_engine:get_resources_shared_with_on_bridge(Owner, ServicePortId),
             %% TODO: For usign blocks that require multiple resources it'd be necessary to consider
             %% all resources shared for each connection. Instead of each share entry separately.
-            MatchingConnections = lists:filter(fun(#bridge_resource_share_entry{ resource=SharedResource
+            MatchingConnections = lists:filter(fun(#bridge_resource_share_entry{ resource=_SharedResource
                                                                                , value=SharedResourceValue
                                                                                }) ->
-                                                       lists:all(fun({ Resource, ResourceValue }) ->
-                                                                         (Resource == SharedResource)
-                                                                             and (ResourceValue == SharedResourceValue)
+                                                       lists:all(fun({ _Key, ResourceValue }) ->
+                                                                         ResourceValue == SharedResourceValue
                                                                  end, Resources)
                                                end, Shares),
             case MatchingConnections of
