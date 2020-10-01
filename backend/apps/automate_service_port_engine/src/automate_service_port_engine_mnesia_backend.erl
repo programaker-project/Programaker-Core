@@ -12,12 +12,15 @@
         , get_signal_listeners/2
 
         , list_custom_blocks/1
+        , get_block_definition/2
         , internal_user_id_to_connection_id/2
         , is_user_connected_to_bridge/2
         , connection_id_to_internal_user_id/2
         , get_user_service_ports/1
         , list_bridge_channels/1
         , list_established_connections/1
+        , list_established_connections/2
+        , get_connection_owner/1
         , get_pending_connection_info/1
 
         , gen_pending_connection/2
@@ -27,12 +30,18 @@
         , get_service_id_for_port/1
         , get_bridge_info/1
         , get_bridge_owner/1
+        , get_bridge_configuration/1
         , get_all_bridge_info/1
         , delete_bridge/2
 
         , get_or_create_monitor_id/2
         , uninstall/0
         , get_channel_origin_bridge/1
+
+        , set_shared_resource/3
+        , get_connection_shares/1
+        , get_resources_shared_with/1
+        , get_connection_bridge/1
         ]).
 
 -include("records.hrl").
@@ -230,6 +239,20 @@ get_bridge_owner(BridgeId) ->
         end,
     automate_storage:wrap_transaction(mnesia:activity(ets, T)).
 
+
+-spec get_bridge_configuration(binary()) -> {ok, #service_port_configuration{}} | {error, not_found}.
+get_bridge_configuration(BridgeId) ->
+    T = fun() ->
+                case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId) of
+                    [] ->
+                        {error, not_found};
+                    [Entry] ->
+                        {ok, Entry}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
+
+
 -spec get_all_bridge_info(binary()) -> {ok, #service_port_entry{}, undefined | #service_port_configuration{}} | {error, _}.
 get_all_bridge_info(BridgeId) ->
     Transaction = fun() ->
@@ -364,7 +387,8 @@ get_signal_listeners(_Content, BridgeId) ->
 -spec list_custom_blocks(owner_id()) -> {ok, map()}.
 list_custom_blocks(Owner) ->
     Transaction = fun() ->
-                          Services = list_userid_ports(Owner) ++ list_public_ports(),
+                          Services = list_userid_ports(Owner) ++ list_public_ports() ++ list_shared_ports(Owner),
+
                           {ok
                           , maps:from_list(
                               lists:filter(fun (X) -> X =/= none end,
@@ -372,20 +396,40 @@ list_custom_blocks(Owner) ->
                                                              case is_user_connected_to_bridge(Owner, PortId) of
                                                                  {ok, false} ->
                                                                      none;
-                                                                 _ ->
-                                                                     list_blocks_for_port(PortId)
+                                                                 {ok, true, SharedResources } ->
+                                                                     list_blocks_for_port(PortId, SharedResources)
                                                              end
                                                      end,
                                                      Services)))}
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            Result;
-        {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+    automate_storage:wrap_transaction(mnesia:activity(ets, Transaction)).
+
+-spec get_block_definition(BridgeId :: binary(), FunctionId :: binary()) -> {ok, #service_port_block{}}.
+get_block_definition(BridgeId, FunctionId) ->
+    T = fun() ->
+                mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId)
+        end,
+    case mnesia:activity(ets, T) of
+        [ #service_port_configuration{ blocks=Blocks } ] ->
+            case lists:filter(fun(Block) ->
+                                      case Block of
+                                          #service_port_block{ block_id=BlockFunId } ->
+                                              BlockFunId == FunctionId;
+                                          _ ->
+                                              false
+                                      end
+                              end, Blocks) of
+                [] -> {error, not_found};
+                %% Note that the case for multiple matches is not handled!
+                [ Block ] ->
+                    {ok, Block}
+            end;
+        [] ->
+            {error, not_found}
     end.
 
--spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
+
+-spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found} | { error, any() }.
 internal_user_id_to_connection_id(Owner, ServicePortId) ->
     case get_all_connections(Owner, ServicePortId) of
         {ok, []} ->
@@ -422,13 +466,13 @@ get_all_connections({OwnerType, OwnerId}, BridgeId) ->
             {error, Reason}
     end.
 
--spec is_user_connected_to_bridge(owner_id(), binary()) -> {ok, boolean()} | {error, not_found}.
+-spec is_user_connected_to_bridge(owner_id(), binary()) -> {ok, false} | {ok, true, all | #{binary() => [binary()] } } | {error, not_found}.
 is_user_connected_to_bridge(Owner, BridgeId) ->
     case get_all_connections(Owner, BridgeId) of
         {ok, []} ->
-            {ok, false};
+            with_shared_connection(Owner, BridgeId);
         {ok, List} when is_list(List) ->
-            {ok, true};
+            {ok, true, all};
         {error, Reason} ->
             {error, Reason}
     end.
@@ -511,7 +555,7 @@ list_bridge_channels(ServicePortId) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+-spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]} | {error, not_found}.
 list_established_connections({OwnerType, OwnerId}) ->
     MatchHead = #user_to_bridge_connection_entry{ id='_'
                                                 , bridge_id='_'
@@ -529,14 +573,33 @@ list_established_connections({OwnerType, OwnerId}) ->
     Transaction = fun() ->
                           {ok, mnesia:select(?USER_TO_BRIDGE_CONNECTION_TABLE, Matcher)}
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            Result;
-        {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+    mnesia:activity(ets, Transaction).
+
+-spec list_established_connections(owner_id(), binary()) -> {ok, [#user_to_bridge_connection_entry{}]} | {error, not_found}.
+list_established_connections(Owner, BridgeId) ->
+    case list_established_connections(Owner) of
+        {ok, Results} ->
+            {ok, lists:filter(fun(#user_to_bridge_connection_entry{ bridge_id=ConnBridgeId }) ->
+                                      ConnBridgeId == BridgeId
+                              end, Results)};
+        X ->
+            X
     end.
 
--spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
+
+-spec get_connection_owner(binary()) -> {ok, owner_id()} | {error, not_found}.
+get_connection_owner(ConnectionId) ->
+    T = fun() ->
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [#user_to_bridge_connection_entry{owner=Owner}] ->
+                        {ok, Owner};
+                    [] ->
+                        {error, not_found}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
+
+-spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}} | {error, not_found}.
 get_pending_connection_info(ConnectionId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, ConnectionId) of
@@ -574,7 +637,7 @@ delete_bridge(Accessor, BridgeId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec get_or_create_monitor_id(owner_id(), binary()) -> {ok, binary()} | {error, term(), binary()}.
+-spec get_or_create_monitor_id(owner_id(), binary()) -> {ok, binary()} | {error, term()}.
 get_or_create_monitor_id(Owner, ServicePortId) ->
     Id = {Owner, ServicePortId},
     case mnesia:dirty_read(?SERVICE_PORT_CHANNEL_TABLE, Id) of
@@ -601,7 +664,7 @@ get_or_create_monitor_id(Owner, ServicePortId) ->
                 {atomic, Result} ->
                     Result;
                 {aborted, Reason} ->
-                    {error, Reason, mnesia:error_description(Reason)}
+                    {error, Reason}
             end
     end.
 
@@ -625,6 +688,62 @@ get_channel_origin_bridge(ChannelId) ->
         {aborted, Reason} ->
             {error, mnesia:error_description(Reason)}
     end.
+
+-spec set_shared_resource(ConnectionId :: binary(), ResourceName :: binary(), Shares :: map()) -> ok.
+set_shared_resource(ConnectionId, ResourceName, Shares) ->
+    T = fun() ->
+                Existing = mnesia:read(?SERVICE_PORT_SHARED_RESOURCES_TABLE, ConnectionId),
+                AboutResource = lists:filter(fun(#bridge_resource_share_entry{resource=Resource}) ->
+                                                     Resource == ResourceName
+                                             end, Existing),
+                ok = lists:foreach(fun(R) ->
+                                           ok = mnesia:delete_object(?SERVICE_PORT_SHARED_RESOURCES_TABLE, R, write)
+                                   end, AboutResource),
+                ok = lists:foreach(fun({ValueId, #{ <<"name">> := ValueName, <<"shared_with">> := Allowed } }) ->
+                                           ok = lists:foreach(fun(#{ <<"type">> := OwnerType
+                                                                   , <<"id">> := OwnerId
+                                                                   }) ->
+                                                                      ok = mnesia:write( ?SERVICE_PORT_SHARED_RESOURCES_TABLE
+                                                                                       , #bridge_resource_share_entry{ connection_id=ConnectionId
+                                                                                                                     , resource=ResourceName
+                                                                                                                     , value=ValueId
+                                                                                                                     , name=ValueName
+                                                                                                                     , shared_with={map_owner_type(OwnerType), OwnerId}
+                                                                                                                     }
+                                                                                       , write)
+                                                              end, Allowed)
+                                   end, maps:to_list(Shares))
+        end,
+    automate_storage:wrap_transaction(mnesia:transaction(T)).
+
+-spec get_connection_shares(ConnectionId :: binary()) -> {ok, #{ binary() => #{ binary() => [ owner_id() ] } } }.
+get_connection_shares(ConnectionId) ->
+    T = fun() ->
+                mnesia:read(?SERVICE_PORT_SHARED_RESOURCES_TABLE, ConnectionId)
+        end,
+    Permissions = automate_storage:wrap_transaction(mnesia:transaction(T)),
+    {ok, shares_list_to_map(Permissions)}.
+
+
+-spec get_resources_shared_with(Owner :: owner_id()) -> {ok, [#bridge_resource_share_entry{}]}.
+get_resources_shared_with(Owner) ->
+    T = fun() ->
+                mnesia:index_read(?SERVICE_PORT_SHARED_RESOURCES_TABLE, Owner, shared_with)
+        end,
+    {ok, automate_storage:wrap_transaction(mnesia:activity(ets, T))}.
+
+
+-spec get_connection_bridge(ConnectionId :: binary()) -> {ok, binary()}.
+get_connection_bridge(ConnectionId) ->
+    T = fun() ->
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [#user_to_bridge_connection_entry{bridge_id=BridgeId}] ->
+                        {ok, BridgeId};
+                    [] ->
+                        {error, not_found}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
 
 %%====================================================================
 %% Internal functions
@@ -651,6 +770,7 @@ list_public_ports() ->
                                            , blocks='_'
                                            , icon='_'
                                            , allow_multiple_connections='_'
+                                           , resources='_'
                                            },
     Guard = {'==', '$2', true},
     ResultColumn = '$1',
@@ -658,14 +778,113 @@ list_public_ports() ->
 
     mnesia:select(?SERVICE_PORT_CONFIGURATION_TABLE, Matcher).
 
-list_blocks_for_port(PortId) ->
+list_shared_ports(Owner) ->
+    {ok, Shares} = get_resources_shared_with(Owner),
+    lists:map(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
+                      {ok, BridgeId} = automate_service_port_engine:get_connection_bridge(ConnectionId),
+                      BridgeId
+              end, Shares).
+
+with_shared_connection(Owner, BridgeId) ->
+    {ok, Shares} = get_resources_shared_with(Owner),
+    SharedResources = lists:foldl(fun(#bridge_resource_share_entry{ connection_id=ConnectionId
+                                                                 , resource=Resource
+                                                                 , value=Value
+                                                                 }, Acc) ->
+                                         case automate_service_port_engine:get_connection_bridge(ConnectionId) of
+                                             {ok, BridgeId} ->
+                                                 case Acc of
+                                                     #{ Resource := PrevValues } ->
+                                                         Acc#{ Resource => sets:add_element(Value, PrevValues) };
+                                                     _ ->
+                                                         Acc#{ Resource => sets:from_list([Value]) }
+                                                 end;
+                                             {ok, _} ->
+                                                 Acc
+                                         end
+                                 end, #{}, Shares),
+    case maps:size(SharedResources) > 0 of
+        false ->
+            {ok, false};
+        true ->
+            {ok, true, maps:map(fun(_K, V) -> sets:to_list(V) end, SharedResources)}
+    end.
+
+list_blocks_for_port(PortId, SharedResources) ->
     case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, PortId) of
         [] -> none;
         [#service_port_configuration{ blocks=Blocks
                                     , service_id=ServiceId
                                     }] ->
-            {ServiceId, Blocks}
+            SharedBlocks = case SharedResources of
+                               all -> Blocks;
+                               Shares when is_map(Shares) ->
+                                   lists:filter(fun(Block) ->
+                                                        case get_block_resources(Block) of
+                                                            %% Shared blocks not refering any resource are a strange case.
+                                                            %% For now, avoid relying on them.
+                                                            [] -> false;
+                                                            Resources ->
+                                                                lists:all(fun(BlockResource) ->
+                                                                                  maps:is_key(BlockResource, SharedResources)
+                                                                          end, Resources)
+                                                        end
+                                                end, Blocks)
+                           end,
+            {ServiceId, SharedBlocks}
     end.
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
+
+-spec shares_list_to_map([#bridge_resource_share_entry{}]) -> #{ binary() => #{ binary() => [ owner_id() ] } }.
+shares_list_to_map(Permissions) ->
+    shares_list_to_map(Permissions, #{}).
+
+shares_list_to_map([], Acc) ->
+    maps:map(fun(_K, Values) ->
+                     maps:map(fun(_K2, Shares) ->
+                                      sets:to_list(Shares)
+                              end, Values)
+             end, Acc);
+shares_list_to_map( [ #bridge_resource_share_entry{ resource=Resource
+                                                  , value=Value
+                                                  , shared_with=Owner } | T ]
+                  , Acc) ->
+    WithShare = case Acc of
+                    #{ Resource := ResourceVal=#{ Value := Shares } } ->
+                        Acc#{ Resource => ResourceVal#{ Value => sets:add_element(Owner, Shares) } };
+                    #{ Resource := ResourceVal } ->
+                        Acc#{ Resource => ResourceVal#{ Value => sets:from_list([Owner]) } };
+                    _ ->
+                        Acc#{ Resource => #{ Value => sets:from_list([Owner]) } }
+                end,
+    shares_list_to_map(T, WithShare).
+
+map_owner_type(Type) when is_binary(Type) ->
+    case Type of
+        <<"group">> ->
+            group;
+        <<"user">> ->
+            user
+    end;
+map_owner_type(Type) when is_atom(Type) ->
+    Type.
+
+
+get_block_resources(Block) ->
+    Arguments = get_block_arguments(Block),
+    Res = lists:filtermap(fun(Arg) ->
+                                  case Arg of
+                                      #service_port_block_collection_argument{ name=Resource } ->
+                                          {true, Resource};
+                                      _ ->
+                                          false
+                                  end
+                          end, Arguments ),
+    sets:to_list(sets:from_list(Res)).
+
+get_block_arguments(#service_port_block{ arguments=Arguments }) ->
+    Arguments;
+get_block_arguments(#service_port_trigger_block{ arguments=Arguments }) ->
+    Arguments.

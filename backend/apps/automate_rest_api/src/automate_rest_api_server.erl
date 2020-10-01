@@ -108,8 +108,10 @@ start_link() ->
                         , {"/api/v0/bridges/by-id/:bridge_id", automate_rest_api_service_ports_specific, []}
                         , {"/api/v0/bridges/by-id/:service_port_id/communication"
                           , automate_rest_api_service_ports_specific_communication, []}
-                        , {"/api/v0/bridges/by-id/:bridge_id/signals"
-                          , automate_rest_api_bridge_signal_root, []}
+                        , {"/api/v0/bridges/by-id/:bridge_id/signals", automate_rest_api_bridge_signal_root, []}
+                        , {"/api/v0/bridges/by-id/:bridge_id/resources", automate_rest_api_bridge_resources_root, []}
+                        , {"/api/v0/connections/by-id/:connection_id/resources/by-name/:resource_name", automate_rest_api_connection_resource_by_name_root, []}
+
 
                           %% Services
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}
@@ -129,6 +131,7 @@ start_link() ->
                         , {"/api/v0/groups/by-id/:group_id/collaborators", automate_rest_api_group_collaborators, [] }
                         , {"/api/v0/groups/by-id/:group_id/picture", automate_rest_api_group_picture, [] }
                         , {"/api/v0/groups/by-id/:group_id/bridges", automate_rest_api_group_bridge_root, [] }
+                        , {"/api/v0/groups/by-id/:group_id/shared-resources", automate_rest_api_group_shared_resources, [] }
 
                           %% Monitor
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}

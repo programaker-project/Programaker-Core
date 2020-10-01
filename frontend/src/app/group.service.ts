@@ -3,8 +3,9 @@ import { Injectable } from '@angular/core';
 import { Collaborator, CollaboratorRole } from 'app/types/collaborator';
 import { ApiRoot } from './api-config';
 import { ContentType } from './content-type';
-import { GroupInfo } from './group';
+import { GroupInfo, UserGroupInfo } from './group';
 import { SessionService } from './session.service';
+import { SharedResource } from './bridges/bridge';
 
 export interface UserAutocompleteInfo {
     id: string,
@@ -53,6 +54,10 @@ export class GroupService {
         return `${ApiRoot}/groups/by-id/${groupId}`;
     }
 
+    getGroupSharedResourcesUrl(groupId: string): string {
+        return `${ApiRoot}/groups/by-id/${groupId}/shared-resources`;
+    }
+
     async getUserGroupsUrl(): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId()
         return `${root}/groups`;
@@ -95,7 +100,7 @@ export class GroupService {
         return result['group'];
     }
 
-    async getUserGroups(): Promise<GroupInfo[]> {
+    async getUserGroups(): Promise<UserGroupInfo[]> {
         const url = await this.getUserGroupsUrl();
 
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
@@ -195,5 +200,16 @@ export class GroupService {
             .delete(url,
                    {headers: this.sessionService.getAuthHeader()})
             .toPromise());
+    }
+
+    async getSharedResources(groupId: string): Promise<SharedResource[]> {
+        const url = this.getGroupSharedResourcesUrl(groupId);
+
+        const response = await (this.http
+            .get(url,
+                 {headers: this.sessionService.getAuthHeader()})
+            .toPromise());
+
+        return response['resources'] as SharedResource[];
     }
 }

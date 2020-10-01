@@ -24,8 +24,12 @@
                                              , callback :: binary()
                                              }).
 
+-record(service_port_block_collection_argument, { name :: binary()
+                                                }).
+
 -type service_port_block_argument() :: #service_port_block_static_argument{}
-                                     | #service_port_block_dynamic_argument{}.
+                                     | #service_port_block_dynamic_argument{}
+                                     | #service_port_block_collection_argument{} .
 
 -type block_save_to() :: null | #{ binary() => any()}.
 -type block_subkey() :: null | #{ binary() => any()}.
@@ -64,6 +68,7 @@
                                     , blocks :: [#service_port_block{}] | ?MNESIA_SELECTOR
                                     , icon :: undefined | supported_icon_type() | ?MNESIA_SELECTOR
                                     , allow_multiple_connections :: boolean() | ?MNESIA_SELECTOR
+                                    , resources :: [binary()] | ?MNESIA_SELECTOR
                                     }).
 
 -record(service_port_entry_extra, { id    :: binary()
@@ -119,3 +124,10 @@
                                                  , channel_id :: binary() | ?MNESIA_SELECTOR
                                                  , creation_time :: non_neg_integer() | ?MNESIA_SELECTOR
                                                  }).
+
+-record(bridge_resource_share_entry, { connection_id :: binary() | ?MNESIA_SELECTOR
+                                     , resource      :: binary() | ?MNESIA_SELECTOR
+                                     , value         :: binary() | ?MNESIA_SELECTOR
+                                     , name          :: binary() | ?MNESIA_SELECTOR
+                                     , shared_with   :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
+                                     }).

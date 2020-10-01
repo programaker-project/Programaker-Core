@@ -17,6 +17,8 @@ import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
 import { iconDataToUrl, getUserPictureUrl } from '../utils';
+import { BridgeIndexData } from 'app/bridges/bridge';
+import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -34,9 +36,10 @@ type TutorialData = { description: string, icons: string[], url: string };
 export class NewDashboardComponent {
     programs: ProgramMetadata[] = [];
     connections: BridgeConnectionWithIconUrl[] = null;
-    bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
     session: Session = null;
     userInfo: {id: string, name: string, groups: GroupInfo[]};
+    bridgeInfo: {[key: string]: BridgeIndexData} = {};
+    bridges: BridgeIndexData[] = null;
     tutorials: TutorialData[] = [
         {
             description: "Create a weather chatbot",
@@ -45,7 +48,8 @@ export class NewDashboardComponent {
         },
     ];
 
-    _getUserPicture = getUserPictureUrl;
+    readonly _getUserPicture = getUserPictureUrl;
+    readonly _iconDataToUrl = iconDataToUrl;
 
     constructor(
         private programService: ProgramService,
@@ -83,6 +87,7 @@ export class NewDashboardComponent {
                     this.programService.getPrograms()
                         .then(programs => this.programs = programs);
 
+                    this.updateBridges();
                     this.updateConnections();
                 }
             })
@@ -111,6 +116,13 @@ export class NewDashboardComponent {
         }
     }
 
+    async updateBridges() {
+        this.bridges = (await this.bridgeService.listUserBridges()).bridges;
+        for (const bridge of this.bridges) {
+            this.bridgeInfo[bridge.id] = bridge;
+        }
+    }
+
     addConnection(): void {
         const dialogRef = this.dialog.open(AddConnectionDialogComponent, { width: '90%' });
 
@@ -121,23 +133,30 @@ export class NewDashboardComponent {
         });
     }
 
-    updateConnections(): void {
-        this.connectionService.getConnections()
-            .then(connections => {
-                this.connections = connections.map((v, _i, _a) => {
-                    const icon_url = iconDataToUrl(v.icon, v.bridge_id);
+    async updateConnections() {
+        const connections = await this.connectionService.getConnections();
+        this.connections = connections.map((v, _i, _a) => {
+            const icon_url = iconDataToUrl(v.icon, v.bridge_id);
 
-                    return { conn: v, extra: {icon_url: icon_url }};
-                });
-
-                for (const conn of connections){
-                    this.bridgeInfo[conn.bridge_id] = {
-                        icon: iconDataToUrl(conn.icon, conn.bridge_id),
-                        name: conn.bridge_name
-                    };
-                }
-            });
+            return { conn: v, extra: {icon_url: icon_url }};
+        });
     }
+
+
+    openBridgePanel(bridge: BridgeIndexData) {
+        const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
+                                                                          maxHeight: '100vh',
+                                                                          autoFocus: false,
+                                                                          data: { bridgeInfo: bridge },
+                                                                        });
+
+        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+            if (result && result.success) {
+                this.updateBridges();
+            }
+        });
+    }
+
 
     async openProgram(program: ProgramMetadata): Promise<void> {
         if (program.type === 'flow_program') {

@@ -69,6 +69,7 @@ export class BridgeIndexComponent {
     showBridgeDetail(bridge: BridgeIndexData): void {
         const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
                                                                           maxHeight: '100vh',
+                                                                          autoFocus: false,
                                                                           data: { bridgeInfo: bridge,
                                                                                 },
                                                                         });

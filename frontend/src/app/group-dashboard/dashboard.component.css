@@ -156,6 +156,35 @@ mat-card.program > .program-operation > .enable-program {
     min-height: 3ex;
 }
 
+.user-connections > .connection-list > div > mat-card.shared-resource {
+    padding: 0;
+}
+.user-connections .shared-resource .connection-type {
+    height: 5ex;
+    display: inline-block;
+    vertical-align: middle;
+    padding: 0 1ex 0 1ex;
+
+    background-color: #27212e;
+    color: #fff;
+    border-radius: 3px 0 0 3px;
+}
+
+.user-connections .shared-resource .connection-type mat-icon {
+    margin-top: 0.75ex;
+}
+
+.user-connections .shared-resource .connection-identifier {
+    padding: 0 1ex 0 1ex;
+    display: inline-block;
+}
+
+.user-connections .shared-resource img {
+    height: 3ex;
+    max-width: 10ex;
+}
+
+
 
 .connection > img.icon {
     height: 3ex;
@@ -192,6 +221,7 @@ mat-card.example > .description {
     background-color: rgba(255,255,255,0.95);
     text-align: left;
     padding: 1ex;
+    min-height: 5ex;
 }
 
 .connection-icon-list > img {
@@ -290,7 +320,7 @@ mat-card.bridge .bridge-name {
 mat-card.bridge img {
     max-width: 10ex;
     height: 3em;
-    padding: 0 0.5ex 0 0.5ex
+    padding: 0.5ex
 }
 
 mat-card.bridge .bridge-status {

@@ -82,7 +82,7 @@ accept_function_call(Req, State) ->
     {ok, Body, _} = ?UTILS:read_body(Req),
     #{<<"arguments">> := Arguments } = jiffy:decode(Body, [return_maps]),
 
-    case automate_rest_api_backend:bridge_function_call(UserId, BridgeId, FunctionName, Arguments) of
+    case automate_rest_api_backend:bridge_function_call({user, UserId}, BridgeId, FunctionName, Arguments) of
         {ok, Result } ->
             Output = encode_result(Result),
 

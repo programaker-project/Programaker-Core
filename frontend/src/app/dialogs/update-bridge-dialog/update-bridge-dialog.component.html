@@ -3,6 +3,73 @@
     <span class="bridge-name">{{ data.bridgeInfo.name }}</span>
 </h2>
 
+<section *ngIf="resources && resources.length > 0" class="resources">
+    <h4>Resources</h4>
+
+    <div class="resource-entry" *ngFor="let resource of resources">
+        <div class="resource-name">{{ resource.name }}</div>
+
+        <ul class="resource-options">
+            <li *ngFor="let entry of resource.values"
+                class="expanded-{{ (!!expandedResources[resource.name]) && (!!expandedResources[resource.name][entry.id]) }}">
+                <button mat-button class="toggle-fold" (click)="toggleFold(resource, entry)">
+                    <mat-icon class="fold-open">unfold_more</mat-icon>
+                    <mat-icon class="fold-close">unfold_less</mat-icon>
+                </button>
+
+                <span class="entry-name">{{ entry.name }}</span>
+
+                <button mat-button mat-raised-button class="share-button"
+                    (click)="addShare(resource, entry)" matBadge="{{  (!!entry.shared_with && entry.shared_with.length) || 0 }}" >
+                    <div class="annotated-icon">
+                        <label>Share</label>
+                        <mat-icon>share</mat-icon>
+                    </div>
+                </button>
+
+                <ul class="shares" *ngIf="entry.shared_with && groupsById">
+                    <li *ngFor="let share of entry.shared_with;let shareIndex=index;">
+                        <button mat-button mat-raised-button (click)="removeShare(resource, entry, shareIndex)" class="remove-share">
+                            <mat-icon>clear</mat-icon>
+                        </button>
+                        <span class="connector-text">
+                            Shared with
+                        </span>
+                        <mat-form-field class="shared-with">
+                            <mat-label>group</mat-label>
+                            <mat-select [(value)]="share.id">
+                                <mat-option *ngFor="let group of adminGroups" [value]="group.id" >
+                                    {{ group.name }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div *ngIf="dirtyShares"  class="confirm-cancel-shares">
+        <span class="explanation">
+            You've prepared some changes for the resource sharing.
+        </span>
+
+        <button #resetShareChanges mat-button mat-raised-button  class="reset-share-button reset-button" (click)="resetShares()">
+            <mat-icon>clear</mat-icon>
+            Cancel
+        </button>
+
+        <button #applyShareChanges mat-button mat-raised-button  class="save-share-button confirm-button"
+            (click)="applyShares()">
+            <mat-icon>save</mat-icon>
+            Apply changes
+
+            <span class="load-bg"></span>
+        </button>
+    </div>
+
+</section>
+
 <section *ngIf="signalStream" class="signals">
     <h4>Signals</h4>
 
@@ -16,16 +83,16 @@
 
 <div class="config-option">
     <div class="accept-cancel">
-        <button color="warn"
-            (click)="deleteBridge()"
-            mat-button mat-raised-button>
-            Delete bridge
-        </button>
-
         <button
             (click)="onBack()"
             mat-button mat-raised-button>
             Go back
+        </button>
+
+        <button color="warn"
+            (click)="deleteBridge()"
+            mat-button mat-raised-button>
+            Delete bridge
         </button>
     </div>
 </div>

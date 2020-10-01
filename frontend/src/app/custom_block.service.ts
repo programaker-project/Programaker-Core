@@ -146,6 +146,7 @@ export class CustomBlockService {
             return arg as StaticBlockArgument;
         }
 
+
         const dynamicArg = arg as DynamicBlockArgument;
         let options : [string, string][];
         try {

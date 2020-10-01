@@ -16,6 +16,8 @@
 
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
+-include("../../automate_service_port_engine/src/records.hrl").
+-include("../../automate_service_registry/src/records.hrl").
 
 -record(state, { owner :: owner_id() | undefined
                , program_id :: binary()
@@ -80,15 +82,33 @@ content_types_provided(Req, State) ->
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
 to_json(Req, State=#state{owner=Owner}) ->
-    case automate_service_registry:get_all_services_for_user(Owner) of
-        { ok, Services } ->
-            ServiceData = automate_rest_api_backend:get_services_metadata(Services, Owner),
-            Output = jiffy:encode(encode_service_list(ServiceData)),
-            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
-            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
+    {ok, Services} =  automate_service_registry:get_all_services_for_user(Owner),
+    {ok, SharedConnections} = automate_service_port_engine:get_resources_shared_with(Owner),
 
-            { Output, Res2, State }
-    end.
+    SharedBridges = lists:map(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
+                                      {ok, BridgeId} = automate_service_port_engine:get_connection_bridge(ConnectionId),
+                                      BridgeId
+              end, SharedConnections),
+    SharedServices = lists:map(fun(BridgeId) ->
+                                       {ok, #service_port_configuration{service_id=ServiceId}} = automate_service_port_engine:get_bridge_configuration(BridgeId),
+                                       {ok, Service} = automate_service_registry:get_service_by_id(ServiceId),
+                                       {ServiceId, Service}
+                               end, sets:to_list(sets:from_list(SharedBridges))),
+
+    AllServices = merge_service_map(SharedServices,Services),
+
+    ServiceData = automate_rest_api_backend:get_services_metadata(AllServices, Owner),
+    Output = jiffy:encode(encode_service_list(ServiceData)),
+    Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
+    Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
+
+    { Output, Res2, State }.
+
+merge_service_map([], Acc) ->
+    Acc;
+merge_service_map([{Id, Val} | T], Acc) ->
+    merge_service_map(T, Acc#{ Id => Val }).
+
 
 encode_service_list(Services) ->
     encode_service_list(Services, []).

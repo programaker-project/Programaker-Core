@@ -1,13 +1,12 @@
-import { Observable, Observer } from 'rxjs';
-import { Injectable } from '@angular/core';
-import { BridgeMetadata, BridgeIndexData, BridgeSignal } from './bridge';
-import * as API from '../api-config';
-
-
 import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { addTokenQueryString, toWebsocketUrl } from 'app/utils';
+import { Observable, Observer } from 'rxjs';
+import * as API from '../api-config';
 import { SessionService } from '../session.service';
-import { ContentType } from '../content-type';
-import { toWebsocketUrl, addTokenQueryString } from 'app/utils';
+import { BridgeIndexData, BridgeMetadata, BridgeResource, BridgeResourceEntry, BridgeResourceMap, BridgeSignal, FullOwnerId } from './bridge';
+
+
 
 export type BridgeInfoUpdate = { count: number };
 
@@ -17,7 +16,7 @@ export class BridgeService {
     // While not strtictly following the Singleton pattern, as class instances
     //   are obtained through Dependency Injection, it allows for every instance
     //   of the class to share the relevant state.
-    // The shared state is theestablished session, it's Observable and Observer.
+    // The shared state is the established session, it's Observable and Observer.
     static bridgeInfoObservable: Observable<BridgeInfoUpdate> = null;
     private static _bridgeInfoObserver: Observer<BridgeInfoUpdate> = null;
     private static bridgeCount: number = null;
@@ -51,6 +50,14 @@ export class BridgeService {
     private getBridgeSignalsUrl(bridgeId: string): string {
         const url = `${API.ApiRoot}/bridges/by-id/${bridgeId}/signals`;
         return toWebsocketUrl(url);
+    }
+
+    private getBridgeResourcesUrl(bridgeId: string): string {
+        return `${API.ApiRoot}/bridges/by-id/${bridgeId}/resources`;
+    }
+
+    private updateConnectionResourceUrl(connectionId: string, resourceName: string): string {
+        return `${API.ApiRoot}/connections/by-id/${connectionId}/resources/by-name/${resourceName}`;
     }
 
     async createServicePort(name: string): Promise<BridgeMetadata> {
@@ -121,6 +128,44 @@ export class BridgeService {
         // }
 
         return (response as { success: boolean }).success;
+    }
+
+    async setShares(connectionId: string, resourceName: string, shares: BridgeResourceEntry[], options?: { asGroup?: string; }) {
+        let url = this.updateConnectionResourceUrl(connectionId, resourceName);
+        if (options && options.asGroup) {
+            url += '&as_group=' + options.asGroup;
+        }
+
+        const response = (await this.http.patch(url, { shared: shares },
+                                                { headers: this.sessionService.addJsonContentType(
+                                                    this.sessionService.getAuthHeader())
+                                                }).toPromise());
+    }
+
+    async getBridgeResources(bridgeId: string, asGroup?: string): Promise<BridgeResource[]> {
+        let url = this.getBridgeResourcesUrl(bridgeId);
+        if (asGroup) {
+            url += '&as_group=' + asGroup;
+        }
+
+        const response = (await this.http.get(url,
+                                              { headers: this.sessionService.getAuthHeader() })
+            .toPromise()) as BridgeResourceMap;
+
+        const resources: BridgeResource[] = [];
+
+        for (const resource of Object.keys(response)) {
+            const values: BridgeResourceEntry[] = [];
+
+            for (const valId of Object.keys(response[resource])) {
+                const value = response[resource][valId];
+                values.push({ id: valId, name: value.name, connection_id: value.connection_id, shared_with: value.shared_with })
+            }
+
+            resources.push({ name: resource, values: values });
+        }
+
+        return resources;
     }
 
     getBridgeSignals(bridgeId: string, asGroup?: string): Observable<BridgeSignal> {

@@ -188,6 +188,7 @@ mat-card.example > .description {
     background-color: rgba(255,255,255,0.95);
     text-align: left;
     padding: 1ex;
+    min-height: 5ex;
 }
 
 .connection-icon-list > img {
@@ -293,4 +294,58 @@ button.cardlike {
     padding: 1ex;
     border-radius: 4px;
     display: inline;
+}
+
+
+
+section.bridges {
+    border-top: 1px solid rgba(0,0,0,0.3);
+}
+
+mat-card.bridge {
+    display: inline-block;
+    vertical-align: bottom;
+    margin-left: 1ex;
+    margin-top: 1ex;
+    padding: 0;
+    height: 3em;
+}
+
+mat-card.bridge .bridge-name {
+    padding: 1ex;
+    display: inline-block;
+}
+
+mat-card.bridge img {
+    max-width: 10ex;
+    height: 3em;
+    padding: 0.5ex
+}
+
+mat-card.bridge .bridge-status {
+    height: 3em;
+    display: inline-block;
+    vertical-align: inherit;
+    padding-left: 1ex;
+    padding-right: 1ex;
+
+    color: #fff;
+    border-radius: 3px 0 0 3px;
+}
+
+mat-card.bridge .bridge-status.connected-true {
+    background-color: #279f27;
+}
+mat-card.bridge .bridge-status.connected-false {
+    background-color: #9f2727;
+}
+
+mat-card.bridge .bridge-status mat-icon {
+    padding-top: 1ex;
+}
+
+mat-card.non-clickable {
+    box-shadow: none;
+    border: 1px solid rgba(0,0,0,0.3);
+    cursor: inherit;
 }

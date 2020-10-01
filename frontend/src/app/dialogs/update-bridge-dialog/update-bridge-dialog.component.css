@@ -21,6 +21,96 @@ h2 mat-icon {
     font-weight: bold;
 }
 
+button.toggle-fold {
+    min-width: 5ex;
+}
+
+li.expanded-true button.toggle-fold .fold-open {
+    display: none;
+}
+
+li.expanded-false button.toggle-fold .fold-close {
+    display: none;
+}
+
+li.expanded-false .shares {
+    display: none;
+}
+
+.resource-entry {
+    padding-left: 1ex;
+    border-left: 1px solid rgba(0,0,0,0.3);
+}
+
+.resource-name {
+    font-size: 120%;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+ul.resource-options {
+    padding-left: 0;
+}
+
+.resource-options li {
+    margin-top: 1ex;
+}
+
+.confirm-cancel-shares {
+    padding: 1ex;
+    background-color: #eff;
+    border-radius: 4px;
+    border: 1px solid #055;
+    margin-bottom: 1em;
+}
+
+.save-share-button {
+    margin: 1ex;
+    background-color: #009688;
+    color: white;
+    font-weight: bold;
+}
+
+button.remove-share {
+    background-color: #fa0;
+    min-height: 3ex;
+    min-width: 4ex;
+
+    padding: 0;
+    vertical-align: super;
+}
+
+button.remove-share mat-icon {
+    vertical-align: middle;
+}
+
+.shares .connector-text {
+    vertical-align: text-bottom;
+}
+
+.shares mat-form-field.shared-with {
+    vertical-align: middle;
+}
+
+.entry-name {
+    vertical-align: middle;
+}
+
+.annotated-icon mat-icon {
+    vertical-align: inherit;
+}
+
+.annotated-icon label {
+    font-size: small;
+    margin: 0 0.5ex 0 0.5ex;
+    pointer-events: none;
+}
+
+section.resources li .share-button {
+    margin: 0 1ex 0 1ex;
+    padding: 0.5ex
+}
+
 .signal-terminal {
     box-shadow: 0 0 2px 1px rgba(0,0,0,0.3) inset;
     max-height: 50vh;

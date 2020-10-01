@@ -15,7 +15,7 @@ export default class ScratchProgramSerializer {
         try {
             const serialized = {
                 variables: this.serializeVariables(variables as HTMLElement),
-                blocks: blocks.map(block => this.serializeBlock(block as HTMLElement)),
+                blocks: blocks.map(block => this.serializeColumn(block as HTMLElement)).filter(column => !!column),
             };
 
             return {
@@ -32,6 +32,17 @@ export default class ScratchProgramSerializer {
     // ====================================================
     // Internal functions
     // ====================================================
+    private serializeColumn(block: HTMLElement): any {
+        const blockType = ScratchProgramSerializer.cleanTypeName(block.getAttribute('type'));
+        const knownBlock = this.toolboxController.customBlocks[blockType];
+
+        if (knownBlock && knownBlock.block_type !== 'trigger') {
+            return null; // This column cannot be executed
+        }
+
+        return this.serializeBlock(block);
+    }
+
     private serializeBlock(block: HTMLElement, chain: any[] = null): any {
         if (chain === null) {
             chain = [];

@@ -9,8 +9,8 @@ export interface StaticBlockArgument {
 export interface DynamicBlockArgument {
     type: string;
     callback: string;
+    collection?: string;
 };
-
 export type BlockArgument = StaticBlockArgument | DynamicBlockArgument;
 
 interface ScratchSerializableArgument {

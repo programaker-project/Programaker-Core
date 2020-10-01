@@ -55,7 +55,6 @@ listen_channel(ChannelId, {Key, SubKey}) ->
 
 -spec send_to_channel(binary(), any()) -> ok | {error, channel_not_found }.
 send_to_channel(ChannelId, Message) ->
-    %% TODO: Use the key/subkey information to better route calls
     spawn(fun () ->
                   automate_stats:log_observation(counter,
                                                  automate_channel_engine_messages_in,
@@ -63,12 +62,11 @@ send_to_channel(ChannelId, Message) ->
                   ?LOGGING:log_event(ChannelId, Message)
     end),
 
-    case get_unique_listener_pids_on_channel(ChannelId) of
+    case get_appropriate_listeners(ChannelId, Message) of
         {ok, []} ->
             ok;
 
         {ok, UniquePids} ->
-            %% io:format("Forwarding ~p to ~p~n", [Message, Listeners]),
             lists:foreach(fun(Pid) ->
                                   Pid ! {channel_engine, ChannelId, Message},
                                   spawn(fun () ->
@@ -102,12 +100,35 @@ get_listeners_on_channel(ChannelId) ->
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
 
-get_unique_listener_pids_on_channel(ChannelId) ->
+get_appropriate_listeners(ChannelId, #{ <<"key">> := Key, <<"subkey">> := SubKey }) ->
+    get_appropriate_listeners_key_subkey(ChannelId, {Key, SubKey});
+get_appropriate_listeners(ChannelId, #{ <<"key">> := Key }) ->
+    get_appropriate_listeners_key_subkey(ChannelId, {Key, null});
+get_appropriate_listeners(ChannelId, _Message) ->
+    get_appropriate_listeners_key_subkey(ChannelId, {null, null}).
+
+get_appropriate_listeners_key_subkey(ChannelId, {Key, SubKey}) ->
     case automate_channel_engine_mnesia_backend:get_listeners_on_channel(ChannelId) of
         {error, Reason } ->
             {error, Reason};
         {ok, Listeners} ->
-            Uniques = sets:from_list(lists:map(fun(#listeners_table_entry{pid=Pid}) -> Pid end,
-                                               Listeners)),
+            Uniques = sets:from_list(lists:filtermap(fun(#listeners_table_entry{pid=Pid, key=ListenerKey, subkey=ListenerSubKey}) ->
+                                                             AcceptedKey = case ListenerKey of
+                                                                               Key -> true;
+                                                                               undefined -> true;
+                                                                               _ -> false
+                                                                           end,
+                                                             AcceptedSubKey = case ListenerSubKey of
+                                                                                  SubKey -> true;
+                                                                                  undefined -> true;
+                                                                                  _ -> false
+                                                                              end,
+                                                             case AcceptedKey and AcceptedSubKey of
+                                                                 true ->
+                                                                     {true, Pid};
+                                                                 false -> false
+                                                             end
+                                                     end,
+                                                     Listeners)),
             {ok, sets:to_list(Uniques)}
     end.

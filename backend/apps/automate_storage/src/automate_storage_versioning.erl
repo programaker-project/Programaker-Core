@@ -28,7 +28,8 @@ apply_versioning(#database_version_progression{base=Base, updates=Updates}, Node
 
     {ok, CurrentDatabaseVersion} = get_database_version(ModuleName),
 
-    ok = apply_updates_after_version(CurrentDatabaseVersion, Updates, ModuleName).
+    ok = apply_updates_after_version(CurrentDatabaseVersion, Updates, ModuleName),
+    ok = mnesia:sync_log().
 
 
 -spec create_database(#database_version_data{}, [node()]) -> ok.
@@ -88,7 +89,8 @@ set_database_version(ModuleName, VersionNumber) ->
     end.
 
 
-apply_updates_after_version(_, [], _) ->
+apply_updates_after_version(FinalDatabaseVersion, [], ModuleName) ->
+    io:fwrite("[~p] Version: ~p~n", [ModuleName, FinalDatabaseVersion]),
     ok;
 
 apply_updates_after_version(OldDatabaseVersion, [#database_version_transformation{ id=Id }
@@ -104,7 +106,7 @@ apply_updates_after_version(OldDatabaseVersion, [#database_version_transformatio
     io:fwrite("[~p] APPLYing update ~p (current: ~p)~n", [ModuleName, Id, OldDatabaseVersion]),
     try Fun() of
         _ ->
-            set_database_version(ModuleName, Id),
+            ok = set_database_version(ModuleName, Id),
             apply_updates_after_version(Id, T, ModuleName)
     catch ErrorNS:Error:StackTrace ->
             io:fwrite("\033[1;37;41m Stopping due to error on update: ~p. StackTrace: ~n~p\033[0m~n", [{ErrorNS, Error}, StackTrace]),

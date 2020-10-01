@@ -247,6 +247,6 @@ wait_bridge_response() ->
             io:fwrite("[~p] Unexpected message: ~p~n", [?MODULE, X]),
             wait_bridge_response()
     after ?MAX_WAIT_TIME ->
-            io:fwrite("[~p] Wait failed after ~pms~n", [?MODULE, ?MAX_WAIT_TIME]),
+            io:fwrite("[~p:~p] Wait failed after ~pms~n", [?MODULE, ?LINE, ?MAX_WAIT_TIME]),
             {error, no_response}
     end.

@@ -10,9 +10,10 @@
         , get_description/0
         , get_uuid/0
         , get_name/0
+        , get_monitor_id/0
         , is_enabled_for_user/1
         , get_how_to_enable/1
-        , get_monitor_id/1
+        , listen_service/2
         , call/4
         ]).
 
@@ -37,16 +38,21 @@ get_name() ->
 get_description() ->
     <<"Timekeeping service.">>.
 
-%% No monitor associated with this service
-get_monitor_id(_UserId) ->
+get_monitor_id() ->
     case automate_service_registry:get_config_for_service(get_uuid(), monitor_id) of
         {error, not_found} ->
+            %% No monitor associated with this service
             {ok, ChannelId} = automate_channel_engine:create_channel(),
             automate_service_registry:set_config_for_service(get_uuid(), monitor_id, ChannelId),
             {ok, ChannelId};
         {ok, ChannelId} ->
             {ok, ChannelId}
     end.
+
+-spec listen_service(owner_id(), {_, _}) -> ok.
+listen_service(_Owner, _Selector) ->
+    {ok, ChannelId} = get_monitor_id(),
+    automate_channel_engine:listen_channel(ChannelId).
 
 call(get_utc_hour, _Values, Thread, _UserId) ->
     {{_Y1970, _Mon, _Day}, {Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
@@ -91,7 +97,7 @@ get_how_to_enable(_) ->
 spawn_timekeeper() ->
     case automate_coordination:run_task_not_parallel(
            fun() ->
-                   {ok, ChannelId} = get_monitor_id(none),
+                   {ok, ChannelId} = get_monitor_id(),
                    {ok, _} = automate_service_registry:register_public(automate_services_time),
                    timekeeping_loop(ChannelId, {{0, 0, 0}, {0, 0, 0}})
            end, ?MODULE) of
@@ -120,6 +126,7 @@ timekeeping_loop(ChannelId, {{LYear, LMonth, LDay}, {LHour, LMin, LSec}}) ->
                                                                       , <<"second">> => Sec
                                                                       }
                                                      , <<"key">> => <<"utc_time">>
+                                                     , <<"service_id">> => get_uuid()
                                                      });
         false ->
             ok
@@ -138,6 +145,7 @@ timekeeping_loop(ChannelId, {{LYear, LMonth, LDay}, {LHour, LMin, LSec}}) ->
                                                                       , <<"second">> => Sec
                                                                       }
                                                      , <<"key">> => <<"utc_date">>
+                                                     , <<"service_id">> => get_uuid()
                                                      });
         false ->
             ok

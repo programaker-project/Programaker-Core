@@ -61,9 +61,6 @@ get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
 
     {ok, UserId} = automate_storage:get_program_owner(ProgramId),
 
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-
     Args = case Listened of
                #{ ?ARGUMENTS := Arguments } ->
                    Arguments;
@@ -72,11 +69,11 @@ get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
            end,
     case ?UTILS:get_block_key_subkey(Args) of
         { key_and_subkey, Key, SubKey } ->
-            automate_channel_engine:listen_channel(MonitorId, { Key, SubKey });
+            automate_service_registry_query:listen_service(ServiceId, UserId, { Key, SubKey });
         { key, Key } ->
-            automate_channel_engine:listen_channel(MonitorId, { Key });
+            automate_service_registry_query:listen_service(ServiceId, UserId, { Key, undefined });
         { not_found } ->
-            automate_channel_engine:listen_channel(MonitorId, { MonitorKey })
+            automate_service_registry_query:listen_service(ServiceId, UserId, { MonitorKey, undefined })
     end,
 
     ?TRIGGERED_BY_MONITOR;
@@ -93,18 +90,22 @@ get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
 get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_BLOCK
                                                        , ?VALUE := [ #{ ?TYPE := ?WAIT_FOR_MONITOR
-                                                                      , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId }
+                                                                      , ?ARGUMENTS := MonitorArgs=#{ ?FROM_SERVICE := ServiceId }
                                                                       }
                                                                    ]
                                                        }
                                                     ]
-                                    }, _Thread) ->
-    case MonitorArgs of
-        #{ <<"key">> := Key } ->
-            automate_channel_engine:listen_channel(MonitorId, {Key});
-        _ ->
-            automate_channel_engine:listen_channel(MonitorId)
+                                    }, #program_thread{ program_id=ProgramId }) ->
+
+    {ok, Owner} = automate_storage:get_program_owner(ProgramId),
+
+    Key = case MonitorArgs of
+              #{ <<"key">> := MonKey } ->
+                  MonKey;
+              _ ->
+                  undefined
     end,
+    automate_service_registry_query:listen_service(ServiceId, Owner, {Key, undefined}),
     ?TRIGGERED_BY_MONITOR;
 
 
@@ -201,7 +202,7 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                 { Error
                                 , binary:list_to_bin(
                                     lists:flatten(io_lib:format("Cannot access position ~s on list '~s'. Only ~s elements",
-                                                                [ListName, Index, MaxIndex])))
+                                                                [Index, ListName, MaxIndex])))
                                 , BlockId
                                 };
 
@@ -756,18 +757,13 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                        }
                                     ]
                     },
-                Thread=#program_thread{ program_id=ProgramId },
-                { ?TRIGGERED_BY_MONITOR, {MonitorId, Message=#{ <<"key">> := MessageKey }} }) ->
+                Thread=#program_thread{ program_id=_ProgramId },
+                { ?TRIGGERED_BY_MONITOR, {_MonitorId, Message=#{ <<"key">> := MessageKey, <<"service_id">> := BridgeId }} }) ->
 
     [ServiceId, MonitorKey] = binary:split(MonitorPath, <<".">>),
 
-    {ok, UserId} = automate_storage:get_program_owner(ProgramId),
-
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, ReceivedMonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-
-    case ReceivedMonitorId of
-        MonitorId ->
+    case BridgeId of
+        ServiceId ->
             SubKeyMatch = case Listened of
                               #{ ?ARGUMENTS := Arguments } ->
                                   case {?UTILS:get_block_key_subkey(Arguments), Message} of
@@ -818,14 +814,14 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
 run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_BLOCK
                                        , ?VALUE := [ #{ ?TYPE := ?WAIT_FOR_MONITOR
-                                                      , ?ARGUMENTS := MonArgs=#{ ?MONITOR_ID := MonitorId }
+                                                      , ?ARGUMENTS := MonArgs=#{ ?FROM_SERVICE := ServiceId }
                                                       }
                                                    ]
                                        }
                                     ]
                     },
                 Thread,
-                { ?TRIGGERED_BY_MONITOR, {MonitorId, Message} }) ->
+                { ?TRIGGERED_BY_MONITOR, {_MonitorId, Message=#{ <<"service_id">> := ServiceId  }} }) ->
 
     Accepted = case MonArgs of
                    #{ <<"key">> := ExpectedKey } ->

@@ -68,8 +68,8 @@ content_types_provided(Req, State) ->
              -> {binary(),cowboy_req:req(), #state{}}.
 to_json(Req, State=#state{user_id=UserId}) ->
     case automate_storage:get_user_groups({user, UserId}) of
-        { ok, Groups } ->
-            Output = jiffy:encode(#{ success => true, groups => lists:map(fun ?FORMATTING:group_to_json/1, Groups)}),
+        { ok, GroupRoles } ->
+            Output = jiffy:encode(#{ success => true, groups => lists:map(fun ?FORMATTING:group_and_role_to_json/1, GroupRoles)}),
             Res = ?UTILS:send_json_format(Req),
 
             { Output, Res, State }

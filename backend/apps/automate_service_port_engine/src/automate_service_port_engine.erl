@@ -20,15 +20,25 @@
         , get_user_service_ports/1
         , delete_bridge/2
         , callback_bridge/3
+        , callback_bridge_through_connection/3
         , get_channel_origin_bridge/1
         , get_bridge_info/1
         , get_bridge_owner/1
+        , get_bridge_configuration/1
 
         , listen_bridge/2
         , listen_bridge/3
         , list_established_connections/1
+        , list_established_connections/2
         , get_pending_connection_info/1
         , is_module_connectable_bridge/2
+
+        , set_shared_resource/3
+        , get_connection_owner/1
+        , get_connection_shares/1
+        , get_connection_bridge/1
+        , get_resources_shared_with/1
+        , get_resources_shared_with_on_bridge/2
         ]).
 
 -include("records.hrl").
@@ -50,11 +60,20 @@ create_service_port(Owner, ServicePortName) when is_tuple(Owner) ->
 register_service_port(ServicePortId) ->
     ?ROUTER:connect_bridge(ServicePortId).
 
--spec call_service_port(binary(), binary(), any(), binary(), map()) -> {ok, map()} | {error, ?ROUTER_ERROR_CLASSES}.
-call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
-    ?LOGGING:log_call_to_bridge(ServicePortId,FunctionName,Arguments,UserId,ExtraData),
+-spec call_service_port(binary(), binary(), any(), owner_id() | binary(), map()) -> {ok, map()} | {error, ?ROUTER_ERROR_CLASSES}.
+call_service_port(ServicePortId, FunctionName, Arguments, Owner, ExtraData) when is_tuple(Owner) ->
+    case internal_user_id_to_connection_id(Owner, ServicePortId) of
+        {ok, ConnectionId} ->
+            call_service_port(ServicePortId, FunctionName, Arguments, ConnectionId, ExtraData);
+        {error, Reason} ->
+            {error, Reason}
+    end;
+
+call_service_port(ServicePortId, FunctionName, Arguments, ConnectionId, ExtraData) ->
+    ?LOGGING:log_call_to_bridge(ServicePortId, FunctionName, Arguments, ConnectionId, ExtraData),
+
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"FUNCTION_CALL">>
-                                        , <<"user_id">> => UserId
+                                        , <<"user_id">> => ConnectionId
                                         , <<"value">> => #{ <<"function_name">> => FunctionName
                                                           , <<"arguments">> => Arguments
                                                           }
@@ -62,16 +81,16 @@ call_service_port(ServicePortId, FunctionName, Arguments, UserId, ExtraData) ->
                                         }).
 
 -spec get_how_to_enable(binary(), binary()) -> {ok, any()} | {error, atom()}.
-get_how_to_enable(ServicePortId, UserId) ->
+get_how_to_enable(ServicePortId, ConnectionId) ->
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"GET_HOW_TO_SERVICE_REGISTRATION">>
-                                        , <<"user_id">> => UserId
+                                        , <<"user_id">> => ConnectionId
                                         , <<"value">> => #{}
                                         }).
 
 -spec send_registration_data(binary(), map(), binary()) -> {ok, map()}.
-send_registration_data(ServicePortId, Data, UserId) ->
+send_registration_data(ServicePortId, Data, ConnectionId) ->
     ?ROUTER:call_bridge(ServicePortId, #{ <<"type">> => <<"REGISTRATION">>
-                                        , <<"user_id">> => UserId
+                                        , <<"user_id">> => ConnectionId
                                         , <<"value">> => #{ <<"form">> => Data }
                                         }).
 
@@ -86,8 +105,9 @@ listen_bridge(BridgeId, Owner) when is_tuple(Owner) ->
     case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId);
-        {error, _X, Description} ->
-            {error, Description}
+
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 -spec listen_bridge(binary(), owner_id(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
@@ -95,8 +115,8 @@ listen_bridge(BridgeId, Owner, Selector) when is_tuple(Owner) ->
     case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId, Selector);
-        {error, _X, Description} ->
-            {error, Description}
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 -spec from_service_port(binary(), owner_id(), binary()) -> ok.
@@ -156,9 +176,9 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                } ->
             case ToUser of
                 null ->
-                    %% TODO: This looping be removed if the users also listened on
-                    %% a common bridge channel. For this, the service API should allow
-                    %% returning multiple channels when asked.
+                    %% This looping might be removed if the users also listened
+                    %% on a common bridge channel. For this, the service API
+                    %% should allow returning multiple channels when asked.
                     {ok, Channels} = ?BACKEND:list_bridge_channels(ServicePortId),
                     Results = lists:map(fun (Channel) ->
                                                 { Channel
@@ -168,6 +188,7 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                                                      , <<"value">> => Value
                                                      , <<"content">> => Content
                                                      , <<"subkey">> => get_subkey_from_notification(Notif)
+                                                     , <<"service_id">> => ServicePortId
                                                      })}
                                         end, Channels),
                     lists:foreach(
@@ -183,15 +204,14 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                 _ ->
                     case ?BACKEND:connection_id_to_internal_user_id(ToUser, ServicePortId) of
                         {ok, ToUserInternalId} ->
-                            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
-
-                            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, ToUserInternalId),
+                            {ok, MonitorId } = ?BACKEND:get_or_create_monitor_id(ToUserInternalId, ServicePortId),
 
                             case automate_channel_engine:send_to_channel(MonitorId,
                                                                          #{ <<"key">> => Key
                                                                           , <<"value">> => Value
                                                                           , <<"content">> => Content
                                                                           , <<"subkey">> => get_subkey_from_notification(Notif)
+                                                                          , <<"service_id">> => ServicePortId
                                                                           }) of
                                 ok ->
                                     ok;
@@ -213,7 +233,7 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
 list_custom_blocks(Owner) when is_tuple(Owner) ->
     ?BACKEND:list_custom_blocks(Owner).
 
--spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found}.
+-spec internal_user_id_to_connection_id(owner_id(), binary()) -> {ok, binary()} | {error, not_found} | {error, any()}.
 internal_user_id_to_connection_id(Owner, ServicePortId) when is_tuple(Owner) ->
     ?BACKEND:internal_user_id_to_connection_id(Owner, ServicePortId).
 
@@ -234,23 +254,59 @@ delete_bridge(Accessor, BridgeId) when is_tuple(Accessor) ->
     ?BACKEND:delete_bridge(Accessor, BridgeId).
 
 
--spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map()} | {error, term()}.
+-spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map() | [#{ id => binary(), name => binary() }]} | {error, term()}.
 callback_bridge(Owner, BridgeId, CallbackName) when is_tuple(Owner) ->
     case internal_user_id_to_connection_id(Owner, BridgeId) of
-        {ok, BridgeUserId} ->
-            ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
-                                           , <<"user_id">> => BridgeUserId
-                                           , <<"value">> => #{ <<"callback">> => CallbackName
-                                                             }
-                                           });
+        {ok, ConnectionId} ->
+            case callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName) of
+                {ok, #{ <<"result">> := Result } } ->
+                    {ok, Result};
+                {error, Reason} ->
+                    {error, Reason}
+            end;
+        {error, not_found} ->
+            case ?BACKEND:is_user_connected_to_bridge(Owner, BridgeId) of
+                {ok, false} ->
+                    {error, not_found};
+                {ok, true, _Values} ->
+                    %% No direct connection, but still connected (via shared connection)
+                    %% We can pull the values from the share
+                    %% TODO: Reformat values from the _Values already returned
+                    {ok, Shares} = ?BACKEND:get_resources_shared_with(Owner),
+                    Values = lists:filtermap(fun(#bridge_resource_share_entry{ connection_id=ConnectionId
+                                                                             , resource=Resource
+                                                                             , value=Value
+                                                                             , name=Name
+                                                                             }) ->
+                                                     case Resource of
+                                                         CallbackName ->
+                                                             case get_connection_bridge(ConnectionId) of
+                                                                 {ok, BridgeId} ->
+                                                                     {true, #{ id => Value, name => Name}};
+                                                                 _ ->
+                                                                     false
+                                                             end;
+                                                         _ ->
+                                                             false
+                                                     end
+                                             end, Shares),
+                    {ok, Values}
+            end;
         {error, Reason} ->
             {error, Reason}
     end.
 
+-spec callback_bridge_through_connection(binary(), binary(), binary()) -> {ok, map()} | {error, term()}.
+callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName) ->
+    ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
+                                   , <<"user_id">> => ConnectionId
+                                   , <<"value">> => #{ <<"callback">> => CallbackName }
+                                   }).
+
 
 -spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
 get_channel_origin_bridge(ChannelId) ->
-    case automate_services_time:get_monitor_id(none) of
+    case automate_services_time:get_monitor_id() of
         {ok, ChannelId} ->
             {ok, automate_services_time:get_uuid()};
         _ ->
@@ -265,9 +321,22 @@ get_bridge_info(BridgeId) ->
 get_bridge_owner(BridgeId) ->
     ?BACKEND:get_bridge_owner(BridgeId).
 
+-spec get_bridge_configuration(binary()) -> {ok, #service_port_configuration{}} | {error, not_found}.
+get_bridge_configuration(BridgeId) ->
+    ?BACKEND:get_bridge_configuration(BridgeId).
+
+
 -spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
 list_established_connections(Owner) when is_tuple(Owner) ->
     ?BACKEND:list_established_connections(Owner).
+
+-spec list_established_connections(owner_id(), binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
+list_established_connections(Owner, BridgeId) when is_tuple(Owner) ->
+    ?BACKEND:list_established_connections(Owner, BridgeId).
+
+-spec get_connection_owner(binary()) -> {ok, owner_id()} | {error, not_found}.
+get_connection_owner(ConnectionId) ->
+    ?BACKEND:get_connection_owner(ConnectionId).
 
 -spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}}.
 get_pending_connection_info(ConnectionId) ->
@@ -297,6 +366,30 @@ is_module_connectable_bridge(_, _) ->
     %% Is not a bridge
     false.
 
+
+-spec set_shared_resource(ConnectionId :: binary(), ResourceName :: binary(), Shares :: map()) -> ok.
+set_shared_resource(ConnectionId, ResourceName, Shares) ->
+    ?BACKEND:set_shared_resource(ConnectionId, ResourceName, Shares).
+
+-spec get_connection_shares(ConnectionId :: binary()) -> {ok, #{ binary() => #{ binary() => [ owner_id() ] } } }.
+get_connection_shares(ConnectionId) ->
+    ?BACKEND:get_connection_shares(ConnectionId).
+
+-spec get_connection_bridge(ConnectionId :: binary()) -> {ok, binary()}.
+get_connection_bridge(ConnectionId) ->
+    ?BACKEND:get_connection_bridge(ConnectionId).
+
+-spec get_resources_shared_with(Owner :: owner_id()) -> {ok, [#bridge_resource_share_entry{}]}.
+get_resources_shared_with(Owner) ->
+    ?BACKEND:get_resources_shared_with(Owner).
+
+-spec get_resources_shared_with_on_bridge(Owner :: owner_id(), BridgeId :: binary()) -> {ok, [#bridge_resource_share_entry{}]}.
+get_resources_shared_with_on_bridge(Owner, BridgeId) ->
+    {ok, Shares} = get_resources_shared_with(Owner),
+    {ok, lists:filter(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
+                              {ok, SharedBridgeId} = automate_service_port_engine:get_connection_bridge(ConnectionId),
+                              SharedBridgeId == BridgeId
+                      end, Shares)}.
 
 
 %%====================================================================
@@ -332,14 +425,32 @@ parse_configuration_map(ServicePortId,
                                 , <<"is_public">> := IsPublic
                                 , <<"service_name">> := ServiceName
                                 }) ->
+    Resources = parse_resources(Config),
     #service_port_configuration{ id=ServicePortId
-                               , is_public=IsPublic
-                               , service_id=undefined
-                               , service_name=ServiceName
-                               , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
-                               , icon=get_icon_from_config(Config)
-                               , allow_multiple_connections=get_allow_multiple_connections_from_config(Config)
-                               }.
+                                 , is_public=IsPublic
+                                 , service_id=undefined
+                                 , service_name=ServiceName
+                                 , blocks=lists:map(fun(B) -> parse_block(B) end, Blocks)
+                                 , icon=get_icon_from_config(Config)
+                                 , allow_multiple_connections=get_allow_multiple_connections_from_config(Config)
+                                 , resources=lists:map(fun({Name, _Lockable}) -> Name end, Resources)
+                                 }.
+
+%% Find lockabel resources in configuration
+-spec parse_resources(map()) -> [{ Name :: binary(), Lockable :: boolean() }].
+parse_resources(#{ <<"resources">> := Resources }) ->
+    lists:map(fun(Resource=#{ <<"name">> := Name }) ->
+                      case Resource of
+                          #{ <<"properties">> := #{  <<"lockable">> := true }
+                           } ->
+                              {Name, true};
+                          _ ->  %% Not declared as lockable
+                              {Name, false}
+                      end
+              end, Resources);
+
+parse_resources(_) ->
+    [].
 
 
 -spec get_icon_from_config(map()) -> undefined | supported_icon_type().
@@ -436,6 +547,11 @@ parse_argument(#{ <<"type">> := <<"variable">>
                                        , default=undefined
                                        , class=undefined
                                        };
+parse_argument(#{ <<"type">> := _Type
+                , <<"values">> := #{ <<"collection">> := Collection
+                                   }
+                }) ->
+    #service_port_block_collection_argument{ name=Collection };
 
 parse_argument(#{ <<"type">> := Type
                 , <<"values">> := #{ <<"callback">> := Callback

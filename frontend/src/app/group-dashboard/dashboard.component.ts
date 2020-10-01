@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BridgeIndexData } from 'app/bridges/bridge';
+import { BridgeIndexData, SharedResource } from 'app/bridges/bridge';
 import { AddCollaboratorsDialogComponent } from 'app/dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
 import { GroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
@@ -40,6 +40,7 @@ export class GroupDashboardComponent {
     collaborators: Collaborator[] = null;
     userRole: CollaboratorRole = null;
     bridges: BridgeIndexData[] = null;
+    sharedResources: SharedResource[];
 
     canWriteToGroup: boolean = false;
 
@@ -87,6 +88,7 @@ export class GroupDashboardComponent {
                         this.updateCollaborators();
                         this.updateBridges();
                         this.updateConnections();
+                        this.updateSharedResources();
                     }
                     catch (err) {
                         console.error(err)
@@ -177,9 +179,21 @@ export class GroupDashboardComponent {
         this.bridges = await this.bridgeService.listGroupBridges(this.groupInfo.id);
     }
 
+    async updateSharedResources() {
+        this.sharedResources = await this.groupService.getSharedResources(this.groupInfo.id);
+
+        for (const conn of this.sharedResources){
+            this.bridgeInfo[conn.bridge_id] = {
+                icon: iconDataToUrl(conn.icon, conn.bridge_id),
+                name: conn.name
+            };
+        }
+    }
+
     openBridgePanel(bridge: BridgeIndexData) {
         const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
                                                                           maxHeight: '100vh',
+                                                                          autoFocus: false,
                                                                           data: { bridgeInfo: bridge,
                                                                                   asGroup: this.groupInfo.id,
                                                                                 },
