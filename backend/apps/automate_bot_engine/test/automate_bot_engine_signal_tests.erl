@@ -364,17 +364,12 @@ wait_for_monitor_signal() ->
                                                                       })),
     {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
-                         Module, OwnerUserId),
-
-
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
                             , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
                                                        , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
                                                            [ ?UTILS:block_val({ ?WAIT_FOR_MONITOR
-                                                                              , #{ ?MONITOR_ID => MonitorId }
+                                                                              , #{ ?FROM_SERVICE => ServicePortId }
                                                                               })
                                                            ]
                                                          }
@@ -433,17 +428,12 @@ wait_for_monitor_signal_check_key() ->
                                                                       })),
     {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(
-                         Module, OwnerUserId),
-
-
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
                             , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
                                                        , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
                                                            [ ?UTILS:block_val({ ?WAIT_FOR_MONITOR
-                                                                              , #{ ?MONITOR_ID => MonitorId
+                                                                              , #{ ?FROM_SERVICE => ServicePortId
                                                                                  , <<"key">> => <<"on_new_message">>
                                                                                  }
                                                                               })
@@ -505,12 +495,11 @@ wait_for_monitor_signal_check_key() ->
 
 wait_for_time_signal() ->
     {_Username, _ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
-    {ok, TimeMonitorId} = automate_services_time:get_monitor_id(none),
     Thread = #program_thread{ position = [1]
                             , program=?UTILS:build_ast([ { ?COMMAND_LOG_VALUE, [constant_val(<<"before">>)] }
                                                        , { ?COMMAND_WAIT_FOR_NEXT_VALUE,
                                                            [ ?UTILS:block_val({ ?WAIT_FOR_MONITOR
-                                                                              , #{ ?MONITOR_ID => TimeMonitorId
+                                                                              , #{ ?FROM_SERVICE => automate_services_time:get_uuid()
                                                                                  , <<"key">> => <<"utc_time">>
                                                                                  }
                                                                               })

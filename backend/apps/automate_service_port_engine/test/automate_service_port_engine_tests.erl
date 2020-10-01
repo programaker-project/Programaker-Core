@@ -283,17 +283,14 @@ route_notification_targeted_to_owner() ->
 
     %% Listen on the service port
     {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
-
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
-    {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
-    ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = automate_service_registry_query:listen_service(ServicePortId, TargetUserId, {undefined, undefined}),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
                                               TargetUserId, #{ <<"test">> => 1 }),
 
     %% Catch notification
-    receive {channel_engine, ChannelId, ReceivedMessage} ->
+    receive {channel_engine, _ChannelId, ReceivedMessage} ->
             ?assertEqual(ExpectedContent, ReceivedMessage)
     after ?RECEIVE_TIMEOUT ->
             ct:fail(timeout)
@@ -319,17 +316,14 @@ route_notification_targeted_to_owner_on_public() ->
 
     %% Listen on the service port
     {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
-
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
-    {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
-    ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = automate_service_registry_query:listen_service(ServicePortId, TargetUserId, {undefined, undefined}),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
                                               TargetUserId, #{ <<"test">> => 2 }),
 
     %% Catch notification
-    receive {channel_engine, ChannelId, ReceivedMessage} ->
+    receive {channel_engine, _ChannelId, ReceivedMessage} ->
             ?assertEqual(ExpectedContent, ReceivedMessage)
     after ?RECEIVE_TIMEOUT ->
             ct:fail(timeout)
@@ -354,17 +348,14 @@ route_notification_targeted_to_non_owner_on_public() ->
 
     %% Listen on the service port
     {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
-
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
-    {ok, ChannelId } = automate_service_registry_query:get_monitor_id(Module, TargetUserId),
-    ok = automate_channel_engine:listen_channel(ChannelId),
+    ok = automate_service_registry_query:listen_service(ServicePortId, TargetUserId, {undefined, undefined}),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
                                               TargetUserId, #{ <<"test">> => 3 }),
 
     %% Catch notification
-    receive {channel_engine, ChannelId, ReceivedMessage} ->
+    receive {channel_engine, _ChannelId, ReceivedMessage} ->
             ?assertEqual(ExpectedContent, ReceivedMessage)
     after ?RECEIVE_TIMEOUT ->
             ct:fail(timeout)
@@ -389,33 +380,23 @@ route_notification_targeted_to_all_users_on_public() ->
 
     %% Listen on the service port for non-owner
     {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
-
-    {ok, #{ module := NonOwnerModule }} = automate_service_registry:get_service_by_id(
-                                            ServicePortId),
-    {ok, NonOwnerChannelId } = automate_service_registry_query:get_monitor_id(
-                                 NonOwnerModule, TargetUserId),
-    ok = automate_channel_engine:listen_channel(NonOwnerChannelId),
+    ok = automate_service_registry_query:listen_service(ServicePortId, TargetUserId, {undefined, undefined}),
 
     %% Listen on the service port for owner
     {ok, _} = ?UTILS:establish_connection(ServicePortId, OwnerUserId),
-
-    {ok, #{ module := OwnerModule }} = automate_service_registry:get_service_by_id(
-                                         ServicePortId),
-    {ok, OwnerChannelId } = automate_service_registry_query:get_monitor_id(
-                              OwnerModule, OwnerUserId),
-    ok = automate_channel_engine:listen_channel(OwnerChannelId),
+    ok = automate_service_registry_query:listen_service(ServicePortId, OwnerUserId, {undefined, undefined}),
 
     %% Emit notification
     {ok, ExpectedContent} = emit_notification(ServicePortId, OwnerUserId,
                                               null, #{ <<"test">> => 4 }),
 
     %% Get notification twice
-    receive {channel_engine, NonOwnerChannelId, NonOwnerReceivedMessage} ->
+    receive {channel_engine, _NonOwnerChannelId, NonOwnerReceivedMessage} ->
             ?assertEqual(ExpectedContent, NonOwnerReceivedMessage)
     after ?RECEIVE_TIMEOUT ->
             ct:fail(notif_to_all_users_non_owner_not_received)
     end,
-    receive {channel_engine, OwnerChannelId, OwnerReceivedMessage} ->
+    receive {channel_engine, _OwnerChannelId, OwnerReceivedMessage} ->
             ?assertEqual(ExpectedContent, OwnerReceivedMessage)
     after ?RECEIVE_TIMEOUT ->
             ct:fail(notif_to_all_users_owner_not_received)
@@ -568,4 +549,5 @@ emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
           , <<"key">> => Key
           , <<"value">> => Value
           , <<"subkey">> => undefined
+          , <<"service_id">> => ServicePortId
           }}.

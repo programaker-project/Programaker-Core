@@ -9,7 +9,7 @@
 -export([ start_link/0
         , is_enabled_for_user/2
         , get_how_to_enable/2
-        , get_monitor_id/2
+        , listen_service/3
         , call/5
         , send_registration_data/4
         ]).
@@ -27,16 +27,21 @@ start_link() ->
     ignore.
 
 %% No monitor associated with this service
--spec get_monitor_id(owner_id(), [binary(), ...]) -> {ok, binary()} | {error, _, binary()}.
+-spec get_monitor_id(owner_id(), [binary(), ...]) -> {ok, binary()} | {error, _}.
 get_monitor_id(Owner, [ServicePortId]) when is_binary(ServicePortId) ->
     {ok, ConnectionId} = get_connection(Owner, ServicePortId),
     {ok, ConnectionOwner} = ?BACKEND:get_connection_owner(ConnectionId),
     ?BACKEND:get_or_create_monitor_id(ConnectionOwner, ServicePortId).
 
+-spec listen_service(owner_id(), {binary() | undefined, binary() | undefined}, [binary(), ...]) -> ok | {error, _}.
+listen_service(Owner, {Key, SubKey}, [ServicePortId]) ->
+    {ok, ChannelId} = get_monitor_id(Owner, [ServicePortId]),
+    %% TODO: Add resource permissions check
+    automate_channel_engine:listen_channel(ChannelId).
+
 -spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()}.
 call(FunctionName, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, Owner),
+    {ok, MonitorId } = ?BACKEND:get_or_create_monitor_id(Owner, ServicePortId),
     LastMonitorValue = case automate_bot_engine_variables:get_last_monitor_value(
                               Thread, MonitorId) of
                            {ok, Value} -> Value;

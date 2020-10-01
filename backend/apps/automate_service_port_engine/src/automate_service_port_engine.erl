@@ -105,8 +105,9 @@ listen_bridge(BridgeId, Owner) when is_tuple(Owner) ->
     case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId);
-        {error, _X, Description} ->
-            {error, Description}
+
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 -spec listen_bridge(binary(), owner_id(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
@@ -114,8 +115,8 @@ listen_bridge(BridgeId, Owner, Selector) when is_tuple(Owner) ->
     case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
         { ok, ChannelId } ->
             automate_channel_engine:listen_channel(ChannelId, Selector);
-        {error, _X, Description} ->
-            {error, Description}
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 -spec from_service_port(binary(), owner_id(), binary()) -> ok.
@@ -175,9 +176,9 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                } ->
             case ToUser of
                 null ->
-                    %% TODO: This looping be removed if the users also listened on
-                    %% a common bridge channel. For this, the service API should allow
-                    %% returning multiple channels when asked.
+                    %% This looping might be removed if the users also listened
+                    %% on a common bridge channel. For this, the service API
+                    %% should allow returning multiple channels when asked.
                     {ok, Channels} = ?BACKEND:list_bridge_channels(ServicePortId),
                     Results = lists:map(fun (Channel) ->
                                                 { Channel
@@ -187,6 +188,7 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                                                      , <<"value">> => Value
                                                      , <<"content">> => Content
                                                      , <<"subkey">> => get_subkey_from_notification(Notif)
+                                                     , <<"service_id">> => ServicePortId
                                                      })}
                                         end, Channels),
                     lists:foreach(
@@ -202,15 +204,14 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                 _ ->
                     case ?BACKEND:connection_id_to_internal_user_id(ToUser, ServicePortId) of
                         {ok, ToUserInternalId} ->
-                            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServicePortId),
-
-                            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, ToUserInternalId),
+                            {ok, MonitorId } = ?BACKEND:get_or_create_monitor_id(ToUserInternalId, ServicePortId),
 
                             case automate_channel_engine:send_to_channel(MonitorId,
                                                                          #{ <<"key">> => Key
                                                                           , <<"value">> => Value
                                                                           , <<"content">> => Content
                                                                           , <<"subkey">> => get_subkey_from_notification(Notif)
+                                                                          , <<"service_id">> => ServicePortId
                                                                           }) of
                                 ok ->
                                     ok;
@@ -304,7 +305,7 @@ callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName) ->
 
 -spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
 get_channel_origin_bridge(ChannelId) ->
-    case automate_services_time:get_monitor_id(none) of
+    case automate_services_time:get_monitor_id() of
         {ok, ChannelId} ->
             {ok, automate_services_time:get_uuid()};
         _ ->

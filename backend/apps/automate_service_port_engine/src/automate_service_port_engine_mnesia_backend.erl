@@ -611,7 +611,7 @@ delete_bridge(Accessor, BridgeId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec get_or_create_monitor_id(owner_id(), binary()) -> {ok, binary()} | {error, term(), binary()}.
+-spec get_or_create_monitor_id(owner_id(), binary()) -> {ok, binary()} | {error, term()}.
 get_or_create_monitor_id(Owner, ServicePortId) ->
     Id = {Owner, ServicePortId},
     case mnesia:dirty_read(?SERVICE_PORT_CHANNEL_TABLE, Id) of
@@ -638,7 +638,7 @@ get_or_create_monitor_id(Owner, ServicePortId) ->
                 {atomic, Result} ->
                     Result;
                 {aborted, Reason} ->
-                    {error, Reason, mnesia:error_description(Reason)}
+                    {error, Reason}
             end
     end.
 

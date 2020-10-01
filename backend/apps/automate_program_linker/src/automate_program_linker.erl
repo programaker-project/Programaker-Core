@@ -24,9 +24,8 @@ relink_subprogram(Subprogram, Owner) ->
 %% Relink service monitor
 relink_block(Block, Owner) ->
     B1 = relink_block_contents(Block, Owner),
-    B2 = relink_block_args(B1, Owner),
-    B3 = relink_block_args_values(B2, Owner),
-    relink_block_values(B3, Owner).
+    B2 = relink_block_args_values(B1, Owner),
+    relink_block_values(B2, Owner).
 
 relink_block_contents(Value = #{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                , ?ARGUMENTS := Arguments
@@ -45,14 +44,6 @@ relink_block_contents(Block=#{ ?CONTENTS := Contents
 relink_block_contents(Block, _Owner) ->
     Block.
 
-relink_block_args(Block=#{ ?ARGUMENTS := Arguments
-                         }, Owner) when is_map(Arguments) ->
-    B1 = relink_monitor_id(Block, Owner),
-    B1;
-
-relink_block_args(Block, _Owner) ->
-    Block.
-
 
 relink_block_args_values(Block=#{ ?ARGUMENTS := Arguments
                                 }, _Owner) when is_list(Arguments) ->
@@ -60,19 +51,6 @@ relink_block_args_values(Block=#{ ?ARGUMENTS := Arguments
 
 relink_block_args_values(Block, _Owner) ->
     Block.
-
-
-relink_monitor_id(Block=#{ ?ARGUMENTS := Args=
-                               #{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId } } }
-                 , Owner
-                 ) ->
-    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, Owner),
-    Block#{ ?ARGUMENTS := Args#{ ?MONITOR_ID :=  MonitorId } };
-
-relink_monitor_id(Block, _Owner) ->
-    Block.
-
 
 %%%% Relink values
 relink_block_values(Block=#{ ?VALUE := Value

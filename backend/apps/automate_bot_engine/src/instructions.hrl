@@ -40,6 +40,7 @@
 -define(MONITOR_ID, <<"monitor_id">>).
 -define(MONITOR_EXPECTED_VALUE, <<"monitor_expected_value">>).
 -define(MONITOR_SAVE_VALUE_TO, <<"monitor_save_value_to">>).
+-define(FROM_SERVICE, <<"from_service">>).
 
 %%%% Services
 -define(SERVICE_ID, <<"service_id">>).

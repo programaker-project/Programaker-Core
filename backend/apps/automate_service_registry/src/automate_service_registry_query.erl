@@ -9,8 +9,8 @@
 -export([ is_enabled_for_user/2
         , get_how_to_enable/2
         , call/5
-        , get_monitor_id/2
         , send_registration_data/4
+        , listen_service/3
         ]).
 
 -define(SERVER, ?MODULE).
@@ -42,16 +42,19 @@ call({Module, Params}, Action, Values, Thread, Owner) ->
 call(Module, Action, Values, Thread, Owner) ->
     Module:call(Action, Values, Thread, Owner).
 
--spec get_monitor_id(module() | {module(), any()}, owner_id()) -> {ok, binary()}.
-get_monitor_id({Module, Params}, Owner) ->
-    Module:get_monitor_id(Owner, Params);
-
-get_monitor_id(Module, UserId) ->
-    Module:get_monitor_id(UserId).
-
 -spec send_registration_data(module() | {module(), any()}, owner_id(), any(), any()) -> {ok, any()}.
 send_registration_data({Module, Params}, UserId, RegistrationData, RegistrationProperties) ->
     Module:send_registration_data(UserId, RegistrationData, Params, RegistrationProperties);
 
 send_registration_data(Module, UserId, RegistrationData, RegistrationProperties) ->
     Module:send_registration_data(UserId, RegistrationData, [], RegistrationProperties).
+
+-spec listen_service(ServiceId :: binary(), Owner :: owner_id(), { any(), any() }) -> ok | {error, any()}.
+listen_service(ServiceId, Owner, { Key, SubKey }) ->
+    {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
+    case Module of
+        {ParametrizedModule, Params} ->
+            ParametrizedModule:listen_service(Owner, {Key, SubKey}, Params);
+        _ ->
+            Module:listen_service(Owner, {Key, SubKey})
+    end.

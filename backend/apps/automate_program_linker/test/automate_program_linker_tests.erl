@@ -41,33 +41,5 @@ stop(_) ->
     ok.
 
 tests(_SetupResult) ->
-    [ { "[Linker] Link wait-for-monitor inside wait_for_next block", fun link_monitor_inside_wait_for_next/0 }
+    [
     ].
-
-%%% Tests
-link_monitor_inside_wait_for_next() ->
-    {ok, TimeMonitorId} = automate_services_time:get_monitor_id(none),
-
-    Blocks = [ [ #{ ?TYPE => ?COMMAND_WAIT_FOR_NEXT_VALUE
-                  , ?ARGUMENTS => [ #{ ?TYPE => ?WAIT_FOR_MONITOR
-                                     , ?ARGUMENTS => #{ ?MONITOR_ID => #{ <<"from_service">> => automate_services_time:get_uuid()
-                                                                        }
-                                                      , <<"key">> => <<"sample_key">>
-                                                      }
-                                     }
-                                  ]
-                  }
-               ] ],
-    Expected = [ [ #{ ?TYPE => ?COMMAND_WAIT_FOR_NEXT_VALUE
-                    , ?ARGUMENTS => [ #{ ?TYPE => ?WAIT_FOR_MONITOR
-                                       , ?ARGUMENTS => #{ ?MONITOR_ID => TimeMonitorId
-                                                        , <<"key">> => <<"sample_key">>
-                                                        }
-                                       }
-                                    ]
-                    }
-                 ] ],
-
-    io:fwrite("Expected: ~p~n", [Expected]),
-    {ok, #{ <<"blocks">> := Linked }} = automate_program_linker:link_program(#{ <<"blocks">> => Blocks}, none),
-    ?assertMatch(Expected, Linked).

@@ -60,15 +60,13 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
     [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
     case automate_service_registry:get_service_by_id(ServiceId) of
         {ok, #{ module := Module }} ->
-            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
-
             case ?UTILS:get_block_key_subkey(Arguments) of
                 { key_and_subkey, Key, SubKey } ->
-                    automate_channel_engine:listen_channel(MonitorId, { Key, SubKey });
+                    automate_service_registry_query:listen_service(ServiceId, UserId, { Key, SubKey });
                 { key, Key } ->
-                    automate_channel_engine:listen_channel(MonitorId, { Key });
+                    automate_service_registry_query:listen_service(ServiceId, UserId, { Key, undefined });
                 { not_found } ->
-                    automate_channel_engine:listen_channel(MonitorId)
+                    automate_service_registry_query:listen_service(ServiceId, UserId, { undefined, undefined })
             end,
 
             ?TRIGGERED_BY_MONITOR;
@@ -182,11 +180,11 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                                                }
                                , subprogram=Program
                                },
-               { ?TRIGGERED_BY_MONITOR, { TriggeredMonitorId
-                                        , FullMessage=#{ <<"key">> := TriggeredKey }
+               { ?TRIGGERED_BY_MONITOR, { MonitorId
+                                        , FullMessage=#{ <<"key">> := TriggeredKey, <<"service_id">> := BridgeId }
                                         } },
                #program_state{ program_id=ProgramId
-                                          , permissions=#program_permissions{owner_user_id=UserId}}) ->
+                             , permissions=#program_permissions{owner_user_id=_UserId}}) ->
 
     Thread = #program_thread{ position=[1]
                             , program=Program
@@ -212,12 +210,10 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                        FunctionName == TriggeredKey
                end,
 
-    case KeyMatch of
+    case KeyMatch and (BridgeId == ServiceId) of
         false ->
             false;
         true ->
-            {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-            {ok, MonitorId } = automate_service_registry_query:get_monitor_id(Module, UserId),
             {MatchingContent, Thread2} = case MonitorArgs of
                                   #{ ?MONITOR_EXPECTED_VALUE := ExpectedValue } ->
                                       {ok, ResolvedExpectedValue, UpdatedThread} = automate_bot_engine_variables:resolve_argument(
@@ -227,8 +223,8 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                                   _ ->
                                       {true, Thread}
                               end,
-            case {MonitorId, MatchingContent} of
-                {TriggeredMonitorId, true} ->
+            case MatchingContent of
+                true ->
                     {ok, ThreadWithSavedValue} = case {MonitorArgs, FullMessage} of
                                                      { #{ ?MONITOR_SAVE_VALUE_TO := SaveTo }
                                                      , #{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }
