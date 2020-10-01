@@ -202,7 +202,7 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                 { Error
                                 , binary:list_to_bin(
                                     lists:flatten(io_lib:format("Cannot access position ~s on list '~s'. Only ~s elements",
-                                                                [ListName, Index, MaxIndex])))
+                                                                [Index, ListName, MaxIndex])))
                                 , BlockId
                                 };
 
