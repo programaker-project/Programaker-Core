@@ -72,8 +72,17 @@ tests(_SetupResult) ->
     , { "[Bridge - Shared resources] Allow to listen on shared resource values"
       , fun allow_to_listen_on_shared_resource_values/0
       }
+    , { "[Bridge - Shared resources] Don't allow to listen on non-shared resource values (no subkey)"
+      , fun disallow_to_listen_on_non_shared_resources/0
+      }
     , { "[Bridge - Shared resources] Don't allow to listen on non-shared resource values (different subkey)"
       , fun disallow_to_listen_on_shared_resource_different_subkey/0
+      }
+    , { "[Bridge - Shared resources] Listening in a subkey doesn't make program receive different subkey messages"
+      , fun listening_on_shared_does_not_receive_different_subkeys/0
+      }
+    , { "[Bridge - Shared resources] Listening in a subkey doesn't make program receive different null subkey messages"
+      , fun listening_on_shared_does_not_receive_null_subkeys/0
       }
     ].
 
@@ -369,8 +378,82 @@ allow_to_listen_on_shared_resource_values() ->
                                                                                              }
                                                                                           ] } }),
 
-    ok = automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, SharedValue }).
+    ok = automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, SharedValue }),
+    ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
+                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
+                                                      , <<"key">> => ResourceName
+                                                      , <<"to_user">> => ConnectionId
+                                                      , <<"value">> => test
+                                                      , <<"content">> => test
+                                                      , <<"subkey">> => SharedValue
+                                                      })),
+    receive {channel_engine, _ChannelId, Msg} ->
+            ?assertMatch(#{ <<"subkey">> := SharedValue }, Msg)
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end.
 
+
+disallow_to_listen_on_non_shared_resources() ->
+    OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-6-owner">>},
+    ReaderUserId = <<?TEST_ID_PREFIX, "-test-6-reader">>,
+    ReaderUser = {user, ReaderUserId},
+    GroupName = <<?TEST_ID_PREFIX, "-test-6-group">>,
+    ResourceName = <<"channels">>,
+    SharedValue = <<"shared-val-id">>,
+    SharedValueName = <<"shared-val-name">>,
+    ReturnMessage = #{ <<"result">> => <<"ok">>} ,
+
+    {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
+    ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
+
+    BridgeName = <<?TEST_ID_PREFIX, "-test-6-service-port">>,
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUser, BridgeName),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => BridgeName
+                     , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
+                     },
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
+
+    Orig = self(),
+    Bridge = spawn(fun() ->
+                           ok = ?ROUTER:connect_bridge(BridgeId),
+                           Orig ! ready,
+                           receive
+                               { automate_service_port_engine_router
+                               , _ %% From
+                               , { data, MessageId, RecvMessage }} ->
+                                   ?assertMatch(#{ <<"value">> := #{ <<"arguments">> := [SharedValue] } },
+                                                RecvMessage),
+                                   io:fwrite("Answering...~n", []),
+                                   ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
+                               _ ->
+                                   ct:fail(timeout)
+                           end
+                   end),
+    receive ready -> ok end,
+
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceName
+                                                         , #{ SharedValue =>
+                                                                  #{ <<"name">> => SharedValueName
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+
+    case automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, undefined }) of
+        ok ->
+            ct:fail("Should not be allowed");
+        {error, not_connected} ->
+            ok
+    end.
 
 disallow_to_listen_on_shared_resource_different_subkey() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-7-owner">>},
@@ -426,12 +509,183 @@ disallow_to_listen_on_shared_resource_different_subkey() ->
                                                                                              }
                                                                                           ] } }),
 
-    case automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, SharedValue }) of
+    case automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, NonSharedValue }) of
         ok ->
             ct:fail("Should not be allowed");
         {error, not_connected} ->
             ok
     end.
+
+listening_on_shared_does_not_receive_different_subkeys() ->
+    OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-8-owner">>},
+    ReaderUserId = <<?TEST_ID_PREFIX, "-test-8-reader">>,
+    ReaderUser = {user, ReaderUserId},
+    GroupName = <<?TEST_ID_PREFIX, "-test-8-group">>,
+    ResourceName = <<"channels">>,
+    NonSharedValue = <<"non-shared-val-id">>,
+    SharedValue = <<"shared-val-id">>,
+    SharedValueName = <<"shared-val-name">>,
+    ReturnMessage = #{ <<"result">> => <<"ok">>} ,
+
+    {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
+    ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
+
+    BridgeName = <<?TEST_ID_PREFIX, "-test-8-service-port">>,
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUser, BridgeName),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => BridgeName
+                     , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
+                     },
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
+
+    Orig = self(),
+    Bridge = spawn(fun() ->
+                           ok = ?ROUTER:connect_bridge(BridgeId),
+                           Orig ! ready,
+                           receive
+                               { automate_service_port_engine_router
+                               , _ %% From
+                               , { data, MessageId, RecvMessage }} ->
+                                   ?assertMatch(#{ <<"value">> := #{ <<"arguments">> := [SharedValue] } },
+                                                RecvMessage),
+                                   io:fwrite("Answering...~n", []),
+                                   ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
+                               _ ->
+                                   ct:fail(timeout)
+                           end
+                   end),
+    receive ready -> ok end,
+
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceName
+                                                         , #{ SharedValue =>
+                                                                  #{ <<"name">> => SharedValueName
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+
+    ok = automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, SharedValue }),
+
+    ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
+                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
+                                                      , <<"key">> => ResourceName
+                                                      , <<"to_user">> => ConnectionId
+                                                      , <<"value">> => test
+                                                      , <<"content">> => test
+                                                      , <<"subkey">> => NonSharedValue
+                                                      })),
+
+    ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
+                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
+                                                      , <<"key">> => ResourceName
+                                                      , <<"to_user">> => ConnectionId
+                                                      , <<"value">> => test
+                                                      , <<"content">> => test
+                                                      , <<"subkey">> => SharedValue
+                                                      })),
+    receive {channel_engine, _, Msg1} ->
+            ?assertMatch(#{ <<"subkey">> := SharedValue }, Msg1)
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end,
+    receive {channel_engine, _, Msg2} ->
+            ct:fail("Should only receive a message, received extra: " ++ lists:flatten(io_lib:format("~p", [Msg2])))
+    after 0 ->
+            ok
+    end.
+
+
+listening_on_shared_does_not_receive_null_subkeys() ->
+    OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-9-owner">>},
+    ReaderUserId = <<?TEST_ID_PREFIX, "-test-9-reader">>,
+    ReaderUser = {user, ReaderUserId},
+    GroupName = <<?TEST_ID_PREFIX, "-test-9-group">>,
+    ResourceName = <<"channels">>,
+    SharedValue = <<"shared-val-id">>,
+    SharedValueName = <<"shared-val-name">>,
+    ReturnMessage = #{ <<"result">> => <<"ok">>} ,
+
+    {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
+    ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
+
+    BridgeName = <<?TEST_ID_PREFIX, "-test-9-service-port">>,
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUser, BridgeName),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => BridgeName
+                     , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
+                     },
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
+
+    Orig = self(),
+    Bridge = spawn(fun() ->
+                           ok = ?ROUTER:connect_bridge(BridgeId),
+                           Orig ! ready,
+                           receive
+                               { automate_service_port_engine_router
+                               , _ %% From
+                               , { data, MessageId, RecvMessage }} ->
+                                   ?assertMatch(#{ <<"value">> := #{ <<"arguments">> := [SharedValue] } },
+                                                RecvMessage),
+                                   io:fwrite("Answering...~n", []),
+                                   ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
+                               _ ->
+                                   ct:fail(timeout)
+                           end
+                   end),
+    receive ready -> ok end,
+
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceName
+                                                         , #{ SharedValue =>
+                                                                  #{ <<"name">> => SharedValueName
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+
+    ok = automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, SharedValue }),
+
+    ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
+                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
+                                                      , <<"key">> => ResourceName
+                                                      , <<"to_user">> => ConnectionId
+                                                      , <<"value">> => test
+                                                      , <<"content">> => test
+                                                      , <<"subkey">> => null
+                                                      })),
+
+    ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
+                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
+                                                      , <<"key">> => ResourceName
+                                                      , <<"to_user">> => ConnectionId
+                                                      , <<"value">> => test
+                                                      , <<"content">> => test
+                                                      , <<"subkey">> => SharedValue
+                                                      })),
+    receive {channel_engine, _, Msg1} ->
+            ?assertMatch(#{ <<"subkey">> := SharedValue }, Msg1)
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end,
+    receive {channel_engine, _, Msg2} ->
+            ct:fail("Should only receive a message, received extra: " ++ lists:flatten(io_lib:format("~p", [Msg2])))
+    after 0 ->
+            ok
+    end.
+
 
 %%====================================================================
 %% Custom block tests - Internal functions
