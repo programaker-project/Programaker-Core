@@ -62,11 +62,11 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
         {ok, #{ module := Module }} ->
             case ?UTILS:get_block_key_subkey(Arguments) of
                 { key_and_subkey, Key, SubKey } ->
-                    automate_service_registry_query:listen_service(ServiceId, UserId, { Key, SubKey });
+                    ok = automate_service_registry_query:listen_service(ServiceId, UserId, { Key, SubKey });
                 { key, Key } ->
-                    automate_service_registry_query:listen_service(ServiceId, UserId, { Key, undefined });
+                    ok = automate_service_registry_query:listen_service(ServiceId, UserId, { Key, undefined });
                 { not_found } ->
-                    automate_service_registry_query:listen_service(ServiceId, UserId, { undefined, undefined })
+                    ok = automate_service_registry_query:listen_service(ServiceId, UserId, { undefined, undefined })
             end,
 
             ?TRIGGERED_BY_MONITOR;
