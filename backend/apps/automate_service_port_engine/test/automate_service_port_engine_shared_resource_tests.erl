@@ -57,19 +57,31 @@ tests(_SetupResult) ->
     [ { "[Bridge - Shared resources] Allow to share resources, blocks that require a shared resource do appear"
       , fun blocks_with_shared_resources_appear/0
       }
+    , { "[Bridge - Shared resources] Allow to share resources, blocks that require a shared resource do appear (multiple resources)"
+      , fun blocks_with_shared_resources_appear_multiple_resources/0
+      }
     , { "[Bridge - Shared resources] Allow to share resources, blocks that require a non-shared resource don't appear"
       , fun non_shared_resources_negate_custom_blocks/0
+      }
+    , { "[Bridge - Shared resources] Allow to share resources, blocks that require a non-shared resource don't appear (multiple resources)"
+      , fun non_shared_resources_negate_custom_blocks_multiple_resources/0
       }
     , { "[Bridge - Shared resources] Allow to share resources, blocks that don't require resources don't appear"
       , fun shared_block_with_no_resources_dont_appear/0
       }
-      %% TODO: Should it show blocks with NO required resources?
       %% Execution test
     , { "[Bridge - Shared resources] Allow to make calls on shared resource values"
       , fun allow_to_make_calls_on_shared_resource_values/0
       }
     , { "[Bridge - Shared resources] Don't to make calls on non-shared resource values"
       , fun disallow_calls_on_non_shared_resource_values/0
+      }
+      %% TODO: For this to be supported consider the TO-DO on automate_service_port_engine_service:get_connection()
+      %% , { "[Bridge - Shared resources] Allow to make calls on shared resource values (multiple resources)"
+      %%   , fun allow_to_make_calls_on_shared_resource_values_multiple_resources/0
+      %%   }
+    , { "[Bridge - Shared resources] Don't to make calls on non-shared resource values (multiple resources)"
+      , fun disallow_calls_on_non_shared_resource_values_multiple_resources/0
       }
       %% Routing tests
     , { "[Bridge - Shared resources] Allow to listen on shared resource values"
@@ -96,7 +108,6 @@ tests(_SetupResult) ->
 blocks_with_shared_resources_appear() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-1-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-1-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-1-group">>,
     ResourceName = <<"channels">>,
     SharedValue = <<"shared-val-id">>,
@@ -130,10 +141,56 @@ blocks_with_shared_resources_appear() ->
     {ok, #{ BridgeId := [CustomBlock] } } = automate_service_port_engine:list_custom_blocks({group, GroupId}),
     check_test_block(CustomBlock).
 
+blocks_with_shared_resources_appear_multiple_resources() ->
+    OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-11-owner">>},
+    ReaderUserId = <<?TEST_ID_PREFIX, "-test-11-reader">>,
+    GroupName = <<?TEST_ID_PREFIX, "-test-11-group">>,
+    ResourceName1 = <<"channels">>,
+    SharedValue1 = <<"shared-val-id1">>,
+    SharedValueName1 = <<"shared-val-name1">>,
+    ResourceName2 = <<"group">>,
+    SharedValue2 = <<"shared-val-id2">>,
+    SharedValueName2 = <<"shared-val-name2">>,
+
+    {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
+    ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
+
+    BridgeName = <<?TEST_ID_PREFIX, "-test-11-service-port">>,
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUser, BridgeName),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => BridgeName
+                     , <<"blocks">> => [ get_test_block([{resource, ResourceName1}, {resource, ResourceName2}]) ]
+                     },
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceName1
+                                                         , #{ SharedValue1 =>
+                                                                  #{ <<"name">> => SharedValueName1
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceName2
+                                                         , #{ SharedValue2 =>
+                                                                  #{ <<"name">> => SharedValueName2
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+
+    {ok, #{ BridgeId := [CustomBlock] } } = automate_service_port_engine:list_custom_blocks({group, GroupId}),
+    check_test_block(CustomBlock).
+
 non_shared_resources_negate_custom_blocks() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-2-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-2-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-2-group">>,
     ResourceNameShared = <<"channels">>,
     ResourceNameNotShared = <<"non-channels">>,
@@ -168,12 +225,62 @@ non_shared_resources_negate_custom_blocks() ->
 
     ?assertMatch({ok, #{ BridgeId := [] } }, automate_service_port_engine:list_custom_blocks({group, GroupId})).
 
-
-shared_block_with_no_resources_dont_appear() ->
+non_shared_resources_negate_custom_blocks_multiple_resources() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-21-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-21-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-21-group">>,
+    ResourceNameNotShared = <<"non-channels">>,
+
+    ResourceNameShared1 = <<"channels1">>,
+    SharedValue1 = <<"shared-val-id1">>,
+    SharedValueName1 = <<"shared-val-name1">>,
+    ResourceNameShared2 = <<"groups">>,
+    SharedValue2 = <<"share-val-id2">>,
+    SharedValueName2 = <<"shared-val-name2">>,
+
+    {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
+    ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
+
+    BridgeName = <<?TEST_ID_PREFIX, "-test-21-service-port">>,
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUser, BridgeName),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => BridgeName
+                     , <<"blocks">> => [ get_test_block([{resource, ResourceNameShared1}, {resource, ResourceNameNotShared}])
+                                       , get_test_block([{resource, ResourceNameNotShared}, {resource, ResourceNameShared1}])
+                                       ]
+                     },
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })
+),
+
+    {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceNameShared1
+                                                         , #{ SharedValue1 =>
+                                                                  #{ <<"name">> => SharedValueName1
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceNameShared2
+                                                         , #{ SharedValue2 =>
+                                                                  #{ <<"name">> => SharedValueName2
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+
+    ?assertMatch({ok, #{ BridgeId := [] } }, automate_service_port_engine:list_custom_blocks({group, GroupId})).
+
+
+shared_block_with_no_resources_dont_appear() ->
+    OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-22-owner">>},
+    ReaderUserId = <<?TEST_ID_PREFIX, "-test-22-reader">>,
+    GroupName = <<?TEST_ID_PREFIX, "-test-22-group">>,
     ResourceNameShared = <<"channels">>,
     SharedValue = <<"shared-val-id">>,
     SharedValueName = <<"shared-val-name">>,
@@ -181,7 +288,7 @@ shared_block_with_no_resources_dont_appear() ->
     {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
     ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
 
-    BridgeName = <<?TEST_ID_PREFIX, "-test-2-service-port">>,
+    BridgeName = <<?TEST_ID_PREFIX, "-test-22-service-port">>,
     {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUser, BridgeName),
 
     Configuration = #{ <<"is_public">> => false
@@ -209,12 +316,10 @@ shared_block_with_no_resources_dont_appear() ->
 allow_to_make_calls_on_shared_resource_values() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-3-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-3-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-3-group">>,
     ResourceName = <<"channels">>,
     SharedValue = <<"shared-val-id">>,
     SharedValueName = <<"shared-val-name">>,
-    ReturnMessage = #{ <<"result">> => <<"ok">>} ,
 
     {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
     ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
@@ -233,24 +338,7 @@ allow_to_make_calls_on_shared_resource_values() ->
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
 
-    Orig = self(),
-    Bridge = spawn(fun() ->
-                           ok = ?ROUTER:connect_bridge(BridgeId),
-                           Orig ! ready,
-                           receive
-                               { automate_service_port_engine_router
-                               , _ %% From
-                               , { data, MessageId, RecvMessage }} ->
-                                   ?assertMatch(#{ <<"value">> := #{ <<"arguments">> := [SharedValue] } },
-                                                RecvMessage),
-                                   io:fwrite("Answering...~n", []),
-                                   ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
-                               _ ->
-                                   ct:fail(timeout)
-                           end
-                   end),
-    receive ready -> ok end,
-
+    BridgePid = test_bridge(BridgeId),
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
                                                          , ResourceName
                                                          , #{ SharedValue =>
@@ -277,12 +365,11 @@ allow_to_make_calls_on_shared_resource_values() ->
                             , thread_id=undefined
                             },
 
-    {ran_this_tick, NewThreadState} = automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined).
+    ?assertMatch({ran_this_tick, NewThreadState}, automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined)).
 
 disallow_calls_on_non_shared_resource_values() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-4-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-4-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-4-group">>,
     ResourceName = <<"channels">>,
     SharedValue = <<"shared-val-id">>,
@@ -306,21 +393,7 @@ disallow_calls_on_non_shared_resource_values() ->
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
 
-    Orig = self(),
-    Bridge = spawn(fun() ->
-                           ok = ?ROUTER:connect_bridge(BridgeId),
-                           Orig ! ready,
-                           receive
-                               { automate_service_port_engine_router
-                               , _ %% From
-                               , { data, _MessageId, _RecvMessage }} ->
-                                   Orig ! { fail, "Should not have called the bridge"};
-                               done ->
-                                   ok
-                           end
-                   end),
-    receive ready -> ok end,
-
+    Bridge = test_bridge(BridgeId),
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
                                                          , ResourceName
                                                          , #{ SharedValue =>
@@ -351,10 +424,179 @@ disallow_calls_on_non_shared_resource_values() ->
     Bridge ! done,
     ?assertMatch({stopped, _}, Ret).
 
+allow_to_make_calls_on_shared_resource_values_multiple_resources() ->
+    OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-31-owner">>},
+    ReaderUserId = <<?TEST_ID_PREFIX, "-test-31-reader">>,
+    GroupName = <<?TEST_ID_PREFIX, "-test-31-group">>,
+    ResourceName1 = <<"channels">>,
+    ResourceName2 = <<"groups">>,
+    SharedValue1 = <<"shared-val-id1">>,
+    SharedValue2 = <<"shared-val-id2">>,
+    NonSharedValue = <<"non-shared-val-id">>,
+    SharedValueName1 = <<"shared-val-name">>,
+    SharedValueName2 = <<"shared-val-name">>,
+    ReturnMessage = #{ <<"result">> => <<"ok">>} ,
+
+    {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
+    ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
+
+    BridgeName = <<?TEST_ID_PREFIX, "-test-3-service-port">>,
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUser, BridgeName),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => BridgeName
+                     , <<"blocks">> => [ get_test_block([{resource, ResourceName1}, {resource, ResourceName2}]) ]
+                     },
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
+
+    Bridge = test_bridge(BridgeId),
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceName1
+                                                         , #{ SharedValue1 =>
+                                                                  #{ <<"name">> => SharedValueName1
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceName2
+                                                         , #{ SharedValue2 =>
+                                                                  #{ <<"name">> => SharedValueName2
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+
+    {ok, ProgramId} =  ?BOT_UTILS:create_user_program({group, GroupId}),
+    Thread = #program_thread{ position = [1]
+                            , program=[ #{ ?TYPE => ?COMMAND_CALL_SERVICE
+                                         , ?ARGUMENTS => #{ ?SERVICE_ID => BridgeId
+                                                          , ?SERVICE_ACTION => get_function_id()
+                                                          , ?SERVICE_CALL_VALUES => [ #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                                       , ?VALUE => SharedValue1
+                                                                                       }
+                                                                                    , #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                                       , ?VALUE => SharedValue2
+                                                                                       }
+                                                                                    ]
+                                                          }
+                                         }
+                                      ]
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+
+    ?assertMatch({ran_this_tick, NewThreadState}, automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined)).
+
+disallow_calls_on_non_shared_resource_values_multiple_resources() ->
+    OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-41-owner">>},
+    ReaderUserId = <<?TEST_ID_PREFIX, "-test-41-reader">>,
+    GroupName = <<?TEST_ID_PREFIX, "-test-41-group">>,
+    ResourceName1 = <<"channels">>,
+    ResourceName2 = <<"groups">>,
+    SharedValue1 = <<"shared-val-id1">>,
+    SharedValue2 = <<"shared-val-id2">>,
+    NonSharedValue = <<"non-shared-val-id">>,
+    SharedValueName1 = <<"shared-val-name">>,
+    SharedValueName2 = <<"shared-val-name">>,
+
+    {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUser, false),
+    ok = automate_storage:add_collaborators({ group, GroupId }, [{ReaderUserId, editor}]),
+
+    BridgeName = <<?TEST_ID_PREFIX, "-test-41-service-port">>,
+    {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUser, BridgeName),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => BridgeName
+                     , <<"blocks">> => [ get_test_block([{resource, ResourceName1}, {resource, ResourceName2}]) ]
+                     },
+    ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
+                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
+                                                      , <<"value">> => Configuration
+                                                      })),
+
+    {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
+    Bridge = test_bridge(BridgeId),
+
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceName1
+                                                         , #{ SharedValue1 =>
+                                                                  #{ <<"name">> => SharedValueName1
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+
+    ok = automate_service_port_engine:set_shared_resource(ConnectionId
+                                                         , ResourceName2
+                                                         , #{ SharedValue2 =>
+                                                                  #{ <<"name">> => SharedValueName2
+                                                                   , <<"shared_with">> => [ #{ <<"id">> => GroupId
+                                                                                             , <<"type">> => <<"group">>
+                                                                                             }
+                                                                                          ] } }),
+    {ok, ProgramId} =  ?BOT_UTILS:create_user_program({group, GroupId}),
+
+
+    Thread1 = #program_thread{ position = [1]
+                            , program=[ #{ ?TYPE => ?COMMAND_CALL_SERVICE
+                                         , ?ARGUMENTS => #{ ?SERVICE_ID => BridgeId
+                                                          , ?SERVICE_ACTION => get_function_id()
+                                                          , ?SERVICE_CALL_VALUES => [ #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                                       , ?VALUE => SharedValue1
+                                                                                       }
+                                                                                    , #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                                       , ?VALUE => NonSharedValue
+                                                                                       }
+                                                                                    ]
+                                                          }
+                                         }
+                                      ]
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+
+    Ret = automate_bot_engine_operations:run_thread(Thread1, {?SIGNAL_PROGRAM_TICK, none}, undefined),
+    ?assertMatch({stopped, _}, Ret),
+
+    Thread2 = #program_thread{ position = [1]
+                            , program=[ #{ ?TYPE => ?COMMAND_CALL_SERVICE
+                                         , ?ARGUMENTS => #{ ?SERVICE_ID => BridgeId
+                                                          , ?SERVICE_ACTION => get_function_id()
+                                                          , ?SERVICE_CALL_VALUES => [ #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                                       , ?VALUE => NonSharedValue
+                                                                                       }
+                                                                                    , #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                                                       , ?VALUE => SharedValue2
+                                                                                       }
+                                                                                    ]
+                                                          }
+                                         }
+                                      ]
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+
+    Ret = automate_bot_engine_operations:run_thread(Thread2, {?SIGNAL_PROGRAM_TICK, none}, undefined),
+    Bridge ! done,
+    ?assertMatch({stopped, _}, Ret).
+
+
 allow_to_listen_on_shared_resource_values() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-5-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-5-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-5-group">>,
     ResourceName = <<"channels">>,
     SharedValue = <<"shared-val-id">>,
@@ -377,24 +619,7 @@ allow_to_listen_on_shared_resource_values() ->
                                                       })),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
-
-    Orig = self(),
-    Bridge = spawn(fun() ->
-                           ok = ?ROUTER:connect_bridge(BridgeId),
-                           Orig ! ready,
-                           receive
-                               { automate_service_port_engine_router
-                               , _ %% From
-                               , { data, MessageId, RecvMessage }} ->
-                                   ?assertMatch(#{ <<"value">> := #{ <<"arguments">> := [SharedValue] } },
-                                                RecvMessage),
-                                   io:fwrite("Answering...~n", []),
-                                   ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
-                               _ ->
-                                   ct:fail(timeout)
-                           end
-                   end),
-    receive ready -> ok end,
+    Bridge = test_bridge(BridgeId),
 
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
                                                          , ResourceName
@@ -424,7 +649,6 @@ allow_to_listen_on_shared_resource_values() ->
 disallow_to_listen_on_non_shared_resources() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-6-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-6-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-6-group">>,
     ResourceName = <<"channels">>,
     SharedValue = <<"shared-val-id">>,
@@ -447,24 +671,7 @@ disallow_to_listen_on_non_shared_resources() ->
                                                       })),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
-
-    Orig = self(),
-    Bridge = spawn(fun() ->
-                           ok = ?ROUTER:connect_bridge(BridgeId),
-                           Orig ! ready,
-                           receive
-                               { automate_service_port_engine_router
-                               , _ %% From
-                               , { data, MessageId, RecvMessage }} ->
-                                   ?assertMatch(#{ <<"value">> := #{ <<"arguments">> := [SharedValue] } },
-                                                RecvMessage),
-                                   io:fwrite("Answering...~n", []),
-                                   ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
-                               _ ->
-                                   ct:fail(timeout)
-                           end
-                   end),
-    receive ready -> ok end,
+    Bridge = test_bridge(BridgeId),
 
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
                                                          , ResourceName
@@ -475,17 +682,11 @@ disallow_to_listen_on_non_shared_resources() ->
                                                                                              }
                                                                                           ] } }),
 
-    case automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, undefined }) of
-        ok ->
-            ct:fail("Should not be allowed");
-        {error, no_valid_connection} ->
-            ok
-    end.
+    ?assertMatch({error, no_valid_connection}, automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, undefined })).
 
 disallow_to_listen_on_shared_resource_different_subkey() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-7-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-7-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-7-group">>,
     ResourceName = <<"channels">>,
     NonSharedValue = <<"non-shared-val-id">>,
@@ -509,24 +710,7 @@ disallow_to_listen_on_shared_resource_different_subkey() ->
                                                       })),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
-
-    Orig = self(),
-    Bridge = spawn(fun() ->
-                           ok = ?ROUTER:connect_bridge(BridgeId),
-                           Orig ! ready,
-                           receive
-                               { automate_service_port_engine_router
-                               , _ %% From
-                               , { data, MessageId, RecvMessage }} ->
-                                   ?assertMatch(#{ <<"value">> := #{ <<"arguments">> := [SharedValue] } },
-                                                RecvMessage),
-                                   io:fwrite("Answering...~n", []),
-                                   ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
-                               _ ->
-                                   ct:fail(timeout)
-                           end
-                   end),
-    receive ready -> ok end,
+    Bridge = test_bridge(BridgeId),
 
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
                                                          , ResourceName
@@ -537,17 +721,11 @@ disallow_to_listen_on_shared_resource_different_subkey() ->
                                                                                              }
                                                                                           ] } }),
 
-    case automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, NonSharedValue }) of
-        ok ->
-            ct:fail("Should not be allowed");
-        {error, no_valid_connection} ->
-            ok
-    end.
+    ?assertMatch({error, no_valid_connection}, automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, NonSharedValue })).
 
 listening_on_shared_does_not_receive_different_subkeys() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-8-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-8-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-8-group">>,
     ResourceName = <<"channels">>,
     NonSharedValue = <<"non-shared-val-id">>,
@@ -571,24 +749,7 @@ listening_on_shared_does_not_receive_different_subkeys() ->
                                                       })),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
-
-    Orig = self(),
-    Bridge = spawn(fun() ->
-                           ok = ?ROUTER:connect_bridge(BridgeId),
-                           Orig ! ready,
-                           receive
-                               { automate_service_port_engine_router
-                               , _ %% From
-                               , { data, MessageId, RecvMessage }} ->
-                                   ?assertMatch(#{ <<"value">> := #{ <<"arguments">> := [SharedValue] } },
-                                                RecvMessage),
-                                   io:fwrite("Answering...~n", []),
-                                   ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
-                               _ ->
-                                   ct:fail(timeout)
-                           end
-                   end),
-    receive ready -> ok end,
+    Bridge = test_bridge(BridgeId),
 
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
                                                          , ResourceName
@@ -633,7 +794,6 @@ listening_on_shared_does_not_receive_different_subkeys() ->
 listening_on_shared_does_not_receive_null_subkeys() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-9-owner">>},
     ReaderUserId = <<?TEST_ID_PREFIX, "-test-9-reader">>,
-    ReaderUser = {user, ReaderUserId},
     GroupName = <<?TEST_ID_PREFIX, "-test-9-group">>,
     ResourceName = <<"channels">>,
     SharedValue = <<"shared-val-id">>,
@@ -656,24 +816,7 @@ listening_on_shared_does_not_receive_null_subkeys() ->
                                                       })),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
-
-    Orig = self(),
-    Bridge = spawn(fun() ->
-                           ok = ?ROUTER:connect_bridge(BridgeId),
-                           Orig ! ready,
-                           receive
-                               { automate_service_port_engine_router
-                               , _ %% From
-                               , { data, MessageId, RecvMessage }} ->
-                                   ?assertMatch(#{ <<"value">> := #{ <<"arguments">> := [SharedValue] } },
-                                                RecvMessage),
-                                   io:fwrite("Answering...~n", []),
-                                   ok = ?ROUTER:answer_message(MessageId, ReturnMessage);
-                               _ ->
-                                   ct:fail(timeout)
-                           end
-                   end),
-    receive ready -> ok end,
+    Bridge = test_bridge(BridgeId),
 
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
                                                          , ResourceName
@@ -767,3 +910,20 @@ check_test_block(Block) ->
 -undef(BlockType).
 -undef(BlockResultType).
 -undef(SaveTo).
+
+test_bridge(BridgeId) ->
+    Orig = self(),
+    BridgePid = spawn(fun() ->
+                           ok = ?ROUTER:connect_bridge(BridgeId),
+                           Orig ! ready,
+                           receive
+                               { automate_service_port_engine_router
+                               , _ %% From
+                               , { data, MessageId, RecvMessage }} ->
+                                   ok = ?ROUTER:answer_message(MessageId, #{ <<"result">> => RecvMessage });
+                               done ->
+                                   ok
+                           end
+                   end),
+    receive ready -> ok end,
+    BridgePid.

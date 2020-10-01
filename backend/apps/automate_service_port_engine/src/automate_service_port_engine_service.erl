@@ -28,7 +28,7 @@ start_link() ->
 
 -spec listen_service(owner_id(), {binary() | undefined, binary() | undefined}, [binary(), ...]) -> ok | {error, no_valid_connection}.
 listen_service(Owner, {Key, SubKey}, [ServicePortId]) ->
-    case get_connection(Owner, ServicePortId, {Key, SubKey}) of
+    case get_connection(Owner, ServicePortId, [{Key, SubKey}]) of
         {ok, ConnectionId} ->
             {ok, ConnectionOwner} = ?BACKEND:get_connection_owner(ConnectionId),
             {ok, ChannelId} = ?BACKEND:get_or_create_monitor_id(ConnectionOwner, ServicePortId),
@@ -51,13 +51,8 @@ call(FunctionId, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [S
                            ContextConnectionId;
                        _ ->
                            {ok, BlockInfo} = ?BACKEND:get_block_definition(ServicePortId, FunctionId),
-                           {Key, SubKey} = case get_block_resource(BlockInfo, Values) of
-                               {ok, {Resource, ResourceValue}} ->
-                                   {Resource, ResourceValue};
-                               {error, not_found} ->
-                                   {undefined, undefined}
-                           end,
-                           case get_connection(Owner, ServicePortId, {Key, SubKey}) of
+                           Resources = get_block_resource(BlockInfo, Values),
+                           case get_connection(Owner, ServicePortId, Resources) of
                                {ok, AvailableConnection} ->
                                    AvailableConnection
                                end
@@ -139,19 +134,23 @@ get_name_from_result(_) ->
 %%====================================================================
 %% Internal
 %%====================================================================
--spec get_connection(Owner :: owner_id(), ServicePortId :: binary(), { binary() | undefined, binary() | undefined })
+-spec get_connection(Owner :: owner_id(), ServicePortId :: binary(), [{ binary(), binary() | undefined }])
                     -> {ok, binary()} | {error, not_found}.
-get_connection(Owner, ServicePortId, {Resource, ResourceValue}) ->
+get_connection(Owner, ServicePortId, Resources) ->
     case automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId) of
         {ok, DefaultConnectionId} ->
             {ok, DefaultConnectionId};
         {error, not_found} ->
             {ok, Shares} = automate_service_port_engine:get_resources_shared_with_on_bridge(Owner, ServicePortId),
-            MatchingConnections = lists:filter(fun(#bridge_resource_share_entry{ connection_id=SharedConnectionId
-                                                                               , resource=SharedResource
+            %% TODO: For usign blocks that require multiple resources it'd be necessary to consider
+            %% all resources shared for each connection. Instead of each share entry separately.
+            MatchingConnections = lists:filter(fun(#bridge_resource_share_entry{ resource=SharedResource
                                                                                , value=SharedResourceValue
                                                                                }) ->
-                                                       (Resource == SharedResource) and (ResourceValue == SharedResourceValue)
+                                                       lists:all(fun({ Resource, ResourceValue }) ->
+                                                                         (Resource == SharedResource)
+                                                                             and (ResourceValue == SharedResourceValue)
+                                                                 end, Resources)
                                                end, Shares),
             case MatchingConnections of
                 [#bridge_resource_share_entry{ connection_id=SharedConnectionId } | _] ->
@@ -162,13 +161,13 @@ get_connection(Owner, ServicePortId, {Resource, ResourceValue}) ->
     end.
 
 -spec get_block_resource(BlockInfo :: #service_port_block{}, Values :: [ any() ])
-                        -> {ok, { binary(), binary()}} | {error, not_found}.
-get_block_resource(BlockInfo=#service_port_block{ arguments=Args }, Values) ->
-    get_block_resource_aux(Args, Values).
+                        -> [{ binary(), binary()}].
+get_block_resource(#service_port_block{ arguments=Args }, Values) ->
+    get_block_resource_aux(Args, Values, []).
 
-get_block_resource_aux([ #service_port_block_collection_argument{ name=Name } | _ ], [ Value | _ ]) ->
-    {ok, {Name, Value}};
-get_block_resource_aux([], []) ->
-    {error, not_found};
-get_block_resource_aux([ _ | TArg ], [ _ | TValue ]) ->
-    get_block_resource_aux(TArg, TValue).
+get_block_resource_aux([], [], Acc) ->
+    Acc;
+get_block_resource_aux([ #service_port_block_collection_argument{ name=Name } | TArg ], [ Value | TValue ], Acc) ->
+    get_block_resource_aux(TArg, TValue, [{Name, Value} | Acc]);
+get_block_resource_aux([ _ | TArg ], [ _ | TValue ], Acc) ->
+    get_block_resource_aux(TArg, TValue, Acc).
