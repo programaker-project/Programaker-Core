@@ -6,6 +6,7 @@
         , create_user_program/1
         , wait_for_program_alive/3
         , wait_for_check_ok/3
+        , monitor_program_trigger/1
         ]).
 
 -include("../src/instructions.hrl").
@@ -84,3 +85,12 @@ wait_for_check_ok(Check, TestTimes, SleepTime) ->
             timer:sleep(SleepTime),
             wait_for_check_ok(Check, TestTimes - 1, SleepTime)
     end.
+
+monitor_program_trigger(ChannelId) ->
+    #{ ?ARGUMENTS =>
+           #{ ?MONITOR_ID => ChannelId
+            , ?MONITOR_EXPECTED_VALUE => #{ ?TYPE => ?VARIABLE_CONSTANT
+                                          , ?VALUE => start
+                                          }
+            }
+     , ?TYPE => ?WAIT_FOR_MONITOR}.

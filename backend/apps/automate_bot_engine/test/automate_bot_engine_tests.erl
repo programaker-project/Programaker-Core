@@ -16,7 +16,6 @@
 
 -define(APPLICATION, automate_bot_engine).
 -define(TEST_NODES, [node()]).
--define(TEST_MONITOR, <<"__test_monitor__">>).
 -define(TEST_SERVICE, automate_service_registry_test_service:get_uuid()).
 -define(TEST_SERVICE_ACTION, test_action).
 
@@ -75,9 +74,10 @@ single_line_program_initialization() ->
 
 %% Signals
 wait_for_channel_signal() ->
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
     Program = #program_state{ triggers=[#program_trigger{ condition=#{ ?TYPE => ?WAIT_FOR_MONITOR
                                                                      , ?ARGUMENTS =>
-                                                                           #{ ?MONITOR_ID => ?TEST_MONITOR
+                                                                           #{ ?MONITOR_ID => ChannelId
                                                                             , ?MONITOR_EXPECTED_VALUE => ?MONITOR_ANY_VALUE
                                                                             }
                                                                      }
@@ -97,9 +97,10 @@ constant_argument_resolution() ->
 
 %% Threads
 trigger_thread_with_channel_signal() ->
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
     Program = #program_state{ triggers=[#program_trigger{
                                            condition=#{ ?TYPE => ?WAIT_FOR_MONITOR
-                                                      , ?ARGUMENTS => #{ ?MONITOR_ID => ?TEST_MONITOR
+                                                      , ?ARGUMENTS => #{ ?MONITOR_ID => ChannelId
                                                                        , ?MONITOR_EXPECTED_VALUE =>
                                                                              #{ ?TYPE => ?VARIABLE_CONSTANT
                                                                               , ?VALUE => example
@@ -111,13 +112,14 @@ trigger_thread_with_channel_signal() ->
 
     {ok, [Thread]} = automate_bot_engine_triggers:get_triggered_threads(Program,
                                                                         { ?TRIGGERED_BY_MONITOR
-                                                                        , { ?TEST_MONITOR,
+                                                                        , { ChannelId,
                                                                             #{ ?CHANNEL_MESSAGE_CONTENT => example } }}),
     ?assertMatch(#program_thread{ position=[1], program=[#{ ?TYPE := example }] }, Thread).
 
 run_thread_single_tick() ->
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
     WaitForMonitorInstruction = #{ ?TYPE => ?WAIT_FOR_MONITOR
-                                 , ?ARGUMENTS => #{ ?MONITOR_ID => ?TEST_MONITOR
+                                 , ?ARGUMENTS => #{ ?MONITOR_ID => ChannelId
                                                   , ?MONITOR_EXPECTED_VALUE => #{ ?TYPE => ?VARIABLE_CONSTANT
                                                                                 , ?VALUE => example
                                                                                 }
@@ -136,7 +138,7 @@ run_thread_single_tick() ->
                                                }
                               },
     TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
-                           , { ?TEST_MONITOR, #{ ?CHANNEL_MESSAGE_CONTENT => example }}},
+                           , { ChannelId, #{ ?CHANNEL_MESSAGE_CONTENT => example }}},
 
     ProgramId = create_anonymous_program(),
 

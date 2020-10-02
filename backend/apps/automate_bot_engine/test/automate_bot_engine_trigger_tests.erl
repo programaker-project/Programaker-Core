@@ -43,7 +43,7 @@ setup() ->
     %% Use a custom node name to avoid overwriting the actual databases
     net_kernel:start([testing, shortnames]),
 
-    {ok, _Pid} = application:ensure_all_started(?APPLICATION),
+    {ok, _} = application:ensure_all_started(?APPLICATION),
 
     {NodeName}.
 
@@ -57,6 +57,7 @@ stop({_NodeName}) ->
 
 tests(_SetupResult) ->
     [ { "[Bot engine][Trigger tests] Test save-to", fun save_to_test/0 }
+    , { "[Bot engine][Trigger tests] Trigger with time", fun trigger_with_time/0 }
     ].
 
 
@@ -139,4 +140,55 @@ save_to_test() ->
     MsgsWaited = [ M || #user_generated_log_entry{event_message=M} <- LogsWaited ],
     io:fwrite("Logs after signal: ~p~n", [MsgsWaited]),
     ?assertMatch([ <<"sample content">> ], MsgsWaited),
+    ok.
+
+trigger_with_time() ->
+    Prefix = erlang:atom_to_list(?MODULE),
+    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-2-owner"])},
+    {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
+
+    {{_Year, _Month, _Day}, {Hour, Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    %% Wait for the next second
+    Value = binary:list_to_bin(lists:flatten(io_lib:format("~p:~p:~p", [Hour, Min, Sec + 2]))),
+    io:fwrite("Waiting for: ~p (~s)~n", [Value, Value]),
+    Blocks = [ #{ <<"type">> => <<"wait_for_monitor">>
+                , ?ARGUMENTS => #{ ?MONITOR_EXPECTED_VALUE => #{ ?TYPE => ?VARIABLE_CONSTANT
+                                                               , ?VALUE => Value
+                                                               }
+                                 , ?MONITOR_ID => #{ ?FROM_SERVICE => automate_services_time:get_uuid() }
+                                 }
+                }
+             , #{ <<"type">>  => ?COMMAND_LOG_VALUE
+                , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_CONSTANT
+                                   , ?VALUE => <<"after">>
+                                   }
+                                ]
+                }
+             ],
+
+    ?assertMatch({ok, ProgramId},
+                 automate_storage:update_program_by_id(
+                   ProgramId, #stored_program_content{ type= <<"scratch_program">>
+                                                     , parsed=#{ <<"blocks">> => [ Blocks ]
+                                                               , <<"variables">> => []
+                                                               }
+                                                     , orig=undefined
+                                                     })),
+
+    ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
+
+    io:fwrite("PID: ~p~n", [ProgramId]),
+
+    %% Check that program is alive
+    ?assertMatch(ok, ?UTILS:wait_for_program_alive(ProgramId, 10, 100)),
+
+    %% Wait >2 seconds, should be enough for the time signal to arrive
+    timer:sleep(4000),
+    {ok, LogsAfter} = automate_bot_engine:get_user_generated_logs(ProgramId),
+    MsgsAfter = [ M || #user_generated_log_entry{event_message=M} <- LogsAfter ],
+
+    {_, {AfterHour, AfterMin, AfterSec}} = calendar:now_to_datetime(erlang:timestamp()),
+
+    io:fwrite("Logs after ~p→~p: ~p~n", [{Hour, Min, Sec}, {AfterHour, AfterMin, AfterSec}, MsgsAfter]),
+    ?assertMatch([ <<"after">>], MsgsAfter),
     ok.

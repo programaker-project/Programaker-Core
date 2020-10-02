@@ -72,13 +72,14 @@ start_thread_and_stop_threads_continues() ->
 
     %% Program creation
     {Username, ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
 
     %% Launch program
     ?assertMatch({ok, ProgramId},
                  automate_storage:update_program(
                    Username, ProgramName,
                    #stored_program_content{ type=?JUST_WAIT_PROGRAM_TYPE
-                                          , parsed=#{ <<"blocks">> => [[ ?JUST_WAIT_PROGRAM_TRIGGER
+                                          , parsed=#{ <<"blocks">> => [[ ?UTILS:monitor_program_trigger(ChannelId)
                                                                          | ?JUST_WAIT_PROGRAM_INSTRUCTIONS ]]
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
@@ -94,7 +95,7 @@ start_thread_and_stop_threads_continues() ->
     ?assert(is_process_alive(ProgramPid)),
 
     %% Trigger sent, thread is spawned
-    ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
+    ProgramPid ! {channel_engine, ChannelId, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
     ok = ?UTILS:wait_for_check_ok(
            fun() ->
                    case automate_storage:get_threads_from_program(ProgramId) of
@@ -142,18 +143,19 @@ start_program_and_stop_threads_nothing() ->
     %%                  ↓           ↓           ↑         ↓
     %% Program          *...........+-----------+.........YES
 
+    {Username, ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
+
     %% Program creation
     TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
-                           , { ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }}},
-
-    {Username, ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+                           , { ChannelId, #{ ?CHANNEL_MESSAGE_CONTENT => start }}},
 
     %% Launch program
     ?assertMatch({ok, ProgramId},
                  automate_storage:update_program(
                    Username, ProgramName,
                    #stored_program_content{ type=?JUST_WAIT_PROGRAM_TYPE
-                                          , parsed=#{ <<"blocks">> => [[ ?JUST_WAIT_PROGRAM_TRIGGER
+                                          , parsed=#{ <<"blocks">> => [[ ?UTILS:monitor_program_trigger(ChannelId)
                                                                          | ?JUST_WAIT_PROGRAM_INSTRUCTIONS ]]
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
