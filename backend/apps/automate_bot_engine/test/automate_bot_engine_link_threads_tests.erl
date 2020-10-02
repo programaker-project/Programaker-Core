@@ -43,7 +43,7 @@ setup() ->
 %% @doc App infrastructure teardown.
 %% @end
 stop({_NodeName}) ->
-    application:stop(?APPLICATION),
+    %% application:stop(?APPLICATION),
 
     ok.
 
