@@ -8,7 +8,7 @@
                         <mat-icon class="action-icon">add</mat-icon>
                     </button>
                 </div>
-                <div *ngIf="(connections !== null) && (connections.length === 0) && (sharedResources !== null) && (sharedResources.length === 0)">
+                <div *ngIf="(!!connections) && (connections.length === 0) && (!!sharedResources) && (sharedResources.length === 0)">
                     <div *ngIf="canWriteToGroup" class="integrated-call-to-action call-to-left">
                         <mat-icon class="action-icon">arrow_back</mat-icon>
                         To start, connect a service.

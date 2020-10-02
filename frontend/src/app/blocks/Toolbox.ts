@@ -307,6 +307,10 @@ export class Toolbox {
             init: function () {
 
                 let currentBridgeSelected = null;
+                let connectionDropDown = bridge_dropdown;
+                if (connectionDropDown.length == 0) {
+                    connectionDropDown = [[ 'No bridges found', '__not_found_error__' ]];
+                }
 
                 this.jsonInit({
                     'id': 'operator_select_connection',
@@ -315,16 +319,19 @@ export class Toolbox {
                         {
                             'type': 'field_dropdown',
                             'name': 'BRIDGE1',
-                            'options': bridge_dropdown,
-
-
+                            'options': connectionDropDown,
                         },
                         {
                             'type': 'field_dropdown',
                             'name': 'CONNECTION2',
                             'options': () => {
                                 if (!currentBridgeSelected) {
-                                    return full_connection_dropdown;
+                                    if (full_connection_dropdown.length > 0) {
+                                        return full_connection_dropdown;
+                                    }
+                                    else {
+                                        return [ [ "Bridge not found error", '__bridge_not_found_error' ] ];
+                                    }
                                 }
                                 try {
                                     const options = [];
