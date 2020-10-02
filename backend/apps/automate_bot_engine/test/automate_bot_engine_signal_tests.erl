@@ -41,16 +41,14 @@ setup() ->
 
     {ok, _} = application:ensure_all_started(?APPLICATION),
     {ok, _} = application:ensure_all_started(automate_service_port_engine),
-    {ok, _} = application:ensure_all_started(automate_services_time),
 
     {NodeName}.
 
 %% @doc App infrastructure teardown.
 %% @end
 stop({_NodeName}) ->
-    ok = application:stop(automate_services_time),
-    ok = application:stop(automate_service_port_engine),
-    ok = application:stop(?APPLICATION),
+    %% ok = application:stop(automate_service_port_engine),
+    %% ok = application:stop(?APPLICATION),
 
     ok.
 

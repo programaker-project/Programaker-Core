@@ -2,7 +2,7 @@
 %%% Automate bot engine tests.
 %%% @end
 
--module(automate_bot_engine_program_disabled).
+-module(automate_bot_engine_program_disabled_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 %% Data structures
@@ -19,6 +19,7 @@
 -define(TEST_MONITOR, <<"__test_monitor__">>).
 -define(TEST_SERVICE, automate_service_registry_test_service:get_uuid()).
 -define(TEST_SERVICE_ACTION, test_action).
+-define(UTILS, automate_bot_engine_test_utils).
 
 %%====================================================================
 %% Test API
@@ -46,7 +47,7 @@ setup() ->
 %% @doc App infrastructure teardown.
 %% @end
 stop({_NodeName}) ->
-    application:stop(?APPLICATION),
+    %% application:stop(?APPLICATION),
 
     ok.
 
@@ -77,14 +78,15 @@ start_program_launch_thread_and_disable_program_it_continues() ->
 
     %% Program creation
     {Username, ProgramName, ProgramId} = create_anonymous_program(),
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
 
     %% Launch program
     ?assertMatch({ok, ProgramId},
                  automate_storage:update_program(
                    Username, ProgramName,
                    #stored_program_content{ type=?JUST_WAIT_PROGRAM_TYPE
-                                          , parsed=#{ <<"blocks">> => [[ ?JUST_WAIT_PROGRAM_TRIGGER
-                                                                         | ?JUST_WAIT_PROGRAM_INSTRUCTIONS ]]
+                                          , parsed=#{ <<"blocks">> => [[ ?UTILS:monitor_program_trigger(ChannelId)
+                                                                       | ?JUST_WAIT_PROGRAM_INSTRUCTIONS ]]
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
                                           , orig=?JUST_WAIT_PROGRAM_ORIG
@@ -99,7 +101,7 @@ start_program_launch_thread_and_disable_program_it_continues() ->
     ?assert(is_process_alive(ProgramPid)),
 
     %% Trigger sent, thread is spawned
-    ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
+    ProgramPid ! {channel_engine, ChannelId, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
     ok = wait_for_check_ok(fun() ->
                                    case automate_storage:get_threads_from_program(ProgramId) of
                                        {ok, [ThreadId]} ->
@@ -147,19 +149,20 @@ start_program_and_disable_it_no_commands() ->
     %%                  ↓           ↓           ↑         ↓
     %% Program          *...........+-----------+.........YES
 
+    {Username, ProgramName, ProgramId} = create_anonymous_program(),
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
+
     %% Program creation
     TriggerMonitorSignal = { ?TRIGGERED_BY_MONITOR
-                           , { ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }}},
-
-    {Username, ProgramName, ProgramId} = create_anonymous_program(),
+                           , { ChannelId, #{ ?CHANNEL_MESSAGE_CONTENT => start }}},
 
     %% Launch program
     ?assertMatch({ok, ProgramId},
                  automate_storage:update_program(
                    Username, ProgramName,
                    #stored_program_content{ type=?JUST_WAIT_PROGRAM_TYPE
-                                          , parsed=#{ <<"blocks">> => [[ ?JUST_WAIT_PROGRAM_TRIGGER
-                                                                         | ?JUST_WAIT_PROGRAM_INSTRUCTIONS ]]
+                                          , parsed=#{ <<"blocks">> => [[ ?UTILS:monitor_program_trigger(ChannelId)
+                                                                       | ?JUST_WAIT_PROGRAM_INSTRUCTIONS ]]
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
                                           , orig=?JUST_WAIT_PROGRAM_ORIG
@@ -181,7 +184,7 @@ start_program_and_disable_it_no_commands() ->
     ?assert(is_process_alive(ProgramPid2)),
 
     %% Trigger sent, thread is spawned
-    ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
+    ProgramPid ! {channel_engine, ChannelId, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
     timer:sleep(1000),
 
     {ok, Threads} = automate_storage:get_threads_from_program(ProgramId),
@@ -192,14 +195,15 @@ start_program_and_disable_it_no_commands() ->
 start_program_disable_enable_and_launch_command()->
     %% Program creation
     {Username, ProgramName, ProgramId} = create_anonymous_program(),
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
 
     %% Launch program
     ?assertMatch({ok, ProgramId},
                  automate_storage:update_program(
                    Username, ProgramName,
                    #stored_program_content{ type=?JUST_WAIT_PROGRAM_TYPE
-                                          , parsed=#{ <<"blocks">> => [[ ?JUST_WAIT_PROGRAM_TRIGGER
-                                                                         | ?JUST_WAIT_PROGRAM_INSTRUCTIONS ]]
+                                          , parsed=#{ <<"blocks">> => [[ ?UTILS:monitor_program_trigger(ChannelId)
+                                                                       | ?JUST_WAIT_PROGRAM_INSTRUCTIONS ]]
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
                                           , orig=?JUST_WAIT_PROGRAM_ORIG
@@ -223,7 +227,7 @@ start_program_disable_enable_and_launch_command()->
     ok = automate_bot_engine:change_program_status(ProgramId, true),
 
     %% Trigger sent, thread is spawned
-    ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
+    ProgramPid ! {channel_engine, ChannelId, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
     ok = wait_for_check_ok(fun() ->
                                    case automate_storage:get_threads_from_program(ProgramId) of
                                        {ok, [ThreadId]} ->

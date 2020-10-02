@@ -11,13 +11,11 @@
 -include("../src/instructions.hrl").
 -include("../../automate_channel_engine/src/records.hrl").
 
-%% Test data
--include("just_wait_program.hrl").
-
 -define(APPLICATION, automate_bot_engine).
 -define(TEST_NODES, [node()]).
 -define(TEST_SERVICE, automate_service_registry_test_service:get_uuid()).
 -define(TEST_SERVICE_ACTION, test_action).
+-define(UTILS, automate_bot_engine_test_utils).
 
 %%====================================================================
 %% Test API
@@ -45,7 +43,7 @@ setup() ->
 %% @doc App infrastructure teardown.
 %% @end
 stop({_NodeName}) ->
-    application:stop(?APPLICATION),
+    %% application:stop(?APPLICATION),
 
     ok.
 
@@ -72,20 +70,21 @@ thread_link_utc_seconds() ->
 
 thread_link(OrigCall, ResultAction, ServiceId) ->
     %% Program creation
+    {ok, ChannelId} = automate_channel_engine:create_channel(),
     {Username, ProgramName, ProgramId} = create_anonymous_program(),
 
     %% Launch program
-    Blocks = [[ ?JUST_WAIT_PROGRAM_TRIGGER
-                | wait_and_print(OrigCall)]],
+    Blocks = [[ ?UTILS:monitor_program_trigger(ChannelId)
+              | wait_and_print(OrigCall)]],
 
     ?assertMatch({ok, ProgramId},
                  automate_storage:update_program(
                    Username, ProgramName,
-                   #stored_program_content{ type=?JUST_WAIT_PROGRAM_TYPE
+                   #stored_program_content{ type= <<"scratch_program">>
                                           , parsed=#{ <<"blocks">> => Blocks
-                                                    , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
+                                                    , <<"variables">> => []
                                                     }
-                                          , orig=?JUST_WAIT_PROGRAM_ORIG
+                                          , orig= <<"">>
                                           })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
@@ -97,7 +96,7 @@ thread_link(OrigCall, ResultAction, ServiceId) ->
     ?assert(is_process_alive(ProgramPid)),
 
     %% Trigger sent, thread is spawned
-    ProgramPid ! {channel_engine, ?JUST_WAIT_MONITOR_ID, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
+    ProgramPid ! {channel_engine, ChannelId, #{ ?CHANNEL_MESSAGE_CONTENT => start }},
     ok = wait_for_check_ok(
            fun() ->
                    case automate_storage:get_threads_from_program(ProgramId) of

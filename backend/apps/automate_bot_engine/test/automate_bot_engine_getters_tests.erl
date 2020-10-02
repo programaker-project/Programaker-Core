@@ -42,10 +42,10 @@ session_manager_test_() ->
 setup() ->
     NodeName = node(),
 
-    %% %% Use a custom node name to avoid overwriting the actual databases
-    %% net_kernel:start([testing, shortnames]),
+    %% Use a custom node name to avoid overwriting the actual databases
+    net_kernel:start([testing, shortnames]),
 
-    %% {ok, Pid} = application:ensure_all_started(?APPLICATION),
+    {ok, Pid} = application:ensure_all_started(?APPLICATION),
 
     {NodeName}.
 
