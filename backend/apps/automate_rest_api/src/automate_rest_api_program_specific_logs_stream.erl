@@ -72,6 +72,8 @@ websocket_handle({ping, _}, State) ->
     {ok, State};
 websocket_handle(pong, State) ->
     {ok, State};
+websocket_handle({pong, _}, State) ->
+    {ok, State};
 websocket_handle(Message, State) ->
     automate_logging:log_api(warning, ?MODULE, {unexpected_message, Message}),
     {ok, State}.

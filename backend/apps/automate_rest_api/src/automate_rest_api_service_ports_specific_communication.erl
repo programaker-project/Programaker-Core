@@ -28,22 +28,11 @@ websocket_init(State=#state{ service_port_id=ServicePortId
     automate_service_port_engine:register_service_port(ServicePortId),
     {ok, State}.
 
-websocket_handle({_, Msg}, State=#state{ service_port_id=ServicePortId
-                                          , owner=Owner
-                                          }) ->
-    try automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg) of
-        _ ->
-            {ok, State}
-    catch ErrorNs:Error:StackTrace ->
-            automate_logging:log_api(error, ?MODULE, binary:list_to_bin(
-                                                       lists:flatten(io_lib:format("~p:~p~n~p", [ErrorNs, Error, StackTrace])))),
-            { reply
-            , { close
-              , binary:list_to_bin(
-                 lists:flatten(io_lib:format("~p~p", [ErrorNs, Error])))}
-            , State
-            }
-    end;
+websocket_handle({text, Msg}, State) ->
+    handle_bridge_message(Msg, State);
+
+websocket_handle({binary, Msg}, State) ->
+    handle_bridge_message(Msg, State);
 
 websocket_handle(_Message, State) ->
     {ok, State}.
@@ -127,4 +116,21 @@ add_to_user_channels(Owner, ChannelData, State=#state{user_channels=UserChannels
         _ ->
             NewUserData = create_user_data(ChannelData),
             { NewUserData, State#state{ user_channels=UserChannels#{ Owner => NewUserData } } }
+    end.
+
+handle_bridge_message(Msg, State=#state{ service_port_id=ServicePortId
+                                       , owner=Owner
+                                       }) ->
+    try automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg) of
+        _ ->
+            {ok, State}
+    catch ErrorNs:Error:StackTrace ->
+            automate_logging:log_api(error, ?MODULE, binary:list_to_bin(
+                                                       lists:flatten(io_lib:format("~p:~p~n~p", [ErrorNs, Error, StackTrace])))),
+            { reply
+            , { close
+              , binary:list_to_bin(
+                  lists:flatten(io_lib:format("~p~p", [ErrorNs, Error])))}
+            , State
+            }
     end.

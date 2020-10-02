@@ -98,18 +98,12 @@ websocket_init(State=#state{error=Error}) ->
     }.
 
 
-websocket_handle(ping, State) ->
-    {ok, State};
-websocket_handle({ping, _}, State) ->
-    {ok, State};
-websocket_handle(pong, State) ->
-    {ok, State};
-websocket_handle(_, State=#state{can_edit=false}) ->
+websocket_handle({Type, _}, State=#state{can_edit=false}) when (Type == text) orelse (Type == binary) ->
     {reply
     , { close, <<"Not authorized to send events">> }
     , State
     };
-websocket_handle({_Type, Message}, State=#state{program_id=ProgramId, channel_id=ChannelId}) ->
+websocket_handle({Type, Message}, State=#state{program_id=ProgramId, channel_id=ChannelId}) when (Type == text) orelse (Type == binary) ->
     Decoded = jiffy:decode(Message, [return_maps]),
     case Decoded of
         #{ <<"type">> := <<"editor_event">> } ->
@@ -123,6 +117,8 @@ websocket_handle({_Type, Message}, State=#state{program_id=ProgramId, channel_id
         _ ->
             ok
     end,
+    {ok, State};
+websocket_handle(_, State) ->
     {ok, State}.
 
 websocket_info({ automate_channel_engine, add_listener, {Pid, _Key, _SubKey}}, State) ->
