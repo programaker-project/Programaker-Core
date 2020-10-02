@@ -356,8 +356,12 @@ is_module_connectable_bridge(Owner, {automate_service_port_engine_service, [ Bri
                                 #service_port_configuration{ allow_multiple_connections=true } ->
                                     true;
                                 #service_port_configuration{ allow_multiple_connections=false } ->
-                                    {ok, Connected} = ?BACKEND:is_user_connected_to_bridge(Owner, BridgeId),
-                                    not Connected
+                                    case ?BACKEND:is_user_connected_to_bridge(Owner, BridgeId) of
+                                        {ok, true, _} ->
+                                            false;
+                                        {ok, false} ->
+                                            true
+                                    end
                             end,
             {IsConnectable, {BridgeInfo, BridgeConfiguration}}
     end;
