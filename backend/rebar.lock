@@ -24,7 +24,7 @@
   0},
  {<<"prometheus">>,
   {git,"https://github.com/deadtrickster/prometheus.erl/",
-       {ref,"7e98c67ca95fa4f1fd1bdc81f75df2cabdbc36fa"}},
+       {ref,"f8619006f945eeaeb1725206209ec89a1409575c"}},
   0},
  {<<"ranch">>,
   {git,"https://github.com/ninenines/ranch",
