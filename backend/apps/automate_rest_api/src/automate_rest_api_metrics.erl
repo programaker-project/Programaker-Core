@@ -11,7 +11,6 @@
 -export([ to_text/2
         ]).
 
--include("./records.hrl").
 -define(APPLICATION, automate_rest_api).
 -define(METRICS_BEARER_TOKEN_SETTING, metrics_secret).
 
@@ -47,7 +46,14 @@ content_types_provided(Req, State) ->
              -> {binary(),cowboy_req:req(), {}}.
 
 to_text(Req, State) ->
-    Output = automate_stats:format(prometheus),
-    Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
-    Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"text/plain">>, Res1),
-    { Output, Res2, State }.
+    try automate_stats:format(prometheus) of
+        Output ->
+            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
+            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"text/plain">>, Res1),
+            { Output, Res2, State }
+    catch ErrorNS:Error:StackTrace ->
+            Code = 500,
+            automate_logging:log_platform(error, ErrorNS, Error, StackTrace),
+            Res = cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, <<"Error getting stats, check logs for more info">>, Req),
+            {stop, Res, State}
+    end.

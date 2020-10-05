@@ -8,6 +8,12 @@
                            , logged_last_month :: pos_integer()
                            }).
 
+-record(group_stat_metrics, { count :: pos_integer()
+                            , created_last_day :: pos_integer()
+                            , created_last_week :: pos_integer()
+                            , created_last_month :: pos_integer()
+                            }).
+
 -record(bridge_stat_metrics, { public_count :: pos_integer()
                              , private_count :: pos_integer()
                              , connections :: pos_integer()
@@ -21,5 +27,6 @@
                           , monitor_count :: #{ active => number(), workers => number()}
                           , service_count :: #{ public => number(), all => number()}
                           , user_stats :: #user_stat_metrics{}
+                          , group_stats :: #group_stat_metrics{}
                           , bridge_stats :: #bridge_stat_metrics{}
                           }).

@@ -581,6 +581,21 @@ get_versioning(Nodes) ->
                                                             automate_configuration:get_table_wait_time())
                         end
                 }
+
+                %% Add groups creation time
+              , #database_version_transformation
+                { id=18
+                , apply=fun() ->
+
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_GROUPS_TABLE,
+                                                 fun( {user_group_entry, Id, Name, CanonicalName, Public} ) ->
+                                                         {user_group_entry, Id, Name, CanonicalName, Public, 0}
+                                                 end,
+                                                 [ id, name, canonical_name, public, creation_time ],
+                                                 user_group_entry)
+                        end
+                }
               ]
         }.
 

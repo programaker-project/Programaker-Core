@@ -88,6 +88,11 @@ serialize_stats(#internal_metrics{ services_active=ServiceCounts
                                                                 , logged_last_week=LoggedUsersLastWeek
                                                                 , logged_last_month=LoggedUsersLastMonth
                                                                 }
+                                 , group_stats=#group_stat_metrics{ count=GroupCount
+                                                                  , created_last_day=CreatedGroupsLastDay
+                                                                  , created_last_week=CreatedGroupsLastWeek
+                                                                  , created_last_month=CreatedGroupsLastMonth
+                                                                  }
                                  , bridge_stats=#bridge_stat_metrics{ public_count=NumBridgesPublic
                                                                     , private_count=NumBridgesPrivate
                                                                     , connections=NumConnections
@@ -109,6 +114,11 @@ serialize_stats(#internal_metrics{ services_active=ServiceCounts
                  , logged_last_week => LoggedUsersLastWeek
                  , logged_last_month => LoggedUsersLastMonth
                  }
+     , groups => #{ count => GroupCount
+                  , created_last_day => CreatedGroupsLastDay
+                  , created_last_week => CreatedGroupsLastWeek
+                  , created_last_month => CreatedGroupsLastMonth
+                  }
      , bridges => #{ public_count => NumBridgesPublic
                    , private_count => NumBridgesPrivate
                    , connections => NumConnections

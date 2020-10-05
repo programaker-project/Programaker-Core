@@ -1334,6 +1334,7 @@ list_custom_signals({OwnerType, OwnerId}) ->
 create_group(Name, AdminUserId, Public) ->
     Canonicalized = automate_storage_utils:canonicalize(Name),
     Id = generate_id(),
+    CurrentTime = erlang:system_time(second),
     Transaction = fun() ->
                           case mnesia:index_read(?USER_GROUPS_TABLE, Name, #user_group_entry.canonical_name) of
                               [] ->
@@ -1341,6 +1342,7 @@ create_group(Name, AdminUserId, Public) ->
                                                            , name=Name
                                                            , canonical_name=Canonicalized
                                                            , public=Public
+                                                           , creation_time=CurrentTime
                                                            },
                                   ok = mnesia:write(?USER_GROUPS_TABLE, Entry, write),
                                   ok = mnesia:write(?USER_GROUP_PERMISSIONS_TABLE, #user_group_permissions_entry{ group_id=Id
