@@ -3,6 +3,7 @@
 -module(automate_storage_stats).
 
 -export([ get_user_metrics/0
+        , get_group_metrics/0
         , get_program_metrics/0
         ]).
 
@@ -88,6 +89,42 @@ get_user_metrics() ->
                           { ok
                           , UserCount, RegisteredUsersLastDay, RegisteredUsersLastWeek, RegisteredUsersLastMonth
                           , LoggedUsersLastHour, LoggedUsersLastDay, LoggedUsersLastWeek, LoggedUsersLastMonth
+                          }
+                  end,
+    mnesia:async_dirty(Transaction).
+
+get_group_metrics() ->
+    %% This is done in a dirty way for the sake of performance.
+    %% It's no supposed to have great consistency, but good speed.
+    CurrentTime = erlang:system_time(second),
+
+    %% Group queries
+    GroupMatchHead = #user_group_entry{ id='$1'
+                                      , name='_'
+                                      , canonical_name='_'
+                                      , public='_'
+                                      , creation_time='$2'
+                                      },
+    GroupResultColumn = '$1',
+
+    CreatedGroupsLastDayMatcher = [{ GroupMatchHead
+                                   , [{ '>', '$2', CurrentTime - ?SECONDS_IN_DAY }]
+                                   , [GroupResultColumn]}],
+    CreatedGroupsLastWeekMatcher = [{ GroupMatchHead
+                                    , [{ '>', '$2', CurrentTime - ?SECONDS_IN_7DAY_WEEK }]
+                                    , [GroupResultColumn]}],
+    CreatedGroupsLastMonthMatcher = [{ GroupMatchHead
+                                     , [{ '>', '$2', CurrentTime - ?SECONDS_IN_28DAY_MONTH }]
+                                     , [GroupResultColumn]}],
+
+    Transaction = fun () ->
+                          GroupCount = mnesia:table_info(?USER_GROUPS_TABLE, size),
+                          CreatedGroupsLastDay = select_length(?USER_GROUPS_TABLE, CreatedGroupsLastDayMatcher),
+                          CreatedGroupsLastWeek = select_length(?USER_GROUPS_TABLE, CreatedGroupsLastWeekMatcher),
+                          CreatedGroupsLastMonth = select_length(?USER_GROUPS_TABLE, CreatedGroupsLastMonthMatcher),
+
+                          { ok
+                          , GroupCount, CreatedGroupsLastDay, CreatedGroupsLastWeek, CreatedGroupsLastMonth
                           }
                   end,
     mnesia:async_dirty(Transaction).

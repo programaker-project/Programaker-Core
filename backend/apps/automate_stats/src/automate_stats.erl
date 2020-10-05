@@ -91,23 +91,23 @@ get_internal_metrics() ->
 
     %% Bots
     {BotCount, Err1} = try supervisor:count_children(automate_bot_engine_runner_sup)
-               of Bots ->
+                       of Bots ->
                                { maps:from_list(lists:filter(fun({K, _}) -> (K =:= active) or (K =:= workers) end, Bots))
                                , Errors}
-               catch BotErrNS:BotErr:BotStackTrace ->
-                       { #{ active => undefined, worker => undefined }
-                       , [{bot_engine_programs, {BotErrNS, BotErr, BotStackTrace}} | Errors]}
-               end,
+                       catch BotErrNS:BotErr:BotStackTrace ->
+                               { #{ active => undefined, worker => undefined }
+                               , [{bot_engine_programs, {BotErrNS, BotErr, BotStackTrace}} | Errors]}
+                       end,
 
     %% Threads
     { ThreadCount, Err2 } = try supervisor:count_children(automate_bot_engine_thread_runner_sup)
-                               of Threads ->
+                            of Threads ->
                                     { maps:from_list(lists:filter(fun({K, _}) -> (K =:= active) or (K =:= workers) end, Threads))
                                     , Err1}
-                               catch ThreadErrNS:ThreadErr:ThreadStackTrace ->
-                                       { #{ active => undefined, worker => undefined }
-                                       , [{bot_engine_threads, {ThreadErrNS, ThreadErr, ThreadStackTrace}} | Err1]}
-                               end,
+                            catch ThreadErrNS:ThreadErr:ThreadStackTrace ->
+                                    { #{ active => undefined, worker => undefined }
+                                    , [{bot_engine_threads, {ThreadErrNS, ThreadErr, ThreadStackTrace}} | Err1]}
+                            end,
 
     %% Monitors
     { MonitorCount, Err3 } = try supervisor:count_children(automate_monitor_engine_runner_sup)
@@ -138,6 +138,10 @@ get_internal_metrics() ->
     } = automate_storage_stats:get_user_metrics(),
 
     { ok
+    , GroupCount, CreatedGroupsLastDay, CreatedGroupsLastWeek, CreatedGroupsLastMonth
+    } = automate_storage_stats:get_group_metrics(),
+
+    { ok
     , NumBridgesPublic, NumBridgesPrivate
     , NumConnections, NumUniqueConnections
     , NumMessagesOnFlight
@@ -158,6 +162,11 @@ get_internal_metrics() ->
                                                       , logged_last_week=LoggedUsersLastWeek
                                                       , logged_last_month=LoggedUsersLastMonth
                                                       }
+                       , group_stats=#group_stat_metrics{ count=GroupCount
+                                                        , created_last_day=CreatedGroupsLastDay
+                                                        , created_last_week=CreatedGroupsLastWeek
+                                                        , created_last_month=CreatedGroupsLastMonth
+                                                        }
                        , bridge_stats=#bridge_stat_metrics{ public_count=NumBridgesPublic
                                                           , private_count=NumBridgesPrivate
                                                           , connections=NumConnections
@@ -178,27 +187,28 @@ update_internal_metrics() ->
                           , monitor_count=MonitorCount
                           , service_count=ServiceCount
                           , user_stats=UserStats
+                          , group_stats=GroupStats
                           , bridge_stats=BridgeStats
-           }, Errors} = get_internal_metrics(),
+                          }, Errors} = get_internal_metrics(),
     maps:map(fun(Service, Active) ->
                      set_metric(boolean, automate_service, Active, [Service])
              end, Services),
 
     maps:map(fun(Category, Count) ->
-                      set_metric(gauge, automate_bot_count, Count, [Category])
-              end, BotCount),
+                     set_metric(gauge, automate_bot_count, Count, [Category])
+             end, BotCount),
 
     maps:map(fun(Category, Count) ->
-                      set_metric(gauge, automate_program_thread_count, Count, [Category])
-              end, ThreadCount),
+                     set_metric(gauge, automate_program_thread_count, Count, [Category])
+             end, ThreadCount),
 
     maps:map(fun(Category, Count) ->
-                      set_metric(gauge, automate_monitor_count, Count, [Category])
-              end, MonitorCount),
+                     set_metric(gauge, automate_monitor_count, Count, [Category])
+             end, MonitorCount),
 
     maps:map(fun(Category, Count)  ->
-                      set_metric(gauge, automate_service_count, Count, [Category])
-              end, ServiceCount),
+                     set_metric(gauge, automate_service_count, Count, [Category])
+             end, ServiceCount),
 
     %% Users
     #user_stat_metrics{ count=UserCount
@@ -219,6 +229,17 @@ update_internal_metrics() ->
     set_metric(gauge, automate_logged_users_last_day, LoggedUsersLastDay, [registered]),
     set_metric(gauge, automate_logged_users_last_week, LoggedUsersLastWeek, [registered]),
     set_metric(gauge, automate_logged_users_last_month, LoggedUsersLastMonth, [registered]),
+
+    %% Groups
+    #group_stat_metrics{ count=GroupCount
+                       , created_last_day=CreatedGroupsLastDay
+                       , created_last_week=CreatedGroupsLastWeek
+                       , created_last_month=CreatedGroupsLastMonth
+                       } = GroupStats,
+    set_metric(gauge, automate_group_count, GroupCount, [created]),
+    set_metric(gauge, automate_created_groups_last_day, CreatedGroupsLastDay, [created]),
+    set_metric(gauge, automate_created_groups_last_week, CreatedGroupsLastWeek, [created]),
+    set_metric(gauge, automate_created_groups_last_month, CreatedGroupsLastMonth, [created]),
 
     %% Bridges
     #bridge_stat_metrics{ public_count=NumBridgesPublic
@@ -294,6 +315,12 @@ prepare() ->
     add_metric(gauge, automate_logged_users_last_day, <<"Users logged in the last 24 hours.">>, [state]),
     add_metric(gauge, automate_logged_users_last_week, <<"Users logged in the last 7 days.">>, [state]),
     add_metric(gauge, automate_logged_users_last_month, <<"Users logged in the last 28 days.">>, [state]),
+
+    add_metric(gauge, automate_group_count, <<"Automate's groups.">>, [state]),
+    add_metric(gauge, automate_created_groups_last_day, <<"Groups created in the last 24 hours.">>, [state]),
+    add_metric(gauge, automate_created_groups_last_week, <<"Groups created in the last 7 days.">>, [state]),
+    add_metric(gauge, automate_created_groups_last_month, <<"Groups created in the last 28 days.">>, [state]),
+
     ok.
 
 

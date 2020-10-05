@@ -25,6 +25,7 @@
                           , name :: binary() | ?MNESIA_SELECTOR
                           , canonical_name :: binary() | ?MNESIA_SELECTOR
                           , public :: boolean() | ?MNESIA_SELECTOR
+                          , creation_time :: time_in_seconds() | ?MNESIA_SELECTOR
                           }).
 
 -record(user_group_permissions_entry, { group_id :: binary() | ?MNESIA_SELECTOR
