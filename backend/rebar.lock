@@ -1,4 +1,6 @@
-[{<<"cowboy">>,
+{"1.1.0",
+[{<<"cf">>,{pkg,<<"cf">>,<<"0.3.1">>},2},
+ {<<"cowboy">>,
   {git,"https://github.com/ninenines/cowboy",
        {ref,"3eec447960eb03cde48f0f04cd72fd4d1e548ca0"}},
   0},
@@ -10,6 +12,7 @@
   {git,"https://github.com/ergenius/eargon2",
        {ref,"949dfc7c3e1bd06843b3eca823c92e9ed0c66199"}},
   0},
+ {<<"erlware_commons">>,{pkg,<<"erlware_commons">>,<<"1.3.1">>},1},
  {<<"jiffy">>,
   {git,"https://github.com/davisp/jiffy",
        {ref,"6dadc0cd22b06e2b1972ee8aba5708c478418926"}},
@@ -26,6 +29,11 @@
   {git,"https://github.com/deadtrickster/prometheus.erl",
        {ref,"f8619006f945eeaeb1725206209ec89a1409575c"}},
   0},
+ {<<"qdate">>,
+  {git,"http://github.com/choptastic/qdate",
+       {ref,"b8a50750267af6480333a1e4ee27e9db91b2c422"}},
+  0},
+ {<<"qdate_localtime">>,{pkg,<<"qdate_localtime">>,<<"1.1.0">>},1},
  {<<"ranch">>,
   {git,"https://github.com/ninenines/ranch",
        {ref,"3190aef88aea04d6dce8545fe9b4574288903f44"}},
@@ -33,4 +41,10 @@
  {<<"uuid">>,
   {git,"https://github.com/avtobiff/erlang-uuid",
        {ref,"cb02a2039a9b29dd2eef0446039c9c6e164df9ef"}},
-  0}].
+  0}]}.
+[
+{pkg_hash,[
+ {<<"cf">>, <<"5CB902239476E141EA70A740340233782D363A31EEA8AD37049561542E6CD641">>},
+ {<<"erlware_commons">>, <<"0CE192AD69BC6FD0880246D852D0ECE17631E234878011D1586E053641ED4C04">>},
+ {<<"qdate_localtime">>, <<"5F6C3ACF10ECC5A7E2EFA3DCD2C863102B962188DBD9E086EC01D29FE029DA29">>}]}
+].

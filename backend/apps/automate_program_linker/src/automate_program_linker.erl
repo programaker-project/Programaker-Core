@@ -61,13 +61,13 @@ relink_block_values(Block, _Owner) ->
     Block.
 
 
-%% Relink time
+%% Relink UTC time (DEPR)
 relink_value(Value = #{ ?TYPE := <<"time_get_utc_hour">>
                       }) ->
     #{ ?TYPE => ?COMMAND_CALL_SERVICE
      , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_utc_hour
                       , ?SERVICE_ID => automate_services_time:get_uuid()
-                      , ?SERVICE_CALL_VALUES => Value
+                      , ?SERVICE_CALL_VALUES => Value#{ <<"timezone">> => <<"UTC">> }
                       }
      };
 
@@ -76,7 +76,7 @@ relink_value(Value = #{ ?TYPE := <<"time_get_utc_minute">>
     #{ ?TYPE => ?COMMAND_CALL_SERVICE
      , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_utc_minute
                       , ?SERVICE_ID => automate_services_time:get_uuid()
-                      , ?SERVICE_CALL_VALUES => Value
+                      , ?SERVICE_CALL_VALUES => Value#{ <<"timezone">> => <<"UTC">> }
                       }
      };
 
@@ -84,6 +84,34 @@ relink_value(Value = #{ ?TYPE := <<"time_get_utc_seconds">>
                       }) ->
     #{ ?TYPE => ?COMMAND_CALL_SERVICE
      , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_utc_seconds
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value#{ <<"timezone">> => <<"UTC">> }
+                      }
+     };
+
+%% Relink Timezone time
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_hour">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_hour
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_minute">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_minute
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_seconds">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_seconds
                       , ?SERVICE_ID => automate_services_time:get_uuid()
                       , ?SERVICE_CALL_VALUES => Value
                       }

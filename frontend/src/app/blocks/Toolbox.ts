@@ -23,6 +23,7 @@ import { ConnectionService } from '../connection.service';
 import { BridgeConnection } from '../connection';
 import { iconDataToUrl } from '../utils';
 import { ProgramContent } from 'app/program';
+import { AssetService } from '../asset.service';
 
 
 declare const Blockly;
@@ -221,6 +222,74 @@ export class Toolbox {
                 });
             }
         };
+
+
+        AssetService.GetTimezoneData().then((tz) => {
+
+            const tzData = (tz
+                .filter(v => v.status === 'Canonical' || v.status === 'Alias')
+                .sort((a, b) => {
+                    if (a.tz > b.tz) {
+                        return 1;
+                    }
+                    if (a.tz < b.tz) {
+                        return -1;
+                    }
+                    return 0;
+                })
+                .map((v) => {
+                    return [v.tz, v.tz]
+                }));
+
+
+
+            const tzArg = {
+                'type': 'field_dropdown',
+                'name': 'TIMEZONE',
+                'options': tzData
+            };
+            Blockly.Blocks['time_get_tz_hour'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'time_get_tz_hour',
+                        'message0': 'Hour at %1',
+                        'args0': [
+                            tzArg,
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_time', 'output_string']
+                    });
+                }
+            };
+
+            Blockly.Blocks['time_get_tz_minute'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'time_get_tz_minute',
+                        'message0': 'Minutes at %1',
+                        'args0': [
+                            tzArg,
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_time', 'output_string']
+                    });
+                }
+            };
+
+            Blockly.Blocks['time_get_tz_seconds'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'time_get_tz_seconds',
+                        'message0': 'Seconds at %1',
+                        'args0': [
+                            tzArg,
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_time', 'output_string']
+                    });
+                }
+            };
+        });
 
         Blockly.Blocks[UtcTimeOfDayBlockId] = {
             init: function () {
@@ -892,6 +961,9 @@ export class Toolbox {
           <block type="time_get_utc_hour" id="time_get_utc_hour"></block>
           <block type="time_get_utc_minute" id="time_get_utc_minute"></block>
           <block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>
+          <block type="time_get_tz_hour" id="time_get_utc_hour"></block>
+          <block type="time_get_tz_minute" id="time_get_utc_minute"></block>
+          <block type="time_get_tz_seconds" id="time_get_utc_seconds"></block>
           <block type="${UtcTimeOfDayBlockId}" id="${UtcTimeOfDayBlockId}">
             <value name="DAY_OF_WEEK">
               <shadow type="field_dropdown"></shadow>
