@@ -17,6 +17,7 @@
         , call/4
         ]).
 
+-include("./definitions.hrl").
 -include("../../automate_channel_engine/src/records.hrl").
 -define(SLEEP_RESOULUTION_MS, 500).
 
@@ -30,7 +31,7 @@ start_link() ->
 
 %% This one can be considered static.
 get_uuid() ->
-    <<"0093325b-373f-4f1c-bace-4532cce79df4">>.
+    ?TIME_SERVICE_UUID.
 
 get_name() ->
     <<"Timekeeping">>.

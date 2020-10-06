@@ -245,9 +245,37 @@ export class Toolbox {
 
             const tzArg = {
                 'type': 'field_dropdown',
-                'name': 'TIMEZONE',
+                'name': 'TIMEZONE4',
                 'options': tzData
             };
+
+
+            Blockly.Blocks['time_trigger_at_tz'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'time_trigger_at',
+                        'message0': 'Every day at %1:%2:%3 in %4',
+                        'args0': [
+                            {
+                                'type': 'input_value',
+                                'name': 'HOUR1'
+                            },
+                            {
+                                'type': 'input_value',
+                                'name': 'MINUTE2'
+                            },
+                            {
+                                'type': 'input_value',
+                                'name': 'SECOND3'
+                            },
+                            tzArg,
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_time', 'shape_hat']
+                    });
+                }
+            };
+
             Blockly.Blocks['time_get_tz_hour'] = {
                 init: function () {
                     this.jsonInit({
@@ -941,29 +969,41 @@ export class Toolbox {
 
         const timeCategory = `
         <category name="Time" id="time" colour="#85CCB3" secondaryColour="#1D1D5F">
-          <block type="time_trigger_at" id="time_trigger_at">
-            <value name="HOUR">
+            <block type="time_trigger_at_tz" id="time_trigger_at_tz">
+            <value name="HOUR1">
               <shadow type="math_positive_number">
                 <field name="NUM">19</field>
               </shadow>
             </value>
-            <value name="MINUTE">
+            <value name="MINUTE2">
               <shadow type="math_positive_number">
                 <field name="NUM">10</field>
               </shadow>
             </value>
-            <value name="SECOND">
+            <value name="SECOND3">
               <shadow type="math_positive_number">
                 <field name="NUM">00</field>
               </shadow>
             </value>
+            <value name="TIMEZONE4">
+              <shadow type="field_dropdown"></shadow>
+            </value>
           </block>
-          <block type="time_get_utc_hour" id="time_get_utc_hour"></block>
-          <block type="time_get_utc_minute" id="time_get_utc_minute"></block>
-          <block type="time_get_utc_seconds" id="time_get_utc_seconds"></block>
-          <block type="time_get_tz_hour" id="time_get_utc_hour"></block>
-          <block type="time_get_tz_minute" id="time_get_utc_minute"></block>
-          <block type="time_get_tz_seconds" id="time_get_utc_seconds"></block>
+          <block type="time_get_tz_hour" id="time_get_utc_hour">
+            <value name="TIMEZONE">
+              <shadow type="field_dropdown"></shadow>
+            </value>
+          </block>
+          <block type="time_get_tz_minute" id="time_get_utc_minute">
+            <value name="TIMEZONE">
+              <shadow type="field_dropdown"></shadow>
+            </value>
+          </block>
+          <block type="time_get_tz_seconds" id="time_get_utc_seconds">
+            <value name="TIMEZONE">
+              <shadow type="field_dropdown"></shadow>
+            </value>
+          </block>
           <block type="${UtcTimeOfDayBlockId}" id="${UtcTimeOfDayBlockId}">
             <value name="DAY_OF_WEEK">
               <shadow type="field_dropdown"></shadow>
