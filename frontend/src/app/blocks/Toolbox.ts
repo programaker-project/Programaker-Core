@@ -26,6 +26,8 @@ import { ProgramContent } from 'app/program';
 import { AssetService } from '../asset.service';
 
 
+import * as jstz from 'jstz';
+
 declare const Blockly;
 
 const MonitorPrimaryColor = '#CC55CC';
@@ -227,6 +229,9 @@ export class Toolbox {
 
         this.assetService.getTimezoneData().then((tz) => {
 
+            const detectedTz = jstz.determine().name();
+            console.log("Autodetected Timezone:", detectedTz);
+
             const tzData = (tz
                 .filter(v => v.status === 'Canonical' || v.status === 'Alias')
                 .sort((a, b) => {
@@ -242,7 +247,8 @@ export class Toolbox {
                     return [v.tz, v.tz]
                 }));
 
-
+            // Add the detected timezone at the top
+            tzData.unshift([detectedTz, detectedTz]);
 
             const tzArg = {
                 'type': 'field_dropdown',
