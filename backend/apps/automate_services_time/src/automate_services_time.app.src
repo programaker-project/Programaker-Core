@@ -9,6 +9,7 @@
                  , automate_monitor_engine
                  , automate_configuration
                  , automate_coordination
+                 , qdate
                  ]},
   {env, [
         ]},

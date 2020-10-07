@@ -1,4 +1,4 @@
-FROM plazaproject/ci-base-backend:3bc4014b475625b0946d32bc2ee6381b9043aab8
+FROM plazaproject/ci-base-backend:5e91faa7bb0593d8da302e8ee621871a1be56ccf
 
 ADD . /app
 RUN sh -x -c 'if [ ! -f config/sys.config ]; then cp -v config/sys.config.orig config/sys.config ; fi'
