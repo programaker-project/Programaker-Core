@@ -17,6 +17,7 @@
         , call/4
         ]).
 
+-include("./definitions.hrl").
 -include("../../automate_channel_engine/src/records.hrl").
 -define(SLEEP_RESOULUTION_MS, 500).
 
@@ -30,7 +31,7 @@ start_link() ->
 
 %% This one can be considered static.
 get_uuid() ->
-    <<"0093325b-373f-4f1c-bace-4532cce79df4">>.
+    ?TIME_SERVICE_UUID.
 
 get_name() ->
     <<"Timekeeping">>.
@@ -64,6 +65,18 @@ call(get_utc_minute, _Values, Thread, _UserId) ->
 
 call(get_utc_seconds, _Values, Thread, _UserId) ->
     {{_Y1970, _Mon, _Day}, {_Hour, _Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    {ok, Thread, Sec};
+
+call(get_tz_hour, [Timezone], Thread, _UserId) ->
+    {{_Y1970, _Mon, _Day}, {Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {ok, Thread, Hour};
+
+call(get_tz_minute, [Timezone], Thread, _UserId) ->
+    {{_Y1970, _Mon, _Day}, {_Hour, Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {ok, Thread, Min};
+
+call(get_tz_seconds, [Timezone], Thread, _UserId) ->
+    {{_Y1970, _Mon, _Day}, {_Hour, _Min, Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
     {ok, Thread, Sec};
 
 call(<<"utc_is_day_of_week">>, [DayOfWeek], Thread, _UserId) ->

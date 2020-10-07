@@ -31,6 +31,7 @@ import { environment } from '../environments/environment';
 import { unixMsToStr } from './utils';
 import { Synchronizer } from './syncronizer';
 import { MatMenu } from '@angular/material/menu';
+import { AssetService } from './asset.service';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -38,7 +39,7 @@ type NonReadyReason = 'loading' | 'disconnected';
     selector: 'app-my-program-detail',
     templateUrl: './program-detail.component.html',
     providers: [
-        ConnectionService, CustomBlockService, CustomSignalService,
+        AssetService, ConnectionService, CustomBlockService, CustomSignalService,
         MonitorService, ProgramService, ServiceService, SessionService,
         TemplateService
     ],
@@ -83,6 +84,7 @@ export class ProgramDetailComponent implements OnInit {
         private programService: ProgramService,
         private customBlockService: CustomBlockService,
         private customSignalService: CustomSignalService,
+        private assetService: AssetService,
         private route: ActivatedRoute,
         private router: Router,
         private _location: Location,
@@ -519,6 +521,7 @@ export class ProgramDetailComponent implements OnInit {
 
         return new Toolbox(
             program,
+            this.assetService,
             this.monitorService,
             this.customBlockService,
             this.dialog,

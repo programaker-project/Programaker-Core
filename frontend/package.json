@@ -32,6 +32,7 @@
     "bootstrap": "^4.5.0",
     "core-js": "^2.6.11",
     "fuse.js": "^5.2.3",
+    "jstz": "^2.1.1",
     "ngx-bootstrap": "^5.6.1",
     "nprogress": "^0.2.0",
     "rxjs": "^6.5.5",

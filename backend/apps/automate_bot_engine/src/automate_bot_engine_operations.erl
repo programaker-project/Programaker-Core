@@ -1234,17 +1234,20 @@ get_block_result(Op=#{ ?TYPE := <<"services.", ServiceCall/binary>>
 get_block_result(Op=#{ ?TYPE := <<"services.", _ServiceCall/binary>> }, Thread) ->
     get_block_result(Op#{ ?ARGUMENTS => [] }, Thread);
 
-get_block_result(#{ ?TYPE := ?COMMAND_CALL_SERVICE
-                  , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
-                                   , ?SERVICE_ACTION := Action
-                                   , ?SERVICE_CALL_VALUES := Values
-                                   }
-                  }, Thread=#program_thread{ program_id=PID }) ->
+get_block_result(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
+                     , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
+                                      , ?SERVICE_ACTION := Action
+                                      , ?SERVICE_CALL_VALUES := #{ ?ARGUMENTS := Arguments }
+                                      }
+                     }, Thread=#program_thread{ program_id=PID }) ->
 
     {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(PID),
+
+    {Values, Thread2} = eval_args(Arguments, Thread, Op),
+
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, Thread2, Value} = automate_service_registry_query:call(Module, Action, Values, Thread, Owner),
-    {ok, Value, Thread2};
+    {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, Owner),
+    {ok, Value, Thread3};
 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_LIST_GET_CONTENTS
                      , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST

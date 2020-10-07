@@ -5,6 +5,7 @@
 
 -include("../../automate_service_registry/src/records.hrl").
 -include("../../automate_bot_engine/src/instructions.hrl").
+-include("../../automate_services_time/src/definitions.hrl").
 -include("records.hrl").
 
 %%====================================================================
@@ -30,7 +31,34 @@ relink_block(Block, Owner) ->
 relink_block_contents(Value = #{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                , ?ARGUMENTS := Arguments
                                }, Owner) ->
-    io:fwrite("Args: ~p~n", [Arguments]),
+    Value#{ ?ARGUMENTS => lists:map(fun(B) -> relink_block(B, Owner) end,
+                                    Arguments)
+          };
+
+
+%% Special case for handling of timezone trigger
+relink_block_contents(Block=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                             , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ?TIME_SERVICE_UUID  }
+                                                          , ?MONITOR_EXPECTED_VALUE := MonExpectedValue=#{ <<"value">> := ExpectedTime }
+                                                          , <<"timezone">> := Timezone
+                                                          }
+                             }, _Owner) ->
+    %% TODO: Note that the timezone conversion will take into account the
+    %% daylight savings at the point in time where it was linked.
+    ok = qdate:set_timezone(Timezone),
+    {NowDate, _NowTime} = calendar:now_to_datetime(erlang:timestamp()),
+    {_, { Hour, Min, Sec }} = qdate:parse(ExpectedTime),
+    {_, { ExHour, ExMin, ExSec }} = qdate:to_date(<<"UTC">>, {NowDate, {Hour, Min, Sec}}),
+    ok = qdate:set_timezone(<<"UTC">>),
+
+    ExpectedTimeWithTimezone = binary:list_to_bin(lists:flatten(io_lib:format("~p:~p:~p", [ExHour, ExMin, ExSec]))),
+
+    Block#{ ?ARGUMENTS => MonitorArgs#{ ?MONITOR_EXPECTED_VALUE => MonExpectedValue#{ <<"value">> => ExpectedTimeWithTimezone }}};
+
+
+relink_block_contents(Value = #{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
+                               , ?ARGUMENTS := Arguments
+                               }, Owner) ->
     Value#{ ?ARGUMENTS => lists:map(fun(B) -> relink_block(B, Owner) end,
                                     Arguments)
           };
@@ -61,13 +89,13 @@ relink_block_values(Block, _Owner) ->
     Block.
 
 
-%% Relink time
+%% Relink UTC time (DEPR)
 relink_value(Value = #{ ?TYPE := <<"time_get_utc_hour">>
                       }) ->
     #{ ?TYPE => ?COMMAND_CALL_SERVICE
      , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_utc_hour
                       , ?SERVICE_ID => automate_services_time:get_uuid()
-                      , ?SERVICE_CALL_VALUES => Value
+                      , ?SERVICE_CALL_VALUES => Value#{ <<"timezone">> => <<"UTC">> }
                       }
      };
 
@@ -76,7 +104,7 @@ relink_value(Value = #{ ?TYPE := <<"time_get_utc_minute">>
     #{ ?TYPE => ?COMMAND_CALL_SERVICE
      , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_utc_minute
                       , ?SERVICE_ID => automate_services_time:get_uuid()
-                      , ?SERVICE_CALL_VALUES => Value
+                      , ?SERVICE_CALL_VALUES => Value#{ <<"timezone">> => <<"UTC">> }
                       }
      };
 
@@ -84,6 +112,34 @@ relink_value(Value = #{ ?TYPE := <<"time_get_utc_seconds">>
                       }) ->
     #{ ?TYPE => ?COMMAND_CALL_SERVICE
      , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_utc_seconds
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value#{ <<"timezone">> => <<"UTC">> }
+                      }
+     };
+
+%% Relink Timezone time
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_hour">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_hour
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_minute">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_minute
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_seconds">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_seconds
                       , ?SERVICE_ID => automate_services_time:get_uuid()
                       , ?SERVICE_CALL_VALUES => Value
                       }
