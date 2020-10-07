@@ -48,6 +48,7 @@ export class Toolbox {
 
     constructor(
         private program: ProgramContent,
+        private assetService: AssetService,
         monitorService: MonitorService,
         customBlockService: CustomBlockService,
         dialog: MatDialog,
@@ -224,7 +225,7 @@ export class Toolbox {
         };
 
 
-        AssetService.GetTimezoneData().then((tz) => {
+        this.assetService.getTimezoneData().then((tz) => {
 
             const tzData = (tz
                 .filter(v => v.status === 'Canonical' || v.status === 'Alias')
