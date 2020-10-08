@@ -25,15 +25,80 @@ button.toggle-fold {
     min-width: 5ex;
 }
 
-li.expanded-true button.toggle-fold .fold-open {
+
+.conn-url, .tokens  {
+    padding-left: 1em;
+}
+
+.editable-token .call-to-action {
+    margin-left: 1em;
+}
+
+.redacted {
+    margin-left: 1ex;
+    text-decoration: underline dotted;
+}
+
+button.create-token {
+    margin-left: 1em;
+    padding: 0;
+    min-width: 5ex;
+}
+
+button.remove-token {
+    padding: 0;
+    min-width: 5ex;
+    background-color: #f44;
+    color: white;
+}
+
+.token .note {
+    text-decoration: none;
+    background: #444;
+    padding: 1ex;
+    color: white;
+    border-radius: 4px;
+}
+
+.token-creation-cell {
+    display: grid;
+}
+
+.token-creation-cell .token-name {
+    grid-row: 1;
+    grid-column: 1;
+}
+
+.token-creation-cell .error-message {
+    grid-row: 2;
+    grid-column-start: 1;
+    grid-column-end: 1;
+}
+
+.token-creation-cell button {
+    grid-row: 1;
+    grid-column: 2;
+    height: 5ex;
+}
+
+span.value {
+    padding-left: 1ex;
+    text-decoration: underline dotted;
+}
+
+.expanded-true button.toggle-fold .fold-open {
     display: none;
 }
 
-li.expanded-false button.toggle-fold .fold-close {
+.expanded-false button.toggle-fold .fold-close {
     display: none;
 }
 
-li.expanded-false .shares {
+.expanded-false .shares {
+    display: none;
+}
+
+.expanded-false .token-list {
     display: none;
 }
 

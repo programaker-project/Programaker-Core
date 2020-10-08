@@ -131,3 +131,11 @@
                                      , name          :: binary() | ?MNESIA_SELECTOR
                                      , shared_with   :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
                                      }).
+
+-record(bridge_token_entry, { token_key  :: binary() | ?MNESIA_SELECTOR
+                            , token_name :: binary() | ?MNESIA_SELECTOR
+                            , bridge_id  :: binary() | ?MNESIA_SELECTOR
+                            , creation_time        :: non_neg_integer() | ?MNESIA_SELECTOR
+                            , expiration_time      :: non_neg_integer() | undefined | ?MNESIA_SELECTOR
+                            , last_connection_time :: non_neg_integer() | undefined | ?MNESIA_SELECTOR
+                            }).

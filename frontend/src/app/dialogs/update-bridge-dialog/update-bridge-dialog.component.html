@@ -3,6 +3,100 @@
     <span class="bridge-name">{{ data.bridgeInfo.name }}</span>
 </h2>
 
+<section class="connection-info">
+    <h4>Connection info</h4>
+    <div class="conn-url">
+        <span class="key">Connection  URL:</span>
+        <span class="value">{{ connectionUrl }}</span>
+    </div>
+
+    <div class="token expanded-{{ expandedTokens }}">
+        <button mat-button class="toggle-fold" (click)="expandedTokens = !expandedTokens">
+            <mat-icon class="fold-open">unfold_more</mat-icon>
+            <mat-icon class="fold-close">unfold_less</mat-icon>
+        </button>
+
+        <span class="key"
+            matBadgePosition="before"
+            [matBadge]="tokens && (tokens.length > 0 || null) && tokens.length">
+            Connection tokens
+        </span>
+        <button mat-button mat-raised-button
+            class="create-token call-to-action soft"
+            [disabled]="editableToken"
+            (click)="editableToken = true" >
+            <mat-icon>add</mat-icon>
+        </button>
+
+        <tr *ngIf="editableToken" class="editable-token">
+            <td></td>
+            <td [formGroup]="options" class="token-creation-cell">
+                <mat-form-field class="token-name">
+                    <input matInput
+                        id="newTokenName"
+                        formControlName="newTokenName"
+                        placeholder="New token name"
+                        required
+                        name="groupName" />
+                </mat-form-field>
+                <mat-error *ngIf="saveTokenErrorMessage">
+                    {{ saveTokenErrorMessage }}
+                </mat-error>
+
+                <button mat-button mat-raised-button
+                    class="call-to-action"
+                    [disabled]="!options.valid"
+                    (click)="saveToken()" >
+                    <mat-icon>save</mat-icon> Save
+                </button>
+            </td>
+        </tr>
+
+        <div class="value token-list">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+
+                        </th>
+                        <th>
+                            Token name
+                        </th>
+                        <th>
+                            Token key
+                        </th>
+                        <th>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="token" *ngFor="let token of tokens">
+                        <td class="token-actions">
+                            <button mat-button mat-raised-button
+                                class="remove-token"
+                                (click)="removeToken(token)" >
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </td>
+                        <td class="token-name">{{ token.name }}</td>
+                        <td class="token-value" *ngIf="token.key">
+                            {{ token.key }}
+
+                            <span class="note">
+                                Copy now the tooltip. Later it won't be possible to view it.
+                            </span>
+                        </td>
+                        <td class="token-value redacted" *ngIf="!token.key"
+                            matTooltip="Token keys cannot be read after created">
+                            **************
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
 <section *ngIf="resources && resources.length > 0" class="resources">
     <h4>Resources</h4>
 
@@ -20,7 +114,7 @@
                 <span class="entry-name">{{ entry.name }}</span>
 
                 <button mat-button mat-raised-button class="share-button"
-                    (click)="addShare(resource, entry)" matBadge="{{  (!!entry.shared_with && entry.shared_with.length) || 0 }}" >
+                    (click)="addShare(resource, entry)" [matBadge]="(!!entry.shared_with && entry.shared_with.length) || null" >
                     <div class="annotated-icon">
                         <label>Share</label>
                         <mat-icon>share</mat-icon>

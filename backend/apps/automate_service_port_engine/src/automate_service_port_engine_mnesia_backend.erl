@@ -42,10 +42,15 @@
         , get_connection_shares/1
         , get_resources_shared_with/1
         , get_connection_bridge/1
+
+        , create_bridge_token/4
+        , list_bridge_tokens/1
+        , delete_bridge_token_by_name/2
         ]).
 
 -include("records.hrl").
 -include("databases.hrl").
+-include("../../automate_storage/src/security_params.hrl").
 
 %%====================================================================
 %% API
@@ -745,6 +750,61 @@ get_connection_bridge(ConnectionId) ->
         end,
     automate_storage:wrap_transaction(mnesia:activity(ets, T)).
 
+
+-spec create_bridge_token(BridgeId :: binary(), Owner :: owner_id(), TokenName :: binary(), ExpiresOn :: undefined | non_neg_integer())
+                         -> {ok, binary()} | {error, name_taken}.
+create_bridge_token(BridgeId, Owner, TokenName, ExpiresOn) ->
+    TokenKey = generate_key(),
+    CurrentTime = erlang:system_time(second),
+
+    T = fun() ->
+                %% Check that there are no tokens with the same name
+                BridgeTokens = mnesia:index_read(?BRIDGE_TOKEN_TABLE, BridgeId, bridge_id),
+                MatchingTokens = lists:filter(fun(#bridge_token_entry{ token_name=Name}) ->
+                                                      TokenName == Name
+                                              end, BridgeTokens),
+                case MatchingTokens of
+                    [] ->
+                        ok = mnesia:write(?BRIDGE_TOKEN_TABLE
+                                         , #bridge_token_entry{ token_key=TokenKey
+                                                              , token_name=TokenName
+                                                              , bridge_id=BridgeId
+                                                              , creation_time=CurrentTime
+                                                              , expiration_time=ExpiresOn
+                                                              , last_connection_time=undefined
+                                                              }, write),
+                        {ok, TokenKey};
+                    [#bridge_token_entry{ token_key=Key }] ->
+                        {error, name_taken}
+                end
+
+        end,
+    automate_storage:wrap_transaction(mnesia:transaction(T)).
+
+-spec list_bridge_tokens(BridgeId :: binary()) -> {ok, [#bridge_token_entry{}]}.
+list_bridge_tokens(BridgeId) ->
+    T = fun() ->
+                {ok, mnesia:index_read(?BRIDGE_TOKEN_TABLE, BridgeId, bridge_id)}
+        end,
+    automate_storage:wrap_transaction(mnesia:ets(T)).
+
+-spec delete_bridge_token_by_name(BridgeId :: binary(), TokenName :: binary()) -> ok | {error, not_found}.
+delete_bridge_token_by_name(BridgeId, TokenName) ->
+    %% TODO: Remove connection from bridges with that token
+    T = fun() ->
+                BridgeTokens = mnesia:index_read(?BRIDGE_TOKEN_TABLE, BridgeId, bridge_id),
+                MatchingTokens = lists:filter(fun(#bridge_token_entry{ token_name=Name}) ->
+                                                      TokenName == Name
+                                              end, BridgeTokens),
+                case MatchingTokens of
+                    [] -> {error, not_found};
+                    [#bridge_token_entry{ token_key=Key }] ->
+                        ok = mnesia:delete(?BRIDGE_TOKEN_TABLE, Key, write)
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:transaction(T)).
+
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -836,6 +896,9 @@ list_blocks_for_port(PortId, SharedResources) ->
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
+
+generate_key() ->
+    base64:encode(crypto:strong_rand_bytes(?KEY_RANDOM_LENGTH)).
 
 -spec shares_list_to_map([#bridge_resource_share_entry{}]) -> #{ binary() => #{ binary() => [ owner_id() ] } }.
 shares_list_to_map(Permissions) ->

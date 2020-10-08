@@ -39,6 +39,10 @@
         , get_connection_bridge/1
         , get_resources_shared_with/1
         , get_resources_shared_with_on_bridge/2
+
+        , create_bridge_token/4
+        , list_bridge_tokens/1
+        , delete_bridge_token_by_name/2
         ]).
 
 -include("records.hrl").
@@ -395,6 +399,20 @@ get_resources_shared_with_on_bridge(Owner, BridgeId) ->
                               SharedBridgeId == BridgeId
                       end, Shares)}.
 
+
+
+-spec create_bridge_token(BridgeId :: binary(), Owner :: owner_id(), TokenName :: binary(), ExpiresOn :: non_neg_integer() | undefined)
+                         -> {ok, binary()} | {error, name_taken}.
+create_bridge_token(BridgeId, Owner, TokenName, ExpiresOn) ->
+    ?BACKEND:create_bridge_token(BridgeId, Owner, TokenName, ExpiresOn).
+
+-spec list_bridge_tokens(BridgeId :: binary()) -> {ok, [#bridge_token_entry{}]}.
+list_bridge_tokens(BridgeId) ->
+    ?BACKEND:list_bridge_tokens(BridgeId).
+
+-spec delete_bridge_token_by_name(BridgeId :: binary(), TokenName :: binary()) -> ok | {error, not_found}.
+delete_bridge_token_by_name(BridgeId, TokenName) ->
+    ?BACKEND:delete_bridge_token_by_name(BridgeId, TokenName).
 
 %%====================================================================
 %% Internal functions

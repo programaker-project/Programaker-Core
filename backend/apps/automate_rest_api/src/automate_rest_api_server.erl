@@ -111,6 +111,8 @@ start_link() ->
                         , {"/api/v0/bridges/by-id/:bridge_id/signals", automate_rest_api_bridge_signal_root, []}
                         , {"/api/v0/bridges/by-id/:bridge_id/resources", automate_rest_api_bridge_resources_root, []}
                         , {"/api/v0/connections/by-id/:connection_id/resources/by-name/:resource_name", automate_rest_api_connection_resource_by_name_root, []}
+                        , {"/api/v0/bridges/by-id/:bridge_id/tokens", automate_rest_api_bridge_tokens_root, []}
+                        , {"/api/v0/bridges/by-id/:bridge_id/tokens/by-name/:token_name", automate_rest_api_bridge_tokens_by_name_root, []}
 
 
                           %% Services
@@ -143,6 +145,7 @@ start_link() ->
                  ]),
 
     Port = get_port(),
+    io:fwrite("== Listening on: ~p~n", [Port]),
     Start = cowboy:start_clear(http, [{port, Port}],
                                #{
                                  env => #{dispatch => Dispatch}

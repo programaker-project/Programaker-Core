@@ -2,7 +2,7 @@ import { Component, Inject, ViewChild } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BridgeIndexData, BridgeResource, BridgeResourceEntry, BridgeSignal } from 'app/bridges/bridge';
+import { BridgeIndexData, BridgeResource, BridgeResourceEntry, BridgeSignal, BridgeTokenInfo, FullBridgeTokenInfo } from 'app/bridges/bridge';
 import { BridgeService } from 'app/bridges/bridge.service';
 import { UserGroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
@@ -11,6 +11,8 @@ import { SessionService } from 'app/session.service';
 import { Observable } from 'rxjs';
 import { ConfirmDeleteDialogComponent } from '../confirm-delete-dialog/confirm-delete-dialog.component';
 import { slidingWindow } from './sliding-window.operator';
+import { Validators, FormBuilder, FormGroup } from '@angular/forms';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
     selector: 'app-update-bridge-dialog',
@@ -30,6 +32,13 @@ export class UpdateBridgeDialogComponent {
     groups: UserGroupInfo[];
     expandedResources: {[key:string]: {[key: string]: boolean}} = {};
     dirtyShares = false;
+    connectionUrl: string;
+
+    expandedTokens = false;
+    tokens: (BridgeTokenInfo| FullBridgeTokenInfo)[];
+    options: FormGroup;
+    editableToken = false;
+    saveTokenErrorMessage: string;
 
     _stringify = JSON.stringify;
     private groupsReady: Promise<void>;
@@ -42,6 +51,7 @@ export class UpdateBridgeDialogComponent {
                 private groupService: GroupService,
                 private dialog: MatDialog,
                 private notification: MatSnackBar,
+                private formBuilder: FormBuilder,
 
                 @Inject(MAT_DIALOG_DATA)
                 public data: {
@@ -49,10 +59,18 @@ export class UpdateBridgeDialogComponent {
                     asGroup?: string,
                 }) {
 
+        this.options = this.formBuilder.group({
+            newTokenName: ['', [Validators.required, Validators.minLength(4)]],
+        });
+
+        this.connectionUrl = bridgeService.getConnectionUrl(data.bridgeInfo.id);
+        this.bridgeService.getBridgeTokens(data.bridgeInfo.id, data.asGroup).then(tokens => this.tokens = tokens);
+
         this.sessionService.getSession().then(session => {
             this.session = session;
 
             this.resetShares();
+
             const stream = this.bridgeService.getBridgeSignals(data.bridgeInfo.id, data.asGroup);
             this.groupsReady = this.groupService.getUserGroups().then(groups => {
                 const acceptedGroups: UserGroupInfo[] = [];
@@ -212,6 +230,51 @@ export class UpdateBridgeDialogComponent {
                     this.dialogRef.close({success: true});
                 }));
         });
+    }
 
+    removeToken(token: BridgeTokenInfo) {
+        const dialogRef = this.dialog.open(ConfirmDeleteDialogComponent, {
+            data: token
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            await this.bridgeService.revokeToken(this.data.bridgeInfo.id, token.name, this.data.asGroup);
+
+            const idx = this.tokens.indexOf(token);
+            this.tokens.splice(idx, 1);
+        });
+    }
+
+    async saveToken() {
+        const tokenName = this.options.controls.newTokenName.value;
+
+        let saved = false;
+        let tokenInfo;
+        try {
+            tokenInfo = await this.bridgeService.createBridgeToken(this.data.bridgeInfo.id, tokenName, this.data.asGroup);
+            saved = true;
+        }
+        catch (err) {
+            if ((err.name === 'HttpErrorResponse') && (err.status === 409)) {
+                this.saveTokenErrorMessage = 'A token already exists with this name.';
+                this.expandedTokens = true;
+            }
+            else {
+                this.saveTokenErrorMessage = 'Error saving token. Try again later.';
+            }
+        }
+
+        if (saved){
+            this.options.controls.newTokenName.setValue('');
+            this.editableToken = false;
+            this.tokens.unshift(tokenInfo);
+
+            this.expandedTokens = true;
+        }
     }
 }

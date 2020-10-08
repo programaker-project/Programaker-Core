@@ -239,6 +239,31 @@ get_versioning(Nodes) ->
                                     {atomic, ok} = mnesia:add_table_index(?SERVICE_PORT_SHARED_RESOURCES_TABLE, shared_with)
                             end
                     }
+
+                  , #database_version_transformation
+                    %% Introduce bridge tokens
+                    { id=6
+                    , apply=fun() ->
+                                    ok = automate_storage_versioning:create_database(
+                                           #database_version_data
+                                           { database_name=?BRIDGE_TOKEN_TABLE
+                                           , records=[ token_key
+                                                     , token_name
+                                                     , bridge_id
+                                                     , creation_time
+                                                     , expiration_time
+                                                     , last_connection_time
+                                                     ]
+                                           , record_name=bridge_token_entry
+                                           , type=set
+                                           }, Nodes),
+
+                                    ok = mnesia:wait_for_tables([ ?BRIDGE_TOKEN_TABLE
+                                                                ], automate_configuration:get_table_wait_time()),
+
+                                    {atomic, ok} = mnesia:add_table_index(?BRIDGE_TOKEN_TABLE, bridge_id)
+                            end
+                    }
                   ]
         }.
 
