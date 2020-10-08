@@ -3,176 +3,211 @@
     <span class="bridge-name">{{ data.bridgeInfo.name }}</span>
 </h2>
 
-<section class="connection-info">
-    <h4>Connection info</h4>
-    <div class="conn-url">
-        <span class="key">Connection  URL:</span>
-        <span class="value">{{ connectionUrl }}</span>
-    </div>
-
-    <div class="token expanded-{{ expandedTokens }}">
-        <button mat-button class="toggle-fold" (click)="expandedTokens = !expandedTokens">
-            <mat-icon class="fold-open">unfold_more</mat-icon>
+<section class="connection-info expanded-{{ expandedConnectionInfo }}">
+    <h4>
+        <button mat-button class="toggle-fold" (click)="expandedConnectionInfo = !expandedConnectionInfo">
+            <mat-icon class="fold-open">expand_more</mat-icon>
             <mat-icon class="fold-close">unfold_less</mat-icon>
         </button>
 
-        <span class="key"
-            matBadgePosition="before"
-            [matBadge]="tokens && (tokens.length > 0 || null) && tokens.length">
-            Connection tokens
-        </span>
-        <button mat-button mat-raised-button
-            class="create-token call-to-action soft"
-            [disabled]="editableToken"
-            (click)="editableToken = true" >
-            <mat-icon>add</mat-icon>
+        <span class="title">Connection info</span>
+    </h4>
+
+    <div class="expanded-contents">
+        <div class="conn-url">
+            <span class="key">Connection  URL:</span>
+            <span class="value">{{ connectionUrl }}</span>
+        </div>
+
+        <div class="expanded-{{ expandedTokens }}">
+            <button mat-button class="toggle-fold" (click)="expandedTokens = !expandedTokens">
+                <mat-icon *ngIf="tokens && tokens.length > 0" class="fold-open">expand_more</mat-icon>
+                <mat-icon *ngIf="tokens && tokens.length > 0" class="fold-close">unfold_less</mat-icon>
+
+                <mat-icon *ngIf="(!tokens) || (tokens.length == 0)" matTooltip="No token yet" >remove</mat-icon>
+            </button>
+
+            <span class="key"
+                matBadgePosition="before"
+                [matBadge]="tokens && (tokens.length > 0 || null) && tokens.length">
+                Connection tokens
+            </span>
+            <button mat-button mat-raised-button
+                class="create-token call-to-action soft"
+                [disabled]="editableToken"
+                (click)="editableToken = true" >
+                <mat-icon>add</mat-icon>
+            </button>
+
+            <div class="value token-list">
+                <div *ngIf="editableToken" class="editable-token token-creation-cell" [formGroup]="options">
+                    <mat-form-field class="token-name">
+                        <input matInput
+                            id="newTokenName"
+                            formControlName="newTokenName"
+                            placeholder="New token name"
+                            required
+                            name="groupName" />
+                    </mat-form-field>
+                    <mat-error *ngIf="saveTokenErrorMessage">
+                        {{ saveTokenErrorMessage }}
+                    </mat-error>
+
+                    <button mat-button mat-raised-button
+                        class="call-to-action"
+                        [disabled]="!options.valid"
+                        (click)="saveToken()" >
+                        <mat-icon>save</mat-icon> Save
+                    </button>
+                </div>
+
+                <table *ngIf="tokens && tokens.length > 0">
+                    <thead>
+                        <tr>
+                            <th>
+                                Token name
+                            </th>
+                            <th>
+                                Token key
+                            </th>
+                            <th class="action-col">
+                                <!-- Actions -->
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="token" *ngFor="let token of tokens">
+                            <td class="token-name">{{ token.name }}</td>
+                            <td class="token-value" *ngIf="token.key">
+                                <input matInput
+                                    size="{{ token.key.length }}"
+                                    readonly="readonly"
+                                    [value]="token.key" />
+                            </td>
+                            <td class="token-value" *ngIf="!token.key">
+
+                                <span class="redacted"
+                                    matTooltipPosition="after"
+                                    matTooltip="Token keys cannot be read after created">
+                                    **************
+                                </span>
+                            </td>
+                            <td class="token-actions action-col">
+                                <button mat-button mat-raised-button
+                                    class="remove-token"
+                                    (click)="removeToken(token)" >
+                                    <mat-icon>delete</mat-icon>
+                                </button>
+                            </td>
+
+                            <td>
+                                <span class="note" *ngIf="token.key">
+                                    Copy now the tooltip. Later it won't be possible to view it.
+                                </span>
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="resources expanded-{{ expandedResourceInfo }}">
+    <h4>
+        <button mat-button class="toggle-fold" (click)="expandedResourceInfo = !expandedResourceInfo">
+            <mat-icon *ngIf="resources && resources.length > 0" class="fold-open">expand_more</mat-icon>
+            <mat-icon class="fold-close">unfold_less</mat-icon>
         </button>
 
-        <tr *ngIf="editableToken" class="editable-token">
-            <td></td>
-            <td [formGroup]="options" class="token-creation-cell">
-                <mat-form-field class="token-name">
-                    <input matInput
-                        id="newTokenName"
-                        formControlName="newTokenName"
-                        placeholder="New token name"
-                        required
-                        name="groupName" />
-                </mat-form-field>
-                <mat-error *ngIf="saveTokenErrorMessage">
-                    {{ saveTokenErrorMessage }}
-                </mat-error>
+        <span class="title">Resources</span>
+    </h4>
 
-                <button mat-button mat-raised-button
-                    class="call-to-action"
-                    [disabled]="!options.valid"
-                    (click)="saveToken()" >
-                    <mat-icon>save</mat-icon> Save
-                </button>
-            </td>
-        </tr>
+    <div *ngIf="resources && resources.length > 0" class="expanded-contents">
+        <div class="resource-entry" *ngFor="let resource of resources">
+            <div class="resource-name">{{ resource.name }}</div>
 
-        <div class="value token-list">
-            <table>
-                <thead>
-                    <tr>
-                        <th>
+            <ul class="resource-options">
+                <li *ngFor="let entry of resource.values"
+                    class="expanded-{{ (!!expandedResources[resource.name]) && (!!expandedResources[resource.name][entry.id]) }}">
+                    <button mat-button class="toggle-fold" (click)="toggleFold(resource, entry)">
+                        <mat-icon *ngIf="entry.shared_with && entry.shared_with.length > 0" class="fold-open">expand_more</mat-icon>
+                        <mat-icon *ngIf="entry.shared_with && entry.shared_with.length > 0"  class="fold-close">unfold_less</mat-icon>
 
-                        </th>
-                        <th>
-                            Token name
-                        </th>
-                        <th>
-                            Token key
-                        </th>
-                        <th>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="token" *ngFor="let token of tokens">
-                        <td class="token-actions">
-                            <button mat-button mat-raised-button
-                                class="remove-token"
-                                (click)="removeToken(token)" >
+                        <mat-icon *ngIf="(!entry.shared_with) || (entry.shared_with == 0)" matTooltip="Nothing shared yet" >remove</mat-icon>
+                    </button>
+
+                    <span class="entry-name">{{ entry.name }}</span>
+
+                    <button mat-button mat-raised-button class="share-button"
+                        (click)="addShare(resource, entry)" [matBadge]="(!!entry.shared_with && entry.shared_with.length) || null" >
+                        <div class="annotated-icon">
+                            <label>Share</label>
+                            <mat-icon>share</mat-icon>
+                        </div>
+                    </button>
+
+                    <ul class="expanded-contents" *ngIf="entry.shared_with && groupsById">
+                        <li *ngFor="let share of entry.shared_with;let shareIndex=index;">
+                            <span class="connector-text">
+                                Shared with
+                            </span>
+                            <mat-form-field class="shared-with">
+                                <mat-label>group</mat-label>
+                                <mat-select [(value)]="share.id">
+                                    <mat-option *ngFor="let group of adminGroups" [value]="group.id" >
+                                        {{ group.name }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <button mat-button mat-raised-button (click)="removeShare(resource, entry, shareIndex)" class="remove-share">
                                 <mat-icon>delete</mat-icon>
                             </button>
-                        </td>
-                        <td class="token-name">{{ token.name }}</td>
-                        <td class="token-value" *ngIf="token.key">
-                            {{ token.key }}
-
-                            <span class="note">
-                                Copy now the tooltip. Later it won't be possible to view it.
-                            </span>
-                        </td>
-                        <td class="token-value redacted" *ngIf="!token.key"
-                            matTooltip="Token keys cannot be read after created">
-                            **************
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
         </div>
+
+        <div *ngIf="dirtyShares"  class="confirm-cancel-shares">
+            <span class="explanation">
+                You've prepared some changes for the resource sharing.
+            </span>
+
+            <button #resetShareChanges mat-button mat-raised-button  class="reset-share-button reset-button" (click)="resetShares()">
+                <mat-icon>clear</mat-icon>
+                Cancel
+            </button>
+
+            <button #applyShareChanges mat-button mat-raised-button  class="save-share-button confirm-button"
+                (click)="applyShares()">
+                <mat-icon>save</mat-icon>
+                Apply changes
+
+                <span class="load-bg"></span>
+            </button>
+        </div>
+
     </div>
 </section>
 
-<section *ngIf="resources && resources.length > 0" class="resources">
-    <h4>Resources</h4>
-
-    <div class="resource-entry" *ngFor="let resource of resources">
-        <div class="resource-name">{{ resource.name }}</div>
-
-        <ul class="resource-options">
-            <li *ngFor="let entry of resource.values"
-                class="expanded-{{ (!!expandedResources[resource.name]) && (!!expandedResources[resource.name][entry.id]) }}">
-                <button mat-button class="toggle-fold" (click)="toggleFold(resource, entry)">
-                    <mat-icon class="fold-open">unfold_more</mat-icon>
-                    <mat-icon class="fold-close">unfold_less</mat-icon>
-                </button>
-
-                <span class="entry-name">{{ entry.name }}</span>
-
-                <button mat-button mat-raised-button class="share-button"
-                    (click)="addShare(resource, entry)" [matBadge]="(!!entry.shared_with && entry.shared_with.length) || null" >
-                    <div class="annotated-icon">
-                        <label>Share</label>
-                        <mat-icon>share</mat-icon>
-                    </div>
-                </button>
-
-                <ul class="shares" *ngIf="entry.shared_with && groupsById">
-                    <li *ngFor="let share of entry.shared_with;let shareIndex=index;">
-                        <button mat-button mat-raised-button (click)="removeShare(resource, entry, shareIndex)" class="remove-share">
-                            <mat-icon>clear</mat-icon>
-                        </button>
-                        <span class="connector-text">
-                            Shared with
-                        </span>
-                        <mat-form-field class="shared-with">
-                            <mat-label>group</mat-label>
-                            <mat-select [(value)]="share.id">
-                                <mat-option *ngFor="let group of adminGroups" [value]="group.id" >
-                                    {{ group.name }}
-                                </mat-option>
-                            </mat-select>
-                        </mat-form-field>
-                    </li>
-                </ul>
-            </li>
-        </ul>
-    </div>
-
-    <div *ngIf="dirtyShares"  class="confirm-cancel-shares">
-        <span class="explanation">
-            You've prepared some changes for the resource sharing.
-        </span>
-
-        <button #resetShareChanges mat-button mat-raised-button  class="reset-share-button reset-button" (click)="resetShares()">
-            <mat-icon>clear</mat-icon>
-            Cancel
+<section *ngIf="signalStream" class="signals expanded-{{ expandedSignalInfo }}">
+    <h4>
+        <button mat-button class="toggle-fold" (click)="expandedSignalInfo = !expandedSignalInfo">
+            <mat-icon class="fold-open">expand_more</mat-icon>
+            <mat-icon class="fold-close">unfold_less</mat-icon>
         </button>
+        <span class="title">Signals</span>
+    </h4>
 
-        <button #applyShareChanges mat-button mat-raised-button  class="save-share-button confirm-button"
-            (click)="applyShares()">
-            <mat-icon>save</mat-icon>
-            Apply changes
-
-            <span class="load-bg"></span>
-        </button>
-    </div>
-
-</section>
-
-<section *ngIf="signalStream" class="signals">
-    <h4>Signals</h4>
-
-    <div class="signal-terminal">
-        <div *ngFor="let signal of signalStream | async" class="signal-message">
-            {{ _stringify(signal, null, 4) }}
+    <div class="expanded-contents">
+        <div class="signal-terminal">
+            <div *ngFor="let signal of signalStream | async" class="signal-message">
+                {{ _stringify(signal, null, 4) }}
+            </div>
         </div>
     </div>
-
 </section>
 
 <div class="config-option">

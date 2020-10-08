@@ -34,6 +34,9 @@ export class UpdateBridgeDialogComponent {
     dirtyShares = false;
     connectionUrl: string;
 
+    expandedConnectionInfo = false;
+    expandedResourceInfo = false;
+    expandedSignalInfo = false;
     expandedTokens = false;
     tokens: (BridgeTokenInfo| FullBridgeTokenInfo)[];
     options: FormGroup;

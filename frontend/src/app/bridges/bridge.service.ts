@@ -197,7 +197,7 @@ export class BridgeService {
             url += '&as_group=' + asGroup;
         }
 
-        const response = (await this.http.post(url, { name: tokenName },
+        const response = (await this.http.post(url, { name: tokenName.trim() },
                           { headers: this.sessionService.addJsonContentType(
                               this.sessionService.getAuthHeader())
                           }).toPromise());
