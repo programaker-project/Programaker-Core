@@ -110,7 +110,9 @@ accept_json_create_service_port(Req, State=#state{user_id=UserId}) ->
     case automate_service_port_engine:create_service_port({user, UserId}, ServicePortName)  of
         {ok, ServicePortId} ->
             ServicePortUrl = ?URLS:bridge_control_url(ServicePortId),
-            Output = jiffy:encode(#{<<"control_url">> => ServicePortUrl}),
+            Output = jiffy:encode(#{ control_url => ServicePortUrl
+                                   , id => ServicePortId
+                                   }),
             Res2 = cowboy_req:set_resp_body(Output, Req1),
             Res3 = cowboy_req:delete_resp_header(<<"content-type">>,
                                                  Res2),

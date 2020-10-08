@@ -143,7 +143,7 @@ export class BridgeService {
     async setShares(connectionId: string, resourceName: string, shares: BridgeResourceEntry[], options?: { asGroup?: string; }) {
         let url = this.updateConnectionResourceUrl(connectionId, resourceName);
         if (options && options.asGroup) {
-            url += '&as_group=' + options.asGroup;
+            url += '?as_group=' + options.asGroup;
         }
 
         const response = (await this.http.patch(url, { shared: shares },
@@ -155,7 +155,7 @@ export class BridgeService {
     async getBridgeResources(bridgeId: string, asGroup?: string): Promise<BridgeResource[]> {
         let url = this.getBridgeResourcesUrl(bridgeId);
         if (asGroup) {
-            url += '&as_group=' + asGroup;
+            url += '?as_group=' + asGroup;
         }
 
         const response = (await this.http.get(url,
@@ -181,7 +181,7 @@ export class BridgeService {
     public async getBridgeTokens(bridgeId: string, asGroup?: string): Promise<BridgeTokenInfo[]> {
         let url = this.getBridgeTokensUrl(bridgeId);
         if (asGroup) {
-            url += '&as_group=' + asGroup;
+            url += '?as_group=' + asGroup;
         }
 
         const response = (await this.http.get(url,
@@ -194,7 +194,7 @@ export class BridgeService {
     public async createBridgeToken(bridgeId: string, tokenName: string, asGroup: string): Promise<FullBridgeTokenInfo> {
         let url = this.getBridgeTokensUrl(bridgeId);
         if (asGroup) {
-            url += '&as_group=' + asGroup;
+            url += '?as_group=' + asGroup;
         }
 
         const response = (await this.http.post(url, { name: tokenName.trim() },
@@ -208,7 +208,7 @@ export class BridgeService {
     public async revokeToken(bridgeId: string, tokenName: string, asGroup?: string): Promise<void> {
         let url = this.getBridgeTokenByNameUrl(bridgeId, tokenName);
         if (asGroup) {
-            url += '&as_group=' + asGroup;
+            url += '?as_group=' + asGroup;
         }
 
         const response = (await this.http.delete(url,

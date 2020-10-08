@@ -1,12 +1,11 @@
 import { Component, Inject, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { BridgeMetadata } from 'app/bridges/bridge';
 import { BridgeService } from 'app/bridges/bridge.service';
 import { GroupService } from 'app/group.service';
 import { SessionService } from 'app/session.service';
-import { toWebsocketUrl } from 'app/utils';
 
 @Component({
     selector: 'app-add-bridge-dialog',
@@ -20,6 +19,7 @@ import { toWebsocketUrl } from 'app/utils';
 export class AddBridgeDialogComponent {
     @ViewChild('confirmationButton') confirmationButton: MatButton;
     bridgeControlUrl = "";
+    bridgeId: string | null;
     bridgeCreated = false;
 
     options: FormGroup;
@@ -29,7 +29,7 @@ export class AddBridgeDialogComponent {
                 private formBuilder: FormBuilder,
 
                 @Inject(MAT_DIALOG_DATA)
-                public data: { groupId: string }) {
+                public data: { groupId?: string }) {
     }
 
     async ngOnInit() {
@@ -40,7 +40,7 @@ export class AddBridgeDialogComponent {
     }
 
     onBack(): void {
-        this.dialogRef.close({success: this.bridgeCreated});
+        this.dialogRef.close({success: false, id: null, name: null});
     }
 
     create(): void {
@@ -52,10 +52,17 @@ export class AddBridgeDialogComponent {
         classList.remove('completed');
 
         this.bridgeCreated = true;
-        this.bridgeService.createGroupBridge(bridgeName, this.data.groupId).then((BridgeMetadata: BridgeMetadata) => {
-            this.bridgeControlUrl = toWebsocketUrl(BridgeMetadata.control_url);
 
-            this.options.controls.bridgeName.disable();
+        let createGroupProcess: Promise<BridgeMetadata>;
+        if (this.data.groupId) {
+            createGroupProcess = this.bridgeService.createGroupBridge(bridgeName, this.data.groupId);
+        }
+        else {
+            createGroupProcess = this.bridgeService.createServicePort(bridgeName);
+        }
+
+        createGroupProcess.then((BridgeMetadata: BridgeMetadata) => {
+            this.dialogRef.close({success: this.bridgeCreated, bridgeId: BridgeMetadata.id, bridgeName: bridgeName});
         }).catch(() => {
             this.bridgeCreated = false;
         }).then(() => {

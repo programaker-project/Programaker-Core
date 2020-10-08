@@ -58,7 +58,6 @@ import { ServicesComponent } from './services.component';
 
 // Bridges
 import { BridgeIndexComponent } from './bridges/index.component';
-import { BridgeAddComponent } from './bridges/add.component';
 
 // Info
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
@@ -92,7 +91,6 @@ import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/upda
         ProgramDetailComponent,
         FlowEditorComponent,
         BridgeIndexComponent,
-        BridgeAddComponent,
         ServicesComponent,
         LoginFormComponent,
         ResetPasswordStartComponent,
@@ -158,9 +156,7 @@ import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/upda
         AlertModule.forRoot(),
         AppRoutingModule,
     ],
-    exports: [
-        BridgeAddComponent,
-    ],
+    exports: [],
     providers: [],
     bootstrap: [AppComponent],
 })

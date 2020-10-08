@@ -34,7 +34,7 @@ export class UpdateBridgeDialogComponent {
     dirtyShares = false;
     connectionUrl: string;
 
-    expandedConnectionInfo = false;
+    expandedConnectionInfo = true;
     expandedResourceInfo = false;
     expandedSignalInfo = false;
     expandedTokens = false;
@@ -58,7 +58,7 @@ export class UpdateBridgeDialogComponent {
 
                 @Inject(MAT_DIALOG_DATA)
                 public data: {
-                    bridgeInfo: BridgeIndexData,
+                    bridgeInfo: { id: string, name: string },
                     asGroup?: string,
                 }) {
 
@@ -253,11 +253,16 @@ export class UpdateBridgeDialogComponent {
         });
     }
 
+    createNewToken() {
+        this.editableToken = true;
+        this.expandedTokens = true;
+    }
+
     async saveToken() {
         const tokenName = this.options.controls.newTokenName.value;
 
         let saved = false;
-        let tokenInfo;
+        let tokenInfo: BridgeTokenInfo;
         try {
             tokenInfo = await this.bridgeService.createBridgeToken(this.data.bridgeInfo.id, tokenName, this.data.asGroup);
             saved = true;

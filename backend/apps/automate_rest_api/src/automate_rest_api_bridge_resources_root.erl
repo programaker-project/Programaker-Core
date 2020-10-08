@@ -66,22 +66,32 @@ content_types_provided(Req, State) ->
      Req, State}.
 
 to_json(Req, State=#state{ bridge_id=BridgeId, owner=Owner }) ->
-    {ok, #service_port_configuration{resources=Resources}} = automate_service_port_engine:get_bridge_configuration(BridgeId),
-    case automate_service_port_engine:list_established_connections(Owner, BridgeId) of
-        {ok, Results} ->
-            ResourceList = merge_to_map(lists:flatmap(
-                                          fun(#user_to_bridge_connection_entry{id=ConnectionId}) ->
-                                                  {ok, ConnectionShares} = automate_service_port_engine:get_connection_shares(ConnectionId),
+    case automate_service_port_engine:get_bridge_configuration(BridgeId) of
+        {ok, #service_port_configuration{resources=Resources}} ->
+            case automate_service_port_engine:list_established_connections(Owner, BridgeId) of
+                {ok, Results} ->
+                    ResourceList = merge_to_map(lists:flatmap(
+                                                  fun(#user_to_bridge_connection_entry{id=ConnectionId}) ->
+                                                          {ok, ConnectionShares} = automate_service_port_engine:get_connection_shares(ConnectionId),
 
-                                                  lists:map(fun(ResourceName) ->
-                                                                    {ok, #{ <<"result">> := Values }} = automate_service_port_engine:callback_bridge_through_connection(ConnectionId, BridgeId, ResourceName),
-                                                                    {ResourceName, maps:map(fun(K, V) -> V#{ connection_id => ConnectionId
-                                                                                                            , shared_with => find_shares(ConnectionShares, ResourceName, K)
-                                                                                                            } end, Values)}
-                                                            end, Resources)
-                                          end, Results)),
-            Res = ?UTILS:send_json_format(Req),
-            { jiffy:encode(ResourceList), Res, State }
+                                                          lists:map(fun(ResourceName) ->
+                                                                            {ok, #{ <<"result">> := Values }} = automate_service_port_engine:callback_bridge_through_connection(ConnectionId, BridgeId, ResourceName),
+                                                                            {ResourceName, maps:map(fun(K, V) -> V#{ connection_id => ConnectionId
+                                                                                                                   , shared_with => find_shares(ConnectionShares, ResourceName, K)
+                                                                                                                   } end, Values)}
+                                                                    end, Resources)
+                                                  end, Results)),
+                    Res = ?UTILS:send_json_format(Req),
+                    { jiffy:encode(ResourceList), Res, State }
+            end;
+        {error, Reason} ->
+            Code = case Reason of
+                       not_found -> 404
+                   end,
+            Output = jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }),
+            Res = cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req),
+            { stop, Res, State }
+
     end.
 
 merge_to_map(List) ->

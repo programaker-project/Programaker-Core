@@ -4,8 +4,6 @@ import { RouterModule, Routes } from '@angular/router';
 import { BridgeIndexComponent } from './bridges/index.component';
 import { ServicesComponent } from './services.component';
 
-import { BridgeAddComponent } from './bridges/add.component';
-
 import { DashboardComponent } from './old-dashboard/dashboard.component';
 import { NewDashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/user-settings/settings.component';
@@ -54,7 +52,6 @@ const routes: Routes = [
 
     // Bridges
     { path: 'bridges', component: BridgeIndexComponent },
-    { path: 'bridges/add', component: BridgeAddComponent },
 
     // Settings
     { path: 'settings', component: SettingsComponent },
