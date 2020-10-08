@@ -43,6 +43,8 @@
         , create_bridge_token/4
         , list_bridge_tokens/1
         , delete_bridge_token_by_name/2
+        , check_bridge_token/2
+        , can_skip_authentication/1
         ]).
 
 -include("records.hrl").
@@ -414,6 +416,14 @@ list_bridge_tokens(BridgeId) ->
 delete_bridge_token_by_name(BridgeId, TokenName) ->
     ?BACKEND:delete_bridge_token_by_name(BridgeId, TokenName).
 
+-spec check_bridge_token(BridgeId :: binary(), Token :: binary()) -> {ok, boolean()}.
+check_bridge_token(BridgeId, Token) ->
+    ?BACKEND:check_bridge_token(BridgeId, Token).
+
+-spec can_skip_authentication(BridgeId :: binary()) -> {ok, boolean()}.
+can_skip_authentication(BridgeId) ->
+    ?BACKEND:can_skip_authentication(BridgeId).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -422,7 +432,6 @@ delete_bridge_token_by_name(BridgeId, TokenName) ->
 add_service_port_extra({#service_port_entry{ id=Id
                                            , name=Name
                                            , owner=Owner
-                                           , service_id=ServiceId
                                            }, Config}) ->
     {ok, IsConnected} = ?ROUTER:is_bridge_connected(Id),
 
@@ -433,7 +442,6 @@ add_service_port_extra({#service_port_entry{ id=Id
     #service_port_entry_extra{ id=Id
                              , name=Name
                              , owner=Owner
-                             , service_id=ServiceId
                              , is_connected=IsConnected
                              , icon=BridgeIcon
                              }.

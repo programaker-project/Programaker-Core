@@ -46,6 +46,8 @@
         , create_bridge_token/4
         , list_bridge_tokens/1
         , delete_bridge_token_by_name/2
+        , check_bridge_token/2
+        , can_skip_authentication/1
         ]).
 
 -include("records.hrl").
@@ -90,6 +92,7 @@ create_service_port(Owner, ServicePortName) ->
     Entry = #service_port_entry{ id=ServicePortId
                                , name=ServicePortName
                                , owner=Owner
+                               , old_skip_authentication=false %% Only old bridges can skip authentication
                                },
 
     Transaction = fun() ->
@@ -516,7 +519,7 @@ get_user_service_ports({OwnerType, OwnerName}) ->
                           MatchHead = #service_port_entry{ id='_'
                                                          , name='_'
                                                          , owner={'$1', '$2'}
-                                                         , service_id='_'
+                                                         , old_skip_authentication='_'
                                                          },
                           Guards = [ {'==', '$1', OwnerType}
                                    , {'==', '$2', OwnerName}
@@ -804,6 +807,41 @@ delete_bridge_token_by_name(BridgeId, TokenName) ->
         end,
     automate_storage:wrap_transaction(mnesia:transaction(T)).
 
+-spec check_bridge_token(BridgeId :: binary(), Token :: binary()) -> {ok, boolean()}.
+check_bridge_token(BridgeId, Token) ->
+    T = fun() ->
+                case mnesia:read(?BRIDGE_TOKEN_TABLE, Token) of
+                    [] -> {ok, false};
+                    [#bridge_token_entry{bridge_id=BridgeId}] ->
+                        %% TODO: Check that it hasn't expired
+
+                        %% If the bridge could skip auth before, it no longer
+                        %% needs it after authenticating correctly.
+                        case mnesia:read(?SERVICE_PORT_TABLE, BridgeId) of
+                            [#service_port_entry{old_skip_authentication=false}] ->
+                                ok; %% Nothing to do
+                            [Rec=#service_port_entry{old_skip_authentication=true}] ->
+                                ok = mnesia:write(?SERVICE_PORT_TABLE
+                                                 , Rec#service_port_entry{old_skip_authentication=false}
+                                                 , write)
+                        end,
+                        {ok, true}; %% Nothing to do
+                    [#bridge_token_entry{bridge_id=_OtherBridgeId}] ->
+                        {ok, false}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:transaction(T)).
+
+-spec can_skip_authentication(BridgeId :: binary()) -> {ok, boolean()}.
+can_skip_authentication(BridgeId) ->
+    T = fun() ->
+                case mnesia:read(?SERVICE_PORT_TABLE, BridgeId) of
+                    [] -> {ok, false};
+                    [#service_port_entry{old_skip_authentication=CanSkip}] ->
+                        {ok, CanSkip}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:ets(T)).
 
 %%====================================================================
 %% Internal functions
@@ -812,7 +850,7 @@ list_userid_ports({OwnerType, OwnerId}) ->
     MatchHead = #service_port_entry{ id='$1'
                                    , name='_'
                                    , owner={'$2', '$3'}
-                                   , service_id='_'
+                                   , old_skip_authentication='_'
                                    },
     Guards = [ {'==', '$2', OwnerType}
              , {'==', '$3', OwnerId}

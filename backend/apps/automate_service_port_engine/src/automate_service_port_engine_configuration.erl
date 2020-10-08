@@ -261,11 +261,25 @@ get_versioning(Nodes) ->
                                     ok = mnesia:wait_for_tables([ ?BRIDGE_TOKEN_TABLE
                                                                 ], automate_configuration:get_table_wait_time()),
 
-                                    {atomic, ok} = mnesia:add_table_index(?BRIDGE_TOKEN_TABLE, bridge_id)
+                                    {atomic, ok} = mnesia:add_table_index(?BRIDGE_TOKEN_TABLE, bridge_id),
+
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?SERVICE_PORT_TABLE,
+                                                     fun({service_port_entry
+                                                         , Id, Name, Owner, _ServiceId
+                                                         }) ->
+                                                             {service_port_entry
+                                                             , Id, Name, Owner, true
+                                                             }
+                                                     end,
+                                                     [ id, name, owner, old_skip_authentication ],
+                                                     service_port_entry
+                                                    )
                             end
                     }
                   ]
         }.
+
 
 
 db_map_table_to_table(FromTable, ToTable, Function) ->

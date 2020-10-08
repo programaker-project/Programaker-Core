@@ -13,6 +13,7 @@
 -record(state, { owner           :: owner_id()
                , service_port_id :: binary()
                , user_channels   :: #{ owner_id() := any() }
+               , authenticated   :: boolean()
                }).
 
 init(Req, _Opts) ->
@@ -21,11 +22,11 @@ init(Req, _Opts) ->
     {cowboy_websocket, Req, #state{ service_port_id=ServicePortId
                                   , owner=Owner
                                   , user_channels=#{}
+                                  , authenticated=false
                                   }}.
 
 websocket_init(State=#state{ service_port_id=ServicePortId
                            }) ->
-    automate_service_port_engine:register_service_port(ServicePortId),
     {ok, State}.
 
 websocket_handle({text, Msg}, State) ->
@@ -117,6 +118,41 @@ add_to_user_channels(Owner, ChannelData, State=#state{user_channels=UserChannels
             NewUserData = create_user_data(ChannelData),
             { NewUserData, State#state{ user_channels=UserChannels#{ Owner => NewUserData } } }
     end.
+
+
+handle_bridge_message(Msg, State=#state{ service_port_id=BridgeId
+                                       , authenticated=false
+                                       }) ->
+    Data = jiffy:decode(Msg, [return_maps]),
+    Passed = case Data of
+                 #{ <<"type">> := <<"AUTHENTICATION">>
+                  , <<"value">> := #{ <<"token">> := Token
+                                    }
+                  } ->
+                     {ok, Answer} = automate_service_port_engine:check_bridge_token(BridgeId, Token),
+                     Answer;
+                 _ ->
+                     {ok, Answer} = automate_service_port_engine:can_skip_authentication(BridgeId),
+                     case Answer of
+                         true -> skip;
+                         false -> false
+                     end
+             end,
+    case Passed of
+        true ->
+            ok = automate_service_port_engine:register_service_port(BridgeId),
+            {ok, State#state{ authenticated=true }};
+        skip ->
+            ok = automate_service_port_engine:register_service_port(BridgeId),
+            handle_bridge_message(Msg, State#state{ authenticated=true });
+        false ->
+            { reply
+            , { close
+              , <<"Not authenticated">>
+              }
+            , State
+            }
+    end;
 
 handle_bridge_message(Msg, State=#state{ service_port_id=ServicePortId
                                        , owner=Owner
