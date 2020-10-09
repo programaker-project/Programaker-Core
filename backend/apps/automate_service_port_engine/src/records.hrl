@@ -3,9 +3,7 @@
 -record(service_port_entry, { id    :: binary() | ?MNESIA_SELECTOR
                             , name  :: binary() | ?MNESIA_SELECTOR
                             , owner :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
-                            , service_id :: binary() | 'undefined' | ?MNESIA_SELECTOR
-%%% Note: This service ID is unused and to be dropped.
-%%% Check the service_port_configuration record.
+                            , old_skip_authentication :: boolean() | ?MNESIA_SELECTOR
                             }).
 
 
@@ -74,8 +72,7 @@
 -record(service_port_entry_extra, { id    :: binary()
                                   , name  :: binary()
                                   , owner :: owner_id()
-                                  , service_id :: binary() | 'undefined'
-                                                % ↓ Extra data
+                                                  % ↓ Extra data
                                   , is_connected :: boolean()
                                   , icon :: supported_icon_type()
                                   }).
@@ -131,3 +128,11 @@
                                      , name          :: binary() | ?MNESIA_SELECTOR
                                      , shared_with   :: owner_id() | ?OWNER_ID_MNESIA_SELECTOR
                                      }).
+
+-record(bridge_token_entry, { token_key  :: binary() | ?MNESIA_SELECTOR
+                            , token_name :: binary() | ?MNESIA_SELECTOR
+                            , bridge_id  :: binary() | ?MNESIA_SELECTOR
+                            , creation_time        :: non_neg_integer() | ?MNESIA_SELECTOR
+                            , expiration_time      :: non_neg_integer() | undefined | ?MNESIA_SELECTOR
+                            , last_connection_time :: non_neg_integer() | undefined | ?MNESIA_SELECTOR
+                            }).

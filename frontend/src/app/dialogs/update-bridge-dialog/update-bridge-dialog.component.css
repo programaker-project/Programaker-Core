@@ -22,24 +22,152 @@ h2 mat-icon {
 }
 
 button.toggle-fold {
+    min-width: 4ex;
+    padding: 0;
+    border: 1px solid black inset;
+}
+
+
+h4 button {
+    vertical-align: middle;
+}
+
+h4 .title {
+    margin-left: 0.5ex;
+}
+
+.conn-url {
+    margin-left: calc(1em + 2ex);
+    margin-bottom: 1ex;
+}
+
+.redacted {
+    text-decoration: underline dotted;
+}
+
+button.create-token {
+    margin-left: 1em;
+    padding: 0;
     min-width: 5ex;
 }
 
-li.expanded-true button.toggle-fold .fold-open {
+button.remove-token {
+    padding: 0;
+    min-width: 5ex;
+    background-color: #f44;
+    color: white;
+}
+
+.token .note {
+    text-decoration: none;
+    background: #444;
+    padding: 1ex;
+    color: white;
+    border-radius: 4px;
+    margin-left: 1em;
+    display: inline-block;
+}
+
+.token-creation-cell {
+    display: grid;
+    width: max-content;
+    margin-left: 1ex;
+}
+
+.token-creation-cell .token-name {
+    grid-row: 1;
+    grid-column: 1;
+    max-width: 40ex;
+}
+
+.token-creation-cell .error-message {
+    grid-row: 2;
+    grid-column-start: 1;
+    grid-column-end: 1;
+
+    margin-bottom: 2ex;
+}
+
+.token-creation-cell button {
+    grid-row: 1;
+    grid-column: 2;
+    height: 5ex;
+    margin-left: 1em;
+    margin-top: 1ex;
+    width: max-content;
+}
+
+span.value {
+    padding-left: 1ex;
+    text-decoration: underline dotted;
+}
+
+.expanded-true > button.toggle-fold .fold-open  {
     display: none;
 }
 
-li.expanded-false button.toggle-fold .fold-close {
+.expanded-true > h4 button.toggle-fold .fold-open  {
     display: none;
 }
 
-li.expanded-false .shares {
+.expanded-false > button.toggle-fold .fold-close {
     display: none;
 }
 
-.resource-entry {
+.expanded-false > h4 button.toggle-fold .fold-close {
+    display: none;
+}
+
+.expanded-false .token-list {
+    display: none;
+}
+
+.token-list {
     padding-left: 1ex;
     border-left: 1px solid rgba(0,0,0,0.3);
+    margin-left: 1em;
+}
+
+.token-list table {
+    margin-top: 1ex;
+    width: 100%;
+}
+
+.token-list th, .token-list td {
+    padding: 0.5ex 1ex 0.5ex 1ex;
+}
+
+.token-list tbody tr:nth-child(odd) {
+    background-color: #fed;
+}
+
+.token-list th.action-col, .token-list td.action-col {
+    border: none;
+}
+
+.token-value input {
+    text-decoration: underline rgba(0,0,0,0.3);
+}
+
+
+.expanded-false .expanded-contents {
+    display: none;
+}
+
+.expanded-contents {
+    padding-left: 1ex;
+    border-left: 1px solid rgba(0,0,0,0.3);
+    margin-left: 1em;
+}
+
+section {
+    margin-top: 1ex;
+}
+
+section.signals .expanded-contents {
+    padding: 0;
+    margin: 0;
+    border: none;
 }
 
 .resource-name {
@@ -72,9 +200,11 @@ ul.resource-options {
 }
 
 button.remove-share {
-    background-color: #fa0;
+    background-color: #f44;
+    color: white;
     min-height: 3ex;
-    min-width: 4ex;
+    min-width: 5ex;
+    margin-left: 1ex;
 
     padding: 0;
     vertical-align: super;
@@ -94,6 +224,7 @@ button.remove-share mat-icon {
 
 .entry-name {
     vertical-align: middle;
+    margin-left: 1ex;
 }
 
 .annotated-icon mat-icon {

@@ -146,13 +146,15 @@ export class GroupDashboardComponent {
 
     addBridge(): void {
         const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '50%',
-                                                                       data: { groupId: this.groupInfo.id,
+                                                                       data: { groupId: this.groupInfo.id
                                                                              },
                                                                      });
 
-        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+        dialogRef.afterClosed().subscribe((result: {success: boolean, bridgeId?: string, bridgeName?: string}) => {
             if (result && result.success) {
                 this.updateBridges();
+
+                this.openBridgePanel({ id: result.bridgeId, name: result.bridgeName });
             }
         });
     }
@@ -190,7 +192,7 @@ export class GroupDashboardComponent {
         }
     }
 
-    openBridgePanel(bridge: BridgeIndexData) {
+    openBridgePanel(bridge: { id: string, name: string }) {
         const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
                                                                           maxHeight: '100vh',
                                                                           autoFocus: false,

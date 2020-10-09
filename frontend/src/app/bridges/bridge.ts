@@ -2,6 +2,7 @@ import { IconReference } from '../connection';
 
 export interface BridgeMetadata {
     control_url: string;
+    id: string;
 };
 
 export interface BridgeIndexData {
@@ -39,3 +40,11 @@ export interface BridgeResourceEntry{
 export type BridgeResource = { name: string, values: BridgeResourceEntry[] };
 
 export type BridgeSignal = any;
+
+export interface BridgeTokenInfo {
+    name: string,
+};
+
+export interface FullBridgeTokenInfo extends BridgeTokenInfo {
+    key: string,
+};

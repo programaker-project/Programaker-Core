@@ -16,31 +16,14 @@
         <div *ngIf="options.controls.bridgeName.errors.minlength">Bridge name requires at least {{ options.controls.bridgeName.errors.minlength.requiredLength }} characters</div>
 	</mat-error>
 
-    <div *ngIf="bridgeControlUrl">
-        <mat-form-field class="bridge-url-field">
-            <input matInput
-                editable
-                id="bridgeControlUrl"
-                name="bridgeControlUrl"
-                placeholder="Bridge control URL"
-                readonly="readonly"
-                [value]="bridgeControlUrl"
-            />
-        </mat-form-field>
-    </div>
-
 
     <div class="accept-cancel">
         <button class="confirm-button" #confirmationButton
             [disabled]="!options.valid || bridgeCreated"
             (click)="create()"
             mat-button mat-raised-button>
-            <span *ngIf="!bridgeCreated">
-                Create
-            </span>
-            <span *ngIf="bridgeCreated">
-                Done!
-            </span>
+
+            Create
 
             <span class="load-bg"></span>
         </button>
@@ -52,12 +35,8 @@
         <button
             (click)="onBack()"
             mat-button mat-raised-button>
-            <span *ngIf="!bridgeCreated">
-                Go back
-            </span>
-            <span *ngIf="bridgeCreated">
-                OK
-            </span>
+
+            Go back
         </button>
     </div>
 </div>

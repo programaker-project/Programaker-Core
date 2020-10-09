@@ -91,9 +91,8 @@ to_json(Req, State=#state{group_id=GroupId}) ->
 to_map({#service_port_entry{ id=Id
                            , name=Name
                            , owner={OwnerType, OwnerId}
-                           , service_id=ServiceId
                            }
-       , #service_port_configuration{}
+       , #service_port_configuration{ service_id=ServiceId }
        }) ->
     #{ <<"id">> => Id
      , <<"name">> => Name

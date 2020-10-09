@@ -317,11 +317,11 @@ get_service_enable_how_to(Username, ServiceId) ->
     end.
 
 
--spec create_service_port(binary(), binary()) -> {ok, binary()}.
+-spec create_service_port(binary(), binary()) -> {ok, {binary(), binary()}}.
 create_service_port(Username, ServicePortName) ->
     {ok, Owner} = automate_storage:get_userid_from_username(Username),
     {ok, ServicePortId } = automate_service_port_engine:create_service_port(Owner, ServicePortName),
-    {ok, ?URLS:bridge_control_url(ServicePortId)}.
+    {ok, {?URLS:bridge_control_url(ServicePortId), ServicePortId}}.
 
 -spec list_custom_blocks_from_username(binary()) -> {ok, map()}.
 list_custom_blocks_from_username(Username) ->

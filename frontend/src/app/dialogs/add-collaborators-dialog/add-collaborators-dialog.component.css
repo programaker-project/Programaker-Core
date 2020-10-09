@@ -22,7 +22,7 @@ button.remove-collaborator {
     border-radius: 4px;
     min-height: 3ex;
     vertical-align: sub;
-    background-color: #fa0;
+    background-color: #f77;
 }
 
 button.remove-collaborator mat-icon {

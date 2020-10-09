@@ -12,6 +12,8 @@
                   , automate_stats
                   , automate_storage
                   , automate_configuration
+                  , uuid
+                  , eargon2
                   ]},
    {env, [
          ]},

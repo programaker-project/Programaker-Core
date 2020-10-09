@@ -116,7 +116,9 @@ accept_json_create_service_port(Req, State=#state{group_id=GroupId}) ->
         {ok, ServicePortId} ->
             Url = ?URLS:bridge_control_url(ServicePortId),
 
-            Output = jiffy:encode(#{<<"control_url">> => Url}),
+            Output = jiffy:encode(#{ control_url => Url
+                                   , id => ServicePortId
+                                   }),
             Res2 = cowboy_req:set_resp_body(Output, Req1),
             Res3 = cowboy_req:delete_resp_header(<<"content-type">>,
                                                  Res2),

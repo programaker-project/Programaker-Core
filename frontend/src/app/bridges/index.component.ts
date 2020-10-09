@@ -1,17 +1,13 @@
-import * as progbar from '../ui/progbar';
-
 import { Component } from '@angular/core';
-import { ServiceService } from '../service.service';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-
+import { AddBridgeDialogComponent } from 'app/dialogs/add-bridge-dialog/add-bridge-dialog.component';
+import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
+import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
-
-import { BridgeService } from './bridge.service';
 import { BridgeIndexData } from './bridge';
-import { BridgeDeleteDialogComponent } from './delete-dialog.component';
-import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
+import { BridgeService } from './bridge.service';
 
 
 @Component({
@@ -51,22 +47,33 @@ export class BridgeIndexComponent {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 }
                 else {
-                    this.refresh_bridge_list();
+                    this.refreshBridgeList();
                 }
             });
     }
 
-    refresh_bridge_list(): void {
+    refreshBridgeList(): void {
         this.bridgeService.listUserBridges().then((data) => {
             this.bridges = data.bridges;
         });
     }
 
     addBridge(): void {
-        this.router.navigate(['/bridges/add']);
+        const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '50%',
+                                                                       data: { },
+                                                                     });
+
+        dialogRef.afterClosed().subscribe((result: {success: boolean, bridgeId?: string, bridgeName?: string}) => {
+            if (result && result.success) {
+                this.refreshBridgeList();
+
+                this.showBridgeDetail({ id: result.bridgeId, name: result.bridgeName });
+            }
+        });
+
     }
 
-    showBridgeDetail(bridge: BridgeIndexData): void {
+    showBridgeDetail(bridge: { id: string, name: string }): void {
         const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
                                                                           maxHeight: '100vh',
                                                                           autoFocus: false,
@@ -76,7 +83,7 @@ export class BridgeIndexComponent {
 
         dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
             if (result && result.success) {
-                this.refresh_bridge_list();
+                this.refreshBridgeList();
             }
         });
     }

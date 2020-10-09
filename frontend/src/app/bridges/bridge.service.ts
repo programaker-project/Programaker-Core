@@ -4,9 +4,7 @@ import { addTokenQueryString, toWebsocketUrl } from 'app/utils';
 import { Observable, Observer } from 'rxjs';
 import * as API from '../api-config';
 import { SessionService } from '../session.service';
-import { BridgeIndexData, BridgeMetadata, BridgeResource, BridgeResourceEntry, BridgeResourceMap, BridgeSignal, FullOwnerId } from './bridge';
-
-
+import { BridgeIndexData, BridgeMetadata, BridgeResource, BridgeResourceEntry, BridgeResourceMap, BridgeSignal, FullOwnerId, BridgeTokenInfo, FullBridgeTokenInfo } from './bridge';
 
 export type BridgeInfoUpdate = { count: number };
 
@@ -56,8 +54,20 @@ export class BridgeService {
         return `${API.ApiRoot}/bridges/by-id/${bridgeId}/resources`;
     }
 
+    private getBridgeTokensUrl(bridgeId: string): string {
+        return `${API.ApiRoot}/bridges/by-id/${bridgeId}/tokens`;
+    }
+
+    private getBridgeTokenByNameUrl(bridgeId: string, tokenName: string): string {
+        return `${API.ApiRoot}/bridges/by-id/${bridgeId}/tokens/by-name/${tokenName}`;
+    }
+
     private updateConnectionResourceUrl(connectionId: string, resourceName: string): string {
         return `${API.ApiRoot}/connections/by-id/${connectionId}/resources/by-name/${resourceName}`;
+    }
+
+    public getConnectionUrl(bridgeId: string): string {
+        return toWebsocketUrl(`${API.ApiRoot}/bridges/by-id/${bridgeId}/communication`);
     }
 
     async createServicePort(name: string): Promise<BridgeMetadata> {
@@ -133,7 +143,7 @@ export class BridgeService {
     async setShares(connectionId: string, resourceName: string, shares: BridgeResourceEntry[], options?: { asGroup?: string; }) {
         let url = this.updateConnectionResourceUrl(connectionId, resourceName);
         if (options && options.asGroup) {
-            url += '&as_group=' + options.asGroup;
+            url += '?as_group=' + options.asGroup;
         }
 
         const response = (await this.http.patch(url, { shared: shares },
@@ -145,7 +155,7 @@ export class BridgeService {
     async getBridgeResources(bridgeId: string, asGroup?: string): Promise<BridgeResource[]> {
         let url = this.getBridgeResourcesUrl(bridgeId);
         if (asGroup) {
-            url += '&as_group=' + asGroup;
+            url += '?as_group=' + asGroup;
         }
 
         const response = (await this.http.get(url,
@@ -167,6 +177,47 @@ export class BridgeService {
 
         return resources;
     }
+
+    public async getBridgeTokens(bridgeId: string, asGroup?: string): Promise<BridgeTokenInfo[]> {
+        let url = this.getBridgeTokensUrl(bridgeId);
+        if (asGroup) {
+            url += '?as_group=' + asGroup;
+        }
+
+        const response = (await this.http.get(url,
+                                              { headers: this.sessionService.getAuthHeader() })
+            .toPromise());
+
+        return (response['tokens'] as BridgeTokenInfo[]) || [];
+    }
+
+    public async createBridgeToken(bridgeId: string, tokenName: string, asGroup: string): Promise<FullBridgeTokenInfo> {
+        let url = this.getBridgeTokensUrl(bridgeId);
+        if (asGroup) {
+            url += '?as_group=' + asGroup;
+        }
+
+        const response = (await this.http.post(url, { name: tokenName.trim() },
+                          { headers: this.sessionService.addJsonContentType(
+                              this.sessionService.getAuthHeader())
+                          }).toPromise());
+
+        return response as FullBridgeTokenInfo;
+    }
+
+    public async revokeToken(bridgeId: string, tokenName: string, asGroup?: string): Promise<void> {
+        let url = this.getBridgeTokenByNameUrl(bridgeId, tokenName);
+        if (asGroup) {
+            url += '?as_group=' + asGroup;
+        }
+
+        const response = (await this.http.delete(url,
+                                                 { headers: this.sessionService.addJsonContentType(
+                                                     this.sessionService.getAuthHeader())
+                                                 }).toPromise());
+
+    }
+
 
     getBridgeSignals(bridgeId: string, asGroup?: string): Observable<BridgeSignal> {
         const token = this.sessionService.getToken();

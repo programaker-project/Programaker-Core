@@ -221,7 +221,6 @@ collaborator_to_json({ #registered_user_entry{ id=Id
 bridge_to_json(#service_port_entry_extra{ id=Id
                                         , name=Name
                                         , owner={OwnerType, OwnerId}
-                                        , service_id=ServiceId
                                         , is_connected=IsConnected
                                         , icon=Icon
                                         }) ->
@@ -229,7 +228,6 @@ bridge_to_json(#service_port_entry_extra{ id=Id
      , <<"name">> => Name
      , <<"owner">> => OwnerId
      , <<"owner_full">> => #{type => OwnerType, id => OwnerId}
-     , <<"service_id">> => ServiceId
      , <<"is_connected">> => IsConnected
      , <<"icon">> => serialize_icon(Icon)
      }.

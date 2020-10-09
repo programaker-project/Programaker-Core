@@ -39,6 +39,12 @@
         , get_connection_bridge/1
         , get_resources_shared_with/1
         , get_resources_shared_with_on_bridge/2
+
+        , create_bridge_token/4
+        , list_bridge_tokens/1
+        , delete_bridge_token_by_name/2
+        , check_bridge_token/2
+        , can_skip_authentication/1
         ]).
 
 -include("records.hrl").
@@ -396,6 +402,28 @@ get_resources_shared_with_on_bridge(Owner, BridgeId) ->
                       end, Shares)}.
 
 
+
+-spec create_bridge_token(BridgeId :: binary(), Owner :: owner_id(), TokenName :: binary(), ExpiresOn :: non_neg_integer() | undefined)
+                         -> {ok, binary()} | {error, name_taken}.
+create_bridge_token(BridgeId, Owner, TokenName, ExpiresOn) ->
+    ?BACKEND:create_bridge_token(BridgeId, Owner, TokenName, ExpiresOn).
+
+-spec list_bridge_tokens(BridgeId :: binary()) -> {ok, [#bridge_token_entry{}]}.
+list_bridge_tokens(BridgeId) ->
+    ?BACKEND:list_bridge_tokens(BridgeId).
+
+-spec delete_bridge_token_by_name(BridgeId :: binary(), TokenName :: binary()) -> ok | {error, not_found}.
+delete_bridge_token_by_name(BridgeId, TokenName) ->
+    ?BACKEND:delete_bridge_token_by_name(BridgeId, TokenName).
+
+-spec check_bridge_token(BridgeId :: binary(), Token :: binary()) -> {ok, boolean()}.
+check_bridge_token(BridgeId, Token) ->
+    ?BACKEND:check_bridge_token(BridgeId, Token).
+
+-spec can_skip_authentication(BridgeId :: binary()) -> {ok, boolean()}.
+can_skip_authentication(BridgeId) ->
+    ?BACKEND:can_skip_authentication(BridgeId).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -404,7 +432,6 @@ get_resources_shared_with_on_bridge(Owner, BridgeId) ->
 add_service_port_extra({#service_port_entry{ id=Id
                                            , name=Name
                                            , owner=Owner
-                                           , service_id=ServiceId
                                            }, Config}) ->
     {ok, IsConnected} = ?ROUTER:is_bridge_connected(Id),
 
@@ -415,7 +442,6 @@ add_service_port_extra({#service_port_entry{ id=Id
     #service_port_entry_extra{ id=Id
                              , name=Name
                              , owner=Owner
-                             , service_id=ServiceId
                              , is_connected=IsConnected
                              , icon=BridgeIcon
                              }.
