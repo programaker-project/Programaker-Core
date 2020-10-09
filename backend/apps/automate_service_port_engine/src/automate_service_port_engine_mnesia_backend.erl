@@ -809,10 +809,12 @@ delete_bridge_token_by_name(BridgeId, TokenName) ->
 
 -spec check_bridge_token(BridgeId :: binary(), Token :: binary()) -> {ok, boolean()}.
 check_bridge_token(BridgeId, Token) ->
+    CurrentTime = erlang:system_time(second),
+
     T = fun() ->
                 case mnesia:read(?BRIDGE_TOKEN_TABLE, Token) of
                     [] -> {ok, false};
-                    [#bridge_token_entry{bridge_id=BridgeId}] ->
+                    [TokenRec=#bridge_token_entry{bridge_id=BridgeId}] ->
                         %% TODO: Check that it hasn't expired
 
                         %% If the bridge could skip auth before, it no longer
@@ -825,6 +827,10 @@ check_bridge_token(BridgeId, Token) ->
                                                  , Rec#service_port_entry{old_skip_authentication=false}
                                                  , write)
                         end,
+
+                        %% Update token last used time
+                        ok = mnesia:write(?BRIDGE_TOKEN_TABLE, TokenRec#bridge_token_entry{ last_connection_time=CurrentTime }, write),
+
                         {ok, true}; %% Nothing to do
                     [#bridge_token_entry{bridge_id=_OtherBridgeId}] ->
                         {ok, false}
