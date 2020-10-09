@@ -24,7 +24,6 @@ h2 mat-icon {
 button.toggle-fold {
     min-width: 4ex;
     padding: 0;
-    border: 1px solid black inset;
 }
 
 
