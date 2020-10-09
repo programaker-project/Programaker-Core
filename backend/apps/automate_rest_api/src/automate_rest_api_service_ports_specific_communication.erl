@@ -129,13 +129,16 @@ handle_bridge_message(Msg, State=#state{ service_port_id=BridgeId
                   , <<"value">> := #{ <<"token">> := Token
                                     }
                   } ->
-                     {ok, Answer} = automate_service_port_engine:check_bridge_token(BridgeId, Token),
-                     Answer;
+                     case automate_service_port_engine:check_bridge_token(BridgeId, Token) of
+                         {ok, true} -> true;
+                         {ok, false} ->
+                             {false, mismatch}
+                     end;
                  _ ->
                      {ok, Answer} = automate_service_port_engine:can_skip_authentication(BridgeId),
                      case Answer of
                          true -> skip;
-                         false -> false
+                         false -> {false, not_found}
                      end
              end,
     case Passed of
@@ -145,10 +148,16 @@ handle_bridge_message(Msg, State=#state{ service_port_id=BridgeId
         skip ->
             ok = automate_service_port_engine:register_service_port(BridgeId),
             handle_bridge_message(Msg, State#state{ authenticated=true });
-        false ->
+        {false, Reason} ->
+            automate_logging:log_api(warning, ?MODULE,
+                                     binary:list_to_bin(lists:flatten(io_lib:format("Authentication error on bridge_id=~p (~p)",
+                                                                                    [ BridgeId, Reason ])))),
             { reply
             , { close
-              , <<"Not authenticated">>
+              , case Reason of
+                    mismatch -> <<"Not matching token">>;
+                    not_found -> <<"Token not found">>
+                end
               }
             , State
             }
