@@ -1,94 +1,94 @@
 ' Just the simple path
 @startuml happy-path.png
 participant program
-participant plaza
+participant backend
 participant bridge
 
-program -> plaza: Run order
-plaza -> bridge: Run order
+program -> backend: Run order
+backend -> bridge: Run order
 ... bridge computes response ...
-plaza <-- bridge: Result
-program <-- plaza: Result
+backend <-- bridge: Result
+program <-- backend: Result
 @enduml
 
 @startuml long-running-operation.png
 participant program
-participant plaza
+participant backend
 participant bridge
 
-program -> plaza: Run order
-plaza -> bridge: Run order
+program -> backend: Run order
+backend -> bridge: Run order
 ... bridge computes response ...
-plaza -> bridge: Still running?
-plaza <-- bridge: Yes
+backend -> bridge: Still running?
+backend <-- bridge: Yes
 ... bridge still computes response ...
-plaza <-- bridge: Result
-program <-- plaza: Result
+backend <-- bridge: Result
+program <-- backend: Result
 @enduml
 
 @startuml failed-operation.png
 participant program
-participant plaza
+participant backend
 participant bridge
 
-program -> plaza: Run order
-plaza -> bridge: Run order
+program -> backend: Run order
+backend -> bridge: Run order
 ... bridge fails ...
-plaza -> bridge: Still running?
-plaza <-- bridge: No
-program <-- plaza: Error
+backend -> bridge: Still running?
+backend <-- bridge: No
+program <-- backend: Error
 @enduml
 
 
 @startuml error-on-connection-to-bridge.png
 participant program
-participant plaza
+participant backend
 participant bridge
 
-program -> plaza: Run order
-plaza -> bridge: Run order
+program -> backend: Run order
+backend -> bridge: Run order
 ... bridge connection fails silently ...
-plaza -X bridge: Still running?
+backend -X bridge: Still running?
 ... Timeout time passes ...
-program <-- plaza: Error
+program <-- backend: Error
 @enduml
 
 @startuml disconnection-to-bridge.png
 participant program
-participant plaza
+participant backend
 participant bridge
 
-program -> plaza: Run order
-plaza -> bridge: Run order
+program -> backend: Run order
+backend -> bridge: Run order
 ... bridge connection fails ...
-plaza -> plaza: Connection failed
-program <-- plaza: Error
+backend -> backend: Connection failed
+program <-- backend: Error
 @enduml
 
 @startuml too-long-running-operation.png
 participant program
-participant plaza
+participant backend
 participant bridge
 
-program -> plaza: Run order
-plaza -> bridge: Run order
+program -> backend: Run order
+backend -> bridge: Run order
 ... bridge computes response ...
-plaza -> bridge: Still running?
-plaza <-- bridge: Yes
+backend -> bridge: Still running?
+backend <-- bridge: Yes
 ... this repeats MaxTimeouts ...
-program <-- plaza: Result
-plaza -> bridge: Cancel
+program <-- backend: Result
+backend -> bridge: Cancel
 
 @enduml
 
 
 @startuml no-bridge-running.png
 participant program
-participant plaza
+participant backend
 participant bridge
 
-program -> plaza: Run order
+program -> backend: Run order
 destroy bridge
 
-program <-- plaza: Error
+program <-- backend: Error
 @enduml

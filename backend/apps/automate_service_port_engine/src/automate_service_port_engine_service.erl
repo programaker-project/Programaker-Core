@@ -112,7 +112,7 @@ send_registration_data(Owner, RegistrationData, [ServicePortId], Properties) ->
                            Result;
 
                        #{ <<"success">> := false, <<"error">> := <<"No registerer available">> } ->
-                           %% For compatibility with plaza/programaker-bridge library before connections
+                           %% For compatibility with programaker-bridge library before connections
                            %% where introduced.
                            Name = get_name_from_result(Result),
                            ok = ?BACKEND:establish_connection(ServicePortId, Owner, ConnectionId, Name),

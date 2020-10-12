@@ -380,8 +380,8 @@
         "for": "0m",
         "frequency": "60s",
         "handler": 1,
-        "message": "Failing plaza service",
-        "name": "Plaza services alert",
+        "message": "Failing programaker service",
+        "name": "Programaker services alert",
         "noDataState": "alerting",
         "notifications": [
           {
@@ -3106,7 +3106,7 @@
         "tagValuesQuery": "label_values({job=\"$tag\"},instance)",
         "tags": [
           "blackbox",
-          "plaza-dev"
+          "programaker-dev"
         ],
         "tagsQuery": "label_values(job)",
         "type": "query",
@@ -3218,7 +3218,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "Plaza",
+  "title": "Programaker",
   "uid": "iKcIpW8mk",
   "version": 11
 }

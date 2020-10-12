@@ -1,13 +1,13 @@
-# What is Plaza?
+# What is Programaker?
 
-Plaza is the project behind [PrograMaker](https://programaker.com). It has the goal of enabling anyone to build anything, without the need for code, servers or technical expertise.
+Programaker is the project behind [PrograMaker.com](https://programaker.com). It has the goal of enabling anyone to build anything, without the need for code, servers or technical expertise.
 
-Plaza programs are not run on your computer. Thus, it is especially suited for simple tasks that don't require a lot of computing power but that must run contiguously, for example:
+Programaker's programs are not run on your computer. Thus, it is especially suited for simple tasks that don't require a lot of computing power but that must run contiguously, for example:
 * Chat bots
 * Connections between services
 * Scheduled tasks
 
-Plaza is programmed using MIT's Scratch language. Through it, and Plaza's distributed computer, the steps to create a new program are:
+Programaker can be programmed using MIT's Scratch language (more in progress). Through it, and Programaker's distributed computer, the steps to create a new program are:
 * Open a new program in your web browser
 * Configure the program steps
 * Press run
@@ -16,20 +16,20 @@ Plaza is programmed using MIT's Scratch language. Through it, and Plaza's distri
 
 ## Bridges
 
-Plaza bridges are the components that connect the Plaza platform with external services and devices. This is a list of some bridges in no particular order.
+Programaker bridges are the components that connect the Programaker platform with external services and devices. This is a list of some bridges in no particular order.
 
 | Name                                                                                | Maturity            | Language    | Description                                                    | License                                                                                                |
 |-------------------------------------------------------------------------------------|---------------------|-------------|----------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | Hue lights [[repo](https://gitlab.com/adri1177/hue-lights-bridge)]                  | Usable/Experimental | Python      | Bridge for Phillips Hue lights                                 | [Apache License 2.0](https://gitlab.com/adri1177/hue-lights-bridge/blob/master/LICENSE)                |
-| AEMET [[repo](https://gitlab.com/plaza-project/bridges/aemet-bridge)]               | Usable/Experimental | Python      | Bridge for Spanish Weather Agency predictions.                 | [Apache License 2.0](https://gitlab.com/plaza-project/bridges/aemet-bridge/blob/master/LICENSE)        |
-| Meteogalicia [[repo](https://gitlab.com/plaza-project/bridges/meteogalicia-bridge)] | Usable/Experimental | Python      | Bridge for Galician weather predictions.                       | [Apache License 2.0](https://gitlab.com/plaza-project/bridges/meteogalicia-bridge/blob/master/LICENSE) |
-| Twitter bridge [[repo](https://gitlab.com/plaza-project/bridges/twitter-bridge)]    | In development      | Python      | Bridge to read data from Twitter.                              | [Apache License 2.0](https://gitlab.com/plaza-project/bridges/twitter-bridge/blob/master/LICENSE)      |
-| Toggl bridge [[repo](https://gitlab.com/plaza-project/bridges/toggl-bridge)]        | Usable/Experimental | Python      | Bridge to keep track of time on Toggl platform.                | [Apache License 2.0](https://gitlab.com/plaza-project/bridges/toggl-bridge/blob/master/LICENSE)        |
-| Telegram bridge [[repo](https://gitlab.com/plaza-project/bridges/telegram-bridge)]  | Usable/Experimental | Python      | Bridge to control bots on the Telegram IM network.             | [Apache License 2.0](https://gitlab.com/plaza-project/bridges/telegram-bridge/blob/develop/LICENSE)    |
-| Unix bridge [[repo](https://gitlab.com/plaza-project/bridges/unix-bridge)]          | Experimental        | Python/Bash | Library to write bridges using Unix tools (like bash scripts). | [Apache License 2.0](https://gitlab.com/plaza-project/bridges/unix-bridge/blob/master/LICENSE)         |
-| Matrix bridge [[repo](https://gitlab.com/plaza-project/bridges/matrix-bridge)]      | Usable/Experimental | Python      | Bridge for the Matrix IM network.                              | [Apache License 2.0](https://gitlab.com/plaza-project/bridges/matrix-bridge/blob/master/LICENSE)       |
-| XMPP bridge [[repo](https://gitlab.com/plaza-project/bridges/xmpp-bridge)]          | Experimental        | Python      | Bridge for the XMPP/Jabber IM network.                         | [Apache License 2.0](https://gitlab.com/plaza-project/bridges/xmpp-bridge/blob/master/LICENSE)         |
-| Gitlab bridge [[repo](https://gitlab.com/plaza-project/bridges/gitlab-bridge)]      | Experimental        | Python      | Bridge for the Gitlab plaform.                                 | [Apache License 2.0](https://gitlab.com/plaza-project/bridges/gitlab-bridge/blob/master/LICENSE)       |
+| AEMET [[repo](https://gitlab.com/programaker-project/bridges/aemet-bridge)]               | Usable/Experimental | Python      | Bridge for Spanish Weather Agency predictions.                 | [Apache License 2.0](https://gitlab.com/programaker-project/bridges/aemet-bridge/blob/master/LICENSE)        |
+| Meteogalicia [[repo](https://gitlab.com/programaker-project/bridges/meteogalicia-bridge)] | Usable/Experimental | Python      | Bridge for Galician weather predictions.                       | [Apache License 2.0](https://gitlab.com/programaker-project/bridges/meteogalicia-bridge/blob/master/LICENSE) |
+| Twitter bridge [[repo](https://gitlab.com/programaker-project/bridges/twitter-bridge)]    | In development      | Python      | Bridge to read data from Twitter.                              | [Apache License 2.0](https://gitlab.com/programaker-project/bridges/twitter-bridge/blob/master/LICENSE)      |
+| Toggl bridge [[repo](https://gitlab.com/programaker-project/bridges/toggl-bridge)]        | Usable/Experimental | Python      | Bridge to keep track of time on Toggl platform.                | [Apache License 2.0](https://gitlab.com/programaker-project/bridges/toggl-bridge/blob/master/LICENSE)        |
+| Telegram bridge [[repo](https://gitlab.com/programaker-project/bridges/telegram-bridge)]  | Usable/Experimental | Python      | Bridge to control bots on the Telegram IM network.             | [Apache License 2.0](https://gitlab.com/programaker-project/bridges/telegram-bridge/blob/develop/LICENSE)    |
+| Unix bridge [[repo](https://gitlab.com/programaker-project/bridges/unix-bridge)]          | Experimental        | Python/Bash | Library to write bridges using Unix tools (like bash scripts). | [Apache License 2.0](https://gitlab.com/programaker-project/bridges/unix-bridge/blob/master/LICENSE)         |
+| Matrix bridge [[repo](https://gitlab.com/programaker-project/bridges/matrix-bridge)]      | Usable/Experimental | Python      | Bridge for the Matrix IM network.                              | [Apache License 2.0](https://gitlab.com/programaker-project/bridges/matrix-bridge/blob/master/LICENSE)       |
+| XMPP bridge [[repo](https://gitlab.com/programaker-project/bridges/xmpp-bridge)]          | Experimental        | Python      | Bridge for the XMPP/Jabber IM network.                         | [Apache License 2.0](https://gitlab.com/programaker-project/bridges/xmpp-bridge/blob/master/LICENSE)         |
+| Gitlab bridge [[repo](https://gitlab.com/programaker-project/bridges/gitlab-bridge)]      | Experimental        | Python      | Bridge for the Gitlab plaform.                                 | [Apache License 2.0](https://gitlab.com/programaker-project/bridges/gitlab-bridge/blob/master/LICENSE)       |
 | InfluxDB bridge [[repo](https://gitlab.com/kenkeiras/influxdb-bridge)]              | Usable/Experimental | Python      | Bridge for the InfluxDB time series database.                  | [Apache License 2.0](https://gitlab.com/kenkeiras/influxdb-bridge/blob/master/LICENSE)                 |
 
 ## Setup
@@ -65,7 +65,7 @@ After this, the backend is available on http://localhost:8888 (although the oper
 
 #### Docker compose
 
-A [docker-compose](https://docs.docker.com/compose/overview/) script exists to setup a base deployment of Plaza.
+A [docker-compose.yml](https://docs.docker.com/compose/overview/) script exists to setup a base deployment of Programaker.
 This can be used to do some tests or as a help to develop bridges.
 But keep in mind that a deployment launched with this script **has no redundancy** and **the data is not saved** between executions.
 

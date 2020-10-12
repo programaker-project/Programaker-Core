@@ -4,7 +4,7 @@
     "./src/Popup.ts"
   ],
   "compilerOptions": {
-    "outFile": "./popup/plaza.js",
+    "outFile": "./popup/programaker.js",
     "sourceMap": true,
     "module": "amd",
     "declaration": false,

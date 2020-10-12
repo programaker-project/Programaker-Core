@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "plaza": {
+    "programaker": {
       "root": "",
       "sourceRoot": "src",
       "projectType": "application",
@@ -94,21 +94,21 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "plaza:build"
+            "browserTarget": "programaker:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "plaza:build:production"
+              "browserTarget": "programaker:build:production"
             },
             "pm-dev": {
-              "browserTarget": "plaza:build:pm-dev"
+              "browserTarget": "programaker:build:pm-dev"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "plaza:build"
+            "browserTarget": "programaker:build"
           }
         },
         "test": {
@@ -152,7 +152,7 @@
         }
       }
     },
-    "plaza-e2e": {
+    "programaker-e2e": {
       "root": "",
       "sourceRoot": "",
       "projectType": "application",
@@ -161,7 +161,7 @@
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
             "protractorConfig": "./protractor.conf.js",
-            "devServerTarget": "plaza:serve"
+            "devServerTarget": "programaker:serve"
           }
         },
         "lint": {
@@ -176,7 +176,7 @@
       }
     }
   },
-  "defaultProject": "plaza",
+  "defaultProject": "programaker",
   "schematics": {
     "@schematics/angular:component": {
       "prefix": "app",

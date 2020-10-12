@@ -1,5 +1,5 @@
 import * as BrowserApi from "./BrowserApi";
-import * as PlazaApi from "./PlazaApi";
+import * as ProgramakerApi from "./ProgramakerApi";
 import * as Storage from "./Storage";
 
 function login() {
@@ -7,7 +7,7 @@ function login() {
     const password = (document.querySelector('input[name="login_password"]') as HTMLInputElement).value;
 
     console.log("Loging in:", username);
-    PlazaApi.get_token(username, password)
+    ProgramakerApi.get_token(username, password)
         .then((token) => Storage.save_auth_token(username, token))
         .then(() => show_ready());
 
@@ -48,7 +48,7 @@ function check_token() {
         BrowserApi.get_current_tab()
             .then((tab) => {
                 BrowserApi.run_on_tab(tab, "/popup/injected.js", () => {
-                    BrowserApi.send_message_to_tab(tab, {plazaInjectedOptions: { username, token }});
+                    BrowserApi.send_message_to_tab(tab, {programakerInjectedOptions: { username, token }});
                     BrowserApi.close_popup();
                 });
             }, (error) => {

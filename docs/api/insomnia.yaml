@@ -38,9 +38,9 @@ resources:
     _type: request_group
   - _id: wrk_345ba95d0c964d4b85b64df4cc2d0f19
     created: 1550782382008
-    description: Plaza project API
+    description: Programaker project API
     modified: 1550783380599
-    name: Plaza
+    name: Programaker
     parentId: null
     _type: workspace
   - _id: req_b0df3c8bd7b7488b85d062ad85c831ba
@@ -237,7 +237,7 @@ resources:
     isPrivate: false
     metaSortKey: 1
     modified: 1559599978615
-    name: Plaza local development
+    name: Programaker local development
     parentId: env_1ad291d9e0bd469c9992c925c695d3c3
     _type: environment
   - _id: env_5a872eacd5d74e8fb30138b046d6d430
@@ -259,6 +259,6 @@ resources:
     isPrivate: false
     metaSortKey: 2
     modified: 1559599978619
-    name: Plaza local dev. host 2
+    name: Programaker local dev. host 2
     parentId: env_1ad291d9e0bd469c9992c925c695d3c3
     _type: environment

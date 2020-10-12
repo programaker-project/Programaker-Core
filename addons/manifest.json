@@ -1,9 +1,9 @@
 {
     "manifest_version": 2,
-    "name": "Plaza",
+    "name": "Programaker",
     "version": "0.0.1",
 
-    "description": "Companion addon for plaza.",
+    "description": "Companion addon for programaker.",
 
     "icons": {
         "48": "icons/icon-48.png"
@@ -23,13 +23,13 @@
         "default_icon": {
             "48": "icons/icon-48.png"
         },
-        "default_title": "Plaza",
-        "default_popup": "popup/plaza.html"
+        "default_title": "Programaker",
+        "default_popup": "popup/programaker.html"
     },
 
     "applications": {
         "gecko": {
-            "id": "plaza@plaza.spiral.systems"
+            "id": "contact@programaker.com"
         }
     }
 }

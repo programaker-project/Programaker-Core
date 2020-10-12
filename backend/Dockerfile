@@ -1,4 +1,4 @@
-FROM erlang:23-alpine as plaza-backend-ci-base
+FROM erlang:23-alpine as programaker-backend-ci-base
 
 # Build dependencies
 RUN apk add git gcc libc-dev g++ make libtool autoconf automake
@@ -12,7 +12,7 @@ RUN sh ./get-deps.sh && rebar3 compile
 RUN rebar3 dialyzer
 
 # Add application code
-FROM plaza-backend-ci-base as develop
+FROM programaker-backend-ci-base as develop
 ADD . /app
 RUN sh -x -c 'if [ ! -f config/sys.config ]; then cp -v config/sys.config.orig config/sys.config ; fi'
 

@@ -1,4 +1,4 @@
-const DB_NAME = "PlazaDB";
+const DB_NAME = "ProgramakerDB";
 const DB_VERSION = 1;
 const AUTH_TOKEN_STORE = "auth_token";
 
