@@ -1,10 +1,10 @@
-import { PlazaPage } from './app.po';
+import { ProgramakerPage } from './app.po';
 
-describe('plaza App', () => {
-  let page: PlazaPage;
+describe('programaker App', () => {
+  let page: ProgramakerPage;
 
   beforeEach(() => {
-    page = new PlazaPage();
+    page = new ProgramakerPage();
   });
 
   it('should display message saying app works', () => {

@@ -8,10 +8,10 @@ cd ../../backend
 
 TAG=`git rev-parse HEAD`
 
-LOCAL_NAME="plaza-backend-ci-base-preparation:$TAG"
-REMOTE_NAME="plazaproject/ci-base-backend:$TAG"
+LOCAL_NAME="programaker-backend-ci-base-preparation:$TAG"
+REMOTE_NAME="programakerproject/ci-base-backend:$TAG"
 
-docker build --no-cache -t "${LOCAL_NAME}" --target plaza-backend-ci-base .
+docker build --no-cache -t "${LOCAL_NAME}" --target programaker-backend-ci-base .
 
 docker tag "${LOCAL_NAME}" "${REMOTE_NAME}"
 

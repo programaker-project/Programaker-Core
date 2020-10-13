@@ -18,7 +18,7 @@ type CallbackResult = (
 
 @Injectable()
 export class CustomBlockService {
-    static DataCallbackCachePrefix = "plaza-data-callback";
+    static DataCallbackCachePrefix = "programaker-data-callback";
     onFlightCallbackQueries: { [key: string]: Promise<[string, string][]> } = {};
 
     constructor(
@@ -151,7 +151,7 @@ export class CustomBlockService {
         let options : [string, string][];
         try {
             options = await this.getCachedArgOptions(programId, dynamicArg, block);
-            const loading = options[0][1] === '__plaza_internal_loading';
+            const loading = options[0][1] === '__programaker_internal_loading';
 
             // Reload asynchronously
             this.getArgOptions(programId, block.service_port_id, dynamicArg.callback).then((result) => {
@@ -171,7 +171,7 @@ export class CustomBlockService {
             }).catch((err) => {
                 console.warn(err);
                 if (loading) {
-                    options[0] = ["Not found", "__plaza_internal_not_found"];
+                    options[0] = ["Not found", "__programaker_internal_not_found"];
                 }
             });
 
@@ -181,7 +181,7 @@ export class CustomBlockService {
         }
         catch(exception) {
             console.error("Callback error:", exception);
-            options = [["Not found", "__plaza_internal_not_found"]];
+            options = [["Not found", "__programaker_internal_not_found"]];
         }
 
         const resolved = dynamicArg as ResolvedDynamicBlockArgument;
@@ -204,7 +204,7 @@ export class CustomBlockService {
         const results = storage.getItem(this.getCallbackCacheId(programId, block.service_port_id, arg.callback));
 
         if ((results === null) || (results.length == 0)) {
-            return [["Loading", "__plaza_internal_loading"]];
+            return [["Loading", "__programaker_internal_loading"]];
         }
         return JSON.parse(results);
     }

@@ -14,7 +14,7 @@ services:
     ports:
       - 9090:9090
     volumes:
-      - plaza-monitoring-prometheus:/prometheus
+      - programaker-monitoring-prometheus:/prometheus
 
   grafana:
     build: grafana
@@ -24,8 +24,8 @@ services:
     links:
       - prometheus
     volumes:
-      - plaza-monitoring-grafana:/var/lib/grafana
+      - programaker-monitoring-grafana:/var/lib/grafana
 
 volumes:
-  plaza-monitoring-grafana:
-  plaza-monitoring-prometheus:
+  programaker-monitoring-grafana:
+  programaker-monitoring-prometheus:

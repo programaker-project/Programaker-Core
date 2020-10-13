@@ -8,9 +8,9 @@ stages:
   - push-branch  # To avoid duplicating the upload do it sequentially
 
 variables:
-  DOCKER_IMAGE_FRONTEND: plaza-core-frontend
-  DOCKER_IMAGE_BACKEND: plaza-core-backend
-  DOCKER_IMAGE_BACKEND_OPTIMIZED: plaza-core-backend-optimized
+  DOCKER_IMAGE_FRONTEND: programaker-core-frontend
+  DOCKER_IMAGE_BACKEND: programaker-core-backend
+  DOCKER_IMAGE_BACKEND_OPTIMIZED: programaker-core-backend-optimized
 
 services:
   - docker:19.03.5-dind

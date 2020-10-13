@@ -1,5 +1,5 @@
 import { Browser } from "./BrowserApi";
-import * as PlazaApi from "./PlazaApi";
+import * as ProgramakerApi from "./ProgramakerApi";
 
 Browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.command === "addMonitor") {
@@ -7,6 +7,6 @@ Browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const payload = message.message;
         const username = message.username;
 
-        PlazaApi.send_xpath_monitor(username, token, payload);
+        ProgramakerApi.send_xpath_monitor(username, token, payload);
     }
 });

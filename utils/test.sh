@@ -28,5 +28,5 @@ pushd addons
 npm install .
 npm run build
 npm run lint
-make dist/plaza.xpi
+make dist/programaker.xpi
 popd

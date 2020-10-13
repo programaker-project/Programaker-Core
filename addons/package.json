@@ -1,8 +1,8 @@
 {
-  "name": "plaza-addon",
+  "name": "programaker-addon",
   "version": "0.0.1",
   "license": "Apache-2.0",
-  "description": "Companion addon for plaza.",
+  "description": "Companion addon for programaker.",
   "main": "background.js",
   "scripts": {
     "build": "tsc-bundle --project tsconfig_background.json && tsc-bundle --project tsconfig_popup.json && tsc-bundle --project tsconfig_injected.json",

@@ -8,11 +8,11 @@ cd ../../frontend
 
 TAG=`git rev-parse HEAD`
 
-LOCAL_NAME="plaza-frontend-ci-base-preparation:$TAG"
-REMOTE_NAME="plazaproject/ci-base-frontend:$TAG"
+LOCAL_NAME="programaker-frontend-ci-base-preparation:$TAG"
+REMOTE_NAME="programakerproject/ci-base-frontend:$TAG"
 
-BROWSER_LOCAL_NAME="plaza-frontend-ci-base-preparation-browser:$TAG"
-BROWSER_REMOTE_NAME="plazaproject/ci-base-frontend-browser:$TAG"
+BROWSER_LOCAL_NAME="programaker-frontend-ci-base-preparation-browser:$TAG"
+BROWSER_REMOTE_NAME="programakerproject/ci-base-frontend-browser:$TAG"
 
 set -x
 

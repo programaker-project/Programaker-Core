@@ -1,6 +1,6 @@
 import { browser, element, by } from 'protractor';
 
-export class PlazaPage {
+export class ProgramakerPage {
   navigateTo() {
     return browser.get('/');
   }

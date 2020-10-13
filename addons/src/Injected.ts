@@ -1,4 +1,4 @@
-import { IXPathDescriptor } from "./PlazaApi.types";
+import { IXPathDescriptor } from "./ProgramakerApi.types";
 import { Browser } from "./BrowserApi";
 
 function build_xpath(node: HTMLElement): string {
@@ -244,7 +244,7 @@ function draw_selector_screen(): ISelectorScreenGui {
     nameField.placeholder = "Insert monitor name";
     nameField.type = "text";
     nameField.style.display = "none";
-    nameField.id = "plazaAddonNameField";
+    nameField.id = "programakerAddonNameField";
 
     nameLabel.htmlFor = nameField.id;
 
@@ -278,7 +278,7 @@ try {
     selectorScreen.draw();
 
     Browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        const scriptOptions = message.plazaInjectedOptions;
+        const scriptOptions = message.programakerInjectedOptions;
         if (scriptOptions) {
             selectorScreen.set_options(scriptOptions);
         }
