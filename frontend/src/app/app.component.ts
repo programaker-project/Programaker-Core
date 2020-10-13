@@ -1,4 +1,4 @@
-import { ElementRef, ViewChild, Component } from '@angular/core';
+import { ElementRef, ViewChild, Component, Inject, PLATFORM_ID } from '@angular/core';
 import { Router } from '@angular/router';
 import { SessionService, SessionInfoUpdate } from './session.service';
 import { Session } from './session';
@@ -6,6 +6,8 @@ import { Subscription } from 'rxjs';
 import { BridgeService, BridgeInfoUpdate } from './bridges/bridge.service';
 import { MatSidenav } from '@angular/material/sidenav';
 import { getUserPictureUrl } from './utils';
+import { BrowserService } from './browser.service';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
     selector: 'app-my-app',
@@ -15,7 +17,7 @@ import { getUserPictureUrl } from './utils';
         'libs/css/material-icons.css',
         'libs/css/bootstrap.min.css',
     ],
-    providers: [BridgeService, SessionService]
+    providers: [BridgeService, SessionService,]
 })
 export class AppComponent {
     sessionSubscription: Subscription;
@@ -29,6 +31,8 @@ export class AppComponent {
 
     constructor(
         private router: Router,
+        private browser: BrowserService,
+
         public sessionService: SessionService,
         private bridgeService: BridgeService,
     ) {
@@ -38,6 +42,24 @@ export class AppComponent {
         this.sessionService.getSessionMonitor().then((data) => {
             if (data.session !== null) {
                 this.session = data.session;
+
+                this.bridgeService.listUserBridges().then((data) => {
+                    this.bridgeCount = data.bridges.length;
+
+                    data.monitor.subscribe({
+                        next: (update: BridgeInfoUpdate) => {
+                            this.bridgeCount = update.count;
+                        },
+                        error: (error: any) => {
+                            console.error("Error monitoring bridge count:", error);
+                        },
+                        complete: () => {
+                            console.error("Bridge count data stopped")
+                        }
+                    });
+                }).catch(err => {
+                    console.warn('Error listing bridges:', err);
+                });
             }
             data.monitor.subscribe({
                 next: (update: SessionInfoUpdate) => {
@@ -54,30 +76,15 @@ export class AppComponent {
             console.warn('Error monitoring session:', err);
         });
 
-        this.bridgeService.listUserBridges().then((data) => {
-            this.bridgeCount = data.bridges.length;
+        this.browser.window.onresize = this.updateVerticalSpaces.bind(this);
+        this.browser.window.onload = this.updateVerticalSpaces.bind(this);
+    }
 
-            data.monitor.subscribe({
-                next: (update: BridgeInfoUpdate) => {
-                    this.bridgeCount = update.count;
-                },
-                error: (error: any) => {
-                    console.error("Error monitoring bridge count:", error);
-                },
-                complete: () => {
-                    console.error("Bridge count data stopped")
-                }
-            });
-        }).catch(err => {
-            console.warn('Error listing bridges:', err);
-        });
-
-        window.onresize = this.updateVerticalSpaces;
-        window.onload = this.updateVerticalSpaces;
+    ngOnInit() {
     }
 
     updateVerticalSpaces(): void {
-        const height = window.innerHeight;
+        const height = this.browser.window.innerHeight;
         const higherPart = document.getElementById('main-toolbar') as HTMLElement;
         const lowerPart = document.getElementsByClassName('mat-drawer-container')[0] as HTMLElement;
 

@@ -149,7 +149,7 @@ import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/upda
 
         BrowserAnimationsModule,
 
-        BrowserModule,
+        BrowserModule.withServerTransition({ appId: 'serverApp' }),
         FormsModule,
         ReactiveFormsModule,
         HttpClientModule,

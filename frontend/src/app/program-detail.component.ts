@@ -1,6 +1,6 @@
 import { Location } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Inject } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue } from './program';
 import { ProgramService } from './program.service';
@@ -32,6 +32,7 @@ import { unixMsToStr } from './utils';
 import { Synchronizer } from './syncronizer';
 import { MatMenu } from '@angular/material/menu';
 import { AssetService } from './asset.service';
+import { BrowserService } from './browser.service';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -80,6 +81,7 @@ export class ProgramDetailComponent implements OnInit {
     private _pinRequiredMatMenuLibrary: MatMenu;
 
     constructor(
+        private browser: BrowserService,
         private monitorService: MonitorService,
         private programService: ProgramService,
         private customBlockService: CustomBlockService,
@@ -111,12 +113,12 @@ export class ProgramDetailComponent implements OnInit {
     ngOnInit(): void {
         this.environment = environment;
 
-        if (window && (window.innerWidth < window.innerHeight)) {
+        if (this.browser.window && (this.browser.window.innerWidth < this.browser.window.innerHeight)) {
             this.portraitMode = true;
         } else {
             this.portraitMode = false;
         }
-        this.smallScreen = window.innerWidth < 750;
+        this.smallScreen = this.browser.window.innerWidth < 750;
 
         progbar.track(new Promise((resolve) => {
             this.route.params.pipe(
@@ -552,7 +554,7 @@ export class ProgramDetailComponent implements OnInit {
         const programHeaderElement = document.getElementById('program-header');
 
         this.hide_workspace(this.workspaceElement);
-        window.onresize = (() => {
+        this.browser.window.onresize = (() => {
             this.calculate_size(this.workspaceElement);
             this.calculate_program_header_size(programHeaderElement);
         });
@@ -672,7 +674,7 @@ export class ProgramDetailComponent implements OnInit {
         const header_pos = this.get_position(header);
         const header_end = header_pos.y + header.clientHeight;
 
-        const window_height = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+        const window_height = Math.max(document.documentElement.clientHeight, this.browser.window.innerHeight || 0);
 
         workspace.style.height = (window_height - header_end - 1) + 'px';
     }
@@ -759,7 +761,7 @@ export class ProgramDetailComponent implements OnInit {
 
         // Elements might have moved around.
         // We trigger a resize to notify SVG elements.
-        window.dispatchEvent(new Event('resize'));
+        this.browser.window.dispatchEvent(new Event('resize'));
     }
 
     hide_workspace(workspace: HTMLElement) {
@@ -965,7 +967,7 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     notifyResize() {
-        window.dispatchEvent(new Event('resize'));
+        this.browser.window.dispatchEvent(new Event('resize'));
     }
 
     closeLogsPanel() {

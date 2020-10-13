@@ -1,7 +1,7 @@
 <div class="app-content">
     <mat-toolbar id="main-toolbar">
         <span id="main-menu-opener" role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span>
-        <a routerLink="/" id="main-title"> <img class="logo" src="/assets/logo.png" alt=""> {{title}} </a>
+        <a routerLink="/" id="main-title"> <img class="logo" src="/assets/logo.png" aria-hidden="true" alt="Back to dashboard"> {{title}} </a>
         <span class="floating-elements">
             <span class="login-indicator">
                 <button mat-mini-fab
@@ -10,6 +10,8 @@
                     class="account-menu">
                     <img class="account-picture"
                         src="{{ _getUserPicture(session.user_id) }}"
+                        aria-hidden="true"
+                        alt="User profile picture"
                         onError="this.src='/assets/profile-not-set.png'" />
                 </button>
                 <div class="login-button" *ngIf="!session.active">
