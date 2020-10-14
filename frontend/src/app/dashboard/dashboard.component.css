@@ -2,12 +2,6 @@
     width: 100%;
 }
 
-mat-card.not-enabled {
-    background-color: grey;
-    color: white;
-}
-
-
 div.letter-call-to-action {
     background-color: darkorange;
     font-size: small;

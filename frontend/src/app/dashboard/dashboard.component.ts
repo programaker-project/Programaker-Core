@@ -204,6 +204,13 @@ export class NewDashboardComponent {
         program.enabled = true;
     }
 
+    async archiveProgram(program: ProgramMetadata) {
+        const session = await this.sessionService.getSession();
+        await this.programService.setProgramStatus(JSON.stringify({"enable": false}),
+                                                   program.id);
+        program.enabled = false;
+    }
+
     openTutorial(tutorial: TutorialData) {
         const win = this.browser.window.open(tutorial.url, '_blank');
         win.focus();
@@ -216,5 +223,13 @@ export class NewDashboardComponent {
 
     createGroup() {
         this.router.navigate(['/new/group']);
+    }
+
+    getEnabled(programs: ProgramMetadata[]): ProgramMetadata[] {
+        return programs.filter((p) => p.enabled);
+    }
+
+    getArchived(programs: ProgramMetadata[]): ProgramMetadata[] {
+        return programs.filter((p) => !p.enabled);
     }
 }
