@@ -78,35 +78,35 @@
 
                     <div class="section-objects">
                         <mat-card *ngFor="let bridge of bridges"
+                            matRipple matRippleColor="#00000017"
                             class="bridge"
                             role="button"
                             (click)="openBridgePanel(bridge)"
                         >
-                            <span class="bridge-status connected-{{bridge.is_connected}}"
-                                matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
-                                <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
-                                <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
-                            </span>
+                            <div class="bridge-data">
+                                <span class="bridge-status connected-{{bridge.is_connected}}"
+                                    matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
+                                    <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
+                                    <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
+                                </span>
 
+                                <img role="avatar" class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
 
-                            <img role="avatar" class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
-
-                            <div *ngIf="!bridge.icon" class="bridge-name">
-                                {{bridge.name || "unnamed bridge"}}
+                                <div *ngIf="!bridge.icon" class="bridge-name">
+                                    {{bridge.name || "unnamed bridge"}}
+                                </div>
                             </div>
                         </mat-card>
                     </div>
-
                     <div class="section-buttons">
-                        <button class="group call-to-action soft" role="button"
-                            (click)="addBridge()"
-                            *ngIf="userRole==='admin'"
-                            mat-raised-button>
-                            <mat-icon>add</mat-icon> Add bridge
-                        </button>
+                            <button class="group call-to-action soft" role="button"
+                                (click)="addBridge()"
+                                *ngIf="userRole==='admin'"
+                                mat-raised-button>
+                                <mat-icon>add</mat-icon> Add bridge
+                            </button>
                     </div>
-                                </section>
-
+                </section>
             </div>
         </div>
         <div class="user-programs col col-sm-8">

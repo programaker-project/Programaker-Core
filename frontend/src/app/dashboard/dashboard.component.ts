@@ -120,6 +120,16 @@ export class NewDashboardComponent {
 
     async updateBridges() {
         this.bridges = (await this.bridgeService.listUserBridges()).bridges;
+        this.bridges.sort((a, b) => {
+            if (a.name < b.name) {
+                return -1;
+            }
+            if (a.name > b.name) {
+                return 1;
+            }
+            return 0;
+        });
+
         for (const bridge of this.bridges) {
             this.bridgeInfo[bridge.id] = bridge;
         }

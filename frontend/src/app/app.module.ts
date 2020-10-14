@@ -78,6 +78,7 @@ import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
 import { AddBridgeDialogComponent } from './dialogs/add-bridge-dialog/add-bridge-dialog.component';
 import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/update-bridge-dialog.component';
+import { MatRippleModule } from '@angular/material/core';
 
 @NgModule({
     declarations: [
@@ -142,6 +143,7 @@ import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/upda
         MatTabsModule,
         MatChipsModule,
         MatSnackBarModule,
+        MatRippleModule,
         MatProgressSpinnerModule,
         MatBadgeModule,
         MatTooltipModule,

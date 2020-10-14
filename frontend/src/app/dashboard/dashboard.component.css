@@ -303,23 +303,46 @@ section.bridges {
 }
 
 mat-card.bridge {
-    display: inline-block;
+    display: block;
     vertical-align: bottom;
     margin-left: 1ex;
     margin-top: 1ex;
     padding: 0;
     height: 3em;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+mat-card.bridge .bridge-data {
+    display: grid;
+    overflow: hidden;
+    height: 100%;
+    grid-template-columns: max-content auto;
 }
 
 mat-card.bridge .bridge-name {
-    padding: 1ex;
-    display: inline-block;
+    grid-row: 1;
+    grid-column: 2;
+    margin: auto 0;
+    padding: 0 0.5ex 0 0.5ex;
+    text-align: center;
 }
 
 mat-card.bridge img {
-    max-width: 10ex;
-    height: 3em;
-    padding: 0.5ex
+    width: 100%;
+    max-height: 3em;
+    padding: 0.5ex;
+    margin: auto 0;
+
+    grid-row: 1;
+    grid-column: 2;
+    text-align: center;
 }
 
 mat-card.bridge .bridge-status {
@@ -328,6 +351,9 @@ mat-card.bridge .bridge-status {
     vertical-align: inherit;
     padding-left: 1ex;
     padding-right: 1ex;
+    grid-row: 1;
+    grid-column: 1;
+    width: max-content;
 
     color: #fff;
     border-radius: 3px 0 0 3px;
