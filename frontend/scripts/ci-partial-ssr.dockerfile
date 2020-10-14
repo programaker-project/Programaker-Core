@@ -5,16 +5,18 @@ ADD . /app
 RUN npm install . && make
 
 # Build application
-ARG BUILD_COMMAND=build-prod
+ARG BUILD_COMMAND=build:ssr
 RUN npm run ${BUILD_COMMAND}
 
 # Copy final app to runner
-FROM nginx:alpine as runner
+FROM node:lts-alpine as runner
 
-copy --from=builder /app/dist/ /usr/share/nginx/html/
+COPY --from=builder /app/dist /app/dist
 
-# Add nginx configuration
-ADD config/simple-nginx.conf /etc/nginx/conf.d/default.conf
+WORKDIR app
 
 # Webserver port
+ENV PORT 80
 EXPOSE 80
+
+CMD ["node", "/app/dist/programaker/server/main.js"]

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { GroupInfo } from 'app/group';
@@ -19,6 +19,7 @@ import { SessionService } from '../session.service';
 import { iconDataToUrl, getUserPictureUrl } from '../utils';
 import { BridgeIndexData } from 'app/bridges/bridge';
 import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
+import { BrowserService } from 'app/browser.service';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -52,6 +53,7 @@ export class NewDashboardComponent {
     readonly _iconDataToUrl = iconDataToUrl;
 
     constructor(
+        private browser: BrowserService,
         private programService: ProgramService,
         private sessionService: SessionService,
         private serviceService: ServiceService,
@@ -193,7 +195,7 @@ export class NewDashboardComponent {
     }
 
     openTutorial(tutorial: TutorialData) {
-        const win = window.open(tutorial.url, '_blank');
+        const win = this.browser.window.open(tutorial.url, '_blank');
         win.focus();
     }
 

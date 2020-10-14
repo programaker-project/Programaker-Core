@@ -84,8 +84,8 @@ tag-frontend-branch:
     - develop
     - master
 
-## Programaker Frontend
-build-programaker-frontend:
+## SSR Frontend
+build-ssr-frontend:
   stage: build
   before_script:
     - mkdir -p tmp_docker_images/ || true
@@ -96,15 +96,74 @@ build-programaker-frontend:
       - tmp_docker_images/
     expire_in: 24h # No need to keep it around
   script:
-    - docker build --build-arg BUILD_COMMAND=build-programaker -t $DOCKER_IMAGE_FRONTEND  -f scripts/ci-partial.dockerfile .
-    - docker save $DOCKER_IMAGE_FRONTEND -o ../tmp_docker_images/programaker-frontend.tar
+    - docker build --build-arg BUILD_COMMAND=build:ssr -t $DOCKER_IMAGE_FRONTEND  -f scripts/ci-partial-ssr.dockerfile .
+    - docker save $DOCKER_IMAGE_FRONTEND -o ../tmp_docker_images/ssr-frontend.tar
+  only:
+    - develop
+    - master
 
-push-programaker-frontend:
+push-ssr-frontend:
   stage: push-commit
   dependencies:
-    - build-programaker-frontend
+    - build-ssr-frontend
   needs:
-    - build-programaker-frontend
+    - build-ssr-frontend
+    - test-frontend-logic
+    - test-frontend-on-browser
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/ssr-frontend.tar
+    - cd frontend
+  script:
+    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend-ssr:$CI_COMMIT_SHA
+    - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend-ssr:$CI_COMMIT_SHA
+  only:
+    - develop
+    - master
+
+tag-ssr-frontend-branch:
+  stage: push-branch
+  dependencies:
+    - build-ssr-frontend
+  needs:
+    - build-ssr-frontend
+    - test-frontend-logic
+    - test-frontend-on-browser
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker load -i tmp_docker_images/ssr-frontend.tar
+    - cd frontend
+  script:
+    - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend-ssr:$CI_COMMIT_REF_NAME
+    - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend-ssr:$CI_COMMIT_REF_NAME
+  only:
+    - develop
+    - master
+
+## Programaker Frontend
+build-programaker-ssr-frontend:
+  stage: build
+  before_script:
+    - mkdir -p tmp_docker_images/ || true
+    - cd frontend
+  needs: []
+  artifacts:
+    paths:
+      - tmp_docker_images/
+    expire_in: 24h # No need to keep it around
+  script:
+    - docker build --build-arg BUILD_COMMAND=build:programaker-ssr -t $DOCKER_IMAGE_FRONTEND  -f scripts/ci-partial-ssr.dockerfile .
+    - docker save $DOCKER_IMAGE_FRONTEND -o ../tmp_docker_images/programaker-frontend.tar
+  only:
+    - develop
+    - master
+
+push-programaker-ssr-frontend:
+  stage: push-commit
+  dependencies:
+    - build-programaker-ssr-frontend
+  needs:
+    - build-programaker-ssr-frontend
     - test-frontend-logic
     - test-frontend-on-browser
   before_script:
@@ -118,12 +177,12 @@ push-programaker-frontend:
     - develop
     - master
 
-tag-programaker-frontend-branch:
+tag-programaker-ssr-frontend-branch:
   stage: push-branch
   dependencies:
-    - build-programaker-frontend
+    - build-programaker-ssr-frontend
   needs:
-    - build-programaker-frontend
+    - build-programaker-ssr-frontend
     - test-frontend-logic
     - test-frontend-on-browser
   before_script:

@@ -1,11 +1,12 @@
 import { Observable, Observer } from 'rxjs';
-import { Injectable } from '@angular/core';
+import { Injectable, Inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Session } from './session';
 
 import * as progbar from './ui/progbar';
 import * as API from './api-config';
 import { ContentType } from './content-type';
+import { BrowserService } from './browser.service';
 
 export type SessionInfoUpdate = { session: Session };
 
@@ -32,6 +33,7 @@ export class SessionService {
 
     constructor(
         private http: HttpClient,
+        private browser: BrowserService,
     ) {
         this.http = http;
     }
@@ -82,17 +84,23 @@ export class SessionService {
     }
 
     storeToken(token: string) {
-        const storage = window.localStorage;
+        const storage = this.browser.window.localStorage;
+
         storage.setItem('session.service.token', token);
     }
 
     removeToken() {
-        const storage = window.localStorage;
+        const storage = this.browser.window.localStorage;
         storage.removeItem('session.service.token');
     }
 
-    getToken(): string {
-        const storage = window.localStorage;
+    getToken(): string | null {
+        const storage = this.browser.window.localStorage;
+
+        if (!storage) { // Might happen on SSR
+            return null;
+        }
+
         const token = storage.getItem('session.service.token');
 
         return token;

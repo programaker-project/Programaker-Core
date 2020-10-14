@@ -1,0 +1,28 @@
+FROM node:lts-alpine as ci-base
+RUN apk add --no-cache make python2 g++
+RUN mkdir /app
+WORKDIR /app
+
+# Build dependencies
+ADD package.json /app
+ADD package-lock.json /app
+RUN npm install --unsafe-perm
+
+# Build final app
+FROM ci-base as builder
+ADD . /app
+RUN make
+RUN npm run build:ssr
+
+# Copy final app to runner
+FROM node:lts-alpine as runner
+
+COPY --from=builder /app/dist /app/dist
+
+WORKDIR app
+
+# Webserver port
+ENV PORT 80
+EXPOSE 80
+
+CMD ["node", "/app/dist/programaker/server/main.js"]

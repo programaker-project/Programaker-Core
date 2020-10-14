@@ -1,6 +1,6 @@
 import { Location } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Inject } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { ProgramContent, FlowProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramType } from '../program';
 import { ProgramService } from '../program.service';
@@ -34,6 +34,7 @@ import { BridgeService } from '../bridges/bridge.service';
 import { FlowGraph } from './flow_graph';
 import { EnumGetter, EnumValue } from './enum_direct_value';
 import { compile } from './graph_analysis';
+import { BrowserService } from 'app/browser.service';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -67,6 +68,8 @@ export class FlowEditorComponent implements OnInit {
     smallScreen: boolean;
 
     constructor(
+        private browser: BrowserService,
+
         private monitorService: MonitorService,
         private programService: ProgramService,
         private customBlockService: CustomBlockService,
@@ -87,12 +90,12 @@ export class FlowEditorComponent implements OnInit {
     ngOnInit(): void {
         this.environment = environment;
 
-        if (window && (window.innerWidth < window.innerHeight)) {
+        if (this.browser.window && (this.browser.window.innerWidth < this.browser.window.innerHeight)) {
             this.portraitMode = true;
         } else {
             this.portraitMode = false;
         }
-        this.smallScreen = window.innerWidth < 750;
+        this.smallScreen = this.browser.window.innerWidth < 750;
 
         progbar.track(new Promise((resolve) => {
             this.sessionService.getSession()
@@ -164,7 +167,7 @@ export class FlowEditorComponent implements OnInit {
         const workspaceElement = document.getElementById('workspace');
         const programHeaderElement = document.getElementById('program-header');
 
-        window.onresize = (() => {
+        this.browser.window.onresize = (() => {
             this.calculate_size(workspaceElement);
             this.calculate_program_header_size(programHeaderElement);
             this.workspace.onResize();
@@ -197,7 +200,7 @@ export class FlowEditorComponent implements OnInit {
         const header_pos = this.get_position(header);
         const header_end = header_pos.y + header.clientHeight;
 
-        const window_height = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+        const window_height = Math.max(document.documentElement.clientHeight, this.browser.window.innerHeight || 0);
 
         workspace.style.height = (window_height - header_end) + 'px';
     }
@@ -398,7 +401,7 @@ export class FlowEditorComponent implements OnInit {
     }
 
     notifyResize() {
-        window.dispatchEvent(new Event('resize'));
+        this.browser.window.dispatchEvent(new Event('resize'));
     }
 
     closeLogsPanel() {
