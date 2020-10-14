@@ -19,6 +19,7 @@
     "dev:ssr": "ng run programaker:serve-ssr",
     "serve:ssr": "node dist/programaker/server/main.js",
     "build:ssr": "ng build --prod && ng run programaker:server:production",
+    "build:programaker-ssr": "ng build --prod -c programaker && ng run programaker:server:production",
     "prerender": "ng run programaker:prerender"
   },
   "private": true,
