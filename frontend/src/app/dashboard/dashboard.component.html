@@ -38,7 +38,7 @@
             <div class="section-explanation">
                 Create a new program or edit the ones you already have.
             </div>
-            <div class="row">
+            <div class="row program-list">
                 <div class="col-sm-6">
                     <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
                         <div class="program-data">
@@ -47,7 +47,7 @@
                     </mat-card>
                 </div>
                 <ng-container *ngFor="let program of programs">
-                    <div class="col-sm-6" *ngIf="program.enabled">
+                    <div class="col-sm-6 program-list" *ngIf="program.enabled">
                         <mat-card
                             [ngClass]="{
                             'module': true,
@@ -56,6 +56,7 @@
                             'not-enabled': !program.enabled
                             }"
                             role="button">
+
                             <div class="program-data" (click)="openProgram(program)">
                                 <div class="program-type">
                                     <img *ngIf="program.type === 'scratch_program'"
@@ -76,13 +77,24 @@
                                     </span>
                                 </div>
                             </div>
+                            <div [class]="'program-settings ' + (programSettingsOpened[program.id] === undefined ? '' : 'hidden-' + (!programSettingsOpened[program.id]))">
+                                <div class="contents">
+                                    <div class="title"><span class="program-name">{{ program.name }}</span>'s Settings</div>
+                                    <button mat-raised-button mat-button
+                                        (click)="archiveProgram(program)"
+                                        class="archive-program">
+                                        <mat-icon>archive</mat-icon>
+                                        Archive
+                                    </button>
+                                </div>
+                            </div>
 
                             <div class="program-operation">
                                 <button mat-mini-fab
-                                    (click)="archiveProgram(program)"
+                                    (click)="toggleShowProgramSettings(program)"
                                     color="accent"
-                                    class="enable-program">
-                                    <mat-icon>archive</mat-icon>
+                                    class="fab-action open-program-settings">
+                                    <mat-icon>settings</mat-icon>
                                 </button>
                             </div>
                         </mat-card>
@@ -98,7 +110,7 @@
             <div class="section-explanation">
                 These are programs that you have archived, they won't be running until you launch them again.
             </div>
-            <div class="row">
+            <div class="row program-list">
                 <ng-container *ngFor="let program of programs">
                     <div class="col-sm-6" *ngIf="!program.enabled">
                         <mat-card
@@ -133,7 +145,7 @@
                                 <button mat-mini-fab
                                     (click)="enableProgram(program)"
                                     color="accent"
-                                    class="enable-program">
+                                    class="fab-action enable-program">
                                     <mat-icon>play_arrow</mat-icon>
                                 </button>
                             </div>

@@ -17,6 +17,11 @@ mat-card.module > h4 {
 }
 
 /* Program styling */
+.row.program-list {
+    margin-right: 1ex;
+    margin-left: 1ex;
+}
+
 mat-card.program {
     padding: 0;
 }
@@ -71,15 +76,90 @@ mat-card.call-to-action > .program-data > .card-title {
 
 mat-card.program > .program-operation {
     float: right;
-    margin-top: -1.5ex;
+    margin-top: -2.5ex;
     margin-bottom: 1ex;
-    margin-right: -1ex;
+    margin-right:  0ex;
 }
 
-mat-card.program > .program-operation > .enable-program {
+mat-card.program > .program-operation > .fab-action {
     border-radius: 999ex; /* Inifinity, round shape */
     color: white;
     z-index: 1;
+}
+
+mat-card.program .program-settings {
+    position: absolute;
+    top: 0;
+    background: #27212e;
+    height: 100%;
+    width: 100%;
+    border-radius: 4px;
+    width: 0;
+}
+
+mat-card.program .program-settings .contents {
+    opacity: 0%;
+    height: 100%;
+    width: 100%;
+    border-radius: 4px;
+}
+
+@keyframes hide-program-settings {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+mat-card.program .program-settings.hidden-true {
+    width: 0%;
+    animation-name: hide-program-settings;
+    animation-duration: 0.5s;
+}
+
+@keyframes hide-program-settings-data {
+    from { opacity: 100%; }
+    25% { opacity: 0%; }
+}
+mat-card.program .program-settings.hidden-true .contents {
+    opacity: 0%;
+    animation-name: hide-program-settings-data;
+    animation-duration: 0.5s;
+}
+
+@keyframes show-program-settings {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+mat-card.program .program-settings.hidden-false {
+    width: 100%;
+    animation-name: show-program-settings;
+    animation-duration: 0.5s;
+}
+
+@keyframes show-program-settings-data {
+    from { opacity: 0%; }
+    75% { opacity: 0%; }
+    to { opacity: 100%; }
+}
+mat-card.program .program-settings.hidden-false .contents {
+    opacity: 100%;
+    animation-name: show-program-settings-data;
+    animation-duration: 0.5s;
+}
+
+mat-card.program .program-settings .contents .title {
+    color: white;
+    padding: 1ex;
+    text-decoration: underline;
+}
+
+mat-card.program .program-settings .contents .title .program-name {
+    font-style: italic;
+}
+
+mat-card.program .program-settings .contents button.archive-program {
+    background-color: #009688;
+    color: white;
+    padding: 1ex;
+    border-radius: 4px;
 }
 
 /* Public section */

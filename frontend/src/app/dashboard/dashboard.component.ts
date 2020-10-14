@@ -48,6 +48,7 @@ export class NewDashboardComponent {
             url: "https://docs.programaker.com/tutorials/weather-bot.html",
         },
     ];
+    programSettingsOpened: { [key: string]: boolean } = {};
 
     readonly _getUserPicture = getUserPictureUrl;
     readonly _iconDataToUrl = iconDataToUrl;
@@ -87,7 +88,10 @@ export class NewDashboardComponent {
                     this.groupService.getUserGroups()
                         .then(groups => this.userInfo.groups = groups);
                     this.programService.getPrograms()
-                        .then(programs => this.programs = programs);
+                        .then(programs => {
+                            this.programs = programs;
+                            this.programSettingsOpened = {};
+                        });
 
                     this.updateBridges();
                     this.updateConnections();
@@ -209,6 +213,11 @@ export class NewDashboardComponent {
         await this.programService.setProgramStatus(JSON.stringify({"enable": false}),
                                                    program.id);
         program.enabled = false;
+        delete this.programSettingsOpened[program.id];
+    }
+
+    async toggleShowProgramSettings(program: ProgramMetadata) {
+        this.programSettingsOpened[program.id] = !this.programSettingsOpened[program.id];
     }
 
     openTutorial(tutorial: TutorialData) {
