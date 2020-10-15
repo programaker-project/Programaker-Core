@@ -45,8 +45,4 @@ export class EditCollaboratorsDialogComponent {
 
         this.dialogRef.close({success: true});
     }
-
-    displayInvitation(user: {username: string}): string {
-        return user && user.username ? user.username : '';
-    }
 }
