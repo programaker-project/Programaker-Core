@@ -49,7 +49,7 @@ export class NewDashboardComponent {
             url: "https://docs.programaker.com/tutorials/weather-bot.html",
         },
     ];
-    programSettingsOpened: { [key: string]: boolean } = {};
+    programSettingsOpened: { [key: string]: false | 'archive' } = {};
 
 
     @ViewChild('navTabGroup') navTabGroup: MatTabGroup;
@@ -147,6 +147,7 @@ export class NewDashboardComponent {
                 const currState = history.state;
 
                 history.replaceState(currState, '', this.updateAnchor(this.browser.window.location.href, this.tabFragName[idx]));
+                this.programSettingsOpened = {};
             }
         });
     }
@@ -274,8 +275,13 @@ export class NewDashboardComponent {
         delete this.programSettingsOpened[program.id];
     }
 
-    async toggleShowProgramSettings(program: ProgramMetadata) {
-        this.programSettingsOpened[program.id] = !this.programSettingsOpened[program.id];
+    async toggleShowProgramArchive(program: ProgramMetadata) {
+        if (this.programSettingsOpened[program.id] === 'archive') {
+            this.programSettingsOpened[program.id] = false;
+        }
+        else {
+            this.programSettingsOpened[program.id] = 'archive';
+        }
     }
 
     openTutorial(tutorial: TutorialData) {

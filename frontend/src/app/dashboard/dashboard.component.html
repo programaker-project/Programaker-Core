@@ -76,9 +76,10 @@
                                     </span>
                                 </div>
                             </div>
-                            <div [class]="'program-settings ' + (programSettingsOpened[program.id] === undefined ? '' : 'hidden-' + (!programSettingsOpened[program.id]))">
+                            <div [class]="'program-settings ' + (programSettingsOpened[program.id] === undefined ? '' : 'hidden-' + (programSettingsOpened[program.id] !== 'archive' ))">
                                 <div class="contents">
-                                    <div class="title"><span class="program-name">{{ program.name }}</span>'s Settings</div>
+                                    <div class="title">Archive <span class="program-name">{{ program.name }}</span>?</div>
+                                    <div class="explanation">The program will stop until you re-start it.</div>
                                     <button mat-raised-button mat-button
                                         (click)="archiveProgram(program)"
                                         class="archive-program">
@@ -90,10 +91,10 @@
 
                             <div class="program-operation">
                                 <button mat-mini-fab
-                                    (click)="toggleShowProgramSettings(program)"
+                                    (click)="toggleShowProgramArchive(program)"
                                     color="accent"
                                     class="fab-action open-program-settings">
-                                    <mat-icon>settings</mat-icon>
+                                    <mat-icon>archive</mat-icon>
                                 </button>
                             </div>
                         </mat-card>
