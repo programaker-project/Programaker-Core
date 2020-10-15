@@ -1,6 +1,6 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { GroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
 import { BridgeService } from '../bridges/bridge.service';
@@ -20,6 +20,7 @@ import { iconDataToUrl, getUserPictureUrl } from '../utils';
 import { BridgeIndexData } from 'app/bridges/bridge';
 import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
 import { BrowserService } from 'app/browser.service';
+import { MatTabGroup } from '@angular/material/tabs';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -50,8 +51,17 @@ export class NewDashboardComponent {
     ];
     programSettingsOpened: { [key: string]: boolean } = {};
 
+
+    @ViewChild('navTabGroup') navTabGroup: MatTabGroup;
     readonly _getUserPicture = getUserPictureUrl;
     readonly _iconDataToUrl = iconDataToUrl;
+
+    tabFragName = [
+        'my-programs',
+        'archived-programs',
+        'bridges',
+        'profile',
+    ];
 
     constructor(
         private browser: BrowserService,
@@ -61,6 +71,8 @@ export class NewDashboardComponent {
         private connectionService: ConnectionService,
         private groupService: GroupService,
         private router: Router,
+        private route: ActivatedRoute,
+
         public dialog: MatDialog,
         public bridgeService: BridgeService,
     ) {
@@ -71,7 +83,6 @@ export class NewDashboardComponent {
         this.router = router;
     }
 
-    // tslint:disable-next-line:use-life-cycle-interface
     ngOnInit(): void {
         this.sessionService.getSession()
             .then(session => {
@@ -100,7 +111,54 @@ export class NewDashboardComponent {
             .catch(e => {
                 console.log('Error getting session', e);
                 this.router.navigate(['/login'], {replaceUrl:true});
+            });
+    }
+
+    ngAfterViewInit() {
+        let unsubscribe = false;
+        let subscription = null;
+        // The same behavior might be achieved with .toPromise(), but it
+        // seems to have problems (with race conditions?).
+        subscription = this.route.fragment.subscribe({
+            next: (fragment => {
+                const idx = this.tabFragName.indexOf(fragment);
+                if (idx >= 0) {
+                    this.navTabGroup.selectedIndex = idx;
+                }
+
+                if (subscription !== null) {
+                    subscription.unsubscribe();
+                }
+                else {
+                    // In case the subscription assignation has not happened yet, take not of it to
+                    // unsubscribe as soon as possible.
+                    unsubscribe = true;
+                }
             })
+        });
+        if (unsubscribe) {
+            // The first value has read before the `subcription` variable has been assigned.
+            // Now the only thing that remains is to perform the unsubscription.
+            subscription.unsubscribe();
+        }
+
+        this.navTabGroup.selectedIndexChange.subscribe({
+            next: (idx: number) => {
+                const currState = history.state;
+
+                history.replaceState(currState, '', this.updateAnchor(this.browser.window.location.href, this.tabFragName[idx]));
+            }
+        });
+    }
+
+    private updateAnchor(href: string, anchor: string): string {
+        const anchorStart = href.indexOf('#');
+        if (anchorStart < 0) {
+            return href + '#' + anchor;
+        }
+        else {
+            return href.substring(0, anchorStart) + '#' + anchor;
+        }
     }
 
     addProgram(): void {

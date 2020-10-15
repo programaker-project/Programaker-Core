@@ -28,8 +28,7 @@
         </div>
     </div>
 
-    <mat-tab-group mat-align-tabs="center" animationDuration="0ms">
-
+    <mat-tab-group #navTabGroup mat-align-tabs="center" animationDuration="0ms">
         <mat-tab>
             <ng-template matTabLabel>
                 <span [matBadge]="programs && getEnabled(programs).length" matBadgeOverlap="false">My programs</span>
