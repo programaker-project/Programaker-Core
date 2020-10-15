@@ -17,6 +17,7 @@ import { SessionService } from 'app/session.service';
 import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborator';
 import { getGroupPictureUrl } from 'app/utils';
 import { ConfirmDeleteDialogComponent } from 'app/dialogs/confirm-delete-dialog/confirm-delete-dialog.component';
+import { GroupCollaboratorEditorComponent } from 'app/components/group-collaborator-editor/group-collaborator-editor.component';
 
 const DEFAULT_ROLE : CollaboratorRole = 'editor';
 
@@ -43,18 +44,14 @@ export class GroupSettingsComponent {
     @ViewChild('imgFileInput') imgFileInput: ElementRef<HTMLInputElement>;
     @ViewChild('saveAvatarButton') saveAvatarButton: MatButton;
 
-    @ViewChild('invitationAutocomplete') invitationAutocomplete: MatAutocomplete;
     @ViewChild('saveCollaboratorsButton') saveCollaboratorsButton: MatButton;
     @ViewChild('saveAdminButton') saveAdminButton: MatButton;
     @ViewChild('deletegroupButton') deletegroupButton: MatButton;
 
-    invitationSearch = new FormControl();
-    userNameQuery: Promise<UserAutocompleteInfo[]> | null = null;
-    filteredOptions: UserAutocompleteInfo[];
     collaborators: Collaborator[];
+    @ViewChild('groupCollaboratorEditor') groupCollaboratorEditor: GroupCollaboratorEditorComponent;
 
     readonly _getGroupPicture = getGroupPictureUrl;
-    readonly _roleToIcon = roleToIcon;
 
     constructor(
         public sessionService: SessionService,
@@ -83,7 +80,6 @@ export class GroupSettingsComponent {
                     }).then(() => {
                         this.groupService.getCollaboratorsOnGroup(this.groupInfo.id).then(collaborators => {
                             this.collaborators = collaborators
-                            this._setupAutocomplete()
                         });
 
                     });
@@ -95,41 +91,6 @@ export class GroupSettingsComponent {
             });
     }
 
-    private _setupAutocomplete() {
-        // Update user list on invitation section
-        this.invitationSearch.valueChanges.subscribe({
-            next: (value) => {
-                if ((!value) || (typeof value !== 'string')) {
-                    this.filteredOptions = [];
-                }
-                else {
-                    const query = this.userNameQuery = this.groupService.autocompleteUsers(value);
-
-                    this.userNameQuery.then((result: UserAutocompleteInfo[]) => {
-                        if (query !== this.userNameQuery) {
-                            // No longer applicable
-                            return;
-                        }
-
-                        result = result.filter((user) => {
-                            if (user.id === this.session.user_id){
-                                return false; // This is the user creating the group
-                            }
-                            if (this.collaborators.find(collaborator => collaborator.id === user.id)) {
-                                return false; // This user is already on the list
-                            }
-
-                            return true;
-                        });
-
-                        this.filteredOptions = result;
-                    });
-                }
-            }
-        })
-        this.invitationAutocomplete.optionSelected.subscribe({ next: this.selectOption.bind(this) });
-    }
-
     onChangeAdvancedSettings(event: MatSlideToggleChange) {
         this.is_advanced = event.checked;
     }
@@ -139,7 +100,7 @@ export class GroupSettingsComponent {
         buttonClass.add('started');
         buttonClass.remove('completed');
 
-        await this.groupService.updateGroupCollaboratorList(this.groupInfo.id, this.collaborators)
+        await this.groupService.updateGroupCollaboratorList(this.groupInfo.id, this.groupCollaboratorEditor.getCollaborators());
 
         buttonClass.remove('started');
         buttonClass.add('completed');
@@ -189,24 +150,6 @@ export class GroupSettingsComponent {
         buttonClass.remove('started');
         buttonClass.add('completed');
     }
-
-
-    displayInvitation(user: {username: string}): string {
-        return user && user.username ? user.username : '';
-    }
-
-    selectOption(arg: MatAutocompleteSelectedEvent){
-        this.invitationSearch.reset();
-        const collaborator = arg.option.value as Collaborator;
-        collaborator.role = DEFAULT_ROLE;
-
-        this.collaborators.push(collaborator);
-    }
-
-    removeCollaborator(user: UserAutocompleteInfo) {
-        this.collaborators = this.collaborators.filter(collaborator => collaborator.id !== user.id);
-    }
-
 
     startDeleteGroup() {
         const programData = { name: this.groupInfo.name };
