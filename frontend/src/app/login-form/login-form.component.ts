@@ -8,7 +8,10 @@ import { SessionService } from '../session.service';
 @Component({
     selector: 'app-my-login-form',
     templateUrl: './login-form.component.html',
-    providers: [SessionService]
+    providers: [SessionService],
+    styleUrls: [
+        'register-form.component.css',
+    ],
 })
 
 export class LoginFormComponent implements OnInit {
