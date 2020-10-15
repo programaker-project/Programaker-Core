@@ -1,0 +1,26 @@
+<h2 mat-dialog-title>Group collaborators</h2>
+<div class="intent">
+    Invite some people to the group.
+</div>
+
+<app-group-collaborator-editor #groupCollaboratorEditor
+    [collaborators]="this.data.existingCollaborators"
+></app-group-collaborator-editor>
+
+<div class="accept-cancel">
+    <button class="confirm-button" #confirmationButton
+        (click)="confirm()"
+        mat-button mat-raised-button>
+        Send invitations
+
+        <span class="load-bg"></span>
+    </button>
+
+    or
+
+    <button
+        (click)="onNoClick()"
+        mat-button mat-raised-button>
+        Go back
+    </button>
+</div>

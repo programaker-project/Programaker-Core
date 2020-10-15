@@ -183,7 +183,7 @@ export class NewDashboardComponent {
     }
 
     addBridge(): void {
-        const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '50%',
+        const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '80%',
                                                                        data: { },
                                                                      });
 

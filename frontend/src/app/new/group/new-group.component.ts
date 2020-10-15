@@ -1,10 +1,10 @@
 import { Location } from '@angular/common';
 import { Component, ViewChild } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { MatAutocomplete, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { GroupService, UserAutocompleteInfo } from 'app/group.service';
+import { GroupCollaboratorEditorComponent } from 'app/components/group-collaborator-editor/group-collaborator-editor.component';
+import { GroupService } from 'app/group.service';
 import { BridgeService } from '../../bridges/bridge.service';
 import { ConnectionService } from '../../connection.service';
 import { MonitorService } from '../../monitor.service';
@@ -34,17 +34,13 @@ export class NewGroupComponent {
     errorMessage: string = '';
     processing = false;
 
-    @ViewChild('invitationAutocomplete') invitationAutocomplete: MatAutocomplete;
-    invitationSearch = new FormControl();
-    userNameQuery: Promise<UserAutocompleteInfo[]> | null = null;
-    filteredOptions: UserAutocompleteInfo[];
-    collaborators: UserAutocompleteInfo[] = [];
+    @ViewChild('groupCollaboratorEditor') groupCollaboratorEditor: GroupCollaboratorEditorComponent;
 
     constructor(
-        public sessionService: SessionService,
-        public router: Router,
-        public dialog: MatDialog,
+        private sessionService: SessionService,
         private groupService: GroupService,
+        private router: Router,
+        private dialog: MatDialog,
         private formBuilder: FormBuilder,
         private _location: Location,
     ) {
@@ -63,39 +59,6 @@ export class NewGroupComponent {
                 }
                 else {
                     this.is_advanced = this.session.tags.is_advanced;
-
-                    // Update user list on invitation section
-                    this.invitationSearch.valueChanges.subscribe({
-                        next: (value) => {
-                            if ((!value) || (typeof value !== 'string')) {
-                                this.filteredOptions = [];
-                            }
-                            else {
-                                const query = this.userNameQuery = this.groupService.autocompleteUsers(value);
-
-                                this.userNameQuery.then((result: UserAutocompleteInfo[]) => {
-                                    if (query !== this.userNameQuery) {
-                                        // No longer applicable
-                                        return;
-                                    }
-
-                                    result = result.filter((user) => {
-                                        if (user.id === this.session.user_id){
-                                            return false; // This is the user creating the group
-                                        }
-                                        if (this.collaborators.find(collaborator => collaborator.id === user.id)) {
-                                            return false; // This user is already on the list
-                                        }
-
-                                        return true;
-                                    });
-
-                                    this.filteredOptions = result;
-                                });
-                            }
-                        }
-                    })
-                    this.invitationAutocomplete.optionSelected.subscribe({ next: this.selectOption.bind(this) });
                 }
             })
             .catch(e => {
@@ -111,22 +74,16 @@ export class NewGroupComponent {
         return user && user.username ? user.username : '';
     }
 
-    selectOption(arg: MatAutocompleteSelectedEvent){
-        this.invitationSearch.reset();
-        this.collaborators.push(arg.option.value as UserAutocompleteInfo);
-    }
-
-    removeCollaborator(user: UserAutocompleteInfo) {
-        this.collaborators = this.collaborators.filter(collaborator => collaborator.id !== user.id);
-    }
-
     createGroup() {
         const groupName = this.options.controls.groupName.value;
         const isPublicGroup = this.publicGroup;
-        const collaborators = this.collaborators;
+        const collaborators = this.groupCollaboratorEditor.getCollaborators();
 
         this.processing = true;
-        this.groupService.createGroup(groupName, { 'public': isPublicGroup, collaborators: collaborators.map(user => user.id) })
+        this.groupService.createGroup(groupName, {
+            'public': isPublicGroup,
+            collaborators: collaborators.map(user => { return { id: user.id, role: user.role }; })
+        })
             .then((group: GroupInfo) => {
                 this.router.navigate(['/groups/' + group.name]);
             })
@@ -140,7 +97,6 @@ export class NewGroupComponent {
                 }
                 this.processing = false;
             });
-        ;
     }
 
     goBack() {

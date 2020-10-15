@@ -1,9 +1,7 @@
 import { Component, Inject } from '@angular/core';
-import { ServiceEnableHowTo, ServiceEnableMessage, ServiceEnableEntry, ServiceEnableType } from '../service';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SessionService } from '../session.service';
 import { ServiceService } from '../service.service';
-import { BridgeIndexComponent } from './index.component';
 import { BridgeIndexData } from './bridge';
 
 @Component({

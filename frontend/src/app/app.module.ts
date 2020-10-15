@@ -51,7 +51,6 @@ import { AddConnectionDialogComponent } from './connections/add-connection-dialo
 import { CustomSignalCreateDialogComponent } from './custom_signals/create-dialog.component';
 import { TemplateCreateDialogComponent } from './templates/create-dialog.component';
 import { SelectProgrammingModelDialogComponent } from './programs/select-programming-model-dialog/select-programming-model-dialog.component';
-import { AddCollaboratorsDialogComponent } from './dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
 
 // Services
 import { ServicesComponent } from './services.component';
@@ -79,6 +78,8 @@ import { SelectFromJSON } from './select_from_json.filter';
 import { AddBridgeDialogComponent } from './dialogs/add-bridge-dialog/add-bridge-dialog.component';
 import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/update-bridge-dialog.component';
 import { MatRippleModule } from '@angular/material/core';
+import { GroupCollaboratorEditorComponent } from './components/group-collaborator-editor/group-collaborator-editor.component';
+import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators-dialog/edit-collaborators-dialog.component';
 
 @NgModule({
     declarations: [
@@ -91,7 +92,6 @@ import { MatRippleModule } from '@angular/material/core';
         GroupSettingsComponent,
         ProgramDetailComponent,
         FlowEditorComponent,
-        BridgeIndexComponent,
         ServicesComponent,
         LoginFormComponent,
         ResetPasswordStartComponent,
@@ -117,10 +117,14 @@ import { MatRippleModule } from '@angular/material/core';
         StopThreadProgramDialogComponent,
         SetProgramTagsDialogComponent,
         AddConnectionDialogComponent,
-        AddCollaboratorsDialogComponent,
+        EditCollaboratorsDialogComponent,
         AddBridgeDialogComponent,
         UpdateBridgeDialogComponent,
         ConfirmDeleteDialogComponent,
+
+        // Independent components
+        BridgeIndexComponent,
+        GroupCollaboratorEditorComponent,
 
         // Pipes
         SummarizeJSON,

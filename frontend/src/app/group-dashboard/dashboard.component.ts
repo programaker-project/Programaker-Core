@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BridgeIndexData, SharedResource } from 'app/bridges/bridge';
-import { AddCollaboratorsDialogComponent } from 'app/dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
 import { GroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
 import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborator';
@@ -20,6 +19,7 @@ import { Session } from '../session';
 import { SessionService } from '../session.service';
 import { AddBridgeDialogComponent } from 'app/dialogs/add-bridge-dialog/add-bridge-dialog.component';
 import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
+import { EditCollaboratorsDialogComponent } from 'app/dialogs/editor-collaborators-dialog/edit-collaborators-dialog.component';
 
 @Component({
     selector: 'app-group-dashboard',
@@ -131,13 +131,13 @@ export class GroupDashboardComponent {
     }
 
     addCollaborators(): void {
-        const dialogRef = this.dialog.open(AddCollaboratorsDialogComponent, { width: '50%',
-                                                                              data: { groupId: this.groupInfo.id,
-                                                                                      existingCollaborators: this.collaborators,
-                                                                                    },
-                                                                            });
+        const dialogRef = this.dialog.open(EditCollaboratorsDialogComponent, { width: '90%', maxHeight: '100vh', maxWidth: '100vw',
+                                                                               data: { groupId: this.groupInfo.id,
+                                                                                       existingCollaborators: this.collaborators,
+                                                                                     },
+                                                                             });
 
-        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+        dialogRef.afterClosed().subscribe(async (result: {success: boolean}) => {
             if (result && result.success) {
                 this.updateCollaborators();
             }
@@ -145,7 +145,7 @@ export class GroupDashboardComponent {
     }
 
     addBridge(): void {
-        const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '50%',
+        const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '80%',
                                                                        data: { groupId: this.groupInfo.id
                                                                              },
                                                                      });

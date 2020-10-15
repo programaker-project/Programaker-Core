@@ -68,7 +68,15 @@ accept_json(Req, State=#state{ user_id=UserId }) ->
                     end,
     case automate_storage:create_group(maps:get(<<"name">>, Parsed), UserId, maps:get(<<"public">>, Parsed)) of
         {ok, Group=#user_group_entry{ id=GroupId }} ->
-            ok = automate_storage:add_collaborators({ group, GroupId }, lists:map(fun(UId) -> {UId, editor} end, Collaborators)),
+            ok = automate_storage:add_collaborators({ group, GroupId }, lists:map(fun(#{ <<"id">> := UId, <<"role">> := RoleStr }) ->
+                                                                                          Role = case RoleStr of
+                                                                                                     <<"admin">> -> admin;
+                                                                                                     <<"editor">> -> editor;
+                                                                                                     <<"viewer">> -> viewer
+                                                                                                 end,
+                                                                                          {UId, Role}
+                                                                                  end,
+                                                                                  Collaborators)),
             Req2 = ?UTILS:send_json_output(jiffy:encode(#{ success => true
                                                          , group => ?FORMATTING:group_to_json(Group)
                                                          }), Req),
