@@ -361,3 +361,8 @@ button.completed > span > .load-bg {
     left: -25%;
     font-size: small;
 }
+
+/* Tab management */
+div.mat-tab-body-content {
+    overflow: hidden;
+}

@@ -154,41 +154,50 @@
                 </ng-container>
             </div>
         </mat-tab>
-        <mat-tab label="Bridges">
+        <mat-tab>
+            <ng-template matTabLabel>
+                <span [matBadge]="bridges && bridges.length" matBadgeOverlap="false">Bridges</span>
+            </ng-template>
+
             <section *ngIf="bridges && bridges.length > 0" class="bridges">
                 <div *ngIf="bridges.length == 0" class="not-joined-explanation">
                     You don't maintain any bridge.
                 </div>
 
-                <div class="section-objects">
-                    <mat-card *ngFor="let bridge of bridges"
-                        matRipple matRippleColor="#00000017"
-                        class="bridge"
-                        role="button"
-                        (click)="openBridgePanel(bridge)"
-                    >
-                        <div class="bridge-data">
-                            <span class="bridge-status connected-{{bridge.is_connected}}"
-                                matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
-                                <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
-                                <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
-                            </span>
-
-                            <img role="avatar" class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
-
-                            <div *ngIf="!bridge.icon" class="bridge-name">
-                                {{bridge.name || "unnamed bridge"}}
+                <div class="row">
+                    <div class="col-sm-6 item-holder">
+                        <mat-card role="button" (click)="addBridge()" class="module bridge call-to-action">
+                            <div class="card-title">
+                                <span>
+                                    <mat-icon>add</mat-icon>
+                                    Add new bridge
+                                </span>
                             </div>
-                        </div>
-                    </mat-card>
-                </div>
-                <div class="section-buttons">
-                    <button class="group call-to-action soft" role="button"
-                        (click)="addBridge()"
-                        *ngIf="userRole==='admin'"
-                        mat-raised-button>
-                        <mat-icon>add</mat-icon> Add bridge
-                    </button>
+                        </mat-card>
+                    </div>
+                    <div class="col-sm-6  item-holder"
+                        *ngFor="let bridge of bridges">
+                        <mat-card
+                            matRipple matRippleColor="#00000017"
+                            class="bridge"
+                            role="button"
+                            (click)="openBridgePanel(bridge)"
+                        >
+                            <div class="bridge-data">
+                                <span class="bridge-status connected-{{bridge.is_connected}}"
+                                    matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
+                                    <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
+                                    <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
+                                </span>
+
+                                <img role="avatar" class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
+
+                                <div *ngIf="!bridge.icon" class="bridge-name">
+                                    {{bridge.name || "unnamed bridge"}}
+                                </div>
+                            </div>
+                        </mat-card>
+                    </div>
                 </div>
             </section>
         </mat-tab>

@@ -21,6 +21,7 @@ import { BridgeIndexData } from 'app/bridges/bridge';
 import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
 import { BrowserService } from 'app/browser.service';
 import { MatTabGroup } from '@angular/material/tabs';
+import { AddBridgeDialogComponent } from 'app/dialogs/add-bridge-dialog/add-bridge-dialog.component';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -179,6 +180,20 @@ export class NewDashboardComponent {
                 this.openProgram(program);
             });
         }
+    }
+
+    addBridge(): void {
+        const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '50%',
+                                                                       data: { },
+                                                                     });
+
+        dialogRef.afterClosed().subscribe((result: {success: boolean, bridgeId?: string, bridgeName?: string}) => {
+            if (result && result.success) {
+                this.updateBridges();
+
+                this.openBridgePanel({ id: result.bridgeId, name: result.bridgeName });
+            }
+        });
     }
 
     async updateBridges() {

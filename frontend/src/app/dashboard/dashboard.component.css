@@ -384,10 +384,29 @@ section.bridges {
     border-top: 1px solid rgba(0,0,0,0.3);
 }
 
+section.bridges .row {
+    margin: 0;
+}
+
+section.bridges .row .item-holder {
+    padding: 0;
+}
+
+.bridge.call-to-action .card-title {
+    height: 100%;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.bridge.call-to-action .card-title mat-icon {
+    vertical-align: bottom;
+}
+
 mat-card.bridge {
     display: block;
     vertical-align: bottom;
-    margin-left: 1ex;
+    margin: 0.5ex 1ex 0.5ex 1ex;
     margin-top: 1ex;
     padding: 0;
     height: 3em;
