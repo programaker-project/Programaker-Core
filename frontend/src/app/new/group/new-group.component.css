@@ -1,8 +1,8 @@
 section.component {
-    width: 100%;
-    padding-top: 2em;
+    max-width: 100%;
+    padding: 1ex;
     width: max-content;
-    margin: 0 auto 2ex auto;
+    margin: 0 auto;
 }
 
 .title {
@@ -24,6 +24,7 @@ section.component {
 
 mat-form-field {
     width: 40ex;
+    max-width: 100%;
 }
 
 mat-error {
@@ -33,6 +34,10 @@ mat-error {
 button {
     min-height: 5ex;
     margin: 0 1ex 0 1ex;
+}
+
+.explanation {
+    white-space: normal;
 }
 
 .key-point {
