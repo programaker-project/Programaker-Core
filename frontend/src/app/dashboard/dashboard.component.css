@@ -298,7 +298,8 @@ mat-card.example > .description {
 
 /* User profile */
 .user-profile {
-    width: 40ex;
+    margin: 1em auto;
+    max-width: 40ex;
 }
 
 .user-profile .avatar {
@@ -475,4 +476,26 @@ mat-card.non-clickable {
     box-shadow: none;
     border: 1px solid rgba(0,0,0,0.3);
     cursor: inherit;
+}
+
+.edit-configuration {
+    text-align: center;
+    margin-top: 1em;
+}
+
+.edit-configuration .settings-link {
+    background-color: #fc8;
+    color: #000;
+    padding: 1ex;
+    box-shadow: 0px 2px 3px 0px rgba(0,0,0,0.3);
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.edit-configuration .settings-link mat-icon {
+    vertical-align: bottom;
+}
+
+.edit-configuration .settings-link:hover {
+    text-decoration: none;
 }

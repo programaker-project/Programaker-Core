@@ -400,6 +400,7 @@ section.edit-configuration .settings-link {
     color: #000;
     padding: 1ex;
     box-shadow: 0px 2px 3px 0px rgba(0,0,0,0.3);
+    border-radius: 4px;
 }
 
 section.edit-configuration .settings-link:hover {

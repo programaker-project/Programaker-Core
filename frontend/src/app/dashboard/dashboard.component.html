@@ -211,6 +211,14 @@
 
                 <div class="username">{{ userInfo.name }}</div>
 
+                <div class="edit-configuration">
+                    <a routerLink="/settings" class="settings-link" role="button"
+                        matRipple>
+                        <mat-icon>settings</mat-icon>
+                        Edit configuration
+                    </a>
+                </div>
+
                 <section *ngIf="userInfo.groups" class="groups">
                     <div class="section-title">Groups</div>
 
