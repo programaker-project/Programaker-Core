@@ -1,11 +1,9 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { BridgeIndexComponent } from './bridges/index.component';
 import { ServicesComponent } from './services.component';
 
-import { DashboardComponent } from './old-dashboard/dashboard.component';
-import { NewDashboardComponent } from './dashboard/dashboard.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/user-settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
 
@@ -22,7 +20,6 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { AboutPageComponent } from './info-pages/about-page.component';
 import { NewGroupComponent } from './new/group/new-group.component';
-import { GroupDashboardComponent } from './group-dashboard/dashboard.component';
 import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
 
 const routes: Routes = [
@@ -37,9 +34,8 @@ const routes: Routes = [
     { path: 'register/verify/:verification_code', component: VerifyCodeComponent },
 
     // General
-    { path: 'full-dashboard', component: DashboardComponent },
-    { path: 'dashboard', component: NewDashboardComponent },
-    { path: 'groups/:group_name', component: GroupDashboardComponent },
+    { path: 'dashboard', component: DashboardComponent },
+    { path: 'groups/:group_name', component: DashboardComponent },
     { path: 'groups/:group_name/settings', component: GroupSettingsComponent },
 
     // Programs
@@ -51,7 +47,7 @@ const routes: Routes = [
     { path: 'services', component: ServicesComponent },
 
     // Bridges
-    { path: 'bridges', component: BridgeIndexComponent },
+    { path: 'bridges', redirectTo: '/dashboard#bridges' },
 
     // Settings
     { path: 'settings', component: SettingsComponent },
@@ -59,6 +55,9 @@ const routes: Routes = [
 
     // Element creation
     { path: 'new/group', component: NewGroupComponent },
+
+    // If no matching route found, go back to dashboard
+    { path: '**', component: DashboardComponent },
 ];
 
 @NgModule({

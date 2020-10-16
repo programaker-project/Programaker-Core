@@ -1,88 +1,90 @@
-<mat-card class="login-form center-block">
-    <form class="container-fluid grid grid-pad">
-        <div class="error-message col-sm-12" *ngIf="!!errorMessage">
-            {{ errorMessage }}
-        </div>
+<div class="container">
+    <mat-card class="login-form center-block">
+        <form class="container-fluid grid grid-pad">
+            <div class="error-message col-sm-12" *ngIf="!!errorMessage">
+                {{ errorMessage }}
+            </div>
 
-        <div class="col-sm-12">
-            <mat-form-field class="full-size col-sm-12">
-                <input matInput  class="col-sm-12"
-                    id="registerUsername"
-                    [(ngModel)]="username"
-                    (focusout)="validateUsername()"
-                    placeholder="User name/Alias"
-                    name="username" />
-            </mat-form-field>
-            <mat-error *ngIf="userErrorMessage">
-		        {{ userErrorMessage }}
-	        </mat-error>
-        </div>
+            <div class="col-sm-12">
+                <mat-form-field class="full-size col-sm-12">
+                    <input matInput  class="col-sm-12"
+                        id="registerUsername"
+                        [(ngModel)]="username"
+                        (focusout)="validateUsername()"
+                        placeholder="User name/Alias"
+                        name="username" />
+                </mat-form-field>
+                <mat-error *ngIf="userErrorMessage">
+		            {{ userErrorMessage }}
+	            </mat-error>
+            </div>
 
-        <div class="col-sm-12">
-            <mat-form-field class="full-size col-sm-12">
-                <input matInput  class="col-sm-12"
-                    id="registerEmail"
-                    [(ngModel)]="email"
-                    (focusout)="validateEmail()"
-                    placeholder="Email address"
-                    type="email"
-                    name="email" />
-            </mat-form-field>
-            <mat-error *ngIf="emailErrorMessage">
-		        {{ emailErrorMessage }}
-	        </mat-error>
-        </div>
+            <div class="col-sm-12">
+                <mat-form-field class="full-size col-sm-12">
+                    <input matInput  class="col-sm-12"
+                        id="registerEmail"
+                        [(ngModel)]="email"
+                        (focusout)="validateEmail()"
+                        placeholder="Email address"
+                        type="email"
+                        name="email" />
+                </mat-form-field>
+                <mat-error *ngIf="emailErrorMessage">
+		            {{ emailErrorMessage }}
+	            </mat-error>
+            </div>
 
-        <div class="col-sm-12">
-            <mat-form-field class="full-size col-sm-12">
-                <input matInput  class="col-sm-12"
-                    id="registerPassword"
-                    [(ngModel)]="password"
-                    placeholder="Password"
-                    (focusout)="validatePassword()"
-                    type="password"
-                    name="password" />
-            </mat-form-field>
-            <mat-error *ngIf="passwordErrorMessage">
-		        {{ passwordErrorMessage }}
-	        </mat-error>
-        </div>
+            <div class="col-sm-12">
+                <mat-form-field class="full-size col-sm-12">
+                    <input matInput  class="col-sm-12"
+                        id="registerPassword"
+                        [(ngModel)]="password"
+                        placeholder="Password"
+                        (focusout)="validatePassword()"
+                        type="password"
+                        name="password" />
+                </mat-form-field>
+                <mat-error *ngIf="passwordErrorMessage">
+		            {{ passwordErrorMessage }}
+	            </mat-error>
+            </div>
 
-        <div  class="col-sm-12">
-            <mat-form-field class="full-size col-sm-12">
-                <input matInput  class="col-sm-12"
-                    id="registerRepeatedPassword"
-                    [(ngModel)]="repeatedPassword"
-                    placeholder="Repeat password"
-                    (focusout)="validateRepeatedPassword()"
-                    type="password"
-                    name="repeatedPassword" />
-            </mat-form-field>
-            <mat-error *ngIf="repeatedPasswordErrorMessage">
-		        {{ repeatedPasswordErrorMessage }}
-	        </mat-error>
-        </div>
+            <div  class="col-sm-12">
+                <mat-form-field class="full-size col-sm-12">
+                    <input matInput  class="col-sm-12"
+                        id="registerRepeatedPassword"
+                        [(ngModel)]="repeatedPassword"
+                        placeholder="Repeat password"
+                        (focusout)="validateRepeatedPassword()"
+                        type="password"
+                        name="repeatedPassword" />
+                </mat-form-field>
+                <mat-error *ngIf="repeatedPasswordErrorMessage">
+		            {{ repeatedPasswordErrorMessage }}
+	            </mat-error>
+            </div>
 
-        <br />
-        <div class="col-sm-12 accept-cancel">
-            <button color="primary"
+            <br />
+            <div class="col-sm-12 accept-cancel">
+                <button color="primary"
                     (click)="doSignUp()"
                     [disabled]="(!validUsername)
-                                || (!validEmail)
-                                || (!validPassword)
-                                || (password != repeatedPassword)"
+                    || (!validEmail)
+                    || (!validPassword)
+                    || (password != repeatedPassword)"
                     mat-button mat-raised-button>
-                Sign Up
-            </button>
-        </div>
+                    Sign Up
+                </button>
+            </div>
 
-        <br />
-        <div class="col-sm-12 text-center ">
-            Or
-            <a role="button"
-               (click)="goLogInMode()">
-                Log in
-            </a>
-        </div>
-    </form>
-</mat-card>
+            <br />
+            <div class="col-sm-12 text-center ">
+                Or
+                <a role="button"
+                    (click)="goLogInMode()">
+                    Log in
+                </a>
+            </div>
+        </form>
+    </mat-card>
+</div>

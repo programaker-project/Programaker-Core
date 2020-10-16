@@ -25,6 +25,11 @@ button.remove-collaborator {
     background-color: #f77;
 }
 
+button.remove-collaborator:disabled {
+    color: transparent;
+    background-color: transparent;
+}
+
 button.remove-collaborator mat-icon {
     vertical-align: bottom;
 }
@@ -41,15 +46,4 @@ mat-form-field.role {
 mat-select-trigger mat-icon {
     font-size: 140%;
     vertical-align: text-top;
-}
-
-
-.accept-cancel {
-    margin-top: 2em;
-}
-
-.confirm-button {
-    background-color: #009688;
-    color: white;
-    font-weight: bold;
 }

@@ -176,6 +176,7 @@ mat-card.call-to-action, div.call-to-action, button.call-to-action {
 .call-to-action.soft {
     background-color: #fc8;
     color: #000;
+    border-radius: 4px;
 }
 
 mat-card.call-to-action > h4 {
@@ -360,4 +361,9 @@ button.completed > span > .load-bg {
     top: 100%;
     left: -25%;
     font-size: small;
+}
+
+/* Tab management */
+div.mat-tab-body-content {
+    overflow: hidden;
 }

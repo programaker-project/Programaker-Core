@@ -82,7 +82,7 @@ export class GroupService {
         return result['users'];
     }
 
-    async createGroup(name: string, options: { 'public': boolean, collaborators: string[] } ): Promise<GroupInfo> {
+    async createGroup(name: string, options: { 'public': boolean, collaborators: { id: string, role: CollaboratorRole }[] } ): Promise<GroupInfo> {
         const url = this.getCreateGroupUrl();
 
         const result = await this.http.post(url,

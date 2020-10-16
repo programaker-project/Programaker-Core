@@ -28,9 +28,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AlertModule } from 'ngx-bootstrap/alert';
 
 import { AppComponent } from './app.component';
-import { DashboardComponent } from './old-dashboard/dashboard.component';
-import { NewDashboardComponent } from './dashboard/dashboard.component';
-import { GroupDashboardComponent } from './group-dashboard/dashboard.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/user-settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
 import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
@@ -51,13 +49,9 @@ import { AddConnectionDialogComponent } from './connections/add-connection-dialo
 import { CustomSignalCreateDialogComponent } from './custom_signals/create-dialog.component';
 import { TemplateCreateDialogComponent } from './templates/create-dialog.component';
 import { SelectProgrammingModelDialogComponent } from './programs/select-programming-model-dialog/select-programming-model-dialog.component';
-import { AddCollaboratorsDialogComponent } from './dialogs/add-collaborators-dialog/add-collaborators-dialog.component';
 
 // Services
 import { ServicesComponent } from './services.component';
-
-// Bridges
-import { BridgeIndexComponent } from './bridges/index.component';
 
 // Info
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
@@ -78,19 +72,19 @@ import { SummarizeJSON } from './summarize_json.filter';
 import { SelectFromJSON } from './select_from_json.filter';
 import { AddBridgeDialogComponent } from './dialogs/add-bridge-dialog/add-bridge-dialog.component';
 import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/update-bridge-dialog.component';
+import { MatRippleModule } from '@angular/material/core';
+import { GroupCollaboratorEditorComponent } from './components/group-collaborator-editor/group-collaborator-editor.component';
+import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators-dialog/edit-collaborators-dialog.component';
 
 @NgModule({
     declarations: [
         AppComponent,
         DashboardComponent,
-        NewDashboardComponent,
-        GroupDashboardComponent,
         SettingsComponent,
         AdminSettingsComponent,
         GroupSettingsComponent,
         ProgramDetailComponent,
         FlowEditorComponent,
-        BridgeIndexComponent,
         ServicesComponent,
         LoginFormComponent,
         ResetPasswordStartComponent,
@@ -116,10 +110,13 @@ import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/upda
         StopThreadProgramDialogComponent,
         SetProgramTagsDialogComponent,
         AddConnectionDialogComponent,
-        AddCollaboratorsDialogComponent,
+        EditCollaboratorsDialogComponent,
         AddBridgeDialogComponent,
         UpdateBridgeDialogComponent,
         ConfirmDeleteDialogComponent,
+
+        // Independent components
+        GroupCollaboratorEditorComponent,
 
         // Pipes
         SummarizeJSON,
@@ -142,6 +139,7 @@ import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/upda
         MatTabsModule,
         MatChipsModule,
         MatSnackBarModule,
+        MatRippleModule,
         MatProgressSpinnerModule,
         MatBadgeModule,
         MatTooltipModule,

@@ -1,50 +1,52 @@
-<mat-card class="login-form center-block">
-    <form class="container-fluid grid grid-pad">
-        <div class="error-message col-sm-12" *ngIf="!!errorMessage">
-            {{ errorMessage }}
-        </div>
+<div class="container">
+    <mat-card class="login-form center-block">
+        <form class="container-fluid grid grid-pad">
+            <div class="error-message col-sm-12" *ngIf="!!errorMessage">
+                {{ errorMessage }}
+            </div>
 
-        <div class="col-sm-12">
-            <mat-form-field class="full-size col-sm-12">
-                <input matInput  class="col-sm-12"
-                       [(ngModel)]="username"
-                       placeholder="User name or Email"
-                       name="username" />
-            </mat-form-field>
-        </div>
+            <div class="col-sm-12">
+                <mat-form-field class="full-size col-sm-12">
+                    <input matInput  class="col-sm-12"
+                        [(ngModel)]="username"
+                        placeholder="User name or Email"
+                        name="username" />
+                </mat-form-field>
+            </div>
 
-        <div class="col-sm-12">
-            <mat-form-field class="full-size col-sm-12">
-                <input matInput  class="col-sm-12"
-                       [(ngModel)]="password"
-                       placeholder="Password"
-                       type="password"
-                       name="password" />
-            </mat-form-field>
-        </div>
+            <div class="col-sm-12">
+                <mat-form-field class="full-size col-sm-12">
+                    <input matInput  class="col-sm-12"
+                        [(ngModel)]="password"
+                        placeholder="Password"
+                        type="password"
+                        name="password" />
+                </mat-form-field>
+            </div>
 
-        <br />
-        <div class="col-sm-12 accept-cancel">
-            <button color="primary"
+            <br />
+            <div class="col-sm-12 accept-cancel">
+                <button color="primary"
                     (click)="doLogIn()"
                     mat-button mat-raised-button>
-                Login
-            </button>
-        </div>
+                    Login
+                </button>
+            </div>
 
-        <br />
-        <div class="col-sm-12 text-center">
-            <a role="button"
-                (click)="goResetPassword()">
-                Reset your password
-            </a>
-        </div>
-        <div class="col-sm-12 text-center">
-            Or
-            <a role="button"
-               (click)="goSignUpMode()">
-                Sign up
-            </a>
-        </div>
-    </form>
-</mat-card>
+            <br />
+            <div class="col-sm-12 text-center">
+                <a role="button"
+                    (click)="goResetPassword()">
+                    Reset your password
+                </a>
+            </div>
+            <div class="col-sm-12 text-center">
+                Or
+                <a role="button"
+                    (click)="goSignUpMode()">
+                    Sign up
+                </a>
+            </div>
+        </form>
+    </mat-card>
+</div>

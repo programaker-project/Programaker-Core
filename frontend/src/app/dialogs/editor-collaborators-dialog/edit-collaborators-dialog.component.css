@@ -1,0 +1,9 @@
+.accept-cancel {
+    margin-top: 2em;
+}
+
+.confirm-button {
+    background-color: #009688;
+    color: white;
+    font-weight: bold;
+}

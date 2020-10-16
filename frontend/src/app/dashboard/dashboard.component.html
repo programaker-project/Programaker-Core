@@ -1,7 +1,7 @@
 <div class="profile-section">
     <div class="private-section">
         <div class="user-connections">
-            <h1>My connections </h1>
+            <h1>Connections</h1>
             <div class="connection-list">
                 <div>
                     <button role="button" (click)="addConnection()" class="module connection call-to-action soft cardlike" mat-raised-button>
@@ -28,27 +28,215 @@
         </div>
     </div>
 
-    <div class="row public-section">
-        <div class="">
-            <div *ngIf="userInfo" class="user-profile ">
-                <div class="avatar">
-                    <img role="avatar" src="{{ _getUserPicture(userInfo.id)  }}"
-                        onError="this.src='/assets/profile-not-set.png'"
-                        />
+    <mat-tab-group #navTabGroup mat-align-tabs="center" animationDuration="0ms">
+        <mat-tab>
+            <ng-template matTabLabel>
+                <span [matBadge]="programs && getEnabled(programs).length" matBadgeOverlap="false">Programs</span>
+            </ng-template>
+
+            <div class="section-explanation">
+                Create a new program or edit the ones you already have.
+            </div>
+            <div class="row program-list">
+                <div class="col-sm-6 item">
+                    <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
+                        <div class="program-data">
+                            <div class="card-title">Create new program</div>
+                        </div>
+                    </mat-card>
+                </div>
+                <ng-container *ngFor="let program of programs">
+                    <div class="col-sm-6 item" *ngIf="program.enabled">
+                        <mat-card
+                            [ngClass]="{
+                            'module': true,
+                            'program': true,
+                            'enabled': program.enabled,
+                            'not-enabled': !program.enabled
+                            }"
+                            role="button">
+
+                            <div class="program-data" (click)="openProgram(program)">
+                                <div class="program-type">
+                                    <img *ngIf="program.type === 'scratch_program'"
+                                        src="/assets/blocks-icon.svg"
+                                        data-toggle="tooltip" data-placement="top" title="Block style program" />
+                                    <img *ngIf="program.type === 'flow_program'"
+                                        src="/assets/flow-icon.svg"
+                                        data-toggle="tooltip" data-placement="top" title="Flow style program"/>
+                                </div>
+                                <div class="card-title">{{program.name}}</div>
+                                <div class="connection-icon-list">
+                                    <span *ngFor="let bridgeId of program.bridges_in_use">
+                                        <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ _iconDataToUrl(bridgeInfo[bridgeId].icon,  bridgeId ) }}"
+                                            data-toggle="tooltip" title="{{bridgeInfo[bridgeId].name}} bridge"/>
+                                        <span class="nametag" *ngIf="bridgeInfo[bridgeId] && (!bridgeInfo[bridgeId].icon) && bridgeInfo[bridgeId].name">
+                                            {{ bridgeInfo[bridgeId].name }}
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div [class]="'program-settings ' + (programSettingsOpened[program.id] === undefined ? '' : 'hidden-' + (programSettingsOpened[program.id] !== 'archive' ))">
+                                <div class="contents">
+                                    <div class="title">Archive <span class="program-name">{{ program.name }}</span>?</div>
+                                    <div class="explanation">The program will stop until you re-start it.</div>
+                                    <button mat-raised-button mat-button
+                                        (click)="archiveProgram(program)"
+                                        class="archive-program">
+                                        <mat-icon>archive</mat-icon>
+                                        Archive
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="program-operation">
+                                <button mat-mini-fab
+                                    (click)="toggleShowProgramArchive(program)"
+                                    color="accent"
+                                    class="fab-action open-program-settings">
+                                    <mat-icon>archive</mat-icon>
+                                </button>
+                            </div>
+                        </mat-card>
+                    </div>
+                </ng-container>
+            </div>
+        </mat-tab>
+        <mat-tab>
+            <ng-template matTabLabel>
+                <span [matBadge]="programs && getArchived(programs).length" matBadgeOverlap="false">Archived programs</span>
+            </ng-template>
+
+            <div class="section-explanation">
+                These are programs that you have archived, they won't be running until you launch them again.
+            </div>
+            <div class="row program-list">
+                <ng-container *ngFor="let program of programs">
+                    <div class="col-sm-6" *ngIf="!program.enabled">
+                        <mat-card
+                            [ngClass]="{
+                            'module': true,
+                            'program': true,
+                            'enabled': program.enabled,
+                            'not-enabled': !program.enabled
+                            }"
+                            role="button">
+                            <div class="program-data" (click)="openProgram(program)">
+                                <div class="program-type">
+                                    <img *ngIf="program.type === 'scratch_program'"
+                                        src="/assets/blocks-icon.svg"
+                                        data-toggle="tooltip" data-placement="top" title="Block style program" />
+                                    <img *ngIf="program.type === 'flow_program'"
+                                        src="/assets/flow-icon.svg"
+                                        data-toggle="tooltip" data-placement="top" title="Flow style program"/>
+                                </div>
+                                <div class="card-title">{{program.name}}</div>
+                                <div class="connection-icon-list">
+                                    <span *ngFor="let bridgeId of program.bridges_in_use">
+                                        <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ _iconDataToUrl(bridgeInfo[bridgeId].icon,  bridgeId ) }}"
+                                            data-toggle="tooltip" title="{{bridgeInfo[bridgeId].name}} bridge"/>
+                                        <span class="nametag" *ngIf="bridgeInfo[bridgeId] && (!bridgeInfo[bridgeId].icon) && bridgeInfo[bridgeId].name">
+                                            {{ bridgeInfo[bridgeId].name }}
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div *ngIf="!program.enabled" class="program-operation">
+                                <button mat-mini-fab
+                                    (click)="enableProgram(program)"
+                                    color="accent"
+                                    class="fab-action enable-program">
+                                    <mat-icon>play_arrow</mat-icon>
+                                </button>
+                            </div>
+                        </mat-card>
+                    </div>
+                </ng-container>
+            </div>
+       </mat-tab>
+        <mat-tab>
+            <ng-template matTabLabel>
+                <span [matBadge]="bridges && bridges.length" matBadgeOverlap="false">Bridges</span>
+            </ng-template>
+
+            <section *ngIf="bridges && bridges.length > 0" class="bridges">
+                <div *ngIf="bridges.length == 0" class="not-joined-explanation">
+                    You don't maintain any bridge.
                 </div>
 
-                <div class="username">{{ userInfo.name }}</div>
+                <div class="row">
+                    <div class="col-sm-6 item-holder">
+                        <mat-card role="button" (click)="addBridge()" class="module bridge call-to-action">
+                            <div class="card-title">
+                                <span>
+                                    <mat-icon>add</mat-icon>
+                                    Add new bridge
+                                </span>
+                            </div>
+                        </mat-card>
+                    </div>
+                    <div class="col-sm-6  item-holder"
+                        *ngFor="let bridge of bridges">
+                        <mat-card
+                            matRipple matRippleColor="#00000017"
+                            class="bridge"
+                            role="button"
+                            (click)="openBridgePanel(bridge)"
+                        >
+                            <div class="bridge-data">
+                                <span class="bridge-status connected-{{bridge.is_connected}}"
+                                    matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
+                                    <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
+                                    <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
+                                </span>
 
-                <section *ngIf="userInfo.groups" class="groups">
-                    <div class="section-title">Groups</div>
+                                <img role="avatar" class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
 
-                    <div *ngIf="userInfo.groups.length == 0" class="not-joined-explanation">
+                                <div *ngIf="!bridge.icon" class="bridge-name">
+                                    {{bridge.name || "unnamed bridge"}}
+                                </div>
+                            </div>
+                        </mat-card>
+                    </div>
+                </div>
+            </section>
+        </mat-tab>
+        <mat-tab label="{{ (profile && _toCapitalCase(profile.type)) || 'Loading...' }}">
+            <div *ngIf="profile" class="profile ">
+                <div class="avatar" *ngIf="profile.picture">
+                    <img role="avatar" src="{{ profile.picture  }}"
+                        onError="this.src='/assets/profile-not-set.png'"
+                    />
+                </div>
+
+                <div class="profile-name">{{ profile.name }}</div>
+
+                <div class="edit-configuration">
+                    <a routerLink="/settings" class="settings-link" role="button"
+                        matRipple>
+                        <mat-icon>settings</mat-icon>
+                        Edit configuration
+                    </a>
+                </div>
+
+                <section *ngIf="profile.groups" class="groups">
+                    <div class="section-title">
+                        Groups
+
+                        <button class="group call-to-action soft" role="button"
+                            (click)="createGroup()"
+                            mat-raised-button>
+                            <mat-icon>group_add</mat-icon> New
+                        </button>
+                    </div>
+
+                    <div *ngIf="profile.groups.length == 0" class="not-joined-explanation">
                         You have not joined any <span class="keyword">group</span>.
                     </div>
 
                     <div class="section-objects">
                         <mat-card class="group"
-                            *ngFor="let group of userInfo.groups"
+                            *ngFor="let group of profile.groups"
                             (click)="openGroup(group)"
                             role="button" >
                             <img role="avatar" class="icon" *ngIf="group.picture" src="{{ group.picture }}" alt="{{ group.name }}"
@@ -60,109 +248,47 @@
                         </mat-card>
                     </div>
 
-                    <div class="section-buttons">
-                        <button class="group call-to-action soft" role="button"
-                            (click)="createGroup()"
-                            mat-raised-button>
-                            <mat-icon>add</mat-icon> Create group
-                        </button>
-                    </div>
                 </section>
 
-                <section *ngIf="bridges && bridges.length > 0" class="bridges">
-                    <div class="section-title">Bridges</div>
+                <section *ngIf="collaborators" class="collaborators">
+                    <div class="section-title">
+                        Collaborators
 
-                    <div *ngIf="bridges.length == 0" class="not-joined-explanation">
-                        You don't maintain any bridge.
+                        <button class="collaborators call-to-action soft" role="button"
+                            (click)="addCollaborators()"
+                            *ngIf="userRole==='admin'"
+                            mat-raised-button>
+                            <mat-icon>edit</mat-icon> Edit
+                        </button>
+
+                    </div>
+
+                    <div *ngIf="collaborators.length == 0" class="not-joined-explanation">
+                        This group has no public collaborator.
                     </div>
 
                     <div class="section-objects">
-                        <mat-card *ngFor="let bridge of bridges"
-                            class="bridge"
-                            role="button"
-                            (click)="openBridgePanel(bridge)"
-                        >
-                            <span class="bridge-status connected-{{bridge.is_connected}}"
-                                matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
-                                <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
-                                <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
+                        <mat-card class="collaborator non-clickable"
+                            *ngFor="let user of collaborators">
+                            <span class="collaborator-role"
+                                matTooltip="{{ user.role }}">
+                                <mat-icon>{{ _roleToIcon(user.role)  }}</mat-icon>
                             </span>
 
+                            <img role="avatar" class="icon" *ngIf="user.picture"
+                                src="{{ user.picture }}"
+                                alt="{{ user.username }}"
+                                matTooltip="@{{ user.username }}"
+                            />
 
-                            <img role="avatar" class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
-
-                            <div *ngIf="!bridge.icon" class="bridge-name">
-                                {{bridge.name || "unnamed bridge"}}
-                            </div>
+                            <span *ngIf="!user.picture" class="user-name">
+                                {{ user.username }}
+                            </span>
                         </mat-card>
                     </div>
-
-                    <div class="section-buttons">
-                        <button class="group call-to-action soft" role="button"
-                            (click)="addBridge()"
-                            *ngIf="userRole==='admin'"
-                            mat-raised-button>
-                            <mat-icon>add</mat-icon> Add bridge
-                        </button>
-                    </div>
-                                </section>
+                </section>
 
             </div>
-        </div>
-        <div class="user-programs col col-sm-8">
-            <h1>My Programs</h1>
-            <div class="section-explanation">
-                Create a new program or edit the ones you already have.
-            </div>
-            <div class="row">
-                <div class="col-sm-6">
-                    <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
-                        <div class="program-data">
-                            <div class="card-title">Create new program</div>
-                        </div>
-                    </mat-card>
-                </div>
-                <div class="col-sm-6" *ngFor="let program of programs">
-                    <mat-card
-                        [ngClass]="{
-                        'module': true,
-                        'program': true,
-                        'enabled': program.enabled,
-                        'not-enabled': !program.enabled
-                        }"
-                        role="button">
-                        <div class="program-data" (click)="openProgram(program)">
-                            <div class="program-type">
-                                <img *ngIf="program.type === 'scratch_program'"
-                                    src="/assets/blocks-icon.svg"
-                                    data-toggle="tooltip" data-placement="top" title="Block style program" />
-                                <img *ngIf="program.type === 'flow_program'"
-                                    src="/assets/flow-icon.svg"
-                                    data-toggle="tooltip" data-placement="top" title="Flow style program"/>
-                            </div>
-                            <div class="card-title">{{program.name}}</div>
-                            <div class="connection-icon-list">
-                                <span *ngFor="let bridgeId of program.bridges_in_use">
-                                    <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ _iconDataToUrl(bridgeInfo[bridgeId].icon,  bridgeId ) }}"
-                                        data-toggle="tooltip" title="{{bridgeInfo[bridgeId].name}} bridge"/>
-                                    <span class="nametag" *ngIf="bridgeInfo[bridgeId] && (!bridgeInfo[bridgeId].icon) && bridgeInfo[bridgeId].name">
-                                        {{ bridgeInfo[bridgeId].name }}
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <div *ngIf="!program.enabled" class="program-operation">
-                            <button mat-mini-fab
-                                (click)="enableProgram(program)"
-                                color="accent"
-                                class="enable-program">
-                                <mat-icon>play_arrow</mat-icon>
-                            </button>
-                        </div>
-                    </mat-card>
-                </div>
-            </div>
-        </div>
-    </div>
+        </mat-tab>
+    </mat-tab-group>
 </div>
