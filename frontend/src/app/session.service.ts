@@ -148,7 +148,17 @@ export class SessionService {
 
     getSession(): Promise<Session> {
         if (this.getToken() === null) {
-            return Promise.resolve(null);
+            // Return unactive session
+            return Promise.resolve({
+                username: null,
+                user_id: null,
+                active: false,
+                tags: {
+                    is_admin: false,
+                    is_advanced: false,
+                    is_in_preview: false,
+                }
+            });
         }
 
         if (SessionService.EstablishedSession !== null) {
