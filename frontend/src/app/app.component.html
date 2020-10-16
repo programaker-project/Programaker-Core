@@ -4,18 +4,17 @@
         <a routerLink="/" id="main-title"> <img class="logo" src="/assets/logo.png" aria-hidden="true" alt="Back to dashboard"> {{title}} </a>
         <span class="floating-elements">
             <span class="login-indicator">
-                <button mat-mini-fab
-                    (click)="gotoSettings()"
-                    *ngIf="session.active"
-                    class="account-menu">
+                <a class="action-link account-menu"
+                    routerLink="/settings"
+                    *ngIf="session.active">
                     <img class="account-picture"
                         src="{{ _getUserPicture(session.user_id) }}"
                         aria-hidden="true"
                         alt="User profile picture"
                         onError="this.src='/assets/profile-not-set.png'" />
-                </button>
+                </a>
                 <div class="login-button" *ngIf="!session.active">
-                    <a class="action-link" (click)="gotoLogin()">Login</a>
+                    <a class="action-link" routerLink="/login">Login</a>
                 </div>
             </span>
         </span>
@@ -25,35 +24,22 @@
             <ul class="panels"
                 *ngIf="session.active">
                 <li>
-                    <button mat-button (click)="gotoDashboard()">
-                        <span>
-                            Dashboard
-                        </span>
-                    </button>
-                </li>
-                <li>
-                    <button mat-button (click)="gotoBridges()">
-                        <span matBadge="{{ bridgeCount }}" matBadgePosition="after" matBadgeColor="accent">
-                            Bridges
-                        </span>
-                    </button>
+                    <a class="sidenav-link" routerLink="/dashboard" (click)="!!this.resetSidenavState()" mat-button>
+                        Dashboard
+                    </a>
                 </li>
             </ul>
             <ul class="user-controls"
                 *ngIf="session.active">
                 <li>
-                    <button mat-button (click)="gotoSettings()">
-                        <span>
-                            Settings
-                        </span>
-                    </button>
+                    <a class="sidenav-link" routerLink="/settings" (click)="!!this.resetSidenavState()" mat-button>
+                        Settings
+                    </a>
                 </li>
                 <li *ngIf="session.tags && session.tags.is_admin">
-                    <button mat-button (click)="gotoAdminPanel()">
-                        <span>
-                            Admin panel
-                        </span>
-                    </button>
+                    <a class="sidenav-link" routerLink="/settings/admin" (click)="!!this.resetSidenavState()" mat-button>
+                        Admin panel
+                    </a>
                 </li>
                 <li>
                     <button mat-button (click)="logout()">
@@ -66,11 +52,9 @@
             <ul class="user-controls"
                 *ngIf="!session.active">
                 <li>
-                    <button mat-button (click)="gotoLogin()">
-                        <span>
-                            Login
-                        </span>
-                    </button>
+                    <a class="sidenav-link" routerLink="/login" (click)="!!this.resetSidenavState()" mat-button>
+                        Login
+                    </a>
                 </li>
             </ul>
         </mat-sidenav>

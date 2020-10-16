@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { BridgeIndexComponent } from './bridges/index.component';
 import { ServicesComponent } from './services.component';
 
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -48,7 +47,7 @@ const routes: Routes = [
     { path: 'services', component: ServicesComponent },
 
     // Bridges
-    { path: 'bridges', component: BridgeIndexComponent },
+    { path: 'bridges', redirectTo: '/dashboard#bridges' },
 
     // Settings
     { path: 'settings', component: SettingsComponent },

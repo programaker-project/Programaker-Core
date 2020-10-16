@@ -53,9 +53,6 @@ import { SelectProgrammingModelDialogComponent } from './programs/select-program
 // Services
 import { ServicesComponent } from './services.component';
 
-// Bridges
-import { BridgeIndexComponent } from './bridges/index.component';
-
 // Info
 import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { AboutPageComponent } from './info-pages/about-page.component';
@@ -119,7 +116,6 @@ import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators
         ConfirmDeleteDialogComponent,
 
         // Independent components
-        BridgeIndexComponent,
         GroupCollaboratorEditorComponent,
 
         // Pipes
