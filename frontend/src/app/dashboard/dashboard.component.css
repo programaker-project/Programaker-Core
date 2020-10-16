@@ -23,8 +23,13 @@ mat-card.module > h4 {
     margin-left: 1ex;
 }
 
+.row.program-list > .item {
+    padding: 0;
+}
+
 mat-card.program {
     padding: 0;
+    margin: 1ex;
 }
 
 .program-data {
@@ -299,7 +304,7 @@ mat-card.example > .description {
 /* User profile */
 .user-profile {
     margin: 1em auto;
-    max-width: 40ex;
+    max-width: 100%;
 }
 
 .user-profile .avatar {
@@ -498,4 +503,12 @@ mat-card.non-clickable {
 
 .edit-configuration .settings-link:hover {
     text-decoration: none;
+}
+
+button.collaborators.call-to-action, button.group.call-to-action {
+    font-size: 75%;
+    vertical-align: bottom;
+    height: 2em;
+    font-weight: initial;
+    padding: 0.5ex 1ex;
 }

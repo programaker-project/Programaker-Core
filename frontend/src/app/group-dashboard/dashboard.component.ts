@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BridgeIndexData, SharedResource } from 'app/bridges/bridge';
@@ -20,6 +20,8 @@ import { SessionService } from '../session.service';
 import { AddBridgeDialogComponent } from 'app/dialogs/add-bridge-dialog/add-bridge-dialog.component';
 import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
 import { EditCollaboratorsDialogComponent } from 'app/dialogs/editor-collaborators-dialog/edit-collaborators-dialog.component';
+import { MatTabGroup } from '@angular/material/tabs';
+import { BrowserService } from 'app/browser.service';
 
 @Component({
     selector: 'app-group-dashboard',
@@ -42,13 +44,24 @@ export class GroupDashboardComponent {
     bridges: BridgeIndexData[] = null;
     sharedResources: SharedResource[];
 
+    @ViewChild('navTabGroup') navTabGroup: MatTabGroup;
     canWriteToGroup: boolean = false;
+
+    programSettingsOpened: { [key: string]: false | 'archive' } = {};
 
     readonly _roleToIcon = roleToIcon;
     readonly _getGroupPicture = getGroupPictureUrl;
     readonly _iconDataToUrl = iconDataToUrl;
 
+    tabFragName = [
+        'programs',
+        'archived-programs',
+        'bridges',
+        'info',
+    ];
+
     constructor(
+        private browser: BrowserService,
         private programService: ProgramService,
         private sessionService: SessionService,
         private serviceService: ServiceService,
@@ -99,6 +112,54 @@ export class GroupDashboardComponent {
                 console.log('Error getting session', e);
                 this.router.navigate(['/login'], {replaceUrl:true});
             })
+    }
+
+    ngAfterViewInit() {
+        let unsubscribe = false;
+        let subscription = null;
+        // The same behavior might be achieved with .toPromise(), but it
+        // seems to have problems (with race conditions?).
+        subscription = this.route.fragment.subscribe({
+            next: (fragment => {
+                const idx = this.tabFragName.indexOf(fragment);
+                if (idx >= 0) {
+                    this.navTabGroup.selectedIndex = idx;
+                }
+
+                if (subscription !== null) {
+                    subscription.unsubscribe();
+                }
+                else {
+                    // In case the subscription assignation has not happened yet, take not of it to
+                    // unsubscribe as soon as possible.
+                    unsubscribe = true;
+                }
+            })
+        });
+        if (unsubscribe) {
+            // The first value has read before the `subcription` variable has been assigned.
+            // Now the only thing that remains is to perform the unsubscription.
+            subscription.unsubscribe();
+        }
+
+        this.navTabGroup.selectedIndexChange.subscribe({
+            next: (idx: number) => {
+                const currState = history.state;
+
+                history.replaceState(currState, '', this.updateAnchor(this.browser.window.location.href, this.tabFragName[idx]));
+                this.programSettingsOpened = {};
+            }
+        });
+    }
+
+    private updateAnchor(href: string, anchor: string): string {
+        const anchorStart = href.indexOf('#');
+        if (anchorStart < 0) {
+            return href + '#' + anchor;
+        }
+        else {
+            return href.substring(0, anchorStart) + '#' + anchor;
+        }
     }
 
     addProgram(): void {
@@ -267,5 +328,31 @@ export class GroupDashboardComponent {
         await this.programService.setProgramStatus(JSON.stringify({"enable": true}),
                                                    program.id);
         program.enabled = true;
+    }
+
+
+    async archiveProgram(program: ProgramMetadata) {
+        const session = await this.sessionService.getSession();
+        await this.programService.setProgramStatus(JSON.stringify({"enable": false}),
+                                                   program.id);
+        program.enabled = false;
+        delete this.programSettingsOpened[program.id];
+    }
+
+    async toggleShowProgramArchive(program: ProgramMetadata) {
+        if (this.programSettingsOpened[program.id] === 'archive') {
+            this.programSettingsOpened[program.id] = false;
+        }
+        else {
+            this.programSettingsOpened[program.id] = 'archive';
+        }
+    }
+
+    getEnabled(programs: ProgramMetadata[]): ProgramMetadata[] {
+        return programs.filter((p) => p.enabled);
+    }
+
+    getArchived(programs: ProgramMetadata[]): ProgramMetadata[] {
+        return programs.filter((p) => !p.enabled);
     }
 }

@@ -38,7 +38,7 @@
                 Create a new program or edit the ones you already have.
             </div>
             <div class="row program-list">
-                <div class="col-sm-6">
+                <div class="col-sm-6 item">
                     <mat-card role="button" (click)="addProgram()" class="module program call-to-action">
                         <div class="program-data">
                             <div class="card-title">Create new program</div>
@@ -46,7 +46,7 @@
                     </mat-card>
                 </div>
                 <ng-container *ngFor="let program of programs">
-                    <div class="col-sm-6 program-list" *ngIf="program.enabled">
+                    <div class="col-sm-6 item" *ngIf="program.enabled">
                         <mat-card
                             [ngClass]="{
                             'module': true,
@@ -153,7 +153,7 @@
                     </div>
                 </ng-container>
             </div>
-        </mat-tab>
+       </mat-tab>
         <mat-tab>
             <ng-template matTabLabel>
                 <span [matBadge]="bridges && bridges.length" matBadgeOverlap="false">Bridges</span>
@@ -220,7 +220,15 @@
                 </div>
 
                 <section *ngIf="userInfo.groups" class="groups">
-                    <div class="section-title">Groups</div>
+                    <div class="section-title">
+                        Groups
+
+                        <button class="group call-to-action soft" role="button"
+                            (click)="createGroup()"
+                            mat-raised-button>
+                            <mat-icon>group_add</mat-icon> New
+                        </button>
+                    </div>
 
                     <div *ngIf="userInfo.groups.length == 0" class="not-joined-explanation">
                         You have not joined any <span class="keyword">group</span>.
@@ -240,14 +248,8 @@
                         </mat-card>
                     </div>
 
-                    <div class="section-buttons">
-                        <button class="group call-to-action soft" role="button"
-                            (click)="createGroup()"
-                            mat-raised-button>
-                            <mat-icon>add</mat-icon> Create group
-                        </button>
-                    </div>
                 </section>
             </div>
-        </mat-tab>    </mat-tab-group>
+        </mat-tab>
+    </mat-tab-group>
 </div>
