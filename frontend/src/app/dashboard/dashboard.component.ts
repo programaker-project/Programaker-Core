@@ -114,14 +114,7 @@ export class DashboardComponent {
                         this.groupInfo = await this.groupService.getGroupWithName(groupName);
                         this.profile.picture = getGroupPictureUrl(this.groupInfo.id);
 
-                        this.programService.getProgramsOnGroup(this.groupInfo.id)
-                            .then(programs => {
-                                this.programs = programs;
-                            });
-
                         this.updateCollaborators();
-                        this.updateBridges();
-                        this.updateConnections();
                         this.updateSharedResources();
                     }
                     else {
@@ -134,15 +127,12 @@ export class DashboardComponent {
 
                         this.groupService.getUserGroups()
                             .then(groups => this.profile.groups = groups);
-                        this.programService.getPrograms()
-                            .then(programs => {
-                                this.programs = programs;
-                                this.programSettingsOpened = {};
-                            });
 
-                        this.updateBridges();
-                        this.updateConnections();
                     }
+
+                    this.updatePrograms();
+                    this.updateBridges();
+                    this.updateConnections();
                 }
             })
             .catch(e => {
@@ -227,6 +217,29 @@ export class DashboardComponent {
             }
             programCreation.then(program => this.openProgram(program));
         }
+    }
+
+    async updatePrograms() {
+        let programListing: Promise<ProgramMetadata[]>;
+        if (this.groupInfo) {
+            programListing = this.programService.getProgramsOnGroup(this.groupInfo.id);
+        }
+        else {
+            programListing = this.programService.getPrograms();
+        }
+
+        const programs = await programListing;
+        programs.sort((a, b) => {
+            if (a.name < b.name) {
+                return -1;
+            }
+            if (a.name > b.name) {
+                return 1;
+            }
+            return 0;
+        });
+        this.programs = programs;
+        this.programSettingsOpened = {};
     }
 
     addBridge(): void {
