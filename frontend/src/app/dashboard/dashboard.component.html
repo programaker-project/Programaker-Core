@@ -1,7 +1,7 @@
 <div class="profile-section">
     <div class="private-section">
         <div class="user-connections">
-            <h1>My connections </h1>
+            <h1>Connections</h1>
             <div class="connection-list">
                 <div>
                     <button role="button" (click)="addConnection()" class="module connection call-to-action soft cardlike" mat-raised-button>
@@ -31,7 +31,7 @@
     <mat-tab-group #navTabGroup mat-align-tabs="center" animationDuration="0ms">
         <mat-tab>
             <ng-template matTabLabel>
-                <span [matBadge]="programs && getEnabled(programs).length" matBadgeOverlap="false">My programs</span>
+                <span [matBadge]="programs && getEnabled(programs).length" matBadgeOverlap="false">Programs</span>
             </ng-template>
 
             <div class="section-explanation">
@@ -201,15 +201,15 @@
                 </div>
             </section>
         </mat-tab>
-        <mat-tab label="Profile">
-            <div *ngIf="userInfo" class="user-profile ">
-                <div class="avatar">
-                    <img role="avatar" src="{{ _getUserPicture(userInfo.id)  }}"
+        <mat-tab label="{{ (profile && _toCapitalCase(profile.type)) || 'Loading...' }}">
+            <div *ngIf="profile" class="profile ">
+                <div class="avatar" *ngIf="profile.picture">
+                    <img role="avatar" src="{{ profile.picture  }}"
                         onError="this.src='/assets/profile-not-set.png'"
                     />
                 </div>
 
-                <div class="username">{{ userInfo.name }}</div>
+                <div class="profile-name">{{ profile.name }}</div>
 
                 <div class="edit-configuration">
                     <a routerLink="/settings" class="settings-link" role="button"
@@ -219,7 +219,7 @@
                     </a>
                 </div>
 
-                <section *ngIf="userInfo.groups" class="groups">
+                <section *ngIf="profile.groups" class="groups">
                     <div class="section-title">
                         Groups
 
@@ -230,13 +230,13 @@
                         </button>
                     </div>
 
-                    <div *ngIf="userInfo.groups.length == 0" class="not-joined-explanation">
+                    <div *ngIf="profile.groups.length == 0" class="not-joined-explanation">
                         You have not joined any <span class="keyword">group</span>.
                     </div>
 
                     <div class="section-objects">
                         <mat-card class="group"
-                            *ngFor="let group of userInfo.groups"
+                            *ngFor="let group of profile.groups"
                             (click)="openGroup(group)"
                             role="button" >
                             <img role="avatar" class="icon" *ngIf="group.picture" src="{{ group.picture }}" alt="{{ group.name }}"
@@ -249,6 +249,45 @@
                     </div>
 
                 </section>
+
+                <section *ngIf="collaborators" class="collaborators">
+                    <div class="section-title">
+                        Collaborators
+
+                        <button class="collaborators call-to-action soft" role="button"
+                            (click)="addCollaborators()"
+                            *ngIf="userRole==='admin'"
+                            mat-raised-button>
+                            <mat-icon>edit</mat-icon> Edit
+                        </button>
+
+                    </div>
+
+                    <div *ngIf="collaborators.length == 0" class="not-joined-explanation">
+                        This group has no public collaborator.
+                    </div>
+
+                    <div class="section-objects">
+                        <mat-card class="collaborator non-clickable"
+                            *ngFor="let user of collaborators">
+                            <span class="collaborator-role"
+                                matTooltip="{{ user.role }}">
+                                <mat-icon>{{ _roleToIcon(user.role)  }}</mat-icon>
+                            </span>
+
+                            <img role="avatar" class="icon" *ngIf="user.picture"
+                                src="{{ user.picture }}"
+                                alt="{{ user.username }}"
+                                matTooltip="@{{ user.username }}"
+                            />
+
+                            <span *ngIf="!user.picture" class="user-name">
+                                {{ user.username }}
+                            </span>
+                        </mat-card>
+                    </div>
+                </section>
+
             </div>
         </mat-tab>
     </mat-tab-group>

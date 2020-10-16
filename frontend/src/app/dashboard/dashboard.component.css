@@ -243,6 +243,33 @@ mat-card.program .program-settings .contents button.archive-program {
     min-height: 3ex;
 }
 
+.user-connections > .connection-list > div > mat-card.shared-resource {
+    padding: 0;
+}
+.user-connections .shared-resource .connection-type {
+    height: 5ex;
+    display: inline-block;
+    vertical-align: middle;
+    padding: 0 1ex 0 1ex;
+
+    background-color: #27212e;
+    color: #fff;
+    border-radius: 3px 0 0 3px;
+}
+
+.user-connections .shared-resource .connection-type mat-icon {
+    margin-top: 0.75ex;
+}
+
+.user-connections .shared-resource .connection-identifier {
+    padding: 0 1ex 0 1ex;
+    display: inline-block;
+}
+
+.user-connections .shared-resource img {
+    height: 3ex;
+    max-width: 10ex;
+}
 
 .connection > img.icon {
     height: 3ex;
@@ -302,38 +329,47 @@ mat-card.example > .description {
 }
 
 /* User profile */
-.user-profile {
+.profile {
     margin: 1em auto;
     max-width: 100%;
 }
 
-.user-profile .avatar {
+.profile .avatar {
     text-align: center;
 }
 
-.user-profile .avatar img {
+.profile .avatar img {
     height: 10em;
     width: 10em;
     border-radius: 4px;
 }
 
-.user-profile .username {
+.profile .profile-name {
     font-size: 200%;
     color: #444;
     text-align: center;
 }
 
-.user-profile section {
+.status-ispublic-info {
+    text-align: center;
+    font-style: italic;
+}
+
+.status-ispublic-info mat-icon {
+    vertical-align: bottom;
+}
+
+.profile section {
     padding-left: 1em;
     padding-top: 1em;
     margin: 1em;
 }
 
-.user-profile .section-title {
+.profile .section-title {
     font-size: 150%;
 }
 
-.user-profile .no-group-joined-explanation {
+.profile .no-group-joined-explanation {
     font-style: italic;
     display: inline;
     padding-left: 1em;
@@ -343,7 +379,7 @@ mat-card.example > .description {
     text-decoration: underline;
 }
 
-mat-card.group {
+mat-card.group, mat-card.collaborator {
     display: inline-block;
     vertical-align: bottom;
     margin-left: 1ex;
@@ -511,4 +547,46 @@ button.collaborators.call-to-action, button.group.call-to-action {
     height: 2em;
     font-weight: initial;
     padding: 0.5ex 1ex;
+}
+
+mat-card.collaborator {
+    display: inline-block;
+    vertical-align: bottom;
+    margin-left: 1ex;
+    margin-top: 1ex;
+    padding: 0;
+    box-sizing: content-box;
+}
+
+.collaborator .collaborator-role {
+    height: 3em;
+    display: inline-block;
+    vertical-align: inherit;
+    padding-left: 1ex;
+    padding-right: 1ex;
+
+    background-color: #27212e;
+    color: #fff;
+    border-radius: 3px 0 0 3px;
+}
+
+mat-card.collaborator .collaborator-role mat-icon {
+    vertical-align: middle;
+    font-size: 140%;
+    margin-top: 1ex;
+}
+
+mat-card.collaborator img {
+    max-width: 10ex;
+    width: 3em;
+    text-align: center;
+    height: 3em;
+    border-radius: 0 4px 4px 0;
+    display: inline-block;
+}
+
+mat-card.collaborator .user-name {
+    display: inline-block;
+    padding: 1ex;
+    height: 3em;
 }

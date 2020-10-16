@@ -28,9 +28,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AlertModule } from 'ngx-bootstrap/alert';
 
 import { AppComponent } from './app.component';
-import { DashboardComponent } from './old-dashboard/dashboard.component';
-import { NewDashboardComponent } from './dashboard/dashboard.component';
-import { GroupDashboardComponent } from './group-dashboard/dashboard.component';
+import { DashboardComponent as OldDashboardComponent } from './old-dashboard/dashboard.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/user-settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
 import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
@@ -85,8 +84,7 @@ import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators
     declarations: [
         AppComponent,
         DashboardComponent,
-        NewDashboardComponent,
-        GroupDashboardComponent,
+        OldDashboardComponent,
         SettingsComponent,
         AdminSettingsComponent,
         GroupSettingsComponent,

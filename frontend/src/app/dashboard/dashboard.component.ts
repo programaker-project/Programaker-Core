@@ -1,10 +1,17 @@
-import { Component, Inject, ViewChild } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { Router, ActivatedRoute } from '@angular/router';
+import { MatTabGroup } from '@angular/material/tabs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { BridgeIndexData, SharedResource } from 'app/bridges/bridge';
+import { BrowserService } from 'app/browser.service';
+import { AddBridgeDialogComponent } from 'app/dialogs/add-bridge-dialog/add-bridge-dialog.component';
+import { EditCollaboratorsDialogComponent } from 'app/dialogs/editor-collaborators-dialog/edit-collaborators-dialog.component';
+import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
 import { GroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
+import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborator';
 import { BridgeService } from '../bridges/bridge.service';
-import { BridgeConnectionWithIconUrl } from '../connection';
+import { BridgeConnection, BridgeConnectionWithIconUrl } from '../connection';
 import { ConnectionService } from '../connection.service';
 import { AddConnectionDialogComponent } from '../connections/add-connection-dialog.component';
 import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
@@ -16,12 +23,7 @@ import { AvailableService, ServiceEnableHowTo } from '../service';
 import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
-import { iconDataToUrl, getUserPictureUrl } from '../utils';
-import { BridgeIndexData } from 'app/bridges/bridge';
-import { UpdateBridgeDialogComponent } from 'app/dialogs/update-bridge-dialog/update-bridge-dialog.component';
-import { BrowserService } from 'app/browser.service';
-import { MatTabGroup } from '@angular/material/tabs';
-import { AddBridgeDialogComponent } from 'app/dialogs/add-bridge-dialog/add-bridge-dialog.component';
+import { getGroupPictureUrl, getUserPictureUrl, iconDataToUrl } from '../utils';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -36,12 +38,14 @@ type TutorialData = { description: string, icons: string[], url: string };
         '../libs/css/bootstrap.min.css',
     ],
 })
-export class NewDashboardComponent {
+export class DashboardComponent {
     programs: ProgramMetadata[] = [];
     connections: BridgeConnectionWithIconUrl[] = null;
     session: Session = null;
-    userInfo: {id: string, name: string, groups: GroupInfo[]};
-    bridgeInfo: {[key: string]: BridgeIndexData} = {};
+    profile: {type: 'user' | 'group', name: string, groups: GroupInfo[], picture: string};
+    bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
+    collaborators: Collaborator[] = null;
+
     bridges: BridgeIndexData[] = null;
     tutorials: TutorialData[] = [
         {
@@ -52,17 +56,19 @@ export class NewDashboardComponent {
     ];
     programSettingsOpened: { [key: string]: false | 'archive' } = {};
 
+    sharedResources: SharedResource[];
 
     @ViewChild('navTabGroup') navTabGroup: MatTabGroup;
-    readonly _getUserPicture = getUserPictureUrl;
-    readonly _iconDataToUrl = iconDataToUrl;
 
     tabFragName = [
-        'my-programs',
+        'programs',
         'archived-programs',
         'bridges',
-        'profile',
+        'info',
     ];
+    groupInfo: GroupInfo;
+    userRole: CollaboratorRole | null;
+    canWriteToGroup: boolean;
 
     constructor(
         private browser: BrowserService,
@@ -86,27 +92,57 @@ export class NewDashboardComponent {
 
     ngOnInit(): void {
         this.sessionService.getSession()
-            .then(session => {
+            .then(async (session) => {
                 this.session = session;
 
                 if (!session.active) {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 } else {
-                    this.userInfo = {
-                        id: session.user_id,
-                        name: session.username,
-                        groups: null
-                    };
-                    this.groupService.getUserGroups()
-                        .then(groups => this.userInfo.groups = groups);
-                    this.programService.getPrograms()
-                        .then(programs => {
-                            this.programs = programs;
-                            this.programSettingsOpened = {};
-                        });
 
-                    this.updateBridges();
-                    this.updateConnections();
+                    const params = this.route.params['value'];
+                    if (params.group_name !== undefined) {
+                        // Group Dashboard
+                        const groupName = params.group_name;
+
+                        this.profile = {
+                            name: groupName,
+                            'type': 'group',
+                            groups: null,
+                            picture: null,
+                        };
+
+                        this.groupInfo = await this.groupService.getGroupWithName(groupName);
+                        this.profile.picture = getGroupPictureUrl(this.groupInfo.id);
+
+                        this.programService.getProgramsOnGroup(this.groupInfo.id)
+                            .then(programs => {
+                                this.programs = programs;
+                            });
+
+                        this.updateCollaborators();
+                        this.updateBridges();
+                        this.updateConnections();
+                        this.updateSharedResources();
+                    }
+                    else {
+                        this.profile = {
+                            name: session.username,
+                            'type': 'user',
+                            groups: null,
+                            picture: getUserPictureUrl(session.user_id)
+                        };
+
+                        this.groupService.getUserGroups()
+                            .then(groups => this.profile.groups = groups);
+                        this.programService.getPrograms()
+                            .then(programs => {
+                                this.programs = programs;
+                                this.programSettingsOpened = {};
+                            });
+
+                        this.updateBridges();
+                        this.updateConnections();
+                    }
                 }
             })
             .catch(e => {
@@ -169,22 +205,33 @@ export class NewDashboardComponent {
 
             dialogRef.afterClosed().subscribe((result: {success: boolean, program_type: ProgramType, program_name: string}) => {
                 if (result && result.success) {
-                    this.programService.createProgram(result.program_type, result.program_name).then(program => {
-                        this.openProgram(program);
-                    });
+                    let programCreation: Promise<ProgramMetadata>;
+                    if (this.groupInfo) {
+                        programCreation = this.programService.createProgramOnGroup(result.program_type, result.program_name, this.groupInfo.id);
+                    }
+                    else {
+                        programCreation = this.programService.createProgram(result.program_type, result.program_name);
+                    }
+
+                    programCreation.then(program => this.openProgram(program));
                 }
             });
         }
         else {
-            this.programService.createProgram('scratch_program').then(program => {
-                this.openProgram(program);
-            });
+            let programCreation: Promise<ProgramMetadata>;
+            if (this.groupInfo) {
+                programCreation = this.programService.createProgramOnGroup('scratch_program', null, this.groupInfo.id);
+            }
+            else {
+                programCreation = this.programService.createProgram('scratch_program');
+            }
+            programCreation.then(program => this.openProgram(program));
         }
     }
 
     addBridge(): void {
         const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '80%',
-                                                                       data: { },
+                                                                       data: { groupId: this.groupInfo?.id },
                                                                      });
 
         dialogRef.afterClosed().subscribe((result: {success: boolean, bridgeId?: string, bridgeName?: string}) => {
@@ -197,7 +244,12 @@ export class NewDashboardComponent {
     }
 
     async updateBridges() {
-        this.bridges = (await this.bridgeService.listUserBridges()).bridges;
+        if (this.groupInfo) {
+            this.bridges = await this.bridgeService.listGroupBridges(this.groupInfo.id);
+        }
+        else {
+            this.bridges = (await this.bridgeService.listUserBridges()).bridges;
+        }
         this.bridges.sort((a, b) => {
             if (a.name < b.name) {
                 return -1;
@@ -209,12 +261,91 @@ export class NewDashboardComponent {
         });
 
         for (const bridge of this.bridges) {
-            this.bridgeInfo[bridge.id] = bridge;
+            this.bridgeInfo[bridge.id] = { name: bridge.name, icon: iconDataToUrl(bridge.icon, bridge.id) };
         }
     }
 
+
+    async updateSharedResources() {
+        if (!this.groupInfo) {
+            return;
+        }
+
+        this.sharedResources = await this.groupService.getSharedResources(this.groupInfo.id);
+
+        for (const conn of this.sharedResources){
+            this.bridgeInfo[conn.bridge_id] = {
+                icon: iconDataToUrl(conn.icon, conn.bridge_id),
+                name: conn.name
+            };
+        }
+    }
+
+    addCollaborators(): void {
+        const dialogRef = this.dialog.open(EditCollaboratorsDialogComponent, { width: '90%', maxHeight: '100vh', maxWidth: '100vw',
+                                                                               data: { groupId: this.groupInfo.id,
+                                                                                       existingCollaborators: this.collaborators,
+                                                                                     },
+                                                                             });
+
+        dialogRef.afterClosed().subscribe(async (result: {success: boolean}) => {
+            if (result && result.success) {
+                this.updateCollaborators();
+            }
+        });
+    }
+
+    async updateCollaborators() {
+        if (!this.groupInfo) {
+            return;
+        }
+
+        const collaborators = await this.groupService.getCollaboratorsOnGroup(this.groupInfo.id)
+
+        collaborators.sort((a, b) => {
+            // First try to sort by role
+            if ((a.role === 'admin'  && b.role !== 'admin') ||
+                (a.role === 'editor' && b.role === 'viewer')) {
+                return -1;
+            }
+
+            if ((b.role === 'admin'  && a.role !== 'admin') ||
+                (b.role === 'editor' && a.role === 'viewer')) {
+                return 1;
+            }
+
+            // Else, sort alphabetically by username
+            const nameA = a.username.toUpperCase();
+            const nameB = b.username.toUpperCase();
+
+            if (nameA < nameB) {
+                return -1;
+            }
+            if (nameB < nameA) {
+                return 1;
+            }
+
+            // Equal name and role
+            return 0;
+        });
+        this.collaborators = collaborators;
+
+        // Discover own user role
+        for (let user of collaborators) {
+            if (user.id == this.session.user_id) {
+                if ((!this.userRole) || (user.role === 'admin')
+                    || (user.role === 'editor' && this.userRole !== 'admin')) {
+
+                    this.userRole = user.role;
+                }
+            }
+        }
+        this.canWriteToGroup = (this.userRole === 'admin') || (this.userRole === 'editor');
+    }
+
     addConnection(): void {
-        const dialogRef = this.dialog.open(AddConnectionDialogComponent, { width: '90%' });
+        const dialogRef = this.dialog.open(AddConnectionDialogComponent, { width: '90%',
+                                                                           data: { groupId: this.groupInfo?.id }});
 
         dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
             if (result && result.success) {
@@ -224,7 +355,13 @@ export class NewDashboardComponent {
     }
 
     async updateConnections() {
-        const connections = await this.connectionService.getConnections();
+        let connections: BridgeConnection[];
+        if (this.groupInfo) {
+            connections = await this.connectionService.getConnectionsOnGroup(this.groupInfo.id);
+        }
+        else {
+            connections = await this.connectionService.getConnections();
+        }
         this.connections = connections.map((v, _i, _a) => {
             const icon_url = iconDataToUrl(v.icon, v.bridge_id);
 
@@ -237,7 +374,10 @@ export class NewDashboardComponent {
         const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
                                                                           maxHeight: '100vh',
                                                                           autoFocus: false,
-                                                                          data: { bridgeInfo: bridge },
+                                                                          data: {
+                                                                              bridgeInfo: bridge,
+                                                                              asGroup: this.groupInfo?.id,
+                                                                          },
                                                                         });
 
         dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
@@ -249,14 +389,13 @@ export class NewDashboardComponent {
 
 
     async openProgram(program: ProgramMetadata): Promise<void> {
+        let programType = 'scratch';
+
         if (program.type === 'flow_program') {
-            this.router.navigate(['/programs/' + program.id + '/flow']);
+            programType = 'flow';
         }
-        else if ((!program.type) || (program.type === 'scratch_program')) {
-            const session = await this.sessionService.getSession();
-            this.router.navigate(['/users/' + session.username
-                                  + '/programs/' + encodeURIComponent(program.name)]);
-        }
+
+        this.router.navigateByUrl(`/programs/${program.id}/${programType}`);
     }
 
     enableService(service: AvailableService): void {
@@ -299,6 +438,18 @@ export class NewDashboardComponent {
         }
     }
 
+    getEnabled(programs: ProgramMetadata[]): ProgramMetadata[] {
+        return programs.filter((p) => p.enabled);
+    }
+
+    getArchived(programs: ProgramMetadata[]): ProgramMetadata[] {
+        return programs.filter((p) => !p.enabled);
+    }
+
+    createGroup() {
+        this.router.navigate(['/new/group']);
+    }
+
     openTutorial(tutorial: TutorialData) {
         const win = this.browser.window.open(tutorial.url, '_blank');
         win.focus();
@@ -306,18 +457,17 @@ export class NewDashboardComponent {
 
     openGroup(group: GroupInfo) {
         this.router.navigateByUrl(`/groups/${group.canonical_name}`);
-
     }
 
-    createGroup() {
-        this.router.navigate(['/new/group']);
-    }
+    // Utils
+    readonly _getUserPicture = getUserPictureUrl;
+    readonly _iconDataToUrl = iconDataToUrl;
+    readonly _roleToIcon = roleToIcon;
 
-    getEnabled(programs: ProgramMetadata[]): ProgramMetadata[] {
-        return programs.filter((p) => p.enabled);
-    }
-
-    getArchived(programs: ProgramMetadata[]): ProgramMetadata[] {
-        return programs.filter((p) => !p.enabled);
+    _toCapitalCase(x: string): string {
+        if (!x || x.length == 0) {
+            return x;
+        }
+        return x[0].toUpperCase() + x.substr(1);
     }
 }
