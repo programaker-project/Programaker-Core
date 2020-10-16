@@ -359,12 +359,6 @@ mat-card.example > .description {
     vertical-align: bottom;
 }
 
-.profile section {
-    padding-left: 1em;
-    padding-top: 1em;
-    margin: 1em;
-}
-
 .profile .section-title {
     font-size: 150%;
 }
@@ -421,6 +415,13 @@ button.cardlike {
 }
 
 
+section {
+    margin: 1em auto;
+    padding-top: 1ex;
+    width: max-content;
+    max-width: 100%;
+    border-top: 1px solid #aaa;
+}
 
 section.bridges {
     border-top: 1px solid rgba(0,0,0,0.3);
