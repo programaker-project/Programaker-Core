@@ -4,7 +4,6 @@ import { RouterModule, Routes } from '@angular/router';
 import { BridgeIndexComponent } from './bridges/index.component';
 import { ServicesComponent } from './services.component';
 
-import { DashboardComponent as OldDashboard } from './old-dashboard/dashboard.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { SettingsComponent } from './settings/user-settings/settings.component';
 import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
@@ -36,7 +35,6 @@ const routes: Routes = [
     { path: 'register/verify/:verification_code', component: VerifyCodeComponent },
 
     // General
-    { path: 'full-dashboard', component: OldDashboard }, // Deprecated
     { path: 'dashboard', component: DashboardComponent },
     { path: 'groups/:group_name', component: DashboardComponent },
     { path: 'groups/:group_name/settings', component: GroupSettingsComponent },
