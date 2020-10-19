@@ -69,7 +69,6 @@ export class AddConnectionDialogComponent {
             }
             return;
         }
-        console.log("How to enable", this.howToEnable);
         if (this.howToEnable.type === 'direct') {
             this.ready = true;
             return;
@@ -101,7 +100,6 @@ export class AddConnectionDialogComponent {
             }
 
             query.then((result) => {
-                console.log("Result:", result);
                 if (result.success) {
                     this.dialogRef.close({success: true});
                 }
@@ -228,7 +226,8 @@ export class AddConnectionDialogComponent {
     sendForm(): void {
         this.serviceService.registerService(this.form,
                                             this.data.bridgeInfo.id,
-                                            (this.howToEnable.metadata as TwoStepEnableMetadata).connection_id)
+                                            (this.howToEnable.metadata as TwoStepEnableMetadata).connection_id,
+                                            { program_id: this.data.programId, group_id: this.data.groupId })
             .then((result) => {
                 if (result.success) {
                     this.dialogRef.close({ success: true });

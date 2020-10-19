@@ -37,9 +37,8 @@ export class ServiceService {
         return `${API.ApiRoot}/services/by-id/${service.id}/how-to-enable`;
     }
 
-    async getServiceRegistryUrl(service_id: string) {
-        const serviceRoot = await this.getListAvailableServicesUrl();
-        return serviceRoot + 'id/' + service_id + '/register';
+    getServiceRegistryUrl(serviceId: string) {
+        return `${API.ApiRoot}/services/by-id/${serviceId}/register`;
     }
 
     getServiceRegistryUrlOnGroup(service_id: string) {
@@ -87,21 +86,27 @@ export class ServiceService {
             .toPromise() as Promise<ServiceEnableHowTo>);
     }
 
-    registerService(data: { [key: string]: string }, service_id: string, connection_id: string): Promise<{success: boolean}> {
+    registerService(data: { [key: string]: string },
+                        service_id: string,
+                    connection_id: string,
+                    params?: { program_id: string, group_id: string } ): Promise<{success: boolean}> {
+
         if (connection_id) {
             if (data.metadata === undefined) {
                 (data as any).metadata = {};
             }
             (data as any).metadata.connection_id = connection_id;
         }
-        return this.getServiceRegistryUrl(service_id).then(
-            url => (this.http.post(
-                url, JSON.stringify(data),
-                {
-                    headers: this.sessionService.addContentType(
-                        this.sessionService.getAuthHeader(),
-                        ContentType.Json),
-                }).toPromise()) as Promise<{success: boolean}>);
+
+        const url = this.getServiceRegistryUrl(service_id);
+        return (this.http.post(
+            url, JSON.stringify(data),
+            {
+                headers: this.sessionService.addContentType(
+                    this.sessionService.getAuthHeader(),
+                    ContentType.Json),
+                params: params,
+            }).toPromise()) as Promise<{success: boolean}>;
     }
 
     async directRegisterService(bridge_id: string): Promise<{success: boolean}> {
