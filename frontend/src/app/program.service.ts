@@ -282,6 +282,8 @@ export class ProgramService {
     }
 
     watchProgramLogs(programId: string, options: { request_previous_logs?: boolean }): Observable<ProgramInfoUpdate> {
+        let websocket: WebSocket | null = null;
+
         return new Observable((observer) => {
 
             this.getProgramStreamingLogsUrl(programId).then(streamingUrl => {
@@ -289,7 +291,7 @@ export class ProgramService {
                 let buffer = [];
                 let state : 'none_ready' | 'ws_ready' | 'all_ready' = 'none_ready';
 
-                const websocket = new WebSocket(streamingUrl);
+                websocket = new WebSocket(streamingUrl);
                 websocket.onopen = (() => {
                     if (options.request_previous_logs) {
                         state = 'ws_ready';
@@ -333,6 +335,12 @@ export class ProgramService {
                     observer.complete();
                 });
             });
+
+            return () => {
+                if (websocket) {
+                    websocket.close();
+                }
+            }
         });
     }
 
@@ -371,17 +379,17 @@ export class ProgramService {
                     observer.complete();
                 });
             });
+
+            return () => {
+                if (websocket) {
+                    websocket.close();
+                }
+            }
         });
 
         const sharedObserver = obs.pipe(share());
         return {
             subscribe: sharedObserver.subscribe.bind(sharedObserver),
-            close: () => {
-                state = 'closed';
-                if (websocket) {
-                    websocket.close();
-                }
-            },
             push: (ev: ProgramEditorEventValue) => {
                 const msg = {type: 'editor_event', value: ev};
                 if (state === 'none_ready') {

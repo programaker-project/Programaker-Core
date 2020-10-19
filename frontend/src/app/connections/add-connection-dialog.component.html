@@ -1,53 +1,25 @@
-<div *ngIf="availableBridges === null">
-    <h2 mat-dialog-title></h2>
-    <mat-dialog-content class="info-msg">
-        Loading available connections...
-    </mat-dialog-content>
-</div>
-
-<div *ngIf="(availableBridges !== null) && (availableBridges.length == 0)">
-    <h2 mat-dialog-title>Connections complete</h2>
-    <mat-dialog-content class="info-msg">
-        <mat-icon class="text-icon">check</mat-icon> All possible connections have been established
-    </mat-dialog-content>
-    <mat-dialog-actions>
-        <button class="cancellation" mat-button [mat-dialog-close]="false">Close</button>
-    </mat-dialog-actions>
-</div>
-
-<div *ngIf="(availableBridges !== null) && (availableBridges.length > 0)">
-    <h2 mat-dialog-title>Select a bridge to connect to</h2>
+<div>
+    <h2 mat-dialog-title>Connecting to {{ data.bridgeInfo.name }}</h2>
 
     <mat-dialog-content>
-        <div class="collection-grid">
-            <div class="grid grid-pad">
-                <div class="row">
-
-                    <div *ngFor="let bridge of availableBridges" class="col-sm-6">
-                        <mat-card [ngClass]="{
-                            'module': true,
-                            'bridge': true,
-                            'selected': bridge.state === 'selected',
-                            'reading': bridge.state === 'reading',
-                            'error': bridge.state === 'error'
-                            }"
-                            role="button"
-                            (click)="enableService(bridge)">
-                            <h4>{{ bridge.bridge.name }}</h4>
-                        </mat-card>
-                    </div>
-                </div>
+        <div [ngClass]="!(howToEnable && howToEnable.type !== 'direct') ? 'hidden' : ''" #renderingZone></div>
+        <div *ngIf="howToEnable && howToEnable.type === 'direct'">
+            Everything is ready to connect, just click <span class="button-ref">Accept</span>.
+        </div>
+        <div *ngIf="error">
+            <div *ngIf="errorType === 'bridge_not_ready'">
+                The bridge has not connected to Programaker yet. Connect it and retry.
+            </div>
+            <div *ngIf="errorType !== 'bridge_not_ready'">
+                An error has happened while obtaining the information needed to connect to the bridge.
             </div>
         </div>
     </mat-dialog-content>
-    <mat-dialog-actions>
-        <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
-        <button class="confirmation"
-            type="submit"
-            color="primary"
-            mat-button
-            [disabled]="selectedIndex === null"
-            (click)="this.establishConnection()"
-            mat-raised-button>Add connection</button>
+    <mat-dialog-actions *ngIf="type == 'message'" class="form-buttons">
+        <button class="rejection" mat-button mat-dialog-close>Cancel</button>
+    </mat-dialog-actions>
+    <mat-dialog-actions *ngIf="type != 'message'" class="form-buttons">
+        <button class="rejection" mat-button mat-dialog-close>Cancel</button>
+        <button class="confirmation" *ngIf="ready" mat-button mat-raised-button (click)="this.establishConnection()" color="primary">Accept</button>
     </mat-dialog-actions>
 </div>

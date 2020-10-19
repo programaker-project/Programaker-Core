@@ -1,11 +1,11 @@
 import { Location } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, ViewChild, Inject } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Inject, NgZone } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue } from './program';
 import { ProgramService } from './program.service';
 
-import { Toolbox } from './blocks/Toolbox';
+import { Toolbox, ToolboxRegistration } from './blocks/Toolbox';
 import { BlockSynchronizer, BlocklyEvent } from './blocks/BlockSynchronizer';
 import * as progbar from './ui/progbar';
 /// <reference path="./blocks/blockly-core.d.ts" />
@@ -33,6 +33,8 @@ import { Synchronizer } from './syncronizer';
 import { MatMenu } from '@angular/material/menu';
 import { AssetService } from './asset.service';
 import { BrowserService } from './browser.service';
+import { EditorController } from './program-editors/editor-controller';
+import { Unsubscribable } from 'rxjs';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -52,7 +54,7 @@ type NonReadyReason = 'loading' | 'disconnected';
 })
 export class ProgramDetailComponent implements OnInit {
     @Input() program: ProgramContent;
-    workspace: Blockly.Workspace;
+    workspace: Blockly.WorkspaceSvg;
     programId: string;
     environment: { [key: string]: any };
 
@@ -79,6 +81,9 @@ export class ProgramDetailComponent implements OnInit {
 
     // HACK: Prevent the MatMenu import for being removed
     private _pinRequiredMatMenuLibrary: MatMenu;
+    eventSubscription: Unsubscribable | null;
+    logSubscription: Unsubscribable | null;
+    blockSynchronizer: BlockSynchronizer;
 
     constructor(
         private browser: BrowserService,
@@ -93,9 +98,10 @@ export class ProgramDetailComponent implements OnInit {
         private templateService: TemplateService,
         private serviceService: ServiceService,
         private notification: MatSnackBar,
-        public dialog: MatDialog,
-        public connectionService: ConnectionService,
-        public sessionService: SessionService,
+        private dialog: MatDialog,
+        private connectionService: ConnectionService,
+        private sessionService: SessionService,
+        private ngZone: NgZone,
     ) {
         this.monitorService = monitorService;
         this.programService = programService;
@@ -191,11 +197,6 @@ export class ProgramDetailComponent implements OnInit {
 
                 next_blocks = (Array.from(next.childNodes)
                                .filter((x: Element) => this.is_block(x)));
-
-                if (next_blocks.length == 0) {
-                    child.removeChild(next);
-                    continue;
-                }
             }
 
             const _type = child.getAttribute('type');
@@ -233,8 +234,8 @@ export class ProgramDetailComponent implements OnInit {
         // Initialize log listeners
         this.streamingLogs = true;
         if (!this.program.readonly) {
-            this.programService.watchProgramLogs(this.program.id,
-                                                 { request_previous_logs: true })
+            this.logSubscription = this.programService.watchProgramLogs(this.program.id,
+                                                                        { request_previous_logs: true })
                 .subscribe(
                     {
                         next: (update: ProgramInfoUpdate) => {
@@ -261,7 +262,7 @@ export class ProgramDetailComponent implements OnInit {
         // Initialize editor event listeners
         // This is used for collaborative editing.
         this.eventStream = this.programService.getEventStream(this.program.id);
-        const synchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
+        this.blockSynchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
 
         const onCreation = {};
         const mirrorEvent = (event: BlocklyEvent) => {
@@ -269,7 +270,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;  // Don't mirror UI events.
             }
 
-            if (synchronizer.isDuplicated(event)) {
+            if (this.blockSynchronizer.isDuplicated(event)) {
                 return; // Avoid mirroring events received from the net
             }
 
@@ -292,14 +293,13 @@ export class ProgramDetailComponent implements OnInit {
             }
         }
 
-
-        this.eventStream.subscribe(
+        this.eventSubscription = this.eventStream.subscribe(
             {
                 next: (ev: ProgramEditorEventValue) => {
                     if (ev.type === 'blockly_event') {
                         const event = Blockly.Events.fromJson(ev.value, this.workspace);
 
-                        synchronizer.receivedEvent(event as BlocklyEvent);
+                        this.blockSynchronizer.receivedEvent(event as BlocklyEvent);
                         if (ev.value.type === 'create') {
                             onCreation[ev.value.blockId] = true;
                         }
@@ -326,6 +326,7 @@ export class ProgramDetailComponent implements OnInit {
                     console.error("Error obtainig editor events:", error);
                 },
                 complete: () => {
+                    console.log("Disconnected");
                     this.nonReadyReason = 'disconnected';
                     this.isReady = false;
                 }
@@ -517,6 +518,28 @@ export class ProgramDetailComponent implements OnInit {
         (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_.orig = this.patchedFunctions.recordDeleteAreas;
     }
 
+    async reloadToolbox(): Promise<any> {
+        const toolbox = new Toolbox(
+            this.program,
+            this.assetService,
+            this.monitorService,
+            this.customBlockService,
+            this.dialog,
+            this.templateService,
+            this.serviceService,
+            this.customSignalService,
+            this.connectionService,
+            this.sessionService,
+            this.toolboxController,
+        );
+
+        const [toolboxXml, registrations, _controller] = await toolbox.inject();
+
+        this.toolboxController.setToolbox(toolboxXml);
+        this.toolboxController.update();
+        this.performToolboxRegistrations(registrations);
+    }
+
     prepareWorkspace(program: ProgramContent): Promise<ToolboxController> {
         // For consistency and because it affects the positioning of the bottom drawer.
         this.reset_header_scroll();
@@ -541,12 +564,11 @@ export class ProgramDetailComponent implements OnInit {
             });
     }
 
-    injectWorkspace(toolbox: HTMLElement, registrations: Function[], controller: ToolboxController) {
+    injectWorkspace(toolbox: HTMLElement, registrations: ToolboxRegistration[], controller: ToolboxController) {
         // Avoid initializing it twice
-        if (this.workspace !== undefined) {
+        if (this.workspace) {
             return;
         }
-
 
         this.cursorDiv = document.getElementById('program-cursors');
 
@@ -592,11 +614,8 @@ export class ProgramDetailComponent implements OnInit {
                 fieldShadow: 'rgba(255, 255, 255, 0.3)',
                 dragShadowOpacity: 0.6
             }
-        });
-
-        for (const reg of registrations) {
-            reg(this.workspace);
-        }
+        }) as Blockly.WorkspaceSvg;
+        this.performToolboxRegistrations(registrations);
 
         this.toolboxController = controller;
         controller.setWorkspace(this.workspace);
@@ -638,6 +657,17 @@ export class ProgramDetailComponent implements OnInit {
         }, 0);
 
         this.patch_blockly();
+    }
+
+    performToolboxRegistrations(registrations: ToolboxRegistration[]) {
+        const editorController: EditorController = {
+            reloadToolbox: () => {
+                this.reloadToolbox();
+            }
+        };
+        for (const reg of registrations) {
+            reg(this.workspace, editorController, this.ngZone);
+        }
     }
 
     /**
@@ -781,12 +811,28 @@ export class ProgramDetailComponent implements OnInit {
     dispose() {
         try {
             this.workspace.dispose();
+            this.workspace = null;
         } catch(error) {
             console.error("Error disposing workspace:", error);
         }
 
         try {
-            this.eventStream.close();
+            if (this.eventSubscription) {
+                this.eventSubscription.unsubscribe();
+                this.eventSubscription = null;
+            }
+
+            if (this.logSubscription) {
+                this.logSubscription.unsubscribe();
+                this.logSubscription = null;
+            }
+
+            if (this.blockSynchronizer) {
+                this.blockSynchronizer.close();
+                this.blockSynchronizer = null;
+            }
+
+            this.eventStream = null;
         } catch(error) {
             console.error("Error closing event stream:", error);
         }

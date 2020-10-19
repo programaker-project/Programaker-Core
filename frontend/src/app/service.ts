@@ -35,7 +35,7 @@ interface ServiceEnableTextEntry {
 type ServiceEnableEntry = ServiceEnableTextEntry | ServiceEnableTagEntry;
 type ServiceEnableType = 'message' | 'form';
 
-interface TwoStepEnableMetadata {
+export interface TwoStepEnableMetadata {
     service_id: string,
     connection_id: string,
 }

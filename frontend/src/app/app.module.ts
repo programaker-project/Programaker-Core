@@ -43,7 +43,6 @@ import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
 import { SetProgramTagsDialogComponent } from './program_tags/SetProgramTagsDialogComponent';
 import { ConfirmDeleteDialogComponent } from './dialogs/confirm-delete-dialog/confirm-delete-dialog.component';
-import { HowToEnableServiceDialogComponent } from './HowToEnableServiceDialogComponent';
 import { BridgeDeleteDialogComponent } from './bridges/delete-dialog.component';
 import { AddConnectionDialogComponent } from './connections/add-connection-dialog.component';
 import { CustomSignalCreateDialogComponent } from './custom_signals/create-dialog.component';
@@ -102,7 +101,6 @@ import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators
 
         // Dialogs
         BridgeDeleteDialogComponent,
-        HowToEnableServiceDialogComponent,
         RenameProgramDialogComponent,
         DeleteProgramDialogComponent,
         CustomSignalCreateDialogComponent,

@@ -74,13 +74,22 @@ to_json(Req, State) ->
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
             { jiffy:encode(extend_how_to(HowTo, ServiceId)), Res2, State };
-        {error, not_found} ->
-            Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
-            Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            %% TODO: Return 404
-            { jiffy:encode(#{ <<"success">> => false, <<"message">> => <<"Service not found">> }),
-              Res2, State }
+        {error, Reason} ->
+            automate_logging:log_api(error, ?MODULE, binary:list_to_bin(lists:flatten(io_lib:format("~p", [Reason])))),
+            Code = case Reason of
+                       not_found -> 404;
+                       no_connection -> 409;
+                       _ -> 500
+                   end,
+            Output = jiffy:encode(#{ <<"success">> => false
+                                   , <<"message">> => case Reason of
+                                                          X when is_atom(X) -> X;
+                                                          _ -> error
+                                                      end
+                                   }),
+            Res = cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req),
+            { stop, Res, State }
     end.
 
 extend_how_to(HowTo=#{ <<"type">> := <<"form">>

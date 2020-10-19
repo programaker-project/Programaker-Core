@@ -30,3 +30,7 @@ mat-card.reading {
 mat-card.error {
     background-color: #fbb0b0;
 }
+
+.hidden {
+    display: none;
+}

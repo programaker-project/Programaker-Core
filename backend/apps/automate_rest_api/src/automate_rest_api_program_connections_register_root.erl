@@ -1,8 +1,4 @@
-%%% @doc
-%%% REST endpoint to manage knowledge collections.
-%%% @end
-
--module(automate_rest_api_services_register_new).
+-module(automate_rest_api_program_connections_register_root).
 -export([init/2]).
 -export([ allowed_methods/2
         , options/2
@@ -17,8 +13,7 @@
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(state, { group_id :: binary() | undefined
-               , program_id :: binary() | undefined
+-record(state, { program_id :: binary()
                , service_id :: binary()
                , owner :: owner_id() | undefined
                }).
@@ -26,15 +21,12 @@
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     ServiceId = cowboy_req:binding(service_id, Req),
-    Qs = cowboy_req:parse_qs(Req),
-    GroupId = proplists:get_value(<<"group_id">>, Qs),
-    ProgramId = proplists:get_value(<<"program_id">>, Qs),
+    ProgramId = cowboy_req:binding(program_id, Req),
     Req1 = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Req1
-    , #state{ group_id=GroupId
-            , service_id=ServiceId
+    , #state{ owner=undefined
             , program_id=ProgramId
-            , owner=undefined
+            , service_id=ServiceId
             }}.
 
 %% CORS
@@ -46,7 +38,7 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"POST">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State=#state{program_id=ProgramId, group_id=GroupId}) ->
+is_authorized(Req, State=#state{program_id=ProgramId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -59,23 +51,11 @@ is_authorized(Req, State=#state{program_id=ProgramId, group_id=GroupId}) ->
                 X ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            case {ProgramId, GroupId} of
-                                {Pid, _} when is_binary(Pid) ->
-                                    {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(ProgramId),
-                                    case automate_storage:can_user_edit_as({user, UserId}, Owner) of
-                                        true -> { true, Req1, State#state{ owner=Owner } };
-                                        false ->
-                                            { { false, <<"Operation not allowed">>}, Req1, State }
-                                    end;
-                                {_, G} when is_binary(G) ->
-                                    case automate_storage:is_allowed_to_write_in_group({user, UserId}, GroupId) of
-                                        true ->
-                                            { true, Req1, State#state{owner={group, GroupId}} };
-                                        false ->
-                                            { { false, <<"Unauthorized to create a service here">>}, Req1, State }
-                                    end;
-                                _ ->
-                                    { true, Req1, State#state{owner={user, UserId}} }
+                            {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(ProgramId),
+                            case automate_storage:can_user_edit_as({user, UserId}, Owner) of
+                                true -> { true, Req1, State#state{ owner=Owner } };
+                                false ->
+                                    { { false, <<"Operation not allowed">>}, Req1, State }
                             end;
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }

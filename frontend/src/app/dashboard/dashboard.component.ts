@@ -11,15 +11,10 @@ import { GroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
 import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborator';
 import { BridgeService } from '../bridges/bridge.service';
-import { BridgeConnection, BridgeConnectionWithIconUrl } from '../connection';
-import { ConnectionService } from '../connection.service';
-import { AddConnectionDialogComponent } from '../connections/add-connection-dialog.component';
-import { HowToEnableServiceDialogComponent } from '../HowToEnableServiceDialogComponent';
 import { MonitorService } from '../monitor.service';
 import { ProgramMetadata, ProgramType } from '../program';
 import { ProgramService } from '../program.service';
 import { SelectProgrammingModelDialogComponent } from '../programs/select-programming-model-dialog/select-programming-model-dialog.component';
-import { AvailableService, ServiceEnableHowTo } from '../service';
 import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
@@ -31,7 +26,7 @@ type TutorialData = { description: string, icons: string[], url: string };
     // moduleId: module.id,
     selector: 'app-my-dashboard',
     templateUrl: './dashboard.component.html',
-    providers: [BridgeService, ConnectionService, GroupService, MonitorService, ProgramService, SessionService, ServiceService],
+    providers: [BridgeService, GroupService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'dashboard.component.css',
         '../libs/css/material-icons.css',
@@ -40,7 +35,6 @@ type TutorialData = { description: string, icons: string[], url: string };
 })
 export class DashboardComponent {
     programs: ProgramMetadata[] = [];
-    connections: BridgeConnectionWithIconUrl[] = null;
     session: Session = null;
     profile: {type: 'user' | 'group', name: string, groups: GroupInfo[], picture: string};
     bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
@@ -74,20 +68,13 @@ export class DashboardComponent {
         private browser: BrowserService,
         private programService: ProgramService,
         private sessionService: SessionService,
-        private serviceService: ServiceService,
-        private connectionService: ConnectionService,
         private groupService: GroupService,
         private router: Router,
         private route: ActivatedRoute,
 
-        public dialog: MatDialog,
-        public bridgeService: BridgeService,
+        private dialog: MatDialog,
+        private bridgeService: BridgeService,
     ) {
-        this.programService = programService;
-        this.sessionService = sessionService;
-        this.serviceService = serviceService;
-        this.connectionService = connectionService;
-        this.router = router;
     }
 
     ngOnInit(): void {
@@ -132,7 +119,6 @@ export class DashboardComponent {
 
                     this.updatePrograms();
                     this.updateBridges();
-                    this.updateConnections();
                 }
             })
             .catch(e => {
@@ -356,33 +342,6 @@ export class DashboardComponent {
         this.canWriteToGroup = (this.userRole === 'admin') || (this.userRole === 'editor');
     }
 
-    addConnection(): void {
-        const dialogRef = this.dialog.open(AddConnectionDialogComponent, { width: '90%',
-                                                                           data: { groupId: this.groupInfo?.id }});
-
-        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
-            if (result && result.success) {
-                this.updateConnections();
-            }
-        });
-    }
-
-    async updateConnections() {
-        let connections: BridgeConnection[];
-        if (this.groupInfo) {
-            connections = await this.connectionService.getConnectionsOnGroup(this.groupInfo.id);
-        }
-        else {
-            connections = await this.connectionService.getConnections();
-        }
-        this.connections = connections.map((v, _i, _a) => {
-            const icon_url = iconDataToUrl(v.icon, v.bridge_id);
-
-            return { conn: v, extra: {icon_url: icon_url }};
-        });
-    }
-
-
     openBridgePanel(bridge: {id: string, name: string} ) {
         const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
                                                                           maxHeight: '100vh',
@@ -411,31 +370,13 @@ export class DashboardComponent {
         this.router.navigateByUrl(`/programs/${program.id}/${programType}`);
     }
 
-    enableService(service: AvailableService): void {
-        this.serviceService.getHowToEnable(service)
-            .then(howToEnable => this.showHowToEnable(howToEnable));
-    }
-
-    showHowToEnable(howTo: ServiceEnableHowTo): void {
-        if ((howTo as any).success === false) {
-            return;
-        }
-        const dialogRef = this.dialog.open(HowToEnableServiceDialogComponent, {
-            data: howTo
-        });
-
-        dialogRef.afterClosed().subscribe(result => { });
-    }
-
     async enableProgram(program: ProgramMetadata) {
-        const session = await this.sessionService.getSession();
         await this.programService.setProgramStatus(JSON.stringify({"enable": true}),
                                                    program.id);
         program.enabled = true;
     }
 
     async archiveProgram(program: ProgramMetadata) {
-        const session = await this.sessionService.getSession();
         await this.programService.setProgramStatus(JSON.stringify({"enable": false}),
                                                    program.id);
         program.enabled = false;

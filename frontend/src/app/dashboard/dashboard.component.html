@@ -1,33 +1,4 @@
 <div class="profile-section">
-    <div class="private-section">
-        <div class="user-connections">
-            <h1>Connections</h1>
-            <div class="connection-list">
-                <div>
-                    <button role="button" (click)="addConnection()" class="module connection call-to-action soft cardlike" mat-raised-button>
-                        <mat-icon class="action-icon">add</mat-icon>
-                    </button>
-                </div>
-                <div *ngIf="(connections !== null) && (connections.length == 0)">
-                    <div class="integrated-call-to-action call-to-left">
-                        <mat-icon class="action-icon">arrow_back</mat-icon>
-                        To start, connect a service.
-                    </div>
-                </div>
-                <div *ngFor="let connection of connections">
-                    <mat-card class="module connection non-clickable"
-                        role="button" (click)="openConnection(connection.conn)">
-                        <img class="icon" role="avatar" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
-
-                        <span *ngIf="!connection.extra.icon_url" class="connection-name">
-                            {{ connection.conn.bridge_name }}
-                        </span>
-                    </mat-card>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <mat-tab-group #navTabGroup mat-align-tabs="center" animationDuration="0ms">
         <mat-tab>
             <ng-template matTabLabel>
@@ -159,13 +130,13 @@
                 <span [matBadge]="bridges && bridges.length" matBadgeOverlap="false">Bridges</span>
             </ng-template>
 
-            <section *ngIf="bridges && bridges.length > 0" class="bridges">
-                <div *ngIf="bridges.length == 0" class="not-joined-explanation">
+            <section *ngIf="bridges" class="bridges">
+                <div *ngIf="(bridges.length == 0) && (profile.type === 'user' || userRole === 'admin')" class="not-joined-explanation">
                     You don't maintain any bridge.
                 </div>
 
                 <div class="row">
-                    <div class="col-sm-6 item-holder">
+                    <div *ngIf="profile.type === 'user' || userRole === 'admin'" class="col-sm-6 item-holder">
                         <mat-card role="button" (click)="addBridge()" class="module bridge call-to-action">
                             <div class="card-title">
                                 <span>

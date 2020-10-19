@@ -306,14 +306,13 @@ get_services_metadata(Services, Owner) ->
                            maps:to_list(Services))).
 
 
--spec get_service_enable_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found}.
+-spec get_service_enable_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found} | {error, no_connection} | {error, _}.
 get_service_enable_how_to(Username, ServiceId) ->
     case get_platform_service_how_to(Username, ServiceId) of
         {ok, HowTo} ->
             {ok, HowTo};
-        {error, not_found} ->
-            automate_logging:log_api(error, ?MODULE, "Unknown platform service required"),
-            {error, not_found}
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 
@@ -482,7 +481,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , last_upload_time=LastUploadTime
                  }.
 
--spec get_platform_service_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found}.
+-spec get_platform_service_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found} | {error, no_connection} | {error, _}.
 get_platform_service_how_to(Username, ServiceId)  ->
     {ok, Owner} = automate_storage:get_userid_from_username(Username),
     case automate_service_registry:get_service_by_id(ServiceId) of

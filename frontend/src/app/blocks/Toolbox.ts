@@ -27,6 +27,10 @@ import { AssetService } from '../asset.service';
 
 
 import * as jstz from 'jstz';
+import { BridgeIndexData } from 'app/bridges/bridge';
+import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
+import { EditorController } from 'app/program-editors/editor-controller';
+import { NgZone } from '@angular/core';
 
 declare const Blockly;
 
@@ -39,38 +43,37 @@ const CustomSecondaryColor = '#E7E7E7';
 const TimeServiceUuid = "0093325b-373f-4f1c-bace-4532cce79df4";
 const UtcTimeOfDayBlockId = `services.${TimeServiceUuid}.utc_is_day_of_week`;
 
+export type ToolboxRegistration = ((workspace: Blockly.WorkspaceSvg,
+                                    controller: EditorController,
+                                    ngZone: NgZone,
+                                   ) => void);
+
 export class Toolbox {
-    monitorService: MonitorService;
-    customBlockService: CustomBlockService;
-    dialog: MatDialog;
     templateController: TemplateController;
     customSignalController: CustomSignalController;
     controller: ToolboxController;
-    serviceService: ServiceService;
 
     constructor(
         private program: ProgramContent,
         private assetService: AssetService,
-        monitorService: MonitorService,
-        customBlockService: CustomBlockService,
-        dialog: MatDialog,
+        private monitorService: MonitorService,
+        private customBlockService: CustomBlockService,
+        private dialog: MatDialog,
         templateService: TemplateService,
-        serviceService: ServiceService,
+        private serviceService: ServiceService,
         customSignalService: CustomSignalService,
-        public connectionService: ConnectionService,
-        public sessionService: SessionService,
+        private connectionService: ConnectionService,
+        private sessionService: SessionService,
+        toolboxController?: ToolboxController,
     ) {
-        this.monitorService = monitorService;
-        this.customBlockService = customBlockService;
-        this.dialog = dialog;
-        this.serviceService = serviceService;
-
-        this.controller = new ToolboxController();
+        this.controller = toolboxController || new ToolboxController();
         this.templateController = new TemplateController(this.dialog, this.controller, templateService);
         this.customSignalController = new CustomSignalController(this.dialog, this.controller, customSignalService);
     }
 
-    async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
+    async inject(): Promise<[HTMLElement, ToolboxRegistration[], ToolboxController]> {
+        let availableConnectionsQuery = this.connectionService.getAvailableBridgesForNewConnectionOnProgram(this.program.id);
+
         const [monitors, custom_blocks, services, connections] = await Promise.all([
             this.monitorService.getMonitorsOnProgram(this.program.id),
             this.customBlockService.getCustomBlocksOnProgram(this.program.id, false),
@@ -79,15 +82,76 @@ export class Toolbox {
         ]) as [MonitorMetadata[], ResolvedCustomBlock[], AvailableService[], BridgeConnection[]];
 
         this.controller.addCustomBlocks(custom_blocks);
+        const categorized_blocks = this.categorize_blocks(custom_blocks,services);
+
+        let availableConnections: BridgeIndexData[];
+        try {
+            availableConnections = await availableConnectionsQuery;
+        }
+        catch (error) {
+            if ((error.name === 'HttpErrorResponse') && (error.status === 401)) {
+                // User cannot add connections, so skip adding them
+                availableConnections = [];
+            }
+            else {
+                throw error;
+            }
+        }
 
 
-        const categorized_blocks =  this.categorize_blocks(custom_blocks,services);
-
-        const registrations = this.injectBlocks(monitors, categorized_blocks, services, connections);
+        let registrations = this.injectBlocks(monitors, categorized_blocks, services, connections);
         const toolboxXML = await this.injectToolbox(monitors, categorized_blocks);
+
+        registrations = registrations.concat(this.addAvailableConnections(availableConnections, toolboxXML));
         this.controller.setToolbox(toolboxXML);
 
         return [toolboxXML, registrations, this.controller];
+    }
+
+    addAvailableConnections(availableBridges: BridgeIndexData[], toolboxXML: HTMLElement): ((workspace: any) => void)[]  {
+        const hooks = [];
+        for (const bridge of availableBridges) {
+            const category = createDom('category', {
+                name: bridge.name,
+                colour: Toolbox.get_bridge_color(bridge.id),
+                secondaryColour: Toolbox.get_bridge_secondary_color(bridge.id),
+                id: bridge.id,
+            })
+
+            const callbackKey = "AUTOMATE_CONNECT_" + bridge.id;
+            category.appendChild(createDom('button', {
+                text: "Connect to " + bridge.name,
+                callbackKey: callbackKey,
+            }));
+
+            toolboxXML.appendChild(category);
+
+            hooks.push((workspace: Blockly.WorkspaceSvg, editorController: EditorController, ngZone: NgZone) => {
+
+                workspace.registerButtonCallback(callbackKey, (_x: Blockly.FlyoutButton) => {
+                    ngZone.run(() => {
+                        const dialogRef = this.dialog.open(AddConnectionDialogComponent, {
+                            disableClose: false,
+                            data: {
+                                programId: this.program.id,
+                                bridgeInfo: bridge,
+                            }
+                        });
+
+                        dialogRef.afterClosed().subscribe(async (result) => {
+                            if (!result) {
+                                console.log("Cancelled");
+                                return;
+                            }
+
+                            editorController.reloadToolbox();
+                        });
+                    });
+                });
+            });
+        }
+
+        return hooks;
     }
 
     categorize_blocks(custom_blocks: ResolvedCustomBlock[], services: AvailableService[]): CategorizedCustomBlock[]{
@@ -119,7 +183,7 @@ export class Toolbox {
                  custom_blocks: CategorizedCustomBlock[],
                  services: AvailableService[],
                  connections: BridgeConnection[],
-                ): Function[] {
+                ): ToolboxRegistration[] {
         let registrations = [];
 
         this.injectMonitorBlocks(monitors);
