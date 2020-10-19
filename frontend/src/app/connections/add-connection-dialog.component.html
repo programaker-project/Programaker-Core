@@ -2,7 +2,7 @@
     <h2 mat-dialog-title>Connecting to {{ data.bridgeInfo.name }}</h2>
 
     <mat-dialog-content>
-        <div *ngIf="howToEnable && howToEnable.type !== 'direct'" #renderingZone></div>
+        <div [ngClass]="!(howToEnable && howToEnable.type !== 'direct') ? 'hidden' : ''" #renderingZone></div>
         <div *ngIf="howToEnable && howToEnable.type === 'direct'">
             Everything is ready to connect, just click <span class="button-ref">Accept</span>.
         </div>
@@ -22,5 +22,4 @@
         <button class="rejection" mat-button mat-dialog-close>Cancel</button>
         <button class="confirmation" *ngIf="ready" mat-button mat-raised-button (click)="this.establishConnection()" color="primary">Accept</button>
     </mat-dialog-actions>
-
 </div>

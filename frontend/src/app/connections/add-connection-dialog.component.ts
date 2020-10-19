@@ -4,7 +4,7 @@ import { ConnectionService } from '../connection.service';
 import { ServiceService } from '../service.service';
 import { BridgeService } from '../bridges/bridge.service';
 
-import { ServiceEnableHowTo, ServiceEnableMessage, ServiceEnableEntry } from '../service';
+import { ServiceEnableHowTo, ServiceEnableMessage, ServiceEnableEntry, TwoStepEnableMetadata } from '../service';
 
 import { MatDialog } from '@angular/material/dialog';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -71,7 +71,16 @@ export class AddConnectionDialogComponent {
             return;
         }
 
+        if (this.howToEnable.type === 'message') {
+            // Open websocket to monitor for side-channel connection
+            (this.connectionService.waitForPendingConnectionEstablished(this.howToEnable.metadata.connection_id)
+                .then(_success => {
+                    this.dialogRef.close({ success: true });
+                }))
+        }
+
         this.render(this.howToEnable as ServiceEnableMessage);
+        this.ready = true;
     }
 
     establishConnection(): void {
@@ -93,20 +102,31 @@ export class AddConnectionDialogComponent {
                 console.error("Error registering", error);
             });
         }
+        else if (this.howToEnable.type === 'form') {
+            this.sendForm();
+        }
     }
 
-    render(data: ServiceEnableMessage): HTMLElement {
+    render(data: ServiceEnableMessage) {
         this.type = data.type;
 
+        let element: HTMLDivElement;
         if (data.type === 'message') {
-            return this.render_scripted_form(data as ServiceEnableMessage);
+            element = this.render_scripted_form(data as ServiceEnableMessage);
         }
 
         else if (data.type === 'form') {
-            return this.render_scripted_form(data as ServiceEnableMessage);
+            element = this.render_scripted_form(data as ServiceEnableMessage);
+        }
+        else {
+            this.error = 'Cannot render ' + data.type;
         }
 
-        throw new Error("Cannot render type: " + data.type);
+        const zone = this.renderingZone.nativeElement;
+        while (zone.lastElementChild) {
+            zone.removeChild(zone.lastElementChild);
+        }
+        zone.appendChild(element);
     }
 
     render_scripted_form(data: ServiceEnableMessage): HTMLDivElement {
@@ -196,5 +216,18 @@ export class AddConnectionDialogComponent {
 
         entry.onchange = update_value;
         update_value();
+    }
+
+    sendForm(): void {
+        this.serviceService.registerService(this.form,
+                                            this.data.bridgeInfo.id,
+                                            (this.howToEnable.metadata as TwoStepEnableMetadata).connection_id)
+            .then((result) => {
+                if (result.success) {
+                    this.dialogRef.close({ success: true });
+                }
+            }).catch((error) => {
+                console.error("Error registering", error);
+            });
     }
 }
