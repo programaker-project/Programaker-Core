@@ -90,6 +90,7 @@ start_link() ->
                         , {"/api/v0/groups/by-id/:group_id/connections/available", automate_rest_api_group_connections_available_root, []}
 
                         , {"/api/v0/programs/by-id/:program_id/connections/established", automate_rest_api_program_connections_established_root, []}
+                        , {"/api/v0/programs/by-id/:program_id/connections/available", automate_rest_api_program_connections_available_root, []}
 
                           %% Bridges
                         , {"/api/v0/users/:user_id/bridges", automate_rest_api_service_ports_root, []}

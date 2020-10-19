@@ -27,6 +27,8 @@ import { AssetService } from '../asset.service';
 
 
 import * as jstz from 'jstz';
+import { BridgeIndexData } from 'app/bridges/bridge';
+import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
 
 declare const Blockly;
 
@@ -40,37 +42,30 @@ const TimeServiceUuid = "0093325b-373f-4f1c-bace-4532cce79df4";
 const UtcTimeOfDayBlockId = `services.${TimeServiceUuid}.utc_is_day_of_week`;
 
 export class Toolbox {
-    monitorService: MonitorService;
-    customBlockService: CustomBlockService;
-    dialog: MatDialog;
     templateController: TemplateController;
     customSignalController: CustomSignalController;
     controller: ToolboxController;
-    serviceService: ServiceService;
 
     constructor(
         private program: ProgramContent,
         private assetService: AssetService,
-        monitorService: MonitorService,
-        customBlockService: CustomBlockService,
-        dialog: MatDialog,
+        private monitorService: MonitorService,
+        private customBlockService: CustomBlockService,
+        private dialog: MatDialog,
         templateService: TemplateService,
-        serviceService: ServiceService,
+        private serviceService: ServiceService,
         customSignalService: CustomSignalService,
-        public connectionService: ConnectionService,
-        public sessionService: SessionService,
+        private connectionService: ConnectionService,
+        private sessionService: SessionService,
     ) {
-        this.monitorService = monitorService;
-        this.customBlockService = customBlockService;
-        this.dialog = dialog;
-        this.serviceService = serviceService;
-
         this.controller = new ToolboxController();
         this.templateController = new TemplateController(this.dialog, this.controller, templateService);
         this.customSignalController = new CustomSignalController(this.dialog, this.controller, customSignalService);
     }
 
     async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
+        let availableConnectionsQuery = this.connectionService.getAvailableBridgesForNewConnectionOnProgram(this.program.id);
+
         const [monitors, custom_blocks, services, connections] = await Promise.all([
             this.monitorService.getMonitorsOnProgram(this.program.id),
             this.customBlockService.getCustomBlocksOnProgram(this.program.id, false),
@@ -78,16 +73,71 @@ export class Toolbox {
             this.connectionService.getConnectionsOnProgram(this.program.id),
         ]) as [MonitorMetadata[], ResolvedCustomBlock[], AvailableService[], BridgeConnection[]];
 
-        this.controller.addCustomBlocks(custom_blocks);
-
-
         const categorized_blocks =  this.categorize_blocks(custom_blocks,services);
 
-        const registrations = this.injectBlocks(monitors, categorized_blocks, services, connections);
+        let availableConnections: BridgeIndexData[];
+        try {
+            availableConnections = await availableConnectionsQuery;
+        }
+        catch (error) {
+            if ((error.name === 'HttpErrorResponse') && (error.status === 401)) {
+                // User cannot add connections, so skip adding them
+                availableConnections = [];
+            }
+            else {
+                throw error;
+            }
+        }
+
+
+        let registrations = this.injectBlocks(monitors, categorized_blocks, services, connections);
         const toolboxXML = await this.injectToolbox(monitors, categorized_blocks);
+
+        registrations = registrations.concat(this.addAvailableConnections(availableConnections, toolboxXML));
         this.controller.setToolbox(toolboxXML);
 
         return [toolboxXML, registrations, this.controller];
+    }
+
+    addAvailableConnections(availableBridges: BridgeIndexData[], toolboxXML: HTMLElement): ((workspace: any) => void)[]  {
+        const hooks = [];
+        for (const bridge of availableBridges) {
+            const category = createDom('category', {
+                name: bridge.name,
+                colour: Toolbox.get_bridge_color(bridge.id),
+                secondaryColour: Toolbox.get_bridge_secondary_color(bridge.id),
+                id: bridge.id,
+            })
+
+            category.appendChild(createDom('button', {
+                text: "Connect to " + bridge.name,
+                callbackKey: "AUTOMATE_CONNECT_" + bridge.id,
+            }));
+
+            toolboxXML.appendChild(category);
+
+            hooks.push((workspace: any) => {
+                workspace.registerButtonCallback("AUTOMATE_CONNECT_" + bridge.id, (x, y, z) => {
+                    const dialogRef = this.dialog.open(AddConnectionDialogComponent, {
+                        data: {
+                            programId: this.program.id,
+                            bridgeInfo: bridge,
+                        }
+                    });
+
+                    dialogRef.afterClosed().subscribe(async (result) => {
+                        if (!result) {
+                            console.log("Cancelled");
+                            return;
+                        }
+
+                        alert("Connected to " + bridge.name + ". Reloading blocks..." );
+                    });
+                });
+            });
+        }
+
+        return hooks;
     }
 
     categorize_blocks(custom_blocks: ResolvedCustomBlock[], services: AvailableService[]): CategorizedCustomBlock[]{

@@ -53,16 +53,16 @@ export class AddBridgeDialogComponent {
 
         this.bridgeCreated = true;
 
-        let createGroupProcess: Promise<BridgeMetadata>;
+        let createBridge: Promise<BridgeMetadata>;
         if (this.data.groupId) {
-            createGroupProcess = this.bridgeService.createGroupBridge(bridgeName, this.data.groupId);
+            createBridge = this.bridgeService.createGroupBridge(bridgeName, this.data.groupId);
         }
         else {
-            createGroupProcess = this.bridgeService.createServicePort(bridgeName);
+            createBridge = this.bridgeService.createServicePort(bridgeName);
         }
 
-        createGroupProcess.then((BridgeMetadata: BridgeMetadata) => {
-            this.dialogRef.close({success: this.bridgeCreated, bridgeId: BridgeMetadata.id, bridgeName: bridgeName});
+        createBridge.then((bridgeMetadata: BridgeMetadata) => {
+            this.dialogRef.close({success: this.bridgeCreated, bridgeId: bridgeMetadata.id, bridgeName: bridgeName});
         }).catch(() => {
             this.bridgeCreated = false;
         }).then(() => {

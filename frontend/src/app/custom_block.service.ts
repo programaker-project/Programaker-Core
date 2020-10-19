@@ -73,7 +73,12 @@ export class CustomBlockService {
             })).toPromise();
 
         const resolvedBlocks = await Promise.all(blocks.map(async (block): Promise<ResolvedCustomBlock> => {
-            return await this._resolveBlock(programId, block, skip_resolve_argument_options === true);
+            try {
+                return await this._resolveBlock(programId, block, skip_resolve_argument_options === true);
+            }
+            catch(err) {
+                console.warn(err);
+            }
         }));
 
         return resolvedBlocks.filter((v, _i, _a) => {
@@ -279,16 +284,14 @@ export class CustomBlockService {
 
         // Cache result
 
-        query.then(result => {
-            this.cacheArgOptions(programId, bridgeId, callbackName, result);
-        });
-
-
-
-        query.catch(err => {
-            console.error(err);
-            delete this.onFlightCallbackQueries[url];
-        });
+        query
+            .then(result => {
+                this.cacheArgOptions(programId, bridgeId, callbackName, result);
+            })
+            .catch(err => {
+                console.warn(err);
+                delete this.onFlightCallbackQueries[url];
+            });
 
         this.onFlightCallbackQueries[url] = query;
         return query;

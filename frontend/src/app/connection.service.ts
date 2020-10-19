@@ -39,7 +39,11 @@ export class ConnectionService {
         return `${ApiRoot}/programs/by-id/${programId}/connections/established`;
     }
 
-    async getWaitForConnectionUrl(connection_id: string): Promise<string> {
+    getProgramAvailableConnectionsUrl(programId: string): string {
+        return `${ApiRoot}/programs/by-id/${programId}/connections/available`;
+    }
+
+   async getWaitForConnectionUrl(connection_id: string): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId();
 
         const url = root + '/connections/pending/' + connection_id + '/wait';
@@ -55,6 +59,13 @@ export class ConnectionService {
 
     public getAvailableBridgesForNewConnectionOnGroup(groupId: string): Promise<BridgeIndexData[]> {
         const url = this.getGroupAvailableConnectionsUrl(groupId);
+        return (this.http.get(url,
+                              { headers: this.sessionService.getAuthHeader() }
+                             ).toPromise() as Promise<BridgeIndexData[]>);
+    }
+
+    public getAvailableBridgesForNewConnectionOnProgram(programId: string): Promise<BridgeIndexData[]> {
+        const url = this.getProgramAvailableConnectionsUrl(programId);
         return (this.http.get(url,
                               { headers: this.sessionService.getAuthHeader() }
                              ).toPromise() as Promise<BridgeIndexData[]>);
