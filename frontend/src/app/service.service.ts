@@ -42,6 +42,10 @@ export class ServiceService {
         return `${API.ApiRoot}/services/by-id/${service_id}/register`;
     }
 
+    getServiceRegistryUrlOnProgram(bridgeId: string, programId: string) {
+        return `${API.ApiRoot}/programs/by-id/${programId}/services/by-id/${bridgeId}/register`;
+    }
+
     getAvailableServices(): Promise<AvailableService[]> {
         return this.getListAvailableServicesUrl().then(
             url => this.http.get(url, { headers: this.sessionService.getAuthHeader() })
@@ -112,6 +116,19 @@ export class ServiceService {
                     this.sessionService.getAuthHeader(),
                     ContentType.Json),
                 params: { group_id: groupId }
+            }).toPromise()) as Promise<{success: boolean}>;
+    }
+
+    async directRegisterServiceOnProgram(bridgeId: string, programId: string): Promise<{ success: boolean; }> {
+        const data = { };
+
+        const url = this.getServiceRegistryUrlOnProgram(bridgeId, programId);
+        return (this.http.post(
+            url, JSON.stringify(data),
+            {
+                headers: this.sessionService.addContentType(
+                    this.sessionService.getAuthHeader(),
+                    ContentType.Json),
             }).toPromise()) as Promise<{success: boolean}>;
     }
 }

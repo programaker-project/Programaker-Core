@@ -87,7 +87,10 @@ export class AddConnectionDialogComponent {
     establishConnection(): void {
         if (this.howToEnable.type === 'direct') {
             let query: Promise<{success: boolean}>;
-            if (this.data.groupId) {
+            if (this.data.programId) {
+                query = this.serviceService.directRegisterServiceOnProgram(this.data.bridgeInfo.id, this.data.programId)
+            }
+            else if (this.data.groupId) {
                 query = this.serviceService.directRegisterServiceOnGroup(this.data.bridgeInfo.id, this.data.groupId)
             }
             else {

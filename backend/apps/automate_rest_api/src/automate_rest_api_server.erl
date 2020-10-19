@@ -89,6 +89,7 @@ start_link() ->
                         , {"/api/v0/groups/by-id/:group_id/connections/established", automate_rest_api_group_connections_established_root, []}
                         , {"/api/v0/groups/by-id/:group_id/connections/available", automate_rest_api_group_connections_available_root, []}
 
+                        , {"/api/v0/programs/by-id/:program_id/services/by-id/:service_id/register", automate_rest_api_program_connections_register_root, []}
                         , {"/api/v0/programs/by-id/:program_id/connections/established", automate_rest_api_program_connections_established_root, []}
                         , {"/api/v0/programs/by-id/:program_id/connections/available", automate_rest_api_program_connections_available_root, []}
 
