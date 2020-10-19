@@ -64,6 +64,7 @@ export class AddConnectionDialogComponent {
                 // User cannot add connections, so skip adding them
                 this.errorType = 'bridge_not_ready';
             }
+            return;
         }
         console.log("How to enable", this.howToEnable);
         if (this.howToEnable.type === 'direct') {

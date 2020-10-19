@@ -29,6 +29,8 @@ import { AssetService } from '../asset.service';
 import * as jstz from 'jstz';
 import { BridgeIndexData } from 'app/bridges/bridge';
 import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
+import { EditorController } from 'app/program-editors/editor-controller';
+import { NgZone } from '@angular/core';
 
 declare const Blockly;
 
@@ -40,6 +42,11 @@ const CustomSecondaryColor = '#E7E7E7';
 // Constant Ids, to reference the time service.
 const TimeServiceUuid = "0093325b-373f-4f1c-bace-4532cce79df4";
 const UtcTimeOfDayBlockId = `services.${TimeServiceUuid}.utc_is_day_of_week`;
+
+export type ToolboxRegistration = ((workspace: Blockly.WorkspaceSvg,
+                                    controller: EditorController,
+                                    ngZone: NgZone,
+                                   ) => void);
 
 export class Toolbox {
     templateController: TemplateController;
@@ -57,13 +64,14 @@ export class Toolbox {
         customSignalService: CustomSignalService,
         private connectionService: ConnectionService,
         private sessionService: SessionService,
+        toolboxController?: ToolboxController,
     ) {
-        this.controller = new ToolboxController();
+        this.controller = toolboxController || new ToolboxController();
         this.templateController = new TemplateController(this.dialog, this.controller, templateService);
         this.customSignalController = new CustomSignalController(this.dialog, this.controller, customSignalService);
     }
 
-    async inject(): Promise<[HTMLElement, Function[], ToolboxController]> {
+    async inject(): Promise<[HTMLElement, ToolboxRegistration[], ToolboxController]> {
         let availableConnectionsQuery = this.connectionService.getAvailableBridgesForNewConnectionOnProgram(this.program.id);
 
         const [monitors, custom_blocks, services, connections] = await Promise.all([
@@ -73,7 +81,8 @@ export class Toolbox {
             this.connectionService.getConnectionsOnProgram(this.program.id),
         ]) as [MonitorMetadata[], ResolvedCustomBlock[], AvailableService[], BridgeConnection[]];
 
-        const categorized_blocks =  this.categorize_blocks(custom_blocks,services);
+        this.controller.addCustomBlocks(custom_blocks);
+        const categorized_blocks = this.categorize_blocks(custom_blocks,services);
 
         let availableConnections: BridgeIndexData[];
         try {
@@ -109,29 +118,34 @@ export class Toolbox {
                 id: bridge.id,
             })
 
+            const callbackKey = "AUTOMATE_CONNECT_" + bridge.id;
             category.appendChild(createDom('button', {
                 text: "Connect to " + bridge.name,
-                callbackKey: "AUTOMATE_CONNECT_" + bridge.id,
+                callbackKey: callbackKey,
             }));
 
             toolboxXML.appendChild(category);
 
-            hooks.push((workspace: any) => {
-                workspace.registerButtonCallback("AUTOMATE_CONNECT_" + bridge.id, (x, y, z) => {
-                    const dialogRef = this.dialog.open(AddConnectionDialogComponent, {
-                        data: {
-                            programId: this.program.id,
-                            bridgeInfo: bridge,
-                        }
-                    });
+            hooks.push((workspace: Blockly.WorkspaceSvg, editorController: EditorController, ngZone: NgZone) => {
 
-                    dialogRef.afterClosed().subscribe(async (result) => {
-                        if (!result) {
-                            console.log("Cancelled");
-                            return;
-                        }
+                workspace.registerButtonCallback(callbackKey, (_x: Blockly.FlyoutButton) => {
+                    ngZone.run(() => {
+                        const dialogRef = this.dialog.open(AddConnectionDialogComponent, {
+                            disableClose: false,
+                            data: {
+                                programId: this.program.id,
+                                bridgeInfo: bridge,
+                            }
+                        });
 
-                        alert("Connected to " + bridge.name + ". Reloading blocks..." );
+                        dialogRef.afterClosed().subscribe(async (result) => {
+                            if (!result) {
+                                console.log("Cancelled");
+                                return;
+                            }
+
+                            editorController.reloadToolbox();
+                        });
                     });
                 });
             });
@@ -169,7 +183,7 @@ export class Toolbox {
                  custom_blocks: CategorizedCustomBlock[],
                  services: AvailableService[],
                  connections: BridgeConnection[],
-                ): Function[] {
+                ): ToolboxRegistration[] {
         let registrations = [];
 
         this.injectMonitorBlocks(monitors);
