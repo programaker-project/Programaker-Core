@@ -415,12 +415,16 @@ button.cardlike {
 }
 
 
-section {
+.profile section {
     margin: 1em auto;
     padding-top: 1ex;
     width: max-content;
     max-width: 100%;
     border-top: 1px solid #aaa;
+}
+
+section.bridges .not-joined-explanation {
+    margin: 1em;
 }
 
 section.bridges {

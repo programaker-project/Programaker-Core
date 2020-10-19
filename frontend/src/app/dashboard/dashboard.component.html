@@ -130,13 +130,13 @@
                 <span [matBadge]="bridges && bridges.length" matBadgeOverlap="false">Bridges</span>
             </ng-template>
 
-            <section *ngIf="bridges && bridges.length > 0" class="bridges">
-                <div *ngIf="bridges.length == 0" class="not-joined-explanation">
+            <section *ngIf="bridges" class="bridges">
+                <div *ngIf="(bridges.length == 0) && (profile.type === 'user' || userRole === 'admin')" class="not-joined-explanation">
                     You don't maintain any bridge.
                 </div>
 
                 <div class="row">
-                    <div class="col-sm-6 item-holder">
+                    <div *ngIf="profile.type === 'user' || userRole === 'admin'" class="col-sm-6 item-holder">
                         <mat-card role="button" (click)="addBridge()" class="module bridge call-to-action">
                             <div class="card-title">
                                 <span>
