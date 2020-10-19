@@ -2,6 +2,7 @@
 
 import { Synchronizer } from "app/syncronizer";
 import { ProgramEditorEventValue } from "app/program";
+import { Unsubscribable } from "rxjs";
 
 const CHECKPOINT_EVENT = 'save_checkpoint';
 const LEADER_WAIT_TIME = 60 * 1000;
@@ -37,6 +38,7 @@ export class BlockSynchronizer {
     private readonly _syncStatus: () => Promise<void>;
     private hasChanges: boolean = false;
     private _timeout: NodeJS.Timeout;
+    eventSubscription: Unsubscribable;
 
     constructor(eventStream: Synchronizer<ProgramEditorEventValue>, syncStatus: () => Promise<void>) {
         this._typeBufferSize = TYPE_BUFFER_SIZE;
@@ -52,7 +54,7 @@ export class BlockSynchronizer {
         this._eventStream = eventStream;
         this._syncStatus = syncStatus;
 
-        this._eventStream.subscribe({
+        this.eventSubscription = this._eventStream.subscribe({
             next: this.onNewEvent.bind(this),
             complete: () => {
                 clearTimeout(this._timeout)
@@ -232,6 +234,17 @@ export class BlockSynchronizer {
 
             // This might happen and is not bundled into Blockly.Events.Ui
             return null;
+        }
+    }
+
+    public close() {
+        if (this.eventSubscription) {
+            this.eventSubscription.unsubscribe();
+            this.eventSubscription = null;
+        }
+        if (this._timeout) {
+            clearTimeout(this._timeout);
+            this._timeout = null;
         }
     }
 }

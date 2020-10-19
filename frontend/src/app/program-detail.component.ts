@@ -79,6 +79,9 @@ export class ProgramDetailComponent implements OnInit {
 
     // HACK: Prevent the MatMenu import for being removed
     private _pinRequiredMatMenuLibrary: MatMenu;
+    eventSubscription: Unsubscribable | null;
+    logSubscription: Unsubscribable | null;
+    blockSynchronizer: BlockSynchronizer;
 
     constructor(
         private browser: BrowserService,
@@ -233,8 +236,8 @@ export class ProgramDetailComponent implements OnInit {
         // Initialize log listeners
         this.streamingLogs = true;
         if (!this.program.readonly) {
-            this.programService.watchProgramLogs(this.program.id,
-                                                 { request_previous_logs: true })
+            this.logSubscription = this.programService.watchProgramLogs(this.program.id,
+                                                                        { request_previous_logs: true })
                 .subscribe(
                     {
                         next: (update: ProgramInfoUpdate) => {
@@ -261,7 +264,7 @@ export class ProgramDetailComponent implements OnInit {
         // Initialize editor event listeners
         // This is used for collaborative editing.
         this.eventStream = this.programService.getEventStream(this.program.id);
-        const synchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
+        this.blockSynchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
 
         const onCreation = {};
         const mirrorEvent = (event: BlocklyEvent) => {
@@ -269,7 +272,7 @@ export class ProgramDetailComponent implements OnInit {
                 return;  // Don't mirror UI events.
             }
 
-            if (synchronizer.isDuplicated(event)) {
+            if (this.blockSynchronizer.isDuplicated(event)) {
                 return; // Avoid mirroring events received from the net
             }
 
@@ -292,14 +295,13 @@ export class ProgramDetailComponent implements OnInit {
             }
         }
 
-
-        this.eventStream.subscribe(
+        this.eventSubscription = this.eventStream.subscribe(
             {
                 next: (ev: ProgramEditorEventValue) => {
                     if (ev.type === 'blockly_event') {
                         const event = Blockly.Events.fromJson(ev.value, this.workspace);
 
-                        synchronizer.receivedEvent(event as BlocklyEvent);
+                        this.blockSynchronizer.receivedEvent(event as BlocklyEvent);
                         if (ev.value.type === 'create') {
                             onCreation[ev.value.blockId] = true;
                         }
@@ -781,12 +783,28 @@ export class ProgramDetailComponent implements OnInit {
     dispose() {
         try {
             this.workspace.dispose();
+            this.workspace = null;
         } catch(error) {
             console.error("Error disposing workspace:", error);
         }
 
         try {
-            this.eventStream.close();
+            if (this.eventSubscription) {
+                this.eventSubscription.unsubscribe();
+                this.eventSubscription = null;
+            }
+
+            if (this.logSubscription) {
+                this.logSubscription.unsubscribe();
+                this.logSubscription = null;
+            }
+
+            if (this.blockSynchronizer) {
+                this.blockSynchronizer.close();
+                this.blockSynchronizer = null;
+            }
+
+            this.eventStream = null;
         } catch(error) {
             console.error("Error closing event stream:", error);
         }
