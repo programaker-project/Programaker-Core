@@ -48,7 +48,10 @@ export class AddConnectionDialogComponent {
         const as_service = await this.connectionService.toAvailableService(this.data.bridgeInfo);
 
         let query: Promise<ServiceEnableHowTo>;
-        if (this.data.groupId) {
+        if (this.data.programId) {
+            query = this.serviceService.getHowToEnableOnProgram(as_service, this.data.programId);
+        }
+        else if (this.data.groupId) {
             query = this.serviceService.getHowToEnableOnGroup(as_service, this.data.groupId);
         }
         else {

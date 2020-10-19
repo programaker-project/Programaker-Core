@@ -29,7 +29,11 @@ export class ServiceService {
         return service.link + '/how-to-enable';
     }
 
-    async getServiceEnableOnGroupHowToUrl(service: AvailableService, groupId: string) {
+    getServiceEnableOnGroupHowToUrl(service: AvailableService, groupId: string) {
+        return `${API.ApiRoot}/services/by-id/${service.id}/how-to-enable`;
+    }
+
+    getServiceEnableOnProgramHowToUrl(service: AvailableService, programId: string) {
         return `${API.ApiRoot}/services/by-id/${service.id}/how-to-enable`;
     }
 
@@ -68,9 +72,17 @@ export class ServiceService {
     }
 
     async getHowToEnableOnGroup(service: AvailableService, groupId: string): Promise<ServiceEnableHowTo> {
-        const url = await this.getServiceEnableOnGroupHowToUrl(service, groupId);
+        const url = this.getServiceEnableOnGroupHowToUrl(service, groupId);
         return (this.http.get(url, { headers: this.sessionService.getAuthHeader(),
                                      params: { group_id: groupId }
+                                   })
+            .toPromise() as Promise<ServiceEnableHowTo>);
+    }
+
+    getHowToEnableOnProgram(service: AvailableService, programId: string): Promise<ServiceEnableHowTo> {
+        const url = this.getServiceEnableOnProgramHowToUrl(service, programId);
+        return (this.http.get(url, { headers: this.sessionService.getAuthHeader(),
+                                     params: { program_id: programId }
                                    })
             .toPromise() as Promise<ServiceEnableHowTo>);
     }

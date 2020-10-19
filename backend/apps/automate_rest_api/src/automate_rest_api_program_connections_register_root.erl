@@ -52,7 +52,7 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
                             {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(ProgramId),
-                            case automate_storage:can_user_view_as({user, UserId}, Owner) of
+                            case automate_storage:can_user_edit_as({user, UserId}, Owner) of
                                 true -> { true, Req1, State#state{ owner=Owner } };
                                 false ->
                                     { { false, <<"Operation not allowed">>}, Req1, State }
