@@ -10,25 +10,12 @@ export type BridgeInfoUpdate = { count: number };
 
 @Injectable()
 export class BridgeService {
-    // These static values help create a Singleton-like class.
-    // While not strtictly following the Singleton pattern, as class instances
-    //   are obtained through Dependency Injection, it allows for every instance
-    //   of the class to share the relevant state.
-    // The shared state is the established session, it's Observable and Observer.
-    static bridgeInfoObservable: Observable<BridgeInfoUpdate> = null;
-    private static _bridgeInfoObserver: Observer<BridgeInfoUpdate> = null;
-    private static bridgeCount: number = null;
-
-
     constructor(
         private http: HttpClient,
         private sessionService: SessionService
     ) {
         this.http = http;
         this.sessionService = sessionService;
-        BridgeService.bridgeInfoObservable = new Observable<BridgeInfoUpdate>((observer) => {
-            BridgeService._bridgeInfoObserver = observer;
-        });
     }
 
     private async getBridgeIndexUrl(): Promise<string> {
@@ -73,32 +60,24 @@ export class BridgeService {
     async createServicePort(name: string): Promise<BridgeMetadata> {
         const url = await this.getBridgeIndexUrl();
 
-
         const response = (await this.http.post(url, JSON.stringify({ name: name }),
                                                { headers: this.sessionService.addJsonContentType(
                                                    this.sessionService.getAuthHeader())
                                                }).toPromise());
 
-        if (BridgeService.bridgeCount !== null) {
-            BridgeService.bridgeCount += 1;
-            BridgeService._bridgeInfoObserver.next({ count: BridgeService.bridgeCount });
-        }
-
         return response as BridgeMetadata;
     }
 
-    async listUserBridges(): Promise<{bridges: BridgeIndexData[], monitor: Observable<BridgeInfoUpdate>}> {
+    async listUserBridges(): Promise<{bridges: BridgeIndexData[]}> {
         const url = await this.getBridgeIndexUrl();
         const response = (await this.http.get(url,
                                               { headers: this.sessionService.getAuthHeader()})
             .toPromise());
 
         const bridgeData = response as BridgeIndexData[];
-        BridgeService.bridgeCount = bridgeData.length;
 
         return {
             bridges: bridgeData,
-            monitor: BridgeService.bridgeInfoObservable,
         };
     }
 
@@ -127,15 +106,6 @@ export class BridgeService {
         const response = (await this.http.delete(url,
                                                  { headers: this.sessionService.getAuthHeader() })
                           .toPromise());
-
-        // We would have to know who is the owner to do this appropriately
-        // @TODO
-        // if (BridgeService.bridgeCount !== null) {
-        //     BridgeService.bridgeCount -= 1;
-        //     BridgeService._bridgeInfoObserver.next({
-        //         count: BridgeService.bridgeCount
-        //     });
-        // }
 
         return (response as { success: boolean }).success;
     }
