@@ -152,4 +152,11 @@ encode_argument(#service_port_block_dynamic_argument{ type=Type
                                                     }) ->
     #{ <<"type">> => Type
      , <<"callback">> => Callback
+     };
+
+encode_argument(#service_port_block_collection_argument{ name=Collection
+                                                       }) ->
+    #{ type => string
+     , callback => Collection
+     , collection => Collection
      }.
