@@ -127,7 +127,9 @@
        </mat-tab>
         <mat-tab>
             <ng-template matTabLabel>
-                <span [matBadge]="bridges && bridges.length" matBadgeOverlap="false">Bridges</span>
+                <span matBadgeOverlap="false"
+                    [matBadge]="bridges && bridges.length + (connectionsNotInBridges && connectionsNotInBridges.length || 0)"
+                >Bridges</span>
             </ng-template>
 
             <section *ngIf="bridges" class="bridges">
@@ -146,7 +148,7 @@
                             </div>
                         </mat-card>
                     </div>
-                    <div class="col-sm-6  item-holder"
+                    <div class="col-sm-6 item-holder"
                         *ngFor="let bridge of bridges">
                         <mat-card
                             matRipple matRippleColor="#00000017"
@@ -168,6 +170,28 @@
                                 </div>
                             </div>
                         </mat-card>
+                    </div>
+                </div>
+                <div *ngIf="connectionsNotInBridges && connectionsNotInBridges.length > 0" class="bridge-connections-subsection">
+                    <h4>Connections to other bridges</h4>
+                    <div class="row">
+                        <div class="col-sm-6 item-holder"
+                            *ngFor="let connection of connectionsNotInBridges">
+                            <mat-card
+                                matRipple matRippleColor="#00000017"
+                                class="bridge"
+                                role="button"
+                                (click)="openBridgePanelFromConnection(connection)"
+                            >
+                                <div class="bridge-data">
+                                    <img class="icon" role="avatar" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
+
+                                    <div *ngIf="!connection.extra.icon_url" class="bridge-name">
+                                        {{ connection.conn.bridge_name }}
+                                    </div>
+                                </div>
+                            </mat-card>
+                        </div>
                     </div>
                 </div>
             </section>

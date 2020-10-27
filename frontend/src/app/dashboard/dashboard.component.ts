@@ -19,6 +19,8 @@ import { ServiceService } from '../service.service';
 import { Session } from '../session';
 import { SessionService } from '../session.service';
 import { getGroupPictureUrl, getUserPictureUrl, iconDataToUrl } from '../utils';
+import { ConnectionService } from 'app/connection.service';
+import { BridgeConnectionWithIconUrl } from 'app/connection';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -26,7 +28,7 @@ type TutorialData = { description: string, icons: string[], url: string };
     // moduleId: module.id,
     selector: 'app-my-dashboard',
     templateUrl: './dashboard.component.html',
-    providers: [BridgeService, GroupService, MonitorService, ProgramService, SessionService, ServiceService],
+    providers: [BridgeService, ConnectionService, GroupService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
         'dashboard.component.css',
         '../libs/css/material-icons.css',
@@ -35,6 +37,9 @@ type TutorialData = { description: string, icons: string[], url: string };
 })
 export class DashboardComponent {
     programs: ProgramMetadata[] = [];
+    connections: BridgeConnectionWithIconUrl[] = null;
+    connectionsNotInBridges: BridgeConnectionWithIconUrl[] = null;
+
     session: Session = null;
     profile: {type: 'user' | 'group', name: string, groups: GroupInfo[], picture: string};
     bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
@@ -63,12 +68,14 @@ export class DashboardComponent {
     groupInfo: GroupInfo;
     userRole: CollaboratorRole | null;
     canWriteToGroup: boolean;
+    bridgesQuery: Promise<void>;
 
     constructor(
         private browser: BrowserService,
         private programService: ProgramService,
         private sessionService: SessionService,
         private groupService: GroupService,
+        private connectionService: ConnectionService,
         private router: Router,
         private route: ActivatedRoute,
 
@@ -118,7 +125,8 @@ export class DashboardComponent {
                     }
 
                     this.updatePrograms();
-                    this.updateBridges();
+                    this.bridgesQuery = this.updateBridges();
+                    this.updateConnections();
                 }
             })
             .catch(e => {
@@ -342,7 +350,22 @@ export class DashboardComponent {
         this.canWriteToGroup = (this.userRole === 'admin') || (this.userRole === 'editor');
     }
 
-    openBridgePanel(bridge: {id: string, name: string} ) {
+    async updateConnections() {
+        const connections = await this.connectionService.getConnections();
+        this.connections = connections.map((v, _i, _a) => {
+            const icon_url = iconDataToUrl(v.icon, v.bridge_id);
+
+            return { conn: v, extra: {icon_url: icon_url }};
+        });
+
+        await this.bridgesQuery; // Wait for the bridges query to complete
+
+        this.connectionsNotInBridges = this.connections.filter((v, _i, _a) => {
+            return !this.bridges.find((b) => v.conn.bridge_id === b.id);
+        });
+    }
+
+    openBridgePanel(bridge: {id: string, name: string}, isOwner: boolean=true ) {
         const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
                                                                           maxHeight: '100vh',
                                                                           maxWidth: '100vw',
@@ -350,6 +373,7 @@ export class DashboardComponent {
                                                                           data: {
                                                                               bridgeInfo: bridge,
                                                                               asGroup: this.groupInfo?.id,
+                                                                              isOwner: isOwner,
                                                                           },
                                                                         });
 
@@ -358,6 +382,13 @@ export class DashboardComponent {
                 this.updateBridges();
             }
         });
+    }
+
+    openBridgePanelFromConnection(connection: BridgeConnectionWithIconUrl) {
+        return this.openBridgePanel({
+            id: connection.conn.bridge_id,
+            name: connection.conn.bridge_name,
+        }, false);
     }
 
 

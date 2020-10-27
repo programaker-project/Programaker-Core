@@ -68,14 +68,17 @@ export class UpdateBridgeDialogComponent {
                 public data: {
                     bridgeInfo: { id: string, name: string },
                     asGroup?: string,
+                    isOwner: boolean,
                 }) {
 
         this.options = this.formBuilder.group({
             newTokenName: ['', [Validators.required, Validators.minLength(4)]],
         });
 
-        this.connectionUrl = bridgeService.getConnectionUrl(data.bridgeInfo.id);
-        this.bridgeService.getBridgeTokens(data.bridgeInfo.id, data.asGroup).then(tokens => this.tokens = tokens);
+        if (data.isOwner) {
+            this.connectionUrl = bridgeService.getConnectionUrl(data.bridgeInfo.id);
+            this.bridgeService.getBridgeTokens(data.bridgeInfo.id, data.asGroup).then(tokens => this.tokens = tokens);
+        }
 
         this.sessionService.getSession().then(session => {
             this.session = session;

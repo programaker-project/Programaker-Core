@@ -3,7 +3,7 @@
     <span class="bridge-name">{{ data.bridgeInfo.name }}</span>
 </h2>
 
-<section class="bridge-info expanded-{{ expandedBridgeInfo }}">
+<section *ngIf="data.isOwner" class="bridge-info expanded-{{ expandedBridgeInfo }}">
     <h4>
         <button mat-button mat-raised-button
             class="toggle-fold" (click)="expandedBridgeInfo = !expandedBridgeInfo">
