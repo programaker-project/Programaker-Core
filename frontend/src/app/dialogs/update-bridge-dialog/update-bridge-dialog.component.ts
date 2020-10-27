@@ -13,6 +13,9 @@ import { ConfirmDeleteDialogComponent } from '../confirm-delete-dialog/confirm-d
 import { slidingWindow } from './sliding-window.operator';
 import { Validators, FormBuilder, FormGroup } from '@angular/forms';
 import { MatTooltip } from '@angular/material/tooltip';
+import { MatSlideToggleChange } from '@angular/material/slide-toggle';
+
+const INCOMING_SIGNAL_STREAM_LEN = 100;
 
 @Component({
     selector: 'app-update-bridge-dialog',
@@ -25,7 +28,6 @@ import { MatTooltip } from '@angular/material/tooltip';
 })
 export class UpdateBridgeDialogComponent {
     session: Session;
-    signalStream: Observable<BridgeSignal[]>;
     resources: BridgeResource[];
     adminGroups: UserGroupInfo[];
     groupsById: {[key: string]: UserGroupInfo[]};
@@ -34,9 +36,8 @@ export class UpdateBridgeDialogComponent {
     dirtyShares = false;
     connectionUrl: string;
 
-    expandedConnectionInfo = true;
+    expandedBridgeInfo = true;
     expandedResourceInfo = false;
-    expandedSignalInfo = false;
     expandedTokens = false;
     tokens: (BridgeTokenInfo| FullBridgeTokenInfo)[];
     options: FormGroup;
@@ -47,6 +48,13 @@ export class UpdateBridgeDialogComponent {
     private groupsReady: Promise<void>;
     @ViewChild('applyShareChanges') applyShareChanges: MatButton;
     @ViewChild('resetShareChanges') resetShareChanges: MatButton;
+
+    expandedSignalInfo = false;
+    expandedIncomingSignals = false;
+    expandedHistoricSignals = false;
+    saveSignalsOnServer = false;
+    saveSignals = false;
+    signalStream: Observable<BridgeSignal[]>;
 
     constructor(public dialogRef: MatDialogRef<UpdateBridgeDialogComponent>,
                 private bridgeService: BridgeService,
@@ -94,7 +102,7 @@ export class UpdateBridgeDialogComponent {
             })
 
             this.signalStream = stream.pipe(
-                slidingWindow(10)
+                slidingWindow(INCOMING_SIGNAL_STREAM_LEN),
             );
         });
     }
@@ -284,5 +292,9 @@ export class UpdateBridgeDialogComponent {
 
             this.expandedTokens = true;
         }
+    }
+
+    onChangeAdvancedSettings(event: MatSlideToggleChange) {
+        this.saveSignals = event.checked;
     }
 }

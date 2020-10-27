@@ -345,6 +345,7 @@ export class DashboardComponent {
     openBridgePanel(bridge: {id: string, name: string} ) {
         const dialogRef = this.dialog.open(UpdateBridgeDialogComponent, { width: '90%',
                                                                           maxHeight: '100vh',
+                                                                          maxWidth: '100vw',
                                                                           autoFocus: false,
                                                                           data: {
                                                                               bridgeInfo: bridge,
