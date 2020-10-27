@@ -18,6 +18,7 @@
         , connection_id_to_internal_user_id/2
         , get_user_service_ports/1
         , list_bridge_channels/1
+        , list_bridge_connections/1
         , list_established_connections/1
         , list_established_connections/2
         , get_connection_owner/1
@@ -568,6 +569,25 @@ list_bridge_channels(ServicePortId) ->
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
+
+-spec list_bridge_connections(BridgeId :: binary()) -> {ok, [#user_to_bridge_connection_entry{}]} | {error, not_found}.
+list_bridge_connections(BridgeId) ->
+    MatchHead = #user_to_bridge_connection_entry{ id='_'
+                                                , bridge_id='$1'
+                                                , owner='_'
+                                                , channel_id='_'
+                                                , name='_'
+                                                , creation_time='_'
+                                                , save_signals='_'
+                                                },
+    Guards = [ { '==', '$1', BridgeId } ],
+    ResultColum = '$_',
+    Matcher = [{MatchHead, Guards, [ResultColum]}],
+
+    Transaction = fun() ->
+                          {ok, mnesia:select(?USER_TO_BRIDGE_CONNECTION_TABLE, Matcher)}
+                  end,
+    mnesia:activity(ets, Transaction).
 
 -spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]} | {error, not_found}.
 list_established_connections({OwnerType, OwnerId}) ->

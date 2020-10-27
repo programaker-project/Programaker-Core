@@ -183,23 +183,25 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                } ->
             case ToUser of
                 null ->
-                    %% TODO: save signals on relevant connections
-
-                    %% This looping might be removed if the users also listened
-                    %% on a common bridge channel. For this, the service API
-                    %% should allow returning multiple channels when asked.
-                    {ok, Channels} = ?BACKEND:list_bridge_channels(ServicePortId),
-                    Results = lists:map(fun (Channel) ->
-                                                { Channel
+                    {ok, Connections} = ?BACKEND:list_bridge_connections(ServicePortId),
+                    Results = lists:map(fun (#user_to_bridge_connection_entry{ channel_id=ChannelId
+                                                                             , owner=ConnectionOwner
+                                                                             , save_signals=Save
+                                                                             }) ->
+                                                case Save of
+                                                    true -> ?LOGGING:log_signal_to_bridge_and_owner(Notif, ServicePortId, ConnectionOwner);
+                                                    false -> ok
+                                                end,
+                                                { ChannelId
                                                 , automate_channel_engine:send_to_channel(
-                                                    Channel,
+                                                    ChannelId,
                                                     #{ <<"key">> => Key
                                                      , <<"value">> => Value
                                                      , <<"content">> => Content
                                                      , <<"subkey">> => get_subkey_from_notification(Notif)
                                                      , <<"service_id">> => ServicePortId
                                                      })}
-                                        end, Channels),
+                                        end, Connections),
                     lists:foreach(
                       fun({Channel, Result}) ->
                               case Result of
