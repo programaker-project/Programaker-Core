@@ -49,6 +49,7 @@
         , check_bridge_token/2
         , can_skip_authentication/1
         , set_save_signals_from_bridge/3
+        , check_save_signals_in_connection/1
         ]).
 
 -include("records.hrl").
@@ -783,7 +784,7 @@ create_bridge_token(BridgeId, Owner, TokenName, ExpiresOn) ->
                                                               , last_connection_time=undefined
                                                               }, write),
                         {ok, TokenKey};
-                    [#bridge_token_entry{ token_key=Key }] ->
+                    [#bridge_token_entry{}] ->
                         {error, name_taken}
                 end
 
@@ -870,6 +871,23 @@ set_save_signals_from_bridge(BridgeId, Owner, SaveSignals) ->
                               end, Connections)
         end,
     automate_storage:wrap_transaction(mnesia:transaction(T)).
+
+-spec check_save_signals_in_connection(ConnectionId :: binary()) -> {ok, false} | {ok, true, {binary(), owner_id()}} | {error, not_found}.
+check_save_signals_in_connection(ConnectionId) ->
+    T = fun() ->
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [#user_to_bridge_connection_entry{bridge_id=BridgeId, owner=Owner, save_signals=Save}] ->
+                        case Save of
+                            false ->
+                                {ok, false};
+                            true ->
+                                {ok, true, {BridgeId, Owner}}
+                        end;
+                    [] ->
+                        {error, not_found}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:ets(T)).
 
 %%====================================================================
 %% Internal functions

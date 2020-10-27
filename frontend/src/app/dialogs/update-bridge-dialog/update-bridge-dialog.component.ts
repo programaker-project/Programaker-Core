@@ -60,6 +60,8 @@ export class UpdateBridgeDialogComponent {
     connections: BridgeConnection[];
 
     @ViewChild('updateSaveSignalsButton') updateSaveSignalsButton: MatButton;
+    lazyHistoricSignals = true;
+    signalHistory: any[];
 
     constructor(public dialogRef: MatDialogRef<UpdateBridgeDialogComponent>,
                 private bridgeService: BridgeService,
@@ -321,6 +323,17 @@ export class UpdateBridgeDialogComponent {
 
     onChangeSaveSignals(event: MatSlideToggleChange) {
         this.saveSignals = event.checked;
+    }
+
+    toggleExpandHistoricSignals() {
+        this.expandedHistoricSignals = !this.expandedHistoricSignals;
+        if (this.expandedHistoricSignals) {
+            // Don't load historic signals until it's needed as it might contain a significant amount of data
+            if (this.lazyHistoricSignals) {
+                this.lazyHistoricSignals = false;
+                this.bridgeService.getBridgeHistoric(this.data.bridgeInfo.id, this.data.asGroup).then(history => this.signalHistory = history)
+            }
+        }
     }
 
     async updateSaveSignals() {

@@ -183,6 +183,8 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                } ->
             case ToUser of
                 null ->
+                    %% TODO: save signals on relevant connections
+
                     %% This looping might be removed if the users also listened
                     %% on a common bridge channel. For this, the service API
                     %% should allow returning multiple channels when asked.
@@ -211,6 +213,13 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                 _ ->
                     case ?BACKEND:connection_id_to_internal_user_id(ToUser, ServicePortId) of
                         {ok, ToUserInternalId} ->
+                            case ?BACKEND:check_save_signals_in_connection(ToUser) of
+                                {ok, true, {BridgeId, Owner}} ->
+                                    ?LOGGING:log_signal_to_bridge_and_owner(Notif, BridgeId, Owner);
+                                {ok, false} ->
+                                    ok
+                            end,
+
                             {ok, MonitorId } = ?BACKEND:get_or_create_monitor_id(ToUserInternalId, ServicePortId),
 
                             case automate_channel_engine:send_to_channel(MonitorId,

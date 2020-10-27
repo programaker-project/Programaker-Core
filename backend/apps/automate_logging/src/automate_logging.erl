@@ -7,6 +7,8 @@
 
 %% Application callbacks
 -export([ log_event/2
+        , log_signal_to_bridge_and_owner/3
+        , get_signal_by_bridge_and_owner_history/2
         , log_call_to_bridge/5
         , log_program_error/1
         , log_platform/4
@@ -14,6 +16,7 @@
         , log_api/3
         ]).
 
+-define(DEFAULT_LOG_HISTORY_RETRIEVE, 1000).
 -include("../../automate_storage/src/records.hrl").
 
 %%====================================================================
@@ -57,6 +60,45 @@ log_event(Channel, Message) ->
         {error, not_found} ->
             %% io:fwrite("[DEBUG][logging] No bridge found for ~p~n", [Channel]),
             ok
+    end.
+
+-spec log_signal_to_bridge_and_owner(Signal :: any(), BridgeId :: binary(), Owner :: owner_id()) -> ok.
+log_signal_to_bridge_and_owner(Signal, BridgeId, {OwnerType, OwnerId}) ->
+    Config = get_signal_storage_config(),
+    case Config of
+        #{ type := raw
+         , url := BaseURL
+         } ->
+            Url = lists:flatten(io_lib:format("~s/~s_~p_~s", [BaseURL, BridgeId, OwnerType, OwnerId])),
+            Type = "application/json",
+            Body = jiffy:encode(Signal),
+            Headers = [],
+            HTTPOptions = [],
+            Options = [],
+            {ok, _} = httpc:request(post, {Url, Headers, Type, Body}, HTTPOptions, Options);
+        undefined ->
+            io:fwrite("[Error] Signal logging configuration not set")
+    end.
+
+-spec get_signal_by_bridge_and_owner_history(BridgeId :: binary(), Owner :: owner_id()) -> {ok, iolist()} | {error, _}.
+get_signal_by_bridge_and_owner_history(BridgeId, {OwnerType, OwnerId}) ->
+    Config = get_signal_storage_config(),
+    case Config of
+        #{ type := raw
+         , url := BaseURL
+         } ->
+            Url = lists:flatten(io_lib:format("~s/~s_~p_~s?q=latest&n=~p", [BaseURL, BridgeId, OwnerType, OwnerId, ?DEFAULT_LOG_HISTORY_RETRIEVE])),
+            Headers = [],
+            HTTPOptions = [],
+            Options = [{body_format, binary}],
+            {ok, { {_, StatusCode, _StatusPhrase}, _Headers, Body }
+            } = httpc:request(get, {Url, Headers}, HTTPOptions, Options),
+            2 = StatusCode div 100, %% Expect a 2XX status code.
+            { ok
+            , [<<"[">>, binary:replace(Body, <<"\0">>, <<",">>, [global]), <<"]">>]
+            };
+        undefined ->
+            {error, no_signal_logging}
     end.
 
 
@@ -135,6 +177,14 @@ log_api(Severity, Endpoint, Error) ->
 get_config() ->
     case application:get_env(automate_logging, endpoint) of
         {ok, [Config]} ->
+            Config;
+        undefined ->
+            none
+    end.
+
+get_signal_storage_config() ->
+    case application:get_env(automate_logging, signal_storage_endpoint) of
+        {ok, Config} ->
             Config;
         undefined ->
             none

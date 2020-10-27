@@ -237,7 +237,7 @@
         <div class="expanded-{{ expandedHistoricSignals }}">
             <div class="key">
                 <button mat-button mat-raised-button
-                    class="toggle-fold" (click)="expandedHistoricSignals = !expandedHistoricSignals">
+                    class="toggle-fold" (click)="toggleExpandHistoricSignals()">
 
                     <mat-icon class="fold-open">expand_more</mat-icon>
                     <mat-icon class="fold-close">unfold_less</mat-icon>
@@ -268,6 +268,9 @@
                     </button>
                 </div>
                 <div class="signal-terminal">
+                    <div *ngFor="let signal of signalHistory" class="signal-message">
+                        {{ _stringify(signal, null, 4) }}
+                    </div>
                 </div>
             </div>
         </div>
