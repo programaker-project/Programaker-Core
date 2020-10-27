@@ -109,6 +109,7 @@ start_link() ->
 
                           %% New bridges API
                         , {"/api/v0/bridges/by-id/:bridge_id", automate_rest_api_service_ports_specific, []}
+                        , {"/api/v0/bridges/by-id/:bridge_id/connections", automate_rest_api_service_ports_connections, []}
                         , {"/api/v0/bridges/by-id/:service_port_id/communication"
                           , automate_rest_api_service_ports_specific_communication, []}
                         , {"/api/v0/bridges/by-id/:bridge_id/signals", automate_rest_api_bridge_signal_root, []}

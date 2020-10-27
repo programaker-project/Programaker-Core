@@ -45,6 +45,7 @@
         , delete_bridge_token_by_name/2
         , check_bridge_token/2
         , can_skip_authentication/1
+        , set_save_signals_from_bridge/3
         ]).
 
 -include("records.hrl").
@@ -423,6 +424,10 @@ check_bridge_token(BridgeId, Token) ->
 -spec can_skip_authentication(BridgeId :: binary()) -> {ok, boolean()}.
 can_skip_authentication(BridgeId) ->
     ?BACKEND:can_skip_authentication(BridgeId).
+
+-spec set_save_signals_from_bridge(BridgeId :: binary(), Owner :: owner_id(), SaveSignals :: boolean()) -> ok | {error, _}.
+set_save_signals_from_bridge(BridgeId, Owner, SaveSignals) ->
+    ?BACKEND:set_save_signals_from_bridge(BridgeId, Owner, SaveSignals).
 
 %%====================================================================
 %% Internal functions

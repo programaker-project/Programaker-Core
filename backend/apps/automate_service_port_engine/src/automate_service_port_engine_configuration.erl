@@ -277,6 +277,26 @@ get_versioning(Nodes) ->
                                                     )
                             end
                     }
+                  , #database_version_transformation
+                    %% Set log setting on bridge connections
+                    { id=7
+                    , apply=fun() ->
+
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?USER_TO_BRIDGE_CONNECTION_TABLE,
+                                                     fun({user_to_bridge_connection_entry
+                                                         , Id, BridgeId, Owner, ChannelId, Name, CreationTime
+                                                         }) ->
+                                                             {user_to_bridge_connection_entry
+                                                             , Id, BridgeId, Owner, ChannelId, Name, CreationTime
+                                                             , false
+                                                             }
+                                                     end,
+                                                     [ id, bridge_id, owner, channel_id, name, creation_time, save_signals ],
+                                                     user_to_bridge_connection_entry
+                                                    )
+                            end
+                    }
                   ]
         }.
 

@@ -33,7 +33,7 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    {[<<"DELETE">>, <<"OPTIONS">>], Req, State}.
+    {[<<"DELETE">>, <<"PATCH">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State=#state{bridge_id=BridgeId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),

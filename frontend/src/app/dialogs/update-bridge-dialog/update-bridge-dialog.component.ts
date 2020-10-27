@@ -14,6 +14,8 @@ import { slidingWindow } from './sliding-window.operator';
 import { Validators, FormBuilder, FormGroup } from '@angular/forms';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
+import { ConnectionService } from 'app/connection.service';
+import { BridgeConnection } from 'app/connection';
 
 const INCOMING_SIGNAL_STREAM_LEN = 100;
 
@@ -24,7 +26,7 @@ const INCOMING_SIGNAL_STREAM_LEN = 100;
         'update-bridge-dialog.component.css',
         '../../libs/css/material-icons.css',
     ],
-    providers: [BridgeService, GroupService, SessionService],
+    providers: [BridgeService, ConnectionService, GroupService, SessionService],
 })
 export class UpdateBridgeDialogComponent {
     session: Session;
@@ -55,11 +57,15 @@ export class UpdateBridgeDialogComponent {
     saveSignalsOnServer = false;
     saveSignals = false;
     signalStream: Observable<BridgeSignal[]>;
+    connections: BridgeConnection[];
+
+    @ViewChild('updateSaveSignalsButton') updateSaveSignalsButton: MatButton;
 
     constructor(public dialogRef: MatDialogRef<UpdateBridgeDialogComponent>,
                 private bridgeService: BridgeService,
                 private sessionService: SessionService,
                 private groupService: GroupService,
+                private connectionService: ConnectionService,
                 private dialog: MatDialog,
                 private notification: MatSnackBar,
                 private formBuilder: FormBuilder,
@@ -83,6 +89,7 @@ export class UpdateBridgeDialogComponent {
         this.sessionService.getSession().then(session => {
             this.session = session;
 
+            this.updateConnections();
             this.resetShares();
 
             const stream = this.bridgeService.getBridgeSignals(data.bridgeInfo.id, data.asGroup);
@@ -297,7 +304,35 @@ export class UpdateBridgeDialogComponent {
         }
     }
 
-    onChangeAdvancedSettings(event: MatSlideToggleChange) {
+
+    async updateConnections() {
+        let connectionQuery;
+        if (this.data.asGroup) {
+            connectionQuery = this.connectionService.getConnectionsOnGroup(this.data.asGroup);
+        }
+        else {
+            connectionQuery = this.connectionService.getConnections();
+        }
+
+        this.connections = (await connectionQuery).filter((c, _i, _a) => c.bridge_id === this.data.bridgeInfo.id);
+
+        this.saveSignals = this.saveSignalsOnServer = this.connections.some((c) => c.saving);
+    }
+
+    onChangeSaveSignals(event: MatSlideToggleChange) {
         this.saveSignals = event.checked;
+    }
+
+    async updateSaveSignals() {
+        const buttonClass = this.updateSaveSignalsButton._elementRef.nativeElement.classList;
+        buttonClass.add('started');
+        buttonClass.remove('completed');
+        this.saveSignalsOnServer = this.saveSignals;
+
+        await this.bridgeService.setRecordBridgeConnections(this.data.bridgeInfo.id, this.saveSignalsOnServer, this.data.asGroup);
+
+        buttonClass.remove('started');
+        buttonClass.add('completed');
+        setTimeout(() => buttonClass.remove('completed'), 1000);
     }
 }

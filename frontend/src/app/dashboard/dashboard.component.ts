@@ -351,7 +351,14 @@ export class DashboardComponent {
     }
 
     async updateConnections() {
-        const connections = await this.connectionService.getConnections();
+        let connectionQuery;
+        if (this.groupInfo) {
+            connectionQuery = this.connectionService.getConnectionsOnGroup(this.groupInfo.id);
+        }
+        else {
+            connectionQuery = this.connectionService.getConnections();
+        }
+        const connections = await connectionQuery;
         this.connections = connections.map((v, _i, _a) => {
             const icon_url = iconDataToUrl(v.icon, v.bridge_id);
 

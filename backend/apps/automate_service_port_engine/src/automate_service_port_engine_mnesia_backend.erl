@@ -48,6 +48,7 @@
         , delete_bridge_token_by_name/2
         , check_bridge_token/2
         , can_skip_authentication/1
+        , set_save_signals_from_bridge/3
         ]).
 
 -include("records.hrl").
@@ -149,6 +150,7 @@ establish_connection(BridgeId, Owner, ConnectionId, Name) ->
                                                                           , channel_id=ChannelId
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
+                                                                          , save_signals=false
                                                                           },
                                   ok = mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE, Entry, write),
                                   {ok, ChannelId}
@@ -184,6 +186,7 @@ establish_connection(BridgeId, ConnectionId, Name) ->
                                                                           , channel_id=ChannelId
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
+                                                                          , save_signals=false
                                                                           },
                                   ok = mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE, Entry, write),
                                   {ok, ChannelId}
@@ -456,6 +459,7 @@ get_all_connections({OwnerType, OwnerId}, BridgeId) ->
                                                 , channel_id='_'
                                                 , name='_'
                                                 , creation_time='_'
+                                                , save_signals='_'
                                                 },
     Guards = [ { '==', '$2', BridgeId }
              , { '==', '$3', OwnerType }
@@ -494,6 +498,7 @@ connection_id_to_internal_user_id(ConnectionId, ServicePortId) ->
                                                                       , channel_id='_'
                                                                       , name='_'
                                                                       , creation_time='_'
+                                                                      , save_signals='_'
                                                                       },
                           Guards = [ { '==', '$2', ServicePortId }
                                    , { '==', '$1', ConnectionId }
@@ -571,6 +576,7 @@ list_established_connections({OwnerType, OwnerId}) ->
                                                 , channel_id='_'
                                                 , name='_'
                                                 , creation_time='_'
+                                                , save_signals='_'
                                                 },
     Guards = [ { '==', '$1', OwnerType }
              , { '==', '$2', OwnerId }
@@ -848,6 +854,22 @@ can_skip_authentication(BridgeId) ->
                 end
         end,
     automate_storage:wrap_transaction(mnesia:ets(T)).
+
+-spec set_save_signals_from_bridge(BridgeId :: binary(), Owner :: owner_id(), SaveSignals :: boolean()) -> ok | {error, _}.
+set_save_signals_from_bridge(BridgeId, Owner, SaveSignals) ->
+    T = fun() ->
+                {ok, Connections} = get_all_connections(Owner, BridgeId),
+                lists:foreach(fun(ConnectionId) ->
+                                      case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                                          [Conn=#user_to_bridge_connection_entry{owner=Owner}] ->
+                                              mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE
+                                                          , Conn#user_to_bridge_connection_entry{save_signals=SaveSignals}
+                                                          , write
+                                                          )
+                                      end
+                              end, Connections)
+        end,
+    automate_storage:wrap_transaction(mnesia:transaction(T)).
 
 %%====================================================================
 %% Internal functions

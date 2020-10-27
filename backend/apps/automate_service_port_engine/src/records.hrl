@@ -113,6 +113,7 @@
                                          , channel_id :: binary() | ?MNESIA_SELECTOR
                                          , name :: binary() | undefined | ?MNESIA_SELECTOR
                                          , creation_time :: non_neg_integer() | ?MNESIA_SELECTOR
+                                         , save_signals :: boolean() | ?MNESIA_SELECTOR
                                          }).
 
 -record(user_to_bridge_pending_connection_entry, { id :: binary() | ?MNESIA_SELECTOR

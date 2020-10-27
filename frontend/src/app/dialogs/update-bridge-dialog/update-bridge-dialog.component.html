@@ -251,14 +251,16 @@
                         class="value"
                         color="accent"
                         [checked]=saveSignals
-                        (change)="onChangeAdvancedSettings($event)">
+                        (change)="onChangeSaveSignals($event)">
                         <span>{{ saveSignals ? 'Save signals' : "Don't save" }}</span>
                     </mat-slide-toggle>
 
                     <button mat-button mat-raised-button
+                        #updateSaveSignalsButton
                         class="call-to-action"
                         [disabled]="saveSignals == saveSignalsOnServer"
                         (click)="updateSaveSignals()" >
+                        <span class="load-bg"></span>
                         <div class="annotated-icon">
                             <label>Update</label>
                             <mat-icon>cloud_upload</mat-icon>
