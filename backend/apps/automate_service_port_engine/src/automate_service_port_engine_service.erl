@@ -30,8 +30,7 @@ start_link() ->
 listen_service(Owner, {Key, SubKey}, [ServicePortId]) ->
     case get_connection(Owner, ServicePortId, [{Key, SubKey}]) of
         {ok, ConnectionId} ->
-            {ok, ConnectionOwner} = ?BACKEND:get_connection_owner(ConnectionId),
-            {ok, ChannelId} = ?BACKEND:get_or_create_monitor_id(ConnectionOwner, ServicePortId),
+            {ok, #user_to_bridge_connection_entry{channel_id=ChannelId}} = ?BACKEND:get_connection_by_id(ConnectionId),
             automate_channel_engine:listen_channel(ChannelId, {Key, SubKey});
         {error, not_found} ->
             {error, no_valid_connection}

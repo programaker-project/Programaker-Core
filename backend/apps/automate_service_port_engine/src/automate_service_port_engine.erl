@@ -213,18 +213,16 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                     %% messages had been sent
                     ok;
                 _ ->
-                    case ?BACKEND:connection_id_to_internal_user_id(ToUser, ServicePortId) of
-                        {ok, ToUserInternalId} ->
-                            case ?BACKEND:check_save_signals_in_connection(ToUser) of
-                                {ok, true, {BridgeId, Owner}} ->
-                                    ?LOGGING:log_signal_to_bridge_and_owner(Notif, BridgeId, Owner);
-                                {ok, false} ->
+                    case ?BACKEND:get_connection_by_id(ToUser) of
+                        {ok, #user_to_bridge_connection_entry{channel_id=ChannelId, bridge_id=ServicePortId, save_signals=Save}} ->
+                            case Save of
+                                true ->
+                                    ?LOGGING:log_signal_to_bridge_and_owner(Notif, ServicePortId, Owner);
+                                false ->
                                     ok
                             end,
 
-                            {ok, MonitorId } = ?BACKEND:get_or_create_monitor_id(ToUserInternalId, ServicePortId),
-
-                            case automate_channel_engine:send_to_channel(MonitorId,
+                            case automate_channel_engine:send_to_channel(ChannelId,
                                                                          #{ <<"key">> => Key
                                                                           , <<"value">> => Value
                                                                           , <<"content">> => Content
@@ -237,7 +235,7 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                                     automate_logging:log_platform(
                                       error,
                                       io_lib:format("[~p] Error propagating notification: ~p  (conn: ~p, monitor_id: ~p)~n",
-                                                    [ServicePortId, Reason, ToUser, MonitorId]))
+                                                    [ServicePortId, Reason, ToUser, ChannelId]))
                             end;
                         {error, Reason} ->
                             automate_logging:log_platform(

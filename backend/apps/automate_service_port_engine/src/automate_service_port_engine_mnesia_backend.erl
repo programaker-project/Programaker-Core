@@ -22,6 +22,7 @@
         , list_established_connections/1
         , list_established_connections/2
         , get_connection_owner/1
+        , get_connection_by_id/1
         , get_pending_connection_info/1
 
         , gen_pending_connection/2
@@ -634,6 +635,18 @@ get_connection_owner(ConnectionId) ->
         end,
     automate_storage:wrap_transaction(mnesia:activity(ets, T)).
 
+-spec get_connection_by_id(binary()) -> {ok, #user_to_bridge_connection_entry{}} | {error, not_found}.
+get_connection_by_id(ConnectionId) ->
+    T = fun() ->
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [Connection] ->
+                        {ok, Connection};
+                    [] ->
+                        {error, not_found}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
+
 -spec get_pending_connection_info(binary()) -> {ok, #user_to_bridge_pending_connection_entry{}} | {error, not_found}.
 get_pending_connection_info(ConnectionId) ->
     Transaction = fun() ->
@@ -783,7 +796,7 @@ get_connection_bridge(ConnectionId) ->
 
 -spec create_bridge_token(BridgeId :: binary(), Owner :: owner_id(), TokenName :: binary(), ExpiresOn :: undefined | non_neg_integer())
                          -> {ok, binary()} | {error, name_taken}.
-create_bridge_token(BridgeId, Owner, TokenName, ExpiresOn) ->
+create_bridge_token(BridgeId, _Owner, TokenName, ExpiresOn) ->
     TokenKey = generate_key(),
     CurrentTime = erlang:system_time(second),
 
