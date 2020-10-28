@@ -282,6 +282,10 @@ get_versioning(Nodes) ->
                     { id=7
                     , apply=fun() ->
 
+                                    ok = mnesia:wait_for_tables([ ?USER_TO_BRIDGE_CONNECTION_TABLE
+                                                                , automate_service_port_channel_table
+                                                                ], automate_configuration:get_table_wait_time()),
+
                                     {atomic, ok} = mnesia:transform_table(
                                                      ?USER_TO_BRIDGE_CONNECTION_TABLE,
                                                      fun({user_to_bridge_connection_entry
