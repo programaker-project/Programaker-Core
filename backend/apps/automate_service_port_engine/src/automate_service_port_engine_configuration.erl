@@ -288,13 +288,20 @@ get_versioning(Nodes) ->
 
                                     {atomic, ok} = mnesia:transform_table(
                                                      ?USER_TO_BRIDGE_CONNECTION_TABLE,
-                                                     fun({user_to_bridge_connection_entry
-                                                         , Id, BridgeId, Owner, ChannelId, Name, CreationTime
-                                                         }) ->
-                                                             {user_to_bridge_connection_entry
-                                                             , Id, BridgeId, Owner, ChannelId, Name, CreationTime
-                                                             , false
-                                                             }
+                                                     fun(Entry) ->
+                                                             case Entry of
+                                                                 { user_to_bridge_connection_entry
+                                                                 , Id, BridgeId, Owner, ChannelId, Name, CreationTime
+                                                                 } ->
+                                                                     {user_to_bridge_connection_entry
+                                                                     , Id, BridgeId, Owner, ChannelId, Name, CreationTime
+                                                                     , false
+                                                                     };
+                                                                 { user_to_bridge_connection_entry
+                                                                 , Id, BridgeId, Owner, ChannelId, Name, CreationTime
+                                                                 , SaveSignals} ->
+                                                                     Entry
+                                                             end
                                                      end,
                                                      [ id, bridge_id, owner, channel_id, name, creation_time, save_signals ],
                                                      user_to_bridge_connection_entry
