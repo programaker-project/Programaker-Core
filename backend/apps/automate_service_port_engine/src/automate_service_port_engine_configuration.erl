@@ -32,7 +32,7 @@ get_versioning(Nodes) ->
                                         }
 
                   %% UserId×ServiceId -> ChannelId
-                , #database_version_data{ database_name=?SERVICE_PORT_CHANNEL_TABLE
+                , #database_version_data{ database_name=automate_service_port_channel_table
                                         , records=[ id, channel_id ]
                                         , record_name=service_port_monitor_channel_entry
                                         }
@@ -162,7 +162,7 @@ get_versioning(Nodes) ->
                                                      service_port_entry
                                                     ),
 
-                                    ok = db_update_ids(?SERVICE_PORT_CHANNEL_TABLE,
+                                    ok = db_update_ids(automate_service_port_channel_table,
                                                        fun({ service_port_monitor_channel_entry
                                                            , {UserId, BridgeId}, ChannelId
                                                            }) ->
@@ -294,7 +294,9 @@ get_versioning(Nodes) ->
                                                      end,
                                                      [ id, bridge_id, owner, channel_id, name, creation_time, save_signals ],
                                                      user_to_bridge_connection_entry
-                                                    )
+                                                    ),
+
+                                    {atomic, ok} = mnesia:delete_table(automate_service_port_channel_table)
                             end
                     }
                   ]

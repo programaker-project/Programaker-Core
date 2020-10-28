@@ -109,21 +109,15 @@ send_oauth_return(Qs, ServicePortId) ->
 
 -spec listen_bridge(binary(), owner_id()) -> ok | {error, term()}.
 listen_bridge(BridgeId, Owner) when is_tuple(Owner) ->
-    case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
-        { ok, ChannelId } ->
-            automate_channel_engine:listen_channel(ChannelId);
+    listen_bridge(BridgeId, Owner, {undefined, undefined}).
 
-        {error, Reason} ->
-            {error, Reason}
-    end.
-
--spec listen_bridge(binary(), owner_id(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
+-spec listen_bridge(binary(), owner_id(), {binary()} | {binary() | undefined, binary() | undefined}) -> ok | {error, term()}.
 listen_bridge(BridgeId, Owner, Selector) when is_tuple(Owner) ->
-    case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
-        { ok, ChannelId } ->
-            automate_channel_engine:listen_channel(ChannelId, Selector);
-        {error, Reason} ->
-            {error, Reason}
+    case Selector of
+        {Key} ->
+            automate_service_prot_engine_service:listen_service(Owner, {Key, undefined}, [BridgeId]);
+        {Key, SubKey} ->
+            automate_service_prot_engine_service:listen_service(Owner, {Key, SubKey}, [BridgeId])
     end.
 
 -spec from_service_port(binary(), owner_id(), binary()) -> ok.
@@ -240,7 +234,12 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                         {error, Reason} ->
                             automate_logging:log_platform(
                               error,
-                              io_lib:format("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason]))
+                              io_lib:format("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason]));
+                        {ok, #user_to_bridge_connection_entry{bridge_id=OtherServicePortId}} ->
+                            automate_logging:log_platform(
+                              error,
+                              io_lib:format("[~p] BridgeId ~p sent message to conenction with bridgeId ~p~n",
+                                            [?MODULE, ServicePortId, OtherServicePortId]))
                     end
             end
     end.

@@ -7,8 +7,8 @@
         , get_program_variable/2
         , set_program_variable/3
 
-        , set_last_monitor_value/3
-        , get_last_monitor_value/2
+        , set_last_bridge_value/3
+        , get_last_bridge_value/2
 
         , retrieve_thread_value/2
         , retrieve_thread_values/2
@@ -116,13 +116,13 @@ get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
             {error, not_found}
     end.
 
--spec set_last_monitor_value(#program_thread{}, binary(), any()) -> {ok, #program_thread{}}.
-set_last_monitor_value(Thread, MonitorId, Value) ->
-    set_thread_value(Thread, [?LAST_MONITOR_VALUES, MonitorId], Value).
+-spec set_last_bridge_value(#program_thread{}, binary(), any()) -> {ok, #program_thread{}}.
+set_last_bridge_value(Thread, BridgeId, Value) ->
+    set_thread_value(Thread, [?LAST_BRIDGE_VALUES, BridgeId], Value).
 
--spec get_last_monitor_value(#program_thread{}, binary()) -> {ok, any()} | {error, not_found}.
-get_last_monitor_value(Thread, MonitorId) ->
-    get_thread_value(Thread, [?LAST_MONITOR_VALUES, MonitorId]).
+-spec get_last_bridge_value(#program_thread{}, binary()) -> {ok, any()} | {error, not_found}.
+get_last_bridge_value(Thread, BridgeId) ->
+    get_thread_value(Thread, [?LAST_BRIDGE_VALUES, BridgeId]).
 
 -spec retrieve_instruction_memory(#program_thread{}) -> {ok, any()} | {error, not_found}.
 retrieve_instruction_memory(#program_thread{ instruction_memory=Memory, position=Position }) ->

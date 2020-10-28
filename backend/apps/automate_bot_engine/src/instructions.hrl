@@ -47,7 +47,7 @@
 -define(SERVICE_CALL_VALUES, <<"service_call_values">>).
 -define(SERVICE_ACTION, <<"service_action">>).
 
--define(LAST_MONITOR_VALUES, <<"__last_monitor_values__">>).
+-define(LAST_BRIDGE_VALUES, <<"__last_bridge_values__">>).
 
 %%%% Special data
 -define(LIST_FILL, null).

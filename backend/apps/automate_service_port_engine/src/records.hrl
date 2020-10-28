@@ -85,12 +85,6 @@
                                , icon :: undefined   | supported_icon_type() | ?MNESIA_SELECTOR
                                }).
 
--record(service_port_monitor_channel_entry, { id :: { binary() | ?MNESIA_SELECTOR  %% user id
-                                                    , binary() | ?MNESIA_SELECTOR  %% bridge id
-                                                    } | ?MNESIA_SELECTOR
-                                            , channel_id :: binary() | ?MNESIA_SELECTOR
-                                            }).
-
 -record(bridge_connection_entry, { id :: binary() | ?MNESIA_SELECTOR %% Bridge id
                                  , pid :: pid()   | ?MNESIA_SELECTOR %% Connection pid
                                  , node :: atom() | ?MNESIA_SELECTOR %% node() %% Node where the connection pid lives
