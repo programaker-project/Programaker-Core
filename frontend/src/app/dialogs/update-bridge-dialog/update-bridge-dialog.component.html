@@ -123,7 +123,9 @@
         <button mat-button mat-raised-button
             class="toggle-fold" (click)="expandedResourceInfo = !expandedResourceInfo">
             <mat-icon *ngIf="resources && resources.length > 0" class="fold-open">expand_more</mat-icon>
-            <mat-icon class="fold-close">unfold_less</mat-icon>
+            <mat-icon *ngIf="resources && resources.length > 0" class="fold-close">unfold_less</mat-icon>
+
+            <mat-icon *ngIf="!(resources && resources.length > 0)" matTooltip="No resources found">panorama_fish_eye</mat-icon>
         </button>
 
         <span class="title">Resources</span>
