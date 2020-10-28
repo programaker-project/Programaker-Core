@@ -39,7 +39,7 @@
                                 <div class="card-title">{{program.name}}</div>
                                 <div class="connection-icon-list">
                                     <span *ngFor="let bridgeId of program.bridges_in_use">
-                                        <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ _iconDataToUrl(bridgeInfo[bridgeId].icon,  bridgeId ) }}"
+                                        <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ bridgeInfo[bridgeId].icon }}"
                                             data-toggle="tooltip" title="{{bridgeInfo[bridgeId].name}} bridge"/>
                                         <span class="nametag" *ngIf="bridgeInfo[bridgeId] && (!bridgeInfo[bridgeId].icon) && bridgeInfo[bridgeId].name">
                                             {{ bridgeInfo[bridgeId].name }}
@@ -104,7 +104,7 @@
                                 <div class="card-title">{{program.name}}</div>
                                 <div class="connection-icon-list">
                                     <span *ngFor="let bridgeId of program.bridges_in_use">
-                                        <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ _iconDataToUrl(bridgeInfo[bridgeId].icon,  bridgeId ) }}"
+                                        <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ bridgeInfo[bridgeId].icon }}"
                                             data-toggle="tooltip" title="{{bridgeInfo[bridgeId].name}} bridge"/>
                                         <span class="nametag" *ngIf="bridgeInfo[bridgeId] && (!bridgeInfo[bridgeId].icon) && bridgeInfo[bridgeId].name">
                                             {{ bridgeInfo[bridgeId].name }}
