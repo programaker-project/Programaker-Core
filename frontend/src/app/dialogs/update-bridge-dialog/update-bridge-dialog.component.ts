@@ -13,6 +13,11 @@ import { ConfirmDeleteDialogComponent } from '../confirm-delete-dialog/confirm-d
 import { slidingWindow } from './sliding-window.operator';
 import { Validators, FormBuilder, FormGroup } from '@angular/forms';
 import { MatTooltip } from '@angular/material/tooltip';
+import { MatSlideToggleChange } from '@angular/material/slide-toggle';
+import { ConnectionService } from 'app/connection.service';
+import { BridgeConnection } from 'app/connection';
+
+const INCOMING_SIGNAL_STREAM_LEN = 100;
 
 @Component({
     selector: 'app-update-bridge-dialog',
@@ -21,11 +26,10 @@ import { MatTooltip } from '@angular/material/tooltip';
         'update-bridge-dialog.component.css',
         '../../libs/css/material-icons.css',
     ],
-    providers: [BridgeService, GroupService, SessionService],
+    providers: [BridgeService, ConnectionService, GroupService, SessionService],
 })
 export class UpdateBridgeDialogComponent {
     session: Session;
-    signalStream: Observable<BridgeSignal[]>;
     resources: BridgeResource[];
     adminGroups: UserGroupInfo[];
     groupsById: {[key: string]: UserGroupInfo[]};
@@ -34,9 +38,8 @@ export class UpdateBridgeDialogComponent {
     dirtyShares = false;
     connectionUrl: string;
 
-    expandedConnectionInfo = true;
+    expandedBridgeInfo = true;
     expandedResourceInfo = false;
-    expandedSignalInfo = false;
     expandedTokens = false;
     tokens: (BridgeTokenInfo| FullBridgeTokenInfo)[];
     options: FormGroup;
@@ -48,10 +51,22 @@ export class UpdateBridgeDialogComponent {
     @ViewChild('applyShareChanges') applyShareChanges: MatButton;
     @ViewChild('resetShareChanges') resetShareChanges: MatButton;
 
+    expandedSignalInfo = false;
+    expandedIncomingSignals = false;
+    expandedHistoricSignals = false;
+    signalStream: Observable<BridgeSignal[]>;
+    connections: (BridgeConnection & { savingInServer: boolean })[];
+
+    @ViewChild('updateSaveSignalsButton') updateSaveSignalsButton: MatButton;
+    lazyHistoricSignals = true;
+    signalHistory: any[];
+    dirtySaveLogs: boolean;
+
     constructor(public dialogRef: MatDialogRef<UpdateBridgeDialogComponent>,
                 private bridgeService: BridgeService,
                 private sessionService: SessionService,
                 private groupService: GroupService,
+                private connectionService: ConnectionService,
                 private dialog: MatDialog,
                 private notification: MatSnackBar,
                 private formBuilder: FormBuilder,
@@ -60,18 +75,22 @@ export class UpdateBridgeDialogComponent {
                 public data: {
                     bridgeInfo: { id: string, name: string },
                     asGroup?: string,
+                    isOwner: boolean,
                 }) {
 
         this.options = this.formBuilder.group({
             newTokenName: ['', [Validators.required, Validators.minLength(4)]],
         });
 
-        this.connectionUrl = bridgeService.getConnectionUrl(data.bridgeInfo.id);
-        this.bridgeService.getBridgeTokens(data.bridgeInfo.id, data.asGroup).then(tokens => this.tokens = tokens);
+        if (data.isOwner) {
+            this.connectionUrl = bridgeService.getConnectionUrl(data.bridgeInfo.id);
+            this.bridgeService.getBridgeTokens(data.bridgeInfo.id, data.asGroup).then(tokens => this.tokens = tokens);
+        }
 
         this.sessionService.getSession().then(session => {
             this.session = session;
 
+            this.updateConnections();
             this.resetShares();
 
             const stream = this.bridgeService.getBridgeSignals(data.bridgeInfo.id, data.asGroup);
@@ -94,7 +113,7 @@ export class UpdateBridgeDialogComponent {
             })
 
             this.signalStream = stream.pipe(
-                slidingWindow(10)
+                slidingWindow(INCOMING_SIGNAL_STREAM_LEN),
             );
         });
     }
@@ -284,5 +303,67 @@ export class UpdateBridgeDialogComponent {
 
             this.expandedTokens = true;
         }
+    }
+
+
+    async updateConnections() {
+        let connectionQuery: Promise<BridgeConnection[]>;
+        if (this.data.asGroup) {
+            connectionQuery = this.connectionService.getConnectionsOnGroup(this.data.asGroup);
+        }
+        else {
+            connectionQuery = this.connectionService.getConnections();
+        }
+
+        this.connections = (await connectionQuery)
+                               .filter((c, _i, _a) => c.bridge_id === this.data.bridgeInfo.id)
+                               .map((c, _i, _a) => {
+                                   (c as any).savingInServer = c.saving;
+                                   return c as BridgeConnection & { savingInServer: boolean };
+                               });
+        this.dirtySaveLogs = false;
+    }
+
+    onChangeSaveSignals(connection: BridgeConnection, event: MatSlideToggleChange) {
+        connection.saving = !connection.saving;
+
+        this.dirtySaveLogs = this.connections.some(c => c.saving != c.savingInServer );
+    }
+
+    resetSaveLogs() {
+        this.connections.forEach(c => c.saving = c.savingInServer);
+        this.dirtySaveLogs = false;
+    }
+
+    toggleExpandHistoricSignals() {
+        this.expandedHistoricSignals = !this.expandedHistoricSignals;
+        if (this.expandedHistoricSignals) {
+            // Don't load historic signals until it's needed as it might contain a significant amount of data
+            if (this.lazyHistoricSignals) {
+                this.lazyHistoricSignals = false;
+                this.bridgeService.getBridgeHistoric(this.data.bridgeInfo.id, this.data.asGroup).then(history => this.signalHistory = history)
+            }
+        }
+    }
+
+    async updateSaveSignals() {
+        const buttonClass = this.updateSaveSignalsButton._elementRef.nativeElement.classList;
+        buttonClass.add('started');
+        buttonClass.remove('completed');
+
+        const updates = this.connections.map((conn) => {
+            const query = this.connectionService.setRecordConnectionsSignal(conn.connection_id, conn.saving, this.data.asGroup);
+            return query.then((res) => {
+                conn.savingInServer = conn.saving; // Update saving-in-server status
+                return res;
+            })
+        });
+
+        await Promise.all(updates);
+        this.dirtySaveLogs = false;
+
+        buttonClass.remove('started');
+        buttonClass.add('completed');
+        setTimeout(() => buttonClass.remove('completed'), 1000);
     }
 }

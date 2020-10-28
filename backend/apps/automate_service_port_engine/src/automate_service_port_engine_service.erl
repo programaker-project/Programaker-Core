@@ -30,8 +30,7 @@ start_link() ->
 listen_service(Owner, {Key, SubKey}, [ServicePortId]) ->
     case get_connection(Owner, ServicePortId, [{Key, SubKey}]) of
         {ok, ConnectionId} ->
-            {ok, ConnectionOwner} = ?BACKEND:get_connection_owner(ConnectionId),
-            {ok, ChannelId} = ?BACKEND:get_or_create_monitor_id(ConnectionOwner, ServicePortId),
+            {ok, #user_to_bridge_connection_entry{channel_id=ChannelId}} = ?BACKEND:get_connection_by_id(ConnectionId),
             automate_channel_engine:listen_channel(ChannelId, {Key, SubKey});
         {error, not_found} ->
             {error, no_valid_connection}
@@ -39,9 +38,7 @@ listen_service(Owner, {Key, SubKey}, [ServicePortId]) ->
 
 -spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()}.
 call(FunctionId, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->
-    {ok, MonitorId } = ?BACKEND:get_or_create_monitor_id(Owner, ServicePortId),
-    LastMonitorValue = case automate_bot_engine_variables:get_last_monitor_value(
-                              Thread, MonitorId) of
+    LastMonitorValue = case automate_bot_engine_variables:get_last_bridge_value(Thread, ServicePortId) of
                            {ok, Value} -> Value;
                            {error, not_found} -> null
                        end,
@@ -134,7 +131,7 @@ get_name_from_result(_) ->
 %%====================================================================
 %% Internal
 %%====================================================================
--spec get_connection(Owner :: owner_id(), ServicePortId :: binary(), [{ binary(), binary() | undefined }])
+-spec get_connection(Owner :: owner_id(), ServicePortId :: binary(), [{ binary() | undefined, binary() | undefined }])
                     -> {ok, binary()} | {error, not_found}.
 get_connection(Owner, ServicePortId, Resources) ->
     case automate_service_port_engine:internal_user_id_to_connection_id(Owner, ServicePortId) of

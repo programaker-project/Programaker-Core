@@ -13,6 +13,7 @@
         , program_data_to_json/2
         , collaborator_to_json/1
         , bridge_to_json/1
+        , connection_to_json/1
         ]).
 
 -include("./records.hrl").
@@ -231,3 +232,30 @@ bridge_to_json(#service_port_entry_extra{ id=Id
      , <<"is_connected">> => IsConnected
      , <<"icon">> => serialize_icon(Icon)
      }.
+
+-spec connection_to_json(#user_to_bridge_connection_entry{}) -> false | {true, map()}.
+connection_to_json(#user_to_bridge_connection_entry{ id=Id
+                                                   , bridge_id=BridgeId
+                                                   , owner=_
+                                                   , channel_id=_
+                                                   , name=Name
+                                                   , creation_time=_CreationTime
+                                                   , save_signals=Saving
+                                                   }) ->
+    case automate_service_port_engine:get_bridge_info(BridgeId) of
+        {ok, #service_port_metadata{ name=BridgeName, icon=Icon }} ->
+            {true, #{ <<"connection_id">> => Id
+                    , <<"name">> => serialize_string_or_undefined(Name)
+                    , <<"bridge_id">> => BridgeId
+                    , <<"bridge_name">> => serialize_string_or_undefined(BridgeName)
+                    , <<"icon">> => serialize_icon(Icon)
+                    , <<"saving">> => Saving
+                    } };
+        {error, _Reason} ->
+            false
+    end.
+
+serialize_string_or_undefined(undefined) ->
+    null;
+serialize_string_or_undefined(String) ->
+    String.

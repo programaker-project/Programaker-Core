@@ -8,6 +8,7 @@ export interface BridgeConnection {
     icon: IconReference,
     bridge_id: string,
     bridge_name: string,
+    saving: boolean,
 };
 
 export interface BridgeConnectionWithIconUrl {

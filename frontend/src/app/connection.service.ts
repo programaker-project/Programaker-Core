@@ -43,6 +43,10 @@ export class ConnectionService {
         return `${ApiRoot}/programs/by-id/${programId}/connections/available`;
     }
 
+    private getConnectionUrl(connectionId: string): string {
+        return `${ApiRoot}/connections/by-id/${connectionId}`;
+    }
+
    async getWaitForConnectionUrl(connection_id: string): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId();
 
@@ -90,6 +94,18 @@ export class ConnectionService {
         return (this.http.get(url,
                               { headers: this.sessionService.getAuthHeader() }
                              ).toPromise() as Promise<BridgeConnection[]>);
+    }
+
+    public async setRecordConnectionsSignal(connectionId: string, saveSignals: boolean, asGroup?: string): Promise<void> {
+        let url = this.getConnectionUrl(connectionId);
+        if (asGroup) {
+            url += '?as_group=' + asGroup;
+        }
+
+        const _response = (await this.http.patch(url, { save_signals: saveSignals },
+                                                 { headers: this.sessionService.addJsonContentType(
+                                                     this.sessionService.getAuthHeader())
+                                                 }).toPromise());
     }
 
     async waitForPendingConnectionEstablished(connection_id: string): Promise<boolean> {

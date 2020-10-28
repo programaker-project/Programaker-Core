@@ -3,44 +3,45 @@
     <span class="bridge-name">{{ data.bridgeInfo.name }}</span>
 </h2>
 
-<section class="connection-info expanded-{{ expandedConnectionInfo }}">
+<section *ngIf="data.isOwner" class="bridge-info expanded-{{ expandedBridgeInfo }}">
     <h4>
         <button mat-button mat-raised-button
-            class="toggle-fold" (click)="expandedConnectionInfo = !expandedConnectionInfo">
+            class="toggle-fold" (click)="expandedBridgeInfo = !expandedBridgeInfo">
             <mat-icon class="fold-open">expand_more</mat-icon>
             <mat-icon class="fold-close">unfold_less</mat-icon>
         </button>
 
-        <span class="title">Connection info</span>
+        <span class="title">Bridge Info</span>
     </h4>
 
     <div class="expanded-contents">
         <div class="conn-url">
-            <span class="key">Connection  URL:</span>
+            <span class="key">Connection URL:</span>
             <span class="value">{{ connectionUrl }}</span>
         </div>
 
         <div class="expanded-{{ expandedTokens }}">
-            <button mat-button mat-raised-button
-                class="toggle-fold" (click)="expandedTokens = !expandedTokens"
-                matBadgePosition="before"
-                [matBadge]="tokens && (tokens.length > 0 || null) && tokens.length">
+            <div class="key">
+                <button mat-button mat-raised-button
+                    class="toggle-fold" (click)="expandedTokens = !expandedTokens"
+                    matBadgePosition="before"
+                    [matBadge]="tokens && (tokens.length > 0 || null) && tokens.length">
 
-                <mat-icon *ngIf="tokens && tokens.length > 0" class="fold-open">expand_more</mat-icon>
-                <mat-icon *ngIf="tokens && tokens.length > 0" class="fold-close">unfold_less</mat-icon>
+                    <mat-icon *ngIf="tokens && tokens.length > 0" class="fold-open">expand_more</mat-icon>
+                    <mat-icon *ngIf="tokens && tokens.length > 0" class="fold-close">unfold_less</mat-icon>
 
-                <mat-icon *ngIf="(!tokens) || (tokens.length == 0)" matTooltip="No token yet" >remove</mat-icon>
-            </button>
+                    <mat-icon *ngIf="(!tokens) || (tokens.length == 0)" matTooltip="No token yet" >remove</mat-icon>
+                </button>
 
-            <span class="key">
                 Connection tokens
-            </span>
-            <button mat-button mat-raised-button
-                class="create-token call-to-action soft"
-                [disabled]="editableToken"
-                (click)="createNewToken()" >
-                <mat-icon>add</mat-icon>
-            </button>
+
+                <button mat-button mat-raised-button
+                    class="create-token call-to-action soft"
+                    [disabled]="editableToken"
+                    (click)="createNewToken()" >
+                    <mat-icon>add</mat-icon>
+                </button>
+            </div>
 
             <div class="value token-list">
                 <div *ngIf="editableToken" class="editable-token token-creation-cell" [formGroup]="options">
@@ -135,24 +136,28 @@
             <ul class="resource-options">
                 <li *ngFor="let entry of resource.values"
                     class="expanded-{{ (!!expandedResources[resource.name]) && (!!expandedResources[resource.name][entry.id]) }}">
-                    <button mat-button mat-raised-button class="toggle-fold" (click)="toggleFold(resource, entry)"
-                        matBadgePosition="before"
-                        [matBadge]="(!!entry.shared_with && entry.shared_with.length) || null">
-                        <mat-icon *ngIf="entry.shared_with && entry.shared_with.length > 0" class="fold-open">expand_more</mat-icon>
-                        <mat-icon *ngIf="entry.shared_with && entry.shared_with.length > 0"  class="fold-close">unfold_less</mat-icon>
+                    <div class="key">
+                        <button mat-button mat-raised-button class="toggle-fold" (click)="toggleFold(resource, entry)"
+                            matBadgePosition="before"
+                            [matBadge]="(!!entry.shared_with && entry.shared_with.length) || null">
+                            <mat-icon *ngIf="entry.shared_with && entry.shared_with.length > 0" class="fold-open">expand_more</mat-icon>
+                            <mat-icon *ngIf="entry.shared_with && entry.shared_with.length > 0"  class="fold-close">unfold_less</mat-icon>
 
-                        <mat-icon *ngIf="(!entry.shared_with) || (entry.shared_with == 0)" matTooltip="Nothing shared yet" >remove</mat-icon>
-                    </button>
+                            <mat-icon *ngIf="(!entry.shared_with) || (entry.shared_with == 0)" matTooltip="Nothing shared yet" >remove</mat-icon>
+                        </button>
 
-                    <span class="entry-name">{{ entry.name }}</span>
+                        <span class="entry-name">{{ entry.name }}</span>
 
-                    <button mat-button mat-raised-button class="share-button"
-                        (click)="addShare(resource, entry)" >
-                        <div class="annotated-icon">
-                            <label>Share</label>
-                            <mat-icon>share</mat-icon>
-                        </div>
-                    </button>
+                        <button mat-button mat-raised-button class="share-button call-to-action soft"
+                            (click)="addShare(resource, entry)"
+                            matTooltip="Share"
+                        >
+                            <div class="annotated-icon">
+                                <label>Share</label>
+                                <mat-icon>share</mat-icon>
+                            </div>
+                        </button>
+                    </div>
 
                     <ul class="expanded-contents" *ngIf="entry.shared_with && groupsById">
                         <li *ngFor="let share of entry.shared_with;let shareIndex=index;">
@@ -181,18 +186,20 @@
                 You've prepared some changes for the resource sharing.
             </span>
 
-            <button #resetShareChanges mat-button mat-raised-button  class="reset-share-button reset-button" (click)="resetShares()">
-                <mat-icon>clear</mat-icon>
-                Cancel
-            </button>
+            <div class="control-buttons">
+                <button #resetShareChanges mat-button mat-raised-button  class="reset-share-button reset-button" (click)="resetShares()">
+                    <mat-icon>clear</mat-icon>
+                    Cancel
+                </button>
 
-            <button #applyShareChanges mat-button mat-raised-button  class="save-share-button confirm-button"
-                (click)="applyShares()">
-                <mat-icon>save</mat-icon>
-                Apply changes
+                <button #applyShareChanges mat-button mat-raised-button  class="save-share-button confirm-button"
+                    (click)="applyShares()">
+                    <mat-icon>save</mat-icon>
+                    Apply changes
 
-                <span class="load-bg"></span>
-            </button>
+                    <span class="load-bg"></span>
+                </button>
+            </div>
         </div>
 
     </div>
@@ -208,9 +215,82 @@
     </h4>
 
     <div class="expanded-contents">
-        <div class="signal-terminal">
-            <div *ngFor="let signal of signalStream | async" class="signal-message">
-                {{ _stringify(signal, null, 4) }}
+        <div class="expanded-{{ expandedIncomingSignals }}">
+            <div class="key">
+                <button mat-button mat-raised-button
+                    class="toggle-fold" (click)="expandedIncomingSignals = !expandedIncomingSignals">
+
+                    <mat-icon class="fold-open">expand_more</mat-icon>
+                    <mat-icon class="fold-close">unfold_less</mat-icon>
+                </button>
+
+                Incoming Signals
+            </div>
+
+            <div class="expanded-contents">
+                <div class="signal-terminal">
+                    <div *ngFor="let signal of signalStream | async" class="signal-message">
+                        {{ _stringify(signal, null, 4) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="expanded-{{ expandedHistoricSignals }}">
+            <div class="key">
+                <button mat-button mat-raised-button
+                    class="toggle-fold" (click)="toggleExpandHistoricSignals()">
+
+                    <mat-icon class="fold-open">expand_more</mat-icon>
+                    <mat-icon class="fold-close">unfold_less</mat-icon>
+                </button>
+                Signal history
+            </div>
+
+            <div class="expanded-contents">
+                <div class="connection-config" *ngFor="let conn of connections">
+                    <div class="save-signals-controls">
+                        <mat-slide-toggle
+                            class="value"
+                            color="accent"
+                            [checked]=conn.saving
+                            (change)="onChangeSaveSignals(conn, $event)">
+                            <span class="connection-log-status">{{ conn.saving ? 'Log data' : "Don't log" }}</span>
+                        </mat-slide-toggle>
+
+                        <span class="connection-name" matTooltip="{{ conn.name }}">
+                            <span class="content">
+                                {{ conn.name }}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                <div *ngIf="dirtySaveLogs"  class="confirm-cancel-logs">
+                    <span class="explanation">
+                        You've prepared some changes for the signal logging.
+                    </span>
+
+                    <div class="control-buttons">
+                        <button mat-button mat-raised-button  class="reset-button reset-button" (click)="resetSaveLogs()">
+                            <mat-icon>clear</mat-icon>
+                            Cancel
+                        </button>
+
+                        <button #updateSaveSignalsButton mat-button mat-raised-button  class="save-button confirm-button"
+                            (click)="updateSaveSignals()">
+                            <mat-icon>save</mat-icon>
+                            Apply changes
+                            <span class="load-bg"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="signal-terminal">
+                    <div *ngFor="let signal of signalHistory" class="signal-message">
+                        {{ _stringify(signal, null, 4) }}
+                    </div>
+                </div>
             </div>
         </div>
     </div>

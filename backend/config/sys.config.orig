@@ -27,15 +27,23 @@
                     %% , { password_reset_verification_sender, <<"PrograMaker Team<contact@programaker.com>">> }
                     %% , { platform_name, <<"PrograMaker">> }
                     ] }
-%% If you uncomment this you can add elastic search logs and exclude some channels.
-%%,  { automate_logging, [ { endpoint, [ #{ "type" => elasticsearch
-%%                                        , "url" => "@INSERT HERE YOUR ES SERVER URL"
-%%                                        , "index_prefix" => "programaker"
-%%                                        , "exclude_bridges" => [ <<"0093325b-373f-4f1c-bace-4532cce79df4">> %% Time
-%%                                                               ]
-%%										  , "user" => "USER"
-%%										  , "password" => "PASSWORD"
-%%                                        }
-%%                                     ] }
-%%					   ]}
+
+%%                          %% Uncomment to allow the users to save the bridge signals
+%% ,  { automate_logging, [ { signal_storage_endpoint, #{ type => raw
+%%                                                      , url => <<"http://localhost:5000">> %% Your server URL
+%%                                                      }
+%%                          }
+%%                          %% ↓ Deprecated, is preferrable to allow the users to configure which bridges are to be recorded
+%%                          %% Uncomment this to send everything (except excluded bridges) to an ElasticSearch server.
+%%                        , { endpoint, [ #{ "type" => elasticsearch
+%%                                         , "url" => "@INSERT HERE YOUR ES SERVER URL"
+%%                                         , "index_prefix" => "programaker"
+%%                                         , "exclude_bridges" => [ <<"0093325b-373f-4f1c-bace-4532cce79df4">> %% Time
+%%                                                                ]
+%%                                         , "user" => "USER"
+%%                                         , "password" => "PASSWORD"
+%%                                         }
+%%                                      ]
+%%                          }
+%%                        ]}
 ].

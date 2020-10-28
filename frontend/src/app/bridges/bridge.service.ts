@@ -32,6 +32,10 @@ export class BridgeService {
         return `${API.ApiRoot}/bridges/by-id/${bridgeId}`;
     }
 
+    private getBridgeHistoricUrl(bridgeId: string): string {
+        return `${API.ApiRoot}/bridges/by-id/${bridgeId}/signals/history`;
+    }
+
     private getBridgeSignalsUrl(bridgeId: string): string {
         const url = `${API.ApiRoot}/bridges/by-id/${bridgeId}/signals`;
         return toWebsocketUrl(url);
@@ -173,6 +177,18 @@ export class BridgeService {
                           }).toPromise());
 
         return response as FullBridgeTokenInfo;
+    }
+
+    public async getBridgeHistoric(bridgeId: string, asGroup?: string): Promise<any[]> {
+        let url = this.getBridgeHistoricUrl(bridgeId);
+        if (asGroup) {
+            url += '?as_group=' + asGroup;
+        }
+
+        const response = (await this.http.get(url,{ headers: this.sessionService.getAuthHeader()}
+                                              ).toPromise());
+
+        return response['data'];
     }
 
     public async revokeToken(bridgeId: string, tokenName: string, asGroup?: string): Promise<void> {

@@ -18,9 +18,11 @@
         , connection_id_to_internal_user_id/2
         , get_user_service_ports/1
         , list_bridge_channels/1
+        , list_bridge_connections/1
         , list_established_connections/1
         , list_established_connections/2
         , get_connection_owner/1
+        , get_connection_by_id/1
         , get_pending_connection_info/1
 
         , gen_pending_connection/2
@@ -34,7 +36,6 @@
         , get_all_bridge_info/1
         , delete_bridge/2
 
-        , get_or_create_monitor_id/2
         , uninstall/0
         , get_channel_origin_bridge/1
 
@@ -48,6 +49,8 @@
         , delete_bridge_token_by_name/2
         , check_bridge_token/2
         , can_skip_authentication/1
+        , set_save_signals_on_connection/3
+        , check_save_signals_in_connection/1
         ]).
 
 -include("records.hrl").
@@ -83,7 +86,6 @@ start_link() ->
 uninstall() ->
     {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_TABLE),
     {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_CONFIGURATION_TABLE),
-    {atomic, ok} = mnesia:delete_table(?SERVICE_PORT_CHANNEL_TABLE),
     ok.
 
 -spec create_service_port(owner_id(), binary()) -> {ok, binary()} | {error, _, string()}.
@@ -149,6 +151,7 @@ establish_connection(BridgeId, Owner, ConnectionId, Name) ->
                                                                           , channel_id=ChannelId
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
+                                                                          , save_signals=false
                                                                           },
                                   ok = mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE, Entry, write),
                                   {ok, ChannelId}
@@ -184,6 +187,7 @@ establish_connection(BridgeId, ConnectionId, Name) ->
                                                                           , channel_id=ChannelId
                                                                           , name=Name
                                                                           , creation_time=CurrentTime
+                                                                          , save_signals=false
                                                                           },
                                   ok = mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE, Entry, write),
                                   {ok, ChannelId}
@@ -456,6 +460,7 @@ get_all_connections({OwnerType, OwnerId}, BridgeId) ->
                                                 , channel_id='_'
                                                 , name='_'
                                                 , creation_time='_'
+                                                , save_signals='_'
                                                 },
     Guards = [ { '==', '$2', BridgeId }
              , { '==', '$3', OwnerType }
@@ -494,6 +499,7 @@ connection_id_to_internal_user_id(ConnectionId, ServicePortId) ->
                                                                       , channel_id='_'
                                                                       , name='_'
                                                                       , creation_time='_'
+                                                                      , save_signals='_'
                                                                       },
                           Guards = [ { '==', '$2', ServicePortId }
                                    , { '==', '$1', ConnectionId }
@@ -545,23 +551,42 @@ get_user_service_ports({OwnerType, OwnerName}) ->
     end.
 
 -spec list_bridge_channels(binary()) -> {ok, [binary()]}.
-list_bridge_channels(ServicePortId) ->
-    Transaction = fun() ->
-                          MatchHead = #service_port_monitor_channel_entry{ id={'_', '$1'}
-                                                                         , channel_id='$2'
-                                                                         },
-                          Guard = {'==', '$1', ServicePortId},
-                          ResultColumn = '$2',
-                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+list_bridge_channels(BridgeId) ->
+    MatchHead = #user_to_bridge_connection_entry{ id='_'
+                                                , bridge_id='$1'
+                                                , owner='_'
+                                                , channel_id='$2'
+                                                , name='_'
+                                                , creation_time='_'
+                                                , save_signals='_'
+                                                },
+    Guards = [ { '==', '$1', BridgeId } ],
+    ResultColum = '$2',
+    Matcher = [{MatchHead, Guards, [ResultColum]}],
 
-                          {ok, mnesia:select(?SERVICE_PORT_CHANNEL_TABLE, Matcher)}
+    Transaction = fun() ->
+                          {ok, mnesia:select(?USER_TO_BRIDGE_CONNECTION_TABLE, Matcher)}
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            Result;
-        {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
-    end.
+    mnesia:activity(ets, Transaction).
+
+-spec list_bridge_connections(BridgeId :: binary()) -> {ok, [#user_to_bridge_connection_entry{}]} | {error, not_found}.
+list_bridge_connections(BridgeId) ->
+    MatchHead = #user_to_bridge_connection_entry{ id='_'
+                                                , bridge_id='$1'
+                                                , owner='_'
+                                                , channel_id='_'
+                                                , name='_'
+                                                , creation_time='_'
+                                                , save_signals='_'
+                                                },
+    Guards = [ { '==', '$1', BridgeId } ],
+    ResultColum = '$_',
+    Matcher = [{MatchHead, Guards, [ResultColum]}],
+
+    Transaction = fun() ->
+                          {ok, mnesia:select(?USER_TO_BRIDGE_CONNECTION_TABLE, Matcher)}
+                  end,
+    mnesia:activity(ets, Transaction).
 
 -spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]} | {error, not_found}.
 list_established_connections({OwnerType, OwnerId}) ->
@@ -571,6 +596,7 @@ list_established_connections({OwnerType, OwnerId}) ->
                                                 , channel_id='_'
                                                 , name='_'
                                                 , creation_time='_'
+                                                , save_signals='_'
                                                 },
     Guards = [ { '==', '$1', OwnerType }
              , { '==', '$2', OwnerId }
@@ -601,6 +627,18 @@ get_connection_owner(ConnectionId) ->
                 case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
                     [#user_to_bridge_connection_entry{owner=Owner}] ->
                         {ok, Owner};
+                    [] ->
+                        {error, not_found}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:activity(ets, T)).
+
+-spec get_connection_by_id(binary()) -> {ok, #user_to_bridge_connection_entry{}} | {error, not_found}.
+get_connection_by_id(ConnectionId) ->
+    T = fun() ->
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [Connection] ->
+                        {ok, Connection};
                     [] ->
                         {error, not_found}
                 end
@@ -645,57 +683,24 @@ delete_bridge(Accessor, BridgeId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec get_or_create_monitor_id(owner_id(), binary()) -> {ok, binary()} | {error, term()}.
-get_or_create_monitor_id(Owner, ServicePortId) ->
-    Id = {Owner, ServicePortId},
-    case mnesia:dirty_read(?SERVICE_PORT_CHANNEL_TABLE, Id) of
-        [#service_port_monitor_channel_entry{channel_id=ChannelId}] ->
-            {ok, ChannelId};
-        [] ->
-            {ok, ChannelId} = automate_channel_engine:create_channel(),
-            Transaction = fun() ->
-                                  ok = mnesia:write(?SERVICE_PORT_CHANNEL_TABLE,
-                                                    #service_port_monitor_channel_entry{ id=Id
-                                                                                       , channel_id=ChannelId},
-                                                    write),
-
-                                  ChannelMonitors = mnesia:read(?SERVICE_PORT_CHANNEL_MONITORS_TABLE, ServicePortId),
-                                  {ok, ChannelId, ChannelMonitors}
-                          end,
-            case mnesia:transaction(Transaction) of
-                {atomic, {ok, ChannelId, ChannelMonitors}} ->
-                    lists:foreach(fun(#channel_monitor_table_entry{pid=Pid}) ->
-                                          Pid ! {automate_service_port_engine, new_channel, {ServicePortId, ChannelId} }
-                                  end,
-                                  ChannelMonitors),
-                    {ok, ChannelId};
-                {atomic, Result} ->
-                    Result;
-                {aborted, Reason} ->
-                    {error, Reason}
-            end
-    end.
-
 -spec get_channel_origin_bridge(binary()) -> {ok, binary()} | {error, not_found}.
 get_channel_origin_bridge(ChannelId) ->
-    Transaction = fun() ->
-                          MatchHead = #service_port_monitor_channel_entry{ id='$1'
-                                                                         , channel_id='$2'
-                                                                         },
-                          Guard = {'==', '$2', ChannelId},
-                          ResultColumn = '$1',
-                          Matcher = [{MatchHead, [Guard], [ResultColumn]}],
+    MatchHead = #user_to_bridge_connection_entry{ id='_'
+                                                , bridge_id='$2'
+                                                , owner='_'
+                                                , channel_id='$1'
+                                                , name='_'
+                                                , creation_time='_'
+                                                , save_signals='_'
+                                                },
+    Guards = [ { '==', '$1', ChannelId } ],
+    ResultColum = '$2',
+    Matcher = [{MatchHead, Guards, [ResultColum]}],
 
-                          mnesia:select(?SERVICE_PORT_CHANNEL_TABLE, Matcher)
+    Transaction = fun() ->
+                          {ok, mnesia:select(?USER_TO_BRIDGE_CONNECTION_TABLE, Matcher)}
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, []} ->
-            {error, not_found};
-        {atomic, [{_UserId, BridgeId}]} ->
-            {ok, BridgeId};
-        {aborted, Reason} ->
-            {error, mnesia:error_description(Reason)}
-    end.
+    mnesia:activity(ets, Transaction).
 
 -spec set_shared_resource(ConnectionId :: binary(), ResourceName :: binary(), Shares :: map()) -> ok.
 set_shared_resource(ConnectionId, ResourceName, Shares) ->
@@ -756,7 +761,7 @@ get_connection_bridge(ConnectionId) ->
 
 -spec create_bridge_token(BridgeId :: binary(), Owner :: owner_id(), TokenName :: binary(), ExpiresOn :: undefined | non_neg_integer())
                          -> {ok, binary()} | {error, name_taken}.
-create_bridge_token(BridgeId, Owner, TokenName, ExpiresOn) ->
+create_bridge_token(BridgeId, _Owner, TokenName, ExpiresOn) ->
     TokenKey = generate_key(),
     CurrentTime = erlang:system_time(second),
 
@@ -777,7 +782,7 @@ create_bridge_token(BridgeId, Owner, TokenName, ExpiresOn) ->
                                                               , last_connection_time=undefined
                                                               }, write),
                         {ok, TokenKey};
-                    [#bridge_token_entry{ token_key=Key }] ->
+                    [#bridge_token_entry{}] ->
                         {error, name_taken}
                 end
 
@@ -845,6 +850,36 @@ can_skip_authentication(BridgeId) ->
                     [] -> {ok, false};
                     [#service_port_entry{old_skip_authentication=CanSkip}] ->
                         {ok, CanSkip}
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:ets(T)).
+
+-spec set_save_signals_on_connection(ConnectionId :: binary(), Owner :: owner_id(), SaveSignals :: boolean()) -> ok | {error, _}.
+set_save_signals_on_connection(ConnectionId, Owner, SaveSignals) ->
+    T = fun() ->
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [Conn=#user_to_bridge_connection_entry{owner=Owner}] ->
+                        mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE
+                                    , Conn#user_to_bridge_connection_entry{save_signals=SaveSignals}
+                                    , write
+                                    )
+                end
+        end,
+    automate_storage:wrap_transaction(mnesia:transaction(T)).
+
+-spec check_save_signals_in_connection(ConnectionId :: binary()) -> {ok, false} | {ok, true, {binary(), owner_id()}} | {error, not_found}.
+check_save_signals_in_connection(ConnectionId) ->
+    T = fun() ->
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [#user_to_bridge_connection_entry{bridge_id=BridgeId, owner=Owner, save_signals=Save}] ->
+                        case Save of
+                            false ->
+                                {ok, false};
+                            true ->
+                                {ok, true, {BridgeId, Owner}}
+                        end;
+                    [] ->
+                        {error, not_found}
                 end
         end,
     automate_storage:wrap_transaction(mnesia:ets(T)).

@@ -450,6 +450,14 @@ section.bridges .row .item-holder {
     vertical-align: bottom;
 }
 
+section.bridges .bridge-connections-subsection {
+    border-top: 1px solid #aaa;
+}
+
+section.bridges .bridge-connections-subsection h4 {
+    margin: 1ex;
+}
+
 mat-card.bridge {
     display: block;
     vertical-align: bottom;

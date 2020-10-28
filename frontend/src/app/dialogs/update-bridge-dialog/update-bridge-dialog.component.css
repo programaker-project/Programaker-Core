@@ -101,7 +101,7 @@ span.value {
     text-decoration: underline dotted;
 }
 
-.expanded-true > button.toggle-fold .fold-open  {
+.expanded-true > .key button.toggle-fold .fold-open  {
     display: none;
 }
 
@@ -109,7 +109,7 @@ span.value {
     display: none;
 }
 
-.expanded-false > button.toggle-fold .fold-close {
+.expanded-false > .key button.toggle-fold .fold-close {
     display: none;
 }
 
@@ -153,26 +153,25 @@ span.value {
     display: none;
 }
 
+
+.key {
+    margin-bottom: 0.5rem;
+}
+
 .expanded-contents {
     padding-left: 1ex;
     border-left: 1px solid rgba(0,0,0,0.3);
     margin-left: 1em;
+    margin-bottom: 0.5rem;
 }
 
 section {
     margin-top: 1ex;
 }
 
-section.signals .expanded-contents {
-    padding: 0;
-    margin: 0;
-    border: none;
-}
-
 .resource-name {
-    font-size: 120%;
-    font-weight: bold;
-    text-transform: capitalize;
+    font-size: 150%;
+    text-transform: capitalized;
 }
 
 ul.resource-options {
@@ -183,7 +182,7 @@ ul.resource-options {
     margin-top: 1ex;
 }
 
-.confirm-cancel-shares {
+.confirm-cancel-shares, .confirm-cancel-logs {
     padding: 1ex;
     background-color: #eff;
     border-radius: 4px;
@@ -191,8 +190,11 @@ ul.resource-options {
     margin-bottom: 1em;
 }
 
-.save-share-button {
-    margin: 1ex;
+.confirm-cancel-shares button, .confirm-cancel-logs button {
+    margin: 0.5ex;
+}
+
+.save-share-button, .save-button {
     background-color: #009688;
     color: white;
     font-weight: bold;
@@ -226,19 +228,31 @@ button.remove-share mat-icon {
     margin-left: 1ex;
 }
 
+.annotated-icon {
+    display: grid;
+}
+
 .annotated-icon mat-icon {
-    vertical-align: inherit;
+    grid-row: 1;
+    grid-column: 1;
+    text-align: center;
+    width: 100%;
 }
 
 .annotated-icon label {
+    grid-row: 2;
+    grid-column: 1;
     font-size: small;
-    margin: 0 0.5ex 0 0.5ex;
-    pointer-events: none;
+    line-height: initial;
+    margin: 0;
+    width: 100%;
+    text-align: center;
 }
 
 section.resources li .share-button {
     margin: 0 1ex 0 1ex;
-    padding: 0.5ex
+    padding: 0.5ex;
+    min-width: 5ex;
 }
 
 .signal-terminal {
@@ -263,4 +277,32 @@ section.resources li .share-button {
     font-style: italic;
     display: inline-block;
     padding: 1ex;
+}
+
+.save-signals-controls {
+    margin-bottom: 0.5rem;
+}
+
+.connection-name {
+    width: calc(100% - 11ex - 1ex);
+    display: inline-block;
+}
+
+.connection-name .content {
+    font-size: small;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    vertical-align: sub;
+}
+
+.save-signals-controls > mat-slide-toggle {
+    margin-right: 1ex;
+    width: 11ex;
+}
+
+.connection-log-status {
+    font-size: small;
+    font-weight: bold;
 }

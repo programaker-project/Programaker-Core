@@ -45,6 +45,7 @@
         , delete_bridge_token_by_name/2
         , check_bridge_token/2
         , can_skip_authentication/1
+        , set_save_signals_on_connection/3
         ]).
 
 -include("records.hrl").
@@ -108,21 +109,15 @@ send_oauth_return(Qs, ServicePortId) ->
 
 -spec listen_bridge(binary(), owner_id()) -> ok | {error, term()}.
 listen_bridge(BridgeId, Owner) when is_tuple(Owner) ->
-    case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
-        { ok, ChannelId } ->
-            automate_channel_engine:listen_channel(ChannelId);
+    listen_bridge(BridgeId, Owner, {undefined, undefined}).
 
-        {error, Reason} ->
-            {error, Reason}
-    end.
-
--spec listen_bridge(binary(), owner_id(), {binary()} | {binary(), binary()}) -> ok | {error, term()}.
+-spec listen_bridge(binary(), owner_id(), {binary()} | {binary() | undefined, binary() | undefined}) -> ok | {error, term()}.
 listen_bridge(BridgeId, Owner, Selector) when is_tuple(Owner) ->
-    case ?BACKEND:get_or_create_monitor_id(Owner, BridgeId) of
-        { ok, ChannelId } ->
-            automate_channel_engine:listen_channel(ChannelId, Selector);
-        {error, Reason} ->
-            {error, Reason}
+    case Selector of
+        {Key} ->
+            automate_service_prot_engine_service:listen_service(Owner, {Key, undefined}, [BridgeId]);
+        {Key, SubKey} ->
+            automate_service_prot_engine_service:listen_service(Owner, {Key, SubKey}, [BridgeId])
     end.
 
 -spec from_service_port(binary(), owner_id(), binary()) -> ok.
@@ -182,21 +177,25 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                } ->
             case ToUser of
                 null ->
-                    %% This looping might be removed if the users also listened
-                    %% on a common bridge channel. For this, the service API
-                    %% should allow returning multiple channels when asked.
-                    {ok, Channels} = ?BACKEND:list_bridge_channels(ServicePortId),
-                    Results = lists:map(fun (Channel) ->
-                                                { Channel
+                    {ok, Connections} = ?BACKEND:list_bridge_connections(ServicePortId),
+                    Results = lists:map(fun (#user_to_bridge_connection_entry{ channel_id=ChannelId
+                                                                             , owner=ConnectionOwner
+                                                                             , save_signals=Save
+                                                                             }) ->
+                                                case Save of
+                                                    true -> ?LOGGING:log_signal_to_bridge_and_owner(Notif, ServicePortId, ConnectionOwner);
+                                                    false -> ok
+                                                end,
+                                                { ChannelId
                                                 , automate_channel_engine:send_to_channel(
-                                                    Channel,
+                                                    ChannelId,
                                                     #{ <<"key">> => Key
                                                      , <<"value">> => Value
                                                      , <<"content">> => Content
                                                      , <<"subkey">> => get_subkey_from_notification(Notif)
                                                      , <<"service_id">> => ServicePortId
                                                      })}
-                                        end, Channels),
+                                        end, Connections),
                     lists:foreach(
                       fun({Channel, Result}) ->
                               case Result of
@@ -208,11 +207,16 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                     %% messages had been sent
                     ok;
                 _ ->
-                    case ?BACKEND:connection_id_to_internal_user_id(ToUser, ServicePortId) of
-                        {ok, ToUserInternalId} ->
-                            {ok, MonitorId } = ?BACKEND:get_or_create_monitor_id(ToUserInternalId, ServicePortId),
+                    case ?BACKEND:get_connection_by_id(ToUser) of
+                        {ok, #user_to_bridge_connection_entry{channel_id=ChannelId, bridge_id=ServicePortId, save_signals=Save}} ->
+                            case Save of
+                                true ->
+                                    ?LOGGING:log_signal_to_bridge_and_owner(Notif, ServicePortId, Owner);
+                                false ->
+                                    ok
+                            end,
 
-                            case automate_channel_engine:send_to_channel(MonitorId,
+                            case automate_channel_engine:send_to_channel(ChannelId,
                                                                          #{ <<"key">> => Key
                                                                           , <<"value">> => Value
                                                                           , <<"content">> => Content
@@ -225,12 +229,17 @@ from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
                                     automate_logging:log_platform(
                                       error,
                                       io_lib:format("[~p] Error propagating notification: ~p  (conn: ~p, monitor_id: ~p)~n",
-                                                    [ServicePortId, Reason, ToUser, MonitorId]))
+                                                    [ServicePortId, Reason, ToUser, ChannelId]))
                             end;
                         {error, Reason} ->
                             automate_logging:log_platform(
                               error,
-                              io_lib:format("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason]))
+                              io_lib:format("[~p] Error propagating notification (to ~p): ~p~n", [ServicePortId, ToUser, Reason]));
+                        {ok, #user_to_bridge_connection_entry{bridge_id=OtherServicePortId}} ->
+                            automate_logging:log_platform(
+                              error,
+                              io_lib:format("[~p] BridgeId ~p sent message to conenction with bridgeId ~p~n",
+                                            [?MODULE, ServicePortId, OtherServicePortId]))
                     end
             end
     end.
@@ -423,6 +432,10 @@ check_bridge_token(BridgeId, Token) ->
 -spec can_skip_authentication(BridgeId :: binary()) -> {ok, boolean()}.
 can_skip_authentication(BridgeId) ->
     ?BACKEND:can_skip_authentication(BridgeId).
+
+-spec set_save_signals_on_connection(ConnectionId :: binary(), Owner :: owner_id(), SaveSignals :: boolean()) -> ok | {error, _}.
+set_save_signals_on_connection(ConnectionId, Owner, SaveSignals) ->
+    ?BACKEND:set_save_signals_on_connection(ConnectionId, Owner, SaveSignals).
 
 %%====================================================================
 %% Internal functions
