@@ -1,8 +1,8 @@
 %%% @doc
-%%% REST endpoint to manage bridge.
+%%% REST endpoint to manage a specific connection.
 %%% @end
 
--module(automate_rest_api_service_ports_connections).
+-module(automate_rest_api_connection_by_id).
 -export([init/2]).
 -export([ allowed_methods/2
         , options/2
@@ -18,20 +18,16 @@
 -include("../../automate_service_port_engine/src/records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(state, { bridge_id :: binary()
-               , group_id :: binary() | undefined
+-record(state, { connection_id :: binary()
                , owner :: owner_id() | undefined
                }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
-    BridgeId = cowboy_req:binding(bridge_id, Req),
-    Qs = cowboy_req:parse_qs(Req),
-    GroupId = proplists:get_value(<<"group_id">>, Qs),
+    ConnectionId = cowboy_req:binding(connection_id, Req),
     Req1 = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Req1
-    , #state{ bridge_id=BridgeId
-            , group_id=GroupId
+    , #state{ connection_id=ConnectionId
             , owner=undefined
             }}.
 
@@ -44,7 +40,7 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"PATCH">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State=#state{ group_id=GroupId }) ->
+is_authorized(Req, State=#state{connection_id=ConnectionId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -57,22 +53,20 @@ is_authorized(Req, State=#state{ group_id=GroupId }) ->
                 X ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            case GroupId of
-                                undefined ->
+                            {ok, Owner} = automate_service_port_engine:get_connection_owner(ConnectionId),
+                            case automate_storage:can_user_edit_as({user, UserId}, Owner) of
+                                true ->
                                     { true, Req1, State#state{ owner={user, UserId} } };
-                                GId when is_binary(GId) ->
-                                    case automate_storage:is_allowed_to_write_in_group({user, UserId}, GroupId) of
-                                        true ->
-                                            { true, Req1, State#state{ owner={group, GroupId} } };
-                                        false ->
-                                            { { false, <<"Unauthorized">>}, Req1, State }
-                                        end
-                            end;
+                                false ->
+                                    { { false, <<"Unauthorized">>}, Req1, State }
+                                end;
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
             end
     end.
+
+
 
 %% Route by Method
 content_types_accepted(Req, State) ->
@@ -86,12 +80,12 @@ accept_json(Req, State) ->
     end.
 
 %% PATCH handler
-accept_json_patch(Req, State=#state{bridge_id=BridgeId, owner=Owner}) ->
+accept_json_patch(Req, State=#state{connection_id=ConnectionId, owner=Owner}) ->
     {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = jiffy:decode(Body, [return_maps]),
     case Parsed of
         #{ <<"save_signals">> := SaveSignals } ->
-            case automate_service_port_engine:set_save_signals_from_bridge(BridgeId, Owner, SaveSignals) of
+            case automate_service_port_engine:set_save_signals_on_connection(ConnectionId, Owner, SaveSignals) of
                 ok ->
                     Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
                     { true, Req2, State };

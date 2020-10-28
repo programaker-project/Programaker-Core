@@ -54,14 +54,13 @@ export class UpdateBridgeDialogComponent {
     expandedSignalInfo = false;
     expandedIncomingSignals = false;
     expandedHistoricSignals = false;
-    saveSignalsOnServer = false;
-    saveSignals = false;
     signalStream: Observable<BridgeSignal[]>;
-    connections: BridgeConnection[];
+    connections: (BridgeConnection & { savingInServer: boolean })[];
 
     @ViewChild('updateSaveSignalsButton') updateSaveSignalsButton: MatButton;
     lazyHistoricSignals = true;
     signalHistory: any[];
+    dirtySaveLogs: boolean;
 
     constructor(public dialogRef: MatDialogRef<UpdateBridgeDialogComponent>,
                 private bridgeService: BridgeService,
@@ -308,7 +307,7 @@ export class UpdateBridgeDialogComponent {
 
 
     async updateConnections() {
-        let connectionQuery;
+        let connectionQuery: Promise<BridgeConnection[]>;
         if (this.data.asGroup) {
             connectionQuery = this.connectionService.getConnectionsOnGroup(this.data.asGroup);
         }
@@ -316,13 +315,24 @@ export class UpdateBridgeDialogComponent {
             connectionQuery = this.connectionService.getConnections();
         }
 
-        this.connections = (await connectionQuery).filter((c, _i, _a) => c.bridge_id === this.data.bridgeInfo.id);
-
-        this.saveSignals = this.saveSignalsOnServer = this.connections.some((c) => c.saving);
+        this.connections = (await connectionQuery)
+                               .filter((c, _i, _a) => c.bridge_id === this.data.bridgeInfo.id)
+                               .map((c, _i, _a) => {
+                                   (c as any).savingInServer = c.saving;
+                                   return c as BridgeConnection & { savingInServer: boolean };
+                               });
+        this.dirtySaveLogs = false;
     }
 
-    onChangeSaveSignals(event: MatSlideToggleChange) {
-        this.saveSignals = event.checked;
+    onChangeSaveSignals(connection: BridgeConnection, event: MatSlideToggleChange) {
+        connection.saving = !connection.saving;
+
+        this.dirtySaveLogs = this.connections.some(c => c.saving != c.savingInServer );
+    }
+
+    resetSaveLogs() {
+        this.connections.forEach(c => c.saving = c.savingInServer);
+        this.dirtySaveLogs = false;
     }
 
     toggleExpandHistoricSignals() {
@@ -340,9 +350,17 @@ export class UpdateBridgeDialogComponent {
         const buttonClass = this.updateSaveSignalsButton._elementRef.nativeElement.classList;
         buttonClass.add('started');
         buttonClass.remove('completed');
-        this.saveSignalsOnServer = this.saveSignals;
 
-        await this.bridgeService.setRecordBridgeConnections(this.data.bridgeInfo.id, this.saveSignalsOnServer, this.data.asGroup);
+        const updates = this.connections.map((conn) => {
+            const query = this.connectionService.setRecordConnectionsSignal(conn.connection_id, conn.saving, this.data.asGroup);
+            return query.then((res) => {
+                conn.savingInServer = conn.saving; // Update saving-in-server status
+                return res;
+            })
+        });
+
+        await Promise.all(updates);
+        this.dirtySaveLogs = false;
 
         buttonClass.remove('started');
         buttonClass.add('completed');

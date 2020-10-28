@@ -49,7 +49,7 @@
         , delete_bridge_token_by_name/2
         , check_bridge_token/2
         , can_skip_authentication/1
-        , set_save_signals_from_bridge/3
+        , set_save_signals_on_connection/3
         , check_save_signals_in_connection/1
         ]).
 
@@ -854,19 +854,16 @@ can_skip_authentication(BridgeId) ->
         end,
     automate_storage:wrap_transaction(mnesia:ets(T)).
 
--spec set_save_signals_from_bridge(BridgeId :: binary(), Owner :: owner_id(), SaveSignals :: boolean()) -> ok | {error, _}.
-set_save_signals_from_bridge(BridgeId, Owner, SaveSignals) ->
+-spec set_save_signals_on_connection(ConnectionId :: binary(), Owner :: owner_id(), SaveSignals :: boolean()) -> ok | {error, _}.
+set_save_signals_on_connection(ConnectionId, Owner, SaveSignals) ->
     T = fun() ->
-                {ok, Connections} = get_all_connections(Owner, BridgeId),
-                lists:foreach(fun(ConnectionId) ->
-                                      case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
-                                          [Conn=#user_to_bridge_connection_entry{owner=Owner}] ->
-                                              mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE
-                                                          , Conn#user_to_bridge_connection_entry{save_signals=SaveSignals}
-                                                          , write
-                                                          )
-                                      end
-                              end, Connections)
+                case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
+                    [Conn=#user_to_bridge_connection_entry{owner=Owner}] ->
+                        mnesia:write(?USER_TO_BRIDGE_CONNECTION_TABLE
+                                    , Conn#user_to_bridge_connection_entry{save_signals=SaveSignals}
+                                    , write
+                                    )
+                end
         end,
     automate_storage:wrap_transaction(mnesia:transaction(T)).
 

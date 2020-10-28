@@ -186,18 +186,20 @@
                 You've prepared some changes for the resource sharing.
             </span>
 
-            <button #resetShareChanges mat-button mat-raised-button  class="reset-share-button reset-button" (click)="resetShares()">
-                <mat-icon>clear</mat-icon>
-                Cancel
-            </button>
+            <div class="control-buttons">
+                <button #resetShareChanges mat-button mat-raised-button  class="reset-share-button reset-button" (click)="resetShares()">
+                    <mat-icon>clear</mat-icon>
+                    Cancel
+                </button>
 
-            <button #applyShareChanges mat-button mat-raised-button  class="save-share-button confirm-button"
-                (click)="applyShares()">
-                <mat-icon>save</mat-icon>
-                Apply changes
+                <button #applyShareChanges mat-button mat-raised-button  class="save-share-button confirm-button"
+                    (click)="applyShares()">
+                    <mat-icon>save</mat-icon>
+                    Apply changes
 
-                <span class="load-bg"></span>
-            </button>
+                    <span class="load-bg"></span>
+                </button>
+            </div>
         </div>
 
     </div>
@@ -242,31 +244,48 @@
                     <mat-icon class="fold-open">expand_more</mat-icon>
                     <mat-icon class="fold-close">unfold_less</mat-icon>
                 </button>
-
                 Signal history
             </div>
-            <div class="expanded-contents">
-                <div class="save-signals-controls">
-                    <mat-slide-toggle
-                        class="value"
-                        color="accent"
-                        [checked]=saveSignals
-                        (change)="onChangeSaveSignals($event)">
-                        <span>{{ saveSignals ? 'Save signals' : "Don't save" }}</span>
-                    </mat-slide-toggle>
 
-                    <button mat-button mat-raised-button
-                        #updateSaveSignalsButton
-                        class="call-to-action"
-                        [disabled]="saveSignals == saveSignalsOnServer"
-                        (click)="updateSaveSignals()" >
-                        <span class="load-bg"></span>
-                        <div class="annotated-icon">
-                            <label>Update</label>
-                            <mat-icon>cloud_upload</mat-icon>
-                        </div>
-                    </button>
+            <div class="expanded-contents">
+                <div class="connection-config" *ngFor="let conn of connections">
+                    <div class="save-signals-controls">
+                        <mat-slide-toggle
+                            class="value"
+                            color="accent"
+                            [checked]=conn.saving
+                            (change)="onChangeSaveSignals(conn, $event)">
+                            <span class="connection-log-status">{{ conn.saving ? 'Log data' : "Don't log" }}</span>
+                        </mat-slide-toggle>
+
+                        <span class="connection-name" matTooltip="{{ conn.name }}">
+                            <span class="content">
+                                {{ conn.name }}
+                            </span>
+                        </span>
+                    </div>
                 </div>
+
+                <div *ngIf="dirtySaveLogs"  class="confirm-cancel-logs">
+                    <span class="explanation">
+                        You've prepared some changes for the signal logging.
+                    </span>
+
+                    <div class="control-buttons">
+                        <button mat-button mat-raised-button  class="reset-button reset-button" (click)="resetSaveLogs()">
+                            <mat-icon>clear</mat-icon>
+                            Cancel
+                        </button>
+
+                        <button #updateSaveSignalsButton mat-button mat-raised-button  class="save-button confirm-button"
+                            (click)="updateSaveSignals()">
+                            <mat-icon>save</mat-icon>
+                            Apply changes
+                            <span class="load-bg"></span>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="signal-terminal">
                     <div *ngFor="let signal of signalHistory" class="signal-message">
                         {{ _stringify(signal, null, 4) }}

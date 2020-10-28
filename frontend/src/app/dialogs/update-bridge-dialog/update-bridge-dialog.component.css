@@ -169,6 +169,11 @@ section {
     margin-top: 1ex;
 }
 
+.resource-name {
+    font-size: 150%;
+    text-transform: capitalized;
+}
+
 ul.resource-options {
     padding-left: 0;
 }
@@ -177,7 +182,7 @@ ul.resource-options {
     margin-top: 1ex;
 }
 
-.confirm-cancel-shares {
+.confirm-cancel-shares, .confirm-cancel-logs {
     padding: 1ex;
     background-color: #eff;
     border-radius: 4px;
@@ -185,8 +190,11 @@ ul.resource-options {
     margin-bottom: 1em;
 }
 
-.save-share-button {
-    margin: 1ex;
+.confirm-cancel-shares button, .confirm-cancel-logs button {
+    margin: 0.5ex;
+}
+
+.save-share-button, .save-button {
     background-color: #009688;
     color: white;
     font-weight: bold;
@@ -275,6 +283,26 @@ section.resources li .share-button {
     margin-bottom: 0.5rem;
 }
 
+.connection-name {
+    width: calc(100% - 11ex - 1ex);
+    display: inline-block;
+}
+
+.connection-name .content {
+    font-size: small;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    vertical-align: sub;
+}
+
 .save-signals-controls > mat-slide-toggle {
-    width: 16ex; /* Fix with to avoid moving the update button around. */
+    margin-right: 1ex;
+    width: 11ex;
+}
+
+.connection-log-status {
+    font-size: small;
+    font-weight: bold;
 }

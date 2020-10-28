@@ -32,10 +32,6 @@ export class BridgeService {
         return `${API.ApiRoot}/bridges/by-id/${bridgeId}`;
     }
 
-    private getBridgeConnectionsUrl(bridgeId: string): string {
-        return `${API.ApiRoot}/bridges/by-id/${bridgeId}/connections`;
-    }
-
     private getBridgeHistoricUrl(bridgeId: string): string {
         return `${API.ApiRoot}/bridges/by-id/${bridgeId}/signals/history`;
     }
@@ -181,18 +177,6 @@ export class BridgeService {
                           }).toPromise());
 
         return response as FullBridgeTokenInfo;
-    }
-
-    public async setRecordBridgeConnections(bridgeId: string, saveSignals: boolean, asGroup?: string): Promise<void> {
-        let url = this.getBridgeConnectionsUrl(bridgeId);
-        if (asGroup) {
-            url += '?as_group=' + asGroup;
-        }
-
-        const _response = (await this.http.patch(url, { save_signals: saveSignals },
-                                                 { headers: this.sessionService.addJsonContentType(
-                                                     this.sessionService.getAuthHeader())
-                                                 }).toPromise());
     }
 
     public async getBridgeHistoric(bridgeId: string, asGroup?: string): Promise<any[]> {
