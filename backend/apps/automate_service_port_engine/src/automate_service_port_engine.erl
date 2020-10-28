@@ -115,9 +115,9 @@ listen_bridge(BridgeId, Owner) when is_tuple(Owner) ->
 listen_bridge(BridgeId, Owner, Selector) when is_tuple(Owner) ->
     case Selector of
         {Key} ->
-            automate_service_prot_engine_service:listen_service(Owner, {Key, undefined}, [BridgeId]);
+            automate_service_port_engine_service:listen_service(Owner, {Key, undefined}, [BridgeId]);
         {Key, SubKey} ->
-            automate_service_prot_engine_service:listen_service(Owner, {Key, SubKey}, [BridgeId])
+            automate_service_port_engine_service:listen_service(Owner, {Key, SubKey}, [BridgeId])
     end.
 
 -spec from_service_port(binary(), owner_id(), binary()) -> ok.
