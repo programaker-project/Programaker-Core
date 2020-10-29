@@ -71,11 +71,15 @@ log_signal_to_bridge_and_owner(Signal, BridgeId, {OwnerType, OwnerId}) ->
          } ->
             Url = lists:flatten(io_lib:format("~s/~s_~p_~s", [BaseURL, BridgeId, OwnerType, OwnerId])),
             Type = "application/json",
-            Body = jiffy:encode(Signal),
+            Body = list_to_binary([jiffy:encode(Signal)]),
             Headers = [],
             HTTPOptions = [],
             Options = [],
-            {ok, _} = httpc:request(post, {Url, Headers, Type, Body}, HTTPOptions, Options);
+            case httpc:request(post, {Url, Headers, Type, Body}, HTTPOptions, Options) of
+                {ok, _} -> ok;
+                {error, Reason} ->
+                    log_platform(error, list_to_binary(io_lib:format("Error logging signal: ~p", [Reason])))
+            end;
         undefined ->
             io:fwrite("[Error] Signal logging configuration not set")
     end.
