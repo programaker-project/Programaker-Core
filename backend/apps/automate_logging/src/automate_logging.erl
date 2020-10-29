@@ -153,26 +153,26 @@ log_program_error(LogEntry=#user_program_log_entry{ severity=Severity, program_i
 
 -spec log_platform(log_severity(), _, _, _) -> ok.
 log_platform(warning, ErrorNS, Error, _StackTrace) ->
-    io:fwrite("[~p] ~p:~p~n", [warning, ErrorNS, Error]);
+    io:fwrite("~s [~p] ~p:~p~n", [get_time_string(), warning, ErrorNS, Error]);
 log_platform(debug, _ErrorNS, _Error, _StackTrace) ->
     ok; %% Ignored for now
 
 log_platform(Severity, ErrorNS, Error, StackTrace) ->
-    io:fwrite("[~p] ~p:~p || ~p~n", [Severity, ErrorNS, Error, StackTrace]).
+    io:fwrite("~s [~p] ~p:~p || ~p~n", [get_time_string(), Severity, ErrorNS, Error, StackTrace]).
 
 -spec log_platform(atom(), _) -> ok.
 log_platform(Severity, Msg) when is_list(Msg) ->
-    io:fwrite("[~p] ~s~n", [Severity, binary:list_to_bin(lists:flatten(Msg))]);
+    io:fwrite("~s [~p] ~s~n", [get_time_string(), Severity, binary:list_to_bin(lists:flatten(Msg))]);
 log_platform(Severity, Msg) ->
-    io:fwrite("[~p] ~p~n", [Severity, Msg]).
+    io:fwrite("~s [~p] ~p~n", [get_time_string(), Severity, Msg]).
 
 -spec log_api(log_severity(), _, _) -> ok.
 log_api(debug, _, _) ->
     ok; %% Ignored for now
 log_api(Severity, Endpoint, Error) when is_binary(Error) ->
-    io:fwrite("[~p@~p] ~s~n", [Severity, Endpoint, Error]);
+    io:fwrite("~s [~p@~p] ~s~n", [get_time_string(), Severity, Endpoint, Error]);
 log_api(Severity, Endpoint, Error) ->
-    io:fwrite("[~p@~p] ~p~n", [Severity, Endpoint, Error]).
+    io:fwrite("~s [~p@~p] ~p~n", [get_time_string(), Severity, Endpoint, Error]).
 
 
 %%====================================================================
@@ -196,3 +196,7 @@ get_signal_storage_config() ->
 
 get_timestamp() ->
     erlang:system_time(millisecond).
+
+get_time_string() ->
+    {{Year,Month,Day},{Hour,Min,Sec}} = erlang:localtime(),
+    io_lib:format("~4..0B/~2..0B/~2..0B ~2..0B:~2..0B:~2..0B", [Year, Month, Day, Hour, Min, Sec]).
