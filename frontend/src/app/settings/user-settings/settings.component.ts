@@ -1,7 +1,7 @@
 import * as progbar from 'app/ui/progbar';
 
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 import { ProgramService } from 'app/program.service';
 
@@ -44,25 +44,28 @@ export class SettingsComponent {
     constructor(
         public sessionService: SessionService,
         public router: Router,
+        private route: ActivatedRoute,
         public dialog: MatDialog,
     ) {
     }
 
     // tslint:disable-next-line:use-life-cycle-interface
     ngOnInit(): void {
-        this.sessionService.getSession()
-            .then(session => {
-                this.session = session;
-                if (!session.active) {
+        this.route.data
+            .subscribe({
+                next: (data: { session: Session }) => {
+                    this.session = data.session;
+                    if (!data.session.active) {
+                        this.router.navigate(['/login'], {replaceUrl:true});
+                    }
+                    else {
+                        this.is_advanced = this.session.tags.is_advanced;
+                    }
+                },
+                error: err => {
+                    console.log('Error getting session', err);
                     this.router.navigate(['/login'], {replaceUrl:true});
                 }
-                else {
-                    this.is_advanced = this.session.tags.is_advanced;
-                }
-            })
-            .catch(e => {
-                console.log('Error getting session', e);
-                this.router.navigate(['/login'], {replaceUrl:true});
             });
     }
 

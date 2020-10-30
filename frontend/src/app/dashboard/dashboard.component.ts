@@ -82,17 +82,19 @@ export class DashboardComponent {
         private dialog: MatDialog,
         private bridgeService: BridgeService,
     ) {
+        this.route.data
+            .subscribe((data: { programs: ProgramMetadata[] }) => {
+                this.programs = data.programs;
+            });
     }
 
     ngOnInit(): void {
         this.sessionService.getSession()
             .then(async (session) => {
                 this.session = session;
-
                 if (!session.active) {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 } else {
-
                     const params = this.route.params['value'];
                     if (params.group_name !== undefined) {
                         // Group Dashboard
@@ -124,7 +126,6 @@ export class DashboardComponent {
 
                     }
 
-                    this.updatePrograms();
                     this.bridgesQuery = this.updateBridges();
                     this.updateConnections();
                 }
@@ -211,29 +212,6 @@ export class DashboardComponent {
             }
             programCreation.then(program => this.openProgram(program));
         }
-    }
-
-    async updatePrograms() {
-        let programListing: Promise<ProgramMetadata[]>;
-        if (this.groupInfo) {
-            programListing = this.programService.getProgramsOnGroup(this.groupInfo.id);
-        }
-        else {
-            programListing = this.programService.getPrograms();
-        }
-
-        const programs = await programListing;
-        programs.sort((a, b) => {
-            if (a.name < b.name) {
-                return -1;
-            }
-            if (a.name > b.name) {
-                return 1;
-            }
-            return 0;
-        });
-        this.programs = programs;
-        this.programSettingsOpened = {};
     }
 
     addBridge(): void {

@@ -60,34 +60,19 @@ export class GroupSettingsComponent {
         public dialog: MatDialog,
         private groupService: GroupService,
     ) {
-    }
-
-    // tslint:disable-next-line:use-life-cycle-interface
-    ngOnInit(): void {
-        this.sessionService.getSession()
-            .then(session => {
-                this.session = session;
-                if (!session.active) {
+        this.route.data
+            .subscribe((data: { groupInfo: { info: GroupInfo, collaborators: Collaborator[]  }, session: Session }) => {
+                this.session = data.session;
+                if (!data.session.active) {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 }
                 else {
                     this.is_advanced = this.session.tags.is_advanced;
-                    const params = this.route.params['value'];
-                    const groupName = params['group_name'];
-                    this.groupService.getGroupWithName(groupName).then((groupInfo) => {
-                        this.groupInfo = groupInfo;
-                        this.setToPublicGroup = this.groupInfo.public;
-                    }).then(() => {
-                        this.groupService.getCollaboratorsOnGroup(this.groupInfo.id).then(collaborators => {
-                            this.collaborators = collaborators
-                        });
+                    this.groupInfo = data.groupInfo.info;
+                    this.setToPublicGroup = this.groupInfo.public;
 
-                    });
+                    this.collaborators = data.groupInfo.collaborators;
                 }
-            })
-            .catch(e => {
-                console.log('Error getting session', e);
-                this.router.navigate(['/login'], {replaceUrl:true});
             });
     }
 

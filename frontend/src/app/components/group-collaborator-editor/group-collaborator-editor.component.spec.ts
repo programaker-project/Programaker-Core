@@ -1,8 +1,10 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
-import { GroupCollaboratorEditorComponent } from './group-collaborator-editor.component';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { RouterTestingModule } from '@angular/router/testing';
+import { CookiesService } from '@ngx-utils/cookies';
+import { BrowserCookiesModule, BrowserCookiesService } from '@ngx-utils/cookies/browser';
+import { GroupCollaboratorEditorComponent } from './group-collaborator-editor.component';
 
 
 describe('GroupCollaboratorEditorComponent', () => {
@@ -12,12 +14,19 @@ describe('GroupCollaboratorEditorComponent', () => {
     beforeEach(async(() => {
         TestBed.configureTestingModule({
             imports: [
+                BrowserCookiesModule.forRoot(),
                 RouterTestingModule,
                 HttpClientTestingModule,
                 MatAutocompleteModule,
             ],
             declarations: [
                 GroupCollaboratorEditorComponent
+            ],
+            providers: [
+                {
+                    provide: CookiesService,
+                    useClass: BrowserCookiesService,
+                },
             ],
         }).compileComponents();
     }));

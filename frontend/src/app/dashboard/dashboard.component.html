@@ -207,10 +207,15 @@
                 <div class="profile-name">{{ profile.name }}</div>
 
                 <div class="edit-configuration">
-                    <a routerLink="/settings" class="settings-link" role="button"
+                    <a *ngIf="groupInfo" routerLink="/groups/{{ groupInfo.canonical_name }}/settings" class="settings-link" role="button"
                         matRipple>
                         <mat-icon>settings</mat-icon>
-                        Edit configuration
+                        Edit group configuration
+                    </a>
+                    <a *ngIf="!groupInfo" routerLink="/settings" class="settings-link" role="button"
+                        matRipple>
+                        <mat-icon>settings</mat-icon>
+                        Edit profile
                     </a>
                 </div>
 

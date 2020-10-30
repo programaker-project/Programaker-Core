@@ -1,26 +1,32 @@
 import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-
-import { ServicesComponent } from './services.component';
-
+import { RouterModule, Routes, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
-import { SettingsComponent } from './settings/user-settings/settings.component';
-import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
-
-import { ProgramDetailComponent } from './program-detail.component';
 import { FlowEditorComponent } from './flow-editor/flow-editor.component';
-
+import { GroupService } from './group.service';
+import { AboutPageComponent } from './info-pages/about-page.component';
+import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { LoginFormComponent } from './login-form/login-form.component';
-import { ResetPasswordStartComponent } from './login-form/reset-password-start.component';
-import { ResetPasswordUpdatePasswordComponent } from './login-form/reset-password-update-password.component';
 import { RegisterFormComponent } from './login-form/register-form.component';
 import { WaitForMailVerificationComponent } from './login-form/register-wait-for-mail-verification.component';
+import { ResetPasswordStartComponent } from './login-form/reset-password-start.component';
+import { ResetPasswordUpdatePasswordComponent } from './login-form/reset-password-update-password.component';
 import { VerifyCodeComponent } from './login-form/verify-code.component';
-
-import { HomeRedirectComponent } from './info-pages/home-redirect.component';
-import { AboutPageComponent } from './info-pages/about-page.component';
 import { NewGroupComponent } from './new/group/new-group.component';
+import { ProgramDetailComponent } from './program-detail.component';
+import { ProgramService } from './program.service';
+import { ProgramListResolver } from './resolvers/program-list.resolver';
+import { SessionResolver } from './resolvers/session.resolver';
+import { ServicesComponent } from './services.component';
+import { SessionService } from './session.service';
+import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
 import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
+import { SettingsComponent } from './settings/user-settings/settings.component';
+import { Session } from './session';
+import { GroupInfoWithCollaboratorsResolver } from './resolvers/group-info-with-collaborators.resolver';
+import { AdminService } from './admin.service';
+import { AdminStatsResolver } from './resolvers/admin-stats.resolver';
+import { AdminUserListResolver } from './resolvers/admin-user-list.resolver';
+
 
 const routes: Routes = [
     { path: '', component: HomeRedirectComponent, pathMatch: 'full' },
@@ -34,34 +40,44 @@ const routes: Routes = [
     { path: 'register/verify/:verification_code', component: VerifyCodeComponent },
 
     // General
-    { path: 'dashboard', component: DashboardComponent },
-    { path: 'groups/:group_name', component: DashboardComponent },
-    { path: 'groups/:group_name/settings', component: GroupSettingsComponent },
+    { path: 'dashboard', component: DashboardComponent, resolve: { programs: ProgramListResolver } },
+    { path: 'groups/:group_name', component: DashboardComponent, resolve: { programs: ProgramListResolver } },
+    { path: 'groups/:group_name/settings', component: GroupSettingsComponent, resolve: { groupInfo: GroupInfoWithCollaboratorsResolver, session: SessionResolver } },
 
     // Programs
     { path: 'users/:user_id/programs/:program_id', component: ProgramDetailComponent },
     { path: 'programs/:program_id/flow', component: FlowEditorComponent },
     { path: 'programs/:program_id/scratch', component: ProgramDetailComponent },
 
-    // Services
-    { path: 'services', component: ServicesComponent },
-
     // Bridges
     { path: 'bridges', redirectTo: '/dashboard#bridges' },
 
     // Settings
-    { path: 'settings', component: SettingsComponent },
-    { path: 'settings/admin', component: AdminSettingsComponent },
+    { path: 'settings', component: SettingsComponent, resolve: { session: SessionResolver } },
+    { path: 'settings/admin', component: AdminSettingsComponent, resolve: { session: SessionResolver,
+                                                                            adminStats: AdminStatsResolver, userList: AdminUserListResolver } },
 
     // Element creation
     { path: 'new/group', component: NewGroupComponent },
 
     // If no matching route found, go back to dashboard
-    { path: '**', component: DashboardComponent },
+    { path: '**', component: DashboardComponent, resolve: { programs: ProgramListResolver } },
 ];
 
 @NgModule({
-    imports: [ RouterModule.forRoot(routes) ],
-    exports: [ RouterModule ]
+    imports: [ RouterModule.forRoot(routes, { initialNavigation: 'enabled' }) ],
+    exports: [ RouterModule ],
+    providers: [
+        ProgramListResolver,
+        SessionResolver,
+        GroupInfoWithCollaboratorsResolver,
+        AdminStatsResolver,
+        AdminUserListResolver,
+
+        AdminService,
+        SessionService,
+        ProgramService,
+        GroupService,
+    ]
 })
 export class AppRoutingModule {}

@@ -1,6 +1,8 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { async, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
+import { CookiesService } from '@ngx-utils/cookies';
+import { BrowserCookiesModule, BrowserCookiesService } from '@ngx-utils/cookies/browser';
 import { AppComponent } from './app.component';
 
 
@@ -8,12 +10,19 @@ describe('AppComponent', () => {
     beforeEach(async(() => {
         TestBed.configureTestingModule({
             imports: [
+                BrowserCookiesModule.forRoot(),
                 RouterTestingModule,
                 HttpClientTestingModule,
             ],
             declarations: [
                 AppComponent
             ],
+            providers: [
+                {
+                    provide: CookiesService,
+                    useClass: BrowserCookiesService,
+                },
+            ]
         }).compileComponents();
     }));
 

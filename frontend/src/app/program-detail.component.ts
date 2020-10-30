@@ -1,6 +1,6 @@
-import { Location } from '@angular/common';
+import { Location, isPlatformServer } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, ViewChild, Inject, NgZone } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Inject, NgZone, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue } from './program';
 import { ProgramService } from './program.service';
@@ -102,6 +102,7 @@ export class ProgramDetailComponent implements OnInit {
         private connectionService: ConnectionService,
         private sessionService: SessionService,
         private ngZone: NgZone,
+        @Inject(PLATFORM_ID) private platformId: Object
     ) {
         this.monitorService = monitorService;
         this.programService = programService;
@@ -118,6 +119,11 @@ export class ProgramDetailComponent implements OnInit {
 
     ngOnInit(): void {
         this.environment = environment;
+
+        if (isPlatformServer(this.platformId)) {
+            // This cannot be rendered on server, so halt it's load
+            return;
+        }
 
         if (this.browser.window && (this.browser.window.innerWidth < this.browser.window.innerHeight)) {
             this.portraitMode = true;

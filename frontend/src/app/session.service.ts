@@ -7,6 +7,7 @@ import * as progbar from './ui/progbar';
 import * as API from './api-config';
 import { ContentType } from './content-type';
 import { BrowserService } from './browser.service';
+import { CookiesService } from '@ngx-utils/cookies';
 
 export type SessionInfoUpdate = { session: Session };
 
@@ -19,6 +20,8 @@ export class SessionService {
     readonly resetPasswordUrl = API.ApiRoot + '/sessions/login/reset';
     readonly validatePasswordUpdateUrl = API.ApiRoot + '/sessions/login/reset/validate';
     readonly passwordUpdateUrl = API.ApiRoot + '/sessions/login/reset/update';
+
+    private readonly COOKIE_TOKEN_KEY = 'programaker-auth';
 
 
     // These static values help create a Singleton-like class.
@@ -34,6 +37,7 @@ export class SessionService {
     constructor(
         private http: HttpClient,
         private browser: BrowserService,
+        private cookies: CookiesService,
     ) {
         this.http = http;
     }
@@ -87,18 +91,21 @@ export class SessionService {
         const storage = this.browser.window.localStorage;
 
         storage.setItem('session.service.token', token);
+        this.cookies.put(this.COOKIE_TOKEN_KEY, token);
     }
 
     removeToken() {
         const storage = this.browser.window.localStorage;
         storage.removeItem('session.service.token');
+        this.cookies.remove(this.COOKIE_TOKEN_KEY);
     }
 
     getToken(): string | null {
         const storage = this.browser.window.localStorage;
 
         if (!storage) { // Might happen on SSR
-            return null;
+            const auth = this.cookies.get(this.COOKIE_TOKEN_KEY);
+            return auth || null;
         }
 
         const token = storage.getItem('session.service.token');
@@ -159,6 +166,11 @@ export class SessionService {
                     is_in_preview: false,
                 }
             });
+        }
+        else {
+            // This is (hopefully) a temporary mechanism to migrate users that
+            // only have localStorage authentication to cookie-enabled auth.
+            this._duplicateSessionTokenToCookie();
         }
 
         if (SessionService.EstablishedSession !== null) {
@@ -304,6 +316,13 @@ export class SessionService {
         SessionService.EstablishedSession = session;
         if (SessionService._sessionInfoObserver) {
             SessionService._sessionInfoObserver.next({ session: session });
+        }
+    }
+
+    private _duplicateSessionTokenToCookie() {
+        const token = this.getToken();
+        if (token && !(this.cookies.get(this.COOKIE_TOKEN_KEY))) {
+            this.cookies.put(this.COOKIE_TOKEN_KEY, token);
         }
     }
 
