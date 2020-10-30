@@ -3,6 +3,8 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { BrowserDynamicTestingModule } from '@angular/platform-browser-dynamic/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { CookiesService } from '@ngx-utils/cookies';
+import { BrowserCookiesModule, BrowserCookiesService } from '@ngx-utils/cookies/browser';
 import { SelectProgrammingModelDialogComponent } from './select-programming-model-dialog.component';
 
 
@@ -18,10 +20,15 @@ describe('SelectProgrammingModelDialogComponent', () => {
         TestBed.configureTestingModule({
             declarations: [ SelectProgrammingModelDialogComponent ],
             imports: [
+                BrowserCookiesModule.forRoot(),
                 MatDialogModule,
                 NoopAnimationsModule,
             ],
             providers: [
+                {
+                    provide: CookiesService,
+                    useClass: BrowserCookiesService,
+                },
                 {
                     provide: HttpClient,
                     useValue: {}
