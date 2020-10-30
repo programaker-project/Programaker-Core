@@ -1,4 +1,4 @@
-FROM programakerproject/ci-base-frontend:b0fcf3b17c87060f72aae4407c9789925bcfd668 as builder
+FROM programakerproject/ci-base-frontend:50e8c3f1a1fb0e7d24b7a42cf77421764e0f27e3 as builder
 
 # Prepare dependencies
 ADD . /app
