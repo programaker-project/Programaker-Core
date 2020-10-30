@@ -84,17 +84,14 @@ export class DashboardComponent {
     ) {
         this.route.data
             .subscribe((data: { programs: ProgramMetadata[] }) => {
-                console.log('Programs loaded', data);
                 this.programs = data.programs;
             });
     }
 
     ngOnInit(): void {
-        console.log("1 Programs", this.programs);
         this.sessionService.getSession()
             .then(async (session) => {
                 this.session = session;
-                console.log("2 Programs", this.programs);
                 if (!session.active) {
                     this.router.navigate(['/login'], {replaceUrl:true});
                 } else {
@@ -129,7 +126,6 @@ export class DashboardComponent {
 
                     }
 
-                    console.log("3 Programs", this.programs);
                     this.bridgesQuery = this.updateBridges();
                     this.updateConnections();
                 }

@@ -1,6 +1,6 @@
 import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AdminService, PlatformStatsInfo, UserAdminData } from 'app/admin.service';
 import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
@@ -36,25 +36,29 @@ export class AdminSettingsComponent {
         public adminService: AdminService,
         public sessionService: SessionService,
         public router: Router,
+        private route: ActivatedRoute,
         public dialog: MatDialog,
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
-    }
+        this.route.data
+            .subscribe({
+                next: (data: { session: Session, adminStats: PlatformStatsInfo, userList: UserAdminData[] }) => {
+                    this.session = data.session;
+                    if (!data.session.active) {
+                        this.router.navigate(['/login'], {replaceUrl:true});
+                    }
+                    else if (!data.session.tags.is_admin) {
+                        this.router.navigate(['/settings'], {replaceUrl:true});
+                    }
 
-    // tslint:disable-next-line:use-life-cycle-interface
-    ngOnInit(): void {
-        this.sessionService.getSession()
-            .then(session => {
-                this.session = session;
-                if (!session.active) {
-                    this.router.navigate(['/login'], {replaceUrl:true});
-                }
-                else if (!session.tags.is_admin) {
-                    this.router.navigate(['/settings'], {replaceUrl:true});
-                }
+                    this.stats = data.adminStats;
+                    this.serviceNames = Object.keys(this.stats.stats.active_services).sort();
 
-                this.adminService.listAllUsers().then(users => {
-                    this.users = users.sort((x, y) => {
+                    for (const user of data.userList) {
+                        this.annotate(user);
+                    }
+
+                    this.users = data.userList.sort((x, y) => {
                         // Note that this sorting is reversed
                         if (x.registration_time > y.registration_time) {
                             return -1;
@@ -64,29 +68,35 @@ export class AdminSettingsComponent {
                         }
                         return 0;
                     } );
-
-                    for (const user of users) {
-                        this.annotate(user);
-                    }
-                });
-
-                const reload_stats = () => this.adminService.getStats().then(stats => {
-                    this.stats = stats;
-                    this.serviceNames = Object.keys(stats.stats.active_services).sort();
-
-                    // Don't enter an infinite loop when rendering on server
-                    if (isPlatformBrowser(this.platformId)) {
-                        setTimeout(reload_stats, SYSTEM_STAT_RELOAD_TIME);
-                    }
-                }).catch(err => {
-                    console.error("Error loading stats:", err);
-                });
-                reload_stats();
-            })
-            .catch(e => {
-                console.log('Error getting session', e);
-                this.router.navigate(['/login'], {replaceUrl:true});
+                },
+                error: err => {
+                    console.log('Error getting session', err);
+                    this.router.navigate(['/login'], {replaceUrl:true});
+                }
             });
+
+    }
+
+    // tslint:disable-next-line:use-life-cycle-interface
+    ngOnInit(): void {
+        // Don't enter an infinite loop when rendering on server
+        if (isPlatformBrowser(this.platformId)) {
+            setTimeout(this.reload_stats.bind(this), SYSTEM_STAT_RELOAD_TIME);
+        }
+    }
+
+    reload_stats() {
+        this.adminService.getStats().then(stats => {
+            this.stats = stats;
+            this.serviceNames = Object.keys(stats.stats.active_services).sort();
+
+            // Don't enter an infinite loop when rendering on server
+            if (isPlatformBrowser(this.platformId)) {
+                setTimeout(this.reload_stats.bind(this), SYSTEM_STAT_RELOAD_TIME);
+            }
+        }).catch(err => {
+            console.error("Error loading stats:", err);
+        });
     }
 
     annotate(user: UserAdminData) {

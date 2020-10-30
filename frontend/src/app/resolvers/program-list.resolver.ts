@@ -1,8 +1,8 @@
-import { ProgramMetadata } from "app/program";
-import { Resolve, ActivatedRouteSnapshot, RouterStateSnapshot } from "@angular/router";
-import { ProgramService } from "app/program.service";
 import { Injectable } from "@angular/core";
+import { ActivatedRouteSnapshot, Resolve, RouterStateSnapshot } from "@angular/router";
 import { GroupService } from "app/group.service";
+import { ProgramMetadata } from "app/program";
+import { ProgramService } from "app/program.service";
 
 
 @Injectable()
