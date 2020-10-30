@@ -7,6 +7,7 @@ import * as progbar from './ui/progbar';
 import * as API from './api-config';
 import { ContentType } from './content-type';
 import { BrowserService } from './browser.service';
+import { CookiesService } from '@ngx-utils/cookies';
 
 export type SessionInfoUpdate = { session: Session };
 
@@ -34,6 +35,7 @@ export class SessionService {
     constructor(
         private http: HttpClient,
         private browser: BrowserService,
+        private cookies: CookiesService,
     ) {
         this.http = http;
     }

@@ -23,8 +23,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
 import { AlertModule } from 'ngx-bootstrap/alert';
 
 import { AppComponent } from './app.component';
@@ -143,18 +141,17 @@ import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators
         MatTooltipModule,
         MatSelectModule,
 
-        BrowserAnimationsModule,
-
-        BrowserModule.withServerTransition({ appId: 'serverApp' }),
         FormsModule,
         ReactiveFormsModule,
         HttpClientModule,
         AlertModule.forRoot(),
         AppRoutingModule,
+
+        BrowserModule.withServerTransition({ appId: 'serverApp' }),
     ],
-    exports: [],
+    exports: [AppComponent],
     providers: [],
-    bootstrap: [AppComponent],
+    bootstrap: [],
 })
 
 export class AppModule {
