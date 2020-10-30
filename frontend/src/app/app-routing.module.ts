@@ -21,6 +21,10 @@ import { HomeRedirectComponent } from './info-pages/home-redirect.component';
 import { AboutPageComponent } from './info-pages/about-page.component';
 import { NewGroupComponent } from './new/group/new-group.component';
 import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
+import { ProgramListResolver } from './resolvers/program-list.resolver';
+import { ProgramService } from './program.service';
+import { GroupService } from './group.service';
+import { SessionService } from './session.service';
 
 const routes: Routes = [
     { path: '', component: HomeRedirectComponent, pathMatch: 'full' },
@@ -34,8 +38,8 @@ const routes: Routes = [
     { path: 'register/verify/:verification_code', component: VerifyCodeComponent },
 
     // General
-    { path: 'dashboard', component: DashboardComponent },
-    { path: 'groups/:group_name', component: DashboardComponent },
+    { path: 'dashboard', component: DashboardComponent, resolve: { programs: ProgramListResolver } },
+    { path: 'groups/:group_name', component: DashboardComponent, resolve: { programs: ProgramListResolver } },
     { path: 'groups/:group_name/settings', component: GroupSettingsComponent },
 
     // Programs
@@ -57,11 +61,17 @@ const routes: Routes = [
     { path: 'new/group', component: NewGroupComponent },
 
     // If no matching route found, go back to dashboard
-    { path: '**', component: DashboardComponent },
+    { path: '**', component: DashboardComponent, resolve: { programs: ProgramListResolver } },
 ];
 
 @NgModule({
-    imports: [ RouterModule.forRoot(routes) ],
-    exports: [ RouterModule ]
+    imports: [ RouterModule.forRoot(routes, { initialNavigation: 'enabled' }) ],
+    exports: [ RouterModule ],
+    providers: [
+        ProgramListResolver,
+        SessionService,
+        ProgramService,
+        GroupService,
+    ]
 })
 export class AppRoutingModule {}
