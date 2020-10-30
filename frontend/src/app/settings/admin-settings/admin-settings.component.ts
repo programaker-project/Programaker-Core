@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { AdminService, PlatformStatsInfo, UserAdminData } from 'app/admin.service';
 import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
 import { unixMsToStr } from 'app/utils';
+import { isPlatformBrowser } from '@angular/common';
 
 interface Note {
     icon: string;
@@ -36,6 +37,7 @@ export class AdminSettingsComponent {
         public sessionService: SessionService,
         public router: Router,
         public dialog: MatDialog,
+        @Inject(PLATFORM_ID) private platformId: Object
     ) {
     }
 
@@ -71,7 +73,11 @@ export class AdminSettingsComponent {
                 const reload_stats = () => this.adminService.getStats().then(stats => {
                     this.stats = stats;
                     this.serviceNames = Object.keys(stats.stats.active_services).sort();
-                    setTimeout(reload_stats, SYSTEM_STAT_RELOAD_TIME);
+
+                    // Don't enter an infinite loop when rendering on server
+                    if (isPlatformBrowser(this.platformId)) {
+                        setTimeout(reload_stats, SYSTEM_STAT_RELOAD_TIME);
+                    }
                 }).catch(err => {
                     console.error("Error loading stats:", err);
                 });
