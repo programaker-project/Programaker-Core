@@ -20,7 +20,8 @@ import { Session } from '../session';
 import { SessionService } from '../session.service';
 import { getGroupPictureUrl, getUserPictureUrl, iconDataToUrl } from '../utils';
 import { ConnectionService } from 'app/connection.service';
-import { BridgeConnectionWithIconUrl } from 'app/connection';
+import { BridgeConnectionWithIconUrl, IconReference } from 'app/connection';
+import { EnvironmentService } from 'app/environment.service';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -70,6 +71,9 @@ export class DashboardComponent {
     canWriteToGroup: boolean;
     bridgesQuery: Promise<void>;
 
+    readonly _getUserPicture: (userId: string) => string;
+    readonly _iconDataToUrl: (icon: IconReference, bridge_id: string) => string;
+
     constructor(
         private browser: BrowserService,
         private programService: ProgramService,
@@ -78,10 +82,14 @@ export class DashboardComponent {
         private connectionService: ConnectionService,
         private router: Router,
         private route: ActivatedRoute,
+        private environmentService: EnvironmentService,
 
         private dialog: MatDialog,
         private bridgeService: BridgeService,
     ) {
+        this._getUserPicture = getUserPictureUrl.bind(this, environmentService);
+        this._iconDataToUrl = iconDataToUrl.bind(this, environmentService);
+
         this.route.data
             .subscribe((data: { programs: ProgramMetadata[] }) => {
                 this.programs = data.programs;
@@ -108,7 +116,7 @@ export class DashboardComponent {
                         };
 
                         this.groupInfo = await this.groupService.getGroupWithName(groupName);
-                        this.profile.picture = getGroupPictureUrl(this.groupInfo.id);
+                        this.profile.picture = getGroupPictureUrl(this.environmentService, this.groupInfo.id);
 
                         this.updateCollaborators();
                         this.updateSharedResources();
@@ -118,7 +126,7 @@ export class DashboardComponent {
                             name: session.username,
                             'type': 'user',
                             groups: null,
-                            picture: getUserPictureUrl(session.user_id)
+                            picture: getUserPictureUrl(this.environmentService, session.user_id)
                         };
 
                         this.groupService.getUserGroups()
@@ -246,7 +254,10 @@ export class DashboardComponent {
         });
 
         for (const bridge of this.bridges) {
-            this.bridgeInfo[bridge.id] = { name: bridge.name, icon: iconDataToUrl(bridge.icon, bridge.id) };
+            this.bridgeInfo[bridge.id] = {
+                name: bridge.name,
+                icon: iconDataToUrl(this.environmentService, bridge.icon, bridge.id)
+            };
         }
     }
 
@@ -260,7 +271,7 @@ export class DashboardComponent {
 
         for (const conn of this.sharedResources){
             this.bridgeInfo[conn.bridge_id] = {
-                icon: iconDataToUrl(conn.icon, conn.bridge_id),
+                icon: iconDataToUrl(this.environmentService, conn.icon, conn.bridge_id),
                 name: conn.name
             };
         }
@@ -338,7 +349,7 @@ export class DashboardComponent {
         }
         const connections = await connectionQuery;
         this.connections = connections.map((v, _i, _a) => {
-            const icon_url = iconDataToUrl(v.icon, v.bridge_id);
+            const icon_url = iconDataToUrl(this.environmentService, v.icon, v.bridge_id);
 
             return { conn: v, extra: {icon_url: icon_url }};
         });
@@ -431,8 +442,6 @@ export class DashboardComponent {
     }
 
     // Utils
-    readonly _getUserPicture = getUserPictureUrl;
-    readonly _iconDataToUrl = iconDataToUrl;
     readonly _roleToIcon = roleToIcon;
 
     _toCapitalCase(x: string): string {

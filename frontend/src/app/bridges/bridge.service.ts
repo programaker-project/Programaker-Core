@@ -2,9 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { addTokenQueryString, toWebsocketUrl } from 'app/utils';
 import { Observable, Observer } from 'rxjs';
-import * as API from '../api-config';
 import { SessionService } from '../session.service';
 import { BridgeIndexData, BridgeMetadata, BridgeResource, BridgeResourceEntry, BridgeResourceMap, BridgeSignal, FullOwnerId, BridgeTokenInfo, FullBridgeTokenInfo } from './bridge';
+import { EnvironmentService } from 'app/environment.service';
 
 export type BridgeInfoUpdate = { count: number };
 
@@ -12,7 +12,8 @@ export type BridgeInfoUpdate = { count: number };
 export class BridgeService {
     constructor(
         private http: HttpClient,
-        private sessionService: SessionService
+        private sessionService: SessionService,
+        private environmentService: EnvironmentService,
     ) {
         this.http = http;
         this.sessionService = sessionService;
@@ -20,45 +21,46 @@ export class BridgeService {
 
     private async getBridgeIndexUrl(): Promise<string> {
         const userId = (await this.sessionService.getSession()).user_id;
-        return `${API.ApiRoot}/users/id/${userId}/bridges`;
+        return `${this.environmentService.getApiRoot()}/users/id/${userId}/bridges`;
     }
 
 
     private getGroupBridgeIndexUrl(groupId: string): string {
-        return `${API.ApiRoot}/groups/by-id/${groupId}/bridges`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}/bridges`;
     }
 
     private getSpecificBridgeUrl(bridgeId: string): string {
-        return `${API.ApiRoot}/bridges/by-id/${bridgeId}`;
+        return `${this.environmentService.getApiRoot()}/bridges/by-id/${bridgeId}`;
     }
 
     private getBridgeHistoricUrl(bridgeId: string): string {
-        return `${API.ApiRoot}/bridges/by-id/${bridgeId}/signals/history`;
+        return `${this.environmentService.getApiRoot()}/bridges/by-id/${bridgeId}/signals/history`;
     }
 
     private getBridgeSignalsUrl(bridgeId: string): string {
-        const url = `${API.ApiRoot}/bridges/by-id/${bridgeId}/signals`;
-        return toWebsocketUrl(url);
+        const url = `${this.environmentService.getApiRoot()}/bridges/by-id/${bridgeId}/signals`;
+        return toWebsocketUrl(this.environmentService, url);
     }
 
     private getBridgeResourcesUrl(bridgeId: string): string {
-        return `${API.ApiRoot}/bridges/by-id/${bridgeId}/resources`;
+        return `${this.environmentService.getApiRoot()}/bridges/by-id/${bridgeId}/resources`;
     }
 
     private getBridgeTokensUrl(bridgeId: string): string {
-        return `${API.ApiRoot}/bridges/by-id/${bridgeId}/tokens`;
+        return `${this.environmentService.getApiRoot()}/bridges/by-id/${bridgeId}/tokens`;
     }
 
     private getBridgeTokenByNameUrl(bridgeId: string, tokenName: string): string {
-        return `${API.ApiRoot}/bridges/by-id/${bridgeId}/tokens/by-name/${tokenName}`;
+        return `${this.environmentService.getApiRoot()}/bridges/by-id/${bridgeId}/tokens/by-name/${tokenName}`;
     }
 
     private updateConnectionResourceUrl(connectionId: string, resourceName: string): string {
-        return `${API.ApiRoot}/connections/by-id/${connectionId}/resources/by-name/${resourceName}`;
+        return `${this.environmentService.getApiRoot()}/connections/by-id/${connectionId}/resources/by-name/${resourceName}`;
     }
 
     public getConnectionUrl(bridgeId: string): string {
-        return toWebsocketUrl(`${API.ApiRoot}/bridges/by-id/${bridgeId}/communication`);
+        return toWebsocketUrl(this.environmentService,
+                              `${this.environmentService.getApiRoot()}/bridges/by-id/${bridgeId}/communication`);
     }
 
     async createServicePort(name: string): Promise<BridgeMetadata> {

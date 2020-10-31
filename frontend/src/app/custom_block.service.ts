@@ -1,13 +1,12 @@
 import {map} from 'rxjs/operators';
-import { Injectable, Inject } from '@angular/core';
-import * as API from './api-config';
-
+import { Injectable } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { CustomBlock, ResolvedCustomBlock, ResolvedBlockArgument, BlockArgument, DynamicBlockArgument, StaticBlockArgument, ResolvedDynamicBlockArgument } from './custom_block';
 import { Observable } from 'rxjs';
 import { BrowserService } from './browser.service';
+import { EnvironmentService } from './environment.service';
 
 
 type CallbackResult = (
@@ -26,7 +25,8 @@ export class CustomBlockService {
         private http: HttpClient,
         private browser: BrowserService,
 
-        private sessionService: SessionService
+        private sessionService: SessionService,
+        private environmentService: EnvironmentService,
     ) {
         this.http = http;
         this.sessionService = sessionService;
@@ -39,7 +39,7 @@ export class CustomBlockService {
     }
 
     private getCustomBlocksOnProgramUrl(programId: string) {
-        return `${API.ApiRoot}/programs/by-id/${programId}/custom-blocks`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/custom-blocks`;
     }
 
     public async getCustomBlocksOnProgram(programId: string, skip_resolve_argument_options?: boolean): Promise<ResolvedCustomBlock[]> {
@@ -248,7 +248,7 @@ export class CustomBlockService {
     }
 
     private async getArgOptions(programId: string, bridgeId: string, callbackName: string): Promise<[string, string][]> {
-        const url = `${API.ApiRoot}/programs/by-id/${programId}/bridges/by-id/${bridgeId}/callbacks/${callbackName}`;
+        const url = `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/bridges/by-id/${bridgeId}/callbacks/${callbackName}`;
 
         // Already being performed, "attach" to the on flight query
         if (this.onFlightCallbackQueries[url] !== undefined) {

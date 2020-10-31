@@ -1,19 +1,17 @@
-
 import {map} from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
-
-import * as API from './api-config';
-import { ContentType } from './content-type';
 import { MonitorMetadata } from './monitor';
 import { SessionService } from './session.service';
+import { EnvironmentService } from './environment.service';
 
 @Injectable()
 export class MonitorService {
     constructor(
         private http: HttpClient,
         private sessionService: SessionService,
+        private environmentService: EnvironmentService,
     ) {
         this.http = http;
         this.sessionService = sessionService;
@@ -25,7 +23,7 @@ export class MonitorService {
     }
 
     public async getListMonitorsOnProgramUrl(programId: string) {
-        return `${API.ApiRoot}/programs/by-id/${programId}/monitors`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/monitors`;
     }
 
     public async getRetrieveMonitorUrl(_user_id: string, Monitor_id: string) {

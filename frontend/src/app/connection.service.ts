@@ -1,18 +1,19 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { ApiRoot } from './api-config';
 import { BridgeIndexData } from './bridges/bridge';
 import { BridgeConnection } from './connection';
 import { AvailableService } from './service';
 import { SessionService } from './session.service';
 import { toWebsocketUrl } from './utils';
+import { EnvironmentService } from './environment.service';
 
 
 @Injectable()
 export class ConnectionService {
     constructor(
         private http: HttpClient,
-        private sessionService: SessionService
+        private sessionService: SessionService,
+        private environmentService: EnvironmentService,
     ) { }
 
     async getAvailableConnectionsUrl(): Promise<string> {
@@ -22,7 +23,7 @@ export class ConnectionService {
     }
 
     getGroupAvailableConnectionsUrl(groupId: string): string {
-        return `${ApiRoot}/groups/by-id/${groupId}/connections/available`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}/connections/available`;
     }
 
     async getUserConnectionsUrl(): Promise<string> {
@@ -32,26 +33,26 @@ export class ConnectionService {
     }
 
     getGroupConnectionsUrl(groupId: string): string {
-        return `${ApiRoot}/groups/by-id/${groupId}/connections/established`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}/connections/established`;
     }
 
     getProgramConnectionsUrl(programId: string): string {
-        return `${ApiRoot}/programs/by-id/${programId}/connections/established`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/connections/established`;
     }
 
     getProgramAvailableConnectionsUrl(programId: string): string {
-        return `${ApiRoot}/programs/by-id/${programId}/connections/available`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/connections/available`;
     }
 
     private getConnectionUrl(connectionId: string): string {
-        return `${ApiRoot}/connections/by-id/${connectionId}`;
+        return `${this.environmentService.getApiRoot()}/connections/by-id/${connectionId}`;
     }
 
-   async getWaitForConnectionUrl(connection_id: string): Promise<string> {
+    async getWaitForConnectionUrl(connection_id: string): Promise<string> {
         const root = await this.sessionService.getApiRootForUserId();
 
         const url = root + '/connections/pending/' + connection_id + '/wait';
-        return toWebsocketUrl(url);
+        return toWebsocketUrl(this.environmentService, url);
     }
 
     async getAvailableBridgesForNewConnection(): Promise<BridgeIndexData[]> {

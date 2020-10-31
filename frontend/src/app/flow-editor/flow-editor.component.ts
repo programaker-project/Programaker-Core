@@ -35,6 +35,7 @@ import { FlowGraph } from './flow_graph';
 import { EnumGetter, EnumValue } from './enum_direct_value';
 import { compile } from './graph_analysis';
 import { BrowserService } from 'app/browser.service';
+import { EnvironmentService } from 'app/environment.service';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -84,6 +85,7 @@ export class FlowEditorComponent implements OnInit {
         private connectionService: ConnectionService,
         private sessionService: SessionService,
         private bridgeService: BridgeService,
+        private environmentService: EnvironmentService,
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
     }
@@ -186,6 +188,7 @@ export class FlowEditorComponent implements OnInit {
         this.toolbox = await fromCustomBlockService(workspaceElement, this.workspace,
                                                     this.customBlockService,
                                                     this.bridgeService,
+                                                    this.environmentService,
                                                     this.program.id,
                                                    );
     }

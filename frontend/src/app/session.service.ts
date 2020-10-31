@@ -1,25 +1,18 @@
 import { Observable, Observer } from 'rxjs';
-import { Injectable, Inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Session } from './session';
 
 import * as progbar from './ui/progbar';
-import * as API from './api-config';
 import { ContentType } from './content-type';
 import { BrowserService } from './browser.service';
 import { CookiesService } from '@ngx-utils/cookies';
+import { EnvironmentService } from './environment.service';
 
 export type SessionInfoUpdate = { session: Session };
 
 @Injectable()
 export class SessionService {
-    readonly checkSessionUrl = API.ApiRoot + '/sessions/check';
-    readonly loginUrl = API.ApiRoot + '/sessions/login';
-    readonly registerUrl = API.ApiRoot + '/sessions/register';
-    readonly registerValidateUrl = API.ApiRoot + '/sessions/register/verify';
-    readonly resetPasswordUrl = API.ApiRoot + '/sessions/login/reset';
-    readonly validatePasswordUpdateUrl = API.ApiRoot + '/sessions/login/reset/validate';
-    readonly passwordUpdateUrl = API.ApiRoot + '/sessions/login/reset/update';
 
     private readonly COOKIE_TOKEN_KEY = 'programaker-auth';
 
@@ -38,9 +31,33 @@ export class SessionService {
         private http: HttpClient,
         private browser: BrowserService,
         private cookies: CookiesService,
+        private environmentService: EnvironmentService,
     ) {
         this.http = http;
     }
+
+    getCheckSessionUrl(): string {
+        return this.environmentService.getApiRoot() + '/sessions/check';
+    }
+    getLoginUrl(): string {
+        return this.environmentService.getApiRoot() + '/sessions/login';
+    }
+    getRegisterUrl(): string {
+        return this.environmentService.getApiRoot() + '/sessions/register';
+    }
+    getRegisterValidateUrl(): string {
+        return this.environmentService.getApiRoot() + '/sessions/register/verify';
+    }
+    getResetPasswordUrl(): string {
+        return this.environmentService.getApiRoot() + '/sessions/login/reset';
+    }
+    getValidatePasswordUpdateUrl(): string {
+        return this.environmentService.getApiRoot() + '/sessions/login/reset/validate';
+    }
+    getPasswordUpdateUrl(): string {
+        return this.environmentService.getApiRoot() + '/sessions/login/reset/update';
+    }
+
 
     async getUserApiRoot(): Promise<string> {
         let session = SessionService.EstablishedSession;
@@ -52,7 +69,7 @@ export class SessionService {
     }
 
     getApiRootForUser(username: string): string {
-        return API.ApiRoot + '/users/' + username;
+        return this.environmentService.getApiRoot() + '/users/' + username;
     }
 
     async getApiRootForUserId(user_id?: string): Promise<string> {
@@ -63,7 +80,7 @@ export class SessionService {
             }
             user_id = session.user_id;
         }
-        return API.ApiRoot + '/users/id/' + user_id;
+        return this.environmentService.getApiRoot() + '/users/id/' + user_id;
     }
 
     async getApiRootForUserIdNew(user_id?: string): Promise<string> {
@@ -74,7 +91,7 @@ export class SessionService {
             }
             user_id = session.user_id;
         }
-        return API.ApiRoot + '/users/by-id/' + user_id;
+        return this.environmentService.getApiRoot() + '/users/by-id/' + user_id;
     }
 
     async getUserAvatarUrl(): Promise<string> {
@@ -186,7 +203,7 @@ export class SessionService {
 
     login(username: string, password: string): Promise<boolean> {
         return progbar.track(this.http
-                             .post(this.loginUrl,
+                             .post(this.getLoginUrl(),
                                    JSON.stringify({ username: username, password: password }),
                                    { headers: this.addJsonContentType(this.getAuthHeader()) }).toPromise()
                              .then(async response => {
@@ -213,7 +230,7 @@ export class SessionService {
         return progbar.track(
             this.http
                 .post(
-                    this.registerUrl,
+                    this.getRegisterUrl(),
                     JSON.stringify({
                         username: username
                         , password: password
@@ -232,7 +249,7 @@ export class SessionService {
 
         return progbar.track(this.http
                              .post(
-                                 this.registerValidateUrl,
+                                 this.getRegisterValidateUrl(),
                                  JSON.stringify({
                                      verification_code: verificationCode
                                  }),
@@ -253,7 +270,7 @@ export class SessionService {
 
         return progbar.track(this.http
                              .post(
-                                 this.resetPasswordUrl,
+                                 this.getResetPasswordUrl(),
                                  JSON.stringify({
                                      email: email
                                  }),
@@ -268,7 +285,7 @@ export class SessionService {
 
         return progbar.track(this.http
                              .post(
-                                 this.validatePasswordUpdateUrl,
+                                 this.getValidatePasswordUpdateUrl(),
                                  JSON.stringify({
                                      verification_code: verificationCode
                                  }),
@@ -283,7 +300,7 @@ export class SessionService {
 
         return progbar.track(this.http
                              .post(
-                                 this.passwordUpdateUrl,
+                                 this.getPasswordUpdateUrl(),
                                  JSON.stringify({
                                      verification_code: verificationCode,
                                      password: password,
@@ -332,7 +349,7 @@ export class SessionService {
         }
 
         const response = (await this.http
-                          .get(this.checkSessionUrl, { headers: this.getAuthHeader() }).toPromise());
+                          .get(this.getCheckSessionUrl(), { headers: this.getAuthHeader() }).toPromise());
 
         const check = response as any;
         const session = new Session(check.success,

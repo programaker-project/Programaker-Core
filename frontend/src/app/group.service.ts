@@ -1,11 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Collaborator, CollaboratorRole } from 'app/types/collaborator';
-import { ApiRoot } from './api-config';
 import { ContentType } from './content-type';
 import { GroupInfo, UserGroupInfo } from './group';
 import { SessionService } from './session.service';
 import { SharedResource } from './bridges/bridge';
+import { EnvironmentService } from './environment.service';
 
 export interface UserAutocompleteInfo {
     id: string,
@@ -16,46 +16,47 @@ export interface UserAutocompleteInfo {
 export class GroupService {
     constructor(
         private http: HttpClient,
-        private sessionService: SessionService
+        private sessionService: SessionService,
+        private environmentService: EnvironmentService,
     ) {
         this.http = http;
         this.sessionService = sessionService;
     }
 
     getUserAutocompleteUrl(): string {
-        return `${ApiRoot}/utils/autocomplete/users`;
+        return `${this.environmentService.getApiRoot()}/utils/autocomplete/users`;
     }
 
     getCreateGroupUrl(): string {
-        return `${ApiRoot}/groups`;
+        return `${this.environmentService.getApiRoot()}/groups`;
     }
 
     getGroupInfoUrl(groupName: string): string {
-        return `${ApiRoot}/groups/by-name/${groupName}`;
+        return `${this.environmentService.getApiRoot()}/groups/by-name/${groupName}`;
     }
 
     getGroupCollaboratorsUrl(groupId: string): string {
-        return `${ApiRoot}/groups/by-id/${groupId}/collaborators`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}/collaborators`;
     }
 
     updateGroupCollaboratorsUrl(groupId: string): string {
-        return `${ApiRoot}/groups/by-id/${groupId}/collaborators`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}/collaborators`;
     }
 
     getUpdateGroupAvatarUrl(groupId: string): string {
-        return `${ApiRoot}/groups/by-id/${groupId}/picture`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}/picture`;
     }
 
     getUpdateGroupUrl(groupId: string): string {
-        return `${ApiRoot}/groups/by-id/${groupId}`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}`;
     }
 
     getDeleteGroupUrl(groupId: string): string {
-        return `${ApiRoot}/groups/by-id/${groupId}`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}`;
     }
 
     getGroupSharedResourcesUrl(groupId: string): string {
-        return `${ApiRoot}/groups/by-id/${groupId}/shared-resources`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}/shared-resources`;
     }
 
     async getUserGroupsUrl(): Promise<string> {
@@ -65,7 +66,7 @@ export class GroupService {
 
     private _ground(obj: any, field: string){
         if (obj[field] && obj[field].startsWith('/')) {
-            obj[field] = ApiRoot + obj[field];
+            obj[field] = this.environmentService.getApiRoot() + obj[field];
         }
 
         return obj;

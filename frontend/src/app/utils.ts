@@ -1,10 +1,11 @@
 import { IconReference, HashedIcon } from './connection';
-import { ApiRoot, ApiHost } from './api-config';
+import { EnvironmentService } from './environment.service';
 
-function toWebsocketUrl(url: string): string {
+function toWebsocketUrl(env: EnvironmentService, url: string): string {
     let baseServerPath = document.location.origin;
-    if (ApiHost != '') {
-        baseServerPath = ApiHost;
+    const apiHost = env.getBrowserApiHost();
+    if (apiHost != '') {
+        baseServerPath = apiHost;
     }
 
     if (url.startsWith('/')) { // We need an absolute address for this
@@ -14,21 +15,21 @@ function toWebsocketUrl(url: string): string {
 }
 
 
-function getUserPictureUrl(userId: string): string {
-    return `${ApiRoot}/users/by-id/${userId}/picture`;
+function getUserPictureUrl(env: EnvironmentService, userId: string): string {
+    return `${env.getBrowserApiRoot()}/users/by-id/${userId}/picture`;
 }
 
-function getGroupPictureUrl(groupId: string): string {
-    return `${ApiRoot}/groups/by-id/${groupId}/picture`;
+function getGroupPictureUrl(env: EnvironmentService, groupId: string): string {
+    return `${env.getBrowserApiRoot()}/groups/by-id/${groupId}/picture`;
 }
 
-function iconDataToUrl(icon: IconReference, bridge_id: string): string | undefined {
+function iconDataToUrl(env: EnvironmentService, icon: IconReference, bridge_id: string): string | undefined {
     if (!icon) { return undefined; }
     if ((icon as {url: string}).url) {
         return (icon as {url: string}).url;
     }
     else if ((icon as HashedIcon).sha256) {
-        return ApiRoot + '/assets/icons/' + bridge_id;
+        return env.getBrowserApiRoot() + '/assets/icons/' + bridge_id;
     }
 }
 
