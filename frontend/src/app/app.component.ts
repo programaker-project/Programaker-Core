@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { MatSidenav } from '@angular/material/sidenav';
 import { getUserPictureUrl } from './utils';
 import { BrowserService } from './browser.service';
+import { EnvironmentService } from './environment.service';
 
 @Component({
     selector: 'app-my-app',
@@ -24,14 +25,17 @@ export class AppComponent {
 
     @ViewChild('sidenav', { static: false })
     private sidenav: ElementRef<MatSidenav>;
-    _getUserPicture = getUserPictureUrl;
+    readonly _getUserPicture: (userId: string) => string;
 
     constructor(
         private router: Router,
         private browser: BrowserService,
+        private environmentService: EnvironmentService,
 
         public sessionService: SessionService,
     ) {
+        this._getUserPicture = getUserPictureUrl.bind(this, environmentService);
+
         this.router = router;
         this.session = { active: false } as any;
 

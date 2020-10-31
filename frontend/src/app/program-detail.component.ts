@@ -35,6 +35,7 @@ import { AssetService } from './asset.service';
 import { BrowserService } from './browser.service';
 import { EditorController } from './program-editors/editor-controller';
 import { Unsubscribable } from 'rxjs';
+import { EnvironmentService } from './environment.service';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -102,6 +103,7 @@ export class ProgramDetailComponent implements OnInit {
         private connectionService: ConnectionService,
         private sessionService: SessionService,
         private ngZone: NgZone,
+        private environmentService: EnvironmentService,
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
         this.monitorService = monitorService;
@@ -536,6 +538,7 @@ export class ProgramDetailComponent implements OnInit {
             this.customSignalService,
             this.connectionService,
             this.sessionService,
+            this.environmentService,
             this.toolboxController,
         );
 
@@ -561,6 +564,7 @@ export class ProgramDetailComponent implements OnInit {
             this.customSignalService,
             this.connectionService,
             this.sessionService,
+            this.environmentService,
         )
             .inject()
             .then(([toolbox, registrations, controller]) => {

@@ -19,7 +19,7 @@ export class EnvironmentService {
         this.environment = environment;
     }
 
-    getApiHost(): string {
+    private getApiHost(): string {
         if (this.environment.SSRApiHost && isPlatformServer(this.platformId)) {
             return this.environment.SSRApiHost;
         }
@@ -29,5 +29,13 @@ export class EnvironmentService {
 
     getApiRoot(): string {
         return this.getApiHost() + '/api/v0';
+    }
+
+    getBrowserApiHost(): string {
+        return this.environment.ApiHost;
+    }
+
+    getBrowserApiRoot(): string {
+        return this.getBrowserApiHost() + '/api/v0';
     }
 }

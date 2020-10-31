@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import {User, UserTags} from './user';
+import { User } from './user';
 
 import { SessionService } from './session.service';
 import { HttpClient } from '@angular/common/http';
-import * as API from './api-config';
+import { EnvironmentService } from './environment.service';
 
 export interface UserAdminData extends User {
     status: string;
@@ -50,18 +50,19 @@ export interface PlatformStatsInfo {
 export class AdminService {
     constructor(
         private http: HttpClient,
-        private sessionService: SessionService
+        private sessionService: SessionService,
+        private environmentService: EnvironmentService,
     ) {
         this.http = http;
         this.sessionService = sessionService;
     }
 
     private getListUsersUrl(): string {
-        return API.ApiRoot + '/users';
+        return this.environmentService.getApiRoot() + '/users';
     }
 
     private getAdminStatsUrl(): string {
-        return API.ApiRoot + '/admin/stats';
+        return this.environmentService.getApiRoot() + '/admin/stats';
     }
 
     async listAllUsers(): Promise<UserAdminData[]> {

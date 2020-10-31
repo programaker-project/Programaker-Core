@@ -7,14 +7,15 @@ import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
 import { ContentType } from './content-type';
 import { toWebsocketUrl, addTokenQueryString } from './utils';
-import { ApiRoot } from './api-config';
 import { Synchronizer } from './syncronizer';
+import { EnvironmentService } from './environment.service';
 
 @Injectable()
 export class ProgramService {
     constructor(
         private http: HttpClient,
-        private sessionService: SessionService
+        private sessionService: SessionService,
+        private environmentService: EnvironmentService,
     ) {
         this.http = http;
         this.sessionService = sessionService;
@@ -31,57 +32,59 @@ export class ProgramService {
     }
 
     private getGroupCreateProgramsUrl(groupId: string) {
-        return `${ApiRoot}/groups/by-id/${groupId}/programs`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}/programs`;
     }
 
     private listProgramsOnGroupUrl(groupId: string) {
-        return `${ApiRoot}/groups/by-id/${groupId}/programs`;
+        return `${this.environmentService.getApiRoot()}/groups/by-id/${groupId}/programs`;
     }
 
     private getRetrieveProgramUrl(userId: string, programName: string) {
-        return `${ApiRoot}/users/${userId}/programs/${programName}`;
+        return `${this.environmentService.getApiRoot()}/users/${userId}/programs/${programName}`;
     }
 
     private getRetrieveProgramUrlById(programId: string): string {
-        return ApiRoot + '/programs/by-id/' + programId;
+        return this.environmentService.getApiRoot() + '/programs/by-id/' + programId;
     }
 
     async getUpdateProgramUrl(programId: string) {
-        return ApiRoot + '/programs/by-id/' + programId;
+        return this.environmentService.getApiRoot() + '/programs/by-id/' + programId;
     }
 
     async getProgramCheckpointUrlById(programId: string) {
-        return `${ApiRoot}/programs/by-id/${programId}/checkpoint`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/checkpoint`;
     }
 
     async getProgramTagsUrl(programId: string) {
-        return `${ApiRoot}/programs/by-id/${programId}/tags`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/tags`;
     }
 
     private async getProgramLogsUrl(programId: string) {
-        return `${ApiRoot}/programs/by-id/${programId}/logs`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/logs`;
     }
 
     private async getProgramStreamingLogsUrl(programId: string) {
         const token = this.sessionService.getToken();
-        return addTokenQueryString(toWebsocketUrl(`${ApiRoot}/programs/by-id/${programId}/logs-stream`),
+        return addTokenQueryString(toWebsocketUrl(this.environmentService,
+                                                  `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/logs-stream`),
                                   token,
                                  );
     }
 
     private async getProgramStreamingEventsUrl(programId: string) {
         const token = this.sessionService.getToken();
-        return addTokenQueryString(toWebsocketUrl(`${ApiRoot}/programs/by-id/${programId}/editor-events`),
+        return addTokenQueryString(toWebsocketUrl(this.environmentService,
+                                                  `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/editor-events`),
                                    token,
                                   );
     }
 
     async getProgramStopThreadsUrl(programId: string) {
-        return `${ApiRoot}/programs/by-id/${programId}/stop-threads`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/stop-threads`;
     }
 
     async getProgramsStatusUrl(programId: string) {
-        return `${ApiRoot}/programs/by-id/${programId}/status`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/status`;
     }
 
     getPrograms(): Promise<ProgramMetadata[]> {

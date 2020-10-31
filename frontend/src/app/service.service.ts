@@ -1,16 +1,17 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map } from 'rxjs/operators';
-import * as API from './api-config';
 import { ContentType } from './content-type';
 import { AvailableService, ServiceEnableHowTo } from './service';
 import { SessionService } from './session.service';
+import { EnvironmentService } from './environment.service';
 
 @Injectable()
 export class ServiceService {
     constructor(
         private http: HttpClient,
         private sessionService: SessionService,
+        private environmentService: EnvironmentService,
     ) {
         this.http = http;
         this.sessionService = sessionService;
@@ -22,7 +23,7 @@ export class ServiceService {
     }
 
     private getListAvailableServicesOnProgramUrl(programId: string): string {
-        return `${API.ApiRoot}/programs/by-id/${programId}/services`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/services`;
     }
 
     async getServiceEnableHowToUrl(service: AvailableService) {
@@ -30,23 +31,23 @@ export class ServiceService {
     }
 
     getServiceEnableOnGroupHowToUrl(service: AvailableService, groupId: string) {
-        return `${API.ApiRoot}/services/by-id/${service.id}/how-to-enable`;
+        return `${this.environmentService.getApiRoot()}/services/by-id/${service.id}/how-to-enable`;
     }
 
     getServiceEnableOnProgramHowToUrl(service: AvailableService, programId: string) {
-        return `${API.ApiRoot}/services/by-id/${service.id}/how-to-enable`;
+        return `${this.environmentService.getApiRoot()}/services/by-id/${service.id}/how-to-enable`;
     }
 
     getServiceRegistryUrl(serviceId: string) {
-        return `${API.ApiRoot}/services/by-id/${serviceId}/register`;
+        return `${this.environmentService.getApiRoot()}/services/by-id/${serviceId}/register`;
     }
 
     getServiceRegistryUrlOnGroup(service_id: string) {
-        return `${API.ApiRoot}/services/by-id/${service_id}/register`;
+        return `${this.environmentService.getApiRoot()}/services/by-id/${service_id}/register`;
     }
 
     getServiceRegistryUrlOnProgram(bridgeId: string, programId: string) {
-        return `${API.ApiRoot}/programs/by-id/${programId}/services/by-id/${bridgeId}/register`;
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/services/by-id/${bridgeId}/register`;
     }
 
     getAvailableServices(): Promise<AvailableService[]> {

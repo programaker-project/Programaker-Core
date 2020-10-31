@@ -18,6 +18,7 @@ import { Collaborator, CollaboratorRole, roleToIcon } from 'app/types/collaborat
 import { getGroupPictureUrl } from 'app/utils';
 import { ConfirmDeleteDialogComponent } from 'app/dialogs/confirm-delete-dialog/confirm-delete-dialog.component';
 import { GroupCollaboratorEditorComponent } from 'app/components/group-collaborator-editor/group-collaborator-editor.component';
+import { EnvironmentService } from 'app/environment.service';
 
 const DEFAULT_ROLE : CollaboratorRole = 'editor';
 
@@ -51,7 +52,7 @@ export class GroupSettingsComponent {
     collaborators: Collaborator[];
     @ViewChild('groupCollaboratorEditor') groupCollaboratorEditor: GroupCollaboratorEditorComponent;
 
-    readonly _getGroupPicture = getGroupPictureUrl;
+    readonly _getGroupPicture: (userId: string) => string;
 
     constructor(
         public sessionService: SessionService,
@@ -59,7 +60,10 @@ export class GroupSettingsComponent {
         public router: Router,
         public dialog: MatDialog,
         private groupService: GroupService,
+        private environmentService: EnvironmentService,
     ) {
+        this._getGroupPicture = getGroupPictureUrl.bind(this, environmentService);
+
         this.route.data
             .subscribe((data: { groupInfo: { info: GroupInfo, collaborators: Collaborator[]  }, session: Session }) => {
                 this.session = data.session;

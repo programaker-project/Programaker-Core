@@ -8,6 +8,7 @@ import { InputPortDefinition, MessageType, OutputPortDefinition } from './flow_b
 import { FlowWorkspace } from './flow_workspace';
 import { Toolbox } from './toolbox';
 import { BaseToolboxDescription } from './base_toolbox_description';
+import { EnvironmentService } from 'app/environment.service';
 
 
 export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorkspace): Toolbox {
@@ -37,6 +38,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                                              workspace: FlowWorkspace,
                                              customBlockService: CustomBlockService,
                                              bridgeService: BridgeService,
+                                             environmentService: EnvironmentService,
                                              programId: string,
                                             ): Promise<Toolbox> {
     const base = buildBaseToolbox(baseElement, workspace);
@@ -58,7 +60,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
 
         const bridge = bridge_by_id[block.service_port_id];
         if (bridge) {
-            icon = iconDataToUrl(bridge.icon, bridge.id);
+            icon = iconDataToUrl(environmentService, bridge.icon, bridge.id);
         }
 
         base.addBlockGenerator((manager) => {

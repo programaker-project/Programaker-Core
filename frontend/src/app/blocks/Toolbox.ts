@@ -31,6 +31,7 @@ import { BridgeIndexData } from 'app/bridges/bridge';
 import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
 import { EditorController } from 'app/program-editors/editor-controller';
 import { NgZone } from '@angular/core';
+import { EnvironmentService } from 'app/environment.service';
 
 declare const Blockly;
 
@@ -64,6 +65,7 @@ export class Toolbox {
         customSignalService: CustomSignalService,
         private connectionService: ConnectionService,
         private sessionService: SessionService,
+        private environmentService: EnvironmentService,
         toolboxController?: ToolboxController,
     ) {
         this.controller = toolboxController || new ToolboxController();
@@ -686,13 +688,13 @@ export class Toolbox {
         return null;
     }
 
-    private static getIconForBlocks(block_cat: CategorizedCustomBlock, connections: BridgeConnection[]): string{
+    private getIconForBlocks(block_cat: CategorizedCustomBlock, connections: BridgeConnection[]): string{
         const conn = Toolbox.getConnectionForCategory(block_cat, connections);
         if (!conn) {
             return null;
         }
 
-        return iconDataToUrl(conn.icon, block_cat.bridge_data.bridge_id);
+        return iconDataToUrl(this.environmentService, conn.icon, block_cat.bridge_data.bridge_id);
     }
 
     injectCustomBlocks(categorized_custom_blocks: CategorizedCustomBlock[], connections: BridgeConnection[]) {
@@ -701,7 +703,7 @@ export class Toolbox {
           Blockly.Blocks[block.id] = {
               init: function () {
                   const block_args = get_block_toolbox_arguments(block);
-                  const icon = Toolbox.getIconForBlocks(blocks, connections);
+                  const icon = this.getIconForBlocks(blocks, connections);
                   let msg_prefix = `%${block_args.length + 1} `;
                   let label_arg: ScratchBlockArgument = {
                       type: 'field_label',
@@ -712,7 +714,7 @@ export class Toolbox {
                   if (icon) {
                       label_arg = {
                           type: 'field_image',
-                          src: Toolbox.getIconForBlocks(blocks, connections),
+                          src: this.getIconForBlocks(blocks, connections),
                           width: 48,
                           height: 24,
                           alt: blocks.bridge_data.bridge_name,

@@ -17,6 +17,7 @@ import { ConnectionService } from 'app/connection.service';
 import { BridgeService } from 'app/bridges/bridge.service';
 import { MatButton } from '@angular/material/button';
 import { getUserPictureUrl } from 'app/utils';
+import { EnvironmentService } from 'app/environment.service';
 
 @Component({
     // moduleId: module.id,
@@ -39,14 +40,18 @@ export class SettingsComponent {
     @ViewChild('imgFileInput') imgFileInput: ElementRef<HTMLInputElement>;
     @ViewChild('saveAvatarButton') saveAvatarButton: MatButton;
 
-    _getUserPicture = getUserPictureUrl;
+    readonly _getUserPicture: (userId: string) => string;
 
     constructor(
         public sessionService: SessionService,
         public router: Router,
         private route: ActivatedRoute,
+        private environmentService: EnvironmentService,
+
         public dialog: MatDialog,
     ) {
+        this._getUserPicture = getUserPictureUrl.bind(this, environmentService);
+
     }
 
     // tslint:disable-next-line:use-life-cycle-interface
