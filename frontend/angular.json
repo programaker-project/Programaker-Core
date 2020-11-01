@@ -169,6 +169,17 @@
               ],
               "sourceMap": false,
               "optimization": true
+            },
+            "programaker": {
+              "outputHashing": "media",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.programaker.ts"
+                }
+              ],
+              "sourceMap": true,
+              "optimization": true
             }
           }
         },
