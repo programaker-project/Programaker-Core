@@ -48,11 +48,16 @@ call(FunctionId, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [S
                            ContextConnectionId;
                        _ ->
                            {ok, BlockInfo} = ?BACKEND:get_block_definition(ServicePortId, FunctionId),
-                           Resources = get_block_resource(BlockInfo, Values),
-                           case get_connection(Owner, ServicePortId, Resources) of
-                               {ok, AvailableConnection} ->
-                                   AvailableConnection
-                               end
+                           try get_block_resource(BlockInfo, Values) of
+                               Resources ->
+                                   case get_connection(Owner, ServicePortId, Resources) of
+                                       {ok, AvailableConnection} ->
+                                           AvailableConnection
+                                   end
+                           catch ErrorNS:Error:StackTrace ->
+                                   automate_logging:log_platform(error, ErrorNS, Error, StackTrace),
+                                   {error, {error_getting_resource, {ErrorNS, Error, StackTrace}}}
+                           end
                    end,
 
     case automate_service_port_engine:call_service_port(
@@ -158,12 +163,22 @@ get_connection(Owner, ServicePortId, Resources) ->
 
 -spec get_block_resource(BlockInfo :: #service_port_block{}, Values :: [ any() ])
                         -> [{ binary(), binary()}].
-get_block_resource(#service_port_block{ arguments=Args }, Values) ->
-    get_block_resource_aux(Args, Values, []).
+get_block_resource(#service_port_block{ arguments=Args, save_to=SaveTo }, Values) ->
+    SaveToIndex = case SaveTo of
+                      #{ <<"type">> := <<"argument">>
+                       , <<"index">> := Idx
+                       } ->
+                          Idx;
+                      _ ->
+                          -1
+                  end,
+    get_block_resource_aux(Args, Values, SaveToIndex, 0, []).
 
-get_block_resource_aux([], [], Acc) ->
+get_block_resource_aux([], [], _, _, Acc) ->
     Acc;
-get_block_resource_aux([ #service_port_block_collection_argument{ name=Name } | TArg ], [ Value | TValue ], Acc) ->
-    get_block_resource_aux(TArg, TValue, [{Name, Value} | Acc]);
-get_block_resource_aux([ _ | TArg ], [ _ | TValue ], Acc) ->
-    get_block_resource_aux(TArg, TValue, Acc).
+get_block_resource_aux([ _ | TArg], Values, SaveToIndex, CurrentIndex, Acc) when SaveToIndex == CurrentIndex ->
+    get_block_resource_aux(TArg, Values, SaveToIndex, CurrentIndex + 1, Acc);
+get_block_resource_aux([ #service_port_block_collection_argument{ name=Name } | TArg ], [ Value | TValue ], SaveToIndex, CurrentIndex, Acc) ->
+    get_block_resource_aux(TArg, TValue, SaveToIndex, CurrentIndex + 1, [{Name, Value} | Acc]);
+get_block_resource_aux([ _ | TArg ], [ _ | TValue ], SaveToIndex, CurrentIndex, Acc) ->
+    get_block_resource_aux(TArg, TValue, SaveToIndex, CurrentIndex + 1, Acc).

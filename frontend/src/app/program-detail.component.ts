@@ -212,8 +212,10 @@ export class ProgramDetailComponent implements OnInit {
             if (!controller.isKnownBlock(_type)) {
                 // If it's not known, pull the next into the top level "function"
                 if (next !== undefined) {
-                    next.removeChild(next_blocks[0]);
-                    dom.insertBefore(next_blocks[0], child);
+                    if (next_blocks.length > 0) {
+                        next.removeChild(next_blocks[0]);
+                        dom.insertBefore(next_blocks[0], child);
+                    }
                     child.removeChild(next);
                     this.removeNonExistingBlocks(next, controller);
                 }
