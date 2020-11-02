@@ -700,10 +700,11 @@ export class Toolbox {
     injectCustomBlocks(categorized_custom_blocks: CategorizedCustomBlock[], connections: BridgeConnection[]) {
       for (const blocks of categorized_custom_blocks){
         for (const block of blocks.resolved_custom_blocks) {
+          const toolbox = this;
           Blockly.Blocks[block.id] = {
               init: function () {
                   const block_args = get_block_toolbox_arguments(block);
-                  const icon = this.getIconForBlocks(blocks, connections);
+                  const icon = toolbox.getIconForBlocks(blocks, connections);
                   let msg_prefix = `%${block_args.length + 1} `;
                   let label_arg: ScratchBlockArgument = {
                       type: 'field_label',
@@ -714,7 +715,7 @@ export class Toolbox {
                   if (icon) {
                       label_arg = {
                           type: 'field_image',
-                          src: this.getIconForBlocks(blocks, connections),
+                          src: icon,
                           width: 48,
                           height: 24,
                           alt: blocks.bridge_data.bridge_name,
