@@ -211,7 +211,7 @@ export class FlowEditorComponent implements OnInit {
 
         const window_height = Math.max(document.documentElement.clientHeight, this.browser.window.innerHeight || 0);
 
-        workspace.style.height = (window_height - header_end) + 'px';
+        workspace.style.height = (window_height - header_end - 1) + 'px';
     }
 
     calculate_program_header_size(programHeader: HTMLElement) {
