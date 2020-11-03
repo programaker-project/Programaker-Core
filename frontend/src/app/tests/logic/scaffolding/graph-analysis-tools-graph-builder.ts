@@ -96,17 +96,17 @@ class OpNodeBuilderRef {
         this.builder.establish_connection([this.id, 0], [next, 0]);
     }
 
-    then(next: NodeGenerator | OpNodeBuilderRef): OpNodeBuilderRef {
+    then(next: NodeGenerator | OpNodeBuilderRef, originSignalPosition=0, targetSignalPosition=0): OpNodeBuilderRef {
         if ((next as OpNodeBuilderRef).id) {
             const nextOp = (next as OpNodeBuilderRef);
-            this.builder.establish_connection([this.id, 0], [nextOp.id, 0]);
+            this.builder.establish_connection([this.id, originSignalPosition], [nextOp.id, targetSignalPosition]);
 
             return nextOp;
         }
         else {
             const nextGen = next as NodeGenerator;
             const nextOp = nextGen(this.builder);
-            this.builder.establish_connection([this.id, 0], [nextOp.id, 0]);
+            this.builder.establish_connection([this.id, originSignalPosition], [nextOp.id, targetSignalPosition]);
 
             return nextOp;
         }

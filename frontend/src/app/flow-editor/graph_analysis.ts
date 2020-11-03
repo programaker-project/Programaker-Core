@@ -177,8 +177,12 @@ export function get_source_signals(graph: FlowGraph): string[] {
                         has_block_inputs = true;
                         break;
                     }
+                    else if (a_block.value.options.type === 'trigger') {
+                        has_block_inputs = true;
+                        break;
+                    }
                     else {
-                        throw new Error(`Unexpected input block to trigger (id: ${conn.from.id}, type: ${a_block.value.options.type}), expected a "getter"`);
+                        throw new Error(`Unexpected input block (id: ${conn.from.id}, type: ${a_block.value.options.type}), expected a "getter" or "trigger"`);
                     }
                 }
             }
