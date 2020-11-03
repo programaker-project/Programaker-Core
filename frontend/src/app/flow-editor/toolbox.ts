@@ -1,6 +1,6 @@
 import { BlockExhibitor } from './block_exhibitor';
 import { BlockManager } from './block_manager';
-import { FlowBlock } from './flow_block';
+import { FlowBlock, Position2D } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
 
 export type BlockGenerator = (manager: BlockManager) => FlowBlock;
@@ -91,7 +91,7 @@ export class Toolbox {
 
         const block_exhibitor = BlockExhibitor.FromGenerator(generator, category_div);
         const element = block_exhibitor.getElement();
-        element.onmousedown = (ev: MouseEvent) => {
+        element.onmousedown = element.ontouchstart = (ev: MouseEvent | TouchEvent) => {
             try {
                 const rect = block_exhibitor.getInnerElementRect();
 
@@ -105,7 +105,9 @@ export class Toolbox {
                 this.toolboxDiv.classList.add('subsumed');
 
                 const block_id = this.workspace.drawAbsolute(block, rect);
-                (this.workspace as any)._mouseDownOnBlock(ev, block, (ev: MouseEvent) => {
+                const pos = this.workspace._getPositionFromEvent(ev);
+
+                (this.workspace as any)._mouseDownOnBlock(pos, block, (ev: Position2D) => {
 
                     element.classList.remove('hidden');
                     this.toolboxDiv.classList.remove('subsumed');
@@ -121,6 +123,28 @@ export class Toolbox {
                     }
 
                 });
+
+                if (ev instanceof TouchEvent) {
+                    // Redirect touch events to the canvas. If we don't do this,
+                    // the canvas won't receive touchmove or touchend events.
+                    ev.preventDefault();
+
+                    element.ontouchmove = (ev) => {
+                        ev.preventDefault();
+                        this.workspace.getCanvas().dispatchEvent(new TouchEvent('touchmove', {
+                            targetTouches: Array.from(ev.targetTouches)
+                        }));
+                    }
+                    element.ontouchend = (ev) => {
+                        element.ontouchmove = null;
+                        element.ontouchend = null;
+
+                        ev.preventDefault();
+                        this.workspace.getCanvas().dispatchEvent(new TouchEvent('touchend', {
+                            targetTouches: Array.from(ev.targetTouches)
+                        }));
+                    }
+                }
             }
             catch (err) {
                 console.error(err);

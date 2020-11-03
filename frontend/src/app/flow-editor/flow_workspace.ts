@@ -53,6 +53,10 @@ export class FlowWorkspace implements BlockManager {
         this.update_top_left();
     }
 
+    public getCanvas(): SVGSVGElement {
+        return this.canvas;
+    }
+
     public getGraph(): FlowGraph {
         const blocks: { [key: string]: FlowGraphNode } = {};
         for (const block_id of Object.keys(this.blocks)) {
@@ -291,6 +295,46 @@ export class FlowWorkspace implements BlockManager {
             });
         });
 
+        this.canvas.ontouchstart = ((ev: TouchEvent) => {
+            if (this.state !== 'waiting') {
+                return;
+            }
+
+            if (ev.target !== this.canvas) {
+                return;
+            }
+
+            const touch = ev.targetTouches[0];
+            let last = { x: touch.clientX, y: touch.clientY };
+
+            this.state = 'dragging-workspace';
+            this.canvas.classList.add('dragging');
+
+            this.canvas.ontouchmove = ((ev: TouchEvent) => {
+                if (ev.targetTouches.length == 0) {
+                    return;
+                }
+                if (ev.targetTouches.length == 1) {
+                    const touch = ev.targetTouches[0];
+                    this.top_left.x -= (touch.clientX - last.x) * this.inv_zoom_level;
+                    this.top_left.y -= (touch.clientY - last.y) * this.inv_zoom_level;
+                    last = { x: touch.clientX, y: touch.clientY };
+
+                    this.update_top_left();
+                }
+                else {
+                    console.log("Unexpected action with more than one touch", ev);
+                }
+            });
+
+            this.canvas.ontouchend = (() => {
+                this.state = 'waiting';
+                this.canvas.classList.remove('dragging');
+                this.canvas.ontouchmove = null;
+                this.canvas.ontouchend = null;
+            });
+        })
+
         this.canvas.onwheel = ((ev) => {
             if(!ev.deltaY){
                 return; // ???
@@ -406,7 +450,7 @@ export class FlowWorkspace implements BlockManager {
 
         block.render(this.block_group, position ? position: {x: 10, y: 10});
         const bodyElement = block.getBodyElement();
-        bodyElement.onmousedown = ((ev: MouseEvent) => {
+        bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
 
             if (this.state !== 'waiting'){
                 return;
@@ -414,7 +458,7 @@ export class FlowWorkspace implements BlockManager {
 
             if (this.current_io_selected) { return; }
 
-            this._mouseDownOnBlock(ev, block);
+            this._mouseDownOnBlock(this._getPositionFromEvent(ev), block);
         });
         const input_group = this.drawBlockInputHelpers(block);
 
@@ -423,7 +467,21 @@ export class FlowWorkspace implements BlockManager {
         return block_id;
     }
 
-    private _mouseDownOnBlock(ev: MouseEvent, block: FlowBlock, on_done?: (ev: MouseEvent) => void) {
+    public _getPositionFromEvent(ev: MouseEvent | TouchEvent) : Position2D | null {
+        if ((ev as TouchEvent).targetTouches) {
+            const touchEv = ev as TouchEvent;
+            if (touchEv.targetTouches.length === 0) {
+                return null;
+            }
+            return { x: touchEv.targetTouches[0].clientX, y: touchEv.targetTouches[0].clientY };
+        }
+        else {
+            const mouseEv = ev as MouseEvent;
+            return { x: mouseEv.clientX, y: mouseEv.clientY };
+        }
+    }
+
+    private _mouseDownOnBlock(pos: Position2D, block: FlowBlock, on_done?: (pos: Position2D) => void) {
         if (this.state !== 'waiting') {
             console.error('Forcing start of MouseDown with Workspace state='+this.state);
         }
@@ -432,14 +490,17 @@ export class FlowWorkspace implements BlockManager {
         const bodyElement = block.getBodyElement();
         const block_id = this.getBlockId(block);
 
-        let last = {x: ev.x, y: ev.y};
-        this.canvas.onmousemove = ((ev: MouseEvent) => {
+        let last = pos;
+
+        this.canvas.onmousemove = this.canvas.ontouchmove = ((ev: MouseEvent | TouchEvent) => {
+            const pos = this._getPositionFromEvent(ev);
+
             try {
                 const distance = {
-                    x: (ev.x - last.x) * this.inv_zoom_level,
-                    y: (ev.y - last.y) * this.inv_zoom_level,
+                    x: (pos.x - last.x) * this.inv_zoom_level,
+                    y: (pos.y - last.y) * this.inv_zoom_level,
                 };
-                last = {x: ev.x, y: ev.y};
+                last = {x: pos.x, y: pos.y};
 
                 block.moveBy(distance);
 
@@ -448,7 +509,7 @@ export class FlowWorkspace implements BlockManager {
                 }
                 this.updateBlockInputHelpersPosition(block_id);
 
-                if (this.isInTrashcan(ev)) {
+                if (this.isInTrashcan(pos)) {
                     this.trashcan.classList.add('to-be-activated');
                     bodyElement.classList.add('to-be-removed');
                 }
@@ -461,10 +522,13 @@ export class FlowWorkspace implements BlockManager {
                 console.error(err);
             }
         });
-        this.canvas.onmouseup = ((ev: MouseEvent) => {
+        this.canvas.onmouseup = this.canvas.ontouchend = ((ev: MouseEvent | TouchEvent) => {
+
             try {
+                const pos = this._getPositionFromEvent(ev) || last;
+
                 if (on_done) {
-                    on_done(ev);
+                    on_done(pos);
                 }
 
                 this.state = 'waiting';
@@ -473,7 +537,7 @@ export class FlowWorkspace implements BlockManager {
                 this.trashcan.classList.remove('to-be-activated');
                 bodyElement.classList.remove('to-be-removed');
 
-                if (this.isInTrashcan(ev)) {
+                if (this.isInTrashcan(pos)) {
                     this.removeBlock(block_id);
                 }
             }
