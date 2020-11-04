@@ -11,10 +11,14 @@ import { BaseToolboxDescription } from './base_toolbox_description';
 import { EnvironmentService } from 'app/environment.service';
 import { UiToolboxDescription } from './ui-blocks/ui_toolbox_description';
 import { UiFlowBlock } from './ui-blocks/ui_flow_block';
+import { UiSignalService } from 'app/services/ui-signal.service';
 
 
-export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorkspace): Toolbox {
-    const tb = Toolbox.BuildOn(baseElement, workspace);
+export function buildBaseToolbox(baseElement: HTMLElement,
+                                 workspace: FlowWorkspace,
+                                 uiSignalService: UiSignalService,
+                                ): Toolbox {
+    const tb = Toolbox.BuildOn(baseElement, workspace, uiSignalService);
 
     for (const category of [...UiToolboxDescription, ...BaseToolboxDescription]) {
         tb.setCategory({ id: category.id, name: category.name });
@@ -41,7 +45,7 @@ export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorksp
                         on_inputs_changed: manager.onInputsChanged.bind(manager),
                     }, block);
 
-                    return new UiFlowBlock(desc);
+                    return new UiFlowBlock(desc, uiSignalService);
                 }, category.id);
             }
         }
@@ -56,8 +60,9 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                                              bridgeService: BridgeService,
                                              environmentService: EnvironmentService,
                                              programId: string,
+                                             uiSignalService: UiSignalService,
                                             ): Promise<Toolbox> {
-    const base = buildBaseToolbox(baseElement, workspace);
+    const base = buildBaseToolbox(baseElement, workspace, uiSignalService);
 
     const data = await bridgeService.listUserBridges();
 

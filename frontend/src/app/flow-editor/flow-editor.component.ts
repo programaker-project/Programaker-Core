@@ -36,6 +36,7 @@ import { EnumGetter, EnumValue } from './enum_direct_value';
 import { compile } from './graph_analysis';
 import { BrowserService } from 'app/browser.service';
 import { EnvironmentService } from 'app/environment.service';
+import { UiSignalService } from 'app/services/ui-signal.service';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -44,7 +45,7 @@ import { EnvironmentService } from 'app/environment.service';
         BridgeService,
         ConnectionService, CustomBlockService, CustomSignalService,
         MonitorService, ProgramService, ServiceService, SessionService,
-        TemplateService
+        TemplateService, UiSignalService,
     ],
     styleUrls: [
         'flow-editor.component.css',
@@ -85,6 +86,7 @@ export class FlowEditorComponent implements OnInit {
         private connectionService: ConnectionService,
         private sessionService: SessionService,
         private bridgeService: BridgeService,
+        private uiSignalService: UiSignalService,
         private environmentService: EnvironmentService,
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
@@ -190,6 +192,7 @@ export class FlowEditorComponent implements OnInit {
                                                     this.bridgeService,
                                                     this.environmentService,
                                                     this.program.id,
+                                                    this.uiSignalService,
                                                    );
     }
 

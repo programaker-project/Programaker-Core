@@ -1,5 +1,5 @@
-import { Position2D } from "app/flow-editor/flow_block";
-import { UiFlowBlockRenderer } from "../ui_flow_block";
+import { UiSignalService } from "app/services/ui-signal.service";
+import { OnUiFlowBlockClick, UiFlowBlock, UiFlowBlockRenderer } from "../ui_flow_block";
 import { getRefBox } from "./utils";
 
 
@@ -49,4 +49,10 @@ export const SimpleButtonRenderer: UiFlowBlockRenderer = (canvas: SVGElement, gr
     rectShadow.setAttributeNS(null, 'height', box_height + "");
     rectShadow.setAttributeNS(null, 'width', box_width + "");
     rectShadow.setAttributeNS(null, 'rx', "5px"); // Like border-radius, in px
+}
+
+export const SimpleButtonOnClick : OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => {
+    console.log("Clicked button", block);
+    console.log("UiSignalService", service);
+    return service.sendBlockSignal(block.options.id, block.id);
 }

@@ -1,4 +1,4 @@
-import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions, isAtomicFlowBlockOptions } from './atomic_flow_block';
+import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions, isAtomicFlowBlockOptions, isAtomicFlowBlockData } from './atomic_flow_block';
 import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_description';
 import { DirectValue, DirectValueFlowBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
@@ -7,6 +7,7 @@ import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, 
 import { index_connections, reverse_index_connections } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
+import { isUiFlowBlockData } from './ui-blocks/ui_flow_block';
 
 function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions} {
     const result: {[key: string]: AtomicFlowBlockOptions} = {};
@@ -160,8 +161,8 @@ export function get_source_signals(graph: FlowGraph): string[] {
 
     for (const block_id of Object.keys(graph.nodes)) {
         const block = graph.nodes[block_id];
-        if (block.data.type === AtomicFlowBlock.GetBlockType()){
-            const data = block.data as AtomicFlowBlockData;
+        if (isAtomicFlowBlockData(block.data) || isUiFlowBlockData(block.data)){
+            const data = block.data;
 
             const inputs = data.value.options.inputs || [];
 
@@ -1249,6 +1250,16 @@ function compile_block(graph: FlowGraph,
 
             // Not really a compiled block, this would be an argument, but this simplifies things
         } as any as CompiledBlock;
+    }
+    else if (isUiFlowBlockData(block.data)) {
+
+        return {
+            id: block_id,
+            type: ('services.ui.' + block.data.value.options.id + '.' + block_id) as any,
+            args: [],
+            contents: [],
+        };
+
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)

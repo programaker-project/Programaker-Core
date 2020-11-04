@@ -68,7 +68,7 @@ export class BlockExhibitor implements BlockManager {
         this.baseElement.appendChild(this.element);
 
         this.block = generator(this);
-        this.block.render(this.element);
+        this.block.render(this.element, {});
 
         const area = this.block.getBodyArea();
 

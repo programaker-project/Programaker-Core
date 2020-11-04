@@ -1,5 +1,5 @@
 import { BlockManager } from './block_manager';
-import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData } from './flow_block';
+import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts } from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -53,6 +53,10 @@ export function isAtomicFlowBlockOptions(opt: FlowBlockOptions): opt is AtomicFl
     return ((opt as AtomicFlowBlockOptions).type === 'operation'
         ||  (opt as AtomicFlowBlockOptions).type === 'getter'
         ||  (opt as AtomicFlowBlockOptions).type === 'trigger');
+}
+
+export function isAtomicFlowBlockData(opt: FlowBlockData): opt is AtomicFlowBlockData {
+    return opt.type === BLOCK_TYPE;
 }
 
 function parse_chunks(message: string): MessageChunk[] {
@@ -688,10 +692,10 @@ export class AtomicFlowBlock implements FlowBlock {
         return (chunk.index + this.synthetic_output_count); // Skip outputs not specified by the user
     }
 
-    public render(canvas: SVGElement, position?: {x: number, y: number}): SVGElement {
+    public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         this.canvas = canvas;
-        if (position) {
-            this.position = { x: position.x, y: position.y };
+        if (initOpts.position) {
+            this.position = { x: initOpts.position.x, y: initOpts.position.y };
         }
         else {
             if (this.options.inputs && this.options.inputs.length > 0) {

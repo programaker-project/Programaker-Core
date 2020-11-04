@@ -1,7 +1,7 @@
 import {
     FlowBlock,
     InputPortDefinition, OnIOSelected,
-    Area2D, Direction2D, Position2D, MessageType, FlowBlockData,
+    Area2D, Direction2D, Position2D, MessageType, FlowBlockData, FlowBlockInitOpts,
 } from './flow_block';
 import { BlockManager } from './block_manager';
 
@@ -204,12 +204,12 @@ export class DirectValue implements FlowBlock {
         this.rect.setAttributeNS(null, 'width', box_width + "");
     }
 
-    public render(canvas: SVGElement, position?: {x: number, y: number}): SVGElement {
+    public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group }
 
         this.canvas = canvas;
-        if (position) {
-            this.position = { x: position.x, y: position.y };
+        if (initOpts.position) {
+            this.position = { x: initOpts.position.x, y: initOpts.position.y };
         }
         else {
             this.position = {x: 0, y: 0};

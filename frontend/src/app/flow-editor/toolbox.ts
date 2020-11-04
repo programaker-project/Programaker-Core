@@ -3,21 +3,23 @@ import { BlockManager } from './block_manager';
 import { FlowBlock, Position2D, FlowBlockOptions } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
 import { UiFlowBlockOptions } from './ui-blocks/ui_flow_block';
+import { UiSignalService } from 'app/services/ui-signal.service';
 
 export type BlockGenerator = (manager: BlockManager) => FlowBlock;
 
 export class Toolbox {
-    baseElement: HTMLElement;
     toolboxDiv: HTMLDivElement;
     blockShowcase: HTMLDivElement;
-    workspace: FlowWorkspace;
     categories: { [key: string]: HTMLDivElement } = {};
     blocks: FlowBlockOptions[] = [];
 
-    public static BuildOn(baseElement: HTMLElement, workspace: FlowWorkspace): Toolbox {
+    public static BuildOn(baseElement: HTMLElement,
+                          workspace: FlowWorkspace,
+                          uiSignalService: UiSignalService,
+                         ): Toolbox {
         let toolbox: Toolbox;
         try {
-            toolbox = new Toolbox(baseElement, workspace);
+            toolbox = new Toolbox(baseElement, workspace, uiSignalService);
             toolbox.init();
         }
         catch(err) {
@@ -30,10 +32,10 @@ export class Toolbox {
     }
 
 
-    private constructor(baseElement: HTMLElement, workspace: FlowWorkspace) {
-        this.baseElement = baseElement;
-        this.workspace = workspace;
-    }
+    private constructor(private baseElement: HTMLElement,
+                        private workspace: FlowWorkspace,
+                        public uiSignalService: UiSignalService,
+                       ) { }
 
     onResize() {}
 

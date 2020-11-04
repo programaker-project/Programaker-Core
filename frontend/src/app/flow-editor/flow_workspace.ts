@@ -6,6 +6,8 @@ import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
 import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
 import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
+import { UiFlowBlockData, UiFlowBlock } from './ui-blocks/ui_flow_block';
+import { Toolbox } from './toolbox';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -454,7 +456,10 @@ export class FlowWorkspace implements BlockManager {
             this.variables_in_use[slots.variable]++;
         }
 
-        block.render(this.block_group, position ? position: {x: 10, y: 10});
+        block.render(this.block_group, {
+            block_id: block_id,
+            position: (position ? position : {x: 10, y: 10}),
+        });
         const bodyElement = block.getBodyElement();
         bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
 

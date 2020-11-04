@@ -62,12 +62,14 @@ export type CompiledBlockType = "wait_for_monitor"
     | "logging_add_log" | "flow_get_thread_id"
     | "jump_to_position"
     | "jump_to_block"
-    | "jump_point" // Not found on executable stage, will be removed in link phase
     | "op_fork_execution"
     | "trigger_when_all_completed"
     | "trigger_when_first_completed"
     | "op_preload_getter"
     | "data_lengthoflist" | "data_deleteoflist" | "data_addtolist"
+
+// Not found on executable stage, will be removed in link phase
+    | "jump_point"
 
 // Operations should not appear on a properly compiled AST
     | "trigger_when_all_completed" | "trigger_when_first_completed"

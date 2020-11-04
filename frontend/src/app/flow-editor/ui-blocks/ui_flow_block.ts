@@ -1,6 +1,8 @@
-import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, Position2D, FlowBlockData } from '../flow_block';
+import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts } from '../flow_block';
 import { BlockManager } from '../block_manager';
 import { Toolbox } from '../toolbox';
+import { UiSignalService } from 'app/services/ui-signal.service';
+import { uuidv4 } from '../utils';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -13,12 +15,15 @@ const CONNECTOR_SIDE_SIZE = 15;
 const ICON_PADDING = '1ex';
 
 export type UiFlowBlockRenderer = (canvas: SVGElement, group: SVGElement) => void;
+export type OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => void;
 
 export interface UiFlowBlockOptions extends FlowBlockOptions {
     renderer: UiFlowBlockRenderer;
+    onclick?: OnUiFlowBlockClick;
     type: UiFlowBlockType;
     icon?: string,
     id: string,
+    block_id?: string,
 }
 
 export interface UiFlowBlockData extends FlowBlockData {
@@ -33,6 +38,9 @@ export function isUiFlowBlockOptions(opt: FlowBlockOptions): opt is UiFlowBlockO
     return ((opt as UiFlowBlockOptions).type === BLOCK_TYPE);
 }
 
+export function isUiFlowBlockData(opt: FlowBlockData): opt is UiFlowBlockData {
+    return opt.type === BLOCK_TYPE;
+}
 
 export class UiFlowBlock implements FlowBlock {
     private canvas: SVGElement;
@@ -40,9 +48,12 @@ export class UiFlowBlock implements FlowBlock {
 
     private group: SVGElement;
     private position: {x: number, y: number};
-    output_groups: SVGGElement[];
+    private output_groups: SVGGElement[];
+    private blockId: string;
 
-    constructor(options: UiFlowBlockOptions) {
+    constructor(options: UiFlowBlockOptions,
+                private uiSignalService: UiSignalService,
+               ) {
         this.options = options;
         this.output_groups = [];
     }
@@ -51,10 +62,14 @@ export class UiFlowBlock implements FlowBlock {
         this.canvas.removeChild(this.group);
     }
 
-    public render(canvas: SVGElement, position?: {x: number, y: number}): SVGElement {
+    public get id() {
+        return this.blockId;
+    }
+
+    public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         this.canvas = canvas;
-        if (position) {
-            this.position = { x: position.x, y: position.y };
+        if (initOpts.position) {
+            this.position = { x: initOpts.position.x, y: initOpts.position.y };
         }
         else {
             if (this.options.inputs && this.options.inputs.length > 0) {
@@ -63,6 +78,13 @@ export class UiFlowBlock implements FlowBlock {
             else {
                 this.position = {x: 0, y: 0};
             }
+        }
+
+        if (initOpts.block_id) {
+            this.blockId = initOpts.block_id;
+        }
+        else {
+            this.blockId = uuidv4();
         }
 
         if (this.group) { return this.group }
@@ -200,18 +222,21 @@ export class UiFlowBlock implements FlowBlock {
         options.on_dropdown_extended = manager.onDropdownExtended.bind(manager);
         options.on_inputs_changed = manager.onInputsChanged.bind(manager);
         options.on_io_selected = manager.onIoSelected.bind(manager);
-        options.renderer = this._findRenderer(options.id, toolbox);
 
-        return new UiFlowBlock(options);
+        const templateOptions = this._findTemplateOptions(options.id, toolbox);
+        options.renderer = templateOptions.renderer;
+        options.onclick = templateOptions.onclick;
+
+        return new UiFlowBlock(options, toolbox.uiSignalService);
     }
 
-    private static _findRenderer(blockId: string, toolbox: Toolbox): UiFlowBlockRenderer {
+    private static _findTemplateOptions(blockId: string, toolbox: Toolbox): UiFlowBlockOptions {
         for (const block of toolbox.blocks) {
             if ((block as UiFlowBlockOptions).id === blockId) {
                 // This is done in this order to detect the cases where the ID
                 // matches but the type doesn't (the `else`)
                 if (isUiFlowBlockOptions(block)) {
-                    return block.renderer;
+                    return block;
                 }
                 else {
                     throw new Error(`BlockId found with different type (type: ${(block as any).type}).`);
@@ -299,6 +324,11 @@ export class UiFlowBlock implements FlowBlock {
 
     // UI Flow block specific
     onclick() {
-        console.log("Clicked!");
+        if (this.options.onclick) {
+            this.options.onclick(this, this.uiSignalService);
+        }
+        else {
+            console.debug("No click handler on", this);
+        }
     }
 }
