@@ -12,7 +12,16 @@ $unknown-color: #7f7f7f;
 #workspace > svg {
     width: 100%;
     height: 100%;
-    background-color: #ddd;
+
+    // Taken from https://codepen.io/tennowman/pen/ynrih
+    background-color: #269;
+    background-image:
+        linear-gradient(rgba(255,255,255,.3) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(255,255,255,.3) 2px, transparent 2px),
+        linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
+    background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+    background-position: -2px -2px, -2px -2px, -1px -1px, -1px -1px;
 }
 
 svg.block_renderer.dragging {
