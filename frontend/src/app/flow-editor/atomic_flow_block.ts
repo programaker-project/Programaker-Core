@@ -18,6 +18,7 @@ export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     type: AtomicFlowBlockOperationType;
     icon?: string,
     block_function: string,
+    message: string;
 }
 
 export interface AtomicFlowBlockData extends FlowBlockData {
@@ -48,6 +49,11 @@ function is_digit(char: string): boolean {
     }
 }
 
+export function isAtomicFlowBlockOptions(opt: FlowBlockOptions): opt is AtomicFlowBlockOptions {
+    return ((opt as AtomicFlowBlockOptions).type === 'operation'
+        ||  (opt as AtomicFlowBlockOptions).type === 'getter'
+        ||  (opt as AtomicFlowBlockOptions).type === 'trigger');
+}
 
 function parse_chunks(message: string): MessageChunk[] {
     const result: MessageChunk[] = [];

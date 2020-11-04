@@ -1,10 +1,11 @@
-import { PLATFORM_ICON } from './definitions';
 import { AtomicFlowBlockOptions } from './atomic_flow_block';
+import { PLATFORM_ICON } from './definitions';
+import { UiFlowBlockOptions } from './ui-blocks/ui_flow_block';
 
 interface Category {
     id: string,
     name: string,
-    blocks: AtomicFlowBlockOptions[],
+    blocks: (AtomicFlowBlockOptions | UiFlowBlockOptions)[],
 }
 
 export type ToolboxDescription = Category[];

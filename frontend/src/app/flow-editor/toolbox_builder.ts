@@ -3,31 +3,47 @@ import { BridgeService } from '../bridges/bridge.service';
 import { ResolvedBlockArgument, ResolvedCustomBlock, ResolvedDynamicBlockArgument } from '../custom_block';
 import { CustomBlockService } from '../custom_block.service';
 import { iconDataToUrl } from '../utils';
-import { AtomicFlowBlock } from './atomic_flow_block';
+import { AtomicFlowBlock, isAtomicFlowBlockOptions } from './atomic_flow_block';
 import { InputPortDefinition, MessageType, OutputPortDefinition } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
 import { Toolbox } from './toolbox';
 import { BaseToolboxDescription } from './base_toolbox_description';
 import { EnvironmentService } from 'app/environment.service';
+import { UiToolboxDescription } from './ui-blocks/ui_toolbox_description';
+import { UiFlowBlock } from './ui-blocks/ui_flow_block';
 
 
 export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorkspace): Toolbox {
     const tb = Toolbox.BuildOn(baseElement, workspace);
 
-    for (const category of BaseToolboxDescription) {
+    for (const category of [...UiToolboxDescription, ...BaseToolboxDescription]) {
         tb.setCategory({ id: category.id, name: category.name });
         for (const block of category.blocks) {
-            tb.addBlockGenerator((manager) => {
+            if (isAtomicFlowBlockOptions(block)) {
+                tb.addBlockGenerator((manager) => {
 
-                const desc = Object.assign({
-                    on_io_selected: manager.onIoSelected.bind(manager),
-                    on_dropdown_extended: manager.onDropdownExtended.bind(manager),
-                    on_inputs_changed: manager.onInputsChanged.bind(manager),
-                }, block);
+                    const desc = Object.assign({
+                        on_io_selected: manager.onIoSelected.bind(manager),
+                        on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+                        on_inputs_changed: manager.onInputsChanged.bind(manager),
+                    }, block);
 
-                return new AtomicFlowBlock(desc);
-            }, category.id);
+                    return new AtomicFlowBlock(desc);
+                }, category.id);
+            }
+            else {
+                tb.addBlock(block);
 
+                tb.addBlockGenerator((manager) => {
+                    const desc = Object.assign({
+                        on_io_selected: manager.onIoSelected.bind(manager),
+                        on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+                        on_inputs_changed: manager.onInputsChanged.bind(manager),
+                    }, block);
+
+                    return new UiFlowBlock(desc);
+                }, category.id);
+            }
         }
     }
 

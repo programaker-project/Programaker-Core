@@ -48,7 +48,7 @@ export type OnDropdownExtended = ((block: FlowBlock,
                                   ) => void);
 
 export interface FlowBlockOptions {
-    message: string;
+    message?: string;
     title?: string;
     outputs?: OutputPortDefinition[];
     inputs?: InputPortDefinition[];

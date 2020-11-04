@@ -6,6 +6,7 @@ import { DirectValue, DirectValueFlowBlockData } from './direct_value';
 import { EnumDirectValue } from './enum_direct_value';
 import { uuidv4 } from './utils';
 import { OP_PRELOAD_BLOCK } from './base_toolbox_description';
+import { UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
 
 function graph_scan_nodes(graph: FlowGraph, check: (node_id: string, node: FlowGraphNode) => boolean): string[] {
     const results = [];
@@ -243,6 +244,21 @@ export function is_pulse_output(block: FlowGraphNode, index: number): boolean {
     }
     else if (block.data.type === EnumDirectValue.GetBlockType()){
         return false;
+    }
+    else if (block.data.type === UiFlowBlock.GetBlockType()){
+        const data = block.data as UiFlowBlockData;
+
+        if (!data.value.options) {
+            throw new Error(`No options found on ${JSON.stringify(block)}`)
+        }
+
+        const outputs = data.value.options.outputs;
+        if (!outputs[index]) {
+            throw new Error(`IndexError: Index (${index}) not found on outputs (${JSON.stringify(outputs)})`)
+        }
+
+        // If it has no pulse inputs its a source block
+        return outputs[index].type === 'pulse';
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)

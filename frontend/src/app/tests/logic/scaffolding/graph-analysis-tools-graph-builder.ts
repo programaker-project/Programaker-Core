@@ -1,4 +1,4 @@
-import { AtomicFlowBlockData, AtomicFlowBlockOptions, BLOCK_TYPE as ATOMIC_BLOCK_TYPE, AtomicFlowBlock, AtomicFlowBlockType, AtomicFlowBlockOperationType } from '../../../flow-editor/atomic_flow_block';
+import { AtomicFlowBlockData, AtomicFlowBlockOptions, BLOCK_TYPE as ATOMIC_BLOCK_TYPE, AtomicFlowBlock, AtomicFlowBlockType, AtomicFlowBlockOperationType, isAtomicFlowBlockOptions } from '../../../flow-editor/atomic_flow_block';
 import { BaseToolboxDescription, ToolboxDescription } from '../../../flow-editor/base_toolbox_description';
 import { BLOCK_TYPE as VALUE_BLOCK_TYPE, DirectValueFlowBlockData } from '../../../flow-editor/direct_value';
 import { BLOCK_TYPE as ENUM_BLOCK_TYPE, EnumDirectValueFlowBlockData, EnumDirectValueOptions } from '../../../flow-editor/enum_direct_value';
@@ -31,7 +31,10 @@ function index_toolbox_description(desc: ToolboxDescription): {[key: string]: At
 
     for (const cat of desc) {
         for (const block of cat.blocks) {
-            result[block.block_function] = block;
+            // TODO: This will most probably require UI block definitions too
+            if (isAtomicFlowBlockOptions(block)) {
+                result[block.block_function] = block;
+            }
         }
     }
 

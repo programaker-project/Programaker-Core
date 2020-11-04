@@ -1,7 +1,8 @@
 import { BlockExhibitor } from './block_exhibitor';
 import { BlockManager } from './block_manager';
-import { FlowBlock, Position2D } from './flow_block';
+import { FlowBlock, Position2D, FlowBlockOptions } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
+import { UiFlowBlockOptions } from './ui-blocks/ui_flow_block';
 
 export type BlockGenerator = (manager: BlockManager) => FlowBlock;
 
@@ -11,6 +12,7 @@ export class Toolbox {
     blockShowcase: HTMLDivElement;
     workspace: FlowWorkspace;
     categories: { [key: string]: HTMLDivElement } = {};
+    blocks: FlowBlockOptions[] = [];
 
     public static BuildOn(baseElement: HTMLElement, workspace: FlowWorkspace): Toolbox {
         let toolbox: Toolbox;
@@ -124,7 +126,7 @@ export class Toolbox {
 
                 });
 
-                if (ev instanceof TouchEvent) {
+                if ((ev as TouchEvent).targetTouches) {
                     // Redirect touch events to the canvas. If we don't do this,
                     // the canvas won't receive touchmove or touchend events.
                     ev.preventDefault();
@@ -150,5 +152,9 @@ export class Toolbox {
                 console.error(err);
             }
         };
+    }
+
+    addBlock(block: FlowBlockOptions) {
+        this.blocks.push(block);
     }
 }

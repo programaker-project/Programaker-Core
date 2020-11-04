@@ -139,7 +139,7 @@ export class FlowEditorComponent implements OnInit {
 
     load_program(program: ProgramContent) {
         if (program.orig && program.orig !== 'undefined') {
-            this.workspace.load(program.orig as FlowGraph);
+            this.workspace.load(program.orig as FlowGraph, this.toolbox);
         }
 
         this.initializeListeners();

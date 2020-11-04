@@ -86,7 +86,7 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
-    public load(graph: FlowGraph) {
+    public load(graph: FlowGraph, toolbox: Toolbox) {
         for (const block_id of Object.keys(graph.nodes)) {
             const block = graph.nodes[block_id];
 
@@ -94,6 +94,10 @@ export class FlowWorkspace implements BlockManager {
             switch (block.data.type) {
                 case AtomicFlowBlock.GetBlockType():
                     created_block = AtomicFlowBlock.Deserialize(block.data as AtomicFlowBlockData, this);
+                    break;
+
+                case UiFlowBlock.GetBlockType():
+                    created_block = UiFlowBlock.Deserialize(block.data as UiFlowBlockData, this, toolbox);
                     break;
 
                 case DirectValue.GetBlockType():

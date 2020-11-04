@@ -1,4 +1,4 @@
-import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions } from './atomic_flow_block';
+import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions, isAtomicFlowBlockOptions } from './atomic_flow_block';
 import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_description';
 import { DirectValue, DirectValueFlowBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
@@ -13,7 +13,10 @@ function index_toolbox_description(desc: ToolboxDescription): {[key: string]: At
 
     for (const cat of desc) {
         for (const block of cat.blocks) {
-            result[block.block_function] = block;
+            // TODO: This will most probably require UI block definitions too
+            if (isAtomicFlowBlockOptions(block)) {
+                result[block.block_function] = block;
+            }
         }
     }
 
