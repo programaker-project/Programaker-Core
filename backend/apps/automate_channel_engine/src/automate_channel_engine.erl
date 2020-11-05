@@ -137,9 +137,7 @@ get_appropriate_listeners_key_subkey(ChannelId, {Key, SubKey}) ->
             {ok, sets:to_list(Uniques)}
     end.
 
-canonicalize_selector(undefined) ->
-    undefined;
-canonicalize_selector(null) ->
-    null;
+canonicalize_selector(Atom) when is_atom(Atom) ->
+    Atom;
 canonicalize_selector(Selector) ->
     string:lowercase(Selector).

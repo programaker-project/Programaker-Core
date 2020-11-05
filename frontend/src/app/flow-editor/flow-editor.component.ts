@@ -32,7 +32,7 @@ import { unixMsToStr } from '../utils';
 import { Session } from '../session';
 import { BridgeService } from '../bridges/bridge.service';
 import { FlowGraph } from './flow_graph';
-import { EnumGetter, EnumValue } from './enum_direct_value';
+import { EnumValue } from './enum_direct_value';
 import { compile } from './graph_analysis';
 import { BrowserService } from 'app/browser.service';
 import { EnvironmentService } from 'app/environment.service';
@@ -114,6 +114,13 @@ export class FlowEditorComponent implements OnInit {
                     this.route.params.pipe(
                         switchMap((params: Params) => {
                             this.programId = params['program_id'];
+
+                            // Note that configuring the UiSignal this way means
+                            // that it can be in a semi-initialized state, which
+                            // is not good. This should be fixed in the future
+                            // if we still need this same data.
+                            this.uiSignalService.setProgramId(this.programId);
+
                             return this.programService.getProgramById(params['program_id']).catch(err => {
                                 console.error("Error:", err);
                                 this.goBack();
