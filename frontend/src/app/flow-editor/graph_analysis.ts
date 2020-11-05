@@ -1087,6 +1087,20 @@ function compile_block(graph: FlowGraph,
                                                                          block_id,
                                                                          relatives.exec_orig ? relatives.exec_orig : block_id));
         const block_fun = data.value.options.block_function;
+        const slot_args = [];
+
+        const slots = data.value.slots;
+
+        if (slots) {
+            for (const slot of Object.keys(slots)){
+                slot_args.push({ name: slot, type: slot, value: slots[slot]})
+            }
+        }
+
+        // Prepend slots (sorted) to args
+        compiled_args = slot_args.sort((a, b) => {
+            return (a.name).localeCompare(b.name);
+        }).concat(compiled_args);
 
         if (block_fun === 'flow_utc_time') {
             block_type = "wait_for_monitor";

@@ -25,6 +25,7 @@ export interface AtomicFlowBlockData extends FlowBlockData {
     type: AtomicFlowBlockType,
     value: {
         options: AtomicFlowBlockOptions,
+        slots: {[key: string]: string},
 
         // These counts are needed to keep the consistency when linking
         // inline arguments to it's ports
@@ -160,6 +161,7 @@ export class AtomicFlowBlock implements FlowBlock {
     options: AtomicFlowBlockOptions;
     synthetic_input_count = 0;
     synthetic_output_count = 0;
+    namedChunkTextBoxes: {[key: string]: SVGTextElement } = {};
 
     constructor(options: AtomicFlowBlockOptions, synthetic_input_count?: number, synthetic_output_count?: number) {
         if (!(options.message)) {
@@ -310,7 +312,7 @@ export class AtomicFlowBlock implements FlowBlock {
             type: BLOCK_TYPE,
             value: {
                 options: JSON.parse(JSON.stringify(this.options)),
-
+                slots: this.getSlots(),
                 synthetic_input_count: this.synthetic_input_count,
                 synthetic_output_count: this.synthetic_output_count,
             },
@@ -327,10 +329,17 @@ export class AtomicFlowBlock implements FlowBlock {
         options.on_inputs_changed = manager.onInputsChanged.bind(manager);
         options.on_io_selected = manager.onIoSelected.bind(manager);
 
-        return new AtomicFlowBlock(options,
-                                   data.value.synthetic_input_count,
-                                   data.value.synthetic_output_count
-                                  );
+        const block = new AtomicFlowBlock(options,
+                                          data.value.synthetic_input_count,
+                                          data.value.synthetic_output_count
+                                         );
+
+        for (const slot of Object.keys(data.value.slots)) {
+            const chunk = block.chunks.find((val) => val.type === 'named_var'  && val.name === slot );
+            block.updateChunk(chunk, data.value.slots[slot]);
+        }
+
+        return block;
     }
 
     public getBodyElement(): SVGElement {
@@ -528,7 +537,7 @@ export class AtomicFlowBlock implements FlowBlock {
         this.input_groups[index] = in_group;
     }
 
-    private updateChunk(chunk: MessageChunk, textBox: SVGTextElement, new_value: string) {
+    private updateChunk(chunk: MessageChunk, new_value: string) {
         if (chunk.type === 'const') {
             console.warn('Constant value chunks cannot be updated');
             return;
@@ -539,8 +548,11 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         chunk.val = new_value;
-        textBox.textContent = new_value;
-        this.updateBody();
+        if (this.namedChunkTextBoxes[chunk.name]) {
+            // Might not exist before initialization
+            this.namedChunkTextBoxes[chunk.name].textContent = new_value;
+            this.updateBody();
+        }
     }
 
     private updateBody() {
@@ -913,6 +925,8 @@ export class AtomicFlowBlock implements FlowBlock {
                 image.setAttributeNS(null, 'height', '2ex');
                 image.setAttributeNS(null, 'y', box_height/2 - image.getClientRects()[0].height/2  + "");
 
+                this.namedChunkTextBoxes[chunk.name] = text;
+
                 if (this.options.on_dropdown_extended) {
                     group.onclick = () => {
                         this.options.on_dropdown_extended(this,
@@ -920,7 +934,7 @@ export class AtomicFlowBlock implements FlowBlock {
                                                           chunk.val,
                                                           plate.getBBox(),
                                                           (new_value: string) => {
-                                                              this.updateChunk(chunk, text, new_value);
+                                                              this.updateChunk(chunk, new_value);
                                                           }
                                                          );
                     };

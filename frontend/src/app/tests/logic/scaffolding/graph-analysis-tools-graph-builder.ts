@@ -257,6 +257,7 @@ export class GraphBuilder {
             type: ATOMIC_BLOCK_TYPE,
             value: {
                 options: block_options,
+                slots: {},
                 synthetic_input_count: synth_in,
                 synthetic_output_count: synth_out,
             }
@@ -287,6 +288,7 @@ export class GraphBuilder {
             type: ATOMIC_BLOCK_TYPE,
             value: {
                 options: block_options,
+                slots: {},
                 synthetic_input_count: synth_in,
                 synthetic_output_count: synth_out,
             }
@@ -313,6 +315,7 @@ export class GraphBuilder {
             type: ATOMIC_BLOCK_TYPE,
             value: {
                 options: block_options,
+                slots: {},
                 synthetic_input_count: synth_in,
                 synthetic_output_count: synth_out,
             }
@@ -343,6 +346,7 @@ export class GraphBuilder {
             type: ATOMIC_BLOCK_TYPE,
             value: {
                 options: block_options,
+                slots: {},
                 synthetic_input_count: synth_in,
                 synthetic_output_count: synth_out,
             }
@@ -368,6 +372,7 @@ export class GraphBuilder {
             type: ATOMIC_BLOCK_TYPE,
             value: {
                 options: block_options,
+                slots: {},
                 synthetic_input_count: synth_in,
                 synthetic_output_count: synth_out,
             }
@@ -399,6 +404,7 @@ export class GraphBuilder {
             type: ATOMIC_BLOCK_TYPE,
             value: {
                 options: block_options,
+                slots: {},
                 synthetic_input_count: synth_in,
                 synthetic_output_count: synth_out,
             }
