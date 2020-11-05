@@ -623,12 +623,6 @@ export const BaseToolboxDescription: ToolboxDescription = [
                         name: 'new value',
                         type: "any",
                     },
-                ],
-                outputs: [
-                    {
-                        name: 'saved value',
-                        type: 'any',
-                    }
                 ]
             },
             {
