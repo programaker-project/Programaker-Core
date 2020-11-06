@@ -16,7 +16,6 @@
 -record(state, { user_id    :: binary() | none
                , program_id :: binary()
                , authenticated   :: boolean()
-               , error :: none | binary()
                , can_edit :: boolean()
                , channel_id :: binary() | none
                }).
@@ -26,7 +25,6 @@ init(Req, _Opts) ->
     ProgramId = cowboy_req:binding(program_id, Req),
     {cowboy_websocket, Req, #state{ program_id=ProgramId
                                   , user_id=none
-                                  , error=none
                                   , authenticated=false
                                   , can_edit=false
                                   , channel_id=none
@@ -46,7 +44,7 @@ websocket_info(ping_interval, State) ->
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
     {reply, ping, State};
 
-websocket_info({channel_engine, _ChannelId, Message=#{ <<"key">> := ui_event_show }}, State) ->
+websocket_info({channel_engine, _ChannelId, Message=#{ <<"key">> := ui_events_show }}, State) ->
     {reply, {text, jiffy:encode(Message)}, State};
 
 websocket_info(Message, State) ->
@@ -83,7 +81,7 @@ handle_message(Msg, State=#state{ program_id=ProgramId
         {true, CanEdit} ->
             %% Initialize connection. Listen program and set ping
             {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
-            ok = automate_channel_engine:listen_channel(ChannelId, {ui_event_show, undefined}),
+            ok = automate_channel_engine:listen_channel(ChannelId, {ui_events_show, undefined}),
             erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
 
             {ok, State#state{ authenticated=true, can_edit=CanEdit, channel_id=ChannelId }};
@@ -94,12 +92,11 @@ handle_message(Msg, State=#state{ program_id=ProgramId
             { reply
             , { close
               , case Reason of
-                    mismatch -> <<"Not matching token">>;
                     not_found -> <<"Token not found">>;
                     unauthorized -> <<"Not authorized to connect">>
                 end
               }
-            , State=State#state{ error=Reason }
+            , State
             }
     end;
 

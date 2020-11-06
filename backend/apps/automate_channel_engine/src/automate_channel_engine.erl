@@ -39,7 +39,7 @@ delete_channel(ChannelId) ->
 listen_channel(ChannelId) ->
     listen_channel(ChannelId, {undefined, undefined}).
 
--spec listen_channel(binary(), {binary()} | {binary() | undefined, binary() | undefined}) -> ok | {error, channel_not_found}.
+-spec listen_channel(binary(), {binary()} | {binary() | common_channel_keys(), binary() | undefined}) -> ok | {error, channel_not_found}.
 listen_channel(ChannelId, {Key}) ->
     listen_channel(ChannelId, {Key, undefined});
 
