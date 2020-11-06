@@ -1,7 +1,7 @@
 import {
     FlowBlock,
     InputPortDefinition, OnIOSelected,
-    Area2D, Direction2D, Position2D, MessageType, FlowBlockData, FlowBlockInitOpts,
+    Area2D, Direction2D, Position2D, MessageType, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions,
 } from './flow_block';
 import { BlockManager } from './block_manager';
 
@@ -27,6 +27,10 @@ export interface DirectValueFlowBlockData extends FlowBlockData {
     type: DirectValueBlockType,
     value: DirectValueOptions,
 };
+
+export function isDirectValueBlockData(opt: FlowBlockData): opt is DirectValueFlowBlockData {
+    return opt.type === BLOCK_TYPE;
+}
 
 export class DirectValue implements FlowBlock {
     options: DirectValueOptions;

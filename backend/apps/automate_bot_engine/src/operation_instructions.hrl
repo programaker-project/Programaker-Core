@@ -44,6 +44,7 @@
 -define(COMMAND_SET_VARIABLE, <<"data_setvariableto">>).
 -define(COMMAND_CHANGE_VARIABLE, <<"data_changevariableby">>).
 -define(COMMAND_DATA_VARIABLE, <<"data_variable">>).
+-define(COMMAND_DATA_VARIABLE_ON_CHANGE, <<"on_data_variable_update">>).
 
 %% List control
 -define(COMMAND_ADD_TO_LIST, <<"data_addtolist">>).

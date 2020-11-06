@@ -21,6 +21,11 @@ export interface CompiledConstantArg {
     value: any,
 };
 
+export interface CompiledVariableArg {
+    type: 'variable',
+    value: any,
+};
+
 export type MonitorExpectedValue = CompiledConstantArg;
 
 export interface CompiledBlockArgMonitorDict {
@@ -46,7 +51,7 @@ export interface CompiledBlockArgBlock {
     value: CompiledBlock[]
 }
 
-export type CompiledBlockArg = CompiledBlockArgBlock | CompiledConstantArg;
+export type CompiledBlockArg = CompiledBlockArgBlock | CompiledConstantArg | CompiledVariableArg;
 
 export type CompiledBlockArgList = CompiledBlockArg[];
 
@@ -67,6 +72,9 @@ export type CompiledBlockType = "wait_for_monitor"
     | "trigger_when_first_completed"
     | "op_preload_getter"
     | "data_lengthoflist" | "data_deleteoflist" | "data_addtolist"
+
+// Signal-only
+    | "on_data_variable_update"
 
 // Not found on executable stage, will be removed in link phase
     | "jump_point"

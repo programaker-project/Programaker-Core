@@ -46,6 +46,10 @@ export interface EnumDirectValueOptions {
     on_select_requested?: OnSelectRequested,
 };
 
+export function isEnumDirectValueBlockData(opt: FlowBlockData): opt is EnumDirectValueFlowBlockData {
+    return opt.type === BLOCK_TYPE;
+}
+
 export class EnumDirectValue implements FlowBlock {
     options: EnumDirectValueOptions;
     value_id: string = undefined;

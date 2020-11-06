@@ -1,6 +1,7 @@
 import { ToolboxDescription } from '../base_toolbox_description';
 import { UI_ICON } from '../definitions';
-import { SimpleButtonRenderer, SimpleButtonOnClick } from './renderers/simple_button';
+import { SimpleButtonOnClick, SimpleButtonRenderer } from './renderers/simple_button';
+import { SimpleOutputOnClick, SimpleOutputRenderer } from './renderers/simple_output';
 
 export const UiToolboxDescription: ToolboxDescription = [
     {
@@ -16,6 +17,18 @@ export const UiToolboxDescription: ToolboxDescription = [
                 outputs: [
                     {
                         type: "pulse",
+                    },
+                ]
+            },
+            {
+                icon: UI_ICON,
+                type: 'ui_flow_block',
+                'id': 'simple_output',
+                renderer: SimpleOutputRenderer,
+                onclick: SimpleOutputOnClick,
+                inputs: [
+                    {
+                        type: "any",
                     },
                 ]
             },

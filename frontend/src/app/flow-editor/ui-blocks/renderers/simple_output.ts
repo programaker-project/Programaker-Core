@@ -4,10 +4,11 @@ import { getRefBox } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
+const DefaultContent = "- No content yet -";
 
-const DefaultContent = "Click me!";
+type Handler = SVGTextElement;
 
-export const SimpleButtonRenderer: UiFlowBlockRenderer = (canvas: SVGElement, group: SVGElement, block: UiFlowBlock, service: UiSignalService) => {
+export const SimpleOutputRenderer: UiFlowBlockRenderer = (canvas: SVGElement, group: SVGElement, block: UiFlowBlock, service: UiSignalService) => {
     const refBox = getRefBox(canvas);
 
     const node = document.createElementNS(SvgNS, 'a');
@@ -16,10 +17,10 @@ export const SimpleButtonRenderer: UiFlowBlockRenderer = (canvas: SVGElement, gr
     const contentsGroup = document.createElementNS(SvgNS, 'g');
 
 
-    group.setAttribute('class', 'flow_node ui_node button_node');
+    group.setAttribute('class', 'flow_node ui_node output_node');
 
     const text = document.createElementNS(SvgNS, 'text');
-    text.setAttribute('class', 'button_text');
+    text.setAttribute('class', 'output_text');
     text.setAttributeNS(null,'textlength', '100%');
 
     text.textContent = DefaultContent;
@@ -43,20 +44,29 @@ export const SimpleButtonRenderer: UiFlowBlockRenderer = (canvas: SVGElement, gr
     rect.setAttributeNS(null, 'y', "0");
     rect.setAttributeNS(null, 'height', box_height + "");
     rect.setAttributeNS(null, 'width', box_width + "");
-    rect.setAttributeNS(null, 'rx', "5px"); // Like border-radius, in px
 
     rectShadow.setAttributeNS(null, 'class', "body_shadow");
     rectShadow.setAttributeNS(null, 'x', "0");
     rectShadow.setAttributeNS(null, 'y', "0");
     rectShadow.setAttributeNS(null, 'height', box_height + "");
     rectShadow.setAttributeNS(null, 'width', box_width + "");
-    rectShadow.setAttributeNS(null, 'rx', "5px"); // Like border-radius, in px
 
-    return () => {};
+    return setup(block, service, text);
 }
 
-export const SimpleButtonOnClick : OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => {
-    console.log("Clicked button", block);
-    console.log("UiSignalService", service);
-    return service.sendBlockSignal(block.options.id, block.id);
+export const SimpleOutputOnClick : OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => {
+    console.log("Unhandled click on output screen:", block);
+}
+
+export const setup = (block: UiFlowBlock, service: UiSignalService, handler: Handler) => {
+    // Nothing to do here... yet
+    const observer = service.onElementUpdate(block.options.id, block.id);
+
+    const subscription = observer.subscribe({
+        next: (value: any) => {
+            handler.textContent = JSON.stringify(value.values[0]);
+        }
+    })
+
+    return () => subscription.unsubscribe();
 }

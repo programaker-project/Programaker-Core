@@ -14,13 +14,14 @@ const OUTPUT_PORT_REAL_SIZE = 10;
 const CONNECTOR_SIDE_SIZE = 15;
 const ICON_PADDING = '1ex';
 
-export type UiFlowBlockRenderer = (canvas: SVGElement, group: SVGElement) => void;
+export type UiFlowBlockRenderer = (canvas: SVGElement, group: SVGElement, block: UiFlowBlock, service: UiSignalService) => OnDispose;
 export type OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => void;
+export type OnDispose = () => void;
 
 export interface UiFlowBlockOptions extends FlowBlockOptions {
-    renderer: UiFlowBlockRenderer;
-    onclick?: OnUiFlowBlockClick;
-    type: UiFlowBlockType;
+    renderer: UiFlowBlockRenderer,
+    onclick?: OnUiFlowBlockClick,
+    type: UiFlowBlockType,
     icon?: string,
     id: string,
     block_id?: string,
@@ -49,17 +50,31 @@ export class UiFlowBlock implements FlowBlock {
     private group: SVGElement;
     private position: {x: number, y: number};
     private output_groups: SVGGElement[];
+    private input_groups: SVGGElement[];
     private blockId: string;
+    private input_count: number[] = [];
+    onDispose: OnDispose | null;
 
     constructor(options: UiFlowBlockOptions,
                 private uiSignalService: UiSignalService,
                ) {
         this.options = options;
+        if (!this.options.outputs) {
+            this.options.outputs = [];
+        }
+        if (!this.options.inputs) {
+            this.options.inputs = [];
+        }
         this.output_groups = [];
+        this.input_groups = [];
     }
 
     public dispose() {
         this.canvas.removeChild(this.group);
+
+        if (this.onDispose) {
+            this.onDispose();
+        }
     }
 
     public get id() {
@@ -67,6 +82,8 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
+        if (this.group) { return this.group } // Avoid double initialization
+
         this.canvas = canvas;
         if (initOpts.position) {
             this.position = { x: initOpts.position.x, y: initOpts.position.y };
@@ -87,12 +104,12 @@ export class UiFlowBlock implements FlowBlock {
             this.blockId = uuidv4();
         }
 
-        if (this.group) { return this.group }
         const group = document.createElementNS(SvgNS, 'g');
         this.canvas.appendChild(group);
 
-        this.options.renderer(canvas, group);
+        this.onDispose = this.options.renderer(canvas, group, this, this.uiSignalService);
         this._renderOutputs(group);
+        this._renderInputs(group);
 
         this.group = group;
         this.group.onclick = this.onclick.bind(this);
@@ -197,7 +214,103 @@ export class UiFlowBlock implements FlowBlock {
             }
             this.output_groups[output_index] = out_group;
         }
+    }
 
+    private _renderInputs(group: SVGGElement) {
+        const nodeBox = group.getClientRects()[0];
+
+        // Add inputs
+        let input_index = -1;
+
+        const input_initial_x_position = 10; // px
+        const inputs_x_margin = 10; // px
+        const input_plating_x_margin = 3; // px
+
+        let input_x_position = input_initial_x_position;
+
+        for (const input of this.options.inputs) {
+            input_index++;
+
+            const in_group = document.createElementNS(SvgNS, 'g');
+            in_group.classList.add('input');
+            group.appendChild(in_group);
+
+            const port_external = document.createElementNS(SvgNS, 'circle');
+            const port_internal = document.createElementNS(SvgNS, 'circle');
+
+            in_group.appendChild(port_external);
+            in_group.appendChild(port_internal);
+
+            const input_port_size = 50;
+            const input_port_internal_size = 5;
+            const input_position_start = input_x_position;
+            let input_position_end = input_x_position + input_port_size;
+
+
+            if (input.name) {
+                // Bind input name and port
+                const port_plating = document.createElementNS(SvgNS, 'rect');
+                in_group.appendChild(port_plating);
+
+                const text = document.createElementNS(SvgNS, 'text');
+                text.textContent = input.name;
+                text.setAttributeNS(null, 'class', 'argument_name input');
+                in_group.appendChild(text);
+
+                input_position_end = Math.max(input_position_end, (input_x_position
+                                                                     + text.getClientRects()[0].width
+                                                                     + input_plating_x_margin * 2));
+
+                const input_width = input_position_end - input_position_start;
+
+                text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getClientRects()[0].width/2  + '');
+                text.setAttributeNS(null, 'y', nodeBox.height - (INPUT_PORT_REAL_SIZE/2) + '' );
+
+                input_x_position = input_position_end + inputs_x_margin;
+
+                const input_height = Math.max(input_port_size / 2, (INPUT_PORT_REAL_SIZE
+                                                                      + text.getClientRects()[0].height));
+
+                // Configure port connector now that we know where the input will be positioned
+                port_plating.setAttributeNS(null, 'class', 'port_plating');
+                port_plating.setAttributeNS(null, 'x', input_position_start + '');
+                port_plating.setAttributeNS(null, 'y', nodeBox.height - input_height/1.5 + '');
+                port_plating.setAttributeNS(null, 'width', (input_position_end - input_position_start) + '');
+                port_plating.setAttributeNS(null, 'height', input_height/1.5 + '');
+
+            }
+            else {
+                input_x_position += input_port_size;
+            }
+
+            let type_class = 'unknown_type';
+            if (input.type) {
+                type_class = input.type + '_port';
+            }
+
+            // Draw the input port
+            const port_x_center = (input_position_start + input_position_end) / 2;
+            const port_y_center = 0;
+
+            port_external.setAttributeNS(null, 'class', 'input external_port ' + type_class);
+            port_external.setAttributeNS(null, 'cx', port_x_center + '');
+            port_external.setAttributeNS(null, 'cy', port_y_center + '');
+            port_external.setAttributeNS(null, 'r', INPUT_PORT_REAL_SIZE + '');
+
+            port_internal.setAttributeNS(null, 'class', 'input internal_port');
+            port_internal.setAttributeNS(null, 'cx', port_x_center + '');
+            port_internal.setAttributeNS(null, 'cy', port_y_center + '');
+            port_internal.setAttributeNS(null, 'r', input_port_internal_size + '');
+
+            if (this.options.on_io_selected) {
+                const element_index = input_index; // Capture for use in callback
+                in_group.onclick = ((_ev: MouseEvent) => {
+                    this.options.on_io_selected(this, 'in', element_index, input,
+                                                { x: port_x_center, y: port_y_center });
+                });
+            }
+            this.input_groups[input_index] = in_group;
+        }
     }
 
     public static GetBlockType(): string {
@@ -275,16 +388,47 @@ export class UiFlowBlock implements FlowBlock {
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
     }
 
-    addConnection(direction: "in" | "out", input: number): void {
+    addConnection(direction: "in" | "out", input_index: number): void {
         if (direction === 'out') { return; }
 
-        throw new Error("Method not implemented.");
+        if (!this.input_count[input_index]) {
+            this.input_count[input_index] = 0;
+        }
+        this.input_count[input_index]++;
+
+        const extra_opts = this.options.extra_inputs;
+        if (!extra_opts) {
+            return;
+        }
+
+        // Consider need for extra inputs
+        let has_available_inputs = false;
+        for (let i = 0; i < this.options.inputs.length; i++) {
+            if (!this.input_count[i]) {
+                has_available_inputs = true;
+                break;
+            }
+        }
+
+        if (has_available_inputs) {
+            // Available inputs, nothing to do
+            return;
+        }
+
+
+        if ((extra_opts.quantity === 'any')
+            || (extra_opts.quantity.max < this.input_groups.length)) {
+
+            throw new Error("Generation of extra inputs not implemented.");
+        }
     }
 
     removeConnection(direction: "in" | "out", index: number): void {
         if (direction === 'out') { return; }
 
-        throw new Error("Method not implemented.");
+        if (this.input_count[index]) {
+            this.input_count[index]--;
+        }
     }
 
     getSlots(): { [key: string]: string; } {
@@ -292,12 +436,21 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     getInputs(): InputPortDefinition[] {
-        return [];
-        throw new Error("Method not implemented.");
+        return JSON.parse(JSON.stringify(this.options.inputs));
     }
 
     getPositionOfInput(index: number, edge?: boolean): Position2D {
-        throw new Error("Method not implemented.");
+        const group = this.input_groups[index];
+        const circle = group.getElementsByTagName('circle')[0];
+        const position = { x: parseInt(circle.getAttributeNS(null, 'cx')),
+                           y: parseInt(circle.getAttributeNS(null, 'cy')),
+                         };
+
+        if (edge) {
+            position.y += INPUT_PORT_REAL_SIZE;
+        }
+
+        return position;
     }
 
     getPositionOfOutput(index: number, edge?: boolean): Position2D {

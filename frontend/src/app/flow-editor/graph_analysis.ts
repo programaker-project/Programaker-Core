@@ -1,7 +1,7 @@
 import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions, isAtomicFlowBlockOptions, isAtomicFlowBlockData } from './atomic_flow_block';
 import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_description';
-import { DirectValue, DirectValueFlowBlockData } from './direct_value';
-import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
+import { DirectValue, DirectValueFlowBlockData, isDirectValueBlockData } from './direct_value';
+import { EnumDirectValue, EnumDirectValueFlowBlockData, isEnumDirectValueBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream } from './graph_transformations';
 import { index_connections, reverse_index_connections } from './graph_utils';
@@ -198,8 +198,8 @@ export function get_source_signals(graph: FlowGraph): string[] {
             // If it's a getter check that it gets derived into a trigger
             if (data.value.options.type === 'getter') {
                 const find_triggers_downstream_controller = ((_node_id: string, node: FlowGraphNode, _: string[]) => {
-                    if (node.data.type === AtomicFlowBlock.GetBlockType()) {
-                        const a_node = node.data as AtomicFlowBlockData;
+                    if (isAtomicFlowBlockData(node.data)) {
+                        const a_node = node.data;
 
                         if (a_node.value.options.type === 'getter') {
                             return 'continue'; // This path might be valid, continue checking downstream
@@ -209,6 +209,30 @@ export function get_source_signals(graph: FlowGraph): string[] {
                         }
                         else if (a_node.value.options.type === 'trigger') {
                             return 'capture'; // This is a valid path
+                        }
+                    }
+                    else if (isUiFlowBlockData(node.data)) {
+                        const hasSignalInput = !!(node.data.value.options.inputs.find(inp => inp.type === 'pulse'));
+                        const hasSignalOutput = !!(node.data.value.options.outputs.find(outp => outp.type === 'pulse'));
+
+                        if (!hasSignalInput && hasSignalOutput) {
+                            // Trigger block, like a button
+                            return 'capture'
+                        }
+
+                        if (!hasSignalInput && !hasSignalOutput) {
+                            // Probably a sink, like a display.
+                            //
+                            // There are not any cases where a UI block
+                            // generates data that doesn't have a trigger-like
+                            // function.
+                            return 'capture';
+                        }
+
+                        if (hasSignalInput) {
+                            // Operation, like a counter.
+                            // The cases where this should be used for a UI block are not clear.
+                            return 'stop';
                         }
                     }
                     else {
@@ -229,10 +253,8 @@ export function get_source_signals(graph: FlowGraph): string[] {
 }
 
 function has_pulse_output(block: FlowGraphNode): boolean {
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
-        const data = block.data as AtomicFlowBlockData;
-
-        const outputs = data.value.options.outputs || [];
+    if (isAtomicFlowBlockData(block.data)){
+        const outputs = block.data.value.options.outputs || [];
 
         // If it has no pulse inputs its a source block
         return outputs.filter(v => v.type === 'pulse').length > 0;
@@ -244,6 +266,12 @@ function has_pulse_output(block: FlowGraphNode): boolean {
     }
     else if (block.data.type === EnumDirectValue.GetBlockType()){
         return false;
+    }
+    else if (isUiFlowBlockData(block.data)){
+        const outputs = block.data.value.options.outputs || [];
+
+        // If it has no pulse inputs its a source block
+        return outputs.filter(v => v.type === 'pulse').length > 0;
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
@@ -270,6 +298,18 @@ function has_pulse_input(block: FlowGraphNode): boolean {
     }
 }
 
+function is_node_conversor_streaming_to_step(node: FlowGraphNode): boolean {
+    if (has_pulse_output(node) && !has_pulse_input(node)) {
+        return true;
+    }
+
+    if (isUiFlowBlockData(node.data)) {
+        return true;
+    }
+
+    return false;
+}
+
 export function get_conversions_to_stepped(graph: FlowGraph, source_block_id: string): string[] {
     const results = {};
     const reached = build_index([source_block_id]);
@@ -284,7 +324,7 @@ export function get_conversions_to_stepped(graph: FlowGraph, source_block_id: st
         for (const conn of remaining_connections) {
             if (reached[conn.from.id]) {
                 const node = graph.nodes[conn.to.id];
-                if (has_pulse_output(node) && !has_pulse_input(node)) {
+                if (is_node_conversor_streaming_to_step(node)) {
                     // Conversor to step
                     results[conn.to.id] = true;
                 }
@@ -1059,8 +1099,8 @@ function compile_block(graph: FlowGraph,
         }
     }
 
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
-        const data = block.data as AtomicFlowBlockData;
+    if (isAtomicFlowBlockData(block.data)){
+        const data = block.data;
 
         let compiled_contents = [];
         if (contents && contents.length) {
@@ -1237,8 +1277,8 @@ function compile_block(graph: FlowGraph,
             contents: compiled_contents,
         };
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
-        const data = block.data as DirectValueFlowBlockData;
+    else if (isDirectValueBlockData(block.data)){
+        const data = block.data;
 
         if (contents.length > 0) {
             throw new Error("AssertionError: Contents.length > 0 in DirectValue block")
@@ -1251,7 +1291,7 @@ function compile_block(graph: FlowGraph,
             // Not really a compiled block, this would be an argument, but this simplifies things
         } as any as CompiledBlock;
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         const data = block.data as EnumDirectValueFlowBlockData;
 
         if (contents.length > 0) {
@@ -1267,10 +1307,14 @@ function compile_block(graph: FlowGraph,
     }
     else if (isUiFlowBlockData(block.data)) {
 
+        let compiled_args: CompiledBlockArgs = args.map(v => compile_arg(graph, v,
+                                                                         block_id,
+                                                                         relatives.exec_orig ? relatives.exec_orig : block_id));
+
         return {
             id: block_id,
             type: ('services.ui.' + block.data.value.options.id + '.' + block_id) as any,
-            args: [],
+            args: compiled_args,
             contents: [],
         };
 
@@ -1345,25 +1389,112 @@ export function _link_graph(graph: CompiledFlowGraph): CompiledFlowGraph {
     return graph;
 }
 
+function get_argument_sources(graph: FlowGraph, block: BlockTree): BlockTree[] {
+    const blockArgs = block.arguments.filter( arg => {
+        const node = graph.nodes[arg.tree.block_id];
+
+        if (isAtomicFlowBlockData(node.data) || isUiFlowBlockData(node.data)) {
+            return true;
+        }
+        else if (isDirectValueBlockData(node.data) || isEnumDirectValueBlockData(node.data)) {
+            return false;
+        }
+        else {
+            throw new Error("Unknown block type: " + node.data.type)
+        }
+    });
+
+    if (blockArgs.length === 0) {
+        return [block];
+    }
+
+    // This could be done with a flatMap, but that is fairly recent, so if we
+    // can increase the compatibility with a little boilerplate, it's not a bad
+    // tradeoff
+    let results = [];
+    for (const arg of blockArgs) {
+        results = results.concat(get_argument_sources(graph, arg.tree));
+    }
+    return results;
+}
+
+function build_signal_from_source(graph: FlowGraph, source: BlockTree): CompiledBlock {
+    const source_node = graph.nodes[source.block_id];
+    if (isAtomicFlowBlockData(source_node.data)) {
+        const desc = source_node.data.value.options;
+        if (desc.block_function === 'data_variable') {
+            return {
+                id: source.block_id,
+                type: "on_data_variable_update",
+                args: [
+                    {
+                        type: "variable",
+                        value: source_node.data.value.slots['variable'],
+                    }
+                ],
+                contents: [],
+            }
+        }
+        else {
+            throw new Error(`Unexpected flow source node: (fun: ${desc.block_function}, type: ${source_node.data.type}, id: ${source.block_id})`);
+        }
+    }
+    else {
+        throw new Error(`Unexpected flow source node: (type: ${source_node.data.type}, id: ${source.block_id})`);
+    }
+}
+
+function build_stream_for_source(graph: FlowGraph,
+                                 source: BlockTree,
+                                 sink: BlockTree): CompiledBlock[] {
+    const signal = build_signal_from_source(graph, source);
+
+    return [
+        signal,
+        compile_block(graph, sink.block_id, sink.arguments, [],
+                      { inside_args: false, orig_tree: null },
+                      { before: null }),
+    ];
+}
+
+function build_streaming_flow_to(graph: FlowGraph,
+                                 sink: BlockTree,
+                                ) : CompiledBlock[][] {
+
+    if (sink.arguments.length != 1) {
+        throw new Error("Not implemented `build_streaming_flow_to` for argument list length != 1");
+    }
+
+    const sources = get_argument_sources(graph, sink);
+    const programs = sources.map(source => build_stream_for_source(graph, source, sink));
+
+    return programs;
+}
+
 export function assemble_flow(graph: FlowGraph,
                               signal_id: string,
-                              filter: BlockTree,
-                              stepped_ast: SteppedBlockTree[]): CompiledFlowGraph {
+                              filter: BlockTree | null,
+                              stepped_ast: SteppedBlockTree[]): CompiledFlowGraph[] {
 
     const signal_ast = compile_block(graph, signal_id, [], [],
                                      { inside_args: false, orig_tree: null },
                                      { before: null });
 
     let skip_filter = false;
-    let compiled_graph = null;
+    let compiled_graph: CompiledBlock[] = null;
 
     if (filter) {
         const filter_node = graph.nodes[filter.block_id];
 
-        if (filter_node.data.type === AtomicFlowBlock.GetBlockType()) {
-            const f_block = (filter_node.data as AtomicFlowBlockData);
-            if (f_block.value.options.block_function === 'trigger_on_signal') {
+        if (isAtomicFlowBlockData(filter_node.data)) {
+            if (filter_node.data.value.options.block_function === 'trigger_on_signal') {
                 skip_filter = true;
+            }
+        }
+        else if (isUiFlowBlockData(filter_node.data)) {
+            if (!has_pulse_output(filter_node)) {
+                const flows = build_streaming_flow_to(graph, filter);
+                return flows.map(flow => _link_graph(flow));
             }
         }
         else {
@@ -1398,7 +1529,7 @@ export function assemble_flow(graph: FlowGraph,
         ];
     }
 
-    return _link_graph(compiled_graph);
+    return [_link_graph(compiled_graph)];
 }
 
 export function compile(graph: FlowGraph): CompiledFlowGraph[] {
@@ -1435,7 +1566,7 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
     }
 
     // Finally assemble everything
-    const flows: CompiledFlowGraph[] = [];
+    let flows: CompiledFlowGraph[] = [];
     for (let i = 0; i < source_signals.length; i++) {
         const signal_id = source_signals[i];
 
@@ -1443,16 +1574,19 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
             for (let j = 0; j < filters[i].length; j++) {
                 const filter = filters[i][j];
                 const ast = stepped_asts[i][j];
-                flows.push(assemble_flow(graph, signal_id, filter, ast));
+                flows = flows.concat(assemble_flow(graph, signal_id, filter, ast));
             }
         }
         else {
             const ast = stepped_asts[i][0];
             if (ast.length > 0) { // Ignore triggers with no operations
-                flows.push(assemble_flow(graph, signal_id, null, ast));
+                flows = flows.concat(assemble_flow(graph, signal_id, null, ast));
             }
         }
     }
+
+
+    // TODO: Deduplicate programs
 
     return flows;
 }

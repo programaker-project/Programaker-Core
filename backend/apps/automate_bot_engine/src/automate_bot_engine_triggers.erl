@@ -67,6 +67,18 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
     automate_channel_engine:listen_channel(ChannelId, { ui_events, UiMonitorPath }),
     ?TRIGGERED_BY_MONITOR;
 
+get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?COMMAND_DATA_VARIABLE_ON_CHANGE
+                                                             , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_VARIABLE
+                                                                                , ?VALUE := Variable
+                                                                                }
+                                                                             ]
+                                                             }},
+                                 #program_permissions{owner_user_id=UserId}, ProgramId) ->
+
+    {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
+    automate_channel_engine:listen_channel(ChannelId, { variable_events, Variable }),
+    ?TRIGGERED_BY_MONITOR;
+
 
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
                                                              , ?ARGUMENTS := Arguments
@@ -186,7 +198,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.ui.", UiMonit
                                             }
                                , subprogram=Program
                                },
-               { ?TRIGGERED_BY_MONITOR, { _
+               { ?TRIGGERED_BY_MONITOR, { _MonitorId
                                         , FullMessage=#{ <<"key">> := ui_events, <<"subkey">> := UiMonitorPath }
                                         } },
                #program_state{ program_id=ProgramId
@@ -201,6 +213,36 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.ui.", UiMonit
                             },
     {true, Thread};
 
+
+trigger_thread(#program_trigger{condition=#{ ?TYPE := ?COMMAND_DATA_VARIABLE_ON_CHANGE
+                                           , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_VARIABLE
+                                                              , ?VALUE := OperationVariable
+                                                              }
+                                                           ]
+                                           }
+                               , subprogram=Program
+                               },
+               { ?TRIGGERED_BY_MONITOR, { _MonitorId
+                                        , FullMessage=#{ <<"key">> := variable_events, <<"subkey">> := ReceivedVariable }
+                                        } },
+               #program_state{ program_id=ProgramId
+                             , permissions=#program_permissions{owner_user_id=_UserId}}) ->
+
+    %% Manage subkey canonicalization
+    case automate_channel_engine_utils:canonicalize_selector(OperationVariable) of
+        ReceivedVariable ->
+            %% Match!
+            Thread = #program_thread{ position=[1]
+                                    , program=Program
+                                    , global_memory=#{}
+                                    , instruction_memory=#{}
+                                    , program_id=ProgramId
+                                    , thread_id=undefined
+                                    },
+            {true, Thread};
+        _ ->
+            false
+    end;
 
 %% Bridge channel
 trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", MonitorPath/binary>>

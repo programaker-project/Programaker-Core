@@ -508,3 +508,13 @@ svg.block_renderer g.flow_node.button_node .node_body {
     stroke-width: 1;
     stroke: #222;
 }
+
+svg.block_renderer g.flow_node.output_node .node_body {
+    fill: #222;
+    stroke-width: 1;
+    stroke: #fff;
+}
+
+svg.block_renderer g.flow_node.output_node .output_text {
+    fill: #fc4;
+}

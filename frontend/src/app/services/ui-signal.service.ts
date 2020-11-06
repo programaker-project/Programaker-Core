@@ -1,13 +1,17 @@
-import { Injectable } from '@angular/core';
+import { Injectable, EventEmitter } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from 'app/session.service';
 import { EnvironmentService } from 'app/environment.service';
 import { toWebsocketUrl } from 'app/utils';
+import { Observable } from 'rxjs';
+
+type Message = any;
 
 @Injectable()
 export class UiSignalService {
     programId: string;
     websocketEstablishment: Promise<WebSocket>;
+    messageEmitter: EventEmitter<any>;
 
     constructor(
         private http: HttpClient,
@@ -16,6 +20,7 @@ export class UiSignalService {
     ) {
         this.http = http;
         this.sessionService = sessionService;
+        this.messageEmitter = new EventEmitter<Message>(false);
     }
 
     setProgramId(programId: string) {
@@ -55,7 +60,8 @@ export class UiSignalService {
                 });
 
                 websocket.onmessage = ((ev) => {
-                    console.debug("New message:", ev);
+                    const parsed = JSON.parse(ev.data);
+                    this.messageEmitter.emit(parsed);
                 });
 
                 websocket.onclose = (() => {
@@ -100,4 +106,22 @@ export class UiSignalService {
             }
         }));
     }
+
+
+    public onElementUpdate(blockType: string, blockId: string): Observable<any> {
+        this._assertInitialized();
+
+        const selector = `${blockType}.${blockId}`;
+
+        return new Observable(observer => {
+            this.messageEmitter.subscribe({
+                next: (ev) => {
+                    if (ev.subkey === selector) {
+                        observer.next(ev);
+                    }
+                }});
+        })
+
+    }
+
 }

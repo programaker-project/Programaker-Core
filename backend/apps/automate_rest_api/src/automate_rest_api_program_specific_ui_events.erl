@@ -46,29 +46,14 @@ websocket_info(ping_interval, State) ->
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
     {reply, ping, State};
 
-websocket_info({channel_engine, _ChannelId, Message=#{ <<"type">> := <<"ui_event">> }}, State) ->
-    Pid = self(),
-    case Message of
-        #{ from_id := Pid } ->  % Ignore if the message came from this websocket
-            {ok, State};
-        _ ->
-            NewMessage = case Message of
-                             #{ from_id := NewPid, <<"value">> := Value=#{ <<"value">> := InnerValue }} ->
-                                 Clean = maps:remove(from_id, Message),
-                                 Clean#{ <<"value">> => Value#{ <<"value">> => InnerValue#{ <<"id">> => list_to_binary(pid_to_list(NewPid)) }}};
-                             _ ->
-                                 Message
-                         end,
-            {reply, {text, jiffy:encode(NewMessage)}, State}
-    end;
+websocket_info({channel_engine, _ChannelId, Message=#{ <<"key">> := ui_event_show }}, State) ->
+    {reply, {text, jiffy:encode(Message)}, State};
 
 websocket_info(Message, State) ->
     io:fwrite("Unexpected UI event: ~p~n", [Message]),
     {ok, State}.
 
 %% Message handling
-
-
 handle_message(Msg, State=#state{ program_id=ProgramId
                                 , authenticated=false
                                 }) ->
@@ -85,7 +70,6 @@ handle_message(Msg, State=#state{ program_id=ProgramId
                              case UserCanView of
                                  true -> {true, UserCanEdit};
                                  false ->
-                                     io:fwrite("REASON: ~p~n", TokenUserId),
                                      automate_logging:log_api(error, ?MODULE, {not_authorized, TokenUserId}),
                                      {false, unauthorized}
                              end;
@@ -97,8 +81,11 @@ handle_message(Msg, State=#state{ program_id=ProgramId
              end,
     case Passed of
         {true, CanEdit} ->
+            %% Initialize connection. Listen program and set ping
             {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
-            %% TODO: Listen to channel?
+            ok = automate_channel_engine:listen_channel(ChannelId, {ui_event_show, undefined}),
+            erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
+
             {ok, State#state{ authenticated=true, can_edit=CanEdit, channel_id=ChannelId }};
         {false, Reason} ->
             automate_logging:log_api(warning, ?MODULE,
@@ -117,7 +104,6 @@ handle_message(Msg, State=#state{ program_id=ProgramId
     end;
 
 handle_message(Msg, State=#state{ channel_id=ChannelId }) ->
-    io:fwrite("Received message on UI ws: ~p~n", [Msg]),
     Data = jiffy:decode(Msg, [return_maps]),
     case Data of
         #{ <<"type">> := <<"ui-event">>
