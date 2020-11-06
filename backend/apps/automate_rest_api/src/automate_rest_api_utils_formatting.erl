@@ -82,6 +82,11 @@ serialize_error_subtype(#variable_not_set{variable_name=VariableName}) ->
      , variable_name => VariableName
      };
 
+serialize_error_subtype(#memory_not_set{block_id=BlockId}) ->
+    #{ type => memory_not_set
+     , block_id => BlockId
+     };
+
 serialize_error_subtype(#list_not_set{list_name=ListName}) ->
     #{ type => list_not_set
      , list_name => ListName
