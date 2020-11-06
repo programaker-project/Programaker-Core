@@ -102,8 +102,8 @@ handle_message(Msg, State=#state{ program_id=ProgramId
             {ok, State#state{ authenticated=true, can_edit=CanEdit, channel_id=ChannelId }};
         {false, Reason} ->
             automate_logging:log_api(warning, ?MODULE,
-                                     binary:list_to_bin(list_to_binary(io_lib:format("UI Authentication error on program_id=~p (~p)",
-                                                                                     [ ProgramId, Reason ])))),
+                                     list_to_binary(io_lib:format("UI Authentication error on program_id=~p (~p)",
+                                                                                     [ ProgramId, Reason ]))),
             { reply
             , { close
               , case Reason of
