@@ -110,6 +110,8 @@ export class UiSignalService {
 
     public onElementUpdate(blockType: string, blockId: string): Observable<any> {
         this._assertInitialized();
+        this._getWebsocket(); // Create websocket if not existing
+
 
         const selector = `${blockType}.${blockId}`;
 
