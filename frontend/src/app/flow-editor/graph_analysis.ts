@@ -31,8 +31,8 @@ const JUMP_TO_BLOCK_OPERATION = 'jump_to_block';
 const FORK_OPERATION = 'op_fork_execution';
 
 function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
-        const data = block.data as AtomicFlowBlockData;
+    if (isAtomicFlowBlockData(block.data)){
+        const data = block.data;
 
         if (data.value.options.type !== 'operation') {
             // Getter or trigger
@@ -51,11 +51,14 @@ function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
 
         return input.type === 'pulse';
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
+    else if (isDirectValueBlockData(block.data)){
         throw new Error('Connection from reached block to value (backwards?)');
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         throw new Error('Connection from reached block to value (backwards?)');
+    }
+    else if (isUiFlowBlockData(block.data)) {
+        return true;
     }
 }
 
