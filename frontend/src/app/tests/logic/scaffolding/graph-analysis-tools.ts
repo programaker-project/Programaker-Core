@@ -11,14 +11,18 @@ type _WaitForMonitorOp = ['wait_for_monitor', { monitor_id: { from_service: stri
 type _LastValueOp = ['flow_last_value', string, number | string];
 type _IfElseOp = ['control_if_else', SimpleArrayAstArgument, SimpleArrayAstOperation[]];
 type _ForkExecOp = ['op_fork_execution', SimpleArrayAstArgument[], SimpleArrayAstOperation[]]
+type _DataVariableOp = ['data_variable' | 'on_data_variable_update', SimpleArrayAstArgument[]];
 
 export type SimpleArrayAstArgument = SimpleArrayAstOperation | string | number
-export type SimpleArrayAstOperation = _AndOp | _EqualsOp
+export type SimpleArrayAstArgs = _AndOp | _EqualsOp
     | _CallServiceOp
     | _WaitForMonitorOp | _LastValueOp
     | _IfElseOp
     | _ForkExecOp
+    | _DataVariableOp
 ;
+
+export type SimpleArrayAstOperation = {args: SimpleArrayAstArgs, slots: {[key: string]: any}}
 
 export type SimpleArrayAst = SimpleArrayAstOperation[];
 
@@ -53,42 +57,56 @@ function convert_contents(contents: SimpleArrayAstOperation[]): ContentBlock {
 }
 
 function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
+    const args = op.args;
 
-    if (op[0] === 'wait_for_monitor') {
+    if (args[0] === 'wait_for_monitor') {
         return {
-            type: op[0],
-            args: op[1],
+            type: args[0],
+            args: args[1],
             contents: [],
         }
     }
 
-    if (op[0] === 'command_call_service') {
+    if (args[0] === 'command_call_service') {
         return {
-            type: op[0],
+            type: args[0],
             args: {
-                service_action: op[1].service_action,
-                service_id: op[1].service_id,
+                service_action: args[1].service_action,
+                service_id: args[1].service_id,
                 service_call_values: op[1].service_call_values.map(v => convert_argument(v))
             },
             contents: [],
         }
     }
 
-    if (op[0] === 'control_if_else') {
-        const contents = (op.slice(2) as SimpleArrayAstOperation[][]).map(v => convert_contents(v));
+    if ((args[0] === 'data_variable') || (args[0] === 'on_data_variable_update')) {
+        return {
+            type: args[0],
+            args: [
+                {
+                    type: 'variable',
+                    value: op.slots.variable,
+                }
+            ],
+            contents: [],
+        };
+    }
+
+    if (args[0] === 'control_if_else') {
+        const contents = (args.slice(2) as SimpleArrayAstOperation[][]).map(v => convert_contents(v));
 
         if (contents.length < 2) {
             contents.push({ contents: [] });
         }
 
         return {
-            type: op[0],
+            type: args[0],
             args: [ convert_argument(op[1]) ],
             contents: contents,
         }
     }
 
-    if (op[0] === 'op_fork_execution') {
+    if (args[0] === 'op_fork_execution') {
         const contents = (op[2] as SimpleArrayAstOperation[][]).map(v => convert_contents(v));
 
         if (contents.length < 2) {
@@ -96,21 +114,19 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
         }
 
         return {
-            type: op[0],
+            type: args[0],
             args: op[1].map(arg => convert_argument(arg)),
             contents: contents,
         }
     }
-
-    const args: SimpleArrayAstArgument[] = op.slice(1);
 
     if (typeof args !== 'object') {
         throw new Error(`ASTCompilationError: Expected argument array, found: ${JSON.stringify(args)}. Check for errors on argument nesting`);
     }
 
     return {
-        type: op[0],
-        args: args.map(v => convert_argument(v)),
+        type: args[0],
+        args: args.slice(1).map(v => convert_argument(v)),
         contents: []
     }
 }
@@ -122,6 +138,9 @@ export function gen_compiled(ast: SimpleArrayAst): CompiledFlowGraph {
 
 function canonicalize_arg(arg: CompiledBlockArg): CompiledBlockArg {
     if (arg.type === 'constant') {
+        return arg;
+    }
+    else if (arg.type === 'variable') {
         return arg;
     }
     else {
@@ -172,6 +191,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "operator_gt":
         case "data_setvariableto":
         case "data_variable":
+        case "on_data_variable_update":
         case "data_lengthoflist":
         case "flow_get_thread_id":
         case "data_deleteoflist":

@@ -179,18 +179,8 @@ export function get_source_signals(graph: FlowGraph): string[] {
             for (const conn of rev_conn_index[block_id] || []) {
                 const orig = graph.nodes[conn.from.id];
                 if (orig.data.type === AtomicFlowBlock.GetBlockType()) {
-                    const a_block = orig.data as AtomicFlowBlockData;
-                    if (a_block.value.options.type === 'getter') {
-                        has_block_inputs = true;
-                        break;
-                    }
-                    else if (a_block.value.options.type === 'trigger') {
-                        has_block_inputs = true;
-                        break;
-                    }
-                    else {
-                        throw new Error(`Unexpected input block (id: ${conn.from.id}, type: ${a_block.value.options.type}), expected a "getter" or "trigger"`);
-                    }
+                    has_block_inputs = true;
+                    break;
                 }
             }
 
@@ -215,8 +205,8 @@ export function get_source_signals(graph: FlowGraph): string[] {
                         }
                     }
                     else if (isUiFlowBlockData(node.data)) {
-                        const hasSignalInput = !!(node.data.value.options.inputs.find(inp => inp.type === 'pulse'));
-                        const hasSignalOutput = !!(node.data.value.options.outputs.find(outp => outp.type === 'pulse'));
+                        const hasSignalInput = !!((node.data.value.options.inputs || []).find(inp => inp.type === 'pulse'));
+                        const hasSignalOutput = !!((node.data.value.options.outputs || []).find(outp => outp.type === 'pulse'));
 
                         if (!hasSignalInput && hasSignalOutput) {
                             // Trigger block, like a button
@@ -241,6 +231,9 @@ export function get_source_signals(graph: FlowGraph): string[] {
                     else {
                         throw new Error(`Unexpected: Direct value block should not have an input`);
                     }
+
+                    throw new Error(`Unexpected signal properties: ${JSON.stringify(node.data)} | ${isUiFlowBlockData(node.data)}`)
+
                 });
 
                 if (!scan_downstream(graph, block_id, conn_index, find_triggers_downstream_controller)) {
@@ -374,6 +367,11 @@ export interface BlockTreeArgument {
 export interface BlockTree {
     block_id: string,
     arguments: BlockTreeArgument[],
+};
+
+interface BlockTreeOutputValue {
+    block: BlockTree;
+    output_index: number;
 };
 
 export interface SteppedBlockTreeBlock extends BlockTree  {
@@ -1136,7 +1134,7 @@ function compile_block(graph: FlowGraph,
 
         if (slots) {
             for (const slot of Object.keys(slots)){
-                slot_args.push({ name: slot, type: slot, value: slots[slot]})
+                slot_args.push({ type: slot, value: slots[slot]})
             }
         }
 
@@ -1310,7 +1308,7 @@ function compile_block(graph: FlowGraph,
     }
     else if (isUiFlowBlockData(block.data)) {
 
-        let compiled_args: CompiledBlockArgs = args.map(v => compile_arg(graph, v,
+        const compiled_args: CompiledBlockArgs = args.map(v => compile_arg(graph, v,
                                                                          block_id,
                                                                          relatives.exec_orig ? relatives.exec_orig : block_id));
 
@@ -1392,7 +1390,7 @@ export function _link_graph(graph: CompiledFlowGraph): CompiledFlowGraph {
     return graph;
 }
 
-function get_argument_sources(graph: FlowGraph, block: BlockTree): BlockTree[] {
+function get_argument_sources(graph: FlowGraph, block: BlockTree, output_index: number): BlockTreeOutputValue[] {
     const blockArgs = block.arguments.filter( arg => {
         const node = graph.nodes[arg.tree.block_id];
 
@@ -1408,7 +1406,7 @@ function get_argument_sources(graph: FlowGraph, block: BlockTree): BlockTree[] {
     });
 
     if (blockArgs.length === 0) {
-        return [block];
+        return [{block, output_index}];
     }
 
     // This could be done with a flatMap, but that is fairly recent, so if we
@@ -1416,18 +1414,18 @@ function get_argument_sources(graph: FlowGraph, block: BlockTree): BlockTree[] {
     // tradeoff
     let results = [];
     for (const arg of blockArgs) {
-        results = results.concat(get_argument_sources(graph, arg.tree));
+        results = results.concat(get_argument_sources(graph, arg.tree, arg.output_index));
     }
     return results;
 }
 
-function build_signal_from_source(graph: FlowGraph, source: BlockTree): CompiledBlock {
-    const source_node = graph.nodes[source.block_id];
+function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue): CompiledBlock {
+    const source_node = graph.nodes[source.block.block_id];
     if (isAtomicFlowBlockData(source_node.data)) {
         const desc = source_node.data.value.options;
         if (desc.block_function === 'data_variable') {
             return {
-                id: source.block_id,
+                id: source.block.block_id,
                 type: "on_data_variable_update",
                 args: [
                     {
@@ -1438,17 +1436,44 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTree): Compiled
                 contents: [],
             }
         }
+        else if (desc.type === 'operation') {
+            return {
+                type: "flow_last_value",
+                args: [
+                    {
+                        type: 'constant',
+                        value: source.block.block_id,
+                    },
+                    {
+                        type: 'constant',
+                        value: source.output_index + '',
+                    }
+                ]
+            }
+        }
         else {
-            throw new Error(`Unexpected flow source node: (fun: ${desc.block_function}, type: ${source_node.data.type}, id: ${source.block_id})`);
+            throw new Error(`Unexpected flow source node: (fun: ${desc.block_function}, type: ${source_node.data.type}, id: ${source.block.block_id})`);
         }
     }
+    else if (isUiFlowBlockData(source_node.data)) {
+        const compiled_args: CompiledBlockArgs = source.block.arguments.map(v => compile_arg(graph, v,
+                                                                                             source.block.block_id,
+                                                                                             source.block.block_id));
+
+        return {
+            id: source.block.block_id,
+            type: ('services.ui.' + source_node.data.value.options.id + '.' + source.block.block_id) as any,
+            args: compiled_args,
+            contents: [],
+        };
+    }
     else {
-        throw new Error(`Unexpected flow source node: (type: ${source_node.data.type}, id: ${source.block_id})`);
+        throw new Error(`Unexpected flow source node: (type: ${source_node.data.type}, id: ${source.block.block_id})`);
     }
 }
 
 function build_stream_for_source(graph: FlowGraph,
-                                 source: BlockTree,
+                                 source: BlockTreeOutputValue,
                                  sink: BlockTree): CompiledBlock[] {
     const signal = build_signal_from_source(graph, source);
 
@@ -1468,8 +1493,8 @@ function build_streaming_flow_to(graph: FlowGraph,
         throw new Error("Not implemented `build_streaming_flow_to` for argument list length != 1");
     }
 
-    const sources = get_argument_sources(graph, sink);
-    const programs = sources.map(source => build_stream_for_source(graph, source, sink));
+    const sources = get_argument_sources(graph, sink, null);
+    const programs = sources.map((source: BlockTreeOutputValue) => build_stream_for_source(graph, source, sink));
 
     return programs;
 }

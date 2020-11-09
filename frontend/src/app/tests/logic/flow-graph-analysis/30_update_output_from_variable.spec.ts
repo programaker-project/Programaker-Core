@@ -11,11 +11,7 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
 
     const builder = new GraphBuilder();
 
-    // Trigger
-    const trigger = builder.add_trigger('data_variable', {id: 'trigger', args: ["x"]});
-
-    // Simple operation
-    builder.add_getter('simple_output', { id: 'out', args: [[trigger, 0]] });
+    builder.add_getter('simple_output', { id: 'out', args: [{from_variable: 'x'}] });
 
     const graph = builder.build();
     return graph;
@@ -31,7 +27,7 @@ fdescribe('Flow-30: Update output from variable.', () => {
         are_equivalent_ast(compile(gen_flow()), [
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
-                (on_data_variable_update)
+                (on-var x)
                 (services.ui.simple_output.out (get-var x))
                 `))
         ]);

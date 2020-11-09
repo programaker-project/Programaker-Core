@@ -21,6 +21,7 @@ export const OP_TRANSLATIONS = {
 
     // Variables
     'set-var': 'data_setvariableto',
+    'on-var': 'on_data_variable_update',
     'get-var': 'data_variable',
     'flow-last-value': 'flow_last_value',
     'wait-for-monitor': 'wait_for_monitor',
@@ -72,9 +73,11 @@ function array_to_map(args: any[]): {[key: string]: any} {
     return result;
 }
 
-function transform_call(args: any[]): any[] {
+function transform_call(args: any[]): {args: any[], slots: {[key: string]: any}} {
+    const slots = {};
+
     if (args.length == 0) {
-        return args;
+        return {args, slots};
     }
 
     let op = args[0] as string;
@@ -111,10 +114,10 @@ function transform_call(args: any[]): any[] {
         }
     }
 
-    if (op === 'data_variable') {
-        // Remove args, as they will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1);
+    if ((op === 'data_variable') || (op === 'on_data_variable_update')) {
+        // Move first argument to 'variable' slot
+        const vars = args.splice(1, 1);
+        slots['variable'] = vars[0];
     }
 
     if (op === 'data_lengthoflist') {
@@ -186,7 +189,7 @@ function transform_call(args: any[]): any[] {
         args[2] = contents;
     }
 
-    return args;
+    return {args, slots};
 }
 
 function read(s: string, idx: number, linenum: number, colnum: number): [SimpleArrayAstArgument, number, number, number] {

@@ -6,10 +6,10 @@ import { MessageType } from '../../../flow-editor/flow_block';
 import { FlowGraph, FlowGraphEdge, FlowGraphNode } from '../../../flow-editor/flow_graph';
 import { uuidv4 } from '../../../flow-editor/utils';
 import { UiToolboxDescription } from '../../../flow-editor/ui-blocks/ui_toolbox_description';
-import { UiFlowBlockOptions, isUiFlowBlockOptions, BLOCK_TYPE as FLOW_BLOCK_TYPE } from '../../../flow-editor/ui-blocks/ui_flow_block';
+import { UiFlowBlockOptions, isUiFlowBlockOptions, BLOCK_TYPE as FLOW_BLOCK_TYPE, UiFlowBlockData } from '../../../flow-editor/ui-blocks/ui_flow_block';
 
 
-type NodeDescription = AtomicFlowBlockData | EnumDirectValueFlowBlockData | DirectValueFlowBlockData | UiFlowBlockOptions;
+type NodeDescription = AtomicFlowBlockData | EnumDirectValueFlowBlockData | DirectValueFlowBlockData | UiFlowBlockData;
 
 type ValueNodeRef = [string, number];
 type StreamGenerator = (builder: GraphBuilder) => StreamNodeBuilderRef;
@@ -186,20 +186,55 @@ export class GraphBuilder {
     }
 
     public add_variable_getter_node(var_name: any, options?: { id: string }): StreamNodeBuilderRef {
-        const id = options && options.id ? options.id : 'set_var_' + var_name + '_' + uuidv4();
+        const id = options && options.id ? options.id : 'get_var_' + var_name + '_' + uuidv4();
 
         return this.add_getter('data_variable', { id: id, slots: { variable: var_name } });
     }
 
+    private add_node(block_options: BlockOptions, ref: string): number {
+        let synth_in = 0, synth_out = 0;
+        if (isAtomicFlowBlockOptions(block_options)) {
+            [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
+            this.nodes[ref] = {
+                type: ATOMIC_BLOCK_TYPE,
+                value: {
+                    options: block_options,
+                    slots: block_options.slots || {},
+                    synthetic_input_count: synth_in,
+                    synthetic_output_count: synth_out,
+                }
+            }
+        }
+        else if (isUiFlowBlockOptions(block_options)) {
+            this.nodes[ref] = {
+                type: FLOW_BLOCK_TYPE,
+                value: {
+                    options: block_options,
+                }
+            }
+        }
+        else {
+            throw new Error(`Unexpected flow block options: ${JSON.stringify(block_options)}`);
+        }
+
+        return synth_in;
+    }
+
     private resolve_args(node: string, options?: BlockOptions, offset?: number) {
-        if (options && options.args) {
+        if (!options) {
+            return;
+        }
+
+        let args = options.args || [];
+
+        if (args) {
             let idx = -1;
 
             if (offset) {
                 idx += offset;
             }
 
-            for (const arg of options.args) {
+            for (const arg of args) {
                 idx++;
 
                 if (arg === null || arg === undefined) { continue; }
@@ -209,7 +244,7 @@ export class GraphBuilder {
                     const ref = this.add_direct_node(arg);
                     this.establish_connection(ref, [node, idx]);
                 }
-                // Variaable reference
+                // Variable reference
                 else if ((arg as VariableRef).from_variable) {
                     const vblock = this.add_variable_getter_node((arg as VariableRef).from_variable);
 
@@ -255,19 +290,7 @@ export class GraphBuilder {
             }
         }
 
-        let synth_in: number, synth_out: number
-        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
-
-        this.nodes[ref] = {
-            type: ATOMIC_BLOCK_TYPE,
-            value: {
-                options: block_options,
-                slots: {},
-                synthetic_input_count: synth_in,
-                synthetic_output_count: synth_out,
-            }
-        };
-
+        const synth_in = this.add_node(block_options, ref);
         this.resolve_args(ref, options, synth_in);
 
         return new StreamNodeBuilderRef(this, ref);
@@ -286,29 +309,11 @@ export class GraphBuilder {
             }
         }
 
-        if (isAtomicFlowBlockOptions(block_options)) {
-            let synth_in: number, synth_out: number
-            [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
-            this.nodes[ref] = {
-                type: ATOMIC_BLOCK_TYPE,
-                value: {
-                    options: block_options,
-                    slots: {},
-                    synthetic_input_count: synth_in,
-                    synthetic_output_count: synth_out,
-                }
-            }
-        }
-        else {
-            this.nodes[ref] = {
-                type: FLOW_BLOCK_TYPE,
-                value: {
-                    options: block_options,
-                }
-
-            }
+        if (options && options.slots) {
+            block_options.slots = Object.assign(block_options.slots || {}, options.slots)
         }
 
+        const synth_in = this.add_node(block_options, ref);
         this.resolve_args(ref, options, synth_in);
 
         return new OpNodeBuilderRef(this, ref);
@@ -323,19 +328,11 @@ export class GraphBuilder {
             block_options = infer_block_options(block_type, options, { type: 'getter' });
         }
 
-        let synth_in: number, synth_out: number
-        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
-
-        this.nodes[ref] = {
-            type: ATOMIC_BLOCK_TYPE,
-            value: {
-                options: block_options,
-                slots: {},
-                synthetic_input_count: synth_in,
-                synthetic_output_count: synth_out,
-            }
+        if (options && options.slots) {
+            block_options.slots = Object.assign(block_options.slots || {}, options.slots)
         }
 
+        const synth_in = this.add_node(block_options, ref);
         this.resolve_args(ref, options, synth_in);
 
         return new StreamNodeBuilderRef(this, ref);
@@ -350,23 +347,11 @@ export class GraphBuilder {
             block_options = infer_block_options(block_type, options, { type: 'operation' });
         }
 
-        let synth_in: number, synth_out: number
-        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
-
         if (options && options.slots) {
             block_options.slots = Object.assign(block_options.slots || {}, options.slots)
         }
 
-        this.nodes[ref] = {
-            type: ATOMIC_BLOCK_TYPE,
-            value: {
-                options: block_options,
-                slots: {},
-                synthetic_input_count: synth_in,
-                synthetic_output_count: synth_out,
-            }
-        }
-
+        const synth_in = this.add_node(block_options, ref);
         this.resolve_args(ref, options, synth_in);
 
         return new OpNodeBuilderRef(this, ref);
@@ -380,19 +365,8 @@ export class GraphBuilder {
         const ref = options.id ? options.id : (block_type + '_' + uuidv4());
 
         let block_options = this.blocks[block_type];
-        let synth_in: number, synth_out: number
-        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
 
-        this.nodes[ref] = {
-            type: ATOMIC_BLOCK_TYPE,
-            value: {
-                options: block_options,
-                slots: {},
-                synthetic_input_count: synth_in,
-                synthetic_output_count: synth_out,
-            }
-        }
-
+        this.add_node(block_options, ref);
         this.establish_connection([source.id, 0], [ref, 0]);
         let out_index = -1;
         for (const branch of branches) {
@@ -412,18 +386,8 @@ export class GraphBuilder {
         const ref = options.id ? options.id : (block_type + '_' + uuidv4());
 
         let block_options = this.blocks[block_type];
-        let synth_in: number, synth_out: number
-        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
 
-        this.nodes[ref] = {
-            type: ATOMIC_BLOCK_TYPE,
-            value: {
-                options: block_options,
-                slots: {},
-                synthetic_input_count: synth_in,
-                synthetic_output_count: synth_out,
-            }
-        }
+        const synth_in = this.add_node(block_options, ref);
 
         let cond = options.cond;
         if (typeof cond === 'function') {

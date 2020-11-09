@@ -173,7 +173,7 @@ export function scan_upstream(graph: FlowGraph, source_id: string,
                 return branch_path;
             }
             else {
-                throw new Error('Unknown "scan" command: ' + result);
+                throw new Error('Unknown "scan" (upstream) command: ' + result);
             }
         }
 
@@ -213,7 +213,7 @@ export function scan_downstream(graph: FlowGraph, source_id: string,
                 return branch_path;
             }
             else {
-                throw new Error('Unknown "scan" command: ' + result);
+                throw new Error('Unknown "scan" (downstream) command: ' + result);
             }
         }
 
@@ -296,7 +296,7 @@ export function scan_pulse_upstream(graph: FlowGraph, source_id: string,
                 return branch_path;
             }
             else {
-                throw new Error('Unknown "scan" command: ' + result);
+                throw new Error('Unknown "scan" (pulse-upstream) command: ' + result);
             }
         }
 
