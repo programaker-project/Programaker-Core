@@ -1,13 +1,15 @@
-import { AtomicFlowBlockData, AtomicFlowBlockOptions, BLOCK_TYPE as ATOMIC_BLOCK_TYPE, AtomicFlowBlock, AtomicFlowBlockType, AtomicFlowBlockOperationType, isAtomicFlowBlockOptions } from '../../../flow-editor/atomic_flow_block';
+import { AtomicFlowBlockData, AtomicFlowBlockOptions, BLOCK_TYPE as ATOMIC_BLOCK_TYPE, AtomicFlowBlock, AtomicFlowBlockOperationType, isAtomicFlowBlockOptions } from '../../../flow-editor/atomic_flow_block';
 import { BaseToolboxDescription, ToolboxDescription } from '../../../flow-editor/base_toolbox_description';
 import { BLOCK_TYPE as VALUE_BLOCK_TYPE, DirectValueFlowBlockData } from '../../../flow-editor/direct_value';
 import { BLOCK_TYPE as ENUM_BLOCK_TYPE, EnumDirectValueFlowBlockData, EnumDirectValueOptions } from '../../../flow-editor/enum_direct_value';
 import { MessageType } from '../../../flow-editor/flow_block';
 import { FlowGraph, FlowGraphEdge, FlowGraphNode } from '../../../flow-editor/flow_graph';
 import { uuidv4 } from '../../../flow-editor/utils';
+import { UiToolboxDescription } from '../../../flow-editor/ui-blocks/ui_toolbox_description';
+import { UiFlowBlockOptions, isUiFlowBlockOptions, BLOCK_TYPE as FLOW_BLOCK_TYPE } from '../../../flow-editor/ui-blocks/ui_flow_block';
 
 
-type NodeDescription = AtomicFlowBlockData | EnumDirectValueFlowBlockData | DirectValueFlowBlockData;
+type NodeDescription = AtomicFlowBlockData | EnumDirectValueFlowBlockData | DirectValueFlowBlockData | UiFlowBlockOptions;
 
 type ValueNodeRef = [string, number];
 type StreamGenerator = (builder: GraphBuilder) => StreamNodeBuilderRef;
@@ -26,14 +28,17 @@ type BlockArgument = [OpNodeBuilderRef, 'pulse']
 ;
 
 
-function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions} {
-    const result: {[key: string]: AtomicFlowBlockOptions} = {};
+function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions | UiFlowBlockOptions} {
+    const result: {[key: string]: AtomicFlowBlockOptions | UiFlowBlockOptions} = {};
 
     for (const cat of desc) {
         for (const block of cat.blocks) {
             // TODO: This will most probably require UI block definitions too
             if (isAtomicFlowBlockOptions(block)) {
                 result[block.block_function] = block;
+            }
+            else if (isUiFlowBlockOptions(block)) {
+                result[block.id] = block;
             }
         }
     }
@@ -64,7 +69,7 @@ function infer_block_options(block_type: string,
 }
 
 
-const BaseBlocks = index_toolbox_description(BaseToolboxDescription);
+const BaseBlocks = index_toolbox_description([...BaseToolboxDescription, ...UiToolboxDescription]);
 
 interface BlockOptions {
     namespace?: string,
@@ -119,7 +124,7 @@ class OpNodeBuilderRef {
 export class GraphBuilder {
     nodes: {[key: string]: NodeDescription} = {};
     edges: FlowGraphEdge[] = [];
-    blocks: {[key: string]: AtomicFlowBlockOptions} = {};
+    blocks: {[key: string]: AtomicFlowBlockOptions | UiFlowBlockOptions} = {};
 
     constructor() {
         this.blocks = BaseBlocks;
@@ -281,16 +286,26 @@ export class GraphBuilder {
             }
         }
 
-        let synth_in: number, synth_out: number
-        [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
+        if (isAtomicFlowBlockOptions(block_options)) {
+            let synth_in: number, synth_out: number
+            [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(block_options);
+            this.nodes[ref] = {
+                type: ATOMIC_BLOCK_TYPE,
+                value: {
+                    options: block_options,
+                    slots: {},
+                    synthetic_input_count: synth_in,
+                    synthetic_output_count: synth_out,
+                }
+            }
+        }
+        else {
+            this.nodes[ref] = {
+                type: FLOW_BLOCK_TYPE,
+                value: {
+                    options: block_options,
+                }
 
-        this.nodes[ref] = {
-            type: ATOMIC_BLOCK_TYPE,
-            value: {
-                options: block_options,
-                slots: {},
-                synthetic_input_count: synth_in,
-                synthetic_output_count: synth_out,
             }
         }
 
