@@ -11,6 +11,9 @@ function repr_single_arg(arg: CompiledBlockArg, depth: number): string {
     if (arg.type === 'constant') {
         return JSON.stringify(arg.value);
     }
+    else if (arg.type === 'variable' || arg.type === 'list') {
+        return arg.value;
+    }
     else if (arg.type === 'block') {
         return repr_contents(arg.value, depth, { skip_first_indent: true });
     }

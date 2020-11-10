@@ -22,7 +22,7 @@ export interface CompiledConstantArg {
 };
 
 export interface CompiledVariableArg {
-    type: 'variable',
+    type: 'variable' | 'list',
     value: any,
 };
 

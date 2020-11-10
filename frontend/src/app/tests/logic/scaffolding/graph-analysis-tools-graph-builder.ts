@@ -198,7 +198,7 @@ export class GraphBuilder {
             this.nodes[ref] = {
                 type: ATOMIC_BLOCK_TYPE,
                 value: {
-                    options: block_options,
+                    options: block_options as AtomicFlowBlockOptions,
                     slots: block_options.slots || {},
                     synthetic_input_count: synth_in,
                     synthetic_output_count: synth_out,

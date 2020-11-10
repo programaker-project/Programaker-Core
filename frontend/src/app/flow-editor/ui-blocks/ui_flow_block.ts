@@ -1,7 +1,7 @@
 import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts } from '../flow_block';
 import { BlockManager } from '../block_manager';
 import { Toolbox } from '../toolbox';
-import { UiSignalService } from 'app/services/ui-signal.service';
+import { UiSignalService } from '../../services/ui-signal.service';
 import { uuidv4 } from '../utils';
 
 const SvgNS = "http://www.w3.org/2000/svg";

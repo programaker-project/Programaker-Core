@@ -17,7 +17,7 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
     return graph;
 }
 
-fdescribe('Flow-30: Update output from variable.', () => {
+describe('Flow-30: Update output from variable.', () => {
     it('Validation should pass', async () => {
         expect(validate(gen_flow()))
             .toBeTruthy()

@@ -11,7 +11,6 @@ type _WaitForMonitorOp = ['wait_for_monitor', { monitor_id: { from_service: stri
 type _LastValueOp = ['flow_last_value', string, number | string];
 type _IfElseOp = ['control_if_else', SimpleArrayAstArgument, SimpleArrayAstOperation[]];
 type _ForkExecOp = ['op_fork_execution', SimpleArrayAstArgument[], SimpleArrayAstOperation[]]
-type _DataVariableOp = ['data_variable' | 'on_data_variable_update', SimpleArrayAstArgument[]];
 
 export type SimpleArrayAstArgument = SimpleArrayAstOperation | string | number
 export type SimpleArrayAstArgs = _AndOp | _EqualsOp
@@ -19,12 +18,21 @@ export type SimpleArrayAstArgs = _AndOp | _EqualsOp
     | _WaitForMonitorOp | _LastValueOp
     | _IfElseOp
     | _ForkExecOp
-    | _DataVariableOp
 ;
 
-export type SimpleArrayAstOperation = {args: SimpleArrayAstArgs, slots: {[key: string]: any}}
+export type SimpleArrayAstOperation = SimpleArrayAstArgs;
 
 export type SimpleArrayAst = SimpleArrayAstOperation[];
+
+const SLOT_OPS = {
+    data_variable: 'variable',
+    on_data_variable_update: 'variable',
+    data_setvariableto: 'variable',
+
+    data_lengthoflist: 'list',
+    data_deleteoflist: 'list',
+    data_addtolist: 'list',
+};
 
 function convert_argument(arg: SimpleArrayAstArgument): CompiledBlockArg {
     if ((typeof arg === 'string') || (typeof arg === 'number')) {
@@ -57,56 +65,41 @@ function convert_contents(contents: SimpleArrayAstOperation[]): ContentBlock {
 }
 
 function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
-    const args = op.args;
-
-    if (args[0] === 'wait_for_monitor') {
+    if (op[0] === 'wait_for_monitor') {
         return {
-            type: args[0],
-            args: args[1],
+            type: op[0],
+            args: op[1],
             contents: [],
         }
     }
 
-    if (args[0] === 'command_call_service') {
+    if (op[0] === 'command_call_service') {
         return {
-            type: args[0],
+            type: op[0],
             args: {
-                service_action: args[1].service_action,
-                service_id: args[1].service_id,
+                service_action: op[1].service_action,
+                service_id: op[1].service_id,
                 service_call_values: op[1].service_call_values.map(v => convert_argument(v))
             },
             contents: [],
         }
     }
 
-    if ((args[0] === 'data_variable') || (args[0] === 'on_data_variable_update')) {
-        return {
-            type: args[0],
-            args: [
-                {
-                    type: 'variable',
-                    value: op.slots.variable,
-                }
-            ],
-            contents: [],
-        };
-    }
-
-    if (args[0] === 'control_if_else') {
-        const contents = (args.slice(2) as SimpleArrayAstOperation[][]).map(v => convert_contents(v));
+    if (op[0] === 'control_if_else') {
+        const contents = (op.slice(2) as SimpleArrayAstOperation[][]).map(v => convert_contents(v));
 
         if (contents.length < 2) {
             contents.push({ contents: [] });
         }
 
         return {
-            type: args[0],
+            type: op[0],
             args: [ convert_argument(op[1]) ],
             contents: contents,
         }
     }
 
-    if (args[0] === 'op_fork_execution') {
+    if (op[0] === 'op_fork_execution') {
         const contents = (op[2] as SimpleArrayAstOperation[][]).map(v => convert_contents(v));
 
         if (contents.length < 2) {
@@ -114,19 +107,25 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
         }
 
         return {
-            type: args[0],
+            type: op[0],
             args: op[1].map(arg => convert_argument(arg)),
             contents: contents,
         }
     }
 
-    if (typeof args !== 'object') {
-        throw new Error(`ASTCompilationError: Expected argument array, found: ${JSON.stringify(args)}. Check for errors on argument nesting`);
+    if (typeof op !== 'object') {
+        throw new Error(`ASTCompilationError: Expected argument array, found: ${JSON.stringify(op)}. Check for errors on argument nesting`);
+    }
+
+    const compiled_args = (op.slice(1) as SimpleArrayAstArgument[]).map(v => convert_argument(v));
+
+    if (SLOT_OPS[op[0]]) {
+        compiled_args[0].type = SLOT_OPS[op[0]];
     }
 
     return {
-        type: args[0],
-        args: args.slice(1).map(v => convert_argument(v)),
+        type: op[0],
+        args: compiled_args,
         contents: []
     }
 }
@@ -140,7 +139,7 @@ function canonicalize_arg(arg: CompiledBlockArg): CompiledBlockArg {
     if (arg.type === 'constant') {
         return arg;
     }
-    else if (arg.type === 'variable') {
+    else if (arg.type === 'variable' || arg.type === 'list') {
         return arg;
     }
     else {

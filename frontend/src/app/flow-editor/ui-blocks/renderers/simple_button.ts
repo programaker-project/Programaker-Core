@@ -1,4 +1,4 @@
-import { UiSignalService } from "app/services/ui-signal.service";
+import { UiSignalService } from "../../../services/ui-signal.service";
 import { OnUiFlowBlockClick, UiFlowBlock, UiFlowBlockRenderer } from "../ui_flow_block";
 import { getRefBox } from "./utils";
 

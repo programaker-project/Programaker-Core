@@ -21,14 +21,14 @@ export function gen_flow(): FlowGraph {
 
     const update = builder.add_op('data_setvariableto', {
         args: [
-            [f => f.add_getter('operator_add', { args: [ 1, { from_variable: 'count' } ] }) , 0] ],
-        slots: { 'variable': 'count' }
+            [f => f.add_getter('operator_add', { args: [ 1, { from_variable: 'counter' } ] }) , 0] ],
+        slots: { 'variable': 'counter' }
     });
     const op = builder.add_op('logging_add_log', { args: [ [source, 0] ]
                                               });
 
     const take_cond = builder.add_if(null, update, {
-        cond: [f => f.add_getter('operator_gt', { args: [ { from_variable: 'count' }, 'N' ] }), 0]
+        cond: [f => f.add_getter('operator_gt', { args: [ { from_variable: 'counter' }, 'N' ] }), 0]
     });
     trigger.then_id(take_cond);
     update.then(op);

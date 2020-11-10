@@ -73,11 +73,9 @@ function array_to_map(args: any[]): {[key: string]: any} {
     return result;
 }
 
-function transform_call(args: any[]): {args: any[], slots: {[key: string]: any}} {
-    const slots = {};
-
+function transform_call(args: any[]): any[] {
     if (args.length == 0) {
-        return {args, slots};
+        return args;
     }
 
     let op = args[0] as string;
@@ -112,36 +110,6 @@ function transform_call(args: any[]): {args: any[], slots: {[key: string]: any}}
             args[1].service_call_values = args[1].values;
             delete args[1].values;
         }
-    }
-
-    if ((op === 'data_variable') || (op === 'on_data_variable_update')) {
-        // Move first argument to 'variable' slot
-        const vars = args.splice(1, 1);
-        slots['variable'] = vars[0];
-    }
-
-    if (op === 'data_lengthoflist') {
-        // Remove first arg, as it will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1, 1);
-    }
-
-    if (op === 'data_setvariableto') {
-        // Remove first arg, as it will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1, 1);
-    }
-
-    if (op === 'data_deleteoflist') {
-        // Remove first arg, as it will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1, 1);
-    }
-
-    if (op === 'data_addtolist') {
-        // Remove first arg, as it will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1, 1);
     }
 
     if (op === 'op_fork_execution') {
@@ -189,7 +157,7 @@ function transform_call(args: any[]): {args: any[], slots: {[key: string]: any}}
         args[2] = contents;
     }
 
-    return {args, slots};
+    return args;
 }
 
 function read(s: string, idx: number, linenum: number, colnum: number): [SimpleArrayAstArgument, number, number, number] {
