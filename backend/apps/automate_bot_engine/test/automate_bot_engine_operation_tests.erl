@@ -48,8 +48,12 @@ stop({_NodeName}) ->
 
 tests(_SetupResult) ->
     %% Operations
-    %% Lists
     [ {"[Bot engine][Misc. Operations] Log value", fun test_log_value/0}
+    , {"[Bot engine][String operations] Text contains - Simple - True", fun text_contains_simple_true/0}
+    , {"[Bot engine][String operations] Text contains - Simple - False", fun text_contains_simple_false/0}
+    , {"[Bot engine][String operations] Text contains - Case insensitive  - True", fun text_contains_case_insensitive/0}
+    , {"[Bot engine][String operations] Text contains - Accent insensitive  - True", fun text_contains_accent_insensitive/0}
+    , {"[Bot engine][String operations] Text contains - Several Characters Map to same", fun text_contains_several_map_to_same/0}
     ].
 
 %%%% Operations
@@ -62,6 +66,64 @@ test_log_value() ->
                                    }, Thread, {?SIGNAL_PROGRAM_TICK, test}),
     Logs = automate_bot_engine:get_user_generated_logs(Pid),
     ?assertMatch({ok, [#user_generated_log_entry{event_message= <<"test line">>}]}, Logs).
+
+%%%% Text contains operations
+text_contains_simple_true() ->
+    Thread = empty_thread(),
+    {ok, Value, _} = automate_bot_engine_operations:get_result(
+                                  #{ ?TYPE => ?COMMAND_STRING_CONTAINS
+                                   , ?ARGUMENTS => [ constant_val(<<"this is a test string">>)
+                                                   , constant_val(<<"test">>)
+                                                   ]
+                                   }, Thread),
+    ?assertMatch(true, Value).
+
+text_contains_simple_false() ->
+    Thread = empty_thread(),
+    {ok, Value, _} = automate_bot_engine_operations:get_result(
+                    #{ ?TYPE => ?COMMAND_STRING_CONTAINS
+                     , ?ARGUMENTS => [ constant_val(<<"this is a not a pass">>)
+                                     , constant_val(<<"test">>)
+                                     ]
+                     }, Thread),
+    ?assertMatch(false, Value).
+
+text_contains_case_insensitive() ->
+    Thread = empty_thread(),
+    {ok, Value, _} = automate_bot_engine_operations:get_result(
+                    #{ ?TYPE => ?COMMAND_STRING_CONTAINS
+                     , ?ARGUMENTS => [ constant_val(<<"this is a TEst string">>)
+                                     , constant_val(<<"teST">>)
+                                     ]
+                     }, Thread),
+    ?assertMatch(true, Value).
+
+text_contains_accent_insensitive() ->
+    Thread = empty_thread(),
+    {ok, Value, _} = automate_bot_engine_operations:get_result(
+                    #{ ?TYPE => ?COMMAND_STRING_CONTAINS
+                     , ?ARGUMENTS => [ constant_val(unicode:characters_to_binary("this an accent -åäö oaa- test string", utf8))
+                                     , constant_val(unicode:characters_to_binary("-aao öäå-", utf8))
+                                     ]
+                     }, Thread),
+    ?assertMatch(true, Value).
+
+text_contains_several_map_to_same() ->
+    Unicode = constant_val(unicode:characters_to_binary("Å Å ̊A ấ ą", utf8)), % Taken from http://www.macchiato.com/unicode/nfc-faq
+    Ascii = constant_val(unicode:characters_to_binary("A A A A A", utf8)),
+    Thread = empty_thread(),
+    ?assertMatch({ok, true, _}, automate_bot_engine_operations:get_result(
+                       #{ ?TYPE => ?COMMAND_STRING_CONTAINS
+                        , ?ARGUMENTS => [ Unicode
+                                        , Ascii
+                                        ]
+                        }, Thread)),
+    ?assertMatch({ok, true, _}, automate_bot_engine_operations:get_result(
+                                  #{ ?TYPE => ?COMMAND_STRING_CONTAINS
+                                   , ?ARGUMENTS => [ Ascii
+                                                   , Unicode
+                                                   ]
+                                   }, Thread)).
 
 %%====================================================================
 %% Util functions

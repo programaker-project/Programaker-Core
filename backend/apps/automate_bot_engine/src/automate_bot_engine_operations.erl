@@ -941,6 +941,16 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_JOIN
     {ok, Value} = automate_bot_engine_values:join(FirstVal, SecondVal),
     {ok, Value, Thread2};
 
+get_block_result(Op=#{ ?TYPE := ?COMMAND_STRING_CONTAINS
+                     , ?ARGUMENTS := [ Haystack
+                                     , Needle
+                                     ]
+                     }, Thread) ->
+
+    {[HaystackVal, NeedleVal], Thread2} = eval_args([Haystack, Needle], Thread, Op),
+    {ok, Value} = automate_bot_engine_values:string_contains(HaystackVal, NeedleVal),
+    {ok, Value, Thread2};
+
 get_block_result(Op=#{ ?TYPE := ?COMMAND_JSON
                      , ?ARGUMENTS := [ KeyReference
                                      , MapReference

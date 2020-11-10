@@ -17,6 +17,7 @@
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
+-define(COMMAND_STRING_CONTAINS, <<"operator_contains">>).
 -define(COMMAND_JSON, <<"operator_json_parser">>).
 
 %% Templates
