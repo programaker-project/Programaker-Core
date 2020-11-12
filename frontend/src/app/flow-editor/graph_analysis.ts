@@ -1023,7 +1023,7 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
                             },
                             {
                                 type: 'constant',
-                                value: arg.output_index + '',
+                                value: arg.output_index,
                             }
                         ]
                     }

@@ -68,8 +68,8 @@ module.exports = {
       "data": {
         "type": "direct_value_block",
         "value": {
-          "value": "0",
-          "type": "any"
+          "value": 0,
+          "type": "integer"
         }
       },
       "position": {
@@ -118,8 +118,8 @@ module.exports = {
       "data": {
         "type": "direct_value_block",
         "value": {
-          "value": "11",
-          "type": "any"
+          "value": 11,
+          "type": "integer"
         }
       },
       "position": {

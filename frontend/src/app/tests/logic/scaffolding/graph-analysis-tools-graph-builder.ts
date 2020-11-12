@@ -176,7 +176,7 @@ export class GraphBuilder {
         this.nodes[ref] = {
             type: VALUE_BLOCK_TYPE,
             value: {
-                value: value + '',
+                value: type === 'string'  ? value + '' : value,
                 type: type,
             }
         };

@@ -267,6 +267,9 @@ function read(s: string, idx: number, linenum: number, colnum: number): [SimpleA
         if (token.filter(c => is_digit(c)).length === token.length) { // All are digits
             op = parseInt(op);
         }
+        else if (op.match(/(^\d*\.\d+$)|(^\d+\.\d$)/)) {
+            op = parseFloat(op);
+        }
     }
     else {
         throw new Error(`${linenum}:${colnum} Unexpected character ${s[idx]}`)

@@ -38,7 +38,7 @@ function convert_argument(arg: SimpleArrayAstArgument): CompiledBlockArg {
     if ((typeof arg === 'string') || (typeof arg === 'number')) {
         return {
             type: 'constant',
-            value: arg + '',
+            value: arg,
         };
     }
 
