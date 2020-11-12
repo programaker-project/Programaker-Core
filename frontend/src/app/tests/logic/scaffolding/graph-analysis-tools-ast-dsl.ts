@@ -18,6 +18,7 @@ export const OP_TRANSLATIONS = {
     'wait-seconds': 'control_wait',
     'call-service': 'command_call_service',
     'preload': 'op_preload_getter',
+    'on-block-run': 'op_on_block_run',
 
     // Variables
     'set-var': 'data_setvariableto',

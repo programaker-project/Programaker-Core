@@ -1,3 +1,4 @@
+import { isUiFlowBlockData, UiFlowBlockData } from '../../../flow-editor/ui-blocks/ui_flow_block';
 import { AtomicFlowBlockData, BLOCK_TYPE as ATOMIC_BLOCK_TYPE } from '../../../flow-editor/atomic_flow_block';
 import { BLOCK_TYPE as VALUE_BLOCK_TYPE, DirectValueFlowBlockData } from '../../../flow-editor/direct_value';
 import { BLOCK_TYPE as ENUM_BLOCK_TYPE, EnumDirectValueFlowBlockData } from '../../../flow-editor/enum_direct_value';
@@ -40,6 +41,10 @@ export function convert_to_graphviz(graph: FlowGraph): string {
         else if (node.data.type === ENUM_BLOCK_TYPE ) {
             const e_node = node.data as EnumDirectValueFlowBlockData;
             raws[node_id] = e_node.value.value_text;
+        }
+        else if (isUiFlowBlockData(node.data)) {
+            tokens.push(`  "${node_id}"[label="${node.data.value.options.id}",`
+                        +`style="filled",shape=rect,fontcolor="#ffaa00",fillcolor="#000000"]`);
         }
     }
 

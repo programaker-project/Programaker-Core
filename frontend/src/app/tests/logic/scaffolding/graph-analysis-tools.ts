@@ -196,6 +196,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "data_deleteoflist":
         case "data_addtolist":
         case "op_preload_getter":
+        case "op_on_block_run":
             if (op.args) {
                 op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
             }

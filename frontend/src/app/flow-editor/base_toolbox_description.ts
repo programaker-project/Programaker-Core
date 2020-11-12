@@ -24,6 +24,24 @@ export const OP_PRELOAD_BLOCK: AtomicFlowBlockOptions = {
     outputs: [],
 };
 
+export const OP_ON_BLOCK_RUN: AtomicFlowBlockOptions = {
+    icon: PLATFORM_ICON,
+    message: 'On block run',
+    block_function: 'op_on_block_run',
+    type: 'trigger',
+    inputs: [
+        {
+            name: "block_id",
+            type: "string",
+        },
+        {
+            name: "block_id",
+            type: "integer",
+        },
+    ],
+    outputs: [],
+};
+
 export const BaseToolboxDescription: ToolboxDescription = [
     {
         id: 'control',
@@ -784,7 +802,14 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     },
                 ],
             },
+        ]
+    },
+    {
+        id: '__internal__',
+        name: '__flow_internal__',
+        blocks: [
             OP_PRELOAD_BLOCK,
+            OP_ON_BLOCK_RUN,
         ]
     }
 ];

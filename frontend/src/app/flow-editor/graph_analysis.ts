@@ -3,7 +3,7 @@ import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_descr
 import { DirectValue, DirectValueFlowBlockData, isDirectValueBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData, isEnumDirectValueBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
-import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream } from './graph_transformations';
+import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream, split_streaming_after_stepped } from './graph_transformations';
 import { index_connections, reverse_index_connections } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
@@ -979,9 +979,36 @@ function already_used_in_past(graph: FlowGraph, arg_id: string,
 function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, orig: string): CompiledBlockArg {
     const block = graph.nodes[arg.tree.block_id];
 
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
-        const data = block.data as AtomicFlowBlockData;
+    if (isAtomicFlowBlockData(block.data)){
+        if (block.data.value.options.block_function === 'op_on_block_run') {
+            const values = arg.tree.arguments.map(arg => graph.nodes[arg.tree.block_id].data);
+            if ((values.length != 2) 
+                || !isDirectValueBlockData(values[0])
+                || !isDirectValueBlockData(values[1])) {
 
+                    throw new Error(`Expected 2 direct values for op_on_block_run, found: ${JSON.stringify(values)}`)
+            }
+
+            return {
+                type: 'block',
+                value: [
+                    {
+                        type: 'flow_last_value',
+                        contents: [],
+                        args: [
+                            {
+                                type: 'constant',
+                                value: values[0].value.value,
+                            },
+                            {
+                                type: 'constant',
+                                value: values[1].value.value,
+                            },
+                        ],
+                    }
+                ]
+            }
+        }
         if (already_used_in_past(graph, arg.tree.block_id, parent, orig)) {
             return {
                 type: 'block',
@@ -1028,6 +1055,9 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
             type: 'constant',
             value: data.value.value_id,
         };
+    }
+    else if (isUiFlowBlockData(block.data)) {
+        throw new Error("Unexpected UI block as arg: " + JSON.stringify(block.data.value.options));
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
@@ -1451,6 +1481,18 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
                 ]
             }
         }
+        else if (desc.block_function === 'op_on_block_run') {
+            const compiled_args: CompiledBlockArgs = source.block.arguments.map(v => compile_arg(graph, v,
+                                                                                        source.block.block_id,
+                                                                                        source.block.block_id));
+
+            return {
+                id: source.block.block_id,
+                type: "op_on_block_run",
+                args: compiled_args,
+                contents: [],
+            }
+        }
         else {
             throw new Error(`Unexpected flow source node: (fun: ${desc.block_function}, type: ${source_node.data.type}, id: ${source.block.block_id})`);
         }
@@ -1567,6 +1609,7 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
 
     graph = lift_common_ops(graph);
     graph = extract_internally_reused_arguments(graph);
+    graph = split_streaming_after_stepped(graph);
 
     const source_signals = get_source_signals(graph);
     const filters: BlockTree[][] = [];

@@ -75,6 +75,7 @@ export type CompiledBlockType = "wait_for_monitor"
 
 // Signal-only
     | "on_data_variable_update"
+    | "op_on_block_run"
 
 // Not found on executable stage, will be removed in link phase
     | "jump_point"
