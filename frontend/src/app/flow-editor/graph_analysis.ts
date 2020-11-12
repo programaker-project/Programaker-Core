@@ -87,7 +87,7 @@ function set_difference(whole: any[], subset: {[key: string]: boolean}|string[])
 }
 
 function is_getter_node(block: FlowGraphNode): boolean {
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
+    if (isAtomicFlowBlockData(block.data)){
         const data = block.data as AtomicFlowBlockData;
 
         if (data.value.options.type !== 'operation') {
@@ -96,10 +96,10 @@ function is_getter_node(block: FlowGraphNode): boolean {
         }
         return false;
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
+    else if (isDirectValueBlockData(block.data)){
         return true;
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         return true;
     }
 }
@@ -255,12 +255,12 @@ function has_pulse_output(block: FlowGraphNode): boolean {
         // If it has no pulse inputs its a source block
         return outputs.filter(v => v.type === 'pulse').length > 0;
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
+    else if (isDirectValueBlockData(block.data)){
         const data = block.data as DirectValueFlowBlockData;
 
         return data.value.type === 'pulse';
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         return false;
     }
     else if (isUiFlowBlockData(block.data)){
@@ -275,7 +275,7 @@ function has_pulse_output(block: FlowGraphNode): boolean {
 }
 
 function has_pulse_input(block: FlowGraphNode): boolean {
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
+    if (isAtomicFlowBlockData(block.data)){
         const data = block.data as AtomicFlowBlockData;
 
         const inputs = data.value.options.inputs || [];
@@ -283,10 +283,10 @@ function has_pulse_input(block: FlowGraphNode): boolean {
         // If it has no pulse inputs its a source block
         return inputs.filter(v => v.type === 'pulse').length > 0;
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
+    else if (isDirectValueBlockData(block.data)){
         return false;
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         return false;
     }
     else {
@@ -859,7 +859,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
     if (continuations.length == 1) {
         if (continuations[0].length == 1) {
             const block = graph.nodes[source_id];
-            const is_atomic_block = block.data.type === AtomicFlowBlock.GetBlockType();
+            const is_atomic_block = isAtomicFlowBlockData(block.data);
             let atom_data: AtomicFlowBlockData = null;
             let func_name: string = null;
             if (is_atomic_block) {
@@ -1040,20 +1040,16 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
             }
         }
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
-        const data = block.data as DirectValueFlowBlockData;
-
+    else if (isDirectValueBlockData(block.data)){
         return {
             type: 'constant',
-            value: data.value.value,
+            value: block.data.value.value,
         };
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
-        const data = block.data as EnumDirectValueFlowBlockData;
-
+    else if (isEnumDirectValueBlockData(block.data)){
         return {
             type: 'constant',
-            value: data.value.value_id,
+            value: block.data.value.value_id,
         };
     }
     else if (isUiFlowBlockData(block.data)) {
