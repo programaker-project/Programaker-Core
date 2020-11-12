@@ -12,6 +12,7 @@
         , is_greater_than/2
         , are_equal/1
         , is_equal_to/2
+        , string_contains/2
         ]).
 
 %%%===================================================================
@@ -167,6 +168,15 @@ is_equal_to(V1, V2) when is_binary(V1) and is_binary(V2) ->
 is_equal_to(V1, V2) ->
     is_equal_to(to_bin(V1), to_bin(V2)).
 
+-spec string_contains(_, _) -> {ok, boolean()} | {error, not_found}.
+string_contains(Haystack, Needle) when is_binary(Haystack) and is_binary(Needle) ->
+    CHaystack = canonicalize_string(Haystack),
+    CNeedle = canonicalize_string(Needle),
+    Result = string:find(CHaystack, CNeedle) =/= nomatch,
+    {ok, Result};
+string_contains(Haystack, Needle) ->
+    string_contains(to_bin(Haystack), to_bin(Needle)).
+
 
 %%%===================================================================
 %%% Type handling methods
@@ -224,3 +234,13 @@ to_float(Value) when is_binary(Value) ->
                     X
             end
     end.
+
+%% Convert non-ascii characters to their closest ones.
+canonicalize_string(Str) when is_binary(Str) ->
+
+    Uni = unicode:characters_to_binary(Str, utf8), % This corrects non-unicode binaries. For example the ones containing 'Ã³' pairs instead of 'ó'
+    Decomposed = unicode:characters_to_nfkd_list(Uni),
+    Filtered = lists:filter(fun(X) -> X < 256 end, Decomposed), % Remove non-ascii characters
+
+    %% Unify casing and convert back from list to binary.
+    list_to_binary(string:casefold(Filtered)).
