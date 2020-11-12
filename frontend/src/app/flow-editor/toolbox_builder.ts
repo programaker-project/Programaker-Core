@@ -12,13 +12,15 @@ import { EnvironmentService } from 'app/environment.service';
 import { UiToolboxDescription } from './ui-blocks/ui_toolbox_description';
 import { UiFlowBlock } from './ui-blocks/ui_flow_block';
 import { UiSignalService } from 'app/services/ui-signal.service';
+import { Session } from 'app/session';
 
 
 export function buildBaseToolbox(baseElement: HTMLElement,
                                  workspace: FlowWorkspace,
                                  uiSignalService: UiSignalService,
+                                 session: Session,
                                 ): Toolbox {
-    const tb = Toolbox.BuildOn(baseElement, workspace, uiSignalService);
+    const tb = Toolbox.BuildOn(baseElement, workspace, uiSignalService, session);
 
     for (const category of [...UiToolboxDescription, ...BaseToolboxDescription]) {
         tb.setCategory({ id: category.id, name: category.name });
@@ -61,8 +63,9 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                                              environmentService: EnvironmentService,
                                              programId: string,
                                              uiSignalService: UiSignalService,
+                                             session: Session,
                                             ): Promise<Toolbox> {
-    const base = buildBaseToolbox(baseElement, workspace, uiSignalService);
+    const base = buildBaseToolbox(baseElement, workspace, uiSignalService, session);
 
     const data = await bridgeService.listUserBridges();
 

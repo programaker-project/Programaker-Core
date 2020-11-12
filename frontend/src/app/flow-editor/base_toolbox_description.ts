@@ -42,6 +42,9 @@ export const OP_ON_BLOCK_RUN: AtomicFlowBlockOptions = {
     outputs: [],
 };
 
+export const ADVANCED_CATEGORY = 'advanced';
+export const INTERNAL_CATEGORY = '__internal__';
+
 export const BaseToolboxDescription: ToolboxDescription = [
     {
         id: 'control',
@@ -788,7 +791,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
         ]
     },
     {
-        id: 'advanced',
+        id: ADVANCED_CATEGORY,
         name: 'Advanced',
         blocks: [
             {
@@ -805,8 +808,8 @@ export const BaseToolboxDescription: ToolboxDescription = [
         ]
     },
     {
-        id: '__internal__',
-        name: '__flow_internal__',
+        id: INTERNAL_CATEGORY,
+        name: 'Internal blocks', // Not to be placed manually!
         blocks: [
             OP_PRELOAD_BLOCK,
             OP_ON_BLOCK_RUN,

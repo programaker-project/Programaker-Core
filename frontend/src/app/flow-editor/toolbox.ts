@@ -4,6 +4,9 @@ import { FlowBlock, Position2D, FlowBlockOptions } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
 import { UiFlowBlockOptions } from './ui-blocks/ui_flow_block';
 import { UiSignalService } from 'app/services/ui-signal.service';
+import { Session } from 'app/session';
+import { ADVANCED_CATEGORY, INTERNAL_CATEGORY } from './base_toolbox_description';
+import { INFERRED_TYPE } from '@angular/compiler/src/output/output_ast';
 
 export type BlockGenerator = (manager: BlockManager) => FlowBlock;
 
@@ -16,10 +19,11 @@ export class Toolbox {
     public static BuildOn(baseElement: HTMLElement,
                           workspace: FlowWorkspace,
                           uiSignalService: UiSignalService,
+                          session: Session,
                          ): Toolbox {
         let toolbox: Toolbox;
         try {
-            toolbox = new Toolbox(baseElement, workspace, uiSignalService);
+            toolbox = new Toolbox(baseElement, workspace, uiSignalService, session);
             toolbox.init();
         }
         catch(err) {
@@ -35,6 +39,7 @@ export class Toolbox {
     private constructor(private baseElement: HTMLElement,
                         private workspace: FlowWorkspace,
                         public uiSignalService: UiSignalService,
+                        private session: Session,
                        ) { }
 
     onResize() {}
@@ -90,6 +95,16 @@ export class Toolbox {
     }
 
     addBlockGenerator(generator: BlockGenerator, category_id: string) {
+        if (category_id === ADVANCED_CATEGORY) {
+            if (!this.session.tags.is_advanced) {
+                return; // Skip advaced blocks if the user has not activated them
+            }
+        }
+
+        if (category_id === INTERNAL_CATEGORY) {
+            return; // Don't show internal blocks
+        }
+
         const [category_div] = this.getOrCreateCategory({ id: category_id, name: category_id })
         category_div.classList.remove('empty');
 

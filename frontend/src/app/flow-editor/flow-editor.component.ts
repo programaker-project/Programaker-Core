@@ -200,6 +200,7 @@ export class FlowEditorComponent implements OnInit {
                                                     this.environmentService,
                                                     this.program.id,
                                                     this.uiSignalService,
+                                                    this.session,
                                                    );
     }
 
