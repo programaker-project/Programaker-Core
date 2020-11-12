@@ -530,8 +530,12 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
     {Values, Thread2} = eval_args(Arguments, Thread, Op),
 
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, Thread3, _Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
-    {ran_this_tick, increment_position(Thread3)};
+    {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
+    Thread4 = case ?UTILS:get_block_id(Op) of
+                  none -> Thread3;
+                  BlockId -> automate_bot_engine_variables:set_instruction_memory(Thread3, Value, BlockId)
+              end,
+    {ran_this_tick, increment_position(Thread4)};
 
 run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
                            , ?ARGUMENTS := Arguments
