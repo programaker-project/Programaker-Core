@@ -626,7 +626,7 @@ function is_streaming_node(conn_index: EdgeIndex, rev_conn_index: EdgeIndex, gra
         const nodeHasPulseInputs = (rev_conn_index[nodeId] || []).some( (edge: IndexedFlowGraphEdge) => is_pulse_output( graph.nodes[edge.from.id], edge.from.output_index ) );
 
         return !nodeHasPulseInputs;
-    }
+    }     
     else if (isDirectValueBlockData(node.data) || isEnumDirectValueBlockData(node.data)) {
         return true;
     }
@@ -671,7 +671,7 @@ export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
         const source = graph.nodes[origSourceBlock];
 
         if (isAtomicFlowBlockData(source.data)) {
-            source.data.value.options.report_state = true;
+            source.data.value.report_state = true;
         }
 
         // Update connection to generate from a (virtual) on-block-update
@@ -703,7 +703,7 @@ export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
             }
         }, position: null };
 
-        graph.edges.push({
+        graph.edges.push({  
             from: {
                 id: blockRunIdValue,
                 output_index: 0,
@@ -711,7 +711,7 @@ export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
             to: {
                 id: onBlockRunRef,
                 input_index: 0,
-            }
+            } 
         });
 
         // Add direct value for the output port
@@ -725,7 +725,7 @@ export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
             }
         }, position: null };
 
-        graph.edges.push({
+        graph.edges.push({  
             from: {
                 id: blockRunPortIdxValue,
                 output_index: 0,
@@ -733,9 +733,10 @@ export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
             to: {
                 id: onBlockRunRef,
                 input_index: 1,
-            }
+            } 
         });
     }
 
     return graph;
 }
+

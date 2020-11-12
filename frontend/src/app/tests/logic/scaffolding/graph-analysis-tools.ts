@@ -249,6 +249,8 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
             }
     }
 
+    delete op.report_state;
+
     return op;
 }
 

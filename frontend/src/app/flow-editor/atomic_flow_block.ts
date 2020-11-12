@@ -19,7 +19,6 @@ export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     icon?: string,
     block_function: string,
     message: string;
-    report_state?: boolean,
 }
 
 export interface AtomicFlowBlockData extends FlowBlockData {
@@ -27,6 +26,10 @@ export interface AtomicFlowBlockData extends FlowBlockData {
     value: {
         options: AtomicFlowBlockOptions,
         slots: {[key: string]: string},
+
+        // This is used to indicate if a result of this block is used on another
+        // flow, and thus, if a signal reporting the result of this block has to be sent.
+        report_state?: boolean,
 
         // These counts are needed to keep the consistency when linking
         // inline arguments to it's ports

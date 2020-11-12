@@ -95,6 +95,7 @@ export interface CompiledBlock {
     type: CompiledBlockType,
     args?: CompiledBlockArgs,
     contents?: (CompiledBlock | ContentBlock)[],
+    report_state?: boolean,
 };
 
 export type CompiledFlowGraph = CompiledBlock[];

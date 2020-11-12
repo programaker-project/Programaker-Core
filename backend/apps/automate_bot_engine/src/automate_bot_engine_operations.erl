@@ -159,6 +159,26 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                 run_instruction(Instruction, Thread, Message)
             of
                 Result ->
+                    case {Result, Instruction} of
+                        { {ran_this_tick, Thread2}
+                        , #{ ?BLOCK_ID := BlockId
+                           , ?REPORT_STATE := true
+                           }
+                        } ->
+                            {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
+
+                            Value = case automate_bot_engine_variables:retrieve_instruction_memory(Thread2, BlockId) of
+                                        {error, not_found} -> none;
+                                        {ok, BlockMem} -> BlockMem
+                                    end,
+
+                            %% Trigger element update
+                            ok = automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => block_run_events
+                                                                                     , <<"subkey">> => BlockId
+                                                                                     , <<"value">> => Value
+                                                                                     } );
+                        _ -> ok
+                    end,
                     Result
             catch ErrorNS:Error:StackTrace ->
                     io:fwrite("[ERROR][Thread][ProgId=~p,ThreadId=~p] Critical error: ~0tp~n~0tp~n",

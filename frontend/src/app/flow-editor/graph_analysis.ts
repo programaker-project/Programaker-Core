@@ -982,7 +982,7 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
     if (isAtomicFlowBlockData(block.data)){
         if (block.data.value.options.block_function === 'op_on_block_run') {
             const values = arg.tree.arguments.map(arg => graph.nodes[arg.tree.block_id].data);
-            if ((values.length != 2) 
+            if ((values.length != 2)
                 || !isDirectValueBlockData(values[0])
                 || !isDirectValueBlockData(values[1])) {
 
@@ -1302,6 +1302,7 @@ function compile_block(graph: FlowGraph,
             type: block_type,
             args: compiled_args,
             contents: compiled_contents,
+            report_state: block.data.value.report_state,
         };
     }
     else if (isDirectValueBlockData(block.data)){

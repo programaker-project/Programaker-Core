@@ -79,6 +79,18 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?COMMAND
     automate_channel_engine:listen_channel(ChannelId, { variable_events, Variable }),
     ?TRIGGERED_BY_MONITOR;
 
+get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?FLOW_ON_BLOCK_RUN
+                                                             , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
+                                                                                , ?VALUE := BlockId
+                                                                                }
+                                                                             ,  _ChangeIndex
+                                                                             ]
+                                                             }},
+                                 #program_permissions{owner_user_id=UserId}, ProgramId) ->
+
+    {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
+    automate_channel_engine:listen_channel(ChannelId, { block_run_events, BlockId }),
+    ?TRIGGERED_BY_MONITOR;
 
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"services.", MonitorPath/binary>>
                                                              , ?ARGUMENTS := Arguments
@@ -243,6 +255,37 @@ trigger_thread(#program_trigger{condition=#{ ?TYPE := ?COMMAND_DATA_VARIABLE_ON_
         _ ->
             false
     end;
+
+
+trigger_thread(#program_trigger{condition=#{ ?TYPE := ?FLOW_ON_BLOCK_RUN
+                                           , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
+                                                              , ?VALUE := BlockId
+                                                              }
+                                                           ,  _ChangeIndex
+                                                           ]
+                                           }
+                               , subprogram=Program
+                               },
+               { ?TRIGGERED_BY_MONITOR, { _MonitorId
+                                        , FullMessage=#{ <<"key">> := block_run_events, <<"subkey">> := BlockId}
+                                        } },
+               #program_state{ program_id=ProgramId
+                             , permissions=#program_permissions{owner_user_id=_UserId}}) ->
+
+    Thread = #program_thread{ position=[1]
+                            , program=Program
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+
+    Thread2 = case FullMessage of
+                  #{ <<"value">> := Value } ->
+                      automate_bot_engine_variables:set_instruction_memory(Thread, Value, BlockId);
+                  _ -> Thread
+              end,
+    {true, Thread2};
 
 %% Bridge channel
 trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", MonitorPath/binary>>
@@ -412,7 +455,7 @@ notify_trigger_not_matched(_Trigger, { triggered_by_monitor
 notify_trigger_not_matched(_Trigger, {tick, _}, _Program) ->
     ok;
 %% notify_trigger_not_matched(Trigger, Message, _Program) ->
-%%     io:format("Trigger (~p) not matching (~p) ~n", [Message, Trigger]).
+%%     io:format("Trigger (~p) not matching (~p) ~n", [Message, Trigger]);
 notify_trigger_not_matched(_Trigger, _Message, _Program) ->
     ok.
 -endif.
