@@ -28,6 +28,7 @@ export type OnUiFlowBlockInputUpdated = (block: UiFlowBlock, service: UiSignalSe
 export type OnDispose = () => void;
 
 export interface UiFlowBlockOptions extends FlowBlockOptions {
+    is_container: boolean;
     builder: UiFlowBlockBuilder,
     type: UiFlowBlockType,
     icon?: string,

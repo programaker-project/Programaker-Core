@@ -126,8 +126,9 @@ svg.block_renderer g.flow_node rect.body_shadow {
     fill: rgba(0,0,0,0.3); // Shadow color
 }
 
-svg.block_renderer g.flow_node a.to-be-removed rect.node_body {
-    fill: #ff4444;
+svg.block_renderer g.flow_node a.to-be-removed rect.node_body,
+svg.block_renderer g.flow_node.to-be-removed rect.node_body {
+    fill-opacity: 0.25;
 }
 
 svg.block_renderer.drawing rect.node_body {
@@ -517,4 +518,16 @@ svg.block_renderer g.flow_node.output_node .node_body {
 
 svg.block_renderer g.flow_node.output_node .output_text {
     fill: #fc4;
+}
+
+svg.block_renderer g.flow_node.container_node .node_body {
+    fill: #fff;
+    stroke-width: 1;
+    stroke: #000;
+    stroke-dasharray: 5 5;
+}
+
+svg.block_renderer g.flow_node.container_node .output_text {
+    fill: #222;
+    font-style: italic;
 }

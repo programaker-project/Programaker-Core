@@ -34,6 +34,14 @@ type State = 'waiting'     // Base state
     | 'dragging-block'     // Moving around a block
     | 'dragging-workspace' // Moving around the workspace
 
+function isContainerBlock(block: FlowBlock): boolean {
+    // TODO: Refactor to avoid needing knowledge of the block structure.
+    if (block instanceof UiFlowBlock) {
+        return block.options.is_container;
+    }
+    return false;
+}
+
 export class FlowWorkspace implements BlockManager {
     public static BuildOn(baseElement: HTMLElement,
                           getEnum: EnumGetter): FlowWorkspace {
@@ -157,6 +165,7 @@ export class FlowWorkspace implements BlockManager {
     private canvas: SVGSVGElement;
     private connection_group: SVGGElement;
     private block_group: SVGGElement;
+    private container_group: SVGGElement;
 
     private top_left = { x: 0, y: 0 };
     private inv_zoom_level = 1;
@@ -203,10 +212,12 @@ export class FlowWorkspace implements BlockManager {
         this.trashcan = document.createElementNS(SvgNS, "g");
         this.connection_group = document.createElementNS(SvgNS, "g");
         this.block_group = document.createElementNS(SvgNS, 'g');
+        this.container_group = document.createElementNS(SvgNS, 'g');
 
         // The order of elements determines the relative Z-index
         // The "later" an element is added, the "higher" it is.
         // The elements are stored in groups so their Z-indexes are consistent.
+        this.canvas.appendChild(this.container_group);
         this.canvas.appendChild(this.input_helper_section);
         this.canvas.appendChild(this.trashcan);
         this.canvas.appendChild(this.connection_group);
@@ -456,7 +467,11 @@ export class FlowWorkspace implements BlockManager {
             this.variables_in_use[slots.variable]++;
         }
 
-        block.render(this.block_group, {
+        let group = this.block_group;
+        if (isContainerBlock(block)) {
+            group = this.container_group;
+        }
+        block.render(group, {
             block_id: block_id,
             position: (position ? position : {x: 10, y: 10}),
         });
