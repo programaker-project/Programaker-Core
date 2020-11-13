@@ -1,7 +1,7 @@
 import { BlockManager } from './block_manager';
 import { DirectValue } from './direct_value';
 import { EnumValue, EnumDirectValue, EnumGetter } from './enum_direct_value';
-import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition } from './flow_block';
+import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition, Resizeable } from './flow_block';
 import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
 import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
@@ -474,10 +474,10 @@ export class FlowWorkspace implements BlockManager {
         block.render(group, {
             block_id: block_id,
             position: (position ? position : {x: 10, y: 10}),
+            workspace: this,
         });
         const bodyElement = block.getBodyElement();
         bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
-
             if (this.state !== 'waiting'){
                 return;
             }
@@ -505,6 +505,28 @@ export class FlowWorkspace implements BlockManager {
             const mouseEv = ev as MouseEvent;
             return { x: mouseEv.clientX, y: mouseEv.clientY };
         }
+    }
+
+    public startResizing(block: Resizeable, ev: MouseEvent | TouchEvent) {
+        const initialPos = this._getPositionFromEvent(ev);
+        const area = block.getBodyArea();
+
+        this.canvas.onmousemove = this.canvas.ontouchmove = ((ev: MouseEvent | TouchEvent) => {
+            const pos = this._getPositionFromEvent(ev);
+
+            const diffX = initialPos.x - pos.x;
+            const diffY = initialPos.y - pos.y;
+
+            const newWidth = area.width - diffX;
+            const newHeight = area.height - diffY;
+
+            block.resize({ width: newWidth, height: newHeight });
+        });
+
+        this.canvas.onmouseup = this.canvas.ontouchend = ((ev: MouseEvent | TouchEvent) => {
+            this.canvas.onmousemove = null;
+            this.canvas.onmouseup = null;
+        });
     }
 
     private _mouseDownOnBlock(pos: Position2D, block: FlowBlock, on_done?: (pos: Position2D) => void) {

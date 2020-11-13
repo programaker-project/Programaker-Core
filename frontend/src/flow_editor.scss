@@ -128,7 +128,9 @@ svg.block_renderer g.flow_node rect.body_shadow {
 
 svg.block_renderer g.flow_node a.to-be-removed rect.node_body,
 svg.block_renderer g.flow_node.to-be-removed rect.node_body {
-    fill-opacity: 0.25;
+    fill-opacity: 0.50;
+    fill: #f88;
+    color: #fff;
 }
 
 svg.block_renderer.drawing rect.node_body {
@@ -530,4 +532,14 @@ svg.block_renderer g.flow_node.container_node .node_body {
 svg.block_renderer g.flow_node.container_node .output_text {
     fill: #222;
     font-style: italic;
+}
+
+svg.block_renderer g.flow_node.container_node .manipulators .resize-manipulator {
+    fill: transparent;
+    stroke: #ff0;
+    stroke-width: 2px;
+}
+
+svg.block_renderer g.flow_node.container_node .manipulators.hidden {
+    display: none;
 }

@@ -3,6 +3,7 @@ import { BlockManager } from '../block_manager';
 import { Toolbox } from '../toolbox';
 import { UiSignalService } from '../../services/ui-signal.service';
 import { uuidv4 } from '../utils';
+import { FlowWorkspace } from '../flow_workspace';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -14,9 +15,17 @@ const OUTPUT_PORT_REAL_SIZE = 10;
 const CONNECTOR_SIDE_SIZE = 15;
 const ICON_PADDING = '1ex';
 
-export type UiFlowBlockBuilder = (canvas: SVGElement, group: SVGElement, block: UiFlowBlock, service: UiSignalService) => UiFlowBlockHandler;
+export interface UiFlowBlockBuilderInitOps {
+    workspace?: FlowWorkspace,
+}
+
+export type UiFlowBlockBuilder = (canvas: SVGElement,
+                                  group: SVGElement,
+                                  block: UiFlowBlock,
+                                  service: UiSignalService,
+                                  ops: UiFlowBlockBuilderInitOps) => UiFlowBlockHandler;
 export interface UiFlowBlockHandler {
-    onConnectionLost(portIndex: number);
+    onConnectionLost: (portIndex: number) => void;
     onConnectionValueUpdate : (input_index: number, value: string) => void;
     onClick: () => void,
     onInputUpdated: (connectedBlock: FlowBlock, inputIndex: number) => void,
@@ -40,6 +49,7 @@ export interface UiFlowBlockData extends FlowBlockData {
     type: UiFlowBlockType,
     value: {
         options: UiFlowBlockOptions,
+        dimensions?: {width: number, height: number},
     },
 }
 
@@ -64,6 +74,7 @@ export class UiFlowBlock implements FlowBlock {
     private input_count: number[] = [];
     private handler: UiFlowBlockHandler;
     private input_blocks: [FlowBlock, number][] = [];
+    blockData: { dimensions?: { width: number, height: number } } = {};
 
     constructor(options: UiFlowBlockOptions,
                 private uiSignalService: UiSignalService,
@@ -115,7 +126,9 @@ export class UiFlowBlock implements FlowBlock {
         const group = document.createElementNS(SvgNS, 'g');
         this.canvas.appendChild(group);
 
-        this.handler = this.options.builder(canvas, group, this, this.uiSignalService);
+        this.handler = this.options.builder(canvas, group, this, this.uiSignalService, {
+            workspace: initOpts.workspace,
+        });
         this._renderOutputs(group);
         this._renderInputs(group);
 
@@ -330,6 +343,7 @@ export class UiFlowBlock implements FlowBlock {
             type: BLOCK_TYPE,
             value: {
                 options: JSON.parse(JSON.stringify(this.options)),
+                dimensions: this.blockData.dimensions,
             },
         }
     }
@@ -347,7 +361,13 @@ export class UiFlowBlock implements FlowBlock {
         const templateOptions = this._findTemplateOptions(options.id, toolbox);
         options.builder = templateOptions.builder;
 
-        return new UiFlowBlock(options, toolbox.uiSignalService);
+        const block = new UiFlowBlock(options, toolbox.uiSignalService);
+
+        if (data.value.dimensions) {
+            block.blockData.dimensions = Object.assign({}, data.value.dimensions);
+        }
+
+        return block;
     }
 
     private static _findTemplateOptions(blockId: string, toolbox: Toolbox): UiFlowBlockOptions {

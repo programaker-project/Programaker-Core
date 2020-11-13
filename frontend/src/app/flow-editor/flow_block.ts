@@ -1,3 +1,5 @@
+import { FlowWorkspace } from "./flow_workspace";
+
 export type MessageType = 'integer' | 'float' | 'boolean' | 'string' | 'any' | 'pulse';
 
 export interface Position2D { x: number; y: number };
@@ -65,6 +67,7 @@ export type FlowBlockData = { type: string, value: any };
 export interface FlowBlockInitOpts {
     position?: Position2D;
     block_id?: string;
+    workspace?: FlowWorkspace;
 };
 
 export interface FlowBlock {
@@ -87,4 +90,9 @@ export interface FlowBlock {
     getPositionOfOutput(index: number, edge?: boolean): Position2D;
     getOutputType(index: number): string;
     getOutputRunwayDirection(): Direction2D;
+}
+
+export interface Resizeable {
+    resize: (dimensions: { width: number, height: number }) => void;
+    getBodyArea: () => Area2D;
 }
