@@ -529,6 +529,11 @@ svg.block_renderer g.flow_node.container_node .node_body {
     stroke-dasharray: 5 5;
 }
 
+
+svg.block_renderer g.flow_node.container_node.highlighted .node_body {
+    fill: #AFA;
+}
+
 svg.block_renderer g.flow_node.container_node .output_text {
     fill: #222;
     font-style: italic;

@@ -166,6 +166,7 @@ export class FlowWorkspace implements BlockManager {
     private connection_group: SVGGElement;
     private block_group: SVGGElement;
     private container_group: SVGGElement;
+    private containers: FlowBlock[] = [];
 
     private top_left = { x: 0, y: 0 };
     private inv_zoom_level = 1;
@@ -468,7 +469,8 @@ export class FlowWorkspace implements BlockManager {
         }
 
         let group = this.block_group;
-        if (isContainerBlock(block)) {
+        const isContainer = isContainerBlock(block);
+        if (isContainer) {
             group = this.container_group;
         }
         block.render(group, {
@@ -476,6 +478,12 @@ export class FlowWorkspace implements BlockManager {
             position: (position ? position : {x: 10, y: 10}),
             workspace: this,
         });
+
+        if (isContainer) {
+            // Obtaining the area has to be done AFTER the rendering
+            this.containers.push(block);
+        }
+
         const bodyElement = block.getBodyElement();
         bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
             if (this.state !== 'waiting'){
@@ -529,6 +537,28 @@ export class FlowWorkspace implements BlockManager {
         });
     }
 
+    private _findContainerInPos(pos: Position2D, excluding?: FlowBlock): FlowBlock | null {
+        for (const container of this.containers) {
+            if (excluding === container) {
+                continue;
+            }
+
+            const area = container.getBodyElement().getClientRects()[0];
+            const offset = container.getOffset();
+            const diffX = pos.x - area.x;
+            const diffY = pos.y - area.y;
+
+            if ((diffX >= 0) && (diffY >= 0)
+                && (diffX <= area.width)
+                && (diffY <= area.height)) {
+
+                return container;
+            }
+        }
+
+        return null;
+    }
+
     private _mouseDownOnBlock(pos: Position2D, block: FlowBlock, on_done?: (pos: Position2D) => void) {
         if (this.state !== 'waiting') {
             console.error('Forcing start of MouseDown with Workspace state='+this.state);
@@ -539,9 +569,25 @@ export class FlowWorkspace implements BlockManager {
         const block_id = this.getBlockId(block);
 
         let last = pos;
+        let lastContainer: FlowBlock | null = null;
 
         this.canvas.onmousemove = this.canvas.ontouchmove = ((ev: MouseEvent | TouchEvent) => {
             const pos = this._getPositionFromEvent(ev);
+            const container = this._findContainerInPos(pos, block);
+
+            if (lastContainer !== container) {
+                if (lastContainer) {
+                    lastContainer.getBodyElement().classList.remove('highlighted');
+                }
+
+                if (container) {
+                    container.getBodyElement().classList.add('highlighted');
+                }
+
+                lastContainer = container;
+            }
+
+
 
             try {
                 const distance = {
@@ -571,6 +617,10 @@ export class FlowWorkspace implements BlockManager {
             }
         });
         this.canvas.onmouseup = this.canvas.ontouchend = ((ev: MouseEvent | TouchEvent) => {
+
+            if (lastContainer) {
+                lastContainer.getBodyElement().classList.remove('highlighted');
+            }
 
             try {
                 const pos = this._getPositionFromEvent(ev) || last;
