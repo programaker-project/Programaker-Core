@@ -4,6 +4,7 @@ import {
     Area2D, Direction2D, Position2D, MessageType, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions,
 } from './flow_block';
 import { BlockManager } from './block_manager';
+import { UiFlowBlock } from './ui-blocks/ui_flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -35,6 +36,7 @@ export function isDirectValueBlockData(opt: FlowBlockData): opt is DirectValueFl
 export class DirectValue implements FlowBlock {
     options: DirectValueOptions;
     value: string;
+    sinks: FlowBlock[] = [];
 
     constructor(options: DirectValueOptions) {
         this.options = options;
@@ -148,13 +150,24 @@ export class DirectValue implements FlowBlock {
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
     }
 
-    public addConnection(direction: 'in' | 'out', _index: number) {
+    public addConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {
         if (direction === 'in') {
             console.warn("Should NOT be possible to add a connection to a DirectValue block");
+            return;
         }
+
+        this.sinks.push(block);
     }
 
-    public removeConnection(_direction: 'in' | 'out', _index: number) {
+    public removeConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {
+        if (direction === 'in') {
+            console.warn("Should NOT be possible to have input connections on a DirectValue block");
+            return;
+        }
+
+        const index = this.sinks.findIndex(x => x === block);
+
+        this.sinks.splice(index, 1);
     }
 
     public getSlots(): {[key: string]: string} {
@@ -191,6 +204,11 @@ export class DirectValue implements FlowBlock {
         if (this.group) {
             this.textBox.textContent = this.value || '-';
             this.updateSize();
+        }
+        for (const block of this.sinks) {
+            if (block instanceof UiFlowBlock) {
+                block.updateConnectionValue(this, new_value);
+            }
         }
     }
 

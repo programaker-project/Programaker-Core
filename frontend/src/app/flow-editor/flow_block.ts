@@ -78,8 +78,8 @@ export interface FlowBlock {
     getOffset(): Position2D;
     moveBy(distance: Position2D): void;
 
-    addConnection(direction: 'in' | 'out', input: number): void;
-    removeConnection(direction: 'in' | 'out', index: number): void;
+    addConnection(direction: 'in' | 'out', input: number, block: FlowBlock): void;
+    removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): void;
 
     getSlots(): {[key: string]: string};
     getInputs(): InputPortDefinition[];

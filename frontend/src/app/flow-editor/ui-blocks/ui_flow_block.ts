@@ -14,13 +14,21 @@ const OUTPUT_PORT_REAL_SIZE = 10;
 const CONNECTOR_SIDE_SIZE = 15;
 const ICON_PADDING = '1ex';
 
-export type UiFlowBlockRenderer = (canvas: SVGElement, group: SVGElement, block: UiFlowBlock, service: UiSignalService) => OnDispose;
+export type UiFlowBlockBuilder = (canvas: SVGElement, group: SVGElement, block: UiFlowBlock, service: UiSignalService) => UiFlowBlockHandler;
+export interface UiFlowBlockHandler {
+    onConnectionLost(portIndex: number);
+    onConnectionValueUpdate : (input_index: number, value: string) => void;
+    onClick: () => void,
+    onInputUpdated: (connectedBlock: FlowBlock, inputIndex: number) => void,
+    dispose: () => void,
+}
+
 export type OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => void;
+export type OnUiFlowBlockInputUpdated = (block: UiFlowBlock, service: UiSignalService, connectedBlock: FlowBlock, inputIndex: number) => void;
 export type OnDispose = () => void;
 
 export interface UiFlowBlockOptions extends FlowBlockOptions {
-    renderer: UiFlowBlockRenderer,
-    onclick?: OnUiFlowBlockClick,
+    builder: UiFlowBlockBuilder,
     type: UiFlowBlockType,
     icon?: string,
     id: string,
@@ -53,7 +61,8 @@ export class UiFlowBlock implements FlowBlock {
     private input_groups: SVGGElement[];
     private blockId: string;
     private input_count: number[] = [];
-    onDispose: OnDispose | null;
+    private handler: UiFlowBlockHandler;
+    private input_blocks: [FlowBlock, number][] = [];
 
     constructor(options: UiFlowBlockOptions,
                 private uiSignalService: UiSignalService,
@@ -72,9 +81,7 @@ export class UiFlowBlock implements FlowBlock {
     public dispose() {
         this.canvas.removeChild(this.group);
 
-        if (this.onDispose) {
-            this.onDispose();
-        }
+        this.handler.dispose();
     }
 
     public get id() {
@@ -107,7 +114,7 @@ export class UiFlowBlock implements FlowBlock {
         const group = document.createElementNS(SvgNS, 'g');
         this.canvas.appendChild(group);
 
-        this.onDispose = this.options.renderer(canvas, group, this, this.uiSignalService);
+        this.handler = this.options.builder(canvas, group, this, this.uiSignalService);
         this._renderOutputs(group);
         this._renderInputs(group);
 
@@ -337,8 +344,7 @@ export class UiFlowBlock implements FlowBlock {
         options.on_io_selected = manager.onIoSelected.bind(manager);
 
         const templateOptions = this._findTemplateOptions(options.id, toolbox);
-        options.renderer = templateOptions.renderer;
-        options.onclick = templateOptions.onclick;
+        options.builder = templateOptions.builder;
 
         return new UiFlowBlock(options, toolbox.uiSignalService);
     }
@@ -388,8 +394,11 @@ export class UiFlowBlock implements FlowBlock {
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
     }
 
-    addConnection(direction: "in" | "out", input_index: number): void {
+    addConnection(direction: "in" | "out", input_index: number, block: FlowBlock): void {
         if (direction === 'out') { return; }
+
+        this.input_blocks.push([block, input_index]);
+        this.handler.onInputUpdated(block, input_index);
 
         if (!this.input_count[input_index]) {
             this.input_count[input_index] = 0;
@@ -423,12 +432,27 @@ export class UiFlowBlock implements FlowBlock {
         }
     }
 
-    removeConnection(direction: "in" | "out", index: number): void {
+    removeConnection(direction: "in" | "out", portIndex: number, block: FlowBlock): void {
         if (direction === 'out') { return; }
 
-        if (this.input_count[index]) {
-            this.input_count[index]--;
+        if (this.input_count[portIndex]) {
+            this.input_count[portIndex]--;
         }
+
+        const index = this.input_blocks.findIndex(([x, y]) => x === block);
+
+        this.input_blocks.splice(index, 1);
+        this.handler.onConnectionLost(portIndex);
+    }
+
+    updateConnectionValue(block: FlowBlock, value: string) {
+        const input = this.input_blocks.find(([x, y]) => x === block);
+        let input_index = -1;
+        if (input) {
+            input_index = input[1];
+        }
+
+        this.handler.onConnectionValueUpdate(input_index, value);
     }
 
     getSlots(): { [key: string]: string; } {
@@ -477,11 +501,6 @@ export class UiFlowBlock implements FlowBlock {
 
     // UI Flow block specific
     onclick() {
-        if (this.options.onclick) {
-            this.options.onclick(this, this.uiSignalService);
-        }
-        else {
-            console.debug("No click handler on", this);
-        }
+        this.handler.onClick();
     }
 }

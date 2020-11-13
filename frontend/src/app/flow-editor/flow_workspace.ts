@@ -1010,12 +1010,13 @@ export class FlowWorkspace implements BlockManager {
             this.removeConnection(conn);
         };
         this.connection_group.appendChild(path);
-        source.block.addConnection('out', conn.getSource().output_index);
-        source.connections.push(conn.id);
 
         const sink = this.blocks[conn.getSink().block_id];
+        source.block.addConnection('out', conn.getSource().output_index, sink.block);
+        source.connections.push(conn.id);
+
         sink.connections.push(conn.id);
-        sink.block.addConnection('in', conn.getSink().input_index);
+        sink.block.addConnection('in', conn.getSink().input_index, source.block);
 
         this.connections[conn.id] = { connection: conn, element: path };
         this.updateBlockInputHelpersVisibility(conn.getSink().block_id);
@@ -1024,10 +1025,11 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private removeConnection(conn: FlowConnection) {
-        // Disconnect from source
         const source = this.blocks[conn.getSource().block_id];
+        const sink = this.blocks[conn.getSink().block_id];
 
-        source.block.removeConnection('out', conn.getSource().output_index);
+        // Disconnect from source
+        source.block.removeConnection('out', conn.getSource().output_index, sink.block);
         const source_conn_index = source.connections.indexOf(conn.id);
         if (source_conn_index < 0) {
             console.error('Connection not found when going to remove. For block', source);
@@ -1038,9 +1040,7 @@ export class FlowWorkspace implements BlockManager {
         this.updateBlockInputHelpersVisibility(conn.getSource().block_id);
 
         // Disconnect from sink
-        const sink = this.blocks[conn.getSink().block_id];
-
-        sink.block.removeConnection('in', conn.getSink().input_index);
+        sink.block.removeConnection('in', conn.getSink().input_index, source.block);
         const sink_conn_index = sink.connections.indexOf(conn.id);
         if (sink_conn_index < 0) {
             console.error('Connection not found when going to remove. For block', sink);
