@@ -981,7 +981,12 @@ export class FlowWorkspace implements BlockManager {
         }
 
         for (const block_id of Object.keys(this.blocks)) {
-            const body = this.blocks[block_id].block.getBodyArea();
+            const block = this.blocks[block_id].block;
+            if (isContainerBlock(block)) {
+                continue;
+            }
+
+            const body = block.getBodyArea();
             if (((body.y + body.height) > top.y) && ((body.y < bottom.y))) {
                 occupied_sections.push( { left: body.x, right: body.x + body.width } );
             }
