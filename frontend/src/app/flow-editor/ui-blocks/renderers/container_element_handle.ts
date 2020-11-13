@@ -1,5 +1,5 @@
 import { Position2D, FlowBlock, Resizeable } from "../../flow_block";
-import { FlowWorkspace } from "app/flow-editor/flow_workspace";
+import { FlowWorkspace } from "../../flow_workspace";
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
