@@ -92,6 +92,12 @@ export interface FlowBlock {
     getOutputRunwayDirection(): Direction2D;
 }
 
+export interface ContainerBlock {
+    update(): void;
+    removeContentBlock(block: FlowBlock): void;
+    addContentBlock(block: FlowBlock): void;
+}
+
 export interface Resizeable {
     resize: (dimensions: { width: number, height: number }) => void;
     getBodyArea: () => Area2D;

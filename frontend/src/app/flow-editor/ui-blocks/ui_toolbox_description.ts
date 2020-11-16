@@ -14,7 +14,6 @@ export const UiToolboxDescription: ToolboxDescription = [
                 type: 'ui_flow_block',
                 id: 'simple_button',
                 builder: SimpleButtonBuilder,
-                is_container: false,
                 outputs: [
                     {
                         type: "pulse",
@@ -26,7 +25,6 @@ export const UiToolboxDescription: ToolboxDescription = [
                 type: 'ui_flow_block',
                 id: 'simple_output',
                 builder: SimpleOutputBuilder,
-                is_container: false,
                 inputs: [
                     {
                         type: "any",
@@ -36,9 +34,9 @@ export const UiToolboxDescription: ToolboxDescription = [
             {
                 icon: UI_ICON,
                 type: 'ui_flow_block',
+                subtype: 'container_flow_block',
                 id: 'responsive_page_holder',
                 builder: ResponsivePageBuilder,
-                is_container: true,
             }
         ]
     }

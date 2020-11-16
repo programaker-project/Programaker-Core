@@ -10,9 +10,10 @@ import { Toolbox } from './toolbox';
 import { BaseToolboxDescription } from './base_toolbox_description';
 import { EnvironmentService } from 'app/environment.service';
 import { UiToolboxDescription } from './ui-blocks/ui_toolbox_description';
-import { UiFlowBlock } from './ui-blocks/ui_flow_block';
+import { UiFlowBlock, isUiFlowBlockOptions } from './ui-blocks/ui_flow_block';
 import { UiSignalService } from 'app/services/ui-signal.service';
 import { Session } from 'app/session';
+import { ContainerFlowBlock, isContainerFlowBlockOptions } from './ui-blocks/container_flow_block';
 
 
 export function buildBaseToolbox(baseElement: HTMLElement,
@@ -47,7 +48,17 @@ export function buildBaseToolbox(baseElement: HTMLElement,
                         on_inputs_changed: manager.onInputsChanged.bind(manager),
                     }, block);
 
-                    return new UiFlowBlock(desc, uiSignalService);
+                    if (isContainerFlowBlockOptions(desc)) {
+                        return new ContainerFlowBlock(desc, uiSignalService);
+                    }
+                    // This is a more generic class. It has to be checked after
+                    // the more specific ones so they have a chance of matching.
+                    else if (isUiFlowBlockOptions(desc)) {
+                        return new UiFlowBlock(desc, uiSignalService);
+                    }
+                    else {
+                        throw new Error("Unknown block options: " + JSON.stringify(block))
+                    }
                 }, category.id);
             }
         }

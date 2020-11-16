@@ -1,11 +1,12 @@
 import { AtomicFlowBlockOptions } from './atomic_flow_block';
 import { PLATFORM_ICON } from './definitions';
 import { UiFlowBlockOptions } from './ui-blocks/ui_flow_block';
+import { ContainerFlowBlockOptions } from './ui-blocks/container_flow_block';
 
 interface Category {
     id: string,
     name: string,
-    blocks: (AtomicFlowBlockOptions | UiFlowBlockOptions)[],
+    blocks: (AtomicFlowBlockOptions | UiFlowBlockOptions | ContainerFlowBlockOptions)[],
 }
 
 export type ToolboxDescription = Category[];

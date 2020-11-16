@@ -133,7 +133,7 @@ export class FlowEditorComponent implements OnInit {
                                 this.load_program(program);
                                 resolve();
                             }).catch(err => {
-                                console.error("Error:", err);
+                                console.error(err);
                                 resolve();
                                 this.goBack();
                             });

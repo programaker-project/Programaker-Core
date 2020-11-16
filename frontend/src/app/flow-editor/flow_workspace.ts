@@ -1,13 +1,14 @@
 import { BlockManager } from './block_manager';
 import { DirectValue } from './direct_value';
 import { EnumValue, EnumDirectValue, EnumGetter } from './enum_direct_value';
-import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition, Resizeable } from './flow_block';
+import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition, Resizeable, ContainerBlock } from './flow_block';
 import { FlowConnection } from './flow_connection';
 import { uuidv4 } from './utils';
 import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
 import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
 import { UiFlowBlockData, UiFlowBlock } from './ui-blocks/ui_flow_block';
 import { Toolbox } from './toolbox';
+import { ContainerFlowBlock, isContainerFlowBlockOptions, ContainerFlowBlockData, isContainerFlowBlockData } from './ui-blocks/container_flow_block';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -34,13 +35,6 @@ type State = 'waiting'     // Base state
     | 'dragging-block'     // Moving around a block
     | 'dragging-workspace' // Moving around the workspace
 
-function isContainerBlock(block: FlowBlock): boolean {
-    // TODO: Refactor to avoid needing knowledge of the block structure.
-    if (block instanceof UiFlowBlock) {
-        return block.options.is_container;
-    }
-    return false;
-}
 
 export class FlowWorkspace implements BlockManager {
     public static BuildOn(baseElement: HTMLElement,
@@ -107,7 +101,12 @@ export class FlowWorkspace implements BlockManager {
                     break;
 
                 case UiFlowBlock.GetBlockType():
-                    created_block = UiFlowBlock.Deserialize(block.data as UiFlowBlockData, this, toolbox);
+                    if (isContainerFlowBlockData(block.data)) {
+                        created_block = ContainerFlowBlock.Deserialize(block.data as ContainerFlowBlockData, this, toolbox);
+                    }
+                    else {
+                        created_block = UiFlowBlock.Deserialize(block.data as UiFlowBlockData, this, toolbox);
+                    }
                     break;
 
                 case DirectValue.GetBlockType():
@@ -179,7 +178,9 @@ export class FlowWorkspace implements BlockManager {
         block: FlowBlock,
         connections: string[],
         input_group: SVGGElement,
+        container_id: string | null,
     }};
+
     private connections: {[key: string]: {
         connection: FlowConnection,
         element: SVGElement,
@@ -469,7 +470,7 @@ export class FlowWorkspace implements BlockManager {
         }
 
         let group = this.block_group;
-        const isContainer = isContainerBlock(block);
+        const isContainer = block instanceof ContainerFlowBlock;
         if (isContainer) {
             group = this.container_group;
         }
@@ -496,7 +497,7 @@ export class FlowWorkspace implements BlockManager {
         });
         const input_group = this.drawBlockInputHelpers(block);
 
-        this.blocks[block_id] = { block: block, connections: [], input_group: input_group };
+        this.blocks[block_id] = { block: block, connections: [], input_group: input_group, container_id: null };
 
         return block_id;
     }
@@ -544,7 +545,10 @@ export class FlowWorkspace implements BlockManager {
             }
 
             const area = container.getBodyElement().getClientRects()[0];
-            const offset = container.getOffset();
+            if (!area) {
+                continue;
+            }
+
             const diffX = pos.x - area.x;
             const diffY = pos.y - area.y;
 
@@ -557,6 +561,36 @@ export class FlowWorkspace implements BlockManager {
         }
 
         return null;
+    }
+
+    private _getContainerOfBlock(blockId: string): FlowBlock | null {
+        const blockInfo = this.blocks[blockId];
+        if (blockInfo.container_id) {
+            return this.blocks[blockInfo.container_id].block;
+        }
+
+        return null;
+    }
+
+    private _updateBlockContainer(block: FlowBlock, container?: FlowBlock) {
+        const block_id = this.getBlockId(block);
+        const wasInContainer = this._getContainerOfBlock(block_id);
+
+        const container_id = container ? this.getBlockId(container) : null;
+
+        if (wasInContainer !== container) {
+            if (wasInContainer) {
+                (wasInContainer as any as ContainerBlock).removeContentBlock(block);
+            }
+
+            if (container) {
+                (container as any as ContainerBlock).addContentBlock(block);
+            }
+            this.blocks[block_id].container_id = container_id;
+        }
+        else if (container) {
+            (container as any as ContainerBlock).update();
+        }
     }
 
     private _mouseDownOnBlock(pos: Position2D, block: FlowBlock, on_done?: (pos: Position2D) => void) {
@@ -617,10 +651,13 @@ export class FlowWorkspace implements BlockManager {
             }
         });
         this.canvas.onmouseup = this.canvas.ontouchend = ((ev: MouseEvent | TouchEvent) => {
-
             if (lastContainer) {
                 lastContainer.getBodyElement().classList.remove('highlighted');
             }
+
+            const pos = this._getPositionFromEvent(ev);
+            const container = this._findContainerInPos(pos, block);
+            this._updateBlockContainer(block, container);
 
             try {
                 const pos = this._getPositionFromEvent(ev) || last;
@@ -1032,7 +1069,7 @@ export class FlowWorkspace implements BlockManager {
 
         for (const block_id of Object.keys(this.blocks)) {
             const block = this.blocks[block_id].block;
-            if (isContainerBlock(block)) {
+            if (block instanceof ContainerFlowBlock) {
                 continue;
             }
 

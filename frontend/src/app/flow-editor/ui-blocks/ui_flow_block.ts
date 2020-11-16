@@ -37,7 +37,6 @@ export type OnUiFlowBlockInputUpdated = (block: UiFlowBlock, service: UiSignalSe
 export type OnDispose = () => void;
 
 export interface UiFlowBlockOptions extends FlowBlockOptions {
-    is_container: boolean;
     builder: UiFlowBlockBuilder,
     type: UiFlowBlockType,
     icon?: string,
@@ -370,7 +369,7 @@ export class UiFlowBlock implements FlowBlock {
         return block;
     }
 
-    private static _findTemplateOptions(blockId: string, toolbox: Toolbox): UiFlowBlockOptions {
+    protected static _findTemplateOptions(blockId: string, toolbox: Toolbox): UiFlowBlockOptions {
         for (const block of toolbox.blocks) {
             if ((block as UiFlowBlockOptions).id === blockId) {
                 // This is done in this order to detect the cases where the ID
