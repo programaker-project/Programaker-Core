@@ -1,9 +1,10 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
-import { FlowBlock, Resizeable, Area2D } from "../../flow_block";
-import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockHandler, UiFlowBlockBuilderInitOps } from "../ui_flow_block";
-import { getRefBox } from "./utils";
+import { Area2D, FlowBlock, Resizeable } from "../../flow_block";
+import { ContainerFlowBlock, GenTreeProc } from "../container_flow_block";
+import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { ContainerElement, ContainerElementHandle } from "./container_element_handle";
+import { getRefBox } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -108,6 +109,7 @@ class ResponsivePage implements UiFlowBlockHandler, ContainerElement, Resizeable
 
         this.block.blockData.dimensions = { width, height };
 
+        (this.block as ContainerFlowBlock).update();
         this.handle.update();
     }
 
@@ -142,4 +144,139 @@ class ResponsivePage implements UiFlowBlockHandler, ContainerElement, Resizeable
         return this.block;
     }
 
+}
+
+type CutElement = {i: number, a: Area2D};
+type CutType = 'vertical' | 'horizontal' | 'no-cut';
+type CutTree = CutElement | { cutType:CutType, groups: CutTree[] };
+
+export const ResponsivePageGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
+    // Format in a grid-like
+    const pos = blocks.map((b, i) => {
+        return {i, a: b.getBodyArea()};
+    });
+
+    if (blocks.length < 2) {
+        return blocks.map(b => b.getBodyArea());
+    }
+
+    const tree = cleanestTree(pos);
+
+    // TODO: Complete
+
+    return tree;
+}
+
+function cleanestTree(elems: CutElement[]): CutTree {
+    if (elems.length < 1) {
+        throw new Error(`Cannot build tree with < 1 element, found ${elems.length}`);
+    }
+    else if (elems.length === 1) {
+        return elems[0];
+    }
+
+    const cut = cleanestCut(elems);
+    return { cutType: cut.cutType, groups: cut.groups.map(g => cleanestTree(g)) };
+}
+
+function cleanestCut(elems: CutElement[]): { cutType:CutType, groups: CutElement[][] } {
+
+    // Sort horizantally and vertically
+    const horiz = elems.concat([]);
+    horiz.sort((a, b) => a.a.x - b.a.x );
+
+    const vert = elems.concat([]);
+    vert.sort((a, b) => a.a.y - b.a.y );
+
+    // Measure horizontal spaces
+    const horizSpaces = [];
+    let endX = null;
+    for (let idx = 0; idx < horiz.length; idx++) {
+        const e = horiz[idx];
+
+        if (endX === null) {
+            endX = e.a.x + e.a.width;
+            horizSpaces.push([ -1, idx, e ]);
+            continue;
+        }
+
+        const diff = e.a.x - endX;
+        if (diff <= 0) {
+            horizSpaces.push([ -1, idx, e ]);
+            continue;
+        }
+        endX = e.a.x + e.a.width;
+
+        horizSpaces.push([ diff, idx, e ]);
+    }
+
+    horizSpaces.sort(([a, _aIdx], [b, _bIdx]) => b - a)
+
+    // Measure vertical spaces
+    const vertSpaces = [];
+    let endY = null;
+    for (let idx = 0; idx < vert.length; idx++) {
+        const e = vert[idx];
+
+        if (endY === null) {
+            endY = e.a.y + e.a.height;
+            vertSpaces.push([ -1, idx, e ]);
+            continue;
+        }
+
+        const diff = e.a.y - endY;
+        if (diff <= 0) {
+            vertSpaces.push([ -1, idx, e ]);
+            continue;
+        }
+        endY = e.a.y + e.a.height;
+
+        vertSpaces.push([ diff, idx, e ]);
+    }
+
+    vertSpaces.sort(([a, _aIdx], [b, _bIdx]) => b - a)
+
+    // Find how to cut, horizontally or vertically
+    let cutType : CutType = 'no-cut';
+    if (horizSpaces.length === 0) {
+        if (vertSpaces.length === 0) {
+            cutType = 'no-cut';
+        }
+        else {
+            cutType = 'vertical';
+        }
+    }
+    else if (vertSpaces.length === 0) {
+        cutType = 'horizontal';
+    }
+    else {
+        const maxHoriz = horizSpaces[0][0];
+        const maxVert = vertSpaces[0][0];
+
+        if (maxHoriz > maxVert) {
+            cutType = 'horizontal';
+        }
+        else {
+            cutType = 'vertical';
+        }
+    }
+
+    if (cutType === 'no-cut') {
+        return { cutType:'no-cut', groups: [elems] };
+    }
+
+    // Perform the cut on the index with the most space
+    let before: CutElement[], after:CutElement[];
+    if (cutType === 'horizontal') {
+        const cutIdx = horizSpaces[0][1];
+        before = horiz.slice(0, cutIdx);
+        after = horiz.slice(cutIdx);
+    }
+    else {
+        const cutIdx = vertSpaces[0][1];
+        before = vert.slice(0, cutIdx);
+        after = vert.slice(cutIdx);
+    }
+
+    return { cutType: cutType, groups: [before, after] };
 }

@@ -1,6 +1,6 @@
-import { ContainerBlock, FlowBlockData, FlowBlockOptions, FlowBlock } from '../flow_block';
+import { ContainerBlock, FlowBlockData, FlowBlockOptions, FlowBlock, Position2D } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
-import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockOptions, UiFlowBlockData, isUiFlowBlockData } from './ui_flow_block';
+import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockOptions, UiFlowBlockData, isUiFlowBlockData, UiFlowBlockHandler } from './ui_flow_block';
 import { UiSignalService } from 'app/services/ui-signal.service';
 import { BlockManager } from '../block_manager';
 import { Toolbox } from '../toolbox';
@@ -19,6 +19,9 @@ export interface ContainerFlowBlockBuilderInitOps {
     workspace?: FlowWorkspace,
 }
 
+export type ContainerTree = any; // TODO: Complete typing
+
+export type GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => ContainerTree;
 
 export interface ContainerFlowBlockOptions extends UiFlowBlockOptions {
     builder: UiFlowBlockBuilder,
@@ -26,6 +29,8 @@ export interface ContainerFlowBlockOptions extends UiFlowBlockOptions {
     icon?: string,
     id: string,
     block_id?: string,
+
+    gen_tree: GenTreeProc,
 }
 
 export interface ContainerFlowBlockData extends UiFlowBlockData {
@@ -42,6 +47,7 @@ export function isContainerFlowBlockData(data: FlowBlockData): data is Container
 
 export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     contents: FlowBlock[] = [];
+    options: ContainerFlowBlockOptions;
 
     constructor(options: ContainerFlowBlockOptions,
                 uiSignalService: UiSignalService,
@@ -51,7 +57,6 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
 
     addContentBlock(block: FlowBlock): void {
         this.contents.push(block);
-        this.update();
     }
 
     removeContentBlock(block: FlowBlock): void {
@@ -60,13 +65,35 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
             throw new Error(`Block not found on container`);
         }
 
-        delete this.contents[pos];
-        this.update();
+        this.contents.splice(pos, 1);
     }
 
     update(): void {
-        const positions = this.contents.map(b => [ b, b.getBodyArea() ]);
-        console.log("reFLOWing", positions);
+
+    }
+
+    // private _reposition(): void {
+    //     try {
+    //         const endPositions = this.options.reposition(this.handler, this.contents.concat([]));
+
+    //         let idx = 0;
+    //         for (const block of this.contents) {
+    //             const pos = block.getBodyArea();
+    //             const tgt = endPositions[idx++];
+
+    //             block.moveBy( {
+    //                 x: pos.x - tgt.x,
+    //                 y: pos.y - tgt.y,
+    //             } );
+    //         }
+    //     }
+    //     catch (err) {
+    //         console.error(err);
+    //     }
+    // }
+
+    gen_tree(): ContainerTree {
+        return this.options.gen_tree(this.handler, this.contents.concat([]));
     }
 
     public static Deserialize(data: ContainerFlowBlockData, manager: BlockManager, toolbox: Toolbox): FlowBlock {
@@ -79,8 +106,9 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         options.on_inputs_changed = manager.onInputsChanged.bind(manager);
         options.on_io_selected = manager.onIoSelected.bind(manager);
 
-        const templateOptions = this._findTemplateOptions(options.id, toolbox);
+        const templateOptions = this._findTemplateOptions(options.id, toolbox)  as ContainerFlowBlockOptions;
         options.builder = templateOptions.builder;
+        options.gen_tree = templateOptions.gen_tree;
 
         const block = new ContainerFlowBlock(options, toolbox.uiSignalService);
 

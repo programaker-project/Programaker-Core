@@ -1,8 +1,8 @@
 import { ToolboxDescription } from '../base_toolbox_description';
 import { UI_ICON } from '../definitions';
+import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './renderers/responsive_page';
 import { SimpleButtonBuilder } from './renderers/simple_button';
 import { SimpleOutputBuilder } from './renderers/simple_output';
-import { ResponsivePageBuilder } from './renderers/responsive_page';
 
 export const UiToolboxDescription: ToolboxDescription = [
     {
@@ -37,6 +37,7 @@ export const UiToolboxDescription: ToolboxDescription = [
                 subtype: 'container_flow_block',
                 id: 'responsive_page_holder',
                 builder: ResponsivePageBuilder,
+                gen_tree: ResponsivePageGenerateTree,
             }
         ]
     }

@@ -71,7 +71,7 @@ export class UiFlowBlock implements FlowBlock {
     private input_groups: SVGGElement[];
     private blockId: string;
     private input_count: number[] = [];
-    private handler: UiFlowBlockHandler;
+    protected handler: UiFlowBlockHandler;
     private input_blocks: [FlowBlock, number][] = [];
     blockData: { dimensions?: { width: number, height: number } } = {};
 

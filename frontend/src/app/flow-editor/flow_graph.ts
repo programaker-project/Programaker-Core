@@ -8,6 +8,7 @@ export interface FlowGraphEdge {
 export interface FlowGraphNode {
     data: FlowBlockData,
     position: Position2D,
+    container_id?: string | null,
 };
 
 export interface FlowGraph {

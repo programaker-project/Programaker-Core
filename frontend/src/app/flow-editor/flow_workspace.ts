@@ -68,7 +68,7 @@ export class FlowWorkspace implements BlockManager {
             const serialized = block.serialize();
             const position = block.getOffset();
 
-            blocks[block_id] = { data: serialized, position: position };
+            blocks[block_id] = { data: serialized, position: position, container_id: this.blocks[block_id].container_id };
         }
 
         const connections: FlowGraphEdge[] = [];
@@ -91,47 +91,71 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public load(graph: FlowGraph, toolbox: Toolbox) {
-        for (const block_id of Object.keys(graph.nodes)) {
-            const block = graph.nodes[block_id];
+        let to_go = Object.keys(graph.nodes);
 
-            let created_block = null;
-            switch (block.data.type) {
-                case AtomicFlowBlock.GetBlockType():
-                    created_block = AtomicFlowBlock.Deserialize(block.data as AtomicFlowBlockData, this);
-                    break;
+        let processing = true;
 
-                case UiFlowBlock.GetBlockType():
-                    if (isContainerFlowBlockData(block.data)) {
-                        created_block = ContainerFlowBlock.Deserialize(block.data as ContainerFlowBlockData, this, toolbox);
-                    }
-                    else {
-                        created_block = UiFlowBlock.Deserialize(block.data as UiFlowBlockData, this, toolbox);
-                    }
-                    break;
+        while ((to_go.length > 0) && processing) {
+            processing = false;
+            const skipped = [];
 
-                case DirectValue.GetBlockType():
-                    created_block = DirectValue.Deserialize(block.data, this);
-                    break;
+            for (const block_id of to_go) {
+                const block = graph.nodes[block_id];
+                if (block.container_id && (!this.blocks[block.container_id])) {
+                    skipped.push(block_id);
+                    continue;
+                }
 
-                case EnumDirectValue.GetBlockType():
-                    created_block = EnumDirectValue.Deserialize(block.data, this, this.getEnum);
-                    break;
+                let created_block = null;
+                switch (block.data.type) {
+                    case AtomicFlowBlock.GetBlockType():
+                        created_block = AtomicFlowBlock.Deserialize(block.data as AtomicFlowBlockData, this);
+                        break;
 
-                default:
-                    console.error("Unknown block type:", block.data.type);
+                    case UiFlowBlock.GetBlockType():
+                        if (isContainerFlowBlockData(block.data)) {
+                            created_block = ContainerFlowBlock.Deserialize(block.data as ContainerFlowBlockData, this, toolbox);
+                        }
+                        else {
+                            created_block = UiFlowBlock.Deserialize(block.data as UiFlowBlockData, this, toolbox);
+                        }
+                        break;
+
+                    case DirectValue.GetBlockType():
+                        created_block = DirectValue.Deserialize(block.data, this);
+                        break;
+
+                    case EnumDirectValue.GetBlockType():
+                        created_block = EnumDirectValue.Deserialize(block.data, this, this.getEnum);
+                        break;
+
+                    default:
+                        console.error("Unknown block type:", block.data.type);
+                }
+
+                if (!created_block) {
+                    console.error("Error deserializing block:", block.data);
+                    continue;
+                }
+
+                try {
+                    this.draw(created_block, block.position, block_id);
+                }
+                catch (err) {
+                    console.error("Error drawing block", err);
+                }
+
+                if (block.container_id) {
+                    this._updateBlockContainer(created_block, this.blocks[block.container_id].block);
+                }
+                processing = true;
             }
 
-            if (!created_block) {
-                console.error("Error deserializing block:", block.data);
-                continue;
-            }
+            to_go = skipped;
+        }
 
-            try {
-                this.draw(created_block, block.position, block_id);
-            }
-            catch (err) {
-                console.error("Error drawing block", err);
-            }
+        if (to_go.length !== 0) {
+            throw new Error("Found container-contained circular dependency, on the following IDs: " + JSON.stringify(to_go));
         }
 
         for (const conn of graph.edges) {
