@@ -589,7 +589,15 @@ export class FlowWorkspace implements BlockManager {
 
     private _getContainerOfBlock(blockId: string): FlowBlock | null {
         const blockInfo = this.blocks[blockId];
+        if (!blockInfo) {
+            throw new Error("Can't find block info of " + blockId);
+        }
         if (blockInfo.container_id) {
+
+            if (!blockInfo) {
+                throw new Error("Can't find container: " + blockInfo.container_id);
+            }
+
             return this.blocks[blockInfo.container_id].block;
         }
 
@@ -956,6 +964,19 @@ export class FlowWorkspace implements BlockManager {
     public removeBlock(blockId: string) {
         const info = this.blocks[blockId];
         console.log("Removing block:", info);
+
+
+        if (info.block instanceof ContainerFlowBlock) {
+            const parent_container_id = info.container_id;
+            const parent_container = parent_container_id ? this.blocks[parent_container_id].block : null;
+
+            for (const content of info.block.contents.concat([])) {
+                this._updateBlockContainer(content, parent_container);
+            }
+
+        }
+
+        this._updateBlockContainer(info.block, null);
 
         // Make a copy of the array to avoid problems for modifying it during the loop
         for (const conn_id of info.connections.concat([])) {
