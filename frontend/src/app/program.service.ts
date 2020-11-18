@@ -175,14 +175,16 @@ export class ProgramService {
         );
     }
 
-    async updateProgramById(program: { id: string, type: ProgramType, orig: any, parsed: any }): Promise<boolean> {
+    async updateProgramById(program: { id: string, type: ProgramType, orig: any, parsed: any, pages?: {[key: string]: any} }): Promise<boolean> {
         const url = await this.getUpdateProgramUrl(program.id);
+
+        const data = {type: program.type, orig: program.orig, parsed: program.parsed, pages: program.pages};
 
         try {
             (await
              this.http
                  .put(url,
-                      JSON.stringify({type: program.type, orig: program.orig, parsed: program.parsed}),
+                      JSON.stringify(data),
                       {headers: this.sessionService.addContentType(
                           this.sessionService.getAuthHeader(),
                           ContentType.Json)})

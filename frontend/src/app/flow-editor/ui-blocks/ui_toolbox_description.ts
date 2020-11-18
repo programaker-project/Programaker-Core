@@ -23,7 +23,7 @@ export const UiToolboxDescription: ToolboxDescription = [
             {
                 icon: UI_ICON,
                 type: 'ui_flow_block',
-                id: 'simple_output',
+                id: 'simple_debug_output',
                 builder: SimpleOutputBuilder,
                 inputs: [
                     {
@@ -38,6 +38,7 @@ export const UiToolboxDescription: ToolboxDescription = [
                 id: 'responsive_page_holder',
                 builder: ResponsivePageBuilder,
                 gen_tree: ResponsivePageGenerateTree,
+                is_page: true,
             }
         ]
     }

@@ -107,6 +107,7 @@
 -record(stored_program_content, { type
                                 , orig
                                 , parsed
+                                , pages :: map()
                                 }).
 
 -type program_id() :: binary().
@@ -148,3 +149,9 @@
 -record(storage_configuration_entry, { id :: any()
                                      , value :: any()
                                      }).
+
+-record(program_pages_entry, { page_id :: {binary(), binary()} %% {ProgramId, PagePath}
+                             , program_id :: binary() %% Used for indexing on program-wide operations
+                             , contents :: any() %% Type to be more strictly defined?
+                                           %% TODO: Access permissions?
+                             }).

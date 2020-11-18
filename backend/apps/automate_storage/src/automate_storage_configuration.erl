@@ -593,7 +593,28 @@ get_versioning(Nodes) ->
                                                          {user_group_entry, Id, Name, CanonicalName, Public, 0}
                                                  end,
                                                  [ id, name, canonical_name, public, creation_time ],
-                                                 user_group_entry)
+                                                 user_group_entry
+                                                )
+                        end
+                }
+
+                %% Add groups creation time
+              , #database_version_transformation
+                { id=19
+                , apply=fun() ->
+
+                                {atomic, ok} = mnesia:create_table(?PROGRAM_PAGES_TABLE,
+                                                                   [ { attributes, [ page_id, program_id, contents ] }
+                                                                   , { disc_copies, Nodes }
+                                                                   , { record_name, program_pages_entry }
+                                                                   , { type, set }
+                                                                   , { index, [ program_id ] }
+                                                                   ]),
+
+                                    ok = mnesia:wait_for_tables([ ?PROGRAM_PAGES_TABLE
+                                                                ],
+                                                                automate_configuration:get_table_wait_time())
+
                         end
                 }
               ]

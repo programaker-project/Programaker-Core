@@ -90,6 +90,20 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    public getPages(): {[key: string]: any} {
+        const pages: { [key: string]: any } = {};
+        for (const block_id of Object.keys(this.blocks)) {
+            const block = this.blocks[block_id].block;
+            if (block instanceof ContainerFlowBlock) {
+                if (block.options.is_page) {
+                    pages['/'] = { value: block.renderAsUiElement() };
+                }
+            }
+        }
+
+        return pages;
+    }
+
     public load(graph: FlowGraph, toolbox: Toolbox) {
         let to_go = Object.keys(graph.nodes);
 

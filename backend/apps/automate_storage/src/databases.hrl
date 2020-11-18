@@ -14,6 +14,7 @@
 -define(USER_GENERATED_LOGS_TABLE, automate_user_generated_logs).
 -define(USER_PROGRAM_EVENTS_TABLE, automate_user_program_events).
 -define(USER_PROGRAM_CHECKPOINTS_TABLE, automate_user_program_checkpoints).
+-define(PROGRAM_PAGES_TABLE, autpomate_user_program_pages).
 
 -define(PROGRAM_VARIABLE_TABLE, automate_program_variable_table).
 -define(CUSTOM_SIGNALS_TABLE, automate_custom_signals_table).

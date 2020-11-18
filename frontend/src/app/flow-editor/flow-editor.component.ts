@@ -263,6 +263,7 @@ export class FlowEditorComponent implements OnInit {
 
     async sendProgram(): Promise<boolean> {
         const graph = this.workspace.getGraph();
+        const pages = this.workspace.getPages();
 
         const t0 = new Date();
         const compiled_program = compile(graph);
@@ -278,6 +279,7 @@ export class FlowEditorComponent implements OnInit {
         const program = {
             type: 'flow_program' as ProgramType,
             parsed: { blocks: compiled_program, variables: [] },
+            pages: pages,
             orig: graph,
             id: this.programId,
         };

@@ -36,6 +36,7 @@
 -record(program_content, { type
                          , orig
                          , parsed
+                         , pages = #{} :: map()
                          }).
 
 -record(monitor_metadata, { id

@@ -11,7 +11,7 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
 
     const builder = new GraphBuilder();
 
-    builder.add_getter('simple_output', { id: 'out', args: [{from_variable: 'x'}] });
+    builder.add_getter('simple_debug_output', { id: 'out', args: [{from_variable: 'x'}] });
 
     const graph = builder.build();
     return graph;
@@ -28,7 +28,7 @@ describe('Flow-30: Update output from variable.', () => {
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (on-var x)
-                (services.ui.simple_output.out (get-var x))
+                (services.ui.simple_debug_output.out (get-var x))
                 `))
         ]);
     });

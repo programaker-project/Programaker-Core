@@ -4,6 +4,7 @@ import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockOptions, UiFlowBlockData, i
 import { UiSignalService } from 'app/services/ui-signal.service';
 import { BlockManager } from '../block_manager';
 import { Toolbox } from '../toolbox';
+import { CutTree, UiElementWidgetType } from './renderers/ui_tree_repr';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -19,16 +20,15 @@ export interface ContainerFlowBlockBuilderInitOps {
     workspace?: FlowWorkspace,
 }
 
-export type ContainerTree = any; // TODO: Complete typing
-
-export type GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => ContainerTree;
+export type GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => CutTree;
 
 export interface ContainerFlowBlockOptions extends UiFlowBlockOptions {
     builder: UiFlowBlockBuilder,
     subtype: ContainerFlowBlockType,
     icon?: string,
-    id: string,
+    id: UiElementWidgetType,
     block_id?: string,
+    is_page: boolean,
 
     gen_tree: GenTreeProc,
 }
@@ -68,8 +68,10 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         this.contents.splice(pos, 1);
     }
 
-    update(): void {
+    update(): void {}
 
+    get is_page(): boolean {
+        return this.options.is_page;
     }
 
     // private _reposition(): void {
@@ -92,7 +94,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     //     }
     // }
 
-    gen_tree(): ContainerTree {
+    public renderAsUiElement(): CutTree {
         return this.options.gen_tree(this.handler, this.contents.concat([]));
     }
 

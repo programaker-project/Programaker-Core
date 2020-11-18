@@ -4,6 +4,7 @@ import { Toolbox } from '../toolbox';
 import { UiSignalService } from '../../services/ui-signal.service';
 import { uuidv4 } from '../utils';
 import { FlowWorkspace } from '../flow_workspace';
+import { CutTree, UiElementWidgetType } from './renderers/ui_tree_repr';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -40,7 +41,7 @@ export interface UiFlowBlockOptions extends FlowBlockOptions {
     builder: UiFlowBlockBuilder,
     type: UiFlowBlockType,
     icon?: string,
-    id: string,
+    id: UiElementWidgetType,
     block_id?: string,
 }
 
@@ -137,6 +138,10 @@ export class UiFlowBlock implements FlowBlock {
         this.moveBy({x: 0, y: 0}); // Apply transformation
 
         return this.group;
+    }
+
+    public renderAsUiElement(): CutTree {
+        return { id: this.blockId, widget_type: this.options.id };
     }
 
     private _renderOutputs(group: SVGGElement) {

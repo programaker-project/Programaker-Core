@@ -47,6 +47,7 @@
         , delete_running_process/1
         , update_program_status/2
         , is_user_allowed/3
+        , get_program_page/2
 
         , get_program_owner/1
         , get_program_pid/1
@@ -607,6 +608,16 @@ is_user_allowed(Owner, ProgramId, Action) ->
         { aborted, Reason } ->
             {error, Reason}
     end.
+
+-spec get_program_page(ProgramId :: binary(), Path :: binary()) -> {ok, #program_pages_entry{}} | {error, not_found}.
+get_program_page(ProgramId, Path) ->
+    T = fun() ->
+                case mnesia:read(?PROGRAM_PAGES_TABLE, {ProgramId, Path}) of
+                    [ Page ] -> {ok, Page};
+                    [] -> {error, not_found}
+                end
+        end,
+    wrap_transaction(mnesia:ets(T)).
 
 -spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program(Username, ProgramName, Content)->
@@ -2003,6 +2014,7 @@ store_new_program_content(Username, ProgramName,
                           #stored_program_content{ orig=ProgramOrig
                                                  , parsed=ProgramParsed
                                                  , type=ProgramType
+                                                 , pages=Pages
                                                  })->
     io:fwrite("\033[7m[store_new_program_content(Username, ProgramName,...)] To be deprecated\033[0m~n"),
 
@@ -2065,6 +2077,24 @@ store_new_program_content(Username, ProgramName,
 
                                           ok = mnesia:delete(?USER_PROGRAM_EVENTS_TABLE, ProgramId, write),
 
+                                          %% Refresh pages
+                                          %% Remove old pages
+                                          PagesInDb = mnesia:index_read(?PROGRAM_PAGES_TABLE, ProgramId, program_id),
+                                          ok = lists:foreach(fun (PageInDb) ->
+                                                                     ok = mnesia:delete_object(?PROGRAM_PAGES_TABLE, PageInDb, write)
+                                                             end,
+                                                             PagesInDb),
+
+                                          %% Add new pages
+                                          ok = lists:foreach(fun({Path, #{ <<"value">> := Contents }}) ->
+                                                                        ok = mnesia:write(?PROGRAM_PAGES_TABLE
+                                                                                         , #program_pages_entry{ page_id={ ProgramId, Path }
+                                                                                                               , program_id=ProgramId
+                                                                                                               , contents=Contents
+                                                                                                               }
+                                                                                         , write)
+                                                                end, maps:to_list(Pages)),
+
                                           { ok, ProgramId }
                                   end
                           end
@@ -2084,6 +2114,7 @@ store_new_program_content(ProgramId,
                           #stored_program_content{ orig=ProgramOrig
                                                  , parsed=ProgramParsed
                                                  , type=ProgramType
+                                                 , pages=Pages
                                                  })->
     CurrentTime = erlang:system_time(second),
     Transaction = fun() ->
@@ -2099,6 +2130,24 @@ store_new_program_content(ProgramId,
                                                                               , last_upload_time=CurrentTime
                                                                               }, write),
                                   ok = mnesia:delete(?USER_PROGRAM_EVENTS_TABLE, ProgramId, write),
+
+                                  %% Refresh pages
+                                  %% Remove old pages
+                                  PagesInDb = mnesia:index_read(?PROGRAM_PAGES_TABLE, ProgramId, program_id),
+                                  ok = lists:foreach(fun (PageInDb) ->
+                                                             ok = mnesia:delete_object(?PROGRAM_PAGES_TABLE, PageInDb, write)
+                                                    end,
+                                               PagesInDb),
+
+                                  %% Add new pages
+                                  ok = lists:foreach(fun({Path, #{ <<"value">> := Contents }}) ->
+                                                             ok = mnesia:write(?PROGRAM_PAGES_TABLE
+                                                                              , #program_pages_entry{ page_id={ ProgramId, Path }
+                                                                                                    , program_id=ProgramId
+                                                                                                    , contents= Contents
+                                                                                                    }
+                                                                              , write)
+                                                     end, maps:to_list(Pages)),
 
                                   { ok, ProgramId }
                           end

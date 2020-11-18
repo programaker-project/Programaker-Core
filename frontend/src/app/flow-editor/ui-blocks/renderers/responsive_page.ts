@@ -5,6 +5,7 @@ import { ContainerFlowBlock, GenTreeProc } from "../container_flow_block";
 import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { ContainerElement, ContainerElementHandle } from "./container_element_handle";
 import { getRefBox } from "./utils";
+import { CutElement, CutTree, CutType, CutNode } from "./ui_tree_repr";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -31,7 +32,7 @@ class ResponsivePage implements UiFlowBlockHandler, ContainerElement, Resizeable
     rectShadow: SVGRectElement;
 
     constructor(canvas: SVGElement, group: SVGElement,
-                private block: UiFlowBlock,
+                public block: UiFlowBlock,
                 private service: UiSignalService,
                 private initOps: UiFlowBlockBuilderInitOps) {
 
@@ -146,40 +147,88 @@ class ResponsivePage implements UiFlowBlockHandler, ContainerElement, Resizeable
 
 }
 
-type CutElement = {i: number, a: Area2D};
-type CutType = 'vertical' | 'horizontal' | 'no-cut';
-type CutTree = CutElement | { cutType:CutType, groups: CutTree[] };
-
 export const ResponsivePageGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
     // Format in a grid-like
-    const pos = blocks.map((b, i) => {
-        return {i, a: b.getBodyArea()};
-    });
+    const uiPos = (blocks
+        .filter(b => b instanceof UiFlowBlock)
+        .map((b, i) => {
+            return {i, a: b.getBodyArea(), b: (b as UiFlowBlock)};
+        }));
 
-    if (blocks.length < 2) {
-        return blocks.map(b => b.getBodyArea());
+    if (uiPos.length < 1) {
+        return null;
+    }
+    if (uiPos.length < 2) {
+        return uiPos[0].b.renderAsUiElement();
     }
 
-    const tree = cleanestTree(pos);
+    const tree = cleanestTree(uiPos, uiPos.map(({b: block}) => block));
 
-    // TODO: Complete
-
-    return tree;
+    return reduceTree(tree);
 }
 
-function cleanestTree(elems: CutElement[]): CutTree {
+// These two "reduce" functions might be merged into a single one. It's just not
+// a priority right now, but it might be interesting to do it to check if it
+// results on simpler code.
+function reduceTree(tree: CutTree) {
+    const aux = (node: CutTree) => {
+        if (!((node as CutNode).cut_type)) {
+            return node;
+        }
+
+        const cNode = node as CutNode;
+        const newGroups = reduceGroups(cNode);
+
+        return { cut_type: cNode.cut_type, groups: newGroups };
+    };
+
+    return aux(tree);
+}
+
+function reduceGroups(cNode: CutNode): CutTree[] {
+    let acc = [];
+    const cType = cNode.cut_type;
+
+    const aux = (tree: CutTree) => {
+        if (!(tree as CutNode).cut_type) {
+            acc.push(tree);
+            return;
+        }
+
+        const cTree = tree as CutNode;
+        if (cTree.cut_type === cType) {
+            for (const group of cTree.groups) {
+                aux(group);
+            }
+        }
+        else {
+            acc.push(reduceTree(cTree));
+        }
+    }
+
+    for (const group of cNode.groups) {
+        aux(group);
+    }
+
+    return acc;
+}
+
+// Recursively perform cleanestCut, until all elements are partitioned.
+function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
     if (elems.length < 1) {
         throw new Error(`Cannot build tree with < 1 element, found ${elems.length}`);
     }
     else if (elems.length === 1) {
-        return elems[0];
+        const block = blocks[elems[0].i];
+        return block.renderAsUiElement();
     }
 
     const cut = cleanestCut(elems);
-    return { cutType: cut.cutType, groups: cut.groups.map(g => cleanestTree(g)) };
+    return { cut_type: cut.cutType, groups: cut.groups.filter(g => g.length > 0).map(g => cleanestTree(g, blocks)) };
 }
 
-function cleanestCut(elems: CutElement[]): { cutType:CutType, groups: CutElement[][] } {
+// Perform a single cut that divides the elements on the place where there is more empty space.
+function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElement[][] } {
 
     // Sort horizantally and vertically
     const horiz = elems.concat([]);

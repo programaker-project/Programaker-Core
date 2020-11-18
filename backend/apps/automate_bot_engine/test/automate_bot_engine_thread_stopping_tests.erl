@@ -84,6 +84,7 @@ start_thread_and_stop_threads_continues() ->
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
                                           , orig=?JUST_WAIT_PROGRAM_ORIG
+                                          , pages=#{}
                                           })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
@@ -160,6 +161,7 @@ start_program_and_stop_threads_nothing() ->
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
                                           , orig=?JUST_WAIT_PROGRAM_ORIG
+                                          , pages=#{}
                                           })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
