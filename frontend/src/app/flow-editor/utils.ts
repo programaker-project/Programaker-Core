@@ -1,3 +1,5 @@
+import { Area2D } from "./flow_block";
+
 export function uuidv4() {
     // From https://stackoverflow.com/a/2117523
     // Used to generate unique-in-svg IDs for blocks in workspace
@@ -6,4 +8,15 @@ export function uuidv4() {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
+}
+
+export function isContainedIn(contained: Area2D, container: Area2D): boolean {
+    const diffX = contained.x - container.x ;
+    const diffY = contained.y - container.y;
+
+    return ((diffX >= 0)
+        && (diffY >= 0)
+        && ((container.width - diffX) >= contained.width)
+        && ((container.height - diffY) >= contained.height)
+           );
 }

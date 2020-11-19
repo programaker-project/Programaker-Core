@@ -3,7 +3,7 @@ import { DirectValue } from './direct_value';
 import { EnumValue, EnumDirectValue, EnumGetter } from './enum_direct_value';
 import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition, Resizeable, ContainerBlock } from './flow_block';
 import { FlowConnection } from './flow_connection';
-import { uuidv4 } from './utils';
+import { uuidv4, isContainedIn } from './utils';
 import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
 import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
 import { UiFlowBlockData, UiFlowBlock } from './ui-blocks/ui_flow_block';
@@ -34,7 +34,8 @@ type ConnectableNode = {
 type State = 'waiting'     // Base state
     | 'dragging-block'     // Moving around a block
     | 'dragging-workspace' // Moving around the workspace
-
+    | 'selecting-workspace'
+    ;
 
 export class FlowWorkspace implements BlockManager {
     public static BuildOn(baseElement: HTMLElement,
@@ -200,6 +201,8 @@ export class FlowWorkspace implements BlockManager {
 
     private popupGroup: HTMLDivElement;
     private canvas: SVGSVGElement;
+    private selectionRect: SVGRectElement;
+
     private connection_group: SVGGElement;
     private block_group: SVGGElement;
     private container_group: SVGGElement;
@@ -218,6 +221,7 @@ export class FlowWorkspace implements BlockManager {
         input_group: SVGGElement,
         container_id: string | null,
     }};
+    private _selectedBlocks: string[] = [];
 
     private connections: {[key: string]: {
         connection: FlowConnection,
@@ -248,6 +252,9 @@ export class FlowWorkspace implements BlockManager {
         this.canvas = document.createElementNS(SvgNS, "svg");
         this.canvas.setAttribute('class', 'block_renderer');
 
+        this.selectionRect = document.createElementNS(SvgNS, "rect");
+        this.selectionRect.setAttribute('class', 'selection');
+
         this.input_helper_section = document.createElementNS(SvgNS, "g");
         this.trashcan = document.createElementNS(SvgNS, "g");
         this.connection_group = document.createElementNS(SvgNS, "g");
@@ -262,6 +269,7 @@ export class FlowWorkspace implements BlockManager {
         this.canvas.appendChild(this.trashcan);
         this.canvas.appendChild(this.connection_group);
         this.canvas.appendChild(this.block_group);
+        this.canvas.appendChild(this.selectionRect);
         this.baseElement.appendChild(this.canvas);
 
         this.init_definitions();
@@ -322,6 +330,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private set_events() {
+        let lastMouseDownTime = null;
         this.canvas.onmousedown = ((ev: MouseEvent) => {
             if (this.state !== 'waiting') {
                 return;
@@ -331,25 +340,50 @@ export class FlowWorkspace implements BlockManager {
                 return;
             }
 
-            let last = { x: ev.x, y: ev.y };
+            const time = new Date();
+            if (lastMouseDownTime && (((time as any) - lastMouseDownTime) < 1000))  {
+                const start = this._getPositionFromEvent(ev);
+                this.state = 'selecting-workspace';
+                this.canvas.classList.add('selecting');
+                this._updateSelectionRectangle(start, start);
 
-            this.state = 'dragging-workspace';
-            this.canvas.classList.add('dragging');
+                this.canvas.onmousemove = ((ev: MouseEvent) => {
+                    this._updateSelectionRectangle(start, this._getPositionFromEvent(ev));
+                });
 
-            this.canvas.onmousemove = ((ev: MouseEvent) => {
-                this.top_left.x -= (ev.x - last.x) * this.inv_zoom_level;
-                this.top_left.y -= (ev.y - last.y) * this.inv_zoom_level;
-                last = { x: ev.x, y: ev.y };
+                this.canvas.onmouseup = (() => {
+                    // TODO: Do something with the selection
+                    this.state = 'waiting';
+                    this.canvas.classList.remove('selecting');
+                    this.canvas.onmousemove = null;
+                    this.canvas.onmouseup = null;
+                });
 
-                this.update_top_left();
-            });
+            }
+            else {
 
-            this.canvas.onmouseup = (() => {
-                this.state = 'waiting';
-                this.canvas.classList.remove('dragging');
-                this.canvas.onmousemove = null;
-                this.canvas.onmouseup = null;
-            });
+                lastMouseDownTime = time;
+
+                let last = { x: ev.x, y: ev.y };
+
+                this.state = 'dragging-workspace';
+                this.canvas.classList.add('dragging');
+
+                this.canvas.onmousemove = ((ev: MouseEvent) => {
+                    this.top_left.x -= (ev.x - last.x) * this.inv_zoom_level;
+                    this.top_left.y -= (ev.y - last.y) * this.inv_zoom_level;
+                    last = { x: ev.x, y: ev.y };
+
+                    this.update_top_left();
+                });
+
+                this.canvas.onmouseup = (() => {
+                    this.state = 'waiting';
+                    this.canvas.classList.remove('dragging');
+                    this.canvas.onmousemove = null;
+                    this.canvas.onmouseup = null;
+                });
+            }
         });
 
         this.canvas.ontouchstart = ((ev: TouchEvent) => {
@@ -360,6 +394,9 @@ export class FlowWorkspace implements BlockManager {
             if (ev.target !== this.canvas) {
                 return;
             }
+
+            lastMouseDownTime = new Date();
+            // TODO: Implement select mode
 
             const touch = ev.targetTouches[0];
             let last = { x: touch.clientX, y: touch.clientY };
@@ -406,6 +443,65 @@ export class FlowWorkspace implements BlockManager {
             }
             this.update_top_left();
         });
+    }
+
+    private _updateSelectionRectangle(origin: Position2D, edge: Position2D) {
+        const topLeft = { x: Math.min(origin.x, edge.x), y: Math.min(origin.y, edge.y) };
+        const botRight = { x: Math.max(origin.x, edge.x), y: Math.max(origin.y, edge.y) };
+        const area = this.absPosToWorkspace({
+            x: topLeft.x,
+            y: topLeft.y,
+            width: botRight.x - topLeft.x,
+            height: botRight.y - topLeft.y
+        });
+
+        this.selectionRect.setAttributeNS(null, 'x', area.x + '');
+        this.selectionRect.setAttributeNS(null, 'y', area.y + '');
+        this.selectionRect.setAttributeNS(null, 'width', area.width + '');
+        this.selectionRect.setAttributeNS(null, 'height', area.height + '');
+
+        const blocks = this._getBlocksInArea(area);
+        this.updateSelectBlockList(blocks);
+    }
+
+    private _getBlocksInArea(area: Area2D): string[] {
+        const blocks = [];
+
+        for (const blockId of Object.keys(this.blocks)) {
+            const blockArea = this.blocks[blockId].block.getBodyArea();
+            if (isContainedIn(blockArea, area)) {
+                blocks.push(blockId);
+            }
+        }
+
+        return blocks;
+    }
+
+    private updateSelectBlockList(blockIds: string[]) {
+        // Find blocks that are added and removed from the selection
+        const added = [];
+        const removed = [];
+        for (const blockId of blockIds) {
+            if (this._selectedBlocks.indexOf(blockId) < 0) {
+                added.push(blockId);
+            }
+        }
+
+        for (const blockId of this._selectedBlocks) {
+            if (blockIds.indexOf(blockId) < 0) {
+                removed.push(blockId);
+            }
+        }
+
+        // Update blocks style
+        added.forEach(blockId => {
+            this.blocks[blockId].block.getBodyElement().classList.add('selected');
+        })
+        removed.forEach(blockId => {
+            this.blocks[blockId].block.getBodyElement().classList.remove('selected');
+        })
+
+        this._selectedBlocks = blockIds.concat([]); // Clone the list, just for safety
     }
 
     private update_top_left() {
@@ -640,13 +736,15 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _mouseDownOnBlock(pos: Position2D, block: FlowBlock, on_done?: (pos: Position2D) => void) {
+        const block_id = this.getBlockId(block);
+        this.updateSelectBlockList([block_id]);
+
         if (this.state !== 'waiting') {
             console.error('Forcing start of MouseDown with Workspace state='+this.state);
         }
         this.state = 'dragging-block';
 
         const bodyElement = block.getBodyElement();
-        const block_id = this.getBlockId(block);
 
         let last = pos;
         let lastContainer: FlowBlock | null = null;
@@ -1016,6 +1114,16 @@ export class FlowWorkspace implements BlockManager {
             y: off.y + area.y,
             width: area.width,
             height: area.height,
+        };
+    }
+
+    private absPosToWorkspace(area: Area2D): Area2D {
+        const canvas_rect = this.canvas.getClientRects()[0];
+        return {
+            x: ((area.x - canvas_rect.left) * this.inv_zoom_level) + this.top_left.x,
+            y: ((area.y - canvas_rect.top) * this.inv_zoom_level) + this.top_left.y,
+            width: area.width * this.inv_zoom_level,
+            height: area.height * this.inv_zoom_level,
         };
     }
 

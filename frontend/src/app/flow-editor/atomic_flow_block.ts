@@ -755,9 +755,8 @@ export class AtomicFlowBlock implements FlowBlock {
 
             this.iconPlate = document.createElementNS(SvgNS, 'rect');
             this.iconPlate.setAttributeNS(null, 'class', 'node_icon_plate');
-            this.iconPlate.setAttributeNS(null, 'x', '0');
-            this.iconPlate.setAttributeNS(null, 'y', '0');
-            this.iconPlate.setAttributeNS(null, 'rx', '2');
+            this.iconPlate.setAttributeNS(null, 'x', '1.5');
+            this.iconPlate.setAttributeNS(null, 'y', '1.5');
 
             this.iconSeparator = document.createElementNS(SvgNS, 'path');
             this.iconSeparator.setAttributeNS(null, 'class', 'node_icon_separator');
@@ -1009,7 +1008,7 @@ export class AtomicFlowBlock implements FlowBlock {
             this.iconSeparator.setAttributeNS(null, 'd', `M${ separator_x },0 L${separator_x},${box_height}`);
 
             this.iconPlate.setAttributeNS(null, 'width', separator_x + 1 + ''); // +1 to cover separator stroke-width
-            this.iconPlate.setAttributeNS(null, 'height', box_height + '');
+            this.iconPlate.setAttributeNS(null, 'height', box_height - 3 + '');
 
         }
 
