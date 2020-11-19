@@ -59,7 +59,7 @@ to_json(Req, State=#state{program_id=ProgramId, path=Path}) ->
 
     {ok, #program_pages_entry{ contents=Contents }} = automate_storage:get_program_page(ProgramId, Path),
 
-    { automate_rest_api_renderer:render_page(Contents), Res2, State }.
+    { automate_rest_api_renderer:render_page(ProgramId, Contents), Res2, State }.
 
 
 build_page_path(Path) ->

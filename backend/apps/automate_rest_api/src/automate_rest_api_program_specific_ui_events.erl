@@ -58,6 +58,11 @@ handle_message(Msg, State=#state{ program_id=ProgramId
     Data = jiffy:decode(Msg, [return_maps]),
     Passed = case Data of
                  #{ <<"type">> := <<"AUTHENTICATION">>
+                  , <<"value">> := #{ <<"token">> := <<"ANONYMOUS">>
+                                    }
+                  } -> %% TODO: Check that the program/page is publicly available
+                     {true, false};
+                 #{ <<"type">> := <<"AUTHENTICATION">>
                   , <<"value">> := #{ <<"token">> := Token
                                     }
                   } ->
