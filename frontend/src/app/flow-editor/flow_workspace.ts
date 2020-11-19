@@ -688,7 +688,6 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public cloneSelection(): string[] {
-        console.log("Cloning:", this._selectedBlocks);
         const newIds = [];
         for (const blockId of this._selectedBlocks) {
             const blockInfo = this.blocks[blockId];
@@ -702,9 +701,39 @@ export class FlowWorkspace implements BlockManager {
             newIds.push(newId);
         }
 
-        this.updateSelectBlockList(newIds);
+        // Replicate connections among the selected blocks
+        for (const connectionId of Object.keys(this.connections)) {
+            const connection = this.connections[connectionId].connection;
 
-        // TODO: re-link selected blocks
+            // Look for matching sink
+            const sink = connection.getSink();
+            const sinkIndex = this._selectedBlocks.indexOf(sink.block_id);
+            if (sinkIndex < 0) {
+                continue;
+            }
+
+            // Look for matching source
+            const source = connection.getSource();
+            const sourceIndex = this._selectedBlocks.indexOf(source.block_id);
+            if (sourceIndex < 0) {
+                continue;
+            }
+
+            this.establishConnection(
+                {
+                    block: this.blocks[newIds[sourceIndex]].block,
+                    type: 'out',
+                    index: connection.source.output_index,
+                },
+                {
+                    block: this.blocks[newIds[sinkIndex]].block,
+                    type: 'in',
+                    index: connection.sink.input_index,
+                },
+            );
+        }
+
+        this.updateSelectBlockList(newIds);
 
         return newIds;
     }
