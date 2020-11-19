@@ -148,7 +148,7 @@ export class FlowEditorComponent implements OnInit {
 
     load_program(program: ProgramContent) {
         if (program.orig && program.orig !== 'undefined') {
-            this.workspace.load(program.orig as FlowGraph, this.toolbox);
+            this.workspace.load(program.orig as FlowGraph);
         }
 
         this.initializeListeners();
@@ -202,6 +202,7 @@ export class FlowEditorComponent implements OnInit {
                                                     this.uiSignalService,
                                                     this.session,
                                                    );
+        this.workspace.setToolbox(this.toolbox);
     }
 
     async getEnumValues(enum_namespace: string, enum_name: string): Promise<EnumValue[]> {

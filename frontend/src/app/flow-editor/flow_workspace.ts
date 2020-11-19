@@ -1,7 +1,7 @@
 import { BlockManager } from './block_manager';
 import { DirectValue } from './direct_value';
 import { EnumValue, EnumDirectValue, EnumGetter } from './enum_direct_value';
-import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition, Resizeable, ContainerBlock } from './flow_block';
+import { Area2D, Direction2D, FlowBlock, FlowBlockData, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition, Resizeable, ContainerBlock } from './flow_block';
 import { FlowConnection } from './flow_connection';
 import { uuidv4, isContainedIn } from './utils';
 import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
@@ -52,6 +52,10 @@ export class FlowWorkspace implements BlockManager {
         }
 
         return workspace;
+    }
+
+    public setToolbox(toolbox: Toolbox) {
+        this.toolbox = toolbox;
     }
 
     public onResize() {
@@ -105,7 +109,7 @@ export class FlowWorkspace implements BlockManager {
         return pages;
     }
 
-    public load(graph: FlowGraph, toolbox: Toolbox) {
+    public load(graph: FlowGraph) {
         let to_go = Object.keys(graph.nodes);
 
         let processing = true;
@@ -121,32 +125,7 @@ export class FlowWorkspace implements BlockManager {
                     continue;
                 }
 
-                let created_block = null;
-                switch (block.data.type) {
-                    case AtomicFlowBlock.GetBlockType():
-                        created_block = AtomicFlowBlock.Deserialize(block.data as AtomicFlowBlockData, this);
-                        break;
-
-                    case UiFlowBlock.GetBlockType():
-                        if (isContainerFlowBlockData(block.data)) {
-                            created_block = ContainerFlowBlock.Deserialize(block.data as ContainerFlowBlockData, this, toolbox);
-                        }
-                        else {
-                            created_block = UiFlowBlock.Deserialize(block.data as UiFlowBlockData, this, toolbox);
-                        }
-                        break;
-
-                    case DirectValue.GetBlockType():
-                        created_block = DirectValue.Deserialize(block.data, this);
-                        break;
-
-                    case EnumDirectValue.GetBlockType():
-                        created_block = EnumDirectValue.Deserialize(block.data, this, this.getEnum);
-                        break;
-
-                    default:
-                        console.error("Unknown block type:", block.data.type);
-                }
+                const created_block = this.deserializeBlock(block.data);
 
                 if (!created_block) {
                     console.error("Error deserializing block:", block.data);
@@ -194,10 +173,35 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    private deserializeBlock(blockData: FlowBlockData) {
+        switch (blockData.type) {
+            case AtomicFlowBlock.GetBlockType():
+                return AtomicFlowBlock.Deserialize(blockData as AtomicFlowBlockData, this);
+
+            case UiFlowBlock.GetBlockType():
+                if (isContainerFlowBlockData(blockData)) {
+                    return ContainerFlowBlock.Deserialize(blockData as ContainerFlowBlockData, this, this.toolbox);
+                }
+                else {
+                    return UiFlowBlock.Deserialize(blockData as UiFlowBlockData, this, this.toolbox);
+                }
+
+            case DirectValue.GetBlockType():
+                return DirectValue.Deserialize(blockData, this);
+
+            case EnumDirectValue.GetBlockType():
+                return EnumDirectValue.Deserialize(blockData, this, this.getEnum);
+
+            default:
+                console.error("Unknown block type:", blockData.type);
+        }
+    }
+
     private baseElement: HTMLElement;
     private inlineEditorContainer: HTMLDivElement;
     private inlineEditor: HTMLInputElement;
     private state: State = 'waiting';
+    private toolbox: Toolbox;
 
     private popupGroup: HTMLDivElement;
     private canvas: SVGSVGElement;
@@ -417,7 +421,7 @@ export class FlowWorkspace implements BlockManager {
                     this.update_top_left();
                 }
                 else {
-                    console.log("Unexpected action with more than one touch", ev);
+                    console.error("Unexpected action with more than one touch", ev);
                 }
             });
 
@@ -631,6 +635,12 @@ export class FlowWorkspace implements BlockManager {
         }
 
         const bodyElement = block.getBodyElement();
+
+        bodyElement.oncontextmenu = (ev: MouseEvent) => {
+            ev.preventDefault();
+            this.showBlockContextMenu(this._getPositionFromEvent(ev));
+        };
+
         bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
             if (this.state !== 'waiting'){
                 return;
@@ -638,13 +648,70 @@ export class FlowWorkspace implements BlockManager {
 
             if (this.current_io_selected) { return; }
 
-            this._mouseDownOnBlock(this._getPositionFromEvent(ev), block);
+            if ((ev as MouseEvent).button === 2) {
+                // On right click just make sure it is selected, the context
+                // menu will be handled by 'oncontextmenu'.
+                this.ensureBlockSelected(block_id);
+                // TODO: How to perform this action on touch event?
+            }
+            else {
+                this._mouseDownOnBlock(this._getPositionFromEvent(ev), block);
+            }
         });
         const input_group = this.drawBlockInputHelpers(block);
 
         this.blocks[block_id] = { block: block, connections: [], input_group: input_group, container_id: null };
 
         return block_id;
+    }
+
+    public showBlockContextMenu(pos: Position2D) {
+        // Base positioning
+        this.popupGroup.innerHTML = '';
+        this.popupGroup.setAttribute('class', 'popup_group context_menu');
+
+        const canvas_rect = this.canvas.getClientRects()[0];
+        const workspacePos = { x: pos.x - canvas_rect.x, y: pos.y - canvas_rect.y };
+
+        this.popupGroup.style.left = workspacePos.x + 'px';
+        this.popupGroup.style.top = workspacePos.y + 'px';
+        delete this.popupGroup.style.maxHeight;
+
+        // Block operations
+        const block_ops = document.createElement('ul');
+        const clone_entry = document.createElement('li');
+        clone_entry.innerText = 'clone';
+        clone_entry.onclick = (ev) => { this.ensureContextMenuHidden(); this.cloneSelection(); };
+
+        block_ops.appendChild(clone_entry);
+        this.popupGroup.appendChild(block_ops);
+    }
+
+    public cloneSelection(): string[] {
+        console.log("Cloning:", this._selectedBlocks);
+        const newIds = [];
+        for (const blockId of this._selectedBlocks) {
+            const blockInfo = this.blocks[blockId];
+            const info = blockInfo.block.serialize();
+
+            const clone = this.deserializeBlock(info);
+            const newId = uuidv4();
+
+            const prevPos = blockInfo.block.getBodyArea();
+            this.draw(clone, { x: prevPos.x + 20, y: prevPos.y - 20 }, newId);
+            newIds.push(newId);
+        }
+
+        this.updateSelectBlockList(newIds);
+
+        // TODO: re-link selected blocks
+
+        return newIds;
+    }
+
+    public ensureContextMenuHidden() {
+        this.popupGroup.classList.remove('context_menu');
+        this.popupGroup.classList.add('hidden');
     }
 
     public _getPositionFromEvent(ev: MouseEvent | TouchEvent) : Position2D | null {
@@ -1092,7 +1159,7 @@ export class FlowWorkspace implements BlockManager {
 
     public removeBlock(blockId: string) {
         const info = this.blocks[blockId];
-        console.log("Removing block:", info);
+        console.debug("Removing block:", info);
 
 
         if (info.block instanceof ContainerFlowBlock) {

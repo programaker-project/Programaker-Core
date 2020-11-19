@@ -314,7 +314,6 @@ svg.block_renderer .named_var .var_plate {
 // Popup
 .popup_group {
     position: absolute;
-    border: 1px solid #888;
     background-color: #fafafa;
     box-shadow: 0 0 4px rgba(0,0,0,0.5);
 
@@ -322,6 +321,23 @@ svg.block_renderer .named_var .var_plate {
 
     &.hidden {
         display: none;
+    }
+
+    &.context_menu {
+        ul {
+            margin: 0;
+            padding: 0;
+
+            li {
+                cursor: pointer;
+                padding: 0.5ex 1ex;
+
+                &:hover {
+                    color: #fff;
+                    background-color: #009688;
+                }
+            }
+        }
     }
 }
 
