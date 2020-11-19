@@ -504,6 +504,17 @@ export class FlowWorkspace implements BlockManager {
         this._selectedBlocks = blockIds.concat([]); // Clone the list, just for safety
     }
 
+    private ensureBlockSelected(blockId) {
+        if (this._selectedBlocks.indexOf(blockId) >= 0) {
+            // It's already selected, nothing to do
+            return;
+        }
+        else {
+            // Update selection
+            this.updateSelectBlockList([blockId]);
+        }
+    }
+
     private update_top_left() {
         const width = this.baseElement.clientWidth;
         const height = this.baseElement.clientHeight;
@@ -737,7 +748,7 @@ export class FlowWorkspace implements BlockManager {
 
     private _mouseDownOnBlock(pos: Position2D, block: FlowBlock, on_done?: (pos: Position2D) => void) {
         const block_id = this.getBlockId(block);
-        this.updateSelectBlockList([block_id]);
+        this.ensureBlockSelected(block_id);
 
         if (this.state !== 'waiting') {
             console.error('Forcing start of MouseDown with Workspace state='+this.state);
@@ -774,12 +785,15 @@ export class FlowWorkspace implements BlockManager {
                 };
                 last = {x: pos.x, y: pos.y};
 
-                block.moveBy(distance);
+                for (const blockId of this._selectedBlocks) {
+                    this.blocks[blockId].block.moveBy(distance);
 
-                for (const conn of this.blocks[block_id].connections) {
-                    this.updateConnection(conn);
+                    for (const conn of this.blocks[blockId].connections) {
+                        this.updateConnection(conn);
+                    }
+
+                    this.updateBlockInputHelpersPosition(blockId);
                 }
-                this.updateBlockInputHelpersPosition(block_id);
 
                 if (this.isInTrashcan(pos)) {
                     this.trashcan.classList.add('to-be-activated');
@@ -817,7 +831,10 @@ export class FlowWorkspace implements BlockManager {
                 bodyElement.classList.remove('to-be-removed');
 
                 if (this.isInTrashcan(pos)) {
-                    this.removeBlock(block_id);
+                    for (const blockId of this._selectedBlocks) {
+                        this.removeBlock(blockId);
+                    }
+                    this._selectedBlocks = [];
                 }
             }
             catch (err) {
