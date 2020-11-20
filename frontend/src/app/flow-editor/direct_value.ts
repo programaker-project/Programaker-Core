@@ -240,7 +240,7 @@ export class DirectValue implements FlowBlock {
         const y_padding = 5; // px
 
         this.group = document.createElementNS(SvgNS, 'g');
-        this.node = document.createElementNS(SvgNS, 'a');
+        this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.textBox = document.createElementNS(SvgNS, 'text');
 

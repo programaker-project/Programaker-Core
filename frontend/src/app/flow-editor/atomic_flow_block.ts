@@ -732,7 +732,7 @@ export class AtomicFlowBlock implements FlowBlock {
         const output_plating_x_margin = 3; // px
 
         this.group = document.createElementNS(SvgNS, 'g');
-        this.node = document.createElementNS(SvgNS, 'a');
+        this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.rectShadow = document.createElementNS(SvgNS, 'rect');
         this.chunkGroup = document.createElementNS(SvgNS, 'g');

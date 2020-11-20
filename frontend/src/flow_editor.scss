@@ -149,7 +149,7 @@ svg.block_renderer g.flow_node rect.body_shadow {
     fill: rgba(0,0,0,0.3); // Shadow color
 }
 
-svg.block_renderer g.flow_node a.to-be-removed rect.node_body,
+svg.block_renderer g.flow_node .to-be-removed rect.node_body,
 svg.block_renderer g.flow_node.to-be-removed rect.node_body {
     fill-opacity: 0.50;
     fill: #f88;
