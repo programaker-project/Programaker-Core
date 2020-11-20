@@ -38,6 +38,21 @@
             (click)="stopThreadsProgram()" mat-button>
             <mat-icon>stop</mat-icon> Stop all
         </button>
+
+        <button id="navigateToPageControls" color="secondary"
+            [matMenuTriggerFor]="navigateToPageControls"
+            *ngIf="pages" [disabled]="pages.length === 0" mat-button>
+            <mat-icon>launch</mat-icon>Open web
+        </button>
+        <mat-menu #navigateToPageControls="matMenu">
+            <a mat-menu-item
+                *ngFor="let page of pages" href="{{ page.url }}"
+                target="_blank"
+                rel="noopener noreferer"
+            >{{ page.name }}
+            </a>
+        </mat-menu>
+
         <!-- Advanced functions, on a menu -->
         <button id="advancedProgramControls" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
@@ -51,7 +66,6 @@
                 Tags
             </button>
         </mat-menu>
-
 
         <!-- Dangerous stuff, on its own -->
         <button id="program-delete-button" color="warn"

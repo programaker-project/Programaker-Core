@@ -68,6 +68,7 @@ export class FlowEditorComponent implements OnInit {
 
     portraitMode: boolean;
     smallScreen: boolean;
+    pages: { name: string; url: string; }[];
 
     constructor(
         private browser: BrowserService,
@@ -152,6 +153,13 @@ export class FlowEditorComponent implements OnInit {
         }
 
         this.initializeListeners();
+
+        const pages = this.workspace.getPages();
+        this.updateViewPages(Object.keys(pages));
+    }
+
+    updateViewPages(pages: string[]) {
+        this.pages = pages.map(page => { return { name: page, url: this.programService.getPageUrl(this.programId, page) } });
     }
 
     initializeListeners() {
@@ -265,6 +273,7 @@ export class FlowEditorComponent implements OnInit {
     async sendProgram(): Promise<boolean> {
         const graph = this.workspace.getGraph();
         const pages = this.workspace.getPages();
+        this.updateViewPages(Object.keys(pages));
 
         const t0 = new Date();
         const compiled_program = compile(graph);

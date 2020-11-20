@@ -286,6 +286,17 @@ export class ProgramService {
                 .toPromise());
     }
 
+    public getPageUrl(programId: string, pagePath: string): any {
+        let baseServerPath = document.location.origin;
+        const apiHost = this.environmentService.getBrowserApiHost();
+        if (apiHost != '') {
+            baseServerPath = apiHost;
+        }
+
+        return `${baseServerPath}/api/v0/programs/by-id/${programId}/render${pagePath}`;
+    }
+
+
     watchProgramLogs(programId: string, options: { request_previous_logs?: boolean }): Observable<ProgramInfoUpdate> {
         let websocket: WebSocket | null = null;
 

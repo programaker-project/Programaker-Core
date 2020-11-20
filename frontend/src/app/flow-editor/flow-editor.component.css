@@ -63,7 +63,8 @@ button#program-start-button,
 button#program-delete-button,
 button#program-stop-button,
 button#program-logs-button,
-button#advancedProgramControls {
+button#advancedProgramControls,
+button#navigateToPageControls {
     vertical-align: top;
     padding: 1ex;
     margin-top: 2px;
