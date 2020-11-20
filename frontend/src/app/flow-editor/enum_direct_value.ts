@@ -71,6 +71,7 @@ export class EnumDirectValue implements FlowBlock {
     private group: SVGElement;
     private node: SVGElement;
     private rect: SVGElement;
+    private rectShadow: SVGElement;
     private textBox: SVGElement;
     private canvas: SVGElement;
     private _defaultText: string;
@@ -259,6 +260,7 @@ export class EnumDirectValue implements FlowBlock {
                                                 + box_width/2
                                                 - ((this.textBox as any).getBBox().width/2)) + "");
         this.rect.setAttributeNS(null, 'width', box_width + "");
+        this.rectShadow.setAttributeNS(null, 'width', box_width + "");
     }
 
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
@@ -277,6 +279,7 @@ export class EnumDirectValue implements FlowBlock {
         this.group = document.createElementNS(SvgNS, 'g');
         this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
+        this.rectShadow = document.createElementNS(SvgNS, 'rect');
         this.textBox = document.createElementNS(SvgNS, 'text');
 
         this.group.setAttribute('class', 'flow_node direct_value_node');
@@ -287,6 +290,7 @@ export class EnumDirectValue implements FlowBlock {
         this.textBox.setAttributeNS(null, 'x', "0");
         this.textBox.setAttributeNS(null, 'y', "0");
 
+        this.node.appendChild(this.rectShadow);
         this.node.appendChild(this.rect);
         this.node.appendChild(this.textBox);
         this.group.appendChild(this.node);
@@ -354,8 +358,15 @@ export class EnumDirectValue implements FlowBlock {
         this.rect.setAttributeNS(null, 'y', "0");
         this.rect.setAttributeNS(null, 'width', box_width + "");
         this.rect.setAttributeNS(null, 'height', box_height + "");
-
         this.rect.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
+
+
+        this.rectShadow.setAttributeNS(null, 'class', "body_shadow");
+        this.rectShadow.setAttributeNS(null, 'x', "0");
+        this.rectShadow.setAttributeNS(null, 'y', "0");
+        this.rectShadow.setAttributeNS(null, 'width', box_width + "");
+        this.rectShadow.setAttributeNS(null, 'height', box_height + "");
+        this.rectShadow.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
 
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
