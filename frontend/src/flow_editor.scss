@@ -156,6 +156,20 @@ svg.block_renderer g.flow_node.to-be-removed rect.node_body {
     color: #fff;
 }
 
+.grid-division {
+    stroke: #88f;
+    stroke-width: 1px;
+    stroke-dasharray: 3;
+
+    &.vert-cut {
+        stroke: #f88;
+    }
+
+    &.horiz-cut {
+        stroke: #8f8;
+    }
+}
+
 svg.block_renderer.drawing rect.node_body {
     pointer-events: none;
 }
@@ -565,7 +579,6 @@ svg.block_renderer g.flow_node.container_node .node_body {
     fill: #fff;
     stroke-width: 1;
     stroke: #000;
-    stroke-dasharray: 5 5;
 }
 
 

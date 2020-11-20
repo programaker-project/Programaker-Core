@@ -1,6 +1,6 @@
 import { ContainerBlock, FlowBlockData, FlowBlockOptions, FlowBlock, Position2D } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
-import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockOptions, UiFlowBlockData, isUiFlowBlockData, UiFlowBlockHandler } from './ui_flow_block';
+import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockOptions, UiFlowBlockData, isUiFlowBlockData, UiFlowBlockHandler, UiFlowBlockBuilderInitOps } from './ui_flow_block';
 import { UiSignalService } from 'app/services/ui-signal.service';
 import { BlockManager } from '../block_manager';
 import { Toolbox } from '../toolbox';
@@ -22,8 +22,18 @@ export interface ContainerFlowBlockBuilderInitOps {
 
 export type GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => CutTree;
 
+export type ContainerFlowBlockBuilder = (canvas: SVGElement,
+                                  group: SVGElement,
+                                  block: UiFlowBlock,
+                                  service: UiSignalService,
+                                  ops: UiFlowBlockBuilderInitOps) => ContainerFlowBlockHandler;
+
+export interface ContainerFlowBlockHandler extends UiFlowBlockHandler {
+    onContentUpdate: (contents: FlowBlock[]) => void,
+}
+
 export interface ContainerFlowBlockOptions extends UiFlowBlockOptions {
-    builder: UiFlowBlockBuilder,
+    builder: ContainerFlowBlockBuilder,
     subtype: ContainerFlowBlockType,
     icon?: string,
     id: UiElementWidgetType,
@@ -32,6 +42,7 @@ export interface ContainerFlowBlockOptions extends UiFlowBlockOptions {
 
     gen_tree: GenTreeProc,
 }
+
 
 export interface ContainerFlowBlockData extends UiFlowBlockData {
     subtype: ContainerFlowBlockType,
@@ -48,6 +59,7 @@ export function isContainerFlowBlockData(data: FlowBlockData): data is Container
 export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     contents: FlowBlock[] = [];
     options: ContainerFlowBlockOptions;
+    handler: ContainerFlowBlockHandler;
 
     constructor(options: ContainerFlowBlockOptions,
                 uiSignalService: UiSignalService,
@@ -57,6 +69,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
 
     addContentBlock(block: FlowBlock): void {
         this.contents.push(block);
+        this.handler.onContentUpdate(this.contents);
     }
 
     removeContentBlock(block: FlowBlock): void {
@@ -66,33 +79,16 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         }
 
         this.contents.splice(pos, 1);
+        this.handler.onContentUpdate(this.contents);
     }
 
-    update(): void {}
+    update(): void {
+        this.handler.onContentUpdate(this.contents);
+    }
 
     get is_page(): boolean {
         return this.options.is_page;
     }
-
-    // private _reposition(): void {
-    //     try {
-    //         const endPositions = this.options.reposition(this.handler, this.contents.concat([]));
-
-    //         let idx = 0;
-    //         for (const block of this.contents) {
-    //             const pos = block.getBodyArea();
-    //             const tgt = endPositions[idx++];
-
-    //             block.moveBy( {
-    //                 x: pos.x - tgt.x,
-    //                 y: pos.y - tgt.y,
-    //             } );
-    //         }
-    //     }
-    //     catch (err) {
-    //         console.error(err);
-    //     }
-    // }
 
     public renderAsUiElement(): CutTree {
         return this.options.gen_tree(this.handler, this.contents.concat([]));
