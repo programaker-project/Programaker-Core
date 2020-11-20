@@ -52,18 +52,18 @@ render_element(#{ <<"cut_type">> := CutType
 render_element(#{ <<"widget_type">> := <<"simple_button">>
                 , <<"id">> := WidgetId
                 }) ->
-    [ <<"<button class='simple_button' id='elem-">>
+    [ <<"<div class=widget-container><button class='widget simple_button' id='elem-">>
     , WidgetId
-    , <<"'>Click me!</button>">>
+    , <<"'>Click me!</button></div>">>
     ];
 
 render_element(#{ <<"widget_type">> := <<"simple_debug_output">>
                 , <<"id">> := WidgetId
                 }) ->
     Contents = <<"- No content yet -">>,
-    [ <<"<div class='simple_debug_output' id='elem-">>, WidgetId, <<"'>">>
+    [ <<"<div class=widget-container><div class='widget simple_debug_output' id='elem-">>, WidgetId, <<"'><div>">>
     , Contents
-    , <<"</div>">>
+    , <<"</div></div></div>">>
     ].
 
 %%====================================================================
@@ -73,11 +73,11 @@ render_styles() ->
     [ <<"<style>">>
     , <<"* { margin: 0; padding: 0 } ">>
     , <<"body { height: 100vh; text-align: center; } ">>
-    , <<".horizontal-cut { width: 100%; height: 100%; display: flex; } ">>
-    , <<".vertical-cut { height: 100%; display: flex; flex-flow: column; } ">>
-    , <<".simple_debug_output { margin: auto; height: 100%; display: flex; justify-content: center; flex-direction: column; } ">>
-    , <<".content { } ">>
-    , <<"button { width: max-content; height: max-content; margin: auto; } ">>
+    , <<".horizontal-cut { width: 100%; height: 100%; display: flex; box-sizing: border-box; justify-content: space-evenly; } ">>
+    , <<".vertical-cut { height: 100%; display: flex; flex-flow: column; box-sizing: border-box; justify-content: space-evenly; } ">>
+    , <<".simple_debug_output { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
+    , <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
+    , <<".widget { width: 100%; height: 100%; } ">>
     , <<"</style>">>
     ].
 
