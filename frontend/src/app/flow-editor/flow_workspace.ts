@@ -502,7 +502,13 @@ export class FlowWorkspace implements BlockManager {
             this.blocks[blockId].block.getBodyElement().classList.add('selected');
         })
         removed.forEach(blockId => {
-            this.blocks[blockId].block.getBodyElement().classList.remove('selected');
+            const blockInfo = this.blocks[blockId];
+            if (blockInfo) {
+                blockInfo.block.getBodyElement().classList.remove('selected');
+            }
+            else {
+                console.error(`Error unselecting block (id: ${blockId}). Block not found.`);
+            }
         })
 
         this._selectedBlocks = blockIds.concat([]); // Clone the list, just for safety
