@@ -1122,8 +1122,8 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
-    private editInline(block: DirectValue, type: MessageType, update: (value: string) => void): void {
-        this.inlineEditor.value = block.value;
+    public editInline(area: Area2D, value: string, type: MessageType, update: (value: string) => void): void {
+        this.inlineEditor.value = value;
         this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
         if (type === 'integer') {
             this.inlineEditor.step = '1';
@@ -1135,7 +1135,7 @@ export class FlowWorkspace implements BlockManager {
             this.inlineEditor.step = '';
         }
 
-        const valueArea = this.getWorkspaceRelArea(block.getValueArea());
+        const valueArea = this.getWorkspaceRelArea(area);
 
         this.inlineEditorContainer.style.top = valueArea.y + 2 + 'px';
         this.inlineEditorContainer.style.left = valueArea.x + 'px';
@@ -1975,7 +1975,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     onRequestEdit(block: DirectValue, type: MessageType, update: (value: string) => void): void {
-        this.editInline(block, type, update);
+        this.editInline(block.getValueArea(), block.value, type, update);
     }
     // </Block manager interface>
 }

@@ -280,7 +280,7 @@ svg.block_renderer g.flow_node.direct_value_node text.node_name {
     cursor: text;
 }
 
-svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
+svg.block_renderer g.flow_node.editing rect.node_body {
     stroke-width: 2px;
     stroke: #009688;
 }
@@ -338,6 +338,9 @@ svg.block_renderer .named_var .var_plate {
     }
 
     &.context_menu {
+        border-radius: 4px;
+        padding: 4px 0;
+
         ul {
             margin: 0;
             padding: 0;

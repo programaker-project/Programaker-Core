@@ -49,12 +49,14 @@ render_element(#{ <<"cut_type">> := CutType
     , <<"</div>">>
     ];
 
-render_element(#{ <<"widget_type">> := <<"simple_button">>
-                , <<"id">> := WidgetId
-                }) ->
+render_element(E=#{ <<"widget_type">> := <<"simple_button">>
+                  , <<"id">> := WidgetId
+                  }) ->
     [ <<"<div class=widget-container><button class='widget simple_button' id='elem-">>
     , WidgetId
-    , <<"'>Click me!</button></div>">>
+    , <<"'>">>
+    , html_escape(maps:get(<<"text">>, E, "Click me!"))
+    , <<"</button></div>">>
     ];
 
 render_element(#{ <<"widget_type">> := <<"simple_debug_output">>

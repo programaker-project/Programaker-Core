@@ -1,77 +1,105 @@
 import { UiSignalService } from "../../../services/ui-signal.service";
-import { UiFlowBlock, UiFlowBlockHandler, UiFlowBlockBuilder } from "../ui_flow_block";
+import { UiFlowBlock, UiFlowBlockHandler, UiFlowBlockBuilder, TextEditable } from "../ui_flow_block";
 import { getRefBox } from "./utils";
-import { FlowBlock } from "../../flow_block";
+import { FlowBlock, Area2D } from "../../flow_block";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
 const DefaultContent = "Click me!";
 
-export const SimpleButtonBuilder : UiFlowBlockBuilder = (canvas: SVGElement, group: SVGElement, block: UiFlowBlock, service: UiSignalService) => {
+export const SimpleButtonBuilder: UiFlowBlockBuilder = (canvas: SVGElement, group: SVGElement, block: UiFlowBlock, service: UiSignalService) => {
     return new SimpleButton(canvas, group, block, service);
 }
 
-class SimpleButton implements UiFlowBlockHandler {
-    constructor(canvas: SVGElement, group: SVGElement,
-                private block: UiFlowBlock,
-                private service: UiSignalService) {
-        const refBox = getRefBox(canvas);
+class SimpleButton implements UiFlowBlockHandler, TextEditable {
+    private textBox: SVGTextElement;
+    private textValue: string;
+    private rect: SVGRectElement;
+    private rectShadow: SVGRectElement;
 
+    constructor(canvas: SVGElement, group: SVGElement,
+        private block: UiFlowBlock,
+        private service: UiSignalService) {
         const node = document.createElementNS(SvgNS, 'a');
-        const rect = document.createElementNS(SvgNS, 'rect');
-        const rectShadow = document.createElementNS(SvgNS, 'rect');
+        this.rect = document.createElementNS(SvgNS, 'rect');
+        this.rectShadow = document.createElementNS(SvgNS, 'rect');
         const contentsGroup = document.createElementNS(SvgNS, 'g');
 
 
         group.setAttribute('class', 'flow_node ui_node button_node');
 
-        const text = document.createElementNS(SvgNS, 'text');
-        text.setAttribute('class', 'button_text');
-        text.setAttributeNS(null,'textlength', '100%');
+        this.textBox = document.createElementNS(SvgNS, 'text');
+        this.textBox.setAttribute('class', 'button_text');
+        this.textBox.setAttributeNS(null, 'textlength', '100%');
 
-        text.textContent = DefaultContent;
+        this.textValue = this.textBox.textContent = block.blockData.textContent || DefaultContent;
 
-        contentsGroup.appendChild(text);
-        node.appendChild(rectShadow);
-        node.appendChild(rect);
-        node.appendChild(text);
+
+        contentsGroup.appendChild(this.textBox);
+        node.appendChild(this.rectShadow);
+        node.appendChild(this.rect);
+        node.appendChild(this.textBox);
         group.appendChild(node);
 
-        const text_width = text.getClientRects()[0].width;
 
-        const box_height = refBox.height * 2;
-        const box_width = text_width * 1.5;
+        this.rect.setAttributeNS(null, 'class', "node_body");
+        this.rect.setAttributeNS(null, 'x', "0");
+        this.rect.setAttributeNS(null, 'y', "0");
+        this.rect.setAttributeNS(null, 'rx', "5px"); // Like border-radius, in px
 
-        text.setAttributeNS(null, 'y', box_height/1.5 + "");
-        text.setAttributeNS(null, 'x', (box_width - text_width)/2 + "");
+        this.rectShadow.setAttributeNS(null, 'class', "body_shadow");
+        this.rectShadow.setAttributeNS(null, 'x', "0");
+        this.rectShadow.setAttributeNS(null, 'y', "0");
+        this.rectShadow.setAttributeNS(null, 'rx', "5px"); // Like border-radius, in px
 
-        rect.setAttributeNS(null, 'class', "node_body");
-        rect.setAttributeNS(null, 'x', "0");
-        rect.setAttributeNS(null, 'y', "0");
-        rect.setAttributeNS(null, 'height', box_height + "");
-        rect.setAttributeNS(null, 'width', box_width + "");
-        rect.setAttributeNS(null, 'rx', "5px"); // Like border-radius, in px
+        this._updateSize();
+    }
 
-        rectShadow.setAttributeNS(null, 'class', "body_shadow");
-        rectShadow.setAttributeNS(null, 'x', "0");
-        rectShadow.setAttributeNS(null, 'y', "0");
-        rectShadow.setAttributeNS(null, 'height', box_height + "");
-        rectShadow.setAttributeNS(null, 'width', box_width + "");
-        rectShadow.setAttributeNS(null, 'rx', "5px"); // Like border-radius, in px
+    getArea(): Area2D {
+        return this.rect.getBBox();
     }
 
     onClick() {
         return this.service.sendBlockSignal(this.block.options.id, this.block.id);
     }
 
+    isTextEditable(): this is TextEditable {
+        return true;
+    }
+
+    public get text(): string {
+        return this.textValue;
+    }
+
+    public set text(val: string) {
+        this.textBox.textContent = this.block.blockData.textContent = this.textValue = val;
+        this._updateSize();
+    }
+
     dispose() {}
 
     onInputUpdated(block: FlowBlock, inputIndex: number) {}
 
-    onConnectionValueUpdate(input_index: number, value: string) {}
+    onConnectionValueUpdate(inputIndex: number, value: string) {}
 
     onConnectionLost(portIndex: number) {
         this.onConnectionValueUpdate(portIndex, DefaultContent);
+    }
+
+    // Aux
+    _updateSize() {
+        const textArea = this.textBox.getClientRects()[0];
+
+        const box_height = textArea.height * 2;
+        const box_width = textArea.width + 50;
+
+        this.textBox.setAttributeNS(null, 'y', box_height/1.5 + "");
+        this.textBox.setAttributeNS(null, 'x', (box_width - textArea.width)/2 + "");
+
+        this.rect.setAttributeNS(null, 'height', box_height + "");
+        this.rect.setAttributeNS(null, 'width', box_width + "");
+        this.rectShadow.setAttributeNS(null, 'height', box_height + "");
+        this.rectShadow.setAttributeNS(null, 'width', box_width + "");
     }
 }

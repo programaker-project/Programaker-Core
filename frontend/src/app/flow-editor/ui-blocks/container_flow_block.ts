@@ -109,10 +109,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         options.gen_tree = templateOptions.gen_tree;
 
         const block = new ContainerFlowBlock(options, toolbox.uiSignalService);
-
-        if (data.value.dimensions) {
-            block.blockData.dimensions = Object.assign({}, data.value.dimensions);
-        }
+        block.blockData = Object.assign({}, data.value.extra);
 
         return block;
     }

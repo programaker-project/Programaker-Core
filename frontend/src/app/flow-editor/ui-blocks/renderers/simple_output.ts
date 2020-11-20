@@ -2,7 +2,7 @@ import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { DirectValue } from "../../direct_value";
 import { FlowBlock } from "../../flow_block";
-import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockHandler } from "../ui_flow_block";
+import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockHandler, TextEditable } from "../ui_flow_block";
 import { getRefBox } from "./utils";
 
 
@@ -65,6 +65,10 @@ class SimpleOutput implements UiFlowBlockHandler {
 
     onClick() {
         console.log("Unhandled click on output screen:", this.block);
+    }
+
+    isTextEditable(): this is TextEditable {
+        return false;
     }
 
     dispose() {

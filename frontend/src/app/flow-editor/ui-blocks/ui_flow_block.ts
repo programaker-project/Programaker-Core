@@ -4,7 +4,7 @@ import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, Flow
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
 import { uuidv4 } from '../utils';
-import { CutTree, UiElementWidgetType } from './renderers/ui_tree_repr';
+import { CutTree, UiElementWidgetType, UiElementRepr } from './renderers/ui_tree_repr';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -31,7 +31,13 @@ export interface UiFlowBlockHandler {
     onClick: () => void,
     onInputUpdated: (connectedBlock: FlowBlock, inputIndex: number) => void,
     dispose: () => void,
+    isTextEditable(): this is TextEditable,
 }
+
+export interface TextEditable {
+    text: string,
+    getArea(): Area2D,
+};
 
 export type OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => void;
 export type OnUiFlowBlockInputUpdated = (block: UiFlowBlock, service: UiSignalService, connectedBlock: FlowBlock, inputIndex: number) => void;
@@ -45,11 +51,16 @@ export interface UiFlowBlockOptions extends FlowBlockOptions {
     block_id?: string,
 }
 
+interface UiFlowBlockExtraData {
+    textContent?: string,
+    dimensions?: { width: number, height: number },
+}
+
 export interface UiFlowBlockData extends FlowBlockData {
     type: UiFlowBlockType,
     value: {
         options: UiFlowBlockOptions,
-        dimensions?: {width: number, height: number},
+        extra: UiFlowBlockExtraData,
     },
 }
 
@@ -74,7 +85,9 @@ export class UiFlowBlock implements FlowBlock {
     private input_count: number[] = [];
     protected handler: UiFlowBlockHandler;
     private input_blocks: [FlowBlock, number][] = [];
-    blockData: { dimensions?: { width: number, height: number } } = {};
+    private workspace: FlowWorkspace | null;
+
+    blockData: UiFlowBlockExtraData = {};
 
     constructor(options: UiFlowBlockOptions,
                 private uiSignalService: UiSignalService,
@@ -102,6 +115,7 @@ export class UiFlowBlock implements FlowBlock {
 
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group } // Avoid double initialization
+        this.workspace = initOpts.workspace;
 
         this.canvas = canvas;
         if (initOpts.position) {
@@ -141,7 +155,13 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     public renderAsUiElement(): CutTree {
-        return { id: this.blockId, widget_type: this.options.id };
+        const data: UiElementRepr = { id: this.blockId, widget_type: this.options.id };
+
+        if (this.blockData.textContent) {
+            data.text = this.blockData.textContent;
+        }
+
+        return data;
     }
 
     private _renderOutputs(group: SVGGElement) {
@@ -347,7 +367,7 @@ export class UiFlowBlock implements FlowBlock {
             type: BLOCK_TYPE,
             value: {
                 options: JSON.parse(JSON.stringify(this.options)),
-                dimensions: this.blockData.dimensions,
+                extra: JSON.parse(JSON.stringify(this.blockData)),
             },
         }
     }
@@ -366,10 +386,7 @@ export class UiFlowBlock implements FlowBlock {
         options.builder = templateOptions.builder;
 
         const block = new UiFlowBlock(options, toolbox.uiSignalService);
-
-        if (data.value.dimensions) {
-            block.blockData.dimensions = Object.assign({}, data.value.dimensions);
-        }
+        block.blockData = JSON.parse(JSON.stringify(data.value.extra));
 
         return block;
     }
@@ -481,7 +498,33 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     public getBlockContextActions(): BlockContextAction[] {
-        const actions = [];
+        const actions: BlockContextAction[] = [];
+
+        const handler = this.handler;
+        if (handler.isTextEditable()) {
+            actions.push({
+                title: 'Edit text',
+                run: () => {
+                    const prevValue = handler.text;
+
+                    const area = handler.getArea();
+                    const offset = this.getOffset();
+
+                    area.x += offset.x;
+                    area.y += offset.y;
+                    this.group.classList.add('editing');
+
+                    this.workspace.editInline(area, prevValue, 'string', (newValue: string) => {
+                        this.group.classList.remove('editing');
+
+                        if (newValue.trim().length > 0) {
+                            handler.text = newValue.trim();
+                        }
+                    });
+
+                }
+            });
+        }
 
         return actions;
     }

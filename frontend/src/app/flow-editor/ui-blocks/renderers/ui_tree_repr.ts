@@ -10,6 +10,7 @@ export type UiElementWidgetType
 export interface UiElementRepr {
     id: string,
     widget_type: UiElementWidgetType,
+    text?: string,
 };
 
 export interface CutElement {

@@ -210,6 +210,7 @@ export class GraphBuilder {
                 type: FLOW_BLOCK_TYPE,
                 value: {
                     options: block_options,
+                    extra: {},
                 }
             }
         }
