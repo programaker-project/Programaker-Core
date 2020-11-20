@@ -1,5 +1,5 @@
 import { BlockManager } from './block_manager';
-import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts } from './flow_block';
+import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts, BlockContextAction } from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -668,6 +668,10 @@ export class AtomicFlowBlock implements FlowBlock {
         const box_width = widest_section + x_offset;
         this.rect.setAttributeNS(null, 'width', box_width + "");
         this.rectShadow.setAttributeNS(null, 'width', box_width + "");
+    }
+
+    public getBlockContextActions(): BlockContextAction[] {
+        return [];
     }
 
     public getSlots(): {[key: string]: string} {

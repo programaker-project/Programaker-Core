@@ -70,6 +70,11 @@ export interface FlowBlockInitOpts {
     workspace?: FlowWorkspace;
 };
 
+export interface BlockContextAction {
+    title: string,
+    run: () => void,
+};
+
 export interface FlowBlock {
     dispose(): void;
     render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement;
@@ -83,6 +88,7 @@ export interface FlowBlock {
 
     addConnection(direction: 'in' | 'out', input: number, block: FlowBlock): void;
     removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): void;
+    getBlockContextActions(): BlockContextAction[];
 
     getSlots(): {[key: string]: string};
     getInputs(): InputPortDefinition[];

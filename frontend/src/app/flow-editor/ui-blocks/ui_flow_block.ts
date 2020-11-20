@@ -1,9 +1,9 @@
-import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts } from '../flow_block';
-import { BlockManager } from '../block_manager';
-import { Toolbox } from '../toolbox';
 import { UiSignalService } from '../../services/ui-signal.service';
-import { uuidv4 } from '../utils';
+import { BlockManager } from '../block_manager';
+import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, InputPortDefinition, Position2D } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
+import { Toolbox } from '../toolbox';
+import { uuidv4 } from '../utils';
 import { CutTree, UiElementWidgetType } from './renderers/ui_tree_repr';
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -478,6 +478,12 @@ export class UiFlowBlock implements FlowBlock {
         }
 
         this.handler.onConnectionValueUpdate(input_index, value);
+    }
+
+    public getBlockContextActions(): BlockContextAction[] {
+        const actions = [];
+
+        return actions;
     }
 
     getSlots(): { [key: string]: string; } {

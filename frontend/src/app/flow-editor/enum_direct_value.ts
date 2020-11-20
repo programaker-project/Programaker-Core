@@ -1,9 +1,11 @@
-import {
-    FlowBlock,
-    InputPortDefinition, OnIOSelected,
-    Area2D, Direction2D, Position2D, MessageType, FlowBlockData, FlowBlockInitOpts,
-} from './flow_block';
 import { BlockManager } from './block_manager';
+import {
+    Area2D, BlockContextAction, Direction2D, FlowBlock,
+
+    FlowBlockData, FlowBlockInitOpts, InputPortDefinition,
+    MessageType, OnIOSelected,
+    Position2D
+} from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -158,6 +160,10 @@ export class EnumDirectValue implements FlowBlock {
     }
 
     public removeConnection(_direction: 'in' | 'out', _index: number) {
+    }
+
+    public getBlockContextActions(): BlockContextAction[] {
+        return [];
     }
 
     public getSlots(): {[key: string]: string} {

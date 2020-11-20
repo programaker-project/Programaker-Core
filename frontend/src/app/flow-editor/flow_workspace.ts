@@ -1,14 +1,14 @@
+import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
 import { BlockManager } from './block_manager';
 import { DirectValue } from './direct_value';
-import { EnumValue, EnumDirectValue, EnumGetter } from './enum_direct_value';
-import { Area2D, Direction2D, FlowBlock, FlowBlockData, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition, Resizeable, ContainerBlock } from './flow_block';
+import { EnumDirectValue, EnumGetter, EnumValue } from './enum_direct_value';
+import { Area2D, BridgeEnumInputPortDefinition, ContainerBlock, Direction2D, FlowBlock, FlowBlockData, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, Resizeable } from './flow_block';
 import { FlowConnection } from './flow_connection';
-import { uuidv4, isContainedIn } from './utils';
-import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
-import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
-import { UiFlowBlockData, UiFlowBlock } from './ui-blocks/ui_flow_block';
+import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { Toolbox } from './toolbox';
-import { ContainerFlowBlock, isContainerFlowBlockOptions, ContainerFlowBlockData, isContainerFlowBlockData } from './ui-blocks/container_flow_block';
+import { ContainerFlowBlock, ContainerFlowBlockData, isContainerFlowBlockData } from './ui-blocks/container_flow_block';
+import { UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
+import { isContainedIn, uuidv4 } from './utils';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -344,6 +344,8 @@ export class FlowWorkspace implements BlockManager {
                 return;
             }
 
+            this.ensureContextMenuHidden();
+
             const time = new Date();
             if (lastMouseDownTime && (((time as any) - lastMouseDownTime) < 1000))  {
                 const start = this._getPositionFromEvent(ev);
@@ -654,6 +656,8 @@ export class FlowWorkspace implements BlockManager {
 
             if (this.current_io_selected) { return; }
 
+            this.ensureContextMenuHidden();
+
             if ((ev as MouseEvent).button === 2) {
                 // On right click just make sure it is selected, the context
                 // menu will be handled by 'oncontextmenu'.
@@ -685,11 +689,27 @@ export class FlowWorkspace implements BlockManager {
 
         // Block operations
         const block_ops = document.createElement('ul');
-        const clone_entry = document.createElement('li');
-        clone_entry.innerText = 'clone';
-        clone_entry.onclick = (ev) => { this.ensureContextMenuHidden(); this.cloneSelection(); };
 
+        // Default options
+        const clone_entry = document.createElement('li');
+        clone_entry.innerText = 'Clone';
+        clone_entry.onclick = (ev) => { this.ensureContextMenuHidden(); this.cloneSelection(); };
         block_ops.appendChild(clone_entry);
+
+        // Single block options
+        if (this._selectedBlocks.length === 1) {
+            const blockId = this._selectedBlocks[0];
+            const block = this.blocks[blockId].block;
+            const actions = block.getBlockContextActions();
+
+            for (const action of actions) {
+                const entry = document.createElement('li');
+                entry.innerText = action.title;
+                entry.onclick = (ev) => { this.ensureContextMenuHidden(); action.run(); };
+                block_ops.appendChild(entry);
+            }
+        }
+
         this.popupGroup.appendChild(block_ops);
     }
 

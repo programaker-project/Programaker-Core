@@ -1,7 +1,7 @@
 import {
     FlowBlock,
     InputPortDefinition, OnIOSelected,
-    Area2D, Direction2D, Position2D, MessageType, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions,
+    Area2D, Direction2D, Position2D, MessageType, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, BlockContextAction,
 } from './flow_block';
 import { BlockManager } from './block_manager';
 import { UiFlowBlock } from './ui-blocks/ui_flow_block';
@@ -168,6 +168,10 @@ export class DirectValue implements FlowBlock {
         const index = this.sinks.findIndex(x => x === block);
 
         this.sinks.splice(index, 1);
+    }
+
+    public getBlockContextActions(): BlockContextAction[] {
+        return [];
     }
 
     public getSlots(): {[key: string]: string} {
