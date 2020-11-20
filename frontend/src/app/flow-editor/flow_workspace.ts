@@ -927,10 +927,9 @@ export class FlowWorkspace implements BlockManager {
                 bodyElement.classList.remove('to-be-removed');
 
                 if (this.isInTrashcan(pos)) {
-                    for (const blockId of this._selectedBlocks) {
+                    for (const blockId of this._selectedBlocks.concat([])) {
                         this.removeBlock(blockId);
                     }
-                    this._selectedBlocks = [];
                 }
             }
             catch (err) {
@@ -1212,6 +1211,11 @@ export class FlowWorkspace implements BlockManager {
         info.block.dispose();
 
         delete this.blocks[blockId];
+
+        const idx = this._selectedBlocks.indexOf(blockId);
+        if (idx >= 0) {
+            this._selectedBlocks.splice(idx, 1);
+        }
     }
 
     private getBlockRel(block: FlowBlock, position: Position2D): Position2D {
