@@ -675,7 +675,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
             {
                 icon: PLATFORM_ICON,
                 message: 'Delete all of %(list)',
-                block_function: 'data_deletealllist',
+                block_function: 'data_deletealloflist',
                 type: 'operation'
             },
             {
