@@ -1236,16 +1236,33 @@ function compile_block(graph: FlowGraph,
                 // Ignore
                 block_type = block_fun;
 
-                const listenerArgs: {key: string, subkey?: any} = {
-                    key: block_fun.split('.').reverse()[0],
-                };
-
-                const subkey = data.value.options.subkey;
-                if (subkey) {
-                    listenerArgs.subkey = compiled_args[subkey.index - 1];
+                if (flags.inside_args) {
+                    return {
+                        type: "flow_last_value",
+                        args: [
+                            {
+                                type: 'constant',
+                                value: block_id,
+                            },
+                            {
+                                type: 'constant',
+                                value: 1, // TODO: Not hardcode this
+                            }
+                        ]
+                    };
                 }
+                else {
+                    const listenerArgs: {key: string, subkey?: any} = {
+                        key: block_fun.split('.').reverse()[0],
+                    };
 
-                compiled_args = (listenerArgs as any);
+                    const subkey = data.value.options.subkey;
+                    if (subkey) {
+                        listenerArgs.subkey = compiled_args[subkey.index - 1];
+                    }
+
+                    compiled_args = (listenerArgs as any);
+                }
             }
             else {
                 block_type = "command_call_service";
