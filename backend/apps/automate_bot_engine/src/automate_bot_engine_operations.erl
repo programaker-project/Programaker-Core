@@ -563,6 +563,7 @@ run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
                 {?SIGNAL_PROGRAM_TICK, _}) ->
     {Values, Thread2} = eval_args(Arguments, Thread, Operation),
     {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
+    ok = automate_storage:set_widget_value(ProgramId, UiElement, Values),
 
     %% Trigger element update
     ok = automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => ui_events_show

@@ -155,3 +155,8 @@
                              , contents :: any() %% Type to be more strictly defined?
                                            %% TODO: Access permissions?
                              }).
+
+-record(program_widget_value_entry, { widget_id :: {binary(), binary()} %% {ProgramId, <<widget_type, "." , widget_id>>}
+                                    , program_id :: binary() %% Used for indexing on program-wide operations
+                                    , value :: any() %% Type to be more strictly defined?
+                                    }).

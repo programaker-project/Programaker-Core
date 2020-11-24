@@ -48,7 +48,7 @@ is_authorized(Req, State=#state{program_id=_ProgramId}) ->
 
 %% GET handler
 content_types_provided(Req, State) ->
-    {[{{<<"application">>, <<"json">>, []}, to_json}],
+    {[{{<<"text">>, <<"html">>, []}, to_json}],
      Req, State}.
 
 -spec to_json(cowboy_req:req(), #state{})

@@ -4,6 +4,7 @@ import { SessionService } from 'app/session.service';
 import { EnvironmentService } from 'app/environment.service';
 import { toWebsocketUrl } from 'app/utils';
 import { Observable } from 'rxjs';
+import { startWith } from 'rxjs/operators';
 
 type Message = any;
 
@@ -12,6 +13,8 @@ export class UiSignalService {
     programId: string;
     websocketEstablishment: Promise<WebSocket>;
     messageEmitter: EventEmitter<any>;
+    private _gotInitialValues: boolean | 'in-progress' = false;
+    private _lastMessages: {[key: string]: any} = {};
 
     constructor(
         private http: HttpClient,
@@ -31,6 +34,40 @@ export class UiSignalService {
         if (!this.programId) {
             throw Error("UiSignalService non initialized, ProgramId not set.");
         }
+    }
+
+
+    _getInitialValuesUrl(): string {
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${this.programId}/ui-values`;
+    }
+
+    private _pullInitialValues() {
+        if (this._gotInitialValues) {
+            return;
+        }
+        this._gotInitialValues = 'in-progress';
+
+        const url = this._getInitialValuesUrl();
+        (this.http.get(url, {headers: this.sessionService.getAuthHeader()})
+            .toPromise()
+            .then((resp: any) => {
+
+                const vals = resp.widget_values;
+                for (const widgetId of Object.keys(vals)) {
+                    if (!this._lastMessages[widgetId]) {
+
+                        const message = {
+                            key: 'ui_events_show',
+                            subkey: widgetId,
+                            values: vals[widgetId],
+                        };
+                        this._lastMessages[widgetId] = message;
+                        this.messageEmitter.emit(message);
+                    }
+                }
+
+                this._gotInitialValues = true;
+            }));
     }
 
     _getWebsocketUrl(): string {
@@ -92,7 +129,6 @@ export class UiSignalService {
         this._clearWebsocket();
     }
 
-
     public async sendBlockSignal(blockType: string, blockId: string): Promise<void> {
         this._assertInitialized();
 
@@ -107,23 +143,32 @@ export class UiSignalService {
         }));
     }
 
-
     public onElementUpdate(blockType: string, blockId: string): Observable<any> {
         this._assertInitialized();
         this._getWebsocket(); // Create websocket if not existing
 
+        if (!this._gotInitialValues) {
+            this._pullInitialValues();
+        }
 
         const selector = `${blockType}.${blockId}`;
 
-        return new Observable(observer => {
+        const observer = new Observable(observer => {
             this.messageEmitter.subscribe({
                 next: (ev) => {
                     if (ev.subkey === selector) {
+                        this._lastMessages[selector] = ev;
                         observer.next(ev);
                     }
                 }});
         })
 
-    }
+        if (this._lastMessages[selector]) {
+            return observer.pipe(startWith(this._lastMessages[selector]));
+        }
+        else {
+            return observer;
+        }
 
+    }
 }

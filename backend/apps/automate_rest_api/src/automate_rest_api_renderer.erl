@@ -8,8 +8,9 @@
 %%====================================================================
 -spec render_page(binary(), _) -> iolist().
 render_page(ProgramId, Contents) ->
+    {ok, Values} = automate_storage:get_widget_values_in_program(ProgramId),
     [ render_page_header(Contents)
-    , render_page_body(Contents)
+    , render_page_body(Contents, Values)
     , render_page_footer(ProgramId, Contents)
     ].
 
@@ -17,7 +18,7 @@ render_page(ProgramId, Contents) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-render_page_header(Contents) ->
+render_page_header(_Contents) ->
     Title = unicode:characters_to_binary("<TODO> have configurable titles ¯\\_(ツ)_/¯"),
     [ <<"<!DOCTYPE html>\n">>
     , <<"<html><head><meta charset=\"UTF-8\">\n">>
@@ -27,13 +28,20 @@ render_page_header(Contents) ->
     , <<"</head>\n<body>\n">>
     ].
 
-render_page_body(Contents) ->
-    render_element(Contents).
+render_page_body(Contents, Values) ->
+    render_element(Contents, Values).
 
 render_page_footer(ProgramId, Contents) ->
     [ render_scripts(ProgramId, Contents)
     , <<"\n</html>">>
     ].
+
+raw_to_html(Bin) when is_binary(Bin) ->
+    html_escape(Bin);
+raw_to_html([Contained]) ->
+    raw_to_html(Contained);
+raw_to_html(X) ->
+    raw_to_html(list_to_binary(io_lib:format("~w", [X]))).
 
 html_escape(Str) ->
     mochiweb_html:escape(Str).
@@ -43,15 +51,15 @@ html_escape(Str) ->
 %%====================================================================
 render_element(#{ <<"cut_type">> := CutType
                 , <<"groups">> := Groups
-                }) ->
+                }, Values) ->
     [ <<"<div class='">>, CutType, <<"-cut'>">>
-    , GroupRendering = lists:map(fun render_element/1, Groups)
+    , GroupRendering = lists:map(fun(E) -> render_element(E, Values) end, Groups)
     , <<"</div>">>
     ];
 
 render_element(E=#{ <<"widget_type">> := <<"simple_button">>
                   , <<"id">> := WidgetId
-                  }) ->
+                  }, Values) ->
     [ <<"<div class=widget-container><button class='widget simple_button' id='elem-">>
     , WidgetId
     , <<"'>">>
@@ -59,10 +67,10 @@ render_element(E=#{ <<"widget_type">> := <<"simple_button">>
     , <<"</button></div>">>
     ];
 
-render_element(#{ <<"widget_type">> := <<"simple_debug_output">>
+render_element(#{ <<"widget_type">> := Type= <<"simple_debug_output">>
                 , <<"id">> := WidgetId
-                }) ->
-    Contents = <<"- No content yet -">>,
+                }, Values) ->
+    Contents = raw_to_html(maps:get(<<Type/binary, ".", WidgetId/binary>>, Values, <<"- No content yet -">>)),
     [ <<"<div class=widget-container><div class='widget simple_debug_output' id='elem-">>, WidgetId, <<"'><div>">>
     , Contents
     , <<"</div></div></div>">>

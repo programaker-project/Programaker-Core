@@ -617,6 +617,26 @@ get_versioning(Nodes) ->
 
                         end
                 }
+
+                %% Add groups creation time
+              , #database_version_transformation
+                { id=20
+                , apply=fun() ->
+
+                                {atomic, ok} = mnesia:create_table(?PROGRAM_WIDGET_VALUE_TABLE,
+                                                                   [ { attributes, [ widget_id, program_id, value ] }
+                                                                   , { disc_copies, Nodes }
+                                                                   , { record_name, program_widget_value_entry }
+                                                                   , { type, set }
+                                                                   , { index, [ program_id ] }
+                                                                   ]),
+
+                                    ok = mnesia:wait_for_tables([ ?PROGRAM_WIDGET_VALUE_TABLE
+                                                                ],
+                                                                automate_configuration:get_table_wait_time())
+
+                        end
+                }
               ]
         }.
 

@@ -68,6 +68,7 @@ start_link() ->
                         , {"/api/v0/programs/by-id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
                         , {"/api/v0/programs/by-id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
                         , {"/api/v0/programs/by-id/:program_id/ui-events", automate_rest_api_program_specific_ui_events, []}
+                        , {"/api/v0/programs/by-id/:program_id/ui-values", automate_rest_api_program_specific_ui_values, []}
                         , {"/api/v0/programs/by-id/:program_id/custom-blocks", automate_rest_api_program_custom_blocks, []}
                         , {"/api/v0/programs/by-id/:program_id/bridges/by-id/:bridge_id/callbacks/:callback", automate_rest_api_program_bridge_callback, []}
                         , {"/api/v0/programs/by-id/:program_id/render/[...]", automate_rest_api_program_render, []}

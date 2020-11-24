@@ -75,6 +75,8 @@
 
         , set_program_variable/3
         , get_program_variable/2
+        , set_widget_value/3
+        , get_widget_values_in_program/1
 
         , log_program_error/1
         , mark_successful_call_to_bridge/2
@@ -2231,6 +2233,33 @@ set_program_variable(ProgramId, Key, Value) ->
             io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
+
+-spec set_widget_value(ProgramId :: binary(), WidgetId :: binary(), Value :: any()) -> ok.
+set_widget_value(ProgramId, WidgetId, Value) ->
+    Transaction = fun() ->
+                          mnesia:write(?PROGRAM_WIDGET_VALUE_TABLE, #program_widget_value_entry{ widget_id={ProgramId, WidgetId}
+                                                                                               , program_id=ProgramId
+                                                                                               , value=Value
+                                                                                               },
+                                       write)
+                  end,
+    wrap_transaction(mnesia:transaction(Transaction)).
+
+-spec get_widget_values_in_program(ProgramId :: binary()) -> {ok, #{ binary() => any() }}.
+get_widget_values_in_program(ProgramId) ->
+    T = fun() ->
+                mnesia:index_read(?PROGRAM_WIDGET_VALUE_TABLE, ProgramId, program_id)
+        end,
+    case wrap_transaction(mnesia:ets(T)) of
+        {error, Reason}  ->
+            {error, Reason};
+        Values ->
+            MappedValues = maps:from_list(lists:map(fun(#program_widget_value_entry{ widget_id={ _, WidgetId }, value=Value }) ->
+                                                            { WidgetId, Value }
+                                                    end, Values)),
+            {ok, MappedValues}
+    end.
+
 
 
 -spec apply_group_metadata_changes(#user_group_entry{}, group_metadata_edition()) -> #user_group_entry{}.
