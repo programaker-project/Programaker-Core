@@ -107,7 +107,7 @@ start_link() ->
                         , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/communication"
                           , automate_rest_api_service_ports_specific_communication, []} %% DEPR
                         , {"/api/v0/users/id/:user_id/bridges/id/:service_port_id/oauth_return"
-                          , automate_rest_api_service_port_oauth_return, []}
+                          , automate_rest_api_service_port_oauth_return, []} %% DPR
 
                           %% New bridges API
                         , {"/api/v0/bridges/by-id/:bridge_id", automate_rest_api_service_ports_specific, []}
@@ -120,7 +120,8 @@ start_link() ->
                         , {"/api/v0/connections/by-id/:connection_id/resources/by-name/:resource_name", automate_rest_api_connection_resource_by_name_root, []}
                         , {"/api/v0/bridges/by-id/:bridge_id/tokens", automate_rest_api_bridge_tokens_root, []}
                         , {"/api/v0/bridges/by-id/:bridge_id/tokens/by-name/:token_name", automate_rest_api_bridge_tokens_by_name_root, []}
-
+                        , {"/api/v0/bridges/by-id/:service_port_id/oauth_return"
+                          , automate_rest_api_service_port_oauth_return, []} %% DPR
 
                           %% Services
                         , {"/api/v0/users/:user_id/services", automate_rest_api_services_root, []}

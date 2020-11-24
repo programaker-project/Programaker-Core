@@ -50,7 +50,7 @@
 %% List control
 -define(COMMAND_ADD_TO_LIST, <<"data_addtolist">>).
 -define(COMMAND_DELETE_OF_LIST, <<"data_deleteoflist">>).
--define(COMMAND_DELETE_ALL_LIST, <<"data_deletealllist">>).
+-define(COMMAND_DELETE_ALL_LIST, <<"data_deletealloflist">>).
 -define(COMMAND_INSERT_AT_LIST, <<"data_insertatlist">>).
 -define(COMMAND_REPLACE_VALUE_AT_INDEX, <<"data_replaceitemoflist">>).
 -define(COMMAND_ITEM_OF_LIST, <<"data_itemoflist">>).
