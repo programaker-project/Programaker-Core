@@ -106,7 +106,6 @@ export class EnumDirectValue implements FlowBlock {
 
         const block = new EnumDirectValue(options);
 
-        console.log("Val", data.value);
         block.value_id = data.value.value_id;
         block._defaultText = data.value.value_text;
 

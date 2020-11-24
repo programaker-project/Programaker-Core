@@ -98,14 +98,26 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
             icon = iconDataToUrl(environmentService, bridge.icon, bridge.id);
         }
 
+        const [message, translationTable] = get_block_message(block);
+
+        let subkey = undefined;
+        if (block.subkey) {
+            subkey = {
+                type: 'argument',
+                index: translationTable[block.subkey.index + 1],
+            };
+        }
+
+
         base.addBlockGenerator((manager) => {
             return new AtomicFlowBlock({
                 icon: icon,
-                message: get_block_message(block),
+                message: message,
                 block_function: 'services.' + bridge.id + '.' + block.function_name,
                 type: (block.block_type as any),
                 inputs: get_block_inputs(block),
                 outputs: get_block_outputs(block),
+                subkey: subkey,
                 on_io_selected: manager.onIoSelected.bind(manager),
                 on_dropdown_extended: manager.onDropdownExtended.bind(manager),
                 on_inputs_changed: manager.onInputsChanged.bind(manager),
@@ -135,21 +147,28 @@ function get_output_indexes(block: ResolvedCustomBlock): number[] {
     return output_indexes;
 }
 
-function get_block_message(block: ResolvedCustomBlock): string {
+function get_block_message(block: ResolvedCustomBlock): [string, number[]] {
     const output_indexes = get_output_indexes(block);
 
-    return block.message.replace(/%(\d+)/g, (_match, digits) => {
+    const translationTable = [];
+    let offset = 0;
+
+    const message = block.message.replace(/%(\d+)/g, (_match, digits) => {
         const num = parseInt(digits);
         if (output_indexes.indexOf(num - 1) < 0) { // %num are 1-indexed
-            return `%i${digits}`;
+            translationTable[num] = num - offset;
+            return `%i${num - offset}`;
         }
         else {
+            offset += 1;
             if (output_indexes.length !== 1) {
                 console.error('TODO: Index output remapping', block);
             }
             return '%o1';
         }
     });
+
+    return [message, translationTable];
 }
 
 function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {

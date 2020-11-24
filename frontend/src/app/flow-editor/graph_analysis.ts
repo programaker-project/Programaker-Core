@@ -1235,6 +1235,17 @@ function compile_block(graph: FlowGraph,
             if (data.value.options.type === 'trigger') {
                 // Ignore
                 block_type = block_fun;
+
+                const listenerArgs: {key: string, subkey?: any} = {
+                    key: block_fun.split('.').reverse()[0],
+                };
+
+                const subkey = data.value.options.subkey;
+                if (subkey) {
+                    listenerArgs.subkey = compiled_args[subkey.index - 1];
+                }
+
+                compiled_args = (listenerArgs as any);
             }
             else {
                 block_type = "command_call_service";
@@ -1532,6 +1543,28 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
                 contents: [],
             }
         }
+        else if (desc.block_function.startsWith('services.')) {
+            // Rewrite service calls to custom triggers
+            const compiled_args: CompiledBlockArgs = source.block.arguments.map(v => compile_arg(graph, v,
+                                                                                                 source.block.block_id,
+                                                                                                 source.block.block_id));
+
+            const listenerArgs: {key: string, subkey?: any} = {
+                key: desc.block_function.split('.').reverse()[0],
+            };
+
+            const subkey = desc.subkey;
+            if (subkey) {
+                listenerArgs.subkey = compiled_args[subkey.index - 1];
+            }
+
+            return {
+                id: source.block.block_id,
+                type: (desc.block_function as any),
+                args: (listenerArgs as any),
+                contents: [],
+            }
+        }
         else {
             throw new Error(`Unexpected flow source node: (fun: ${desc.block_function}, type: ${source_node.data.type}, id: ${source.block.block_id})`);
         }
@@ -1585,7 +1618,10 @@ export function assemble_flow(graph: FlowGraph,
                               filter: BlockTree | null,
                               stepped_ast: SteppedBlockTree[]): CompiledFlowGraph[] {
 
-    const signal_ast = compile_block(graph, signal_id, [], [],
+    const conn_index = index_connections(graph);
+    const rev_conn_index = reverse_index_connections(graph);
+
+    const signal_ast = compile_block(graph, signal_id, get_stepped_block_arguments(graph, signal_id, null, conn_index, rev_conn_index), [],
                                      { inside_args: false, orig_tree: null },
                                      { before: null });
 

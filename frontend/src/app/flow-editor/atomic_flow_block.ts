@@ -19,6 +19,7 @@ export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     icon?: string,
     block_function: string,
     message: string;
+    subkey?: { "type": "argument", "index": number };
 }
 
 export interface AtomicFlowBlockData extends FlowBlockData {
