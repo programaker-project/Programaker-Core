@@ -32,11 +32,16 @@ export interface UiFlowBlockHandler {
     onInputUpdated: (connectedBlock: FlowBlock, inputIndex: number) => void,
     dispose: () => void,
     isTextEditable(): this is TextEditable,
+    isTextReadable(): this is TextReadable,
 }
 
 export interface TextEditable {
     text: string,
     getArea(): Area2D,
+};
+
+export interface TextReadable {
+    readonly text: string,
 };
 
 export type OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => void;
@@ -157,7 +162,10 @@ export class UiFlowBlock implements FlowBlock {
     public renderAsUiElement(): CutTree {
         const data: UiElementRepr = { id: this.blockId, widget_type: this.options.id };
 
-        if (this.blockData.textContent) {
+        if (this.handler.isTextReadable()) {
+            data.text = this.handler.text;
+        }
+        else if (this.blockData.textContent) {
             data.text = this.blockData.textContent;
         }
 

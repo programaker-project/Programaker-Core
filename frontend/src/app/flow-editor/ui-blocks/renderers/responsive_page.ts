@@ -2,7 +2,7 @@ import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { Area2D, FlowBlock, Resizeable, Position2D } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
-import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler, TextEditable } from "../ui_flow_block";
+import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler, TextEditable, TextReadable } from "../ui_flow_block";
 import { ContainerElement, ContainerElementHandle } from "./container_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr } from "./ui_tree_repr";
 import { getRefBox } from "./utils";
@@ -133,6 +133,10 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
     }
 
     isTextEditable(): this is TextEditable {
+        return false;
+    }
+
+    isTextReadable(): this is TextReadable {
         return false;
     }
 

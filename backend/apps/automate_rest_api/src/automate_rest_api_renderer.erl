@@ -67,10 +67,12 @@ render_element(E=#{ <<"widget_type">> := <<"simple_button">>
     , <<"</button></div>">>
     ];
 
-render_element(#{ <<"widget_type">> := Type= <<"simple_debug_output">>
-                , <<"id">> := WidgetId
-                }, Values) ->
-    Contents = raw_to_html(maps:get(<<Type/binary, ".", WidgetId/binary>>, Values, <<"- No content yet -">>)),
+render_element(E=#{ <<"widget_type">> := Type= <<"simple_debug_output">>
+                  , <<"id">> := WidgetId
+                  }, Values) ->
+    Contents = raw_to_html(maps:get(<<Type/binary, ".", WidgetId/binary>>, Values,
+                                    maps:get(<<"text">>, E,
+                                             <<"- No content yet -">>))),
     [ <<"<div class=widget-container><div class='widget simple_debug_output' id='elem-">>, WidgetId, <<"'><div>">>
     , Contents
     , <<"</div></div></div>">>

@@ -2,7 +2,7 @@ import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { DirectValue } from "../../direct_value";
 import { FlowBlock } from "../../flow_block";
-import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockHandler, TextEditable } from "../ui_flow_block";
+import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockHandler, TextEditable, TextReadable } from "../ui_flow_block";
 import { getRefBox } from "./utils";
 
 
@@ -16,8 +16,10 @@ export const SimpleOutputBuilder : UiFlowBlockBuilder = (canvas: SVGElement, gro
 }
 
 class SimpleOutput implements UiFlowBlockHandler {
-    subscription: Subscription;
-    text: SVGTextElement;
+    private subscription: Subscription;
+    private textBox: SVGTextElement;
+    private rect: SVGRectElement;
+    private rectShadow: SVGRectElement;
 
     constructor(canvas: SVGElement, group: SVGElement,
                 private block: UiFlowBlock,
@@ -26,41 +28,31 @@ class SimpleOutput implements UiFlowBlockHandler {
         const refBox = getRefBox(canvas);
 
         const node = document.createElementNS(SvgNS, 'a');
-        const rect = document.createElementNS(SvgNS, 'rect');
-        const rectShadow = document.createElementNS(SvgNS, 'rect');
+        this.rect = document.createElementNS(SvgNS, 'rect');
+        this.rectShadow = document.createElementNS(SvgNS, 'rect');
 
         group.setAttribute('class', 'flow_node ui_node output_node');
 
-        this.text = document.createElementNS(SvgNS, 'text');
-        this.text.setAttribute('class', 'output_text');
-        this.text.setAttributeNS(null,'textlength', '100%');
+        this.textBox = document.createElementNS(SvgNS, 'text');
+        this.textBox.setAttribute('class', 'output_text');
+        this.textBox.setAttributeNS(null,'textlength', '100%');
 
-        this.text.textContent = DefaultContent;
+        this.textBox.textContent = DefaultContent;
 
-        node.appendChild(rectShadow);
-        node.appendChild(rect);
-        node.appendChild(this.text);
+        node.appendChild(this.rectShadow);
+        node.appendChild(this.rect);
+        node.appendChild(this.textBox);
         group.appendChild(node);
 
-        const text_width = this.text.getClientRects()[0].width;
+        this.rect.setAttributeNS(null, 'class', "node_body");
+        this.rect.setAttributeNS(null, 'x', "0");
+        this.rect.setAttributeNS(null, 'y', "0");
 
-        const box_height = refBox.height * 2;
-        const box_width = text_width * 1.5;
+        this.rectShadow.setAttributeNS(null, 'class', "body_shadow");
+        this.rectShadow.setAttributeNS(null, 'x', "0");
+        this.rectShadow.setAttributeNS(null, 'y', "0");
 
-        this.text.setAttributeNS(null, 'y', box_height/1.5 + "");
-        this.text.setAttributeNS(null, 'x', (box_width - text_width)/2 + "");
-
-        rect.setAttributeNS(null, 'class', "node_body");
-        rect.setAttributeNS(null, 'x', "0");
-        rect.setAttributeNS(null, 'y', "0");
-        rect.setAttributeNS(null, 'height', box_height + "");
-        rect.setAttributeNS(null, 'width', box_width + "");
-
-        rectShadow.setAttributeNS(null, 'class', "body_shadow");
-        rectShadow.setAttributeNS(null, 'x', "0");
-        rectShadow.setAttributeNS(null, 'y', "0");
-        rectShadow.setAttributeNS(null, 'height', box_height + "");
-        rectShadow.setAttributeNS(null, 'width', box_width + "");
+        this._updateSize();
     }
 
     onClick() {
@@ -69,6 +61,14 @@ class SimpleOutput implements UiFlowBlockHandler {
 
     isTextEditable(): this is TextEditable {
         return false;
+    }
+
+    isTextReadable(): this is TextReadable {
+        return true;
+    }
+
+    get text(): string {
+        return this.textBox.textContent;
     }
 
     dispose() {
@@ -86,7 +86,8 @@ class SimpleOutput implements UiFlowBlockHandler {
     }
 
     onConnectionValueUpdate(_inputIndex: number, value: string) {
-        this.text.textContent = value;
+        this.textBox.textContent = value;
+        this._updateSize();
     }
 
     init() {
@@ -95,8 +96,25 @@ class SimpleOutput implements UiFlowBlockHandler {
 
         this.subscription = observer.subscribe({
             next: (value: any) => {
-                this.text.textContent = JSON.stringify(value.values[0]);
+                this.textBox.textContent = JSON.stringify(value.values[0]);
             }
         })
+    }
+
+
+    // Aux
+    _updateSize() {
+        const textArea = this.textBox.getClientRects()[0];
+
+        const box_height = textArea.height * 2;
+        const box_width = textArea.width * 1.5;
+
+        this.textBox.setAttributeNS(null, 'y', box_height/1.5 + "");
+        this.textBox.setAttributeNS(null, 'x', (box_width - textArea.width)/2 + "");
+
+        this.rect.setAttributeNS(null, 'height', box_height + "");
+        this.rect.setAttributeNS(null, 'width', box_width + "");
+        this.rectShadow.setAttributeNS(null, 'height', box_height + "");
+        this.rectShadow.setAttributeNS(null, 'width', box_width + "");
     }
 }
