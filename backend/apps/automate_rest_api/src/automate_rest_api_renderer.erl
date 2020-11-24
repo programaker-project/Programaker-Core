@@ -84,7 +84,7 @@ render_styles() ->
     , <<"* { margin: 0; padding: 0 } ">>
     , <<"body { height: 100vh; text-align: center; } ">>
     , <<".horizontal-cut { width: 100%; height: 100%; display: flex; box-sizing: border-box; justify-content: space-evenly; } ">>
-    , <<".vertical-cut { height: 100%; display: flex; flex-flow: column; box-sizing: border-box; justify-content: space-evenly; } ">>
+    , <<".vertical-cut { width: 100%; height: 100%; display: flex; flex-flow: column; box-sizing: border-box; justify-content: space-evenly; } ">>
     , <<".simple_debug_output { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
     , <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
     , <<".widget { width: 100%; height: 100%; } ">>
