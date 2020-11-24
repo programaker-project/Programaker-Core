@@ -18,6 +18,10 @@ export const UiToolboxDescription: ToolboxDescription = [
                     {
                         type: "pulse",
                     },
+                    {
+                        name: "button text",
+                        type: "string",
+                    }
                 ]
             },
             {

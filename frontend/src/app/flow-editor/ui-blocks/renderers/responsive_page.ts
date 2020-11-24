@@ -156,11 +156,11 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
     onContentUpdate(contents: FlowBlock[]) {
         // Obtain new distribution
         const uiContents = contents.filter(b => b instanceof UiFlowBlock) as UiFlowBlock[];
-        const tree = ResponsivePageGenerateTree(this, contents);
-
         // Update grid
-        this.grid.innerHTML = ''; // Clear it
         try {
+            const tree = ResponsivePageGenerateTree(this, contents);
+
+            this.grid.innerHTML = ''; // Clear it
             const cuts = performCuts(tree, uiContents, this.width, this.height, this.block.getOffset());
 
             for (const cut of cuts) {

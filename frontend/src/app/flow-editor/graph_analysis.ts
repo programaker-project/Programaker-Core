@@ -4,7 +4,7 @@ import { DirectValue, DirectValueFlowBlockData, isDirectValueBlockData } from '.
 import { EnumDirectValue, EnumDirectValueFlowBlockData, isEnumDirectValueBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream, split_streaming_after_stepped } from './graph_transformations';
-import { index_connections, reverse_index_connections } from './graph_utils';
+import { index_connections, reverse_index_connections, EdgeIndex } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
 import { isUiFlowBlockData } from './ui-blocks/ui_flow_block';
@@ -105,6 +105,92 @@ function is_getter_node(block: FlowGraphNode): boolean {
 }
 
 
+function is_trigger_node(graph: FlowGraph, block_id: string, conn_index: EdgeIndex, rev_conn_index: EdgeIndex): boolean {
+    const block = graph.nodes[block_id];
+    if (isAtomicFlowBlockData(block.data) || isUiFlowBlockData(block.data)){
+        const data = block.data;
+
+        const inputs = data.value.options.inputs || [];
+
+        // If it has any pulse input, it's not a source block
+        if (inputs.filter(v => v.type === 'pulse').length > 0) {
+            return false;
+        }
+
+        // If it has a getter input, it's not a source block (the getter is)
+        let has_block_inputs = false;
+        for (const conn of rev_conn_index[block_id] || []) {
+            const orig = graph.nodes[conn.from.id];
+            if (orig.data.type === AtomicFlowBlock.GetBlockType()) {
+                has_block_inputs = true;
+                break;
+            }
+        }
+
+        if (has_block_inputs) {
+            return false;
+        }
+
+        // If it's a getter check that it gets derived into a trigger
+        if (data.value.options.type === 'getter') {
+            const find_triggers_downstream_controller = ((_node_id: string, node: FlowGraphNode, _: string[]) => {
+                if (isAtomicFlowBlockData(node.data)) {
+                    const a_node = node.data;
+
+                    if (a_node.value.options.type === 'getter') {
+                        return 'continue'; // This path might be valid, continue checking downstream
+                    }
+                    else if (a_node.value.options.type === 'operation') {
+                        return 'stop'; // This path is not valid
+                    }
+                    else if (a_node.value.options.type === 'trigger') {
+                        return 'capture'; // This is a valid path
+                    }
+                }
+                else if (isUiFlowBlockData(node.data)) {
+                    const hasSignalInput = !!((node.data.value.options.inputs || []).find(inp => inp.type === 'pulse'));
+                    const hasSignalOutput = !!((node.data.value.options.outputs || []).find(outp => outp.type === 'pulse'));
+
+                    if (!hasSignalInput && hasSignalOutput) {
+                        // Trigger block, like a button
+                        return 'capture'
+                    }
+
+                    if (!hasSignalInput && !hasSignalOutput) {
+                        // Probably a sink, like a display.
+                        //
+                        // There are not any cases where a UI block
+                        // generates data that doesn't have a trigger-like
+                        // function.
+                        return 'capture';
+                    }
+
+                    if (hasSignalInput) {
+                        // Operation, like a counter.
+                        // The cases where this should be used for a UI block are not clear.
+                        return 'stop';
+                    }
+                }
+                else {
+                    throw new Error(`Unexpected: Direct value block should not have an input`);
+                }
+
+                throw new Error(`Unexpected signal properties: ${JSON.stringify(node.data)} | ${isUiFlowBlockData(node.data)}`)
+
+            });
+
+            if (!scan_downstream(graph, block_id, conn_index, find_triggers_downstream_controller)) {
+                return false; // Ignore this entry if id doesn't derive into a trigger
+            }
+        }
+
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 export function get_unreachable(graph: FlowGraph): string[] {
     const reached = build_index(get_source_signals(graph));
 
@@ -163,87 +249,11 @@ export function get_source_signals(graph: FlowGraph): string[] {
     const rev_conn_index = reverse_index_connections(graph);
 
     for (const block_id of Object.keys(graph.nodes)) {
-        const block = graph.nodes[block_id];
-        if (isAtomicFlowBlockData(block.data) || isUiFlowBlockData(block.data)){
-            const data = block.data;
-
-            const inputs = data.value.options.inputs || [];
-
-            // If it has any pulse input, it's not a source block
-            if (inputs.filter(v => v.type === 'pulse').length > 0) {
-                continue;
-            }
-
-            // If it has a getter input, it's not a source block (the getter is)
-            let has_block_inputs = false;
-            for (const conn of rev_conn_index[block_id] || []) {
-                const orig = graph.nodes[conn.from.id];
-                if (orig.data.type === AtomicFlowBlock.GetBlockType()) {
-                    has_block_inputs = true;
-                    break;
-                }
-            }
-
-            if (has_block_inputs) {
-                continue;
-            }
-
-            // If it's a getter check that it gets derived into a trigger
-            if (data.value.options.type === 'getter') {
-                const find_triggers_downstream_controller = ((_node_id: string, node: FlowGraphNode, _: string[]) => {
-                    if (isAtomicFlowBlockData(node.data)) {
-                        const a_node = node.data;
-
-                        if (a_node.value.options.type === 'getter') {
-                            return 'continue'; // This path might be valid, continue checking downstream
-                        }
-                        else if (a_node.value.options.type === 'operation') {
-                            return 'stop'; // This path is not valid
-                        }
-                        else if (a_node.value.options.type === 'trigger') {
-                            return 'capture'; // This is a valid path
-                        }
-                    }
-                    else if (isUiFlowBlockData(node.data)) {
-                        const hasSignalInput = !!((node.data.value.options.inputs || []).find(inp => inp.type === 'pulse'));
-                        const hasSignalOutput = !!((node.data.value.options.outputs || []).find(outp => outp.type === 'pulse'));
-
-                        if (!hasSignalInput && hasSignalOutput) {
-                            // Trigger block, like a button
-                            return 'capture'
-                        }
-
-                        if (!hasSignalInput && !hasSignalOutput) {
-                            // Probably a sink, like a display.
-                            //
-                            // There are not any cases where a UI block
-                            // generates data that doesn't have a trigger-like
-                            // function.
-                            return 'capture';
-                        }
-
-                        if (hasSignalInput) {
-                            // Operation, like a counter.
-                            // The cases where this should be used for a UI block are not clear.
-                            return 'stop';
-                        }
-                    }
-                    else {
-                        throw new Error(`Unexpected: Direct value block should not have an input`);
-                    }
-
-                    throw new Error(`Unexpected signal properties: ${JSON.stringify(node.data)} | ${isUiFlowBlockData(node.data)}`)
-
-                });
-
-                if (!scan_downstream(graph, block_id, conn_index, find_triggers_downstream_controller)) {
-                    continue; // Ignore this entry if id doesn't derive into a trigger
-                }
-            }
-
+        if (is_trigger_node(graph, block_id, conn_index, rev_conn_index)) {
             signals.push(block_id);
         }
     }
+
 
     return signals;
 }
@@ -435,35 +445,58 @@ export function get_filters(graph: FlowGraph, source_block_id: string): BlockTre
     });
 }
 
-export function get_stepped_block_arguments(graph: FlowGraph, block_id: string): BlockTreeArgument[] {
+export function get_stepped_block_arguments(graph: FlowGraph, block_id: string,
+                                            source_id: string,
+                                            conn_index: EdgeIndex,
+                                            rev_conn_index: EdgeIndex,
+                                           ): BlockTreeArgument[] {
     const args: BlockTreeArgument[] = [];
 
     let pulse_offset = 0;
     let pulse_ports = {};
 
-    for (const conn of graph.edges) {
+    const arg_conns = [];
 
-        if (conn.to.id === block_id) {
-            if (is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index)) {
-                pulse_ports[conn.to.input_index] = true;
-                pulse_offset = Math.max(pulse_offset, conn.to.input_index + 1);
+    for (const conn of rev_conn_index[block_id] || []) {
+        if (is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index)) {
+            pulse_ports[conn.to.input_index] = true;
+            pulse_offset = Math.max(pulse_offset, conn.to.input_index + 1);
+        }
+        else {
+            const idx = conn.to.input_index;
+            pulse_ports[idx] = false;
+
+            if (!arg_conns[idx]) {
+                arg_conns[idx] = [];
             }
-            else {
-                pulse_ports[conn.to.input_index] = false;
+            arg_conns[idx].push(conn);
+        }
+    }
 
-                if (args[conn.to.input_index] !== undefined) {
-                    throw new Error("Multiple inputs on single port");
-                }
+    for (let idx = 0; idx < arg_conns.length;idx++) {
 
-                args[conn.to.input_index] = {
-                    tree: {
-                        block_id: conn.from.id,
-                        arguments: get_stepped_block_arguments(graph, conn.from.id),
-                    },
-                    output_index: conn.from.output_index,
-                };
+        if (!arg_conns[idx]) {
+            continue;
+        }
+
+        let conn = arg_conns[idx][0];
+        if (arg_conns[idx].length > 1) {
+            // If multiple connections, take the one from source_id, if not found, that's an error.
+            conn = arg_conns[idx].find(c => c.from.id === source_id);
+
+            if (!conn) {
+                throw new Error("Multiple inputs on single port."
+                                + " This is only allowed if the inputs correspond to the different triggers, but it's not the case here.");
             }
         }
+
+        args[conn.to.input_index] = {
+            tree: {
+                block_id: conn.from.id,
+                arguments: get_stepped_block_arguments(graph, conn.from.id, source_id, conn_index, rev_conn_index),
+            },
+            output_index: conn.from.output_index,
+        };
     }
 
     // Validate that all pulse's are grouped
@@ -481,6 +514,9 @@ export function get_stepped_block_arguments(graph: FlowGraph, block_id: string):
 
 function get_stepped_ast_continuation(graph: FlowGraph,
                                       continuation: FlowGraphEdge,
+                                      source_id: string,
+                                      conn_index: EdgeIndex,
+                                      rev_conn_index: EdgeIndex,
                                       ast: SteppedBlockTree[],
                                       reached: {[key: string]: boolean}) {
 
@@ -497,7 +533,7 @@ function get_stepped_ast_continuation(graph: FlowGraph,
     else {
         ast.push({
             block_id: block_id,
-            arguments: get_stepped_block_arguments(graph, block_id),
+            arguments: get_stepped_block_arguments(graph, block_id, source_id, conn_index, rev_conn_index),
             contents: [],
         });
 
@@ -787,6 +823,9 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][],
 function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: SteppedBlockTree[], reached: {[key: string]: boolean}) {
     let continuations = get_pulse_continuations(graph, source_id);
 
+    const conn_index = index_connections(graph);
+    const rev_conn_index = reverse_index_connections(graph);
+
     if (continuations.length > 1) {
         let contents = [];
 
@@ -801,7 +840,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             }
             else {
                 const subreached = Object.assign({}, reached)
-                get_stepped_ast_continuation(graph, cont[0], subast, subreached);
+                get_stepped_ast_continuation(graph, cont[0], source_id, conn_index, rev_conn_index, subast, subreached);
                 contents.push(subast);
             }
         }
@@ -870,12 +909,12 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             if (is_atomic_block && func_name === 'control_if_else') {
                 // IF statement with only one output
                 const contents = [];
-                get_stepped_ast_continuation(graph, continuations[0][0], contents, reached);
+                get_stepped_ast_continuation(graph, continuations[0][0], source_id, conn_index, rev_conn_index, contents, reached);
 
                 ast[ast.length - 1].contents = [contents, []]; // Update parent block contents
             }
             else {
-                get_stepped_ast_continuation(graph, continuations[0][0], ast, reached);
+                get_stepped_ast_continuation(graph, continuations[0][0], source_id, conn_index, rev_conn_index, ast, reached);
             }
         }
         else {
@@ -1053,7 +1092,10 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
         };
     }
     else if (isUiFlowBlockData(block.data)) {
-        throw new Error("Unexpected UI block as arg: " + JSON.stringify(block.data.value.options));
+        return {
+            type: 'constant',
+            value: block.data.value.extra.textContent,
+        };
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)

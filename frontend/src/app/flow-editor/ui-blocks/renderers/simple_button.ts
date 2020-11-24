@@ -17,6 +17,7 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
     private textValue: string;
     private rect: SVGRectElement;
     private rectShadow: SVGRectElement;
+    readonly MinWidth = 120;
 
     constructor(canvas: SVGElement, group: SVGElement,
         private block: UiFlowBlock,
@@ -34,7 +35,6 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
         this.textBox.setAttributeNS(null, 'textlength', '100%');
 
         this.textValue = this.textBox.textContent = block.blockData.textContent || DefaultContent;
-
 
         contentsGroup.appendChild(this.textBox);
         node.appendChild(this.rectShadow);
@@ -91,8 +91,8 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
     _updateSize() {
         const textArea = this.textBox.getClientRects()[0];
 
-        const box_height = textArea.height * 2;
-        const box_width = textArea.width + 50;
+        const box_height = textArea.height * 3;
+        const box_width = Math.max(textArea.width + 50, this.MinWidth);
 
         this.textBox.setAttributeNS(null, 'y', box_height/1.5 + "");
         this.textBox.setAttributeNS(null, 'x', (box_width - textArea.width)/2 + "");
