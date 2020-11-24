@@ -52,6 +52,11 @@ export interface CompiledBlockArgBlock {
     value: CompiledBlock[]
 }
 
+interface CompiledBlockServiceCallSelectorArgs {
+    key: string,
+    subkey?: { type: 'argument', index: number },
+};
+
 export type CompiledBlockArg = CompiledBlockArgBlock | CompiledConstantArg | CompiledVariableArg;
 
 export type CompiledBlockArgList = CompiledBlockArg[];
@@ -85,7 +90,12 @@ export type CompiledBlockType = "wait_for_monitor"
     | "trigger_when_all_completed" | "trigger_when_first_completed"
     | "trigger_on_signal" | "trigger_when_all_true"
     ;
-export type CompiledBlockArgs = CompiledBlockArgMonitorDict | CompiledBlockArgCallServiceDict | CompiledBlockArgList;
+export type CompiledBlockArgs
+    = CompiledBlockArgMonitorDict
+    | CompiledBlockArgCallServiceDict
+    | CompiledBlockArgList
+    | CompiledBlockServiceCallSelectorArgs
+;
 
 export interface ContentBlock {
     contents: (CompiledBlock | ContentBlock)[],

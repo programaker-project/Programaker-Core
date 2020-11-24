@@ -113,6 +113,15 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
         }
     }
 
+    if (op[0].startsWith('services.') && (!op[0].startsWith('services.ui.'))) {
+        return {
+            type: op[0],
+            args: {
+                key: op[0].split('.').reverse()[0]
+            },
+        };
+    }
+
     if (typeof op !== 'object') {
         throw new Error(`ASTCompilationError: Expected argument array, found: ${JSON.stringify(op)}. Check for errors on argument nesting`);
     }
@@ -237,7 +246,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
 
         default:
             if (op.type.startsWith('services.')) {
-                if (op.args) {
+                if (op.args && Array.isArray(op.args)) {
                     op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
                 }
                 if (op.contents) {

@@ -1248,7 +1248,8 @@ function compile_block(graph: FlowGraph,
                                 type: 'constant',
                                 value: 1, // TODO: Not hardcode this
                             }
-                        ]
+                        ],
+                        contents: [],
                     };
                 }
                 else {
