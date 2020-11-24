@@ -35,6 +35,7 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
         this.textBox.setAttributeNS(null, 'textlength', '100%');
 
         this.textValue = this.textBox.textContent = block.blockData.textContent || DefaultContent;
+        this.block.blockData.textContent = this.textValue;
 
         contentsGroup.appendChild(this.textBox);
         node.appendChild(this.rectShadow);
@@ -78,6 +79,7 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
 
     public set text(val: string) {
         this.textBox.textContent = this.block.blockData.textContent = this.textValue = val;
+        this.block.blockData.textContent = this.textValue;
         this._updateSize();
     }
 
