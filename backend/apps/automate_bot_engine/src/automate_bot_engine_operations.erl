@@ -1295,11 +1295,18 @@ get_block_result(Op=#{ ?TYPE := <<"services.", _ServiceCall/binary>> }, Thread) 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
                      , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
                                       , ?SERVICE_ACTION := Action
-                                      , ?SERVICE_CALL_VALUES := #{ ?ARGUMENTS := Arguments }
+                                      , ?SERVICE_CALL_VALUES := Args
                                       }
                      }, Thread=#program_thread{ program_id=PID }) ->
 
     {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(PID),
+    Arguments = case Args of
+                    %% This first form was generated on the Scratch's
+                    %% serialization, but it's not found on the getters and it's
+                    %% redundant.
+                    #{ ?ARGUMENTS := A } -> A;
+                    _ -> Args
+                end,
 
     {Values, Thread2} = eval_args(Arguments, Thread, Op),
 
