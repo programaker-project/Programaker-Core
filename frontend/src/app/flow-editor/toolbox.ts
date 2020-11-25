@@ -1,14 +1,13 @@
 import { BlockExhibitor } from './block_exhibitor';
 import { BlockManager } from './block_manager';
-import { FlowBlock, Position2D, FlowBlockOptions } from './flow_block';
+import { FlowBlock, Position2D, FlowBlockOptions, FlowActuator } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
-import { UiFlowBlockOptions } from './ui-blocks/ui_flow_block';
 import { UiSignalService } from 'app/services/ui-signal.service';
 import { Session } from 'app/session';
 import { ADVANCED_CATEGORY, INTERNAL_CATEGORY } from './base_toolbox_description';
-import { INFERRED_TYPE } from '@angular/compiler/src/output/output_ast';
 
 export type BlockGenerator = (manager: BlockManager) => FlowBlock;
+export type ActuatorGenerator = () => FlowActuator;
 
 export class Toolbox {
     toolboxDiv: HTMLDivElement;
@@ -168,6 +167,23 @@ export class Toolbox {
             catch (err) {
                 console.error(err);
             }
+        };
+    }
+
+    addActuator(generator: ActuatorGenerator, category_id: string) {
+        if (category_id === ADVANCED_CATEGORY) {
+            if (!this.session.tags.is_advanced) {
+                return; // Skip advaced blocks if the user has not activated them
+            }
+        }
+
+        const [category_div] = this.getOrCreateCategory({ id: category_id, name: category_id })
+        category_div.classList.remove('empty');
+
+        const actuator = generator();
+        const element = actuator.render(category_div);
+        element.onclick = (ev: MouseEvent) => {
+            actuator.onclick();
         };
     }
 

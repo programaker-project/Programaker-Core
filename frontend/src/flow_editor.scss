@@ -430,6 +430,16 @@ svg.block_renderer .named_var .var_plate {
     opacity: 0.2;
 }
 
+.toolbox-flow-button {
+    margin: 1ex;
+    padding: 1ex;
+    background: #009688;
+    color: #fff;
+    border: none;
+    font-weight: 500;
+    box-shadow: 0 0 1px 1px rgba(0,0,0,0.3);
+}
+
 .toolbox .category.empty {
     display: none;
 }

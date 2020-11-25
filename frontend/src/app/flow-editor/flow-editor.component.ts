@@ -69,6 +69,7 @@ export class FlowEditorComponent implements OnInit {
     portraitMode: boolean;
     smallScreen: boolean;
     pages: { name: string; url: string; }[];
+    workspaceElement: HTMLElement;
 
     constructor(
         private browser: BrowserService,
@@ -189,26 +190,48 @@ export class FlowEditorComponent implements OnInit {
     }
 
     async injectWorkspace() {
-        const workspaceElement = document.getElementById('workspace');
+        this.workspaceElement = document.getElementById('workspace');
         const programHeaderElement = document.getElementById('program-header');
 
         this.browser.window.onresize = (() => {
-            this.calculate_size(workspaceElement);
+            this.calculate_size(this.workspaceElement);
             this.calculate_program_header_size(programHeaderElement);
             this.workspace.onResize();
             this.toolbox.onResize();
         });
-        this.calculate_size(workspaceElement);
+        this.calculate_size(this.workspaceElement);
         this.calculate_program_header_size(programHeaderElement);
 
-        this.workspace = FlowWorkspace.BuildOn(workspaceElement, this.getEnumValues.bind(this));
-        this.toolbox = await fromCustomBlockService(workspaceElement, this.workspace,
+        this.workspace = FlowWorkspace.BuildOn(this.workspaceElement, this.getEnumValues.bind(this));
+        this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
                                                     this.customBlockService,
                                                     this.bridgeService,
                                                     this.environmentService,
                                                     this.program.id,
                                                     this.uiSignalService,
+                                                    this.connectionService,
                                                     this.session,
+                                                    this.dialog,
+                                                    this.reloadToolbox.bind(this),
+                                                   );
+        this.workspace.setToolbox(this.toolbox);
+    }
+
+    async reloadToolbox() {
+        const old = this.toolbox;
+        this.toolbox = null;
+        old.dispose();
+
+        this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
+                                                    this.customBlockService,
+                                                    this.bridgeService,
+                                                    this.environmentService,
+                                                    this.program.id,
+                                                    this.uiSignalService,
+                                                    this.connectionService,
+                                                    this.session,
+                                                    this.dialog,
+                                                    this.reloadToolbox.bind(this),
                                                    );
         this.workspace.setToolbox(this.toolbox);
     }

@@ -108,3 +108,8 @@ export interface Resizeable {
     resize: (dimensions: { width: number, height: number }) => void;
     getBodyArea: () => Area2D;
 }
+
+export interface FlowActuator {
+    onclick(): void;
+    render(div: HTMLDivElement): HTMLElement;
+}

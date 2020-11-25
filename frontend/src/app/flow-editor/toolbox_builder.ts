@@ -14,6 +14,10 @@ import { UiFlowBlock, isUiFlowBlockOptions } from './ui-blocks/ui_flow_block';
 import { UiSignalService } from 'app/services/ui-signal.service';
 import { Session } from 'app/session';
 import { ContainerFlowBlock, isContainerFlowBlockOptions } from './ui-blocks/container_flow_block';
+import { ConnectionService } from 'app/connection.service';
+import { ToolboxFlowButton } from './toolbox-flow-button';
+import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 
 
 export function buildBaseToolbox(baseElement: HTMLElement,
@@ -74,10 +78,14 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                                              environmentService: EnvironmentService,
                                              programId: string,
                                              uiSignalService: UiSignalService,
+                                             connectionService: ConnectionService,
                                              session: Session,
+                                             dialog: MatDialog,
+                                             triggerToolboxReload: () => void,
                                             ): Promise<Toolbox> {
     const base = buildBaseToolbox(baseElement, workspace, uiSignalService, session);
 
+    const availableConnectionsQuery = connectionService.getAvailableBridgesForNewConnectionOnProgram(programId);
     const data = await bridgeService.listUserBridges();
 
     const bridges = data.bridges;
@@ -108,7 +116,6 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
             };
         }
 
-
         base.addBlockGenerator((manager) => {
             return new AtomicFlowBlock({
                 icon: icon,
@@ -123,6 +130,33 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                 on_inputs_changed: manager.onInputsChanged.bind(manager),
             })
         }, block.service_port_id);
+    }
+
+    const availableBridges = await availableConnectionsQuery;
+    for (const bridge of availableBridges) {
+        base.addActuator(() =>
+            new ToolboxFlowButton({
+                message: "Connect to " + bridge.name,
+                action: () => {
+                    const dialogRef = dialog.open(AddConnectionDialogComponent, {
+                        disableClose: false,
+                        data: {
+                            programId: programId,
+                            bridgeInfo: bridge,
+                        }
+                    });
+
+                    dialogRef.afterClosed().subscribe(async (result) => {
+                        if (!result) {
+                            console.log("Cancelled");
+                            return;
+                        }
+
+                        console.debug("Reloading toolbox...");
+                        triggerToolboxReload();
+                    });
+                }
+            }), bridge.id);
     }
 
     return base;
