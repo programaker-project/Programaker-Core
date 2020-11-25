@@ -17,7 +17,7 @@ export interface CutElement {
     i: number,
     a: Area2D,
 };
-export type CutType = 'vertical' | 'horizontal' | 'no-cut';
+export type CutType = 'vbox' | 'hbox' | 'no-box';
 export interface CutNode {
     cut_type: CutType,
     groups: CutTree[],

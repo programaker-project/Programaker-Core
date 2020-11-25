@@ -205,7 +205,7 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
         const cTree = cut.tree as CutNode;
         const elements = cTree.groups.map(g => getElementsInGroup(g));
 
-        if (cTree.cut_type === 'vertical') {
+        if (cTree.cut_type === 'vbox') {
             // This cloning is probably not needed. Done now for simplicity.
             const availArea = Object.assign({}, cut.area);
 
@@ -232,7 +232,7 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
                 }
             }
         }
-        else if (cTree.cut_type === 'horizontal') {
+        else if (cTree.cut_type === 'hbox') {
             // This cloning is probably not needed. Done now for simplicity.
             const availArea = Object.assign({}, cut.area);
 
@@ -453,37 +453,37 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
     vertSpaces.sort(([a, _aIdx], [b, _bIdx]) => b - a)
 
     // Find how to cut, horizontally or vertically
-    let cutType : CutType = 'no-cut';
+    let cutType : CutType = 'no-box';
     if (horizSpaces.length === 0) {
         if (vertSpaces.length === 0) {
-            cutType = 'no-cut';
+            cutType = 'no-box';
         }
         else {
-            cutType = 'vertical';
+            cutType = 'vbox';
         }
     }
     else if (vertSpaces.length === 0) {
-        cutType = 'horizontal';
+        cutType = 'hbox';
     }
     else {
         const maxHoriz = horizSpaces[0][0];
         const maxVert = vertSpaces[0][0];
 
         if (maxHoriz > maxVert) {
-            cutType = 'horizontal';
+            cutType = 'hbox';
         }
         else {
-            cutType = 'vertical';
+            cutType = 'vbox';
         }
     }
 
-    if (cutType === 'no-cut') {
-        return { cutType:'no-cut', groups: [elems] };
+    if (cutType === 'no-box') {
+        return { cutType:'no-box', groups: [elems] };
     }
 
     // Perform the cut on the index with the most space
     let before: CutElement[], after:CutElement[];
-    if (cutType === 'horizontal') {
+    if (cutType === 'hbox') {
         const cutIdx = horizSpaces[0][1];
         before = horiz.slice(0, cutIdx);
         after = horiz.slice(cutIdx);
