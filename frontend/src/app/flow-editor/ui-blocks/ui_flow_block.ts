@@ -35,13 +35,15 @@ export interface UiFlowBlockHandler {
     isTextReadable(): this is TextReadable,
 }
 
-export interface TextEditable {
-    text: string,
-    getArea(): Area2D,
-};
 
 export interface TextReadable {
     readonly text: string,
+    isStaticText: boolean,
+};
+
+export interface TextEditable extends TextReadable {
+    text: string,
+    getArea(): Area2D,
 };
 
 export type OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => void;
@@ -163,10 +165,9 @@ export class UiFlowBlock implements FlowBlock {
         const data: UiElementRepr = { id: this.blockId, widget_type: this.options.id };
 
         if (this.handler.isTextReadable()) {
-            data.text = this.handler.text;
-        }
-        else if (this.blockData.textContent) {
-            data.text = this.blockData.textContent;
+            if (this.handler.isStaticText) {
+                data.text = this.handler.text;
+            }
         }
 
         return data;

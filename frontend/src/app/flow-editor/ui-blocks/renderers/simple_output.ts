@@ -20,6 +20,7 @@ class SimpleOutput implements UiFlowBlockHandler {
     private textBox: SVGTextElement;
     private rect: SVGRectElement;
     private rectShadow: SVGRectElement;
+    private isStaticText = false;
 
     constructor(canvas: SVGElement, group: SVGElement,
                 private block: UiFlowBlock,
@@ -76,6 +77,7 @@ class SimpleOutput implements UiFlowBlockHandler {
     }
 
     onInputUpdated(connectedBlock: FlowBlock, inputIndex: number) {
+        this.isStaticText = connectedBlock instanceof DirectValue;
         if (connectedBlock instanceof DirectValue) {
             this.onConnectionValueUpdate(inputIndex, connectedBlock.value);
         }

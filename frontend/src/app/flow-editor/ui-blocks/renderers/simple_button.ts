@@ -70,7 +70,11 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
     }
 
     isTextReadable(): this is TextReadable {
-        return false;
+        return true;
+    }
+
+    get isStaticText(): boolean {
+        return true;
     }
 
     public get text(): string {
