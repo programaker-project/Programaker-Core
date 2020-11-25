@@ -262,7 +262,6 @@ function has_pulse_output(block: FlowGraphNode): boolean {
     if (isAtomicFlowBlockData(block.data)){
         const outputs = block.data.value.options.outputs || [];
 
-        // If it has no pulse inputs its a source block
         return outputs.filter(v => v.type === 'pulse').length > 0;
     }
     else if (isDirectValueBlockData(block.data)){
@@ -276,7 +275,6 @@ function has_pulse_output(block: FlowGraphNode): boolean {
     else if (isUiFlowBlockData(block.data)){
         const outputs = block.data.value.options.outputs || [];
 
-        // If it has no pulse inputs its a source block
         return outputs.filter(v => v.type === 'pulse').length > 0;
     }
     else {
@@ -290,7 +288,6 @@ function has_pulse_input(block: FlowGraphNode): boolean {
 
         const inputs = data.value.options.inputs || [];
 
-        // If it has no pulse inputs its a source block
         return inputs.filter(v => v.type === 'pulse').length > 0;
     }
     else if (isDirectValueBlockData(block.data)){
@@ -298,6 +295,11 @@ function has_pulse_input(block: FlowGraphNode): boolean {
     }
     else if (isEnumDirectValueBlockData(block.data)){
         return false;
+    }
+    else if (isUiFlowBlockData(block.data)){
+        const inputs = block.data.value.options.inputs || [];
+
+        return inputs.filter(v => v.type === 'pulse').length > 0;
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
@@ -322,6 +324,20 @@ export function get_conversions_to_stepped(graph: FlowGraph, source_block_id: st
 
     let remaining_connections: FlowGraphEdge[] = [].concat(graph.edges);
     let empty_pass = false;
+
+    // If the source node feeds into a non getter, it should also be considered as a conversor
+    const source_block = graph.nodes[source_block_id];
+    if (is_node_conversor_streaming_to_step(source_block)) {
+        for (const conn of remaining_connections) {
+            if (conn.from.id === source_block_id) {
+                const target = graph.nodes[conn.to.id];
+                if (has_pulse_input(target)) {
+                    results[source_block_id] = true;
+                    break;
+                }
+            }
+        }
+    }
 
     do {
         empty_pass = true;
@@ -441,6 +457,10 @@ export function get_filters(graph: FlowGraph, source_block_id: string): BlockTre
     const conversions = get_conversions_to_stepped(graph, source_block_id);
 
     return conversions.map((bottom_id) => {
+        if (bottom_id === source_block_id) {
+            // Although the source performs the conversion, there's no filter.
+            return null;
+        }
         return get_tree_with_ends(graph, source_block_id, bottom_id)
     });
 }
@@ -1719,7 +1739,17 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
 
         if (subfilters.length > 0) {
             for (const subfilter of subfilters) {
-                columns.push(get_stepped_ast(graph, subfilter.block_id));
+                if (subfilter !== null) {
+                    columns.push(get_stepped_ast(graph, subfilter.block_id));
+                }
+                else {
+                    // If the source is a trigger, the filter does not exist itself
+                    const ast = get_stepped_ast(graph, source_signals[i]);
+                    if (ast.length > 0) {
+                        // Skip triggers with no AST or filter
+                        columns.push(ast);
+                    }
+                }
             }
         }
         else {
@@ -1738,7 +1768,10 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
             for (let j = 0; j < filters[i].length; j++) {
                 const filter = filters[i][j];
                 const ast = stepped_asts[i][j];
-                flows = flows.concat(assemble_flow(graph, signal_id, filter, ast));
+
+                if (ast) {
+                    flows = flows.concat(assemble_flow(graph, signal_id, filter, ast));
+                }
             }
         }
         else {
