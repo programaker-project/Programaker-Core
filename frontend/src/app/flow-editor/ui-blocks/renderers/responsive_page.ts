@@ -259,6 +259,7 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
                 }
             }
         }
+        else if (cTree.cut_type === 'no-box') {}
         else {
             throw new Error("Unknown cut type: " + cTree.cut_type);
         }
@@ -382,16 +383,61 @@ function reduceGroups(cNode: CutNode): CutTree[] {
 
 // Recursively perform cleanestCut, until all elements are partitioned.
 function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
-    if (elems.length < 1) {
-        throw new Error(`Cannot build tree with < 1 element, found ${elems.length}`);
-    }
-    else if (elems.length === 1) {
-        const block = blocks[elems[0].i];
-        return block.renderAsUiElement();
+    const topLevel = [];
+
+    const todo = [ { container: topLevel, elems: elems } ]
+
+    let opNum = -1;
+
+    // Easy limit for test, if the function works correctly it should neverbe reached.
+    // Length * 2 should be enough, but some slack is allowed, given that this is only an intuition.
+    let maxOps = elems.length * 3;
+
+    while (todo.length > 0) {
+        // We process items in the same order as they are generated to respect the group order
+        const next = todo.shift();
+
+        opNum++;
+        if (opNum > maxOps) {
+            throw new Error('Infinite loop found tree-ifying.'
+                + ` Started with ${elems.length} elements, did ${opNum} cuts`
+                +  ` and ${todo.length + 1} items remain.`);
+        }
+
+        let result : CutTree;
+        if (next.elems.length < 1) {
+            throw new Error(`Cannot build tree with < 1 element, found ${next.elems.length}`);
+        }
+        else if (next.elems.length === 1) {
+            const block = blocks[next.elems[0].i];
+            result = block.renderAsUiElement();
+        }
+        else {
+            const cut = cleanestCut(next.elems);
+
+            if (cut.cutType === 'no-box') {
+                const asElements = cut.groups[0].map(e => {
+                    const block = blocks[e.i];
+                    return block.renderAsUiElement();
+                });
+                result = { cut_type: cut.cutType, groups: asElements };
+            }
+            else {
+                const resultGroups = [];
+                result = { cut_type: cut.cutType, groups: resultGroups };
+                for (const g of cut.groups){
+                    if (g.length > 0) {
+                        todo.push({ container: resultGroups, elems: g });
+                    }
+                }
+            }
+
+        }
+
+        next.container.push(result);
     }
 
-    const cut = cleanestCut(elems);
-    return { cut_type: cut.cutType, groups: cut.groups.filter(g => g.length > 0).map(g => cleanestTree(g, blocks)) };
+    return topLevel[0];
 }
 
 // Perform a single cut that divides the elements on the place where there is more empty space.
@@ -454,22 +500,25 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
 
     // Find how to cut, horizontally or vertically
     let cutType : CutType = 'no-box';
-    if (horizSpaces.length === 0) {
-        if (vertSpaces.length === 0) {
+    if (horizSpaces.length < 1) {
+        if (vertSpaces.length < 1) {
             cutType = 'no-box';
         }
         else {
             cutType = 'vbox';
         }
     }
-    else if (vertSpaces.length === 0) {
+    else if (vertSpaces.length < 1) {
         cutType = 'hbox';
     }
     else {
         const maxHoriz = horizSpaces[0][0];
         const maxVert = vertSpaces[0][0];
 
-        if (maxHoriz > maxVert) {
+        if ((maxHoriz < 1) && (maxVert < 1)) {
+            cutType = 'no-box';
+        }
+        else if (maxHoriz > maxVert) {
             cutType = 'hbox';
         }
         else {
