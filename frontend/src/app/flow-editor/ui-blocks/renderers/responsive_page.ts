@@ -193,8 +193,13 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
     while (todo.length > 0) {
         const cut = todo.pop();
 
+        if (!cut.tree) {
+            // Empty group
+            continue;
+        }
+
         if ((cut.tree as UiElementRepr).widget_type) {
-            continue; // Nothing to do
+            continue; // Single element, nothing to cut
         }
 
         const cTree = cut.tree as CutNode;
