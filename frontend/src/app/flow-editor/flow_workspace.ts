@@ -937,7 +937,9 @@ export class FlowWorkspace implements BlockManager {
 
             const pos = this._getPositionFromEvent(ev);
             const container = this._findContainerInPos(pos, block);
-            this._updateBlockContainer(block, container);
+            for (const blockId of this._selectedBlocks.concat([])) {
+                this._updateBlockContainer(this.blocks[blockId].block, container);
+            }
 
             try {
                 const pos = this._getPositionFromEvent(ev) || last;
