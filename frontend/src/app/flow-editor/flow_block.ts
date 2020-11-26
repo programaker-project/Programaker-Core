@@ -84,7 +84,7 @@ export interface FlowBlock {
     getBodyArea(): Area2D;
 
     getOffset(): Position2D;
-    moveBy(distance: Position2D): void;
+    moveBy(distance: Position2D): FlowBlock[];
 
     addConnection(direction: 'in' | 'out', input: number, block: FlowBlock): void;
     removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): void;

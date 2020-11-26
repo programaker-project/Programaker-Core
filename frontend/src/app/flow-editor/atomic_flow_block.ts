@@ -369,7 +369,7 @@ export class AtomicFlowBlock implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
-    public moveBy(distance: {x: number, y: number}) {
+    public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
         }
@@ -377,6 +377,8 @@ export class AtomicFlowBlock implements FlowBlock {
         this.position.x += distance.x;
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+
+        return [];
     }
     public getPositionOfInput(index: number, edge?: boolean): Position2D {
         const group = this.input_groups[index];

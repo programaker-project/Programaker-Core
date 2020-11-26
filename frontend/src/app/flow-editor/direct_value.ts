@@ -141,7 +141,7 @@ export class DirectValue implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
-    public moveBy(distance: {x: number, y: number}) {
+    public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
         }
@@ -149,6 +149,8 @@ export class DirectValue implements FlowBlock {
         this.position.x += distance.x;
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+
+        return [];
     }
 
     public addConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {

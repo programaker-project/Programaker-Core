@@ -908,13 +908,15 @@ export class FlowWorkspace implements BlockManager {
                 last = {x: pos.x, y: pos.y};
 
                 for (const blockId of this._selectedBlocks) {
-                    this.blocks[blockId].block.moveBy(distance);
+                    const draggedBlocks = this.blocks[blockId].block.moveBy(distance).map(block => this.getBlockId(block));
 
-                    for (const conn of this.blocks[blockId].connections) {
-                        this.updateConnection(conn);
+                    for (const movedId of draggedBlocks.concat([blockId])) {
+                        for (const conn of this.blocks[movedId].connections) {
+                            this.updateConnection(conn);
+                        }
+
+                        this.updateBlockInputHelpersPosition(movedId);
                     }
-
-                    this.updateBlockInputHelpersPosition(blockId);
                 }
 
                 if (this.isInTrashcan(pos)) {

@@ -126,8 +126,22 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         return block;
     }
 
-
     serialize(): FlowBlockData {
         return Object.assign(super.serialize(), { subtype: BLOCK_TYPE });
+    }
+
+
+    public moveBy(distance: {x: number, y: number}) {
+
+        const dragged = super.moveBy(distance);
+        let result = dragged.concat(this.contents);
+        for (const block of this.contents) {
+            const dragged = block.moveBy(distance);
+            if (dragged.length > 0) {
+                result = result.concat(dragged);
+            }
+        }
+
+        return result;
     }
 }
