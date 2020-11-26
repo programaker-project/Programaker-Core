@@ -14,6 +14,7 @@ export class Toolbox {
     blockShowcase: HTMLDivElement;
     categories: { [key: string]: HTMLDivElement } = {};
     blocks: FlowBlockOptions[] = [];
+    categoryShortcutList: HTMLUListElement;
 
     public static BuildOn(baseElement: HTMLElement,
                           workspace: FlowWorkspace,
@@ -52,6 +53,10 @@ export class Toolbox {
         this.toolboxDiv.setAttribute('class', 'toolbox');
         this.baseElement.appendChild(this.toolboxDiv);
 
+        this.categoryShortcutList = document.createElement('ul');
+        this.categoryShortcutList.setAttribute('class', 'category-shortcut-list');
+        this.toolboxDiv.appendChild(this.categoryShortcutList);
+
         this.blockShowcase = document.createElement('div');
         this.blockShowcase.setAttribute('class', 'showcase');
         this.toolboxDiv.appendChild(this.blockShowcase);
@@ -88,6 +93,24 @@ export class Toolbox {
             };
 
             created_now = true;
+
+            const categoryShortcut = document.createElement('li');
+
+            const catName = document.createElement('div');
+            catName.setAttribute('class', 'category-name');
+            catName.innerText = cat.name;
+            categoryShortcut.appendChild(catName);
+
+            categoryShortcut.onclick = () => {
+                // Expand if it's collapsed
+                if (category_div.classList.contains('collapsed')) {
+                    category_div.classList.remove('collapsed');
+                }
+
+                // Then scroll to it
+                category_div.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest", });
+            };
+            this.categoryShortcutList.appendChild(categoryShortcut);
         }
 
         return [category_div, created_now];

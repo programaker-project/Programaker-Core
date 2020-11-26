@@ -417,17 +417,44 @@ svg.block_renderer .named_var .var_plate {
 .toolbox {
     height: 100%;
     min-width: 5ex;
-    max-width: 40vw;
+    max-width: min(30vw, 30rem);
     background-color: rgba(0,0,0,0.3);
     position: absolute;
     top: 0;
     left: 0;
-    overflow: auto;
+    display: flex;
+
+    padding-left: 6rem; // Space for the shortcut list
 }
 
 .toolbox.subsumed {
     pointer-events: none;
     opacity: 0.2;
+}
+
+.toolbox ul.category-shortcut-list {
+    margin: 0;
+    padding: 0;
+    width: 6rem;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: inherit;
+    overflow-y: auto;
+
+    li {
+        cursor: pointer;
+        color: white;
+        text-align: center;
+        margin: 0.5ex 2px 0.5ex 2px;
+        background-color: rgba(0,0,0,0.6);
+        border-radius: 4px;
+        padding: 4px;
+        font-size: small;
+        word-wrap: break-word;
+        user-select: none;
+    }
 }
 
 .toolbox-flow-button {
@@ -455,6 +482,8 @@ svg.block_renderer .named_var .var_plate {
 
 .toolbox .showcase {
     width: max-content;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .toolbox .block_exhibitor {
