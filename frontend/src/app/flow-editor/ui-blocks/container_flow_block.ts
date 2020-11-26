@@ -38,7 +38,7 @@ export interface ContainerFlowBlockOptions extends UiFlowBlockOptions {
     icon?: string,
     id: UiElementWidgetType,
     block_id?: string,
-    is_page: boolean,
+    isPage: boolean,
 
     gen_tree: GenTreeProc,
 }
@@ -86,8 +86,20 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         this.handler.onContentUpdate(this.contents);
     }
 
-    get is_page(): boolean {
-        return this.options.is_page;
+    get isPage(): boolean {
+        return this.options.isPage;
+    }
+
+    getPageTitle(): string {
+        if (!this.isPage) {
+            return null;
+        }
+
+        if (!this.handler.isTextReadable()) {
+            return null;
+        }
+
+        return this.handler.text;
     }
 
     public renderAsUiElement(): CutTree {

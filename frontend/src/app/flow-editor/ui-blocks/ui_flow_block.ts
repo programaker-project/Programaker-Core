@@ -44,6 +44,7 @@ export interface TextReadable {
 export interface TextEditable extends TextReadable {
     text: string,
     getArea(): Area2D,
+    editableTextName: string,
 };
 
 export type OnUiFlowBlockClick = (block: UiFlowBlock, service: UiSignalService) => void;
@@ -512,7 +513,7 @@ export class UiFlowBlock implements FlowBlock {
         const handler = this.handler;
         if (handler.isTextEditable()) {
             actions.push({
-                title: 'Edit text',
+                title: 'Edit ' + handler.editableTextName,
                 run: () => {
                     const prevValue = handler.text;
 

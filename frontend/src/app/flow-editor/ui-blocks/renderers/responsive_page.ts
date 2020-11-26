@@ -10,6 +10,7 @@ import { getRefBox } from "./utils";
 
 const SvgNS = "http://www.w3.org/2000/svg";
 const Title = "Responsive page";
+const TITLE_PADDING = 5;
 
 export const ResponsivePageBuilder : UiFlowBlockBuilder = (canvas: SVGElement,
                                                            group: SVGElement,
@@ -22,9 +23,9 @@ export const ResponsivePageBuilder : UiFlowBlockBuilder = (canvas: SVGElement,
     return element;
 }
 
-class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Resizeable {
+class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Resizeable, TextEditable {
     subscription: Subscription;
-    text: SVGTextElement;
+    textBox: SVGTextElement;
     handle: ContainerElementHandle | null = null;
     node: SVGAElement;
     textDim: { width: number; height: number; };
@@ -33,6 +34,8 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
     grid: SVGGElement;
     width: number;
     height: number;
+    titleBox: SVGRectElement;
+    title: string;
 
     constructor(canvas: SVGElement, group: SVGElement,
                 public block: UiFlowBlock,
@@ -41,6 +44,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
 
         const refBox = getRefBox(canvas);
 
+        this.titleBox = document.createElementNS(SvgNS, 'rect');
         this.node = document.createElementNS(SvgNS, 'a');
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.rectShadow = document.createElementNS(SvgNS, 'rect');
@@ -49,43 +53,46 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
 
         this.grid = document.createElementNS(SvgNS, 'g');
 
-        this.text = document.createElementNS(SvgNS, 'text');
-        this.text.setAttribute('class', 'output_text');
-        this.text.setAttributeNS(null,'textlength', '100%');
+        this.textBox = document.createElementNS(SvgNS, 'text');
+        this.textBox.setAttribute('class', 'output_text');
+        this.textBox.setAttributeNS(null,'textlength', '100%');
 
-        this.text.textContent = Title;
+        this.textBox.textContent = this.title = block.blockData.textContent ||  Title;
 
         this.node.appendChild(this.rectShadow);
         this.node.appendChild(this.rect);
         this.node.appendChild(this.grid);
+        this.node.appendChild(this.titleBox);
 
-        this.node.appendChild(this.text);
+        this.node.appendChild(this.textBox);
         group.appendChild(this.node);
 
-        const text_width = this.text.getClientRects()[0].width;
-        const text_height = this.text.getClientRects()[0].height;
+        const text_width = this.textBox.getClientRects()[0].width;
+        const text_height = this.textBox.getClientRects()[0].height;
         this.textDim = { width: text_width, height: text_height };
 
         const bdims = block.blockData.dimensions;
         this.width = bdims ? bdims.width : text_width * 1.25;
         this.height = bdims ? bdims.height : refBox.height * 10;
 
-        this.text.setAttributeNS(null, 'y', this.height/2 - text_height / 2 + "");
-        this.text.setAttributeNS(null, 'x', (this.width - text_width)/2 + "");
+        this.textBox.setAttributeNS(null, 'y', this.height/2 - text_height / 2 + "");
+        this.textBox.setAttributeNS(null, 'x', (this.width - text_width)/2 + "");
+
+        this.titleBox.setAttributeNS(null, 'class', 'titlebox');
+        this.titleBox.setAttributeNS(null, 'x', "0");
+        this.titleBox.setAttributeNS(null, 'y', "0");
 
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
         this.rect.setAttributeNS(null, 'y', "0");
-        this.rect.setAttributeNS(null, 'height', this.height + "");
-        this.rect.setAttributeNS(null, 'width', this.width + "");
 
         this.rectShadow.setAttributeNS(null, 'class', "body_shadow");
         this.rectShadow.setAttributeNS(null, 'x', "0");
         this.rectShadow.setAttributeNS(null, 'y', "0");
-        this.rectShadow.setAttributeNS(null, 'height', this.height + "");
-        this.rectShadow.setAttributeNS(null, 'width', this.width + "");
 
         this.grid.setAttribute('class', 'division_grid');
+
+        this.updateSizes();
 
         if (initOps.workspace) {
             this.handle = new ContainerElementHandle(this, initOps.workspace);
@@ -103,19 +110,31 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
         this.width = Math.max(this.textDim.width, dim.width);
         this.height = Math.max(this.textDim.height, dim.height);
 
+        this.updateSizes();
+
+        (this.block as ContainerFlowBlock).update();
+        this.handle.update();
+    }
+
+    updateSizes() {
+        const text_width = this.textBox.getClientRects()[0].width;
+        const text_height = this.textBox.getClientRects()[0].height;
+        this.textDim = { width: text_width, height: text_height };
+
+        const titleHeight = this.textDim.height + TITLE_PADDING * 2;
+        this.titleBox.setAttributeNS(null, 'width', this.width + '');
+        this.titleBox.setAttributeNS(null, 'height', titleHeight + "")
+
         this.rect.setAttributeNS(null, 'width', this.width + '');
         this.rect.setAttributeNS(null, 'height', this.height + '');
 
         this.rectShadow.setAttributeNS(null, 'width', this.width + '');
         this.rectShadow.setAttributeNS(null, 'height', this.height + '');
 
-        this.text.setAttributeNS(null, 'x', (this.width - this.textDim.width)/2 + "");
-        this.text.setAttributeNS(null, 'y', (this.height/2 + this.textDim.height/2) + "");
+        this.textBox.setAttributeNS(null, 'x', (this.width - this.textDim.width)/2 + "");
+        this.textBox.setAttributeNS(null, 'y', this.textDim.height + "");
 
         this.block.blockData.dimensions = { width: this.width, height: this.height };
-
-        (this.block as ContainerFlowBlock).update();
-        this.handle.update();
     }
 
     getBodyArea(): Area2D {
@@ -133,11 +152,34 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
     }
 
     isTextEditable(): this is TextEditable {
-        return false;
+        return true;
     }
 
     isTextReadable(): this is TextReadable {
-        return false;
+        return true;
+    }
+
+
+    get isStaticText(): boolean {
+        return true;
+    }
+
+    get editableTextName(): string {
+        return 'title';
+    }
+
+    public get text(): string {
+        return this.title;
+    }
+
+    public set text(val: string) {
+        this.textBox.textContent = this.block.blockData.textContent = this.title = val;
+        this.updateSizes();
+    }
+
+    // Text edition area
+    getArea(): Area2D {
+        return this.titleBox.getBBox();
     }
 
     dispose() {}

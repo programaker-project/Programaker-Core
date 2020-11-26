@@ -100,8 +100,8 @@ export class FlowWorkspace implements BlockManager {
         for (const block_id of Object.keys(this.blocks)) {
             const block = this.blocks[block_id].block;
             if (block instanceof ContainerFlowBlock) {
-                if (block.options.is_page) {
-                    pages['/'] = { value: block.renderAsUiElement() };
+                if (block.isPage) {
+                    pages['/'] = { value: block.renderAsUiElement(), title: block.getPageTitle() };
                 }
             }
         }

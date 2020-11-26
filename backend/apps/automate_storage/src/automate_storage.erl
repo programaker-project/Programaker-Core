@@ -2088,11 +2088,11 @@ store_new_program_content(Username, ProgramName,
                                                              PagesInDb),
 
                                           %% Add new pages
-                                          ok = lists:foreach(fun({Path, #{ <<"value">> := Contents }}) ->
+                                          ok = lists:foreach(fun({Path, Page}) ->
                                                                         ok = mnesia:write(?PROGRAM_PAGES_TABLE
                                                                                          , #program_pages_entry{ page_id={ ProgramId, Path }
                                                                                                                , program_id=ProgramId
-                                                                                                               , contents=Contents
+                                                                                                               , contents=Page
                                                                                                                }
                                                                                          , write)
                                                                 end, maps:to_list(Pages)),
@@ -2142,7 +2142,7 @@ store_new_program_content(ProgramId,
                                                PagesInDb),
 
                                   %% Add new pages
-                                  ok = lists:foreach(fun({Path, #{ <<"value">> := Contents }}) ->
+                                  ok = lists:foreach(fun({Path, Contents}) ->
                                                              ok = mnesia:write(?PROGRAM_PAGES_TABLE
                                                                               , #program_pages_entry{ page_id={ ProgramId, Path }
                                                                                                     , program_id=ProgramId

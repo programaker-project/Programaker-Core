@@ -164,9 +164,9 @@ decode_program_metadata([#{ <<"name">> := ProgramName
 
 
 decode_program(P=#{ <<"type">> := ProgramType
-                , <<"orig">> := ProgramOrig
-                , <<"parsed">> := ProgramParsed
-                }) ->
+                  , <<"orig">> := ProgramOrig
+                  , <<"parsed">> := ProgramParsed
+                  }) ->
     #program_content { type=ProgramType
                      , orig=ProgramOrig
                      , parsed=ProgramParsed

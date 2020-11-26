@@ -3,35 +3,37 @@
 -export([ render_page/2
         ]).
 
+-define(DEFAULT_TITLE, <<"Page title">>).
+
 %%====================================================================
 %% API functions
 %%====================================================================
 -spec render_page(binary(), _) -> iolist().
-render_page(ProgramId, Contents) ->
+render_page(ProgramId, Page) ->
     {ok, Values} = automate_storage:get_widget_values_in_program(ProgramId),
-    [ render_page_header(Contents)
-    , render_page_body(Contents, Values)
-    , render_page_footer(ProgramId, Contents)
+    [ render_page_header(Page)
+    , render_page_body(Page, Values)
+    , render_page_footer(ProgramId, Page)
     ].
 
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
-render_page_header(_Contents) ->
+render_page_header(Page) ->
     Title = unicode:characters_to_binary("<TODO> have configurable titles ¯\\_(ツ)_/¯"),
     [ <<"<!DOCTYPE html>\n">>
     , <<"<html><head><meta charset=\"UTF-8\">\n">>
     , <<"<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=0'>">>
-    , <<"<title>">>, html_escape(Title), <<"</title>">>
+    , <<"<title>">>, html_escape(maps:get(<<"title">>, Page, ?DEFAULT_TITLE)), <<"</title>">>
     , render_styles()
     , <<"</head>\n<body>\n">>
     ].
 
-render_page_body(Contents, Values) ->
+render_page_body(#{ <<"value">> := Contents }, Values) ->
     render_element(Contents, Values).
 
-render_page_footer(ProgramId, Contents) ->
+render_page_footer(ProgramId, #{ <<"value">> := Contents }) ->
     [ render_scripts(ProgramId, Contents)
     , <<"\n</html>">>
     ].

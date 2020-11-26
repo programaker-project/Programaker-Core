@@ -77,13 +77,16 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
         return true;
     }
 
+    get editableTextName(): string {
+        return 'label';
+    }
+
     public get text(): string {
         return this.textValue;
     }
 
     public set text(val: string) {
         this.textBox.textContent = this.block.blockData.textContent = this.textValue = val;
-        this.block.blockData.textContent = this.textValue;
         this._updateSize();
     }
 
