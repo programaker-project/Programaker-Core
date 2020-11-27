@@ -1,7 +1,7 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { Area2D, FlowBlock, Resizeable, Position2D } from "../../flow_block";
-import { ContainerFlowBlock, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
+import { ContainerFlowBlock, ContainerFlowBlockHandler, GenTreeProc, ContainerFlowBlockBuilder } from "../container_flow_block";
 import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler, TextEditable, TextReadable } from "../ui_flow_block";
 import { ContainerElement, ContainerElementHandle } from "./container_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr } from "./ui_tree_repr";
@@ -12,12 +12,12 @@ const SvgNS = "http://www.w3.org/2000/svg";
 const Title = "Responsive page";
 const TITLE_PADDING = 5;
 
-export const ResponsivePageBuilder : UiFlowBlockBuilder = (canvas: SVGElement,
-                                                           group: SVGElement,
-                                                           block: UiFlowBlock,
-                                                           service: UiSignalService,
-                                                           initOps: UiFlowBlockBuilderInitOps,
-                                                          ) => {
+export const ResponsivePageBuilder : ContainerFlowBlockBuilder = (canvas: SVGElement,
+                                                                  group: SVGElement,
+                                                                  block: UiFlowBlock,
+                                                                  service: UiSignalService,
+                                                                  initOps: UiFlowBlockBuilderInitOps,
+                                                                 ) => {
     const element = new ResponsivePage(canvas, group, block, service, initOps);
     element.init();
     return element;
@@ -72,8 +72,8 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
         this.textDim = { width: text_width, height: text_height };
 
         const bdims = block.blockData.dimensions;
-        this.width = bdims ? bdims.width : text_width * 1.25;
-        this.height = bdims ? bdims.height : refBox.height * 10;
+        this.width = bdims ? bdims.width : text_width * 4;
+        this.height = bdims ? bdims.height : refBox.height * 30;
 
         this.textBox.setAttributeNS(null, 'y', this.height/2 - text_height / 2 + "");
         this.textBox.setAttributeNS(null, 'x', (this.width - text_width)/2 + "");

@@ -442,6 +442,7 @@ svg.block_renderer .named_var .var_plate {
     left: 0;
     height: inherit;
     overflow-y: auto;
+    border-right: 2px solid #27212e;
 
     li {
         cursor: pointer;
@@ -630,7 +631,7 @@ svg.block_renderer g.flow_node.container_node.highlighted .node_body {
 
 svg.block_renderer g.flow_node.container_node.responsive_page .output_text {
     fill: #fff;
-    font-style: italic;
+    font-style: normal;
 }
 
 svg.block_renderer g.flow_node.container_node .output_text {

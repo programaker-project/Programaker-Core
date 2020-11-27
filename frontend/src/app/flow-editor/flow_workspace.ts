@@ -197,6 +197,7 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    private numPages = 0;
     private baseElement: HTMLElement;
     private inlineEditorContainer: HTMLDivElement;
     private inlineEditor: HTMLInputElement;
@@ -640,6 +641,10 @@ export class FlowWorkspace implements BlockManager {
         if (isContainer) {
             // Obtaining the area has to be done AFTER the rendering
             this.containers.push(block);
+
+            if ((block as ContainerFlowBlock).isPage) {
+                this.numPages++;
+            }
         }
 
         const bodyElement = block.getBodyElement();
@@ -675,6 +680,24 @@ export class FlowWorkspace implements BlockManager {
         return block_id;
     }
 
+    public centerOnBlock(blockId: string) {
+        const block = this.blocks[blockId].block;
+        const area = block.getBodyArea();
+        const centerX = area.x + area.width / 2;
+        const centerY = area.y + area.height / 2;
+
+        this.centerOnPoint({ x: centerX, y: centerY });
+    }
+
+    public centerOnPoint(pos: Position2D) {
+        const width = this.canvas.width.baseVal.value;
+        const height = this.canvas.height.baseVal.value;
+
+        this.top_left.x = pos.x - width/2;
+        this.top_left.y = pos.y - height/2;
+        this.update_top_left();
+    }
+
     public showBlockContextMenu(pos: Position2D) {
         // Base positioning
         this.popupGroup.innerHTML = '';
@@ -691,10 +714,13 @@ export class FlowWorkspace implements BlockManager {
         const block_ops = document.createElement('ul');
 
         // Default options
-        const clone_entry = document.createElement('li');
-        clone_entry.innerText = 'Clone';
-        clone_entry.onclick = (ev) => { this.ensureContextMenuHidden(); this.cloneSelection(); };
-        block_ops.appendChild(clone_entry);
+        if (this._selectedBlocks.some(this._canCloneBlock.bind(this))) {
+            const clone_entry = document.createElement('li');
+            clone_entry.innerText = 'Clone';
+            clone_entry.onclick = (ev) => { this.ensureContextMenuHidden(); this.cloneSelection(); };
+
+            block_ops.appendChild(clone_entry);
+        }
 
         // Single block options
         if (this._selectedBlocks.length === 1) {
@@ -715,7 +741,12 @@ export class FlowWorkspace implements BlockManager {
 
     public cloneSelection(): string[] {
         const newIds = [];
-        for (const blockId of this._selectedBlocks) {
+
+        // Unselect blocks that cannot be cloned
+        const blocks = this._selectedBlocks.filter(this._canCloneBlock.bind(this));
+
+        for (const blockId of blocks) {
+
             const blockInfo = this.blocks[blockId];
             const info = blockInfo.block.serialize();
 
@@ -733,14 +764,14 @@ export class FlowWorkspace implements BlockManager {
 
             // Look for matching sink
             const sink = connection.getSink();
-            const sinkIndex = this._selectedBlocks.indexOf(sink.block_id);
+            const sinkIndex = blocks.indexOf(sink.block_id);
             if (sinkIndex < 0) {
                 continue;
             }
 
             // Look for matching source
             const source = connection.getSource();
-            const sourceIndex = this._selectedBlocks.indexOf(source.block_id);
+            const sourceIndex = blocks.indexOf(source.block_id);
             if (sourceIndex < 0) {
                 continue;
             }
@@ -803,6 +834,18 @@ export class FlowWorkspace implements BlockManager {
             this.canvas.onmousemove = null;
             this.canvas.onmouseup = null;
         });
+    }
+
+    private _canCloneBlock(blockId: string): boolean {
+        const block = this.blocks[blockId].block;
+
+        if (block instanceof ContainerFlowBlock) {
+            if (block.isPage) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private _findContainerInPos(pos: Position2D, excluding?: FlowBlock): FlowBlock | null {
@@ -1225,10 +1268,13 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    public get hasPages() {
+        return this.numPages > 0;
+    }
+
     public removeBlock(blockId: string) {
         const info = this.blocks[blockId];
         console.debug("Removing block:", info);
-
 
         if (info.block instanceof ContainerFlowBlock) {
             const parent_container_id = info.container_id;
@@ -1238,6 +1284,9 @@ export class FlowWorkspace implements BlockManager {
                 this._updateBlockContainer(content, parent_container);
             }
 
+            if (info.block.isPage) {
+                this.numPages--;
+            }
         }
 
         this._updateBlockContainer(info.block, null);

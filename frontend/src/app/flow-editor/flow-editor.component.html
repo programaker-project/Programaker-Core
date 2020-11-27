@@ -40,18 +40,19 @@
         </button>
 
         <button id="navigateToPageControls" color="secondary"
-            [matMenuTriggerFor]="navigateToPageControls"
-            *ngIf="pages" [disabled]="pages.length === 0" mat-button>
+            *ngIf="workspace && workspace.hasPages"
+            [disabled]="!pages || pages.length === 0"
+            (click)="openDefaultPage()"
+            mat-button>
             <mat-icon>launch</mat-icon>Open web
         </button>
-        <mat-menu #navigateToPageControls="matMenu">
-            <a mat-menu-item
-                *ngFor="let page of pages" href="{{ page.url }}"
-                target="_blank"
-                rel="noopener noreferer"
-            >{{ page.name }}
-            </a>
-        </mat-menu>
+
+        <button id="addResponsiveGridControls" color="secondary"
+            *ngIf="workspace && !workspace.hasPages"
+            (click)="addResponsivePage()"
+            mat-button>
+            <mat-icon>grid_on</mat-icon>Add web UI
+        </button>
 
         <!-- Advanced functions, on a menu -->
         <button id="advancedProgramControls" color="secondary"

@@ -30,6 +30,12 @@ export function buildBaseToolbox(baseElement: HTMLElement,
     for (const category of [...UiToolboxDescription, ...BaseToolboxDescription]) {
         tb.setCategory({ id: category.id, name: category.name });
         for (const block of category.blocks) {
+            tb.addBlock(block);
+
+            if (block.is_internal) {
+                continue; // Skip
+            }
+
             if (isAtomicFlowBlockOptions(block)) {
                 tb.addBlockGenerator((manager) => {
 
@@ -43,8 +49,6 @@ export function buildBaseToolbox(baseElement: HTMLElement,
                 }, category.id);
             }
             else {
-                tb.addBlock(block);
-
                 tb.addBlockGenerator((manager) => {
                     const desc = Object.assign({
                         on_io_selected: manager.onIoSelected.bind(manager),

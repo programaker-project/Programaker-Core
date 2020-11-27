@@ -43,6 +43,7 @@ export const UiToolboxDescription: ToolboxDescription = [
                 builder: ResponsivePageBuilder,
                 gen_tree: ResponsivePageGenerateTree,
                 isPage: true,
+                is_internal: true,
             }
         ]
     }

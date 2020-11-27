@@ -37,6 +37,9 @@ import { compile } from './graph_analysis';
 import { BrowserService } from 'app/browser.service';
 import { EnvironmentService } from 'app/environment.service';
 import { UiSignalService } from 'app/services/ui-signal.service';
+import { ContainerFlowBlock } from './ui-blocks/container_flow_block';
+import { UI_ICON } from './definitions';
+import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/renderers/responsive_page';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -159,8 +162,29 @@ export class FlowEditorComponent implements OnInit {
         this.updateViewPages(Object.keys(pages));
     }
 
+    addResponsivePage() {
+        const block = new ContainerFlowBlock({
+            icon: UI_ICON,
+            type: 'ui_flow_block',
+            subtype: 'container_flow_block',
+            id: 'responsive_page_holder',
+            builder: ResponsivePageBuilder,
+            gen_tree: ResponsivePageGenerateTree,
+            isPage: true,
+        }, this.uiSignalService);
+
+        const blockId = this.workspace.draw(block);
+
+        this.workspace.centerOnBlock(blockId);
+    }
+
     updateViewPages(pages: string[]) {
         this.pages = pages.map(page => { return { name: page, url: this.programService.getPageUrl(this.programId, page) } });
+    }
+
+    openDefaultPage() {
+        const url = this.programService.getPageUrl(this.programId, '/');
+        let res = window.open(url,'_blank', 'noopener,noreferrer');
     }
 
     initializeListeners() {

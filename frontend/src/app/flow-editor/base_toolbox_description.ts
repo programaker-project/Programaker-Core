@@ -6,7 +6,7 @@ import { ContainerFlowBlockOptions } from './ui-blocks/container_flow_block';
 interface Category {
     id: string,
     name: string,
-    blocks: (AtomicFlowBlockOptions | UiFlowBlockOptions | ContainerFlowBlockOptions)[],
+    blocks: ((AtomicFlowBlockOptions | UiFlowBlockOptions | ContainerFlowBlockOptions) & { is_internal?: boolean })[],
 }
 
 export type ToolboxDescription = Category[];

@@ -64,7 +64,8 @@ button#program-delete-button,
 button#program-stop-button,
 button#program-logs-button,
 button#advancedProgramControls,
-button#navigateToPageControls {
+button#navigateToPageControls,
+button#addResponsiveGridControls {
     vertical-align: top;
     padding: 1ex;
     margin-top: 2px;

@@ -23,10 +23,10 @@ export interface ContainerFlowBlockBuilderInitOps {
 export type GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => CutTree;
 
 export type ContainerFlowBlockBuilder = (canvas: SVGElement,
-                                  group: SVGElement,
-                                  block: UiFlowBlock,
-                                  service: UiSignalService,
-                                  ops: UiFlowBlockBuilderInitOps) => ContainerFlowBlockHandler;
+                                         group: SVGElement,
+                                         block: UiFlowBlock,
+                                         service: UiSignalService,
+                                         ops: UiFlowBlockBuilderInitOps) => ContainerFlowBlockHandler;
 
 export interface ContainerFlowBlockHandler extends UiFlowBlockHandler {
     onContentUpdate: (contents: FlowBlock[]) => void,
