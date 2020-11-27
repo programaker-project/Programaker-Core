@@ -51,6 +51,10 @@ html_escape(Str) ->
 %%====================================================================
 %% Element rendering
 %%====================================================================
+render_element(null, Values) ->
+    [<<"<div class='vbox'>&#x1F6A7; Work in progress &#x1F6A7;</div>">>
+    ];
+
 render_element(#{ <<"cut_type">> := CutType
                 , <<"groups">> := Groups
                 }, Values) ->
@@ -103,6 +107,10 @@ render_scripts(ProgramId, Contents) ->
     , render_connection_block_end()
     , <<"\n</script>">>
     ].
+
+
+wire_components(null) ->
+    [];
 
 wire_components(#{ <<"cut_type">> := CutType
                  , <<"groups">> := Groups
