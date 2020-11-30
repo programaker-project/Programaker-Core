@@ -1044,6 +1044,13 @@ export class FlowWorkspace implements BlockManager {
                 last = {x: pos.x, y: pos.y};
 
                 for (const blockId of this._selectedBlocks) {
+                    const container = this._getContainerOfBlock(blockId);
+                    const isContainerSelected = container === null ? false : this._selectedBlocks.indexOf(this.getBlockId(container)) >= 0;
+                    if (isContainerSelected) {
+                        // Container of the block is also selected, avoid moving it twice
+                        continue;
+                    }
+
                     const draggedBlocks = this.blocks[blockId].block.moveBy(distance).map(block => this.getBlockId(block));
 
                     for (const movedId of draggedBlocks.concat([blockId])) {
