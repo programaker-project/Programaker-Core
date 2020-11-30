@@ -385,6 +385,9 @@ export class AtomicFlowBlock implements FlowBlock {
         return [];
     }
 
+    public onGetFocus() {}
+    public onLoseFocus() {}
+
     public getPositionOfInput(index: number, edge?: boolean): Position2D {
         const group = this.input_groups[index];
         const circle = group.getElementsByTagName('circle')[0];

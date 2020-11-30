@@ -1,6 +1,6 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
-import { Area2D, FlowBlock } from "../../flow_block";
+import { Area2D, FlowBlock, Resizeable } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { ContainerElement, ContainerElementHandle } from "./container_element_handle";
@@ -22,7 +22,7 @@ export const HorizontalUiSectionBuilder : ContainerFlowBlockBuilder = (canvas: S
     return element;
 }
 
-class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement {
+class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement, Resizeable {
     subscription: Subscription;
     handle: ContainerElementHandle | null = null;
     node: SVGAElement;
@@ -75,14 +75,14 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
         this.updateSizes();
 
         if (initOps.workspace) {
-            // this.handle = new ContainerElementHandle(this, initOps.workspace);
+            this.handle = new ContainerElementHandle(this, initOps.workspace, [ 'resize_height' ]);
         }
     }
 
     init() {
-        // if (this.handle) {
-            // this.handle.init();
-        // }
+        if (this.handle) {
+            this.handle.init();
+        }
     }
 
     updateSizes() {
@@ -98,6 +98,10 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
         }
 
         this._updateInternalElementSizes();
+
+        if (this.handle) {
+            this.handle.update();
+        }
     }
 
     _updateInternalElementSizes() {
@@ -115,14 +119,48 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
         return this.block.getBodyArea();
     }
 
+    // Resizeable
+    resize(dimensions: { width: number; height: number; }) {
+        // Make sure what's the minimum possible height
+        const fullContents = this.block.recursiveGetAllContents();
+
+        let minHeight = 0;
+
+        if (fullContents.length > 0) {
+
+            const inflexibleArea = combinedArea(
+                fullContents
+                    .filter(b => !(b instanceof ContainerFlowBlock))
+                    .map(b => b.getBodyArea()));
+
+            const pos = this.block.getOffset();
+            minHeight = inflexibleArea.y - pos.y + inflexibleArea.height;
+        }
+
+        this.height = Math.max(minHeight, dimensions.height);
+        this.updateSizes();
+    }
+
     // UiFlowBlock
     onClick() {
-        // if (!this.handle) {
-        //     throw new Error("Cannot show manipulators as workspace has not been received.");
-        // }
-        // else {
-        //     this.handle.show();
-        // }
+    }
+
+    onGetFocus() {
+        if (!this.handle) {
+            throw new Error("Cannot show manipulators as workspace has not been received.");
+        }
+        else {
+            this.handle.show();
+        }
+    }
+
+    onLoseFocus() {
+        if (!this.handle) {
+            throw new Error("Cannot show manipulators as workspace has not been received.");
+        }
+        else {
+            this.handle.hide();
+        }
     }
 
     isTextEditable(): this is TextEditable {

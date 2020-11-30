@@ -90,6 +90,9 @@ export interface FlowBlock {
     moveBy(distance: Position2D): FlowBlock[];
     endMove(): FlowBlock[];
 
+    onGetFocus(): void;
+    onLoseFocus(): void;
+
     addConnection(direction: 'in' | 'out', input: number, block: FlowBlock): void;
     removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): void;
     getBlockContextActions(): BlockContextAction[];

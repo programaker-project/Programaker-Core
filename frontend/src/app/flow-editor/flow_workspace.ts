@@ -505,11 +505,14 @@ export class FlowWorkspace implements BlockManager {
 
         // Update blocks style
         added.forEach(blockId => {
-            this.blocks[blockId].block.getBodyElement().classList.add('selected');
+            const block = this.blocks[blockId].block;
+            block.getBodyElement().classList.add('selected');
+            block.onGetFocus();
         })
         removed.forEach(blockId => {
             const blockInfo = this.blocks[blockId];
             if (blockInfo) {
+                blockInfo.block.onLoseFocus();
                 blockInfo.block.getBodyElement().classList.remove('selected');
             }
             else {

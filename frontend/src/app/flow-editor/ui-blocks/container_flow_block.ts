@@ -31,8 +31,11 @@ export type ContainerFlowBlockBuilder = (canvas: SVGElement,
 export interface ContainerFlowBlockHandler extends UiFlowBlockHandler {
     dropOnEndMove(): Movement2D;
     getBodyElement(): SVGElement;
-    updateContainer(container: UiFlowBlock);
-    onContentUpdate: (contents: FlowBlock[]) => void,
+    updateContainer(container: UiFlowBlock): void;
+    onContentUpdate: (contents: FlowBlock[]) => void;
+
+    onGetFocus();
+    onLoseFocus();
 }
 
 export interface ContainerFlowBlockOptions extends UiFlowBlockOptions {
@@ -179,5 +182,13 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         }
 
         return acc;
+    }
+
+    onGetFocus() {
+        this.handler.onGetFocus();
+    }
+
+    onLoseFocus() {
+        this.handler.onLoseFocus();
     }
 }

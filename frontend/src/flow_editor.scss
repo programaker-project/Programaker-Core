@@ -639,10 +639,14 @@ svg.block_renderer g.flow_node.container_node .output_text {
     font-style: italic;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .resize-manipulator {
+svg.block_renderer g.flow_node.container_node .manipulators .resize-manipulator path {
     fill: transparent;
     stroke: #ff0;
     stroke-width: 2px;
+}
+
+svg.block_renderer g.flow_node.container_node .manipulators .resize-manipulator .handle-icon-background {
+    fill: #222;
 }
 
 svg.block_renderer g.flow_node.container_node .manipulators.hidden {

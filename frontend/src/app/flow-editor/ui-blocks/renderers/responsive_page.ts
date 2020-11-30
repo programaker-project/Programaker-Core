@@ -1,11 +1,11 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
-import { Area2D, FlowBlock, Resizeable, Position2D } from "../../flow_block";
-import { ContainerFlowBlock, ContainerFlowBlockHandler, GenTreeProc, ContainerFlowBlockBuilder } from "../container_flow_block";
-import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler, TextEditable, TextReadable } from "../ui_flow_block";
+import { Area2D, FlowBlock, Position2D, Resizeable } from "../../flow_block";
+import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
+import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { ContainerElement, ContainerElementHandle } from "./container_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr } from "./ui_tree_repr";
-import { getRefBox, combinedManipulableArea } from "./utils";
+import { combinedArea, combinedManipulableArea, getRefBox } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -14,7 +14,7 @@ const TITLE_PADDING = 5;
 
 export const ResponsivePageBuilder : ContainerFlowBlockBuilder = (canvas: SVGElement,
                                                                   group: SVGElement,
-                                                                  block: UiFlowBlock,
+                                                                  block: ContainerFlowBlock,
                                                                   service: UiSignalService,
                                                                   initOps: UiFlowBlockBuilderInitOps,
                                                                  ) => {
@@ -39,7 +39,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
     contents: FlowBlock[] = [];
 
     constructor(canvas: SVGElement, group: SVGElement,
-                public block: UiFlowBlock,
+                public block: ContainerFlowBlock,
                 private service: UiSignalService,
                 private initOps: UiFlowBlockBuilderInitOps) {
 
@@ -96,7 +96,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
         this.updateSizes();
 
         if (initOps.workspace) {
-            this.handle = new ContainerElementHandle(this, initOps.workspace);
+            this.handle = new ContainerElementHandle(this, initOps.workspace, [ 'resize_width_height' ]);
         }
     }
 
@@ -108,8 +108,29 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
 
     // Resizeable
     resize(dim: { width: number; height: number; }) {
-        this.width = Math.max(this.textDim.width, dim.width);
-        this.height = Math.max(this.textDim.height, dim.height);
+        // Check that what the minimum available size is
+        const fullContents = this.block.recursiveGetAllContents();
+
+        const inflexibleArea = combinedArea(
+            fullContents
+            .filter(b => !(b instanceof ContainerFlowBlock))
+                .map(b => b.getBodyArea()));
+
+        const pos = this.block.getOffset();
+
+        const minWidth = Math.max(
+            this.textDim.width,
+            inflexibleArea.x - pos.x + inflexibleArea.width,
+        );
+
+        const minHeight = Math.max(
+            this.textDim.height,
+            inflexibleArea.y - pos.y + inflexibleArea.height,
+        );
+
+        this.width = Math.max(minWidth, dim.width);
+        this.height = Math.max(minHeight, dim.height);
+
 
         this.updateSizes();
 
@@ -150,11 +171,23 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
 
     // UiFlowBlock
     onClick() {
+    }
+
+    onGetFocus() {
         if (!this.handle) {
             throw new Error("Cannot show manipulators as workspace has not been received.");
         }
         else {
             this.handle.show();
+        }
+    }
+
+    onLoseFocus() {
+        if (!this.handle) {
+            throw new Error("Cannot show manipulators as workspace has not been received.");
+        }
+        else {
+            this.handle.hide();
         }
     }
 

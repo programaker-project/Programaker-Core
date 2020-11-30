@@ -159,6 +159,9 @@ export class EnumDirectValue implements FlowBlock {
         return [];
     }
 
+    public onGetFocus() {}
+    public onLoseFocus() {}
+
     public addConnection(direction: 'in' | 'out', _index: number) {
         if (direction === 'in') {
             console.warn("Should NOT be possible to add a connection to a EnumDirectValue block");

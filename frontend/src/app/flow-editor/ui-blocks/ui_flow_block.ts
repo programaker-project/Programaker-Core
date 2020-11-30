@@ -450,6 +450,8 @@ export class UiFlowBlock implements FlowBlock {
         return [];
     }
 
+    public onGetFocus() {}
+    public onLoseFocus() {}
 
     addConnection(direction: "in" | "out", input_index: number, block: FlowBlock): void {
         if (direction === 'out') { return; }
