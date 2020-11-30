@@ -5,6 +5,7 @@ export type UiElementWidgetType
     = 'simple_button'
     | 'simple_debug_output'
     | 'responsive_page_holder'
+    | 'horizontal_ui_section'
 ;
 
 export interface UiElementRepr {

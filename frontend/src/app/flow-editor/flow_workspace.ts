@@ -211,7 +211,8 @@ export class FlowWorkspace implements BlockManager {
     private connection_group: SVGGElement;
     private block_group: SVGGElement;
     private container_group: SVGGElement;
-    private containers: FlowBlock[] = [];
+    private page_group: SVGGElement;
+    private containers: (FlowBlock & ContainerBlock)[] = [];
 
     private top_left = { x: 0, y: 0 };
     private inv_zoom_level = 1;
@@ -265,10 +266,12 @@ export class FlowWorkspace implements BlockManager {
         this.connection_group = document.createElementNS(SvgNS, "g");
         this.block_group = document.createElementNS(SvgNS, 'g');
         this.container_group = document.createElementNS(SvgNS, 'g');
+        this.page_group = document.createElementNS(SvgNS, 'g');
 
         // The order of elements determines the relative Z-index
         // The "later" an element is added, the "higher" it is.
         // The elements are stored in groups so their Z-indexes are consistent.
+        this.canvas.appendChild(this.page_group);
         this.canvas.appendChild(this.container_group);
         this.canvas.appendChild(this.input_helper_section);
         this.canvas.appendChild(this.trashcan);
@@ -630,7 +633,12 @@ export class FlowWorkspace implements BlockManager {
         let group = this.block_group;
         const isContainer = block instanceof ContainerFlowBlock;
         if (isContainer) {
-            group = this.container_group;
+            if ((block as ContainerFlowBlock).isPage) {
+                group = this.page_group;
+            }
+            else {
+                group = this.container_group;
+            }
         }
         block.render(group, {
             block_id: block_id,
@@ -640,7 +648,7 @@ export class FlowWorkspace implements BlockManager {
 
         if (isContainer) {
             // Obtaining the area has to be done AFTER the rendering
-            this.containers.push(block);
+            this.containers.push((block as FlowBlock & ContainerBlock));
 
             if ((block as ContainerFlowBlock).isPage) {
                 this.numPages++;
@@ -892,6 +900,8 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _findContainerInPos(pos: Position2D, excluding?: FlowBlock): FlowBlock | null {
+        const candidates: (ContainerBlock & FlowBlock)[] = [];
+
         for (const container of this.containers) {
             if (excluding === container) {
                 continue;
@@ -909,11 +919,44 @@ export class FlowWorkspace implements BlockManager {
                 && (diffX <= area.width)
                 && (diffY <= area.height)) {
 
-                return container;
+                candidates.push(container);
             }
         }
 
-        return null;
+        if (candidates.length === 0) {
+            return null;
+        }
+
+        // Candidate priority
+        //  1. First, the ones that are not pages
+        //  2. The ones with less height
+        //  3. The ones with less width
+        const pages = [];
+        const notPages = [];
+
+        for (const container of candidates) {
+            if (container.isPage) {
+                pages.push(container);
+            }
+            else {
+                notPages.push(container);
+            }
+        }
+
+        const partition = notPages.length > 0 ? notPages : pages;
+        partition.sort((a, b) => {
+            const areaA = a.getBodyArea();
+            const areaB = b.getBodyArea();
+            const heightDiff = areaA.height - areaB.height;
+
+            if (heightDiff) {
+                return heightDiff;
+            }
+
+            return areaA.width - areaB.width;
+        })
+
+        return partition[0];
     }
 
     private _getContainerOfBlock(blockId: string): FlowBlock | null {
@@ -948,6 +991,10 @@ export class FlowWorkspace implements BlockManager {
                 (container as any as ContainerBlock).addContentBlock(block);
             }
             this.blocks[block_id].container_id = container_id;
+
+            if (block instanceof UiFlowBlock) {
+                block.updateContainer(container);
+            }
         }
         else if (container) {
             (container as any as ContainerBlock).update();
@@ -1036,6 +1083,16 @@ export class FlowWorkspace implements BlockManager {
 
                 for (const blockId of this._selectedBlocks.concat([])) {
                     this._updateBlockContainer(this.blocks[blockId].block, container);
+
+                    const draggedBlocks = this.blocks[blockId].block.endMove().map(block => this.getBlockId(block));
+
+                    for (const movedId of draggedBlocks.concat([blockId])) {
+                        for (const conn of this.blocks[movedId].connections) {
+                            this.updateConnection(conn);
+                        }
+
+                        this.updateBlockInputHelpersPosition(movedId);
+                    }
                 }
             }
 

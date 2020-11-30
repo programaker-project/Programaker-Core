@@ -4,6 +4,9 @@ export type MessageType = 'integer' | 'float' | 'boolean' | 'string' | 'any' | '
 
 export interface Position2D { x: number; y: number };
 export interface Area2D { x: number, y: number, width: number, height: number  };
+export interface ManipulableArea2D { left: number, top: number, right: number, bottom: number  };
+
+export interface Movement2D { x: number; y: number };
 
 export interface OutputPortDefinition {
     type?: MessageType;
@@ -85,6 +88,7 @@ export interface FlowBlock {
 
     getOffset(): Position2D;
     moveBy(distance: Position2D): FlowBlock[];
+    endMove(): FlowBlock[];
 
     addConnection(direction: 'in' | 'out', input: number, block: FlowBlock): void;
     removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): void;
@@ -102,6 +106,7 @@ export interface ContainerBlock {
     update(): void;
     removeContentBlock(block: FlowBlock): void;
     addContentBlock(block: FlowBlock): void;
+    isPage: boolean;
 }
 
 export interface Resizeable {

@@ -3,6 +3,7 @@ import { UI_ICON } from '../definitions';
 import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './renderers/responsive_page';
 import { SimpleButtonBuilder } from './renderers/simple_button';
 import { SimpleOutputBuilder } from './renderers/simple_output';
+import { HorizontalUiSectionBuilder, HorizontalUiSectionGenerateTree } from './renderers/horizontal_ui_section';
 
 export const UiToolboxDescription: ToolboxDescription = [
     {
@@ -44,7 +45,15 @@ export const UiToolboxDescription: ToolboxDescription = [
                 gen_tree: ResponsivePageGenerateTree,
                 isPage: true,
                 is_internal: true,
-            }
+            },
+            {
+                icon: UI_ICON,
+                type: 'ui_flow_block',
+                subtype: 'container_flow_block',
+                id: 'horizontal_ui_section',
+                builder: HorizontalUiSectionBuilder,
+                gen_tree: HorizontalUiSectionGenerateTree,
+            },
         ]
     }
 ];

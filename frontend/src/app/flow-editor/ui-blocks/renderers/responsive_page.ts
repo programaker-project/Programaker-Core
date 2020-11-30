@@ -5,7 +5,7 @@ import { ContainerFlowBlock, ContainerFlowBlockHandler, GenTreeProc, ContainerFl
 import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler, TextEditable, TextReadable } from "../ui_flow_block";
 import { ContainerElement, ContainerElementHandle } from "./container_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr } from "./ui_tree_repr";
-import { getRefBox } from "./utils";
+import { getRefBox, combinedManipulableArea } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -36,6 +36,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
     height: number;
     titleBox: SVGRectElement;
     title: string;
+    contents: FlowBlock[] = [];
 
     constructor(canvas: SVGElement, group: SVGElement,
                 public block: UiFlowBlock,
@@ -114,6 +115,12 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
 
         (this.block as ContainerFlowBlock).update();
         this.handle.update();
+
+        for (const content of this.contents) {
+            if (content instanceof ContainerFlowBlock) {
+                content.updateContainer(this.block);
+            }
+        }
     }
 
     updateSizes() {
@@ -201,7 +208,9 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
 
     onContentUpdate(contents: FlowBlock[]) {
         // Obtain new distribution
+        this.contents = contents.concat([]);
         const uiContents = contents.filter(b => b instanceof UiFlowBlock) as UiFlowBlock[];
+
         // Update grid
         try {
             const tree = ResponsivePageGenerateTree(this, contents);
@@ -221,6 +230,14 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
             this.grid.innerHTML = ''; // Make sure it's clear
         }
     }
+
+    dropOnEndMove() {
+        return {x: 0, y: 0};
+    }
+
+    updateContainer(_container: UiFlowBlock) {
+        throw new Error("A webpage cannot be put inside a container.");
+    }
 }
 
 function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, height: number, offset: Position2D) {
@@ -229,7 +246,16 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
 
     const blocks = {};
     for (const block of contents) {
-        blocks[block.id] = block;
+        if (block instanceof ContainerFlowBlock) {
+            for (const subBlock of block.recursiveGetAllContents()) {
+                if (subBlock instanceof UiFlowBlock) {
+                    blocks[subBlock.id] = subBlock;
+                }
+            }
+        }
+        else {
+            blocks[block.id] = block;
+        }
     }
 
     while (todo.length > 0) {
@@ -246,16 +272,18 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
 
         const cTree = cut.tree as CutNode;
         const elements = cTree.groups.map(g => getElementsInGroup(g));
+        const cGroups = elements.map((_value, idx) => idx).filter(idx => elements[idx].length > 0);
 
         if (cTree.cut_type === 'vbox') {
             // This cloning is probably not needed. Done now for simplicity.
             const availArea = Object.assign({}, cut.area);
 
             // Analyze as group pairs
-            for (let i = 1; i < cTree.groups.length; i++) {
+            for (let i = 1; i < cGroups.length; i++) {
 
-                const r1 = getRect(elements[i - 1].map(e => blocks[e]));
-                const r2 = getRect(elements[i].map(e => blocks[e]));
+
+                const r1 = getRect(elements[cGroups[i - 1]].map(e => blocks[e]));
+                const r2 = getRect(elements[cGroups[i]].map(e => blocks[e]));
 
                 const cutYPos = (r1.bottom + (r2.top - r1.bottom) / 2) - offset.y;
 
@@ -263,14 +291,14 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
 
                 const topArea = Object.assign({}, availArea);
                 topArea.height = cutYPos - availArea.y;
-                todo.push({ tree: cTree.groups[i - 1], area: topArea });
+                todo.push({ tree: cTree.groups[cGroups[i - 1]], area: topArea });
 
                 availArea.y = cutYPos;
                 availArea.height -= topArea.height;
 
-                if ((i + 1) === cTree.groups.length) {
+                if ((i + 1) === cGroups.length) {
                     // Only recurse bottom on the latest group, to avoid duplicating
-                    todo.push({ tree: cTree.groups[i], area: availArea });
+                    todo.push({ tree: cTree.groups[cGroups[i]], area: availArea });
                 }
             }
         }
@@ -279,10 +307,10 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
             const availArea = Object.assign({}, cut.area);
 
             // Analyze as group pairs
-            for (let i = 1; i < cTree.groups.length; i++) {
+            for (let i = 1; i < cGroups.length; i++) {
 
-                const r1 = getRect(elements[i - 1].map(e => blocks[e]));
-                const r2 = getRect(elements[i].map(e => blocks[e]));
+                const r1 = getRect(elements[cGroups[i - 1]].map(e => blocks[e]));
+                const r2 = getRect(elements[cGroups[i]].map(e => blocks[e]));
 
                 const cutXPos = (r1.right + (r2.left - r1.right) / 2) - offset.x;
 
@@ -290,14 +318,14 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
 
                 const leftArea = Object.assign({}, availArea);
                 leftArea.width = cutXPos - availArea.x;
-                todo.push({ tree: cTree.groups[i - 1], area: leftArea });
+                todo.push({ tree: cTree.groups[cGroups[i - 1]], area: leftArea });
 
                 availArea.x = cutXPos;
                 availArea.width -= leftArea.width;
 
-                if ((i + 1) === cTree.groups.length) {
+                if ((i + 1) === cGroups.length) {
                     // Only recurse right on the latest group, to avoid duplicating
-                    todo.push({ tree: cTree.groups[i], area: availArea });
+                    todo.push({ tree: cTree.groups[cGroups[i]], area: availArea });
                 }
             }
         }
@@ -311,13 +339,13 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
 }
 
 function getElementsInGroup(tree: CutTree): string[] {
-    const acc = [];
+    let acc = [];
 
     const todo = [tree];
     while (todo.length > 0) {
         const cut = todo.pop();
         if ((cut as UiElementRepr).widget_type) {
-            acc.push((cut as UiElementRepr).id);
+                acc.push((cut as UiElementRepr).id);
         }
         else {
             for (const group of (cut as CutNode).groups) {
@@ -330,31 +358,7 @@ function getElementsInGroup(tree: CutTree): string[] {
 }
 
 function getRect(blocks: UiFlowBlock[]) {
-    const initialArea = blocks[0].getBodyArea();
-    let rect = {
-        left: initialArea.x,
-        top: initialArea.y,
-        right: initialArea.x + initialArea.width,
-        bottom: initialArea.y + initialArea.height,
-    };
-
-    for (let i = 1; i < blocks.length; i++) {
-        const bArea = blocks[i].getBodyArea();
-
-        let bRect = {
-            left: bArea.x,
-            top: bArea.y,
-            right: bArea.x + bArea.width,
-            bottom: bArea.y + bArea.height,
-        };
-
-        rect.left = Math.min(rect.left, bRect.left);
-        rect.top = Math.min(rect.top, bRect.top);
-        rect.right = Math.max(rect.right, bRect.right);
-        rect.bottom = Math.max(rect.bottom, bRect.bottom);
-    }
-
-    return rect;
+    return combinedManipulableArea(blocks.map(b => b.getBodyArea()));
 }
 
 export const ResponsivePageGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {

@@ -153,6 +153,10 @@ export class DirectValue implements FlowBlock {
         return [];
     }
 
+    public endMove(): FlowBlock[] {
+        return [];
+    }
+
     public addConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {
         if (direction === 'in') {
             console.warn("Should NOT be possible to add a connection to a DirectValue block");

@@ -1,7 +1,7 @@
-import { ContainerBlock, FlowBlockData, FlowBlockOptions, FlowBlock, Position2D } from '../flow_block';
+import { ContainerBlock, FlowBlockData, FlowBlockOptions, FlowBlock, Position2D, Area2D, Movement2D } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
 import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockOptions, UiFlowBlockData, isUiFlowBlockData, UiFlowBlockHandler, UiFlowBlockBuilderInitOps } from './ui_flow_block';
-import { UiSignalService } from 'app/services/ui-signal.service';
+import { UiSignalService } from '../../services/ui-signal.service';
 import { BlockManager } from '../block_manager';
 import { Toolbox } from '../toolbox';
 import { CutTree, UiElementWidgetType } from './renderers/ui_tree_repr';
@@ -24,11 +24,14 @@ export type GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => 
 
 export type ContainerFlowBlockBuilder = (canvas: SVGElement,
                                          group: SVGElement,
-                                         block: UiFlowBlock,
+                                         block: ContainerFlowBlock,
                                          service: UiSignalService,
                                          ops: UiFlowBlockBuilderInitOps) => ContainerFlowBlockHandler;
 
 export interface ContainerFlowBlockHandler extends UiFlowBlockHandler {
+    dropOnEndMove(): Movement2D;
+    getBodyElement(): SVGElement;
+    updateContainer(container: UiFlowBlock);
     onContentUpdate: (contents: FlowBlock[]) => void,
 }
 
@@ -130,6 +133,15 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         return Object.assign(super.serialize(), { subtype: BLOCK_TYPE });
     }
 
+    public getBodyArea(): Area2D {
+        const rect = (this.handler.getBodyElement() as any).getBBox();
+        return {
+            x: this.position.x,
+            y: this.position.y,
+            width: rect.width,
+            height: rect.height,
+        }
+    }
 
     public moveBy(distance: {x: number, y: number}) {
 
@@ -143,5 +155,29 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         }
 
         return result;
+    }
+
+    public endMove(): FlowBlock[] {
+        const movement = this.handler.dropOnEndMove();
+        return this.moveBy(movement);
+    }
+
+    updateContainer(container: FlowBlock) {
+        if (container instanceof UiFlowBlock) {
+            this.handler.updateContainer(container);
+        }
+    }
+
+    recursiveGetAllContents(): FlowBlock[] {
+        let acc = [];
+
+        for (const content of this.contents) {
+            if (content instanceof ContainerFlowBlock) {
+                acc = acc.concat(content.recursiveGetAllContents());
+            }
+            acc.push(content);
+        }
+
+        return acc;
     }
 }

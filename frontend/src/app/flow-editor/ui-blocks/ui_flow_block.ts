@@ -13,8 +13,6 @@ export const BLOCK_TYPE = 'ui_flow_block';
 
 const INPUT_PORT_REAL_SIZE = 10;
 const OUTPUT_PORT_REAL_SIZE = 10;
-const CONNECTOR_SIDE_SIZE = 15;
-const ICON_PADDING = '1ex';
 
 export interface UiFlowBlockBuilderInitOps {
     workspace?: FlowWorkspace,
@@ -86,7 +84,7 @@ export class UiFlowBlock implements FlowBlock {
     options: UiFlowBlockOptions;
 
     private group: SVGElement;
-    private position: {x: number, y: number};
+    protected position: {x: number, y: number};
     private output_groups: SVGGElement[];
     private input_groups: SVGGElement[];
     private blockId: string;
@@ -448,6 +446,11 @@ export class UiFlowBlock implements FlowBlock {
         return [];
     }
 
+    public endMove(): FlowBlock[] {
+        return [];
+    }
+
+
     addConnection(direction: "in" | "out", input_index: number, block: FlowBlock): void {
         if (direction === 'out') { return; }
 
@@ -589,4 +592,6 @@ export class UiFlowBlock implements FlowBlock {
     onclick() {
         this.handler.onClick();
     }
+
+    updateContainer(container: FlowBlock) {}
 }
