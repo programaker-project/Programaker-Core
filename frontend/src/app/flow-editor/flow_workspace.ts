@@ -698,6 +698,49 @@ export class FlowWorkspace implements BlockManager {
         this.update_top_left();
     }
 
+    public center() {
+        // Find the center of all blocks, and center the view there
+        const blockIds = Object.keys(this.blocks);
+        if (blockIds.length === 0) {
+            return this.centerOnPoint({ x: 0, y: 0 });
+        }
+
+        const block1Area = this.blocks[blockIds[0]].block.getBodyArea();
+        const rect = {
+            left: block1Area.x,
+            top: block1Area.y,
+            right: block1Area.x + block1Area.width,
+            bottom: block1Area.y + block1Area.height,
+        };
+
+        for (let i = 1 ; i < blockIds.length; i++) {
+            const blockArea = this.blocks[blockIds[i]].block.getBodyArea();
+
+            if (blockArea.x < rect.left) {
+                rect.left = blockArea.x;
+            }
+            if (blockArea.y < rect.top) {
+                rect.top = blockArea.y;
+            }
+
+            const right = blockArea.x + blockArea.width;
+            const bottom = blockArea.y + blockArea.height;
+            if (right > rect.right) {
+                rect.right = right;
+            }
+            if (bottom > rect.bottom) {
+                rect.bottom = bottom;
+            }
+        }
+
+        const center = {
+            x: (rect.left + rect.right) / 2,
+            y: (rect.top + rect.bottom) / 2,
+        };
+
+        return this.centerOnPoint(center);
+    }
+
     public showBlockContextMenu(pos: Position2D) {
         // Base positioning
         this.popupGroup.innerHTML = '';

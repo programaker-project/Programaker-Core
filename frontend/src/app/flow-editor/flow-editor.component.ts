@@ -156,6 +156,8 @@ export class FlowEditorComponent implements OnInit {
             this.workspace.load(program.orig as FlowGraph);
         }
 
+        this.workspace.center();
+
         this.initializeListeners();
 
         const pages = this.workspace.getPages();
