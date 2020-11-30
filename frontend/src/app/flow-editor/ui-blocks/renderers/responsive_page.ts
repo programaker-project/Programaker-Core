@@ -11,6 +11,7 @@ import { combinedArea, combinedManipulableArea, getRefBox } from "./utils";
 const SvgNS = "http://www.w3.org/2000/svg";
 const Title = "Responsive page";
 const TITLE_PADDING = 5;
+const PAGE_PADDING = 5;
 
 export const ResponsivePageBuilder : ContainerFlowBlockBuilder = (canvas: SVGElement,
                                                                   group: SVGElement,
@@ -262,6 +263,33 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
             console.error(err);
             this.grid.innerHTML = ''; // Make sure it's clear
         }
+
+        // Check that the container size is adequate, resize it if necessary
+        const fullContents = this.block.recursiveGetAllContents();
+
+        if (fullContents.length === 0) {
+            return;
+        }
+
+        // Move contents down if they are not (vertically) completely inside the section
+        // This is done one-by-one, so the order of addition of blocks to the contained does not affect the final state.
+        const current = this.block.getOffset();
+
+        for (const block of contents) {
+            const blockArea = block.getBodyArea();
+            const yDiff = (current.y + PAGE_PADDING) - blockArea.y;
+            if (yDiff > 0) {
+                block.moveBy({ x: 0, y: yDiff });
+            }
+        }
+
+        const containedArea = combinedArea(fullContents.map(b => b.getBodyArea()));
+
+        // Extend the section to include all elements, if needed
+        if (this.height < containedArea.height) {
+            this.height = containedArea.height;
+            this.updateSizes();
+        }
     }
 
     dropOnEndMove() {
@@ -270,6 +298,14 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
 
     updateContainer(_container: UiFlowBlock) {
         throw new Error("A webpage cannot be put inside a container.");
+    }
+
+    get container(): ContainerFlowBlock {
+        return null;
+    }
+
+    update() {
+        this.onContentUpdate(this.contents);
     }
 }
 

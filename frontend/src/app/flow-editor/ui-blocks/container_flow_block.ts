@@ -1,20 +1,15 @@
-import { ContainerBlock, FlowBlockData, FlowBlockOptions, FlowBlock, Position2D, Area2D, Movement2D } from '../flow_block';
-import { FlowWorkspace } from '../flow_workspace';
-import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockOptions, UiFlowBlockData, isUiFlowBlockData, UiFlowBlockHandler, UiFlowBlockBuilderInitOps } from './ui_flow_block';
 import { UiSignalService } from '../../services/ui-signal.service';
 import { BlockManager } from '../block_manager';
+import { Area2D, ContainerBlock, FlowBlock, FlowBlockData, FlowBlockOptions, Movement2D, Resizeable } from '../flow_block';
+import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
 import { CutTree, UiElementWidgetType } from './renderers/ui_tree_repr';
-
-const SvgNS = "http://www.w3.org/2000/svg";
+import { isUiFlowBlockData, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockData, UiFlowBlockHandler, UiFlowBlockOptions } from './ui_flow_block';
 
 export type ContainerFlowBlockType = 'container_flow_block';
 export const BLOCK_TYPE = 'container_flow_block';
 
-const INPUT_PORT_REAL_SIZE = 10;
-const OUTPUT_PORT_REAL_SIZE = 10;
-const CONNECTOR_SIDE_SIZE = 15;
-const ICON_PADDING = '1ex';
+const PUSH_DOWN_MARGIN = 10;
 
 export interface ContainerFlowBlockBuilderInitOps {
     workspace?: FlowWorkspace,
@@ -28,7 +23,7 @@ export type ContainerFlowBlockBuilder = (canvas: SVGElement,
                                          service: UiSignalService,
                                          ops: UiFlowBlockBuilderInitOps) => ContainerFlowBlockHandler;
 
-export interface ContainerFlowBlockHandler extends UiFlowBlockHandler {
+export interface ContainerFlowBlockHandler extends UiFlowBlockHandler, Resizeable {
     dropOnEndMove(): Movement2D;
     getBodyElement(): SVGElement;
     updateContainer(container: UiFlowBlock): void;
@@ -36,6 +31,9 @@ export interface ContainerFlowBlockHandler extends UiFlowBlockHandler {
 
     onGetFocus();
     onLoseFocus();
+
+    readonly container: ContainerFlowBlock;
+    update(): void; // Notify the handler of a change on the properties of the block
 }
 
 export interface ContainerFlowBlockOptions extends UiFlowBlockOptions {
@@ -165,6 +163,15 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         return this.moveBy(movement);
     }
 
+    onGetFocus() {
+        this.handler.onGetFocus();
+    }
+
+    onLoseFocus() {
+        this.handler.onLoseFocus();
+    }
+
+    // Container-related
     updateContainer(container: FlowBlock) {
         if (container instanceof UiFlowBlock) {
             this.handler.updateContainer(container);
@@ -184,11 +191,54 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         return acc;
     }
 
-    onGetFocus() {
-        this.handler.onGetFocus();
-    }
+    pushDown(startHeight: number, pushDown: number) {
+        // The elements are not always pushed down, only when the movement would
+        // collide with an element or with the end of the block. This helps avoiding
+        // cases where a slight resize up and resizing back down again would "pump"
+        // the elements down.
+        let triggered = false;
 
-    onLoseFocus() {
-        this.handler.onLoseFocus();
+        // Push down if the movement collides with the lower border of the container
+        const area = this.getBodyArea();
+        if ((startHeight + pushDown + PUSH_DOWN_MARGIN)
+            >= (area.y + area.height)) {
+            triggered = true;
+        }
+
+        // Push down if in the movement any block might be affected
+        if (!triggered) {
+            for (const block of this.contents) {
+                const pos = block.getOffset();
+                if (pos.y >= startHeight) {
+                    if ((pos.y - (startHeight + pushDown)) < PUSH_DOWN_MARGIN ) {
+                        triggered = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!triggered) {
+            return;
+        }
+
+        const movement = Math.max(pushDown, PUSH_DOWN_MARGIN);
+
+        for (const block of this.contents) {
+            const pos = block.getOffset();
+            if (pos.y >= startHeight) {
+
+                block.moveBy({ x: 0, y: movement });
+            }
+        }
+
+        const size = this.handler.getBodyArea();
+        size.height += movement;
+        this.handler.resize(size);
+
+        // Propagate the PushDown if it has been triggered
+        if (this.handler.container) {
+            this.handler.container.pushDown(startHeight, pushDown);
+        }
     }
 }

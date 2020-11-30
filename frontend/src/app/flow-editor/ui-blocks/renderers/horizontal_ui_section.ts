@@ -31,7 +31,8 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
     width: number;
     height: number;
     placeholder: SVGTextElement;
-    container: UiFlowBlock;
+    container: ContainerFlowBlock;
+    private _contents: FlowBlock[];
 
     constructor(canvas: SVGElement, group: SVGElement,
                 public block: ContainerFlowBlock,
@@ -124,6 +125,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
         // Make sure what's the minimum possible height
         const fullContents = this.block.recursiveGetAllContents();
 
+        const pos = this.block.getOffset();
         let minHeight = 0;
 
         if (fullContents.length > 0) {
@@ -133,12 +135,19 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
                     .filter(b => !(b instanceof ContainerFlowBlock))
                     .map(b => b.getBodyArea()));
 
-            const pos = this.block.getOffset();
             minHeight = inflexibleArea.y - pos.y + inflexibleArea.height;
         }
 
-        this.height = Math.max(minHeight, dimensions.height);
+        const oldHeight = this.height;
+        const newHeight = Math.max(minHeight, dimensions.height);
+
+        this.height = newHeight;
         this.updateSizes();
+
+        const pushDown = newHeight - oldHeight;
+        if (this.container && pushDown > 0) {
+            this.container.pushDown(pos.y + oldHeight, pushDown);
+        }
     }
 
     // UiFlowBlock
@@ -189,6 +198,8 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
     }
 
     onContentUpdate(contents: FlowBlock[]) {
+        this._contents = contents;
+
         // Check that the container size is adequate, resize it if necessary
         const fullContents = this.block.recursiveGetAllContents();
 
@@ -218,7 +229,12 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
     }
 
     updateContainer(container: UiFlowBlock) {
-        this.container = container;
+        if (container instanceof ContainerFlowBlock) {
+            this.container = container;
+        }
+        else {
+            this.container = null;
+        }
         this.updateSizes();
     }
 
@@ -237,6 +253,10 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
         }
 
         this._updateInternalElementSizes();
+    }
+
+    update() {
+        this.onContentUpdate(this._contents);
     }
 }
 
