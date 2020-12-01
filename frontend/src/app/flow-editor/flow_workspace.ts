@@ -701,10 +701,16 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public centerOnPoint(pos: Position2D) {
-        const width = this.canvas.width.baseVal.value;
+        // Consider toolbox overlap
+        let marginRight = 0;
+        if (this.toolbox.blockShowcase){
+            marginRight = this.toolbox.blockShowcase.getBoundingClientRect().width;
+        }
+
+        const width = this.canvas.width.baseVal.value - marginRight;
         const height = this.canvas.height.baseVal.value;
 
-        this.top_left.x = pos.x - width/2;
+        this.top_left.x = (pos.x - width/2) - marginRight;
         this.top_left.y = pos.y - height/2;
         this.update_top_left();
     }
