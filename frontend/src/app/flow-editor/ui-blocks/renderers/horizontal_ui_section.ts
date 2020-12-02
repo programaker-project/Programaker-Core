@@ -318,7 +318,15 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
 }
 
 export const HorizontalUiSectionGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
-    const groups = blocks.filter(b => b instanceof UiFlowBlock).map((b: UiFlowBlock) => b.renderAsUiElement());
+    const groups = (blocks
+                    // Get UI blocks
+        .filter(b => b instanceof UiFlowBlock)
+                    // Order by from left to right
+        .map(b => { return { area: b.getBodyArea(), block: b } })
+        .sort((a, b) => a.area.x - b.area.x)
+                    // Render the elements themselves as
+        .map((item: {area: Area2D, block: UiFlowBlock}) => item.block.renderAsUiElement())
+                   );
 
     return (handler as HorizontalUiSection).generateTreeWithGroups(groups);
 }
