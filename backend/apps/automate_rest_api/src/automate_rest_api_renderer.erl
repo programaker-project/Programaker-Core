@@ -55,10 +55,23 @@ render_element(null, Values) ->
     [<<"<div class='vbox'>&#x1F6A7; Work in progress &#x1F6A7;</div>">>
     ];
 
-render_element(#{ <<"cut_type">> := CutType
+render_element(E=#{ <<"cut_type">> := CutType
                 , <<"groups">> := Groups
                 }, Values) ->
-    [ <<"<div class='">>, CutType, <<"'>">>
+
+    ElementBackground = case E of
+                            #{ <<"background">> := #{ <<"type">> := <<"color">>
+                                                    , <<"value">> := Color
+                                                    }} ->
+                                [ "background-color:"
+                                , Color %% TODO: Validate that the color is a correct one.
+                                ];
+                            _ -> []
+                        end,
+
+    [ <<"<div class='">>, CutType, <<"' ">>
+    , "style='", ElementBackground, "' "
+    ,  ">"
     , GroupRendering = lists:map(fun(E) -> render_element(E, Values) end, Groups)
     , <<"</div>">>
     ];

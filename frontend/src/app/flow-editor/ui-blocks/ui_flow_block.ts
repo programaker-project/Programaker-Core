@@ -60,6 +60,7 @@ export interface UiFlowBlockOptions extends FlowBlockOptions {
 interface UiFlowBlockExtraData {
     textContent?: string,
     dimensions?: { width: number, height: number },
+    settings?: {[key: string]: any},
 }
 
 export interface UiFlowBlockData extends FlowBlockData {
@@ -91,7 +92,7 @@ export class UiFlowBlock implements FlowBlock {
     private input_count: number[] = [];
     protected handler: UiFlowBlockHandler;
     private input_blocks: [FlowBlock, number][] = [];
-    private workspace: FlowWorkspace | null;
+    protected _workspace: FlowWorkspace | null;
 
     blockData: UiFlowBlockExtraData = {};
 
@@ -121,7 +122,7 @@ export class UiFlowBlock implements FlowBlock {
 
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group } // Avoid double initialization
-        this.workspace = initOpts.workspace;
+        this._workspace = initOpts.workspace;
 
         this.canvas = canvas;
         if (initOpts.position) {
@@ -531,7 +532,7 @@ export class UiFlowBlock implements FlowBlock {
                     area.y += offset.y;
                     this.group.classList.add('editing');
 
-                    this.workspace.editInline(area, prevValue, 'string', (newValue: string) => {
+                    this._workspace.editInline(area, prevValue, 'string', (newValue: string) => {
                         this.group.classList.remove('editing');
 
                         if (newValue.trim().length > 0) {
@@ -599,4 +600,5 @@ export class UiFlowBlock implements FlowBlock {
     // Container-related
     updateContainer(container: FlowBlock) {}
     pushDown(startHeight: number, pushDown: number) {}
+
 }

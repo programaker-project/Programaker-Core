@@ -1,21 +1,28 @@
 import { Position2D, FlowBlock, Resizeable } from "../../flow_block";
 import { FlowWorkspace } from "../../flow_workspace";
+import { ConfigurableBlock } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
 const ManipulatorButtonSize = '200';
 const HEIGHT_MANIPULATOR_VERTICAL_PADDING = 10;
-const RESIZE_MANIPULATOR_SIZE = 25;
+const RESIZE_MANIPULATOR_SIZE = 35;
+const SETTINGS_MANIPULATOR_SIZE = 35;
 const MANIPULATOR_ICON_PADDING = 5;
 
 export type HandleOption
     = 'resize_width_height'
     | 'resize_height'
+    | 'adjust_settings'
 ;
 
 export interface ContainerElement {
     getBodyElement: () => SVGElement;
     getBlock: () => FlowBlock;
+}
+
+export interface ConfigurableSettingsElement extends ConfigurableBlock {
+    startAdjustingSettings(): void;
 }
 
 function gen_width_height_resize_icon(size: number): SVGElement {
@@ -46,12 +53,23 @@ function gen_height_resize_icon(size: number): SVGElement {
     return element;
 }
 
+function gen_settings_manipulator_icon(size: number): SVGElement {
+    const element = document.createElementNS(SvgNS, 'image');
+
+    element.setAttributeNS(null, 'href', '/assets/icons/settings.svg');
+    element.setAttributeNS(null, 'width', size + '');
+    element.setAttributeNS(null, 'height', size + '');
+
+    return element;
+}
+
 export class ContainerElementHandle {
     handleGroup: SVGGElement;
     widthHeightResizeManipulator: SVGElement;
     body: SVGElement;
     resizePrevPos: Position2D;
     heightResizeManipulator: SVGGElement;
+    settingsManipulator: SVGGElement;
 
     constructor(private element: ContainerElement,
                 private workspace: FlowWorkspace,
@@ -64,38 +82,56 @@ export class ContainerElementHandle {
         this.handleGroup.setAttribute('class', 'manipulators hidden');
 
         if (this.handleOptions.indexOf('resize_width_height') >= 0) {
-            this.widthHeightResizeManipulator = document.createElementNS(SvgNS, 'g');
+            const m = this.widthHeightResizeManipulator = document.createElementNS(SvgNS, 'g');
 
             const iconBackground = document.createElementNS(SvgNS, 'rect');
             iconBackground.setAttribute('class', 'handle-icon-background');
             iconBackground.setAttributeNS(null, 'rx', '4');
             iconBackground.setAttributeNS(null, 'width', RESIZE_MANIPULATOR_SIZE + '');
             iconBackground.setAttributeNS(null, 'height', RESIZE_MANIPULATOR_SIZE + '');
-            this.widthHeightResizeManipulator.appendChild(iconBackground);
+            m.appendChild(iconBackground);
 
             const resizeIcon = gen_width_height_resize_icon(RESIZE_MANIPULATOR_SIZE);
-            this.widthHeightResizeManipulator.appendChild(resizeIcon);
-            this.widthHeightResizeManipulator.onmousedown = this._startResizeWidthHeight.bind(this);
+            m.appendChild(resizeIcon);
+            m.onmousedown = this._startResizeWidthHeight.bind(this);
 
-            this.widthHeightResizeManipulator.setAttribute('class', 'resize-manipulator width-height-resizer');
-            this.handleGroup.appendChild(this.widthHeightResizeManipulator);
+            m.setAttribute('class', 'manipulator resize-manipulator width-height-resizer');
+            this.handleGroup.appendChild(m);
         }
         else if (this.handleOptions.indexOf('resize_height') >= 0) {
-            this.heightResizeManipulator = document.createElementNS(SvgNS, 'g');
+            const m =this.heightResizeManipulator = document.createElementNS(SvgNS, 'g');
 
             const iconBackground = document.createElementNS(SvgNS, 'rect');
             iconBackground.setAttribute('class', 'handle-icon-background');
             iconBackground.setAttributeNS(null, 'rx', '4');
             iconBackground.setAttributeNS(null, 'width', RESIZE_MANIPULATOR_SIZE + '');
             iconBackground.setAttributeNS(null, 'height', RESIZE_MANIPULATOR_SIZE + '');
-            this.heightResizeManipulator.appendChild(iconBackground);
+            m.appendChild(iconBackground);
 
             const resizeIcon = gen_height_resize_icon(RESIZE_MANIPULATOR_SIZE);
-            this.heightResizeManipulator.appendChild(resizeIcon);
-            this.heightResizeManipulator.onmousedown = this._startResizeHeight.bind(this);
+            m.appendChild(resizeIcon);
+            m.onmousedown = this._startResizeHeight.bind(this);
 
-            this.heightResizeManipulator.setAttribute('class', 'resize-manipulator height-resizer');
-            this.handleGroup.appendChild(this.heightResizeManipulator);
+            m.setAttribute('class', 'manipulator resize-manipulator height-resizer');
+            this.handleGroup.appendChild(m);
+        }
+
+        if (this.handleOptions.indexOf('adjust_settings') >= 0) {
+            const m = this.settingsManipulator = document.createElementNS(SvgNS, 'g');
+
+            const iconSettings = document.createElementNS(SvgNS, 'rect');
+            iconSettings.setAttribute('class', 'handle-icon-background');
+            iconSettings.setAttributeNS(null, 'rx', '4');
+            iconSettings.setAttributeNS(null, 'width', SETTINGS_MANIPULATOR_SIZE + '');
+            iconSettings.setAttributeNS(null, 'height', SETTINGS_MANIPULATOR_SIZE + '');
+            m.appendChild(iconSettings);
+
+            const resizeIcon = gen_settings_manipulator_icon(SETTINGS_MANIPULATOR_SIZE);
+            m.appendChild(resizeIcon);
+            m.onmousedown = this._startUpdateSettings.bind(this);
+
+            m.setAttribute('class', 'manipulator settings-manipulator');
+            this.handleGroup.appendChild(m);
         }
 
         this.body.parentNode.appendChild(this.handleGroup); // Avoid the manipulators affecting the element
@@ -133,6 +169,15 @@ export class ContainerElementHandle {
         return true;
     }
 
+    private _startUpdateSettings(ev: MouseEvent){
+        ev.preventDefault();           // Avoid triggering default events
+        ev.stopImmediatePropagation(); // Avoid triggering other custom events up-tree
+
+        (this.element as any as ConfigurableSettingsElement).startAdjustingSettings();
+
+        return true;
+    }
+
     private _reposition() {
         const box = this.body.getClientRects()[0];
         if (this.widthHeightResizeManipulator) {
@@ -141,6 +186,9 @@ export class ContainerElementHandle {
 
         if (this.heightResizeManipulator) {
             this.heightResizeManipulator.setAttributeNS(null, 'transform', `translate(${box.width / 2}, ${box.height + HEIGHT_MANIPULATOR_VERTICAL_PADDING})`);
+        }
+        if (this.settingsManipulator) {
+            this.settingsManipulator.setAttributeNS(null, 'transform', `translate(${box.width}, ${0})`);
         }
     }
 }

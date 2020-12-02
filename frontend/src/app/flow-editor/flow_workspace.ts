@@ -9,6 +9,8 @@ import { Toolbox } from './toolbox';
 import { ContainerFlowBlock, ContainerFlowBlockData, isContainerFlowBlockData } from './ui-blocks/container_flow_block';
 import { UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
 import { isContainedIn, uuidv4 } from './utils';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfigureBlockDialogComponent, ConfigurableBlock, BlockConfigurationOptions } from './dialogs/configure-block-dialog/configure-block-dialog.component';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -39,10 +41,12 @@ type State = 'waiting'     // Base state
 
 export class FlowWorkspace implements BlockManager {
     public static BuildOn(baseElement: HTMLElement,
-                          getEnum: EnumGetter): FlowWorkspace {
+                          getEnum: EnumGetter,
+                          dialog: MatDialog,
+                         ): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
-            workspace = new FlowWorkspace(baseElement, getEnum);
+            workspace = new FlowWorkspace(baseElement, getEnum, dialog);
             workspace.init();
         }
         catch(err) {
@@ -234,7 +238,9 @@ export class FlowWorkspace implements BlockManager {
         element: SVGElement,
     }};
 
-    private constructor(baseElement: HTMLElement, getEnum: EnumGetter) {
+    private constructor(baseElement: HTMLElement,
+                        getEnum: EnumGetter,
+                        private dialog: MatDialog) {
         this.baseElement = baseElement;
         this.inlineEditor = undefined;
         this.blocks = {};
@@ -2157,4 +2163,19 @@ export class FlowWorkspace implements BlockManager {
         this.editInline(block.getValueArea(), block.value, type, update);
     }
     // </Block manager interface>
+
+    startBlockConfiguration(block: ConfigurableBlock) {
+        const dialogRef = this.dialog.open(ConfigureBlockDialogComponent, {
+            data: { block: block }
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!(result && result.success)) {
+                console.log("Cancelled");
+                return;
+            }
+
+            block.applyConfiguration((result.settings as BlockConfigurationOptions));
+        });
+    }
 }

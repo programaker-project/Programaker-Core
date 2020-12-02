@@ -3,26 +3,29 @@ import { UiSignalService } from "../../../services/ui-signal.service";
 import { Area2D, FlowBlock, Resizeable } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
-import { ContainerElement, ContainerElementHandle } from "./container_element_handle";
+import { ContainerElement, ContainerElementHandle, ConfigurableSettingsElement } from "./container_element_handle";
 import { combinedArea, getRefBox } from "./utils";
+import { SurfaceOptions, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
+import { CutTree } from "./ui_tree_repr";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
 const BLOCK_TYPE_ANNOTATION = 'Horizontal section'
 const SECTION_PADDING = 5;
+const DEFAULT_COLOR = '';
 
-export const HorizontalUiSectionBuilder : ContainerFlowBlockBuilder = (canvas: SVGElement,
-                                                                  group: SVGElement,
-                                                                  block: ContainerFlowBlock,
-                                                                  service: UiSignalService,
-                                                                  initOps: UiFlowBlockBuilderInitOps,
-                                                                 ) => {
+export const HorizontalUiSectionBuilder: ContainerFlowBlockBuilder = (canvas: SVGElement,
+    group: SVGElement,
+    block: ContainerFlowBlock,
+    service: UiSignalService,
+    initOps: UiFlowBlockBuilderInitOps,
+) => {
     const element = new HorizontalUiSection(canvas, group, block, service, initOps);
     element.init();
     return element;
 }
 
-class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement, Resizeable {
+class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement, Resizeable, ConfigurableSettingsElement {
     subscription: Subscription;
     handle: ContainerElementHandle | null = null;
     node: SVGAElement;
@@ -35,9 +38,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
     private _contents: FlowBlock[];
 
     constructor(canvas: SVGElement, group: SVGElement,
-                public block: ContainerFlowBlock,
-                private service: UiSignalService,
-                private initOps: UiFlowBlockBuilderInitOps) {
+        public block: ContainerFlowBlock,
+        private service: UiSignalService,
+        private initOps: UiFlowBlockBuilderInitOps) {
 
         const refBox = getRefBox(canvas);
 
@@ -45,7 +48,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.placeholder = document.createElementNS(SvgNS, 'text');
 
-        group.setAttribute('class', 'flow_node ui_node container_node responsive_page');
+        group.setAttribute('class', 'flow_node ui_node container_node section_node');
 
         this.grid = document.createElementNS(SvgNS, 'g');
 
@@ -73,10 +76,11 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
 
         this.grid.setAttribute('class', 'division_grid');
 
+        this.updateStyle();
         this.updateSizes();
 
         if (initOps.workspace) {
-            this.handle = new ContainerElementHandle(this, initOps.workspace, [ 'resize_height' ]);
+            this.handle = new ContainerElementHandle(this, initOps.workspace, ['resize_height', 'adjust_settings']);
         }
     }
 
@@ -258,8 +262,63 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
     update() {
         this.onContentUpdate(this._contents);
     }
+
+    // Configurable
+    startAdjustingSettings(): void {
+        this.block.workspace.startBlockConfiguration(this);
+    }
+
+    get isBackgroundConfigurable(): SurfaceOptions {
+        return {color: true, image: true};
+    }
+
+    getCurrentConfiguration(): BlockConfigurationOptions {
+        return Object.assign({}, this.block.blockData.settings || {});
+    }
+
+    applyConfiguration(settings: BlockConfigurationOptions): void {
+        if (settings.bg) {
+            this.block.blockData.settings = Object.assign(this.block.blockData.settings || {}, {bg: settings.bg});
+
+            this.updateStyle();
+        }
+    }
+
+    // Style management
+    updateStyle(){
+        const settings = this.block.blockData.settings;
+        if (!settings) {
+            return;
+        }
+        if (settings.bg) {
+            // Get color to apply
+            let color = DEFAULT_COLOR;
+            if (settings.bg.type === 'color') {
+                color = settings.bg.value;
+            }
+
+            // Apply it to the element's background
+            this.rect.style.fill = color;
+        }
+    }
+
+    // Compilation
+    generateTreeWithGroups(groups: CutTree[]): CutTree {
+        const tree: CutTree = { cut_type: 'hbox', groups: groups };
+
+        const settings = this.block.blockData.settings;
+        if (settings) {
+            if (settings.bg && settings.bg.type === 'color') {
+                tree.background = settings.bg;
+            }
+        }
+
+        return tree;
+    }
 }
 
 export const HorizontalUiSectionGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
-    return { cut_type: 'hbox', groups: blocks.filter(b => b instanceof UiFlowBlock).map((b: UiFlowBlock) => b.renderAsUiElement()) };
+    const groups = blocks.filter(b => b instanceof UiFlowBlock).map((b: UiFlowBlock) => b.renderAsUiElement());
+
+    return (handler as HorizontalUiSection).generateTreeWithGroups(groups);
 }

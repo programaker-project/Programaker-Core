@@ -629,6 +629,10 @@ svg.block_renderer g.flow_node.container_node.highlighted .node_body {
     fill: #AFA;
 }
 
+svg.block_renderer g.flow_node.section_node .node_body {
+    fill: rgba(255,255,255,0.5);
+}
+
 svg.block_renderer g.flow_node.container_node.responsive_page .output_text {
     fill: #fff;
     font-style: normal;
@@ -639,14 +643,27 @@ svg.block_renderer g.flow_node.container_node .output_text {
     font-style: italic;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .resize-manipulator path {
+svg.block_renderer g.flow_node.container_node .manipulators .manipulator path {
     fill: transparent;
     stroke: #ff0;
     stroke-width: 2px;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .resize-manipulator .handle-icon-background {
+svg.block_renderer g.flow_node.container_node .manipulators .manipulator .handle-icon-background {
     fill: #222;
+}
+
+svg.block_renderer g.flow_node.container_node .manipulators .resize-manipulator {
+    cursor: se-resize;
+}
+
+svg.block_renderer g.flow_node.container_node .manipulators .height-resizer.resize-manipulator {
+    cursor: s-resize;
+}
+
+svg.block_renderer g.flow_node.container_node .manipulators .manipulator.settings-manipulator image {
+    cursor: pointer;
+    filter: invert(100%);
 }
 
 svg.block_renderer g.flow_node.container_node .manipulators.hidden {

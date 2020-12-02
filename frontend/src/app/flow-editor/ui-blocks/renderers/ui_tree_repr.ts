@@ -1,5 +1,6 @@
 import { Area2D } from "../../flow_block";
 
+export type BackgroundPropertyConfiguration = { type: 'transparent' } | { type: 'color', value: string };
 
 export type UiElementWidgetType
     = 'simple_button'
@@ -20,6 +21,7 @@ export interface CutElement {
 };
 export type CutType = 'vbox' | 'hbox' | 'no-box';
 export interface CutNode {
+    background?: BackgroundPropertyConfiguration;
     cut_type: CutType,
     groups: CutTree[],
 };

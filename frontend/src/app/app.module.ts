@@ -7,6 +7,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatRadioModule } from '@angular/material/radio';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -72,6 +73,7 @@ import { UpdateBridgeDialogComponent } from './dialogs/update-bridge-dialog/upda
 import { MatRippleModule } from '@angular/material/core';
 import { GroupCollaboratorEditorComponent } from './components/group-collaborator-editor/group-collaborator-editor.component';
 import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators-dialog/edit-collaborators-dialog.component';
+import { ConfigureBlockDialogComponent } from './flow-editor/dialogs/configure-block-dialog/configure-block-dialog.component';
 
 @NgModule({
     declarations: [
@@ -110,6 +112,7 @@ import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators
         AddBridgeDialogComponent,
         UpdateBridgeDialogComponent,
         ConfirmDeleteDialogComponent,
+        ConfigureBlockDialogComponent,
 
         // Independent components
         GroupCollaboratorEditorComponent,
@@ -123,6 +126,7 @@ import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators
         MatAutocompleteModule,
         MatButtonModule,
         MatCheckboxModule,
+        MatRadioModule,
         MatIconModule,
         MatToolbarModule,
         MatSidenavModule,

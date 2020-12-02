@@ -453,7 +453,7 @@ export const ResponsivePageGenerateTree: GenTreeProc = (handler: UiFlowBlockHand
 // These two "reduce" functions might be merged into a single one. It's just not
 // a priority right now, but it might be interesting to do it to check if it
 // results on simpler code.
-function reduceTree(tree: CutTree) {
+function reduceTree(tree: CutTree): CutTree {
     const aux = (node: CutTree) => {
         if (!((node as CutNode).cut_type)) {
             return node;
@@ -462,7 +462,11 @@ function reduceTree(tree: CutTree) {
         const cNode = node as CutNode;
         const newGroups = reduceGroups(cNode);
 
-        return { cut_type: cNode.cut_type, groups: newGroups };
+        const recasted: CutTree = { cut_type: cNode.cut_type, groups: newGroups };
+        if (cNode.background) {
+            recasted.background = cNode.background;
+        }
+        return recasted;
     };
 
     return aux(tree);
@@ -479,7 +483,7 @@ function reduceGroups(cNode: CutNode): CutTree[] {
         }
 
         const cTree = tree as CutNode;
-        if (cTree.cut_type === cType) {
+        if ((!cNode.background) && (cTree.cut_type === cType) && (!cTree.background)) {
             for (const group of cTree.groups) {
                 aux(group);
             }

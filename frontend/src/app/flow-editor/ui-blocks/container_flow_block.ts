@@ -91,7 +91,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     }
 
     get isPage(): boolean {
-        return this.options.isPage;
+        return !!this.options.isPage;
     }
 
     getPageTitle(): string {
@@ -240,5 +240,10 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         if (this.handler.container) {
             this.handler.container.pushDown(startHeight, pushDown);
         }
+    }
+
+    // Configurable handlers
+    get workspace(): FlowWorkspace {
+        return this._workspace;
     }
 }
