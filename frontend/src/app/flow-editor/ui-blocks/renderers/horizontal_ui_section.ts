@@ -232,7 +232,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
         }
     }
 
-    updateContainer(container: UiFlowBlock) {
+    updateContainer(container: UiFlowBlock | null) {
         if (container instanceof ContainerFlowBlock) {
             this.container = container;
         }

@@ -173,9 +173,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
 
     // Container-related
     updateContainer(container: FlowBlock) {
-        if (container instanceof UiFlowBlock) {
-            this.handler.updateContainer(container);
-        }
+        this.handler.updateContainer(container as (UiFlowBlock | null));
     }
 
     recursiveGetAllContents(): FlowBlock[] {
