@@ -6,6 +6,7 @@ const SvgNS = "http://www.w3.org/2000/svg";
 
 const ManipulatorButtonSize = '200';
 const HEIGHT_MANIPULATOR_VERTICAL_PADDING = 10;
+const WIDTH_MANIPULATOR_HORIZONTAL_PADDING = 10;
 const RESIZE_MANIPULATOR_SIZE = 35;
 const SETTINGS_MANIPULATOR_SIZE = 35;
 const MANIPULATOR_ICON_PADDING = 5;
@@ -13,6 +14,7 @@ const MANIPULATOR_ICON_PADDING = 5;
 export type HandleOption
     = 'resize_width_height'
     | 'resize_height'
+    | 'resize_width'
     | 'adjust_settings'
 ;
 
@@ -53,6 +55,23 @@ function gen_height_resize_icon(size: number): SVGElement {
     return element;
 }
 
+function gen_width_resize_icon(size: number): SVGElement {
+    const element = document.createElementNS(SvgNS, 'path');
+
+    const center = size/2;
+    const far = size - MANIPULATOR_ICON_PADDING;
+    const near = MANIPULATOR_ICON_PADDING;
+
+    const cols = (size - MANIPULATOR_ICON_PADDING * 2) / 3;
+
+    const col1 = MANIPULATOR_ICON_PADDING + cols;
+    const col2 = col1 + cols;
+
+    element.setAttributeNS(null, 'd', `M${near},${col1} H${center} V${near} L${far},${center} L${center},${far} V${col2} H${near} V${far} V${near} `);
+
+    return element;
+}
+
 function gen_settings_manipulator_icon(size: number): SVGElement {
     const element = document.createElementNS(SvgNS, 'image');
 
@@ -65,11 +84,13 @@ function gen_settings_manipulator_icon(size: number): SVGElement {
 
 export class ContainerElementHandle {
     handleGroup: SVGGElement;
-    widthHeightResizeManipulator: SVGElement;
     body: SVGElement;
     resizePrevPos: Position2D;
-    heightResizeManipulator: SVGGElement;
     settingsManipulator: SVGGElement;
+
+    widthHeightResizeManipulator: SVGElement;
+    heightResizeManipulator: SVGGElement;
+    widthResizeManipulator: SVGGElement;
 
     constructor(private element: ContainerElement,
                 private workspace: FlowWorkspace,
@@ -99,21 +120,10 @@ export class ContainerElementHandle {
             this.handleGroup.appendChild(m);
         }
         else if (this.handleOptions.indexOf('resize_height') >= 0) {
-            const m =this.heightResizeManipulator = document.createElementNS(SvgNS, 'g');
-
-            const iconBackground = document.createElementNS(SvgNS, 'rect');
-            iconBackground.setAttribute('class', 'handle-icon-background');
-            iconBackground.setAttributeNS(null, 'rx', '4');
-            iconBackground.setAttributeNS(null, 'width', RESIZE_MANIPULATOR_SIZE + '');
-            iconBackground.setAttributeNS(null, 'height', RESIZE_MANIPULATOR_SIZE + '');
-            m.appendChild(iconBackground);
-
-            const resizeIcon = gen_height_resize_icon(RESIZE_MANIPULATOR_SIZE);
-            m.appendChild(resizeIcon);
-            m.onmousedown = this._startResizeHeight.bind(this);
-
-            m.setAttribute('class', 'manipulator resize-manipulator height-resizer');
-            this.handleGroup.appendChild(m);
+            this._createHeightResizeManipulator();
+        }
+        else if (this.handleOptions.indexOf('resize_width') >= 0) {
+            this. _createWidthResizeManipulator();
         }
 
         if (this.handleOptions.indexOf('adjust_settings') >= 0) {
@@ -150,6 +160,87 @@ export class ContainerElementHandle {
         this._reposition();
     }
 
+    public setResizeType(newType: 'horizontal' | 'vertical') {
+        if (newType === 'horizontal') {
+            this._hideHeightResizeManipulator();
+            this._showWidthResizeManipulator();
+        }
+        else if (newType === 'vertical') {
+            this._hideWidthResizeManipulator();
+            this._showHeightResizeManipulator();
+        }
+        this._reposition();
+    }
+
+    private _createWidthResizeManipulator() {
+        const m = this.widthResizeManipulator = document.createElementNS(SvgNS, 'g');
+
+        const iconBackground = document.createElementNS(SvgNS, 'rect');
+        iconBackground.setAttribute('class', 'handle-icon-background');
+        iconBackground.setAttributeNS(null, 'rx', '4');
+        iconBackground.setAttributeNS(null, 'width', RESIZE_MANIPULATOR_SIZE + '');
+        iconBackground.setAttributeNS(null, 'height', RESIZE_MANIPULATOR_SIZE + '');
+        m.appendChild(iconBackground);
+
+        const resizeIcon = gen_width_resize_icon(RESIZE_MANIPULATOR_SIZE);
+        m.appendChild(resizeIcon);
+        m.onmousedown = this._startResizeWidth.bind(this);
+
+        m.setAttribute('class', 'manipulator resize-manipulator width-resizer');
+        this.handleGroup.appendChild(m);
+    }
+
+    private _showWidthResizeManipulator() {
+        if (this.widthResizeManipulator) {
+            this.widthResizeManipulator.classList.remove('hidden');
+        }
+        else {
+            this._createWidthResizeManipulator();
+        }
+    }
+
+    private _hideWidthResizeManipulator() {
+        if (!this.widthResizeManipulator) {
+            return;
+        }
+        this.widthResizeManipulator.classList.add("hidden")
+    }
+
+    private _createHeightResizeManipulator() {
+        const m = this.heightResizeManipulator = document.createElementNS(SvgNS, 'g');
+
+        const iconBackground = document.createElementNS(SvgNS, 'rect');
+        iconBackground.setAttribute('class', 'handle-icon-background');
+        iconBackground.setAttributeNS(null, 'rx', '4');
+        iconBackground.setAttributeNS(null, 'width', RESIZE_MANIPULATOR_SIZE + '');
+        iconBackground.setAttributeNS(null, 'height', RESIZE_MANIPULATOR_SIZE + '');
+        m.appendChild(iconBackground);
+
+        const resizeIcon = gen_height_resize_icon(RESIZE_MANIPULATOR_SIZE);
+        m.appendChild(resizeIcon);
+        m.onmousedown = this._startResizeHeight.bind(this);
+
+        m.setAttribute('class', 'manipulator resize-manipulator height-resizer');
+        this.handleGroup.appendChild(m);
+    }
+
+    private _showHeightResizeManipulator() {
+        if (this.heightResizeManipulator) {
+            this.heightResizeManipulator.classList.remove('hidden');
+        }
+        else {
+            this._createHeightResizeManipulator();
+        }
+    }
+
+    private _hideHeightResizeManipulator() {
+        if (!this.heightResizeManipulator) {
+            return;
+        }
+        this.heightResizeManipulator.classList.add("hidden")
+    }
+
+    // Event handling
     private _startResizeWidthHeight(ev: MouseEvent) {
         ev.preventDefault();           // Avoid triggering default events
         ev.stopImmediatePropagation(); // Avoid triggering other custom events up-tree
@@ -160,6 +251,16 @@ export class ContainerElementHandle {
     }
 
     private _startResizeHeight(ev: MouseEvent) {
+        ev.preventDefault();           // Avoid triggering default events
+        ev.stopImmediatePropagation(); // Avoid triggering other custom events up-tree
+
+        // TODO: Add resize type
+        this.workspace.startResizing(this.element as any as Resizeable, ev);
+
+        return true;
+    }
+
+    private _startResizeWidth(ev: MouseEvent) {
         ev.preventDefault();           // Avoid triggering default events
         ev.stopImmediatePropagation(); // Avoid triggering other custom events up-tree
 
@@ -187,7 +288,12 @@ export class ContainerElementHandle {
         if (this.heightResizeManipulator) {
             this.heightResizeManipulator.setAttributeNS(null, 'transform', `translate(${box.width / 2}, ${box.height + HEIGHT_MANIPULATOR_VERTICAL_PADDING})`);
         }
-        if (this.settingsManipulator) {
+
+        if (this.widthResizeManipulator) {
+            this.widthResizeManipulator.setAttributeNS(null, 'transform', `translate(${box.width + WIDTH_MANIPULATOR_HORIZONTAL_PADDING}, ${box.height / 2})`);
+        }
+
+if (this.settingsManipulator) {
             this.settingsManipulator.setAttributeNS(null, 'transform', `translate(${box.width}, ${0})`);
         }
     }

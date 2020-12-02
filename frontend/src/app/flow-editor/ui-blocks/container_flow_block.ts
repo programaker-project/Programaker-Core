@@ -10,6 +10,7 @@ export type ContainerFlowBlockType = 'container_flow_block';
 export const BLOCK_TYPE = 'container_flow_block';
 
 const PUSH_DOWN_MARGIN = 10;
+const PUSH_RIGHT_MARGIN = 10;
 
 export interface ContainerFlowBlockBuilderInitOps {
     workspace?: FlowWorkspace,
@@ -237,6 +238,54 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         // Propagate the PushDown if it has been triggered
         if (this.handler.container) {
             this.handler.container.pushDown(startHeight, pushDown);
+        }
+    }
+
+    pushRight(startX: number, pushRight: number) {
+        // This takes the same logic as `pushDown` and applies it horizontally.
+        let triggered = false;
+
+        // Push down if the movement collides with the lower border of the container
+        const area = this.getBodyArea();
+        if ((startX + pushRight + PUSH_RIGHT_MARGIN)
+            >= (area.x + area.width)) {
+            triggered = true;
+        }
+
+        // Push down if in the movement any block might be affected
+        if (!triggered) {
+            for (const block of this.contents) {
+                const pos = block.getOffset();
+                if (pos.x >= startX) {
+                    if ((pos.x - (startX + pushRight)) < PUSH_RIGHT_MARGIN ) {
+                        triggered = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!triggered) {
+            return;
+        }
+
+        const movement = Math.max(pushRight, PUSH_RIGHT_MARGIN);
+
+        for (const block of this.contents) {
+            const pos = block.getOffset();
+            if (pos.x >= startX) {
+
+                block.moveBy({ x: movement, y: 0 });
+            }
+        }
+
+        const size = this.handler.getBodyArea();
+        size.width += movement;
+        this.handler.resize(size);
+
+        // Propagate the PushDown if it has been triggered
+        if (this.handler.container) {
+            this.handler.container.pushRight(startX, pushRight);
         }
     }
 
