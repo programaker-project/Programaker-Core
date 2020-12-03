@@ -21,6 +21,15 @@ export function getRefBox(canvas: SVGElement): DOMRect {
 }
 
 export function combinedManipulableArea(areas: Area2D[]): ManipulableArea2D {
+    if (areas.length === 0) {
+        return {
+            left: 0,
+            top: 0,
+            right: 0,
+            bottom: 0,
+        };
+    }
+
     const initialArea = areas[0];
     let rect = {
         left: initialArea.x,
