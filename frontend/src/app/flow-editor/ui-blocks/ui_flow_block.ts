@@ -5,6 +5,7 @@ import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
 import { uuidv4 } from '../utils';
 import { CutTree, UiElementWidgetType, UiElementRepr } from './renderers/ui_tree_repr';
+import { BlockConfigurationOptions } from '../dialogs/configure-block-dialog/configure-block-dialog.component';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -31,6 +32,9 @@ export interface UiFlowBlockHandler {
     dispose: () => void,
     isTextEditable(): this is TextEditable,
     isTextReadable(): this is TextReadable,
+
+    onGetFocus?: () => void;
+    onLoseFocus?: () => void;
 }
 
 
@@ -60,7 +64,7 @@ export interface UiFlowBlockOptions extends FlowBlockOptions {
 interface UiFlowBlockExtraData {
     textContent?: string,
     dimensions?: { width: number, height: number },
-    settings?: {[key: string]: any},
+    settings?: BlockConfigurationOptions,
 }
 
 export interface UiFlowBlockData extends FlowBlockData {
@@ -169,6 +173,8 @@ export class UiFlowBlock implements FlowBlock {
                 data.text = this.handler.text;
             }
         }
+
+        data.settings = this.blockData.settings;
 
         return data;
     }
@@ -451,8 +457,17 @@ export class UiFlowBlock implements FlowBlock {
         return [];
     }
 
-    public onGetFocus() {}
-    public onLoseFocus() {}
+    onGetFocus() {
+        if (this.handler.onGetFocus) {
+            this.handler.onGetFocus();
+        }
+    }
+
+    onLoseFocus() {
+        if (this.handler.onLoseFocus) {
+            this.handler.onLoseFocus();
+        }
+    }
 
     addConnection(direction: "in" | "out", input_index: number, block: FlowBlock): void {
         if (direction === 'out') { return; }
@@ -591,6 +606,11 @@ export class UiFlowBlock implements FlowBlock {
         return 'down';
     }
 
+    // Configurable handlers
+    get workspace(): FlowWorkspace {
+        return this._workspace;
+    }
+
     // UI Flow block specific
     onclick() {
         this.handler.onClick();
@@ -600,5 +620,4 @@ export class UiFlowBlock implements FlowBlock {
     // Container-related
     updateContainer(container: FlowBlock) {}
     pushDown(startHeight: number, pushDown: number) {}
-
 }

@@ -18,7 +18,7 @@ export type HandleOption
     | 'adjust_settings'
 ;
 
-export interface ContainerElement {
+export interface HandleableElement {
     getBodyElement: () => SVGElement;
     getBlock: () => FlowBlock;
 }
@@ -82,7 +82,7 @@ function gen_settings_manipulator_icon(size: number): SVGElement {
     return element;
 }
 
-export class ContainerElementHandle {
+export class UiElementHandle {
     handleGroup: SVGGElement;
     body: SVGElement;
     resizePrevPos: Position2D;
@@ -92,7 +92,7 @@ export class ContainerElementHandle {
     heightResizeManipulator: SVGGElement;
     widthResizeManipulator: SVGGElement;
 
-    constructor(private element: ContainerElement,
+    constructor(private element: HandleableElement,
                 private workspace: FlowWorkspace,
                 private handleOptions: HandleOption[]) {}
 

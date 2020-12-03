@@ -86,6 +86,19 @@ render_element(E=#{ <<"widget_type">> := <<"simple_button">>
     , <<"</button></div>">>
     ];
 
+render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
+                  , <<"id">> := WidgetId
+                  }, Values) ->
+    ElementStyle = get_text_element_style(E),
+    [ <<"<div class=widget-container><div class='widget fixed_text' id='elem-">>
+    , WidgetId
+    , <<"'">>
+    , "style='", ElementStyle, "'"
+    , <<">">>
+    , html_escape(maps:get(<<"text">>, E, "Right click me to edit this text!"))
+    , <<"</div></div>">>
+    ];
+
 render_element(E=#{ <<"widget_type">> := Type= <<"simple_debug_output">>
                   , <<"id">> := WidgetId
                   }, Values) ->
@@ -123,6 +136,10 @@ render_scripts(ProgramId, Contents) ->
 
 
 wire_components(null) ->
+    [];
+
+wire_components(#{ <<"widget_type">> := <<"fixed_text">>
+                 }) ->
     [];
 
 wire_components(#{ <<"cut_type">> := CutType
@@ -174,3 +191,20 @@ render_connection_block_start(ProgramId) ->
 
 render_connection_block_end() ->
     <<"})();">>.
+
+get_text_element_style(E) ->
+    [ get_text_element_font_size_style(E)
+    , get_text_element_text_color_style(E)
+    ].
+
+get_text_element_font_size_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"fontSize">> := #{ <<"value">> := Value } } } }) ->
+    [ "font-size: ", integer_to_binary(Value), "px;"
+    ];
+get_text_element_font_size_style(_) ->
+    [].
+
+get_text_element_text_color_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"color">> := #{ <<"value">> := Value } } } }) ->
+    [ "color: ", Value, ";"
+    ];
+get_text_element_text_color_style(_) ->
+    [].

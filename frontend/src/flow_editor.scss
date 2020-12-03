@@ -56,6 +56,17 @@ svg.block_renderer g.flow_node.selected rect.node_body, svg.block_renderer g.flo
     stroke-dasharray: 0;
 }
 
+// Block type names are hidden by default
+svg.block_renderer .block_type_annotation {
+    visibility: hidden;
+}
+
+// Only shown when the block is selected or on the toolbox showcases
+svg.block_renderer g.flow_node.selected .block_type_annotation,
+.showcase svg.block_renderer .block_type_annotation {
+    visibility: visible;
+}
+
 svg.block_renderer path.building {
     pointer-events: none;
     stroke-width: 4px;
@@ -633,6 +644,16 @@ svg.block_renderer g.flow_node.section_node .node_body {
     fill: rgba(255,255,255,0.5);
 }
 
+
+svg.block_renderer g.flow_node.text_node .node_body {
+    fill: rgba(255,255,255,0.5);
+}
+
+// Don't use transparency on showcase
+.showcase svg.block_renderer g.flow_node.text_node .node_body {
+    fill: #fff;
+}
+
 .showcase svg.block_renderer g.flow_node.section_node .node_body {
     fill: #fff;
 }
@@ -647,37 +668,37 @@ svg.block_renderer g.flow_node.container_node .output_text {
     font-style: italic;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .manipulator path {
+svg.block_renderer g.flow_node .manipulators .manipulator path {
     fill: transparent;
     stroke: #ff0;
     stroke-width: 2px;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .manipulator.hidden {
+svg.block_renderer g.flow_node .manipulators .manipulator.hidden {
     display: none;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .manipulator .handle-icon-background {
+svg.block_renderer g.flow_node .manipulators .manipulator .handle-icon-background {
     fill: #222;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .resize-manipulator {
+svg.block_renderer g.flow_node .manipulators .resize-manipulator {
     cursor: se-resize;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .height-resizer.resize-manipulator {
+svg.block_renderer g.flow_node .manipulators .height-resizer.resize-manipulator {
     cursor: s-resize;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .width-resizer.resize-manipulator {
+svg.block_renderer g.flow_node .manipulators .width-resizer.resize-manipulator {
     cursor: e-resize;
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators .manipulator.settings-manipulator image {
+svg.block_renderer g.flow_node .manipulators .manipulator.settings-manipulator image {
     cursor: pointer;
     filter: invert(100%);
 }
 
-svg.block_renderer g.flow_node.container_node .manipulators.hidden {
+svg.block_renderer g.flow_node .manipulators.hidden {
     display: none;
 }

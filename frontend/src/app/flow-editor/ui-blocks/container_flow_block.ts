@@ -30,8 +30,8 @@ export interface ContainerFlowBlockHandler extends UiFlowBlockHandler, Resizeabl
     updateContainer(container: UiFlowBlock): void;
     onContentUpdate: (contents: FlowBlock[]) => void;
 
-    onGetFocus();
-    onLoseFocus();
+    onGetFocus(): void;
+    onLoseFocus(): void;
 
     readonly container: ContainerFlowBlock;
     update(): void; // Notify the handler of a change on the properties of the block
@@ -287,10 +287,5 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         if (this.handler.container) {
             this.handler.container.pushRight(startX, pushRight);
         }
-    }
-
-    // Configurable handlers
-    get workspace(): FlowWorkspace {
-        return this._workspace;
     }
 }

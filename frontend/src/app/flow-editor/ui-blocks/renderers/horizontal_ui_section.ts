@@ -1,12 +1,12 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
+import { BlockAllowedConfigurations, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
 import { Area2D, FlowBlock, Resizeable } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
-import { ContainerElement, ContainerElementHandle, ConfigurableSettingsElement } from "./container_element_handle";
-import { combinedArea, getRefBox } from "./utils";
-import { SurfaceOptions, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
+import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutTree } from "./ui_tree_repr";
+import { combinedArea, getRefBox } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -25,9 +25,9 @@ export const HorizontalUiSectionBuilder: ContainerFlowBlockBuilder = (canvas: SV
     return element;
 }
 
-class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement, Resizeable, ConfigurableSettingsElement {
+class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElement, Resizeable, ConfigurableSettingsElement {
     subscription: Subscription;
-    handle: ContainerElementHandle | null = null;
+    handle: UiElementHandle | null = null;
     node: SVGAElement;
     rect: SVGRectElement;
     grid: SVGGElement;
@@ -81,7 +81,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
         this.updateSizes();
 
         if (initOps.workspace) {
-            this.handle = new ContainerElementHandle(this, initOps.workspace, ['resize_height', 'adjust_settings']);
+            this.handle = new UiElementHandle(this, initOps.workspace, ['resize_height', 'adjust_settings']);
         }
     }
 
@@ -386,8 +386,8 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, ContainerElement
         this.block.workspace.startBlockConfiguration(this);
     }
 
-    get isBackgroundConfigurable(): SurfaceOptions {
-        return {color: true, image: true};
+    getAllowedConfigurations(): BlockAllowedConfigurations {
+        return { background: {color: true, image: true} };
     }
 
     getCurrentConfiguration(): BlockConfigurationOptions {

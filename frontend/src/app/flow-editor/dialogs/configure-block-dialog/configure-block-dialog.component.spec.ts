@@ -16,7 +16,7 @@ describe('ConfigureBlockDialogComponent', () => {
     };
     const mockDialogData = {
         block: {
-            isBackgroundConfigurable: false,
+            getAllowedConfigurations: () => { return {}; },
             getCurrentConfiguration: () => { return {}; },
         }
     };

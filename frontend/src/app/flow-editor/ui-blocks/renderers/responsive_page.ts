@@ -3,7 +3,7 @@ import { UiSignalService } from "../../../services/ui-signal.service";
 import { Area2D, FlowBlock, Position2D, Resizeable } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
-import { ContainerElement, ContainerElementHandle } from "./container_element_handle";
+import { HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr } from "./ui_tree_repr";
 import { combinedArea, combinedManipulableArea, getRefBox } from "./utils";
 
@@ -24,10 +24,10 @@ export const ResponsivePageBuilder : ContainerFlowBlockBuilder = (canvas: SVGEle
     return element;
 }
 
-class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Resizeable, TextEditable {
+class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Resizeable, TextEditable {
     subscription: Subscription;
     textBox: SVGTextElement;
-    handle: ContainerElementHandle | null = null;
+    handle: UiElementHandle | null = null;
     node: SVGAElement;
     textDim: { width: number; height: number; };
     rect: SVGRectElement;
@@ -97,7 +97,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, ContainerElement, Res
         this.updateSizes();
 
         if (initOps.workspace) {
-            this.handle = new ContainerElementHandle(this, initOps.workspace, [ 'resize_width_height' ]);
+            this.handle = new UiElementHandle(this, initOps.workspace, [ 'resize_width_height' ]);
         }
     }
 

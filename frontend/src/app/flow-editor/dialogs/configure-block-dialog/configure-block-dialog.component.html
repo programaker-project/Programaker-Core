@@ -4,7 +4,7 @@
 </h2>
 
 <section class="block-settings">
-    <div class="background-configuration" *ngIf="bgConf">
+    <div class="background-configuration" *ngIf="allowedConfigurations.background">
         <h3>Background configuration</h3>
         <mat-radio-group #bgTypeSelector
             [(ngModel)]="selectedBackgroundType"
@@ -15,7 +15,7 @@
             <mat-radio-button value="transparent">Transparent</mat-radio-button>
         </mat-radio-group>
 
-        <div [class]="'color-picker ' + ((bgConf.color && selectedBackgroundType=='color') ? '' : 'hidden' ) ">
+        <div [class]="'color-picker ' + ((allowedConfigurations.background.color && selectedBackgroundType=='color') ? '' : 'hidden' ) ">
             <input #bgColorPicker class="color-input" />
         </div>
         <!-- <div class="image-picker" *ngIf="bgConf.image && (selectedBackgroundType=='image')">
@@ -31,6 +31,30 @@
              </button>
              <input hidden accept="image/*" type="file" #bgImgFileInput (change)="previewImage($event)"/>
              </div> -->
+    </div>
+
+    <div class="text-configuration" *ngIf="allowedConfigurations.text">
+        <h3>Text configuration</h3>
+        <div class='color-picker' *ngIf="allowedConfigurations.text.color">
+            <div class="description">
+                Background color:
+            </div>
+            <input #textColorPicker class="color-input" />
+        </div>
+
+        <div class='font-size-picker' *ngIf="allowedConfigurations.text.fontSize">
+            <div class="description">
+                Font size: <span #fontSizeValueViewer></span>px
+            </div>
+            <input #textFontSizePicker type="range" min="10" max="120" />
+        </div>
+
+        <div class='text-sample'>
+            <label>Result sample:</label>
+            <div #textSampleResult class="result">
+                The quick brown fox jumps over the lazy dog
+            </div>
+        </div>
     </div>
 
 
