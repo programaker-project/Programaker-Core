@@ -43,8 +43,6 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         private service: UiSignalService,
         private initOps: UiFlowBlockBuilderInitOps) {
 
-        const refBox = getRefBox(canvas);
-
         this.node = document.createElementNS(SvgNS, 'a');
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.placeholder = document.createElementNS(SvgNS, 'text');
@@ -424,6 +422,11 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     generateTreeWithGroups(groups: CutTree[]): CutTree {
         const tree: CutTree = { cut_type: 'hbox', groups: groups };
 
+        if (this.nestedHorizontal) {
+            // Then this works more like a VBox
+            tree.cut_type = 'vbox';
+        }
+
         const settings = this.block.blockData.settings;
         if (settings) {
             if (settings.bg && settings.bg.type === 'color') {
@@ -436,15 +439,24 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 }
 
 export const HorizontalUiSectionGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
-    const groups = (blocks
+    const horizHandler = handler as HorizontalUiSection;
+    const filterGroups = (blocks
                     // Get UI blocks
         .filter(b => b instanceof UiFlowBlock)
-                    // Order by from left to right
-        .map(b => { return { area: b.getBodyArea(), block: b } })
-        .sort((a, b) => a.area.x - b.area.x)
-                    // Render the elements themselves as
-        .map((item: {area: Area2D, block: UiFlowBlock}) => item.block.renderAsUiElement())
-                   );
+        .map(b => { return { area: b.getBodyArea(), block: b } }));
 
-    return (handler as HorizontalUiSection).generateTreeWithGroups(groups);
+    if (horizHandler.nestedHorizontal) {
+        // Order by from top to bottom
+        filterGroups.sort((a, b) => a.area.y - b.area.y);
+    }
+    else {
+        // Order by from left to right
+        filterGroups.sort((a, b) => a.area.x - b.area.x);
+    }
+
+    // Render the elements themselves
+    const groups = filterGroups.map((item: {area: Area2D, block: UiFlowBlock}) => item.block.renderAsUiElement());
+
+    // Finally generate the tree
+    return horizHandler.generateTreeWithGroups(groups);
 }
