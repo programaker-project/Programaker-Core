@@ -54,6 +54,9 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
             if (this.currentConfig.bg) {
                 this.selectedBackgroundType = this.currentConfig.bg.type;
             }
+            else {
+                this.currentConfig.bg = { type: 'transparent' };
+            }
         }
     }
 
