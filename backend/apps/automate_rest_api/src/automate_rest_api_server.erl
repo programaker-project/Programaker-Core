@@ -83,6 +83,8 @@ start_link() ->
                         , {"/api/v0/programs/by-id/:program_id/tags", automate_rest_api_program_tags, []}
                         , {"/api/v0/programs/by-id/:program_id/stop-threads", automate_rest_api_program_stop, []}
                         , {"/api/v0/programs/by-id/:program_id/status", automate_rest_api_program_status, []}
+                        , {"/api/v0/programs/by-id/:program_id/assets", automate_rest_api_program_assets_root, []}
+                        , {"/api/v0/programs/by-id/:program_id/assets/by-id/:asset_id", automate_rest_api_program_assets_by_id, []}
 
                           %% Connection management
                         , {"/api/v0/users/id/:user_id/connections/available", automate_rest_api_connections_available_root, []}

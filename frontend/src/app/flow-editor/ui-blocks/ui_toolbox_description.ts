@@ -5,6 +5,7 @@ import { SimpleButtonBuilder } from './renderers/simple_button';
 import { HorizontalUiSectionBuilder, HorizontalUiSectionGenerateTree } from './renderers/horizontal_ui_section';
 import { FixedTextBuilder } from './renderers/fixed_text';
 import { DynamicTextBuilder } from './renderers/dynamic_text';
+import { FixedImageBuilder } from './renderers/fixed_image';
 
 export const UiToolboxDescription: ToolboxDescription = [
     {
@@ -42,6 +43,12 @@ export const UiToolboxDescription: ToolboxDescription = [
                         type: "any",
                     },
                 ]
+            },
+            {
+                icon: UI_ICON,
+                type: 'ui_flow_block',
+                id: 'fixed_image',
+                builder: FixedImageBuilder,
             },
             {
                 icon: UI_ICON,

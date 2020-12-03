@@ -18,7 +18,8 @@ describe('ConfigureBlockDialogComponent', () => {
         block: {
             getAllowedConfigurations: () => { return {}; },
             getCurrentConfiguration: () => { return {}; },
-        }
+        },
+        programId: 'test-id',
     };
 
     beforeEach(async(() => {

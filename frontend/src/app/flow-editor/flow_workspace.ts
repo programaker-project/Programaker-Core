@@ -11,6 +11,7 @@ import { UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
 import { isContainedIn, uuidv4 } from './utils';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfigureBlockDialogComponent, ConfigurableBlock, BlockConfigurationOptions } from './dialogs/configure-block-dialog/configure-block-dialog.component';
+import { ProgramService } from '../program.service';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -29,7 +30,7 @@ const HELPER_SEPARATION = HELPER_BASE_SIZE * 1.5;
 
 type ConnectableNode = {
     block: FlowBlock,
-    type: 'in'|'out',
+    type: 'in' | 'out',
     index: number,
 };
 
@@ -43,10 +44,12 @@ export class FlowWorkspace implements BlockManager {
     public static BuildOn(baseElement: HTMLElement,
                           getEnum: EnumGetter,
                           dialog: MatDialog,
+                          programId: string,
+                          programService: ProgramService,
                          ): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
-            workspace = new FlowWorkspace(baseElement, getEnum, dialog);
+            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId, programService);
             workspace.init();
         }
         catch(err) {
@@ -240,7 +243,10 @@ export class FlowWorkspace implements BlockManager {
 
     private constructor(baseElement: HTMLElement,
                         getEnum: EnumGetter,
-                        private dialog: MatDialog) {
+                        private dialog: MatDialog,
+                        private programId: string,
+                        private programService: ProgramService,
+                       ) {
         this.baseElement = baseElement;
         this.inlineEditor = undefined;
         this.blocks = {};
@@ -2164,9 +2170,10 @@ export class FlowWorkspace implements BlockManager {
     }
     // </Block manager interface>
 
+    // Block configuration
     startBlockConfiguration(block: ConfigurableBlock) {
         const dialogRef = this.dialog.open(ConfigureBlockDialogComponent, {
-            data: { block: block }
+            data: { block: block, programId: this.programId }
         });
 
         dialogRef.afterClosed().subscribe(async (result) => {
@@ -2177,5 +2184,9 @@ export class FlowWorkspace implements BlockManager {
 
             block.applyConfiguration((result.settings as BlockConfigurationOptions));
         });
+    }
+
+    getAssetUrlOnProgram(assetId: string): string {
+        return this.programService.getAssetUrlOnProgram(assetId, this.programId);
     }
 }

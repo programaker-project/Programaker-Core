@@ -632,6 +632,10 @@ svg.block_renderer g.flow_node.output_node .output_text {
     fill: #fc4;
 }
 
+svg.block_renderer g.flow_node.image_node image {
+    pointer-events: none;
+}
+
 svg.block_renderer g.flow_node.container_node .node_body {
     fill: #fff;
     stroke-width: 1;

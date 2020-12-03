@@ -7,6 +7,7 @@ export type UiElementWidgetType
     = 'simple_button'
     | 'fixed_text'
     | 'dynamic_text'
+    | 'fixed_image'
     | 'responsive_page_holder'
     | 'horizontal_ui_section'
 ;

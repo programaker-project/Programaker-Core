@@ -19,19 +19,6 @@
             <div [class]="'color-picker ' + ((allowedConfigurations.background.color && selectedBackgroundType=='color') ? '' : 'hidden' ) ">
                 <input #bgColorPicker class="color-input" />
             </div>
-            <!-- <div class="image-picker" *ngIf="bgConf.image && (selectedBackgroundType=='image')">
-                 <div class="avatar">
-                 <img #bgImgPreview
-                 src="{{ bgConf.current && bgConf.current.image ? bgConf.current.image : '/assets/icons/no-image.svg' }}"
-                 onError="this.src='/assets/icons/no-image.svg'" />
-                 </div>
-                 <button color="primary" class="picture-upload-button"
-                 (click)="bgImgFileInput.click()"
-                 mat-raised-button>
-                 <mat-icon>edit</mat-icon> Upload {{ bgConf.current && bgConf.current.image ? ' a new ' : '' }} picture
-                 </button>
-                 <input hidden accept="image/*" type="file" #bgImgFileInput (change)="previewImage($event)"/>
-                 </div> -->
         </div>
     </div>
 
@@ -61,6 +48,25 @@
         </div>
     </div>
 
+    <div class="text-configuration" *ngIf="allowedConfigurations.body">
+        <h3>Element configuration</h3>
+        <div class="section-contents">
+            <div class="image-picker" *ngIf="allowedConfigurations.body.image">
+                <div class="avatar">
+                    <img #bodyImgPreview
+                        src="{{  bodyCurrentImage ? bodyCurrentImage : '/assets/icons/no-image.svg' }}"
+                        onError="this.src='/assets/icons/no-image.svg'" />
+                </div>
+                <button color="primary" class="picture-upload-button"
+                    (click)="bodyImgFileInput.click()"
+                    mat-raised-button>
+                    <mat-icon>edit</mat-icon> Upload {{ bodyCurrentImage ? ' a new ' : '' }} picture
+                </button>
+                <input hidden accept="image/*" type="file" #bodyImgFileInput (change)="previewImage($event)"/>
+            </div>
+        </div>
+    </div>
+
 
     <div class="accept-cancel">
         <button mat-button mat-raised-button  class="cancel-button"
@@ -69,8 +75,9 @@
             Cancel
         </button>
 
-        <button mat-button mat-raised-button  class="save-button confirm-button"
+        <button #acceptSaveConfigButton mat-button mat-raised-button  class="save-button confirm-button"
             (click)="acceptChanges()">
+            <span class="load-bg"></span>
             <mat-icon>save</mat-icon>
             Accept changes
         </button>

@@ -9,6 +9,7 @@ import { ContentType } from './content-type';
 import { toWebsocketUrl, addTokenQueryString } from './utils';
 import { Synchronizer } from './syncronizer';
 import { EnvironmentService } from './environment.service';
+import { ImageAssetConfiguration } from './flow-editor/dialogs/configure-block-dialog/configure-block-dialog.component';
 
 @Injectable()
 export class ProgramService {
@@ -85,6 +86,9 @@ export class ProgramService {
 
     async getProgramsStatusUrl(programId: string) {
         return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/status`;
+    }
+    getAssetUrlOnProgram(assetId: string, programId: string): string {
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/assets/by-id/${assetId}`;
     }
 
     getPrograms(): Promise<ProgramMetadata[]> {

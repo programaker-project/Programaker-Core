@@ -12,7 +12,7 @@
 render_page(ProgramId, Page) ->
     {ok, Values} = automate_storage:get_widget_values_in_program(ProgramId),
     [ render_page_header(Page)
-    , render_page_body(Page, Values)
+    , render_page_body(Page, ProgramId, Values)
     , render_page_footer(ProgramId, Page)
     ].
 
@@ -30,8 +30,8 @@ render_page_header(Page) ->
     , <<"</head>\n<body>\n">>
     ].
 
-render_page_body(#{ <<"value">> := Contents }, Values) ->
-    render_element(Contents, Values).
+render_page_body(#{ <<"value">> := Contents }, ProgramId, Values) ->
+    render_element(Contents, ProgramId, Values).
 
 render_page_footer(ProgramId, #{ <<"value">> := Contents }) ->
     [ render_scripts(ProgramId, Contents)
@@ -51,13 +51,13 @@ html_escape(Str) ->
 %%====================================================================
 %% Element rendering
 %%====================================================================
-render_element(null, Values) ->
+render_element(null, _ProgramId, _Values) ->
     [<<"<div class='vbox'>&#x1F6A7; Work in progress &#x1F6A7;</div>">>
     ];
 
 render_element(E=#{ <<"cut_type">> := CutType
-                , <<"groups">> := Groups
-                }, Values) ->
+                  , <<"groups">> := Groups
+                  }, ProgramId, Values) ->
 
     ElementBackground = case E of
                             #{ <<"background">> := #{ <<"type">> := <<"color">>
@@ -72,13 +72,13 @@ render_element(E=#{ <<"cut_type">> := CutType
     [ <<"<div class='">>, CutType, <<"' ">>
     , "style='", ElementBackground, "' "
     ,  ">"
-    , GroupRendering = lists:map(fun(E) -> render_element(E, Values) end, Groups)
+    , GroupRendering = lists:map(fun(E) -> render_element(E, ProgramId, Values) end, Groups)
     , <<"</div>">>
     ];
 
 render_element(E=#{ <<"widget_type">> := <<"simple_button">>
                   , <<"id">> := WidgetId
-                  }, Values) ->
+                  }, _ProgramId, _Values) ->
     [ <<"<div class=widget-container><button class='widget simple_button' id='elem-">>
     , WidgetId
     , <<"'>">>
@@ -88,7 +88,7 @@ render_element(E=#{ <<"widget_type">> := <<"simple_button">>
 
 render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
                   , <<"id">> := WidgetId
-                  }, Values) ->
+                  }, _ProgramId, _Values) ->
     ElementStyle = get_text_element_style(E),
     [ <<"<div class=widget-container><div class='widget fixed_text' id='elem-">>
     , WidgetId
@@ -101,7 +101,7 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
 
 render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
                   , <<"id">> := WidgetId
-                  }, Values) ->
+                  }, _ProgramId, Values) ->
     Contents = raw_to_html(maps:get(<<"text">>, E,
                                     maps:get(<<Type/binary, ".", WidgetId/binary>>, Values,
                                              <<"- No content yet -">>))),
@@ -111,7 +111,18 @@ render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
     , <<"><div>">>
     , Contents
     , <<"</div></div></div>">>
+    ];
+
+
+render_element(E=#{ <<"widget_type">> := <<"fixed_image">>
+                  , <<"id">> := WidgetId
+                  }, ProgramId, _Values) ->
+    ImgUrl = get_image_url(E, ProgramId),
+    [ <<"<div class=widget-container>">>
+    , "<img src='", ImgUrl, "'/>"
+    , <<"</div>">>
     ].
+
 
 %%====================================================================
 %% Auxiliary sections
@@ -140,8 +151,10 @@ render_scripts(ProgramId, Contents) ->
 
 wire_components(null) ->
     [];
-
 wire_components(#{ <<"widget_type">> := <<"fixed_text">>
+                 }) ->
+    [];
+wire_components(#{ <<"widget_type">> := <<"fixed_image">>
                  }) ->
     [];
 
@@ -221,3 +234,12 @@ get_text_element_background_color_style(#{ <<"settings">> := #{ <<"bg">> := #{ <
     "background: transparent;";
 get_text_element_background_color_style(_) ->
     [].
+
+get_image_url(#{ <<"settings">> := #{ <<"body">> := #{ <<"image">> := #{ <<"id">> := ImgId } } } }, ProgramId) ->
+    [ "/api/v0/programs/by-id/"
+    , ProgramId
+    , "/assets/by-id/"
+    , ImgId
+    ];
+get_image_url(_, _) ->
+    []. %% TODO: Add a default image?

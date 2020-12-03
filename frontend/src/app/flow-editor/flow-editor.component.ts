@@ -228,7 +228,12 @@ export class FlowEditorComponent implements OnInit {
         this.calculate_size(this.workspaceElement);
         this.calculate_program_header_size(programHeaderElement);
 
-        this.workspace = FlowWorkspace.BuildOn(this.workspaceElement, this.getEnumValues.bind(this), this.dialog);
+        this.workspace = FlowWorkspace.BuildOn(this.workspaceElement,
+                                               this.getEnumValues.bind(this),
+                                               this.dialog,
+                                               this.programId,
+                                               this.programService,
+                                              );
         this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
                                                     this.customBlockService,
                                                     this.bridgeService,

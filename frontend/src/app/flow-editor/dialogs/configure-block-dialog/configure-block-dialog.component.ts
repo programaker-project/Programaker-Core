@@ -1,6 +1,8 @@
 import { AfterViewInit, Component, ElementRef, Inject, ViewChild } from '@angular/core';
+import { MatButton } from '@angular/material/button';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatRadioGroup, MatRadioChange } from '@angular/material/radio';
+import { MatRadioChange, MatRadioGroup } from '@angular/material/radio';
+import { SessionService } from '../../../session.service';
 import { BackgroundPropertyConfiguration } from '../../ui-blocks/renderers/ui_tree_repr';
 
 declare const Huebee: any;
@@ -8,22 +10,33 @@ declare const Huebee: any;
 export type ColorOption = { color: boolean };
 export type ImageOption = { image: boolean };
 export type FontSizeOption = { fontSize: boolean };
+export type ImageAssetConfiguration = {
+    id: string,
+};
 
 export type SurfaceOption = ColorOption & ImageOption;
 export type TextOptions = ColorOption & FontSizeOption;
+export type BodyOptions = ImageOption;
 
 export type TextPropertyConfiguration = {
     color?: { value: string },
     fontSize?: { value: number },
 };
 
+
+export type BodyPropertyConfiguration = {
+    image?: ImageAssetConfiguration,
+}
+
 export type BlockConfigurationOptions = {
     bg?: BackgroundPropertyConfiguration,
     text?: TextPropertyConfiguration,
+    body?: BodyPropertyConfiguration,
 };
 export interface BlockAllowedConfigurations {
     background?: SurfaceOption,
     text?: TextOptions,
+    body?: BodyOptions,
 };
 
 export interface ConfigurableBlock {
@@ -39,6 +52,7 @@ const DEFAULT_TEXT_SIZE = 14;
 @Component({
     selector: 'app-configure-block-dialog',
     templateUrl: './configure-block-dialog.component.html',
+    providers: [ SessionService ],
     styleUrls: [
         './configure-block-dialog.component.scss',
         '../../../libs/css/material-icons.css',
@@ -48,8 +62,8 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
     loadedImage: File = null;
     selectedBackgroundType: 'color' | 'image' | 'transparent' = 'transparent';
 
-    @ViewChild('bgImgPreview') bgImgPreview: ElementRef<HTMLImageElement>;
-    @ViewChild('bgImgFileInput') bgImgFileInput: ElementRef<HTMLInputElement>;
+    @ViewChild('acceptSaveConfigButton') acceptSaveConfigButton: MatButton;
+
     @ViewChild('bgColorPicker') bgColorPicker: ElementRef<HTMLInputElement>;
     @ViewChild('bgTypeSelector') bgTypeSelector: MatRadioGroup;
     private hbBgColorPicker: any;
@@ -60,13 +74,18 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
     @ViewChild('textFontSizePicker') textFontSizePicker: ElementRef<HTMLInputElement>;
     private hbTextColorPicker: any;
 
+    @ViewChild('bodyImgPreview') bodyImgPreview: ElementRef<HTMLImageElement>;
+    @ViewChild('bodyImgFileInput') bodyImgFileInput: ElementRef<HTMLInputElement>;
+    bodyCurrentImage: string;
+
     currentConfig: BlockConfigurationOptions;
     allowedConfigurations: BlockAllowedConfigurations;
 
     // Initialization
     constructor(public dialogRef: MatDialogRef<ConfigureBlockDialogComponent>,
+                private sessionService: SessionService,
                 @Inject(MAT_DIALOG_DATA)
-                public data: { block: ConfigurableBlock }) {
+                public data: { programId: string, block: ConfigurableBlock }) {
 
         const config = this.allowedConfigurations = data.block.getAllowedConfigurations();
 
@@ -184,13 +203,34 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
 
     }
 
+    // Operation
+    previewImage(event: KeyboardEvent) {
+        const input: HTMLInputElement = event.target as HTMLInputElement;
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                this.loadedImage = input.files[0];
+                this.bodyImgPreview.nativeElement.src = e.target.result as string;
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+
     // Accept/cancel
     cancelChanges() {
         this.dialogRef.close({success: false});
     }
 
-    acceptChanges() {
+    async acceptChanges() {
         const settings: BlockConfigurationOptions = {};
+
+        const buttonClass = this.acceptSaveConfigButton._elementRef.nativeElement.classList;
+        buttonClass.add('started');
+        buttonClass.remove('completed');
 
         if (this.allowedConfigurations.background) {
             if (this.selectedBackgroundType === 'color') {
@@ -210,6 +250,14 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
                 settings.text.fontSize = { value: this.textFontSizePicker.nativeElement.valueAsNumber };
             }
         }
+
+        if (this.loadedImage) {
+            const imageId = (await this.sessionService.uploadAsset(this.loadedImage, this.data.programId)).value;
+            settings.body = {image: { id: imageId }};
+        }
+
+        buttonClass.remove('started');
+        buttonClass.add('completed');
 
         this.dialogRef.close({success: true, settings: settings });
     }
