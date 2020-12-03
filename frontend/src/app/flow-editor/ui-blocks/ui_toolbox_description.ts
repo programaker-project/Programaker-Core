@@ -2,9 +2,9 @@ import { ToolboxDescription } from '../base_toolbox_description';
 import { UI_ICON } from '../definitions';
 import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './renderers/responsive_page';
 import { SimpleButtonBuilder } from './renderers/simple_button';
-import { SimpleOutputBuilder } from './renderers/simple_output';
 import { HorizontalUiSectionBuilder, HorizontalUiSectionGenerateTree } from './renderers/horizontal_ui_section';
 import { FixedTextBuilder } from './renderers/fixed_text';
+import { DynamicTextBuilder } from './renderers/dynamic_text';
 
 export const UiToolboxDescription: ToolboxDescription = [
     {
@@ -29,19 +29,19 @@ export const UiToolboxDescription: ToolboxDescription = [
             {
                 icon: UI_ICON,
                 type: 'ui_flow_block',
-                id: 'simple_debug_output',
-                builder: SimpleOutputBuilder,
+                id: 'fixed_text',
+                builder: FixedTextBuilder,
+            },
+            {
+                icon: UI_ICON,
+                type: 'ui_flow_block',
+                id: 'dynamic_text',
+                builder: DynamicTextBuilder,
                 inputs: [
                     {
                         type: "any",
                     },
                 ]
-            },
-            {
-                icon: UI_ICON,
-                type: 'ui_flow_block',
-                id: 'fixed_text',
-                builder: FixedTextBuilder,
             },
             {
                 icon: UI_ICON,

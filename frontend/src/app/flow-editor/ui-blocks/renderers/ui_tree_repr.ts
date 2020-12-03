@@ -5,8 +5,8 @@ export type BackgroundPropertyConfiguration = { type: 'transparent' } | { type: 
 
 export type UiElementWidgetType
     = 'simple_button'
-    | 'simple_debug_output'
     | 'fixed_text'
+    | 'dynamic_text'
     | 'responsive_page_holder'
     | 'horizontal_ui_section'
 ;

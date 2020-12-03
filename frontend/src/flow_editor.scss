@@ -56,6 +56,11 @@ svg.block_renderer g.flow_node.selected rect.node_body, svg.block_renderer g.flo
     stroke-dasharray: 0;
 }
 
+// Generic rect control
+rect.hidden {
+    visibility: hidden;
+}
+
 // Block type names are hidden by default
 svg.block_renderer .block_type_annotation {
     visibility: hidden;
@@ -621,8 +626,6 @@ svg.block_renderer g.flow_node.button_node .node_body {
 
 svg.block_renderer g.flow_node.output_node .node_body {
     fill: #222;
-    stroke-width: 1;
-    stroke: #fff;
 }
 
 svg.block_renderer g.flow_node.output_node .output_text {

@@ -121,6 +121,10 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
         if (change.value === 'color' && (!this.hbBgColorPicker)) {
             this._initBgColorPicker(DEFAULT_BACKGROUND_COLOR);
         }
+
+        if (change.value === 'transparent' && (this.allowedConfigurations.text)) {
+            this.textSampleResult.nativeElement.style.backgroundColor = 'transparent';
+        }
     }
 
     private _initBgColorPicker(startingColor: string) {
@@ -138,7 +142,7 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
                 this.textSampleResult.nativeElement.style.backgroundColor = startingColor;
 
                 this.hbBgColorPicker.on('change', (color: string, _hue: any, _sat: any, _lum: any) => {
-                    this.textSampleResult.nativeElement.style.color = color;
+                    this.textSampleResult.nativeElement.style.backgroundColor = color;
                 });
             }
         }, 0); // Update this *after* the appropriate changes had happened

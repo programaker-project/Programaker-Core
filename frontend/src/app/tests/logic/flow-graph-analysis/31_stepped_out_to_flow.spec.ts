@@ -31,7 +31,7 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
         .then(out_of_tree_op)
         ;
 
-    builder.add_getter('simple_debug_output', { id: 'out', args: [[operation, 1]] });
+    builder.add_getter('dynamic_text', { id: 'out', args: [[operation, 1]] });
 
     const graph = builder.build();
     return graph;
@@ -54,7 +54,7 @@ describe('Flow-31: Update streaming block from stepped flow.', () => {
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (on-block-run "op" 1)
-                (services.ui.simple_debug_output.out (flow-last-value "op" 1))
+                (services.ui.dynamic_text.out (flow-last-value "op" 1))
                 `
             ))
 

@@ -93,19 +93,22 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
     [ <<"<div class=widget-container><div class='widget fixed_text' id='elem-">>
     , WidgetId
     , <<"'">>
-    , "style='", ElementStyle, "'"
+    , " style='", ElementStyle, "'"
     , <<">">>
     , html_escape(maps:get(<<"text">>, E, "Right click me to edit this text!"))
     , <<"</div></div>">>
     ];
 
-render_element(E=#{ <<"widget_type">> := Type= <<"simple_debug_output">>
+render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
                   , <<"id">> := WidgetId
                   }, Values) ->
     Contents = raw_to_html(maps:get(<<"text">>, E,
                                     maps:get(<<Type/binary, ".", WidgetId/binary>>, Values,
                                              <<"- No content yet -">>))),
-    [ <<"<div class=widget-container><div class='widget simple_debug_output' id='elem-">>, WidgetId, <<"'><div>">>
+    ElementStyle = get_text_element_style(E),
+    [ <<"<div class=widget-container><div class='widget dynamic_text' id='elem-">>, WidgetId, <<"'">>
+    , " style='", ElementStyle, "'"
+    , <<"><div>">>
     , Contents
     , <<"</div></div></div>">>
     ].
@@ -119,7 +122,7 @@ render_styles() ->
     , <<"body { height: 100vh; text-align: center; } ">>
     , <<".hbox { width: 100%; height: 100%; display: flex; box-sizing: border-box; justify-content: space-evenly; } ">>
     , <<".vbox { width: 100%; height: 100%; display: flex; flex-flow: column; box-sizing: border-box; justify-content: space-evenly; } ">>
-    , <<".simple_debug_output { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
+    , <<".dynamic_text { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
     , <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
     , <<".widget { width: 100%; height: 100%; } ">>
     , <<"</style>">>
@@ -161,7 +164,7 @@ wire_components(#{ <<"widget_type">> := <<"simple_button">>
     , "});\n"
     ];
 
-wire_components(#{ <<"widget_type">> := <<"simple_debug_output">>
+wire_components(#{ <<"widget_type">> := <<"dynamic_text">>
                         , <<"id">> := WidgetId
                         }) ->
     [ "link_widget('", WidgetId, "');"].
@@ -195,6 +198,7 @@ render_connection_block_end() ->
 get_text_element_style(E) ->
     [ get_text_element_font_size_style(E)
     , get_text_element_text_color_style(E)
+    , get_text_element_background_color_style(E)
     ].
 
 get_text_element_font_size_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"fontSize">> := #{ <<"value">> := Value } } } }) ->
@@ -207,4 +211,13 @@ get_text_element_text_color_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"co
     [ "color: ", Value, ";"
     ];
 get_text_element_text_color_style(_) ->
+    [].
+
+get_text_element_background_color_style(#{ <<"settings">> := #{ <<"bg">> := #{ <<"type">> := <<"color">>
+                                                                             , <<"value">> := Value } } }) ->
+    [ "background-color: ", Value, ";"
+    ];
+get_text_element_background_color_style(#{ <<"settings">> := #{ <<"bg">> := #{ <<"type">> := <<"transparent">> } } }) ->
+    "background: transparent;";
+get_text_element_background_color_style(_) ->
     [].

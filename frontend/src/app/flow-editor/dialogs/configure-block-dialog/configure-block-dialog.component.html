@@ -6,53 +6,57 @@
 <section class="block-settings">
     <div class="background-configuration" *ngIf="allowedConfigurations.background">
         <h3>Background configuration</h3>
-        <mat-radio-group #bgTypeSelector
-            [(ngModel)]="selectedBackgroundType"
-            (change)="onNewBgType($event)"
-        >
-            <mat-radio-button value="color">Color</mat-radio-button>
-            <!-- <mat-radio-button value="image">Image</mat-radio-button> -->
-            <mat-radio-button value="transparent">Transparent</mat-radio-button>
-        </mat-radio-group>
+        <div class="section-contents">
+            <mat-radio-group #bgTypeSelector
+                [(ngModel)]="selectedBackgroundType"
+                (change)="onNewBgType($event)"
+            >
+                <mat-radio-button value="color">Color</mat-radio-button>
+                <!-- <mat-radio-button value="image">Image</mat-radio-button> -->
+                <mat-radio-button value="transparent">Transparent</mat-radio-button>
+            </mat-radio-group>
 
-        <div [class]="'color-picker ' + ((allowedConfigurations.background.color && selectedBackgroundType=='color') ? '' : 'hidden' ) ">
-            <input #bgColorPicker class="color-input" />
+            <div [class]="'color-picker ' + ((allowedConfigurations.background.color && selectedBackgroundType=='color') ? '' : 'hidden' ) ">
+                <input #bgColorPicker class="color-input" />
+            </div>
+            <!-- <div class="image-picker" *ngIf="bgConf.image && (selectedBackgroundType=='image')">
+                 <div class="avatar">
+                 <img #bgImgPreview
+                 src="{{ bgConf.current && bgConf.current.image ? bgConf.current.image : '/assets/icons/no-image.svg' }}"
+                 onError="this.src='/assets/icons/no-image.svg'" />
+                 </div>
+                 <button color="primary" class="picture-upload-button"
+                 (click)="bgImgFileInput.click()"
+                 mat-raised-button>
+                 <mat-icon>edit</mat-icon> Upload {{ bgConf.current && bgConf.current.image ? ' a new ' : '' }} picture
+                 </button>
+                 <input hidden accept="image/*" type="file" #bgImgFileInput (change)="previewImage($event)"/>
+                 </div> -->
         </div>
-        <!-- <div class="image-picker" *ngIf="bgConf.image && (selectedBackgroundType=='image')">
-             <div class="avatar">
-             <img #bgImgPreview
-             src="{{ bgConf.current && bgConf.current.image ? bgConf.current.image : '/assets/icons/no-image.svg' }}"
-             onError="this.src='/assets/icons/no-image.svg'" />
-             </div>
-             <button color="primary" class="picture-upload-button"
-             (click)="bgImgFileInput.click()"
-             mat-raised-button>
-             <mat-icon>edit</mat-icon> Upload {{ bgConf.current && bgConf.current.image ? ' a new ' : '' }} picture
-             </button>
-             <input hidden accept="image/*" type="file" #bgImgFileInput (change)="previewImage($event)"/>
-             </div> -->
     </div>
 
     <div class="text-configuration" *ngIf="allowedConfigurations.text">
         <h3>Text configuration</h3>
-        <div class='color-picker' *ngIf="allowedConfigurations.text.color">
-            <div class="description">
-                Background color:
+        <div class="section-contents">
+            <div class='color-picker' *ngIf="allowedConfigurations.text.color">
+                <div class="description">
+                    Text color:
+                </div>
+                <input #textColorPicker class="color-input" />
             </div>
-            <input #textColorPicker class="color-input" />
-        </div>
 
-        <div class='font-size-picker' *ngIf="allowedConfigurations.text.fontSize">
-            <div class="description">
-                Font size: <span #fontSizeValueViewer></span>px
+            <div class='font-size-picker' *ngIf="allowedConfigurations.text.fontSize">
+                <div class="description">
+                    Font size: <span #fontSizeValueViewer></span>px
+                </div>
+                <input #textFontSizePicker type="range" min="10" max="120" />
             </div>
-            <input #textFontSizePicker type="range" min="10" max="120" />
-        </div>
 
-        <div class='text-sample'>
-            <label>Result sample:</label>
-            <div #textSampleResult class="result">
-                The quick brown fox jumps over the lazy dog
+            <div class='text-sample'>
+                <label>Result sample:</label>
+                <div #textSampleResult class="result">
+                    The quick brown fox jumps over the lazy dog
+                </div>
             </div>
         </div>
     </div>
