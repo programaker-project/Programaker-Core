@@ -637,6 +637,26 @@ get_versioning(Nodes) ->
 
                         end
                 }
+
+                %% Add asset table time
+              , #database_version_transformation
+                { id=21
+                , apply=fun() ->
+
+                                {atomic, ok} = mnesia:create_table(?USER_ASSET_TABLE,
+                                                                   [ { attributes, [ asset_id, owner_id, mime_type ] }
+                                                                   , { disc_copies, Nodes }
+                                                                   , { record_name, user_asset_entry }
+                                                                   , { type, set }
+                                                                   , { index, [ owner_id ] }
+                                                                   ]),
+
+                                    ok = mnesia:wait_for_tables([ ?USER_ASSET_TABLE
+                                                                ],
+                                                                automate_configuration:get_table_wait_time())
+
+                        end
+                }
               ]
         }.
 

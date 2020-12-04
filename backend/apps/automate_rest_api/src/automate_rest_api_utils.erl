@@ -10,7 +10,6 @@
         , group_has_picture/1
         , get_bridges_on_program_id/1
         , get_owner_asset_directory/1
-        , owner_has_asset/2
         ]).
 
 -include("../../automate_common_types/src/types.hrl").
@@ -58,12 +57,12 @@ stream_body_to_file_hashname(Req, Path, FileKey) ->
     ok = filelib:ensure_dir(TmpPath),
     {ok, File} = file:open(TmpPath, [write, raw]),
     try multipart(Req, File, #{}, FileKey, hash) of
-        {ok, #{ FileKey := Hash }, Req1} ->
+        {ok, #{ FileKey := {Hash, FileType} }, Req1} ->
             Id = url_safe_base64_encode(Hash),
             FullPath = list_to_binary(io_lib:format("~s/~s", [Path, Id])),
             ok = filelib:ensure_dir(FullPath),
             ok = movefile(TmpPath, FullPath),
-            {ok, Id, Req1}
+            {ok, {Id, FileType}, Req1}
     after
         case filelib:is_file(TmpPath) of
             true ->
@@ -93,11 +92,6 @@ group_picture_path(GroupId) ->
       lists:flatten(io_lib:format("~s/~s", [automate_configuration:asset_directory("public/groups/")
                                            , GroupId
                                            ]))).
-
--spec owner_has_asset(owner_id(), binary()) -> boolean().
-owner_has_asset(Owner, AssetId) ->
-    Dir = get_owner_asset_directory(Owner),
-    filelib:is_file(list_to_binary([Dir, "/", AssetId])).
 
 -spec get_owner_asset_directory(owner_id()) -> binary().
 get_owner_asset_directory({OwnerType, OwnerId}) ->
@@ -132,13 +126,13 @@ multipart(Req0, File, Data, ToSave, Options) ->
                                      {data, FieldName} ->
                                          {ok, Body, Req2} = cowboy_req:read_part_body(Req),
                                          {Req2, Data#{ FieldName => Body }};
-                                     {file, ToSave, _FileName, _FileType} ->
+                                     {file, ToSave, _FileName, FileType} ->
                                          InfoAcc = case Options of
                                                        nohash -> 0;
                                                        hash -> {hash, crypto:hash_init(?HASH_ALGORITHM)}
                                                    end,
                                          {ok, Req2, Result} = stream_body_content_to_file(Req, File, InfoAcc),
-                                         {Req2, Data#{ ToSave => Result }};
+                                         {Req2, Data#{ ToSave => {Result, FileType} }};
                                      {file, _, _, _} ->
                                          {Req, Data}
                                  end,

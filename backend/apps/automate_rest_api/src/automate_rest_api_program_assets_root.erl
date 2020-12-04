@@ -70,7 +70,15 @@ content_types_accepted(Req, State) ->
 -spec accept_file(cowboy_req:req(), #state{}) -> {boolean(),cowboy_req:req(), #state{}}.
 accept_file(Req, State=#state{owner_id=OwnerId}) ->
     Path = ?UTILS:get_owner_asset_directory(OwnerId),
-    {ok, AssetId, Req1} = ?UTILS:stream_body_to_file_hashname(Req, Path, <<"file">>),
+    {ok, {AssetId, FileType}, Req1} = ?UTILS:stream_body_to_file_hashname(Req, Path, <<"file">>),
+
+    MimeType = case binary:split(FileType, <<"/">>) of
+                   [Type, SubType] ->
+                       {Type, SubType};
+                   [Type] ->
+                       {Type, undefined}
+               end,
+    ok = automate_storage:add_user_asset(OwnerId, AssetId, MimeType),
 
     Output = jiffy:encode(#{ success => true
                            , value => AssetId

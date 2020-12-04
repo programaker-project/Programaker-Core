@@ -10,13 +10,14 @@
         ]).
 
 -include("./records.hrl").
--include("../../automate_common_types/src/types.hrl").
+-include("../../automate_storage/src/records.hrl").
 
 -define(UTILS, automate_rest_api_utils).
 
 -record(state, { owner_id :: owner_id() | undefined
                , program_id :: binary()
                , asset_id :: binary()
+               , asset_info :: #user_asset_entry{} | undefined
                }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
@@ -28,12 +29,17 @@ init(Req, _Opts) ->
     , #state{ program_id=ProgramId
             , asset_id=AssetId
             , owner_id=undefined
+            , asset_info=undefined
             }}.
 
 resource_exists(Req, State=#state{program_id=ProgramId, asset_id=AssetId}) ->
     {ok, Owner} = automate_storage:get_program_owner(ProgramId),
-    io:fwrite("Looking for  ~p~n", [{Owner, AssetId}]),
-    {?UTILS:owner_has_asset(Owner, AssetId), Req, State#state{owner_id=Owner}}.
+    case automate_storage:get_user_asset_info(Owner, AssetId) of
+        {error, not_found} ->
+            {false, Req, State};
+        {ok, AssetInfo} ->
+            {true, Req, State#state{owner_id=Owner, asset_info=AssetInfo}}
+    end.
 
 
 %% CORS
@@ -62,11 +68,21 @@ content_types_provided(Req, State) ->
      Req, State}.
 
 -spec retrieve_file(cowboy_req:req(), #state{}) -> {stop | boolean(),cowboy_req:req(), #state{}}.
-retrieve_file(Req, State=#state{asset_id=AssetId, owner_id=Owner}) ->
+retrieve_file(Req, State=#state{ asset_id=AssetId
+                               , owner_id=Owner
+                               , asset_info=#user_asset_entry{mime_type=MimeType}
+                               }) ->
     Dir = ?UTILS:get_owner_asset_directory(Owner),
     Path = list_to_binary([Dir, "/", AssetId]),
     FileSize = filelib:file_size(Path),
 
-    Res = cowboy_req:reply(200, #{ %% <<"content-type">> => "image/png"
+    ContentType = case MimeType of
+                      { Type, undefined } ->
+                          Type;
+                      { Type, SubType } ->
+                          list_to_binary([Type, "/", SubType])
+                  end,
+
+    Res = cowboy_req:reply(200, #{ <<"content-type">> => ContentType
                                  }, {sendfile, 0, FileSize, Path}, Req),
     {stop, Res, State}.

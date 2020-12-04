@@ -160,3 +160,9 @@
                                     , program_id :: binary() %% Used for indexing on program-wide operations
                                     , value :: any() %% Type to be more strictly defined?
                                     }).
+
+-type mime_type() :: { binary(), binary() | undefined }. %% { Type, Subtype }
+-record(user_asset_entry, { asset_id :: { owner_id(), binary() } %% { OwnerId, AssetId }
+                          , owner_id :: owner_id() %% For listing
+                          , mime_type :: mime_type()
+                          }).

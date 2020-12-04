@@ -48,6 +48,8 @@
         , update_program_status/2
         , is_user_allowed/3
         , get_program_page/2
+        , add_user_asset/3
+        , get_user_asset_info/2
 
         , get_program_owner/1
         , get_program_pid/1
@@ -102,7 +104,6 @@
 
         , add_mnesia_node/1
         , register_table/2
-
 
           %% Utils
         , wrap_transaction/1
@@ -620,6 +621,27 @@ get_program_page(ProgramId, Path) ->
                 end
         end,
     wrap_transaction(mnesia:ets(T)).
+
+-spec add_user_asset(OwnerId :: owner_id(), AssetId :: binary(), MimeType :: mime_type()) -> ok.
+add_user_asset(OwnerId, AssetId, MimeType) ->
+    T = fun() ->
+                mnesia:write(?USER_ASSET_TABLE, #user_asset_entry{ asset_id={ OwnerId, AssetId }
+                                                                 , owner_id=OwnerId
+                                                                 , mime_type=MimeType
+                                                                 }, write)
+        end,
+    wrap_transaction(mnesia:transaction(T)).
+
+-spec get_user_asset_info(OwnerId :: owner_id(), AssetId :: binary()) -> { ok, #user_asset_entry{} } | {error, not_found}.
+get_user_asset_info(OwnerId, AssetId) ->
+    T = fun() ->
+                case mnesia:read(?USER_ASSET_TABLE, { OwnerId, AssetId }) of
+                    [] -> {error, not_found};
+                    [Entry] -> {ok, Entry}
+                end
+        end,
+    wrap_transaction(mnesia:ets(T)).
+
 
 -spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program(Username, ProgramName, Content)->
