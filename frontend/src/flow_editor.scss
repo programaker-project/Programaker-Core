@@ -51,7 +51,7 @@ svg.block_renderer g.flow_node > a {
 }
 
 svg.block_renderer g.flow_node.selected rect.node_body, svg.block_renderer g.flow_node .selected rect.node_body {
-    stroke: #B4B;
+    stroke: #A05;
     stroke-width: 3px;
     stroke-dasharray: 0;
 }
@@ -634,6 +634,10 @@ svg.block_renderer g.flow_node.output_node .output_text {
 
 svg.block_renderer g.flow_node.image_node image {
     pointer-events: none;
+}
+
+svg.block_renderer g.flow_node.image_node .node_body {
+    fill: rgba(255,255,255,0.3)
 }
 
 svg.block_renderer g.flow_node.container_node .node_body {

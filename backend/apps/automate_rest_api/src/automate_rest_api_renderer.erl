@@ -119,7 +119,7 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_image">>
                   }, ProgramId, _Values) ->
     ImgUrl = get_image_url(E, ProgramId),
     [ <<"<div class=widget-container>">>
-    , "<img src='", ImgUrl, "'/>"
+    , "<img class='widget' src='", ImgUrl, "'/>"
     , <<"</div>">>
     ].
 
@@ -135,7 +135,7 @@ render_styles() ->
     , <<".vbox { width: 100%; height: 100%; display: flex; flex-flow: column; box-sizing: border-box; justify-content: space-evenly; } ">>
     , <<".dynamic_text { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
     , <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
-    , <<".widget { width: 100%; height: 100%; } ">>
+    , <<".widget { margin: 0 auto; width: max-content; height: max-content; padding: 1ex; } ">>
     , <<"</style>">>
     ].
 
