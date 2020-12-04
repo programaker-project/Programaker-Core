@@ -46,6 +46,17 @@ h2 mat-icon {
             margin: 1ex auto;
         }
     }
+
+}
+
+.width-sample .sample-container {
+    height: 2rem;
+    border: 1px dashed #000;
+
+    .result {
+        height: 100%;
+        background-color: #27212e;
+    }
 }
 
 .text-sample {

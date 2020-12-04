@@ -1,6 +1,6 @@
 import { UiSignalService } from '../../services/ui-signal.service';
 import { BlockManager } from '../block_manager';
-import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, InputPortDefinition, Position2D } from '../flow_block';
+import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, InputPortDefinition, Position2D, Movement2D } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
 import { uuidv4 } from '../utils';
@@ -33,6 +33,8 @@ export interface UiFlowBlockHandler {
     isTextEditable(): this is TextEditable,
     isTextReadable(): this is TextReadable,
 
+    dropOnEndMove?: () => Movement2D;
+    updateContainer?: (container: UiFlowBlock) => void;
     onGetFocus?: () => void;
     onLoseFocus?: () => void;
 }
@@ -454,7 +456,12 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     public endMove(): FlowBlock[] {
-        return [];
+        if (!this.handler.dropOnEndMove) {
+            return [];
+        }
+
+        const movement = this.handler.dropOnEndMove();
+        return this.moveBy(movement);
     }
 
     onGetFocus() {
@@ -618,6 +625,12 @@ export class UiFlowBlock implements FlowBlock {
 
 
     // Container-related
-    updateContainer(container: FlowBlock) {}
+    updateContainer(container: FlowBlock) {
+        if (this.handler.updateContainer) {
+            this.handler.updateContainer(container as (UiFlowBlock | null));
+        }
+    }
+
+
     pushDown(startHeight: number, pushDown: number) {}
 }

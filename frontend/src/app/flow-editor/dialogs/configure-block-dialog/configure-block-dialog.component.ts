@@ -8,15 +8,16 @@ import { BackgroundPropertyConfiguration } from '../../ui-blocks/renderers/ui_tr
 declare const Huebee: any;
 
 export type ColorOption = { color: boolean };
-export type ImageOption = { image: boolean };
+export type ImageOption = { image?: boolean };
 export type FontSizeOption = { fontSize: boolean };
 export type ImageAssetConfiguration = {
     id: string,
 };
+export type WidthTakenOption = {widthTaken?: {name: string, style: string}[]};
 
 export type SurfaceOption = ColorOption & ImageOption;
 export type TextOptions = ColorOption & FontSizeOption;
-export type BodyOptions = ImageOption;
+export type BodyOptions = ImageOption & WidthTakenOption;
 
 export type TextPropertyConfiguration = {
     color?: { value: string },
@@ -26,6 +27,7 @@ export type TextPropertyConfiguration = {
 
 export type BodyPropertyConfiguration = {
     image?: ImageAssetConfiguration,
+    widthTaken?: { value: string },
 }
 
 export type BlockConfigurationOptions = {
@@ -77,6 +79,9 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
     @ViewChild('bodyImgPreview') bodyImgPreview: ElementRef<HTMLImageElement>;
     @ViewChild('bodyImgFileInput') bodyImgFileInput: ElementRef<HTMLInputElement>;
     bodyCurrentImage: string;
+    @ViewChild('widthSampleResult') widthSampleResult: ElementRef<HTMLDivElement>;
+    allowedWidthTypes: string[];
+    widthTaken: string;
 
     currentConfig: BlockConfigurationOptions;
     allowedConfigurations: BlockAllowedConfigurations;
@@ -96,6 +101,16 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
             }
             else {
                 this.currentConfig.bg = { type: 'transparent' };
+            }
+        }
+
+        if (this.allowedConfigurations.body) {
+            if (this.allowedConfigurations.body.widthTaken) {
+                this.allowedWidthTypes = this.allowedConfigurations.body.widthTaken.map((x) => x.name );
+
+                if (this.currentConfig.body && this.currentConfig.body.widthTaken) {
+                    this.widthTaken = this.currentConfig.body.widthTaken.value;
+                }
             }
         }
     }
@@ -134,6 +149,15 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
                 this._initTextSizePicker(size);
             }
         }
+
+        if (this.currentConfig.body && this.currentConfig.body.widthTaken) {
+            this.onNewWidthTaken({ value: this.currentConfig.body.widthTaken.value });
+        }
+    }
+
+    onNewWidthTaken(change: { value: string }) {
+        const val = this.allowedConfigurations.body.widthTaken.find(x => x.name == change.value);
+        this.widthSampleResult.nativeElement.style.width = val.style;
     }
 
     onNewBgType(change: MatRadioChange) {
@@ -251,9 +275,16 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
             }
         }
 
-        if (this.loadedImage) {
-            const imageId = (await this.sessionService.uploadAsset(this.loadedImage, this.data.programId)).value;
-            settings.body = {image: { id: imageId }};
+        if (this.allowedConfigurations.body) {
+            settings.body = {};
+            if (this.loadedImage) {
+                const imageId = (await this.sessionService.uploadAsset(this.loadedImage, this.data.programId)).value;
+                settings.body.image = { id: imageId };
+            }
+
+            if (this.widthTaken) {
+                settings.body.widthTaken = { value: this.widthTaken };
+            }
         }
 
         buttonClass.remove('started');

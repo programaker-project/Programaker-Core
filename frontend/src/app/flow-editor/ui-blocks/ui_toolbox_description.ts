@@ -6,6 +6,7 @@ import { HorizontalUiSectionBuilder, HorizontalUiSectionGenerateTree } from './r
 import { FixedTextBuilder } from './renderers/fixed_text';
 import { DynamicTextBuilder } from './renderers/dynamic_text';
 import { FixedImageBuilder } from './renderers/fixed_image';
+import { HorizontalSeparatorBuilder } from './renderers/horizontal_separator';
 
 export const UiToolboxDescription: ToolboxDescription = [
     {
@@ -43,6 +44,12 @@ export const UiToolboxDescription: ToolboxDescription = [
                         type: "any",
                     },
                 ]
+            },
+            {
+                icon: UI_ICON,
+                type: 'ui_flow_block',
+                id: 'horizontal_separator',
+                builder: HorizontalSeparatorBuilder,
             },
             {
                 icon: UI_ICON,

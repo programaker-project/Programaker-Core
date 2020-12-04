@@ -10,6 +10,7 @@ export type UiElementWidgetType
     | 'fixed_image'
     | 'responsive_page_holder'
     | 'horizontal_ui_section'
+    | 'horizontal_separator'
 ;
 
 export interface UiElementRepr {

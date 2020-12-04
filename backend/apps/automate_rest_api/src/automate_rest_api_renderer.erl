@@ -121,6 +121,19 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_image">>
     [ <<"<div class=widget-container>">>
     , "<img class='widget' src='", ImgUrl, "'/>"
     , <<"</div>">>
+    ];
+
+render_element(E=#{ <<"widget_type">> := <<"horizontal_separator">>
+                  , <<"id">> := _WidgetId
+                  }, _ProgramId, _Values) ->
+    [ "<hr "
+    , case E of
+          #{ <<"settings">> := #{ <<"body">> := #{ <<"widthTaken">> := #{ <<"value">> := Width } } } } ->
+              [ "class='size-", Width, "' " ];
+          _ ->
+              []
+      end
+    , "/>"
     ].
 
 
@@ -130,12 +143,22 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_image">>
 render_styles() ->
     [ <<"<style>">>
     , <<"* { margin: 0; padding: 0 } ">>
-    , <<"body { height: 100vh; text-align: center; } ">>
+    , <<"body { height: 100vh; text-align: center; background-color: #fff; } ">>
+    , "body {"
+    , "font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;"
+    , "font-size: 1rem;"
+    , "font-weight: 400;"
+    , "line-height: 1.5;"
+    , "color: #212529;"
+    , "text-align: left; }"
     , <<".hbox { width: 100%; height: 100%; display: flex; box-sizing: border-box; justify-content: space-evenly; } ">>
     , <<".vbox { width: 100%; height: 100%; display: flex; flex-flow: column; box-sizing: border-box; justify-content: space-evenly; } ">>
     , <<".dynamic_text { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
     , <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
     , <<".widget { margin: 0 auto; width: max-content; height: max-content; padding: 1ex; } ">>
+    , "hr { width: calc(50% - 2px); margin: 1ex auto; border: 1px solid #fff; mix-blend-mode: difference; } "
+    , "hr.size-short { width: calc(min(100%, 20ex) - 2px); } "
+    , "hr.size-full { width: calc(100% - 2px); } "
     , <<"</style>">>
     ].
 
@@ -155,6 +178,9 @@ wire_components(#{ <<"widget_type">> := <<"fixed_text">>
                  }) ->
     [];
 wire_components(#{ <<"widget_type">> := <<"fixed_image">>
+                 }) ->
+    [];
+wire_components(#{ <<"widget_type">> := <<"horizontal_separator">>
                  }) ->
     [];
 

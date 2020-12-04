@@ -640,6 +640,12 @@ svg.block_renderer g.flow_node.image_node .node_body {
     fill: rgba(255,255,255,0.3)
 }
 
+svg.block_renderer g.flow_node.separator_node .representation {
+    stroke: #fff;
+    mix-blend-mode: difference;
+    stroke-width: 2px;
+}
+
 svg.block_renderer g.flow_node.container_node .node_body {
     fill: #fff;
     stroke-width: 1;

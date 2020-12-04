@@ -64,6 +64,29 @@
                 </button>
                 <input hidden accept="image/*" type="file" #bodyImgFileInput (change)="previewImage($event)"/>
             </div>
+
+            <div class="body-width-picker" *ngIf="allowedConfigurations.body.widthTaken">
+                <div class="description">
+                    Element width
+                </div>
+                <mat-radio-group #widthTakenSelector
+                    [(ngModel)]="widthTaken"
+                    (change)="onNewWidthTaken($event)"
+                >
+                    <mat-radio-button
+                        *ngFor="let width of allowedWidthTypes"
+                        [value]="width"
+                    >{{ width }}</mat-radio-button>
+                </mat-radio-group>
+                <div [class]="'width-sample ' + (widthTaken ? '' : 'hidden')" >
+                    <label>Width sample:</label>
+                    <div class="sample-container">
+                        <div #widthSampleResult class="result">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
 
