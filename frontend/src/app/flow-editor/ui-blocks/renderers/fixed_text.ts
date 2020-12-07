@@ -2,12 +2,12 @@ import { UiSignalService } from "../../../services/ui-signal.service";
 import { Area2D, FlowBlock } from "../../flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
-import { BlockConfigurationOptions, BlockAllowedConfigurations } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
+import { BlockConfigurationOptions, BlockAllowedConfigurations, fontWeightToCss } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
-const DefaultContent = "- Fixed (editable) text -";
+const DefaultContent = "- Static (editable) text -";
 
 export const FixedTextBuilder: UiFlowBlockBuilder = (canvas: SVGElement,
     group: SVGElement,
@@ -161,6 +161,9 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
             if (settings.text.fontSize) {
                 settingsStorage.text.fontSize = {value: settings.text.fontSize.value};
             }
+            if (settings.text.fontWeight) {
+                settingsStorage.text.fontWeight = {value: settings.text.fontWeight.value};
+            }
         }
 
         this.block.blockData.settings = settingsStorage;
@@ -181,6 +184,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
             text: {
                 color: true,
                 fontSize: true,
+                fontWeight: true,
             },
         };
     }
@@ -198,6 +202,9 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
             }
             if (settings.text.fontSize) {
                 this.textBox.style.fontSize = settings.text.fontSize.value + 'px';
+            }
+            if (settings.text.fontWeight) {
+                this.textBox.style.fontWeight = fontWeightToCss(settings.text.fontWeight.value);
             }
         }
     }

@@ -39,6 +39,22 @@
                 <input #textFontSizePicker type="range" min="10" max="120" />
             </div>
 
+            <div class='font-weight-picker' *ngIf="allowedConfigurations.text.fontWeight">
+                <div class="description">
+                    Boldness:
+                </div>
+                <mat-radio-group #fontWeightTakenSelector
+                    [(ngModel)]="fontWeightTaken"
+                    (change)="onNewFontWeightTaken($event)"
+                >
+                    <mat-radio-button value="super-light">SuperLight</mat-radio-button>
+                    <mat-radio-button value="light">Light</mat-radio-button>
+                    <mat-radio-button value="normal">Normal</mat-radio-button>
+                    <mat-radio-button value="bold">Bold</mat-radio-button>
+                    <mat-radio-button value="super-bold">SuperBold</mat-radio-button>
+                </mat-radio-group>
+            </div>
+
             <div class='text-sample'>
                 <label>Result sample:</label>
                 <div #textSampleResult class="result">

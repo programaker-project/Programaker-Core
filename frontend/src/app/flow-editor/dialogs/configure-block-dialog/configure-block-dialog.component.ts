@@ -7,21 +7,25 @@ import { BackgroundPropertyConfiguration } from '../../ui-blocks/renderers/ui_tr
 
 declare const Huebee: any;
 
+export type FontWeight = 'super-light' | 'light' | 'normal' | 'bold' | 'super-bold';
+
 export type ColorOption = { color: boolean };
 export type ImageOption = { image?: boolean };
 export type FontSizeOption = { fontSize: boolean };
+export type FontWeightOption = { fontWeight?: boolean };
 export type ImageAssetConfiguration = {
     id: string,
 };
 export type WidthTakenOption = {widthTaken?: {name: string, style: string}[]};
 
 export type SurfaceOption = ColorOption & ImageOption;
-export type TextOptions = ColorOption & FontSizeOption;
+export type TextOptions = ColorOption & FontSizeOption & FontWeightOption;
 export type BodyOptions = ImageOption & WidthTakenOption;
 
 export type TextPropertyConfiguration = {
     color?: { value: string },
     fontSize?: { value: number },
+    fontWeight?: { value: FontWeight },
 };
 
 
@@ -46,6 +50,27 @@ export interface ConfigurableBlock {
     getCurrentConfiguration(): BlockConfigurationOptions;
     getAllowedConfigurations(): BlockAllowedConfigurations,
 }
+
+export function fontWeightToCss(value: FontWeight) {
+    switch(value) {
+        case 'normal':
+        case 'bold':
+            return value;
+
+        case 'light':
+            return '300';
+
+        case 'super-light':
+            return '100';
+
+        case 'super-bold':
+            return '900';
+
+        default:
+            throw Error("Unknown boldness value: " + value);
+    }
+}
+
 
 const DEFAULT_BACKGROUND_COLOR = '#FFFFFF';
 const DEFAULT_TEXT_COLOR = '#000000';
@@ -74,6 +99,7 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
     @ViewChild('textSampleResult') textSampleResult: ElementRef<HTMLDivElement>;
     @ViewChild('fontSizeValueViewer') fontSizeValueViewer: ElementRef<HTMLElement>;
     @ViewChild('textFontSizePicker') textFontSizePicker: ElementRef<HTMLInputElement>;
+    fontWeightTaken: FontWeight = 'normal';
     private hbTextColorPicker: any;
 
     @ViewChild('bodyImgPreview') bodyImgPreview: ElementRef<HTMLImageElement>;
@@ -111,6 +137,12 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
                 if (this.currentConfig.body && this.currentConfig.body.widthTaken) {
                     this.widthTaken = this.currentConfig.body.widthTaken.value;
                 }
+            }
+        }
+
+        if (this.currentConfig.text) {
+            if (this.currentConfig.text.fontWeight) {
+                this.fontWeightTaken = this.currentConfig.text.fontWeight.value;
             }
         }
     }
@@ -158,6 +190,10 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
     onNewWidthTaken(change: { value: string }) {
         const val = this.allowedConfigurations.body.widthTaken.find(x => x.name == change.value);
         this.widthSampleResult.nativeElement.style.width = val.style;
+    }
+
+    onNewFontWeightTaken(change: MatRadioChange) {
+        this.textSampleResult.nativeElement.style.fontWeight = fontWeightToCss(change.value);
     }
 
     onNewBgType(change: MatRadioChange) {
@@ -216,6 +252,7 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
             // Font size selector
             this.textFontSizePicker.nativeElement.value = startingSize + '';
             this.fontSizeValueViewer.nativeElement.innerText = startingSize + '';
+            this.textSampleResult.nativeElement.style.fontSize = startingSize + 'px';
 
             this.textFontSizePicker.nativeElement.oninput = (ev) => {
                 const value = (ev.srcElement as HTMLInputElement).value;
@@ -272,6 +309,9 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
             }
             if (this.allowedConfigurations.text.fontSize) {
                 settings.text.fontSize = { value: this.textFontSizePicker.nativeElement.valueAsNumber };
+            }
+            if (this.allowedConfigurations.text.fontWeight) {
+                settings.text.fontWeight = { value: this.fontWeightTaken };
             }
         }
 

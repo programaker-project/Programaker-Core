@@ -234,11 +234,19 @@ render_connection_block_start(ProgramId) ->
 render_connection_block_end() ->
     <<"})();">>.
 
+%% Element attribute management
 get_text_element_style(E) ->
     [ get_text_element_font_size_style(E)
+    , get_text_element_font_weight_style(E)
     , get_text_element_text_color_style(E)
     , get_text_element_background_color_style(E)
     ].
+
+get_text_element_text_color_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"color">> := #{ <<"value">> := Value } } } }) ->
+    [ "color: ", Value, ";"
+    ];
+get_text_element_text_color_style(_) ->
+    [].
 
 get_text_element_font_size_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"fontSize">> := #{ <<"value">> := Value } } } }) ->
     [ "font-size: ", integer_to_binary(Value), "px;"
@@ -246,10 +254,10 @@ get_text_element_font_size_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"fon
 get_text_element_font_size_style(_) ->
     [].
 
-get_text_element_text_color_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"color">> := #{ <<"value">> := Value } } } }) ->
-    [ "color: ", Value, ";"
+get_text_element_font_weight_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"fontWeight">> := #{ <<"value">> := Value } } } }) ->
+    [ "font-weight: ", font_weight_to_css(Value), ";"
     ];
-get_text_element_text_color_style(_) ->
+get_text_element_font_weight_style(_) ->
     [].
 
 get_text_element_background_color_style(#{ <<"settings">> := #{ <<"bg">> := #{ <<"type">> := <<"color">>
@@ -269,3 +277,15 @@ get_image_url(#{ <<"settings">> := #{ <<"body">> := #{ <<"image">> := #{ <<"id">
     ];
 get_image_url(_, _) ->
     []. %% TODO: Add a default image?
+
+%% Attribution translation
+font_weight_to_css(<<"normal">>) ->
+    "normal";
+font_weight_to_css(<<"bold">>) ->
+    "bold";
+font_weight_to_css(<<"light">>) ->
+    "300";
+font_weight_to_css(<<"super-light">>) ->
+    "100";
+font_weight_to_css(<<"super-bold">>) ->
+    "900".
