@@ -3,6 +3,7 @@ import { Area2D, FlowBlock } from "../../flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { BlockConfigurationOptions, BlockAllowedConfigurations, fontWeightToCss } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
+import { ContainerFlowBlock } from "../container_flow_block";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -21,11 +22,14 @@ export const FixedTextBuilder: UiFlowBlockBuilder = (canvas: SVGElement,
 }
 
 class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSettingsElement, HandleableElement {
-    private textBox: SVGTextElement;
+    private textBox: SVGForeignObjectElement;
     private textValue: string;
     private rect: SVGRectElement;
     readonly MinWidth = 120;
     private handle: UiElementHandle;
+    private _container: ContainerFlowBlock;
+    private textArea: Area2D;
+    private contentBox: HTMLDivElement;
 
     constructor(canvas: SVGElement, group: SVGElement,
         private block: UiFlowBlock,
@@ -38,9 +42,8 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         group.setAttribute('class', 'flow_node ui_node text_node');
 
-        this.textBox = document.createElementNS(SvgNS, 'text');
+        this.textBox = document.createElementNS(SvgNS, 'foreignObject');
         this.textBox.setAttribute('class', 'text');
-        this.textBox.setAttributeNS(null, 'textlength', '100%');
 
         this.textValue = block.blockData.textContent || DefaultContent;
         this.block.blockData.textContent = this.textValue;
@@ -194,6 +197,22 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         };
     }
 
+    // When inside a container, avoid overflowing it
+    updateContainer(container: UiFlowBlock | null) {
+        if (container instanceof ContainerFlowBlock) {
+            this._container = container;
+        }
+        else {
+            this._container = null;
+        }
+        this._updateSize();
+    }
+
+    dropOnEndMove() {
+        this._updateSize();
+        return { x: 0, y: 0 };
+    }
+
     // Style management
     updateStyle() {
         const settings = this.block.blockData.settings;
@@ -218,29 +237,39 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     _updateTextBox() {
         this.textBox.innerHTML = '';
 
-        const lines = this.textValue.split('\n')
-        for (let line of lines) {
-            if (line.length === 0) {
-                line = ' '
-            }
-            const span = document.createElementNS(SvgNS, 'tspan');
-            span.setAttributeNS(null, 'x', '0');
-            span.setAttributeNS(null, 'dy', '1.2em');
-            span.textContent = line;
+        this.contentBox = document.createElement('div');
+        this.contentBox.style.width = 'max-content';
+        this.contentBox.innerText = this.textValue;
 
-            this.textBox.appendChild(span);
-        }
+        this.textBox.appendChild(this.contentBox);
+
+        // Obtain size taken by all the text
+        const textArea = this.contentBox.getClientRects()[0];
+        this.textArea = {
+            x: textArea.x,
+            y: textArea.y,
+            width: textArea.width,
+            height: textArea.height,
+        };
+
+        // Then mark that as max-width
+        this.contentBox.style.maxWidth = 'max-content';
+        this.contentBox.style.width = '';
     }
 
     _updateSize(opts?: { anchor?: 'bottom-center' | 'top-left' }) {
-        const textArea = this.textBox.getBBox();
+        let maxWidth = Infinity;
+        if (this._container) {
+            const containerArea = this._container.getBodyArea();
+            maxWidth = containerArea.width - ( this.block.getOffset().x - containerArea.x );
+        }
 
         const anchor = opts && opts.anchor ? opts.anchor : 'top-left';
 
         const oldHeight = this.rect.height.baseVal.value;
         const oldWidth = this.rect.width.baseVal.value;
-        const box_height = textArea.height * 1.5;
-        const box_width = Math.max(textArea.width + 50, this.MinWidth);
+        const box_height = Math.max(this.textArea.height * 1.5, 120);
+        const box_width = Math.min(maxWidth, Math.max(this.textArea.width + 50, this.MinWidth));
 
         if (anchor === 'bottom-center') {
             // Move the box around to respect the anchor point
@@ -250,14 +279,18 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
             })
         }
 
+        this.textBox.setAttributeNS(null, 'width', box_width + "");
+
+        const textArea = this.contentBox.getClientRects()[0]; // Re-calculate it with the new width
+        this.textBox.setAttributeNS(null, 'height', textArea.height + "");
+
         this.textBox.setAttributeNS(null, 'y', (box_height - textArea.height)/2 + "");
-        for (const line of Array.from(this.textBox.childNodes)) {
-            if (line instanceof SVGTSpanElement) {
-                line.setAttributeNS(null, 'x', (box_width - textArea.width)/2 + "");
-            }
-        }
 
         this.rect.setAttributeNS(null, 'height', box_height + "");
         this.rect.setAttributeNS(null, 'width', box_width + "");
+
+        if (this.handle) {
+            this.handle.update();
+        }
     }
 }
