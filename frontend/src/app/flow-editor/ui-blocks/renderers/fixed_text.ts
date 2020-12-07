@@ -4,6 +4,7 @@ import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilder, UiFlowBloc
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { BlockConfigurationOptions, BlockAllowedConfigurations, fontWeightToCss } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
 import { ContainerFlowBlock } from "../container_flow_block";
+import { startOnElementEditor } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -30,6 +31,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     private _container: ContainerFlowBlock;
     private textArea: Area2D;
     private contentBox: HTMLDivElement;
+    private editing = false;
 
     constructor(canvas: SVGElement, group: SVGElement,
         private block: UiFlowBlock,
@@ -79,7 +81,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     }
 
     isTextEditable(): this is TextEditable {
-        return true;
+        return false;
     }
 
     isTextReadable(): this is TextReadable {
@@ -209,7 +211,9 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     }
 
     dropOnEndMove() {
-        this._updateSize();
+        if (!this.editing) {
+            this._updateSize();
+        }
         return { x: 0, y: 0 };
     }
 
@@ -234,12 +238,34 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     }
 
     // Aux
+    onContentEditStart() {
+        this.textBox.setAttributeNS(null, 'y', "");
+        this.textBox.setAttributeNS(null, 'x', "");
+
+        const width = this.rect.getAttributeNS(null, 'width');
+        const height = this.rect.getAttributeNS(null, 'height');
+        this.textBox.setAttributeNS(null, 'width', width);
+        this.textBox.setAttributeNS(null, 'height', height);
+
+        this.contentBox.style.height = height + 'px';
+        this.contentBox.style.overflow = 'auto';
+
+        this.editing = true;
+
+        startOnElementEditor(this.contentBox, this.textBox, () => {
+            this.editing = false;
+            this._updateSize();
+        } );
+    }
+
     _updateTextBox() {
         this.textBox.innerHTML = '';
 
         this.contentBox = document.createElement('div');
         this.contentBox.style.width = 'max-content';
         this.contentBox.innerText = this.textValue;
+        this.contentBox.contentEditable = 'true';
+        this.contentBox.onfocus = this.onContentEditStart.bind(this);
 
         this.textBox.appendChild(this.contentBox);
 

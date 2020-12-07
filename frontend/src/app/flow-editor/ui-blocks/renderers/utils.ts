@@ -71,3 +71,167 @@ export function combinedArea(areas: Area2D[]): Area2D {
 
     return manipulableAreaToArea2D(combined);
 }
+
+export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, onDone: () => void) {
+    const isTagOnAncestors = (node: Node, tag: string): {tags: string[], ancestor: HTMLElement} => {
+        if (!(node instanceof HTMLElement)) {
+            return isTagOnAncestors(node.parentElement, tag);
+        }
+
+        let element = node as HTMLElement;
+        const tags = [];
+
+        while (element) {
+            if (element.tagName.toLowerCase() === 'foreignobject') {
+                return null;
+            }
+            else if (element.tagName.toLowerCase() === tag) {
+                tags.reverse();
+                return {
+                    tags,
+                    ancestor: element,
+                };
+            }
+            else {
+                tags.push(element.tagName.toLowerCase());
+                element = element.parentElement;
+            }
+        }
+
+        return null;
+    }
+
+    const isTagOnTree = (node: Node, tag: string): boolean => {
+        if (node instanceof HTMLElement) {
+            if (node.tagName.toLowerCase() === tag) {
+                return true;
+            }
+        }
+
+        for (const child of Array.from(node.childNodes)) {
+            if (isTagOnTree(child, tag)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    const cutToRight = (start: Node, ancestor: HTMLElement, acc?: HTMLElement) => {
+        const parent = start.parentElement;
+
+        const cut = document.createElement(parent.tagName);
+
+        let next = start;
+        if (acc) {
+            cut.appendChild(acc);
+            next = start.nextSibling;
+        }
+
+        while (next) {
+            cut.appendChild(next);
+            next = next.nextSibling;
+        }
+
+        if (parent === ancestor) {
+            return cut;
+        }
+
+        return cutToRight(parent, ancestor, cut);
+    }
+
+    const wrapInTags = (node: Node, tags: string[]): Node => {
+        if (tags.length === 0) {
+            return node;
+        }
+        const top = document.createElement(tags[0]);
+        let lower = top;
+
+        for (let i = 1; i < tags.length; i++) {
+            const next = document.createElement(tags[i]);
+            lower.appendChild(next);
+            lower = next;
+        }
+
+        lower.appendChild(node);
+
+        return top;
+    }
+
+    const toggleTagOnSelection = (tag: string) => {
+        const sel = window.getSelection();
+        if (!sel) {
+            return;
+        }
+
+        const range = sel.getRangeAt(0).cloneRange();
+
+        const ancestorTags = isTagOnAncestors(range.commonAncestorContainer, tag);
+
+        if (ancestorTags) {
+            // Rip selection out of others in the same tag
+            range.insertNode(range.extractContents());
+
+            // Move elements on the right of the selection to a structure like the existing one
+            const nextElement = range.commonAncestorContainer.childNodes[range.endOffset];
+            const toRight = cutToRight(nextElement, ancestorTags.ancestor);
+            ancestorTags.ancestor.after(toRight);
+
+            // Replicate tree without the toggled tag on the selection
+            const reTagged = wrapInTags(range.extractContents(), ancestorTags.tags);
+            ancestorTags.ancestor.after(reTagged);
+        }
+        else if (isTagOnTree(range.cloneContents(), tag)) {
+            const wrapper = document.createElement(tag);
+
+            const contents = range.extractContents();
+            const toExtract = contents.querySelectorAll(tag);
+
+            for (const e of Array.from(toExtract)) {
+                let lastNode = e;
+                for (const node of Array.from(e.childNodes)) {
+                    lastNode.after(node);
+                    lastNode = node as Element;
+                }
+                e.parentNode.removeChild(e);
+            }
+
+            wrapper.appendChild(contents);
+            range.insertNode(wrapper)
+        }
+        else {
+            const wrapper = document.createElement(tag);
+            range.surroundContents(wrapper);
+        }
+
+    };
+
+    // TODO: Add buttons
+
+    element.oninput = () => {
+    }
+
+    element.onkeydown = (ev: KeyboardEvent) => {
+        if (ev.ctrlKey && ev.code === 'KeyB') {
+            ev.preventDefault();
+            toggleTagOnSelection('strong');
+        }
+        else if (ev.ctrlKey && ev.code === 'KeyU') {
+            ev.preventDefault();
+            toggleTagOnSelection('u');
+        }
+        else if (ev.ctrlKey && ev.code === 'KeyI') {
+            ev.preventDefault();
+            toggleTagOnSelection('em');
+        }
+        else if (ev.ctrlKey && ev.code === 'Enter') {
+            ev.preventDefault();
+            element.blur(); // Lose focus
+        }
+    }
+
+    element.onblur = (ev) => {
+        element.onkeydown = element.onblur = element.oninput = null;
+        onDone();
+    }
+}
