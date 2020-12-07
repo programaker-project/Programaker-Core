@@ -92,7 +92,7 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
                   , <<"id">> := WidgetId
                   }, _ProgramId, _Values) ->
     ElementStyle = get_text_element_style(E),
-    [ <<"<div class=widget-container><div class='widget fixed_text' id='elem-">>
+    [ <<"<div class=widget-container><div class='widget text fixed_text' id='elem-">>
     , WidgetId
     , <<"'">>
     , " style='", ElementStyle, "'"
@@ -108,7 +108,7 @@ render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
                                     maps:get(<<Type/binary, ".", WidgetId/binary>>, Values,
                                              <<"- No content yet -">>))),
     ElementStyle = get_text_element_style(E),
-    [ <<"<div class=widget-container><div class='widget dynamic_text' id='elem-">>, WidgetId, <<"'">>
+    [ <<"<div class=widget-container><div class='widget text dynamic_text' id='elem-">>, WidgetId, <<"'">>
     , " style='", ElementStyle, "'"
     , <<"><div>">>
     , Contents
@@ -156,6 +156,7 @@ render_styles() ->
     , <<".hbox { width: 100%; height: 100%; display: flex; box-sizing: border-box; justify-content: space-evenly; } ">>
     , <<".vbox { width: 100%; height: 100%; display: flex; flex-flow: column; box-sizing: border-box; justify-content: space-evenly; } ">>
     , <<".dynamic_text { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
+    , ".fixed_text { max-width: 50em; } "
     , <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
     , <<".widget { margin: 0 auto; width: max-content; height: max-content; padding: 1ex; } ">>
     , "hr { width: calc(50% - 2px); margin: 1ex auto; border: 1px solid #fff; mix-blend-mode: difference; } "
