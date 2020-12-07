@@ -46,7 +46,9 @@ raw_to_html(X) ->
     raw_to_html(list_to_binary(io_lib:format("~w", [X]))).
 
 html_escape(Str) ->
-    mochiweb_html:escape(Str).
+    Lines = binary:split(Str, <<"\n">>, [global]),
+    EscapedLines = lists:map(fun mochiweb_html:escape/1, Lines),
+    lists:join("<br/>", EscapedLines).
 
 %%====================================================================
 %% Element rendering

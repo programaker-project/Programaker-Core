@@ -208,6 +208,7 @@ export class FlowWorkspace implements BlockManager {
     private baseElement: HTMLElement;
     private inlineEditorContainer: HTMLDivElement;
     private inlineEditor: HTMLInputElement;
+    private inlineMultilineEditor: HTMLTextAreaElement;
     private state: State = 'waiting';
     private toolbox: Toolbox;
 
@@ -248,7 +249,6 @@ export class FlowWorkspace implements BlockManager {
                         private programService: ProgramService,
                        ) {
         this.baseElement = baseElement;
-        this.inlineEditor = undefined;
         this.blocks = {};
         this.connections = {};
         this.getEnum = getEnum;
@@ -261,6 +261,8 @@ export class FlowWorkspace implements BlockManager {
         this.baseElement.appendChild(this.inlineEditorContainer);
         this.inlineEditor = document.createElement('input');
         this.inlineEditorContainer.appendChild(this.inlineEditor);
+        this.inlineMultilineEditor = document.createElement('textarea');
+        this.inlineEditorContainer.appendChild(this.inlineMultilineEditor);
 
         // Popup group
         this.popupGroup = document.createElement('div');
@@ -690,7 +692,7 @@ export class FlowWorkspace implements BlockManager {
                 // On right click just make sure it is selected, the context
                 // menu will be handled by 'oncontextmenu'.
                 this.ensureBlockSelected(block_id);
-                // TODO: How to perform this action on touch event?
+                // TODO: How to perform this action on touch event? Long touch?
             }
             else {
                 this._mouseDownOnBlock(this._getPositionFromEvent(ev), block);
@@ -1308,52 +1310,75 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public editInline(area: Area2D, value: string, type: MessageType, update: (value: string) => void): void {
-        this.inlineEditor.value = value;
-        this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
-        if (type === 'integer') {
+        let editor = null;
+        let hiddenEditor = null;
+        if (type === 'boolean') {
+            editor = this.inlineEditor;
+            hiddenEditor = this.inlineMultilineEditor;
+
+            this.inlineEditor.step = '';
+            this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
+        }
+        else if (type === 'integer') {
+            editor = this.inlineEditor;
+            hiddenEditor = this.inlineMultilineEditor;
+
             this.inlineEditor.step = '1';
+            this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
         }
         else if (type === 'float') {
-            this.inlineEditor.step = '0.001';
+            editor = this.inlineEditor;
+            hiddenEditor = this.inlineMultilineEditor;
+
+            this.inlineEditor.step = '0.1';
+            this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
         }
         else {
-            this.inlineEditor.step = '';
+            editor = this.inlineMultilineEditor;
+            hiddenEditor = this.inlineEditor;
+        }
+        editor.value = value;
+
+        if (editor === hiddenEditor) {
+            throw Error("Hidden editor and used one should NOT be the same");
         }
 
         const valueArea = this.getWorkspaceRelArea(area);
 
         this.inlineEditorContainer.style.top = valueArea.y + 2 + 'px';
         this.inlineEditorContainer.style.left = valueArea.x + 'px';
-        this.inlineEditor.style.width = valueArea.width + 'px';
-        this.inlineEditor.style.height = valueArea.height - 4 + 'px';
-        this.inlineEditor.style.fontSize = (1 / this.inv_zoom_level) * 100 + '%';
+        editor.style.width = valueArea.width + 'px';
+        editor.style.height = valueArea.height - 4 + 'px';
+        editor.style.fontSize = (1 / this.inv_zoom_level) * 100 + '%';
 
         this.inlineEditorContainer.classList.remove('hidden');
+        editor.classList.remove('hidden');
+        hiddenEditor.classList.add('hidden');
 
         const finishEdition = () => {
-            this.inlineEditor.onblur = null;
-            this.inlineEditor.onkeypress = null;
+            editor.onblur = null;
+            editor.onkeypress = null;
             this.inlineEditorContainer.classList.add('hidden');
 
             if (type === 'boolean') {
                 update(this.inlineEditor.checked ? 'true' : 'false');
             }
             else {
-                update(this.inlineEditor.value);
+                update(editor.value);
             }
         }
 
-        this.inlineEditor.onblur = () => {
+        editor.onblur = () => {
             finishEdition();
         };
 
-        this.inlineEditor.onkeypress = (ev:KeyboardEvent) => {
-            if (ev.key === 'Enter') {
+        editor.onkeypress = (ev:KeyboardEvent) => {
+            if ((ev.shiftKey) && (ev.key === 'Enter')) {
                 finishEdition();
             }
         };
 
-        this.inlineEditor.focus();
+        editor.focus();
     }
 
     private updateBlockInputHelpersPosition(block_id: string) {

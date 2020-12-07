@@ -31,6 +31,7 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
     private handle: UiElementHandle;
     readonly MinWidth = 120;
     isStaticText: boolean;
+    private value: string;
 
     constructor(canvas: SVGElement, group: SVGElement,
                 private block: UiFlowBlock,
@@ -47,7 +48,7 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
         this.textBox.setAttribute('class', 'output_text');
         this.textBox.setAttributeNS(null,'textlength', '100%');
 
-        this.textBox.textContent = DefaultContent;
+        this.value = DefaultContent;
 
         node.appendChild(this.rectShadow);
         node.appendChild(this.rect);
@@ -63,6 +64,7 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
         this.rectShadow.setAttributeNS(null, 'y', "0");
 
         this.updateStyle();
+        this._updateText();
         this._updateSize();
 
         if (initOps.workspace) {
@@ -79,7 +81,7 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
     }
 
     get text(): string {
-        return this.textBox.textContent;
+        return this.value;
     }
 
     dispose() {
@@ -98,17 +100,17 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
     }
 
     onConnectionValueUpdate(_inputIndex: number, value: string) {
-        this.textBox.textContent = value;
+        this.value = value;
+        this._updateText();
         this._updateSize();
     }
 
     init() {
-        // Nothing to do here... yet
         const observer = this.service.onElementUpdate(this.block.options.id, this.block.id);
 
         this.subscription = observer.subscribe({
             next: (value: any) => {
-                this.textBox.textContent = JSON.stringify(value.values[0]);
+                this.onConnectionValueUpdate(0, JSON.stringify(value.values[0]));
             }
         });
 
@@ -253,14 +255,35 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
     }
 
     // Aux
+    _updateText() {
+        this.textBox.innerHTML = '';
+
+        const lines = this.value.split('\n')
+        for (let line of lines) {
+            if (line.length === 0) {
+                line = ' '
+            }
+            const span = document.createElementNS(SvgNS, 'tspan');
+            span.setAttributeNS(null, 'x', '0');
+            span.setAttributeNS(null, 'dy', '1.2em');
+            span.textContent = line;
+
+            this.textBox.appendChild(span);
+        }
+    }
+
     _updateSize(opts?: { anchor?: 'bottom-center' | 'top-left' }) {
         const textArea = this.textBox.getClientRects()[0];
 
         const box_height = textArea.height * 1.5;
         const box_width = Math.max(textArea.width + 50, this.MinWidth);
 
-        this.textBox.setAttributeNS(null, 'y', box_height/1.5 + "");
-        this.textBox.setAttributeNS(null, 'x', (box_width - textArea.width)/2 + "");
+        this.textBox.setAttributeNS(null, 'y', (box_height - textArea.height)/2 + "");
+        for (const line of Array.from(this.textBox.childNodes)) {
+            if (line instanceof SVGTSpanElement) {
+                line.setAttributeNS(null, 'x', (box_width - textArea.width)/2 + "");
+            }
+        }
 
         this.rect.setAttributeNS(null, 'height', box_height + "");
         this.rect.setAttributeNS(null, 'width', box_width + "");

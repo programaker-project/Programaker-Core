@@ -310,6 +310,10 @@ svg.block_renderer g.flow_node.editing rect.node_body {
     display: none;
 }
 
+#workspace > .inline_editor_container .hidden {
+    display: none;
+}
+
 #workspace > .inline_editor_container > input {
     font-family: helvetica;
     border: none;

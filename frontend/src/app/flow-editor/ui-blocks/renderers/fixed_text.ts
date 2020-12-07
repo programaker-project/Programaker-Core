@@ -42,7 +42,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         this.textBox.setAttribute('class', 'text');
         this.textBox.setAttributeNS(null, 'textlength', '100%');
 
-        this.textValue = this.textBox.textContent = block.blockData.textContent || DefaultContent;
+        this.textValue = block.blockData.textContent || DefaultContent;
         this.block.blockData.textContent = this.textValue;
 
         contentsGroup.appendChild(this.textBox);
@@ -56,6 +56,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         this.rect.setAttributeNS(null, 'y', "0");
 
         this.updateStyle();
+        this._updateTextBox();
         this._updateSize();
 
         if (initOps.workspace) {
@@ -95,9 +96,13 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     }
 
     public set text(val: string) {
-        this.textBox.textContent = this.block.blockData.textContent = this.textValue = val;
+        this.block.blockData.textContent = this.textValue = val;
+
+        this._updateTextBox();
         this._updateSize();
     }
+
+
 
     dispose() {}
 
@@ -210,8 +215,25 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     }
 
     // Aux
+    _updateTextBox() {
+        this.textBox.innerHTML = '';
+
+        const lines = this.textValue.split('\n')
+        for (let line of lines) {
+            if (line.length === 0) {
+                line = ' '
+            }
+            const span = document.createElementNS(SvgNS, 'tspan');
+            span.setAttributeNS(null, 'x', '0');
+            span.setAttributeNS(null, 'dy', '1.2em');
+            span.textContent = line;
+
+            this.textBox.appendChild(span);
+        }
+    }
+
     _updateSize(opts?: { anchor?: 'bottom-center' | 'top-left' }) {
-        const textArea = this.textBox.getClientRects()[0];
+        const textArea = this.textBox.getBBox();
 
         const anchor = opts && opts.anchor ? opts.anchor : 'top-left';
 
@@ -228,8 +250,12 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
             })
         }
 
-        this.textBox.setAttributeNS(null, 'y', box_height/1.5 + "");
-        this.textBox.setAttributeNS(null, 'x', (box_width - textArea.width)/2 + "");
+        this.textBox.setAttributeNS(null, 'y', (box_height - textArea.height)/2 + "");
+        for (const line of Array.from(this.textBox.childNodes)) {
+            if (line instanceof SVGTSpanElement) {
+                line.setAttributeNS(null, 'x', (box_width - textArea.width)/2 + "");
+            }
+        }
 
         this.rect.setAttributeNS(null, 'height', box_height + "");
         this.rect.setAttributeNS(null, 'width', box_width + "");
