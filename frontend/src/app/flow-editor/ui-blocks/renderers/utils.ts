@@ -118,26 +118,33 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
     }
 
     const cutToRight = (start: Node, ancestor: HTMLElement, acc?: HTMLElement) => {
+        const parNode = start.parentNode;
+        console.log("ParNode", parNode);
         const parent = start.parentElement;
 
         const cut = document.createElement(parent.tagName);
 
-        let next = start;
+        let it = start;
         if (acc) {
             cut.appendChild(acc);
-            next = start.nextSibling;
+            it = start.nextSibling;
         }
 
-        while (next) {
-            cut.appendChild(next);
-            next = next.nextSibling;
+        console.log(it);
+        while (it) {
+            const next = it.nextSibling;
+            cut.appendChild(it);
+            it = next;
+            console.log(it);
         }
 
         if (parent === ancestor) {
             return cut;
         }
 
-        return cutToRight(parent, ancestor, cut);
+        console.log("Up", parNode);
+
+        return cutToRight(parNode, ancestor, cut);
     }
 
     const wrapInTags = (node: Node, tags: string[]): Node => {
@@ -158,6 +165,51 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
         return top;
     }
 
+    const isAllTreeOnTag = (node: Node, tag: string): boolean => {
+        if (node instanceof HTMLElement) {
+            if (node.tagName.toLowerCase() === tag) {
+                return true;
+            }
+            else {
+                // If any child inside the node is not on the tag, not all tree is in it.
+                if (Array.from(node.childNodes).some(n => !isAllTreeOnTag(n, tag))) {
+                    return false;
+                }
+                return true;
+            }
+        }
+        else if (node instanceof Text) {
+            return node.textContent.trim() === ''; // Ignore whitespace nodes
+        }
+        else if (node instanceof DocumentFragment) {
+            // Same logic as tags
+            // If any child inside the node is not on the tag, not all tree is in it.
+            if (Array.from(node.childNodes).some(n => !isAllTreeOnTag(n, tag))) {
+                return false;
+            }
+            return true;
+        }
+        else {
+            console.log('Problematic node:', node);
+            throw Error(`Unexpected node: ${node}`);
+        }
+    };
+
+    const removeTag = (node: DocumentFragment, tag: string): Node => {
+        const toExtract = node.querySelectorAll(tag);
+
+        for (const e of Array.from(toExtract)) {
+            let lastNode = e;
+            for (const node of Array.from(e.childNodes)) {
+                lastNode.after(node);
+                lastNode = node as Element;
+            }
+            e.parentNode.removeChild(e);
+        }
+
+        return node;
+    }
+
     const toggleTagOnSelection = (tag: string) => {
         const sel = window.getSelection();
         if (!sel) {
@@ -165,27 +217,33 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
         }
 
         const range = sel.getRangeAt(0).cloneRange();
+        console.log("Selected", range);
 
         const ancestorTags = isTagOnAncestors(range.commonAncestorContainer, tag);
+        const selectedContents = range.cloneContents();
 
         if (ancestorTags) {
             // Rip selection out of others in the same tag
             range.insertNode(range.extractContents());
 
+            console.log("In ancestor");
             // Move elements on the right of the selection to a structure like the existing one
-            const nextElement = range.commonAncestorContainer.childNodes[range.endOffset];
+            const nextElement = range.endContainer.nextSibling;
+            console.log("NXT", nextElement);
             const toRight = cutToRight(nextElement, ancestorTags.ancestor);
+            console.log("ToRight", toRight);
             ancestorTags.ancestor.after(toRight);
 
             // Replicate tree without the toggled tag on the selection
             const reTagged = wrapInTags(range.extractContents(), ancestorTags.tags);
             ancestorTags.ancestor.after(reTagged);
         }
-        else if (isTagOnTree(range.cloneContents(), tag)) {
-            const wrapper = document.createElement(tag);
+        else if (isTagOnTree(selectedContents, tag)) {
+            console.log("On tree");
 
             const contents = range.extractContents();
             const toExtract = contents.querySelectorAll(tag);
+            console.log("ToExtract", toExtract);
 
             for (const e of Array.from(toExtract)) {
                 let lastNode = e;
@@ -196,10 +254,23 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
                 e.parentNode.removeChild(e);
             }
 
-            wrapper.appendChild(contents);
-            range.insertNode(wrapper)
+            console.log("Contents:", contents);
+
+            const allTreeOnTag = isAllTreeOnTag(selectedContents, tag);
+            console.log("AllTreeOnTag:", allTreeOnTag);
+
+            if (allTreeOnTag) {
+                range.insertNode(removeTag(selectedContents, tag));
+            }
+            else {
+                const wrapper = document.createElement(tag);
+                wrapper.appendChild(contents);
+                range.insertNode(wrapper)
+            }
         }
         else {
+            console.log("Surround");
+
             const wrapper = document.createElement(tag);
             range.surroundContents(wrapper);
         }
