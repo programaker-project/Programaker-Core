@@ -73,12 +73,43 @@ export function combinedArea(areas: Area2D[]): Area2D {
 }
 
 export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, onDone: () => void) {
+    const elementPos = element.getClientRects()[0];
 
+    const buttonBar = document.createElement('div');
+    buttonBar.classList.add('floating-button-bar');
 
+    const boldButton = document.createElement('button');
+    boldButton.classList.add('bold-button');
+    buttonBar.appendChild(boldButton);
+    boldButton.innerText = 'B';
+    boldButton.onmousedown = (ev) => {
+        document.execCommand('bold', false, undefined);
+        ev.preventDefault(); // Prevent losing focus on element
+    }
 
+    const italicButton = document.createElement('button');
+    italicButton.classList.add('italic-button');
+    buttonBar.appendChild(italicButton);
+    italicButton.innerText = 'I';
+    italicButton.onmousedown = (ev) => {
+        document.execCommand('italic', false, undefined);
+        ev.preventDefault(); // Prevent losing focus on element
+    }
 
+    const underlineButton = document.createElement('button');
+    underlineButton.classList.add('underline-button');
+    buttonBar.appendChild(underlineButton);
+    underlineButton.innerText = 'U';
+    underlineButton.onmousedown = (ev) => {
+        document.execCommand('underline', false, undefined);
+        ev.preventDefault(); // Prevent losing focus on element
+    }
 
+    document.body.appendChild(buttonBar);
 
+    const buttonDim = buttonBar.getClientRects()[0];
+    buttonBar.style.top = elementPos.y - buttonDim.height + 'px';
+    buttonBar.style.left = elementPos.x + 'px';
 
     element.oninput = () => {
     }
@@ -103,7 +134,10 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
     }
 
     element.onblur = (ev) => {
+        // Cleanup
         element.onkeydown = element.onblur = element.oninput = null;
+        document.body.removeChild(buttonBar);
+
         onDone();
     }
 }
