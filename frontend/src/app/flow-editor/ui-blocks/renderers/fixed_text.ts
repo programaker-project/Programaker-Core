@@ -4,12 +4,12 @@ import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilder, UiFlowBloc
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { BlockConfigurationOptions, BlockAllowedConfigurations, fontWeightToCss } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
 import { ContainerFlowBlock } from "../container_flow_block";
-import { startOnElementEditor } from "./utils";
+import { startOnElementEditor, FormattedTextTree, formattedTextTreeToDom } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
-const DefaultContent = "- Static (editable) text -";
+const DefaultContent =  { type: 'text', value: "- Static (editable) text -"};
 
 export const FixedTextBuilder: UiFlowBlockBuilder = (canvas: SVGElement,
     group: SVGElement,
@@ -24,7 +24,7 @@ export const FixedTextBuilder: UiFlowBlockBuilder = (canvas: SVGElement,
 
 class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSettingsElement, HandleableElement {
     private textBox: SVGForeignObjectElement;
-    private textValue: string;
+    private textValue: FormattedTextTree;
     private rect: SVGRectElement;
     readonly MinWidth = 120;
     private handle: UiElementHandle;
@@ -47,8 +47,10 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         this.textBox = document.createElementNS(SvgNS, 'foreignObject');
         this.textBox.setAttribute('class', 'text');
 
-        this.textValue = block.blockData.textContent || DefaultContent;
-        this.block.blockData.textContent = this.textValue;
+        if ((block.blockData.textContent) && !(block.blockData.content)) {
+            block.blockData.content = [{ type: 'text', value: block.blockData.textContent }];
+        }
+        this.textValue = block.blockData.content || [DefaultContent];
 
         contentsGroup.appendChild(this.textBox);
         node.appendChild(this.rect);
@@ -97,17 +99,8 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     }
 
     public get text(): string {
-        return this.textValue;
+        return this.contentBox.innerText;
     }
-
-    public set text(val: string) {
-        this.block.blockData.textContent = this.textValue = val;
-
-        this._updateTextBox();
-        this._updateSize();
-    }
-
-
 
     dispose() {}
 
@@ -115,9 +108,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
     onConnectionValueUpdate(inputIndex: number, value: string) {}
 
-    onConnectionLost(portIndex: number) {
-        this.onConnectionValueUpdate(portIndex, DefaultContent);
-    }
+    onConnectionLost(portIndex: number) { }
 
     // Focus management
     onClick() {
@@ -252,7 +243,9 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         this.editing = true;
 
-        startOnElementEditor(this.contentBox, this.textBox, () => {
+        startOnElementEditor(this.contentBox, this.textBox, (tt: FormattedTextTree) => {
+            this.block.blockData.content = this.textValue = tt;
+
             this.editing = false;
             this._updateSize();
         } );
@@ -263,10 +256,10 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         this.contentBox = document.createElement('div');
         this.contentBox.style.width = 'max-content';
-        this.contentBox.innerText = this.textValue;
         this.contentBox.contentEditable = 'true';
         this.contentBox.onfocus = this.onContentEditStart.bind(this);
 
+        this.contentBox.appendChild(formattedTextTreeToDom(this.textValue));
         this.textBox.appendChild(this.contentBox);
 
         // Obtain size taken by all the text

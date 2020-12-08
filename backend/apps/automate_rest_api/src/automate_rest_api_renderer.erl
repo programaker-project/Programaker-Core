@@ -97,7 +97,7 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
     , <<"'">>
     , " style='", ElementStyle, "'"
     , <<">">>
-    , html_escape(maps:get(<<"text">>, E, "Right click me to edit this text!"))
+    , get_fixed_text_content(E)
     , <<"</div></div>">>
     ];
 
@@ -281,7 +281,39 @@ get_image_url(#{ <<"settings">> := #{ <<"body">> := #{ <<"image">> := #{ <<"id">
 get_image_url(_, _) ->
     []. %% TODO: Add a default image?
 
-%% Attribution translation
+
+get_fixed_text_content(#{ <<"content">> := Content }) ->
+    formatted_text_to_html(Content);
+get_fixed_text_content(E) ->
+    html_escape(maps:get(<<"text">>, E, "Right click me to edit this text!")).
+
+formatted_text_to_html(FT) ->
+    lists:map(fun formatted_element_to_html/1, FT).
+
+formatted_element_to_html(#{ <<"type">> := <<"text">>
+                           , <<"value">> := Text
+                           }) ->
+    html_escape(Text);
+formatted_element_to_html(#{ <<"type">> := <<"format">>
+                           , <<"format">> := Format
+                           , <<"contents">> := Contents
+                           }) ->
+    Tag = format_to_tag(Format),
+    [ "<", Tag, ">"
+    , formatted_text_to_html(Contents)
+    , "</", Tag, ">"
+    ].
+
+format_to_tag(<<"bold">>) ->
+    "b";
+format_to_tag(<<"italic">>) ->
+    "i";
+format_to_tag(<<"underline">>) ->
+    "u".
+
+
+
+%% Attribute translation
 font_weight_to_css(<<"normal">>) ->
     "normal";
 font_weight_to_css(<<"bold">>) ->

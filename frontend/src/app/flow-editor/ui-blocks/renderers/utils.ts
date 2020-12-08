@@ -72,7 +72,99 @@ export function combinedArea(areas: Area2D[]): Area2D {
     return manipulableAreaToArea2D(combined);
 }
 
-export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, onDone: () => void) {
+type FormatType = 'bold' | 'italic' | 'underline';
+type TextChunk = { type: 'text', value: string };
+type FormatChunk = { type: 'format', format: FormatType, contents: FormattedTextTree }
+
+export type FormattedTextTree = (TextChunk | FormatChunk)[];
+
+function getFormatTypeOfElement(el: HTMLElement): FormatType | null {
+    switch (el.tagName.toLowerCase()) {
+        case 'b':
+        case 'strong':
+            return 'bold';
+
+        case 'i':
+        case 'em':
+            return 'italic';
+
+        case 'u':
+            return 'underline';
+
+        default:
+            return null;
+    }
+}
+
+function formatTypeToElement(ft: FormatType): string {
+    switch (ft) {
+        case 'bold':
+            return 'b';
+
+        case 'italic':
+            return 'i';
+
+        case 'underline':
+            return 'u';
+
+        default:
+            return null;
+    }
+}
+
+export function domToFormattedTextTree(node: Node) : FormattedTextTree {
+    if (node instanceof Text) {
+        return [{ type: 'text', value: node.textContent }];
+    }
+    else if (node instanceof HTMLElement) {
+        const formatType = getFormatTypeOfElement(node);
+        let  subTrees = [];
+
+        for (const n of Array.from(node.childNodes)){
+            subTrees = subTrees.concat(domToFormattedTextTree(n));
+        }
+
+        if (!formatType) {
+            return subTrees;
+        }
+        else {
+            return [{ type: 'format', format: formatType, contents: subTrees }];
+        }
+    }
+    else {
+        throw Error("Unexpected node type: " + node);
+    }
+}
+
+export function formattedTextTreeToDom(tt: FormattedTextTree): Node {
+    const nodes = [];
+
+    for (const el of tt) {
+        if (el.type === 'text') {
+            nodes.push(document.createTextNode(el.value));
+        }
+        else if (el.type === 'format') {
+            const node = document.createElement(formatTypeToElement(el.format));
+
+            node.appendChild(formattedTextTreeToDom(el.contents));
+
+            nodes.push(node);
+        }
+    }
+
+    if (nodes.length === 1) {
+        return nodes[0];
+    }
+
+    const wrapper = document.createElement('div');
+    for (const node of nodes){
+        wrapper.appendChild(node);
+    }
+
+    return wrapper;
+}
+
+export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, onDone: (text: FormattedTextTree) => void) {
     const elementPos = element.getClientRects()[0];
 
     const buttonBar = document.createElement('div');
@@ -138,6 +230,6 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
         element.onkeydown = element.onblur = element.oninput = null;
         document.body.removeChild(buttonBar);
 
-        onDone();
+        onDone(domToFormattedTextTree(element));
     }
 }

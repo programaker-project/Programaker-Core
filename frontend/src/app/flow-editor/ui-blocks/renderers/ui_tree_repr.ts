@@ -18,6 +18,7 @@ export interface UiElementRepr {
     id: string,
     widget_type: UiElementWidgetType,
     text?: string,
+    content?: any,
 };
 
 export interface CutElement {

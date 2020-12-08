@@ -65,6 +65,7 @@ export interface UiFlowBlockOptions extends FlowBlockOptions {
 
 interface UiFlowBlockExtraData {
     textContent?: string,
+    content?: any,
     dimensions?: { width: number, height: number },
     settings?: BlockConfigurationOptions,
 }
@@ -174,6 +175,9 @@ export class UiFlowBlock implements FlowBlock {
             if (this.handler.isStaticText) {
                 data.text = this.handler.text;
             }
+        }
+        if (this.blockData.content) {
+            data.content = this.blockData.content;
         }
 
         data.settings = this.blockData.settings;
