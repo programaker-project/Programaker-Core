@@ -1,7 +1,7 @@
 import { Area2D, ManipulableArea2D } from "../../flow_block";
 import { MatDialog } from "@angular/material/dialog";
 import { ConfigureLinkDialogComponent } from "../../dialogs/configure-link-dialog/configure-link-dialog.component";
-import { isTagOnAncestors, isTagOnTree, extractContentsToRight } from "./dom_utils";
+import { isTagOnAncestors, isTagOnTree, extractContentsToRight, surroundRangeWithElement } from "./dom_utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -271,7 +271,7 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
         }
         else {
             linkTag = document.createElement('a');
-            range.surroundContents(linkTag);
+            surroundRangeWithElement(range, linkTag);
         }
 
         const dialogRef = dialog.open(ConfigureLinkDialogComponent, {

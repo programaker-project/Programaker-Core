@@ -57,3 +57,15 @@ export function extractContentsToRight(element: HTMLElement) {
     }
     parent.removeChild(element);
 }
+
+export function surroundRangeWithElement(range: Range, element: HTMLElement) {
+
+    // The difference with Range.surroundContents() is that this supports
+    // ranges that start at one tag and end at another.
+    // In exchange it has to clone whole tags, not supporting partial ones.
+
+
+    const contents = range.extractContents();
+    element.appendChild(contents);
+    range.insertNode(element);
+}
