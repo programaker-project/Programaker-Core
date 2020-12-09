@@ -290,6 +290,7 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
 
             // Update the <a> tag with the appropriate link
             linkTag.href = result.result.link;
+            linkTag.innerText = result.result.text;
 
             resolve();
         });
