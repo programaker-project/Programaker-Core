@@ -329,6 +329,11 @@ svg.block_renderer g.flow_node.editing rect.node_body {
     -moz-appearance: textfield;
 }
 
+// ContentEditable divs
+div[contenteditable="true"] {
+    cursor: text;
+}
+
 // Floating button bar over fixed text elements
 .floating-button-bar {
     position: absolute;

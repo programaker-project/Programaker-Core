@@ -239,14 +239,21 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         this.textBox.setAttributeNS(null, 'height', height);
 
         this.contentBox.style.height = height + 'px';
+        this.contentBox.style.maxWidth = '';
+        this.contentBox.style.width = '100%';
         this.contentBox.style.overflow = 'auto';
 
         this.editing = true;
+
+        this.contentBox.onmousedown = (ev: MouseEvent) => {
+            ev.stopImmediatePropagation();
+        }
 
         startOnElementEditor(this.contentBox, this.textBox, (tt: FormattedTextTree) => {
             this.block.blockData.content = this.textValue = tt;
 
             this.editing = false;
+            this._updateTextBox();
             this._updateSize();
         } );
     }
@@ -303,6 +310,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         const textArea = this.contentBox.getClientRects()[0]; // Re-calculate it with the new width
         this.textBox.setAttributeNS(null, 'height', textArea.height + "");
 
+        this.textBox.setAttributeNS(null, 'x', (box_width - textArea.width)/2 + "");
         this.textBox.setAttributeNS(null, 'y', (box_height - textArea.height)/2 + "");
 
         this.rect.setAttributeNS(null, 'height', box_height + "");
