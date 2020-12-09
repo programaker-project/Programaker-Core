@@ -284,13 +284,15 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
                     // Unwrap elements
                     extractContentsToRight(linkTag);
                 }
-                resolve();
-                return;
             }
-
-            // Update the <a> tag with the appropriate link
-            linkTag.href = result.result.link;
-            linkTag.innerText = result.result.text;
+            else if (result.operation === 'remove-link') {
+                extractContentsToRight(linkTag);
+            }
+            else {
+                // Update the <a> tag with the appropriate link
+                linkTag.href = result.value.link;
+                linkTag.innerText = result.value.text;
+            }
 
             resolve();
         });

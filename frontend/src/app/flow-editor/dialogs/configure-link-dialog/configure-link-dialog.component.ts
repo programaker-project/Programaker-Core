@@ -37,8 +37,11 @@ export class ConfigureLinkDialogComponent {
         this.dialogRef.close({success: false});
     }
 
-    async acceptChanges() {
-        this.dialogRef.close({success: true, result: { link: this.link.value, text: this.text.value }});
+    acceptChanges() {
+        this.dialogRef.close({success: true, operation: 'set-link', value: { link: this.link.value, text: this.text.value }});
     }
 
+    removeLink() {
+        this.dialogRef.close({success: true, operation: 'remove-link', value: { link: this.link.value, text: this.text.value }});
+    }
 }

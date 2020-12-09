@@ -9,6 +9,7 @@
             <mat-label>Text</mat-label>
             <input matInput [formControl]="text" placeholder="Text in link">
         </mat-form-field>
+
         <mat-form-field appearance="standard">
             <mat-label>Link Target</mat-label>
             <input matInput [formControl]="link" placeholder="https://programaker.com/...">
@@ -22,6 +23,12 @@
             (click)="cancelChanges()">
             <mat-icon>clear</mat-icon>
             Cancel
+        </button>
+
+        <button mat-button mat-raised-button  class="cancel-button" color="warn"
+            (click)="removeLink()">
+            <mat-icon>link_off</mat-icon>
+            Remove link
         </button>
 
         <button #acceptSaveConfigButton mat-button mat-raised-button  class="save-button confirm-button"
