@@ -297,8 +297,11 @@ formatted_element_to_html(#{ <<"type">> := <<"text">>
 formatted_element_to_html(#{ <<"type">> := <<"link">>
                            , <<"target">> := Target
                            , <<"contents">> := Contents
+                           , <<"open_in_tab">> := OpenInTab
                            }) ->
-    [ "<a href='", mochiweb_html:escape(Target), "'>"
+    [ "<a href='", mochiweb_html:escape(Target)
+    , "' rel='noopener'", case OpenInTab of true -> " target='_blank'"; _ -> "" end
+    , ">"
     , formatted_text_to_html(Contents)
     , "</a>"
     ];

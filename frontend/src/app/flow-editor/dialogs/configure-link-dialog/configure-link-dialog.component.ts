@@ -15,14 +15,16 @@ const UrlPattern = new RegExp(/(https?:\/\/.{2,}\..{2,})|(mailto:.*@.*)/);
 export class ConfigureLinkDialogComponent {
     link = new FormControl('', [Validators.required, Validators.pattern(UrlPattern)]);
     text = new FormControl('', [Validators.required, Validators.min(1)]);
+    openInTab: boolean;
 
     // Initialization
     constructor(public dialogRef: MatDialogRef<ConfigureLinkDialogComponent>,
                 @Inject(MAT_DIALOG_DATA)
-                public data: { link: string, text: string }) {
+                public data: { link: string, text: string, openInTab: boolean }) {
 
         this.link.setValue(data.link);
         this.text.setValue(data.text);
+        this.openInTab = data.openInTab;
     }
 
     getUrlErrorMessage() {
@@ -38,10 +40,14 @@ export class ConfigureLinkDialogComponent {
     }
 
     acceptChanges() {
-        this.dialogRef.close({success: true, operation: 'set-link', value: { link: this.link.value, text: this.text.value }});
+        this.dialogRef.close({success: true, operation: 'set-link', value: {
+            link: this.link.value,
+            text: this.text.value,
+            openInTab: this.openInTab,
+        }});
     }
 
     removeLink() {
-        this.dialogRef.close({success: true, operation: 'remove-link', value: { link: this.link.value, text: this.text.value }});
+        this.dialogRef.close({success: true, operation: 'remove-link'});
     }
 }

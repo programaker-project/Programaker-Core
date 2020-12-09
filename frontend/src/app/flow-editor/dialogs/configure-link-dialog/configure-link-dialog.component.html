@@ -16,6 +16,8 @@
             <mat-hint><span class="url-sample">http://...</span> or <span class="url-sample">mailto:some@mail.com</span></mat-hint>
             <mat-error *ngIf="link.invalid">{{getUrlErrorMessage()}}</mat-error>
         </mat-form-field>
+
+        <mat-checkbox [(ngModel)]="openInTab">Open link in tab</mat-checkbox>
     </div>
 
     <div class="accept-cancel">

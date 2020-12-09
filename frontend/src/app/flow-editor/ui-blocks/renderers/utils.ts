@@ -77,7 +77,7 @@ export function combinedArea(areas: Area2D[]): Area2D {
 
 type FormatType = 'bold' | 'italic' | 'underline';
 type TextChunk = { type: 'text', value: string };
-type LinkChunk = { type: 'link', target: string, contents: FormattedTextTree };
+type LinkChunk = { type: 'link', target: string, open_in_tab: boolean, contents: FormattedTextTree };
 type FormatChunk = { type: 'format', format: FormatType, contents: FormattedTextTree }
 
 export type FormattedTextTree = (TextChunk | FormatChunk | LinkChunk)[];
@@ -150,7 +150,8 @@ export function domToFormattedTextTree(node: Node) : FormattedTextTree {
         }
 
         if (node instanceof HTMLAnchorElement) {
-            return [{ type: 'link', target: node.href, contents: subTrees }];
+            const openInTab = node.target && (node.target.indexOf('_blank') >= 0);
+            return [{ type: 'link', target: node.href, open_in_tab: !!openInTab, contents: subTrees }];
         }
 
         if (!formatType) {
@@ -224,6 +225,9 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
             const node = document.createElement('a');
 
             node.href = el.target;
+            if (el.open_in_tab) {
+                node.target = '_blank';
+            }
             const contents = formattedTextTreeToDom(el.contents, true);
             node.append(...unwrapSpan(contents));
 
@@ -274,8 +278,10 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
             surroundRangeWithElement(range, linkTag);
         }
 
+        const openInTab = linkTag.target && linkTag.target.indexOf('_blank') >= 0;
+
         const dialogRef = dialog.open(ConfigureLinkDialogComponent, {
-            data: { text: text, link: linkValue }
+            data: { text: text, link: linkValue, openInTab: openInTab }
         });
 
         dialogRef.afterClosed().subscribe(async (result) => {
@@ -292,6 +298,13 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
                 // Update the <a> tag with the appropriate link
                 linkTag.href = result.value.link;
                 linkTag.innerText = result.value.text;
+
+                if (result.value.openInTab) {
+                    linkTag.target = '_blank';
+                }
+                else {
+                    linkTag.target = '';
+                }
             }
 
             resolve();
