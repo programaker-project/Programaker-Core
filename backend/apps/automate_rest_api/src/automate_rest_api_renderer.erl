@@ -305,6 +305,15 @@ formatted_element_to_html(#{ <<"type">> := <<"link">>
     , formatted_text_to_html(Contents)
     , "</a>"
     ];
+formatted_element_to_html(#{ <<"type">> := <<"text-color">>
+                           , <<"color">> := Color
+                           , <<"contents">> := Contents
+                           }) ->
+    [ "<font style='color:", mochiweb_html:escape(Color), ";'"
+    , "'>"
+    , formatted_text_to_html(Contents)
+    , "</font>"
+    ];
 formatted_element_to_html(#{ <<"type">> := <<"format">>
                            , <<"format">> := Format
                            , <<"contents">> := Contents

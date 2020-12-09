@@ -1,0 +1,41 @@
+<h2 class="dialog-title" mat-dialog-title>
+    <mat-icon>format_color_text</mat-icon>
+    <span class="dialog-name">Text color</span>
+</h2>
+
+<section class="settings">
+    <div class='color-picker'>
+        <div class="description">
+            Text color:
+        </div>
+        <input #textColorPicker class="color-input" />
+    </div>
+
+    <div class='text-sample'>
+        <label>Result sample:</label>
+        <div #textSampleResult class="result">
+        </div>
+    </div>
+
+    <div class="accept-cancel">
+        <button mat-button mat-raised-button  class="cancel-button"
+            (click)="cancelChanges()">
+            <mat-icon>clear</mat-icon>
+            Cancel
+        </button>
+
+        <button mat-button mat-raised-button  class="cancel-button" color="warn"
+            (click)="removeColor()">
+            <mat-icon>format_color_reset</mat-icon>
+            Reset color
+        </button>
+
+        <button #acceptSaveConfigButton mat-button mat-raised-button  class="save-button confirm-button"
+            (click)="acceptChanges()">
+            <span class="load-bg"></span>
+            <mat-icon>save</mat-icon>
+            Accept changes
+        </button>
+    </div>
+
+</section>

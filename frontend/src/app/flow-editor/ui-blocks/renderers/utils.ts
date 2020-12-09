@@ -1,7 +1,8 @@
-import { Area2D, ManipulableArea2D } from "../../flow_block";
 import { MatDialog } from "@angular/material/dialog";
+import { ConfigureFontColorDialogComponent } from "../../dialogs/configure-font-color-dialog/configure-font-color-dialog.component";
 import { ConfigureLinkDialogComponent } from "../../dialogs/configure-link-dialog/configure-link-dialog.component";
-import { isTagOnAncestors, isTagOnTree, extractContentsToRight, surroundRangeWithElement } from "./dom_utils";
+import { Area2D, ManipulableArea2D } from "../../flow_block";
+import { extractContentsToRight, isTagOnAncestors, isTagOnTree, surroundRangeWithElement } from "./dom_utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -77,10 +78,11 @@ export function combinedArea(areas: Area2D[]): Area2D {
 
 type FormatType = 'bold' | 'italic' | 'underline';
 type TextChunk = { type: 'text', value: string };
+type TextColorChunk = { type: 'text-color', color: string, contents: FormattedTextTree };
 type LinkChunk = { type: 'link', target: string, open_in_tab: boolean, contents: FormattedTextTree };
 type FormatChunk = { type: 'format', format: FormatType, contents: FormattedTextTree }
 
-export type FormattedTextTree = (TextChunk | FormatChunk | LinkChunk)[];
+export type FormattedTextTree = (TextChunk | FormatChunk | LinkChunk | TextColorChunk)[];
 
 function getFormatTypeOfElement(el: HTMLElement): FormatType | null {
     switch (el.tagName.toLowerCase()) {
@@ -152,6 +154,10 @@ export function domToFormattedTextTree(node: Node) : FormattedTextTree {
         if (node instanceof HTMLAnchorElement) {
             const openInTab = node.target && (node.target.indexOf('_blank') >= 0);
             return [{ type: 'link', target: node.href, open_in_tab: !!openInTab, contents: subTrees }];
+        }
+
+        if (node instanceof HTMLFontElement) {
+            return [{ type: 'text-color', color: node.style.color, contents: subTrees }];
         }
 
         if (!formatType) {
@@ -233,6 +239,15 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
 
             group.appendChild(node);
         }
+        else if (el.type === 'text-color') {
+            const node = document.createElement('font');
+
+            node.style.color = el.color;
+            const contents = formattedTextTreeToDom(el.contents, true);
+            node.append(...unwrapSpan(contents));
+
+            group.appendChild(node);
+        }
     }
 
     if (group && (group.tagName.toLowerCase() === 'div') && group.innerText == '') {
@@ -249,6 +264,68 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
     }
 
     return wrapper;
+}
+
+// Taken from: https://stackoverflow.com/a/3627747
+function colorToHex(rgb: string): string {
+    if (/^#[0-9A-F]{3,6}$/i.test(rgb)) {
+        return rgb;
+    }
+
+    const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    function hex(x) {
+        return ("0" + parseInt(x).toString(16)).slice(-2);
+    }
+    return "#" + hex(match[1]) + hex(match[2]) + hex(match[3]);
+}
+
+function editColorInSelection(dialog: MatDialog): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        const sel = window.getSelection();
+        const range = sel.getRangeAt(0);
+        const contents = range.cloneContents();
+        let text = contents.textContent;
+        let fontTag: HTMLFontElement | null = null;
+
+        const ancestorInfo = isTagOnAncestors(range.commonAncestorContainer, 'font');
+        if (ancestorInfo) {
+            fontTag = ancestorInfo.ancestor as HTMLFontElement;
+        }
+        else  {
+            fontTag = isTagOnTree(contents, 'a') as HTMLFontElement;
+        }
+
+        const newWrapper = !fontTag;
+        if (fontTag) {
+            text = fontTag.textContent;
+        }
+        else {
+            fontTag = document.createElement('font');
+            fontTag.style.color = '#000000';
+            surroundRangeWithElement(range, fontTag);
+        }
+
+        const dialogRef = dialog.open(ConfigureFontColorDialogComponent, {
+            data: { text: text, color: colorToHex(fontTag.style.color) }
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!(result && result.success)) {
+                if (newWrapper) {
+                    // Unwrap elements
+                    extractContentsToRight(fontTag);
+                }
+            }
+            else if (result.operation === 'remove-color') {
+                extractContentsToRight(fontTag);
+            }
+            else {
+                // Update the <a> tag with the appropriate link
+                fontTag.style.color = result.value.color;
+            }
+            resolve();
+        });
+    });
 }
 
 function editLinkInSelection(dialog: MatDialog): Promise<void> {
@@ -344,6 +421,15 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
         underlineButton.onmousedown = (ev) => {
             document.execCommand('underline', false, undefined);
             ev.preventDefault(); // Prevent losing focus on element
+        }
+
+        const colorButton = document.createElement('button');
+        colorButton.classList.add('color-button');
+        buttonBar.appendChild(colorButton);
+        colorButton.innerHTML = '<img class="icon" src="/assets/icons/format_color_text.svg" />';
+        colorButton.onmousedown = (ev) => {
+            ev.preventDefault(); // Prevent losing focus on element
+            withMovingFocus(() => editColorInSelection(dialog));
         }
 
         const linkButton = document.createElement('button');

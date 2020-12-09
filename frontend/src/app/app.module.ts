@@ -75,6 +75,7 @@ import { GroupCollaboratorEditorComponent } from './components/group-collaborato
 import { EditCollaboratorsDialogComponent } from './dialogs/editor-collaborators-dialog/edit-collaborators-dialog.component';
 import { ConfigureBlockDialogComponent } from './flow-editor/dialogs/configure-block-dialog/configure-block-dialog.component';
 import { ConfigureLinkDialogComponent } from './flow-editor/dialogs/configure-link-dialog/configure-link-dialog.component';
+import { ConfigureFontColorDialogComponent } from './flow-editor/dialogs/configure-font-color-dialog/configure-font-color-dialog.component';
 
 @NgModule({
     declarations: [
@@ -115,6 +116,7 @@ import { ConfigureLinkDialogComponent } from './flow-editor/dialogs/configure-li
         ConfirmDeleteDialogComponent,
         ConfigureBlockDialogComponent,
         ConfigureLinkDialogComponent,
+        ConfigureFontColorDialogComponent,
 
         // Independent components
         GroupCollaboratorEditorComponent,
