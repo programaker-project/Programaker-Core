@@ -266,7 +266,8 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         this.contentBox.contentEditable = 'true';
         this.contentBox.onfocus = this.onContentEditStart.bind(this);
 
-        this.contentBox.appendChild(formattedTextTreeToDom(this.textValue));
+        const content = formattedTextTreeToDom(this.textValue);
+        this.contentBox.appendChild(content);
         this.textBox.appendChild(this.contentBox);
 
         // Obtain size taken by all the text

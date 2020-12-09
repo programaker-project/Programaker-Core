@@ -96,6 +96,23 @@ function getFormatTypeOfElement(el: HTMLElement): FormatType | null {
     }
 }
 
+function trimFormattedTextTree(tree: FormattedTextTree): FormattedTextTree {
+    // Note that this is a destructive operation, the inputted text tree will be the same as the outputted one
+    while (tree.length > 0) {
+        const last = tree[tree.length - 1];
+
+        // If the last element is a whitespace, remove it
+        if (last.type === 'text' && last.value.trim() === '') {
+            tree.pop();
+        }
+        else {
+            break;
+        }
+    }
+
+    return tree;
+}
+
 function formatTypeToElement(ft: FormatType): string {
     switch (ft) {
         case 'bold':
@@ -124,6 +141,10 @@ export function domToFormattedTextTree(node: Node) : FormattedTextTree {
             subTrees = subTrees.concat(domToFormattedTextTree(n));
         }
 
+        if (node instanceof HTMLDivElement) {
+            subTrees.push({ type: 'text', value: '\n' });
+        }
+
         if (!formatType) {
             return subTrees;
         }
@@ -136,20 +157,39 @@ export function domToFormattedTextTree(node: Node) : FormattedTextTree {
     }
 }
 
-export function formattedTextTreeToDom(tt: FormattedTextTree): Node {
+export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean): Node {
     const nodes = [];
+
+    let group = document.createElement(nested ? 'span' : 'div');
+    nodes.push(group);
 
     for (const el of tt) {
         if (el.type === 'text') {
-            nodes.push(document.createTextNode(el.value));
+            if (el.value === '\n') {
+                if (group && (group.tagName.toLowerCase() === 'div') && group.innerText == '') {
+                    group.innerHTML = '&nbsp';
+                }
+
+                group = document.createElement('div');
+                nodes.push(group);
+            }
+            else {
+                const node = document.createTextNode(el.value);
+
+                group.appendChild(node);
+            }
         }
         else if (el.type === 'format') {
             const node = document.createElement(formatTypeToElement(el.format));
 
-            node.appendChild(formattedTextTreeToDom(el.contents));
+            node.appendChild(formattedTextTreeToDom(el.contents, true));
 
-            nodes.push(node);
+            group.appendChild(node);
         }
+    }
+
+    if (group && (group.tagName.toLowerCase() === 'div') && group.innerText == '') {
+        group.innerHTML = '&nbsp';
     }
 
     if (nodes.length === 1) {
@@ -230,6 +270,6 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
         element.onkeydown = element.onblur = element.oninput = null;
         document.body.removeChild(buttonBar);
 
-        onDone(domToFormattedTextTree(element));
+        onDone(trimFormattedTextTree(domToFormattedTextTree(element)));
     }
 }
