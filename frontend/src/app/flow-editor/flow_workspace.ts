@@ -242,6 +242,10 @@ export class FlowWorkspace implements BlockManager {
         element: SVGElement,
     }};
 
+    public getDialog(): MatDialog {
+        return this.dialog;
+    }
+
     private constructor(baseElement: HTMLElement,
                         getEnum: EnumGetter,
                         private dialog: MatDialog,

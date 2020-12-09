@@ -1,4 +1,7 @@
 import { Area2D, ManipulableArea2D } from "../../flow_block";
+import { MatDialog } from "@angular/material/dialog";
+import { ConfigureLinkDialogComponent } from "../../dialogs/configure-link-dialog/configure-link-dialog.component";
+import { isTagOnAncestors, isTagOnTree, extractContentsToRight } from "./dom_utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -74,9 +77,10 @@ export function combinedArea(areas: Area2D[]): Area2D {
 
 type FormatType = 'bold' | 'italic' | 'underline';
 type TextChunk = { type: 'text', value: string };
+type LinkChunk = { type: 'link', target: string, contents: FormattedTextTree };
 type FormatChunk = { type: 'format', format: FormatType, contents: FormattedTextTree }
 
-export type FormattedTextTree = (TextChunk | FormatChunk)[];
+export type FormattedTextTree = (TextChunk | FormatChunk | LinkChunk)[];
 
 function getFormatTypeOfElement(el: HTMLElement): FormatType | null {
     switch (el.tagName.toLowerCase()) {
@@ -145,6 +149,10 @@ export function domToFormattedTextTree(node: Node) : FormattedTextTree {
             subTrees.push({ type: 'text', value: '\n' });
         }
 
+        if (node instanceof HTMLAnchorElement) {
+            return [{ type: 'link', target: node.href, contents: subTrees }];
+        }
+
         if (!formatType) {
             return subTrees;
         }
@@ -154,6 +162,30 @@ export function domToFormattedTextTree(node: Node) : FormattedTextTree {
     }
     else {
         throw Error("Unexpected node type: " + node);
+    }
+}
+
+function unwrapSpan(node: Node): Node[] {
+    if (node instanceof HTMLSpanElement) {
+        let elements = [];
+        for (const e of Array.from(node.childNodes)) {
+            const unwrapped = unwrapSpan(e);
+            if (unwrapped.length === 0) {
+                // Nothing to do
+            }
+            else if (unwrapped.length === 1){
+                // No need to create a new list
+                elements.push(unwrapped[0]);
+            }
+            else {
+                elements = elements.concat(unwrapped);
+            }
+        }
+
+        return elements;
+    }
+    else {
+        return [node];
     }
 }
 
@@ -182,7 +214,18 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
         else if (el.type === 'format') {
             const node = document.createElement(formatTypeToElement(el.format));
 
-            node.appendChild(formattedTextTreeToDom(el.contents, true));
+            const contents = formattedTextTreeToDom(el.contents, true);
+
+            node.append(...unwrapSpan(contents));
+
+            group.appendChild(node);
+        }
+        else if (el.type === 'link') {
+            const node = document.createElement('a');
+
+            node.href = el.target;
+            const contents = formattedTextTreeToDom(el.contents, true);
+            node.append(...unwrapSpan(contents));
 
             group.appendChild(node);
         }
@@ -204,44 +247,105 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
     return wrapper;
 }
 
-export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, onDone: (text: FormattedTextTree) => void) {
+function editLinkInSelection(dialog: MatDialog): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        const sel = window.getSelection();
+        const range = sel.getRangeAt(0);
+        const contents = range.cloneContents();
+        let text = contents.textContent;
+        let linkValue = '';
+        let linkTag: HTMLAnchorElement | null = null;
+
+        const ancestorInfo = isTagOnAncestors(range.commonAncestorContainer, 'a');
+        if (ancestorInfo) {
+            linkTag = ancestorInfo.ancestor as HTMLAnchorElement;
+        }
+        else  {
+            linkTag = isTagOnTree(contents, 'a') as HTMLAnchorElement;
+        }
+
+        const newWrapper = !linkTag;
+        if (linkTag) {
+            linkValue = linkTag.href;
+            text = linkTag.textContent;
+        }
+        else {
+            linkTag = document.createElement('a');
+            range.surroundContents(linkTag);
+        }
+
+        const dialogRef = dialog.open(ConfigureLinkDialogComponent, {
+            data: { text: text, link: linkValue }
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!(result && result.success)) {
+                if (newWrapper) {
+                    // Unwrap elements
+                    extractContentsToRight(linkTag);
+                }
+                resolve();
+                return;
+            }
+
+            // Update the <a> tag with the appropriate link
+            linkTag.href = result.result.link;
+
+            resolve();
+        });
+    });
+}
+
+export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, dialog: MatDialog, onDone: (text: FormattedTextTree) => void) {
     const elementPos = element.getClientRects()[0];
 
     const buttonBar = document.createElement('div');
-    buttonBar.classList.add('floating-button-bar');
+    {
+        buttonBar.classList.add('floating-button-bar');
 
-    const boldButton = document.createElement('button');
-    boldButton.classList.add('bold-button');
-    buttonBar.appendChild(boldButton);
-    boldButton.innerText = 'B';
-    boldButton.onmousedown = (ev) => {
-        document.execCommand('bold', false, undefined);
-        ev.preventDefault(); // Prevent losing focus on element
+        const boldButton = document.createElement('button');
+        boldButton.classList.add('bold-button');
+        buttonBar.appendChild(boldButton);
+        boldButton.innerText = 'B';
+        boldButton.onmousedown = (ev) => {
+            document.execCommand('bold', false, undefined);
+            ev.preventDefault(); // Prevent losing focus on element
+        }
+
+        const italicButton = document.createElement('button');
+        italicButton.classList.add('italic-button');
+        buttonBar.appendChild(italicButton);
+        italicButton.innerText = 'I';
+        italicButton.onmousedown = (ev) => {
+            document.execCommand('italic', false, undefined);
+            ev.preventDefault(); // Prevent losing focus on element
+        }
+
+        const underlineButton = document.createElement('button');
+        underlineButton.classList.add('underline-button');
+        buttonBar.appendChild(underlineButton);
+        underlineButton.innerText = 'U';
+        underlineButton.onmousedown = (ev) => {
+            document.execCommand('underline', false, undefined);
+            ev.preventDefault(); // Prevent losing focus on element
+        }
+
+        const linkButton = document.createElement('button');
+        linkButton.classList.add('link-button');
+        buttonBar.appendChild(linkButton);
+        linkButton.innerHTML = '<img class="icon" src="/assets/icons/insert_link.svg" />';
+        linkButton.onmousedown = (ev) => {
+            ev.preventDefault(); // Prevent losing focus on element
+            withMovingFocus(() => editLinkInSelection(dialog));
+        }
+
+        document.body.appendChild(buttonBar);
+
+        const buttonDim = buttonBar.getClientRects()[0];
+        buttonBar.style.top = elementPos.y - buttonDim.height + 'px';
+        buttonBar.style.left = elementPos.x + 'px';
     }
 
-    const italicButton = document.createElement('button');
-    italicButton.classList.add('italic-button');
-    buttonBar.appendChild(italicButton);
-    italicButton.innerText = 'I';
-    italicButton.onmousedown = (ev) => {
-        document.execCommand('italic', false, undefined);
-        ev.preventDefault(); // Prevent losing focus on element
-    }
-
-    const underlineButton = document.createElement('button');
-    underlineButton.classList.add('underline-button');
-    buttonBar.appendChild(underlineButton);
-    underlineButton.innerText = 'U';
-    underlineButton.onmousedown = (ev) => {
-        document.execCommand('underline', false, undefined);
-        ev.preventDefault(); // Prevent losing focus on element
-    }
-
-    document.body.appendChild(buttonBar);
-
-    const buttonDim = buttonBar.getClientRects()[0];
-    buttonBar.style.top = elementPos.y - buttonDim.height + 'px';
-    buttonBar.style.left = elementPos.x + 'px';
 
     element.oninput = () => {
     }
@@ -259,17 +363,34 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
             ev.preventDefault();
             document.execCommand('italic', false, undefined);
         }
+        else if (ev.ctrlKey && ev.code === 'KeyK') {
+            ev.preventDefault();
+            withMovingFocus(() => editLinkInSelection(dialog));
+        }
         else if (ev.ctrlKey && ev.code === 'Enter') {
             ev.preventDefault();
             element.blur(); // Release focus
         }
     }
 
-    element.onblur = (ev) => {
+    const onBlur = (_ev: FocusEvent) => {
         // Cleanup
         element.onkeydown = element.onblur = element.oninput = null;
         document.body.removeChild(buttonBar);
 
         onDone(trimFormattedTextTree(domToFormattedTextTree(element)));
-    }
+    };
+
+    const withMovingFocus = (f: () => Promise<void> ) => {
+        element.onblur = null;
+        const wasFocus = element.onfocus;
+        element.onfocus = null;
+        f().then(() => {
+            element.focus();
+            element.onfocus = wasFocus;
+            element.onblur = onBlur;
+        });
+    };
+
+    element.onblur = onBlur;
 }

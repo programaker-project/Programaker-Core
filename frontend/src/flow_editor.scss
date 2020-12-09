@@ -334,10 +334,20 @@ div[contenteditable="true"] {
     cursor: text;
 }
 
+#workspace div[contenteditable="true"] a {
+    color: revert;
+    text-decoration: revert;
+
+    &:hover {
+        color: revert;
+        text-decoration: revert;
+    }
+}
+
 // Floating button bar over fixed text elements
 .floating-button-bar {
     position: absolute;
-    z-index: 999;
+    z-index: 3; // Less than backdrop
 
     border-radius: 4px;
     box-shadow: 0 0 1px 1px rgba(0,0,0,0.3);
@@ -345,11 +355,18 @@ div[contenteditable="true"] {
     button {
         border-radius: 4px;
         border: none;
-        padding: 0.5ex 1ex;
+        min-width: 4ex;
+        min-height: 4ex;
+        vertical-align: bottom;
 
         &:hover {
             background-color: #27212e;
             color: white;
+
+            img.icon {
+                // Same effect as changing font color, but for images
+                filter: invert(100%);
+            }
         }
     }
 

@@ -294,6 +294,14 @@ formatted_element_to_html(#{ <<"type">> := <<"text">>
                            , <<"value">> := Text
                            }) ->
     html_escape(Text);
+formatted_element_to_html(#{ <<"type">> := <<"link">>
+                           , <<"target">> := Target
+                           , <<"contents">> := Contents
+                           }) ->
+    [ "<a href='", mochiweb_html:escape(Target), "'>"
+    , formatted_text_to_html(Contents)
+    , "</a>"
+    ];
 formatted_element_to_html(#{ <<"type">> := <<"format">>
                            , <<"format">> := Format
                            , <<"contents">> := Contents

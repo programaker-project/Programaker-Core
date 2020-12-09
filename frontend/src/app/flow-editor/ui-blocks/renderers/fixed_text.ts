@@ -249,7 +249,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
             ev.stopImmediatePropagation();
         }
 
-        startOnElementEditor(this.contentBox, this.textBox, (tt: FormattedTextTree) => {
+        startOnElementEditor(this.contentBox, this.textBox, this.block.workspace.getDialog(), (tt: FormattedTextTree) => {
             this.block.blockData.content = this.textValue = tt;
 
             this.editing = false;
