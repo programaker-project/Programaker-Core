@@ -74,8 +74,31 @@ render_element(E=#{ <<"cut_type">> := CutType
     [ <<"<div class='">>, CutType, <<"' ">>
     , "style='", ElementBackground, "' "
     ,  ">"
-    , GroupRendering = lists:map(fun(E) -> render_element(E, ProgramId, Values) end, Groups)
+    , lists:map(fun(E) -> render_element(E, ProgramId, Values) end, Groups)
     , <<"</div>">>
+    ];
+
+render_element(E=#{ <<"container_type">> := <<"simple_card">>
+                  , <<"content">> := Content
+                  }, ProgramId, Values) ->
+    ElementBackground = case E of
+                            #{ <<"background">> := #{ <<"type">> := <<"color">>
+                                                    , <<"value">> := Color
+                                                    }} ->
+                                [ "background-color:"
+                                , Color %% TODO: Validate that the color is a correct one.
+                                ];
+                            _ -> []
+                        end,
+
+    [ <<"<div class=widget-container><div class='simple_card' ">>
+    , "style='", ElementBackground, "' "
+    , ">"
+    , case Content of
+          null -> "";
+          _ -> render_element(Content, ProgramId, Values)
+      end
+    , <<"</div></div>">>
     ];
 
 render_element(E=#{ <<"widget_type">> := <<"simple_button">>
@@ -143,6 +166,8 @@ render_element(E=#{ <<"widget_type">> := <<"horizontal_separator">>
 %% Auxiliary sections
 %%====================================================================
 render_styles() ->
+    MaterialShadow = "0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12)",
+
     [ <<"<style>">>
     , <<"* { margin: 0; padding: 0 } ">>
     , <<"body { height: 100vh; text-align: center; background-color: #fff; } ">>
@@ -162,6 +187,8 @@ render_styles() ->
     , "hr { width: calc(50% - 2px); margin: 1ex auto; border: 1px solid #fff; mix-blend-mode: difference; } "
     , "hr.size-short { width: calc(min(100%, 20ex) - 2px); } "
     , "hr.size-full { width: calc(100% - 2px); } "
+    , ".simple_card { margin: 0 auto; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
+    , ".simple_card > .widget-container > .widget { margin: auto; }"
     , <<"</style>">>
     ].
 
@@ -186,6 +213,10 @@ wire_components(#{ <<"widget_type">> := <<"fixed_image">>
 wire_components(#{ <<"widget_type">> := <<"horizontal_separator">>
                  }) ->
     [];
+wire_components(#{ <<"container_type">> := _
+                 , <<"content">> := Content
+                 }) ->
+    wire_components(Content);
 
 wire_components(#{ <<"cut_type">> := CutType
                  , <<"groups">> := Groups
@@ -309,8 +340,7 @@ formatted_element_to_html(#{ <<"type">> := <<"text-color">>
                            , <<"color">> := Color
                            , <<"contents">> := Contents
                            }) ->
-    [ "<font style='color:", mochiweb_html:escape(Color), ";'"
-    , "'>"
+    [ "<font style='color:", mochiweb_html:escape(Color), ";' >"
     , formatted_text_to_html(Contents)
     , "</font>"
     ];

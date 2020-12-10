@@ -7,6 +7,7 @@ import { FixedTextBuilder } from './renderers/fixed_text';
 import { DynamicTextBuilder } from './renderers/dynamic_text';
 import { FixedImageBuilder } from './renderers/fixed_image';
 import { HorizontalSeparatorBuilder } from './renderers/horizontal_separator';
+import { SimpleUiCardBuilder, SimpleUiCardGenerateTree } from './renderers/simple_ui_card';
 
 export const UiToolboxDescription: ToolboxDescription = [
     {
@@ -74,6 +75,14 @@ export const UiToolboxDescription: ToolboxDescription = [
                 id: 'horizontal_ui_section',
                 builder: HorizontalUiSectionBuilder,
                 gen_tree: HorizontalUiSectionGenerateTree,
+            },
+            {
+                icon: UI_ICON,
+                type: 'ui_flow_block',
+                subtype: 'container_flow_block',
+                id: 'simple_card',
+                builder: SimpleUiCardBuilder,
+                gen_tree: SimpleUiCardGenerateTree,
             },
         ]
     }

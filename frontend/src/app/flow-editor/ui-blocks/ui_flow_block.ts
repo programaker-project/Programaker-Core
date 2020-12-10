@@ -4,7 +4,7 @@ import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, Flow
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
 import { uuidv4 } from '../utils';
-import { CutTree, UiElementWidgetType, UiElementRepr } from './renderers/ui_tree_repr';
+import { CutTree, UiElementWidgetType, UiElementRepr, widgetAsAtomicUiElement } from './renderers/ui_tree_repr';
 import { BlockConfigurationOptions } from '../dialogs/configure-block-dialog/configure-block-dialog.component';
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -169,7 +169,7 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     public renderAsUiElement(): CutTree {
-        const data: UiElementRepr = { id: this.blockId, widget_type: this.options.id };
+        const data: UiElementRepr = { id: this.blockId, widget_type: widgetAsAtomicUiElement(this.options.id) };
 
         if (this.handler.isTextReadable()) {
             if (this.handler.isStaticText) {
