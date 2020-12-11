@@ -118,3 +118,24 @@ export function applyUnderlineSettings(tag: HTMLAnchorElement, underline: Underl
         tag.style.textDecorationColor = underline.color;
     }
 }
+
+function flattenTag(element: Node) {
+    const parent = element.parentNode;
+    const next = element.nextSibling;
+    for (const node of Array.from(element.childNodes)) {
+        if (next) {
+            parent.insertBefore(node, next);
+        }
+        else {
+            parent.appendChild(node);
+        }
+    }
+    parent.removeChild(element);
+}
+
+export function flattenAllTagsUnder(root: HTMLElement, tagNameToFlatten: string) {
+    const toFlatten = root.querySelectorAll(tagNameToFlatten);
+    for (const tag of Array.from(toFlatten)) {
+        flattenTag(tag);
+    }
+}

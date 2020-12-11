@@ -2,7 +2,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { ConfigureFontColorDialogComponent } from "../../dialogs/configure-font-color-dialog/configure-font-color-dialog.component";
 import { ConfigureLinkDialogComponent, UnderlineSettings } from "../../dialogs/configure-link-dialog/configure-link-dialog.component";
 import { Area2D, ManipulableArea2D } from "../../flow_block";
-import { extractContentsToRight, isTagOnAncestors, isTagOnTree, surroundRangeWithElement, getUnderlineSettings, applyUnderlineSettings, colorToHex } from "./dom_utils";
+import { extractContentsToRight, isTagOnAncestors, isTagOnTree, surroundRangeWithElement, getUnderlineSettings, applyUnderlineSettings, colorToHex, flattenAllTagsUnder } from "./dom_utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -283,12 +283,15 @@ function editColorInSelection(dialog: MatDialog): Promise<void> {
         let text = contents.textContent;
         let fontTag: HTMLFontElement | null = null;
 
-        const ancestorInfo = isTagOnAncestors(range.commonAncestorContainer, 'font');
-        if (ancestorInfo) {
-            fontTag = ancestorInfo.ancestor as HTMLFontElement;
-        }
-        else  {
-            fontTag = isTagOnTree(contents, 'font') as HTMLFontElement;
+        if (contents.childNodes.length === 0) {
+            const ancestorInfo = isTagOnAncestors(range.commonAncestorContainer, 'font');
+            if (ancestorInfo) {
+                fontTag = ancestorInfo.ancestor as HTMLFontElement;
+            }
+            else {
+                // TODO: Show error notification
+                reject("Cannot edit color in empty selection");
+            }
         }
 
         const newWrapper = !fontTag;
@@ -319,6 +322,10 @@ function editColorInSelection(dialog: MatDialog): Promise<void> {
                 // Update the <a> tag with the appropriate link
                 fontTag.style.color = result.value.color;
             }
+
+            // Remove all other <font> tags under the updated one
+            flattenAllTagsUnder(fontTag, 'font');
+
             resolve();
         });
     });
@@ -487,11 +494,16 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
         element.onblur = null;
         const wasFocus = element.onfocus;
         element.onfocus = null;
-        f().then(() => {
-            element.focus();
-            element.onfocus = wasFocus;
-            element.onblur = onBlur;
-        });
+        f()
+            .catch(err => {
+                // TODO: Show this as a notification
+                console.error(err);
+            })
+            .then(() => {
+                element.focus();
+                element.onfocus = wasFocus;
+                element.onblur = onBlur;
+            });
     };
 
     element.onblur = onBlur;

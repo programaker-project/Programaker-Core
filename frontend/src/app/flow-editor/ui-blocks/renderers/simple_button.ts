@@ -1,6 +1,5 @@
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { UiFlowBlock, UiFlowBlockHandler, UiFlowBlockBuilder, TextEditable, TextReadable } from "../ui_flow_block";
-import { getRefBox } from "./utils";
 import { FlowBlock, Area2D } from "../../flow_block";
 
 
