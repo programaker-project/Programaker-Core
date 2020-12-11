@@ -74,8 +74,9 @@ render_element(E=#{ <<"cut_type">> := CutType
     [ <<"<div class='">>, CutType, <<"' ">>
     , "style='", ElementBackground, "' "
     ,  ">"
+    , "<div class='inner-box'>"
     , lists:map(fun(E) -> render_element(E, ProgramId, Values) end, Groups)
-    , <<"</div>">>
+    , <<"</div></div>">>
     ];
 
 render_element(E=#{ <<"container_type">> := <<"simple_card">>
@@ -178,17 +179,20 @@ render_styles() ->
     ,   "line-height: 1.5;"
     ,   "color: #212529;"
     ,   "text-align: left; }"
-    , <<".hbox { width: 100%; height: 100%; display: flex; box-sizing: border-box; justify-content: space-evenly; } ">>
-    , <<".vbox { width: 100%; height: 100%; display: flex; flex-flow: column; box-sizing: border-box; justify-content: space-evenly; } ">>
+    , <<".hbox {  box-sizing: border-box; justify-content: space-evenly; } ">>
+    , <<".vbox {  flex-flow: column; box-sizing: border-box; justify-content: space-evenly; } ">>
     , <<".dynamic_text { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
-    , ".fixed_text { max-width: 50em; } "
+    , ".fixed_text { max-width: 50em; overflow-wrap: anywhere; } "
     , <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
     , <<".widget { margin: 0 auto; width: max-content; height: max-content; padding: 1ex; } ">>
     , "hr { width: calc(50% - 2px); margin: 1ex auto; border: 1px solid #fff; mix-blend-mode: difference; } "
     , "hr.size-short { width: calc(min(100%, 20ex) - 2px); } "
     , "hr.size-full { width: calc(100% - 2px); } "
-    , ".simple_card { margin: 0 auto; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
+    , ".hbox > .inner-box { margin: 0 auto; width: max-content; max-width: 100%; text-align: center; }"
+    , ".hbox > .inner-box > .vbox { display: inline-flex; max-width: 100%; }"
+    , ".simple_card { margin: 1ex auto; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
     , ".simple_card > .widget-container > .widget { margin: auto; }"
+    , "img { max-width: 100vw; max-height: 100vw; }" % Set some baseline to image sizes
     , "font a { color: inherit; }"
     , <<"</style>">>
     ].
