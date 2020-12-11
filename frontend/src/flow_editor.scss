@@ -344,6 +344,15 @@ div[contenteditable="true"] {
     }
 }
 
+#workspace foreignObject div[contenteditable="true"] font a {
+    // If an <a> tag is found inside a <font> one respect the <font>'s color.
+    color: inherit;
+
+    &:hover {
+        color: inherit;
+    }
+}
+
 // Floating button bar over fixed text elements
 .floating-button-bar {
     position: absolute;

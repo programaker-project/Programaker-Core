@@ -217,7 +217,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         if (settings.text) {
             if (settings.text.color) {
-                this.textBox.style.fill = settings.text.color.value;
+                this.textBox.style.color = settings.text.color.value;
             }
             if (settings.text.fontSize) {
                 this.textBox.style.fontSize = settings.text.fontSize.value + 'px';

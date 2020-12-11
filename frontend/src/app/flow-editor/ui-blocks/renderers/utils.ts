@@ -288,7 +288,7 @@ function editColorInSelection(dialog: MatDialog): Promise<void> {
             fontTag = ancestorInfo.ancestor as HTMLFontElement;
         }
         else  {
-            fontTag = isTagOnTree(contents, 'a') as HTMLFontElement;
+            fontTag = isTagOnTree(contents, 'font') as HTMLFontElement;
         }
 
         const newWrapper = !fontTag;
