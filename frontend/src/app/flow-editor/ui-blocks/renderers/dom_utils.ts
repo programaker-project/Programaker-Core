@@ -1,3 +1,5 @@
+import { UnderlineSettings } from "../../dialogs/configure-link-dialog/configure-link-dialog.component";
+
 export function isTagOnAncestors(node: Node, tag: string): null | {tags: string[], ancestor: HTMLElement} {
     if (!(node instanceof HTMLElement)) {
         return isTagOnAncestors(node.parentElement, tag);
@@ -68,4 +70,51 @@ export function surroundRangeWithElement(range: Range, element: HTMLElement) {
     const contents = range.extractContents();
     element.appendChild(contents);
     range.insertNode(element);
+}
+
+
+// Taken from: https://stackoverflow.com/a/3627747
+export function colorToHex(rgb: string): string {
+    if (/^#[0-9A-F]{3,6}$/i.test(rgb)) {
+        return rgb;
+    }
+
+    const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (!match) {
+        return null;
+    }
+    function hex(x) {
+        return ("0" + parseInt(x).toString(16)).slice(-2);
+    }
+    return "#" + hex(match[1]) + hex(match[2]) + hex(match[3]);
+}
+
+export function getUnderlineSettings(tag: HTMLAnchorElement): UnderlineSettings {
+    if (tag.style.textDecoration === 'none') {
+        return 'none';
+    }
+    else if (tag.style.textDecorationColor && tag.style.textDecorationColor != 'revert') {
+        const hex = colorToHex(tag.style.textDecorationColor);
+        if (!hex) {
+            console.warn("Error parsing underline color", tag.style.textDecorationColor);
+        }
+        return { color: hex || '#000000' };
+    }
+    else {
+        return 'default';
+    }
+}
+
+export function applyUnderlineSettings(tag: HTMLAnchorElement, underline: UnderlineSettings) {
+    if ((underline === 'default') || (!underline)) {
+        tag.style.textDecoration = 'revert';
+        tag.style.textDecorationColor = 'revert';
+    }
+    else if (underline === 'none') {
+        tag.style.textDecoration = 'none';
+    }
+    else {
+        tag.style.textDecoration = 'revert';
+        tag.style.textDecorationColor = underline.color;
+    }
 }

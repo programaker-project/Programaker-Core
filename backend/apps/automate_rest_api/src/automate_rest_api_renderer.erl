@@ -274,6 +274,7 @@ get_text_element_style(E) ->
     , get_text_element_font_weight_style(E)
     , get_text_element_text_color_style(E)
     , get_text_element_background_color_style(E)
+    , get_text_element_underline_color_style(E)
     ].
 
 get_text_element_text_color_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"color">> := #{ <<"value">> := Value } } } }) ->
@@ -312,6 +313,15 @@ get_image_url(#{ <<"settings">> := #{ <<"body">> := #{ <<"image">> := #{ <<"id">
 get_image_url(_, _) ->
     []. %% TODO: Add a default image?
 
+get_text_element_underline_color_style(#{ <<"underline">> := <<"none">>}) ->
+    "text-decoration: none;";
+get_text_element_underline_color_style(#{ <<"underline">> := #{ <<"color">> := Color}}) ->
+    ["text-decoration: underline; text-decoration-color: ", Color, ";"];
+get_text_element_underline_color_style(#{ <<"underline">> := <<"default">>}) ->
+    "";
+get_text_element_underline_color_style(_) ->
+    "".
+
 
 get_fixed_text_content(#{ <<"content">> := Content }) ->
     formatted_text_to_html(Content);
@@ -325,13 +335,14 @@ formatted_element_to_html(#{ <<"type">> := <<"text">>
                            , <<"value">> := Text
                            }) ->
     html_escape(Text);
-formatted_element_to_html(#{ <<"type">> := <<"link">>
-                           , <<"target">> := Target
-                           , <<"contents">> := Contents
-                           , <<"open_in_tab">> := OpenInTab
-                           }) ->
+formatted_element_to_html(E=#{ <<"type">> := <<"link">>
+                             , <<"target">> := Target
+                             , <<"contents">> := Contents
+                             , <<"open_in_tab">> := OpenInTab
+                             }) ->
     [ "<a href='", mochiweb_html:escape(Target)
     , "' rel='noopener'", case OpenInTab of true -> " target='_blank'"; _ -> "" end
+    , " style='", get_text_element_style(E), "'"
     , ">"
     , formatted_text_to_html(Contents)
     , "</a>"

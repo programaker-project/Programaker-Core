@@ -1,11 +1,13 @@
 import { MatDialog } from "@angular/material/dialog";
 import { ConfigureFontColorDialogComponent } from "../../dialogs/configure-font-color-dialog/configure-font-color-dialog.component";
-import { ConfigureLinkDialogComponent } from "../../dialogs/configure-link-dialog/configure-link-dialog.component";
+import { ConfigureLinkDialogComponent, UnderlineSettings } from "../../dialogs/configure-link-dialog/configure-link-dialog.component";
 import { Area2D, ManipulableArea2D } from "../../flow_block";
-import { extractContentsToRight, isTagOnAncestors, isTagOnTree, surroundRangeWithElement } from "./dom_utils";
+import { extractContentsToRight, isTagOnAncestors, isTagOnTree, surroundRangeWithElement, getUnderlineSettings, applyUnderlineSettings, colorToHex } from "./dom_utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
+
+const DEFAULT_FONT_COLOR = '#000000';
 
 export function getRefBox(canvas: SVGElement): DOMRect {
     const refText = document.createElementNS(SvgNS, 'text');
@@ -79,7 +81,7 @@ export function combinedArea(areas: Area2D[]): Area2D {
 type FormatType = 'bold' | 'italic' | 'underline';
 type TextChunk = { type: 'text', value: string };
 type TextColorChunk = { type: 'text-color', color: string, contents: FormattedTextTree };
-type LinkChunk = { type: 'link', target: string, open_in_tab: boolean, contents: FormattedTextTree };
+type LinkChunk = { type: 'link', target: string, open_in_tab: boolean, underline: UnderlineSettings, contents: FormattedTextTree };
 type FormatChunk = { type: 'format', format: FormatType, contents: FormattedTextTree }
 
 export type FormattedTextTree = (TextChunk | FormatChunk | LinkChunk | TextColorChunk)[];
@@ -153,7 +155,13 @@ export function domToFormattedTextTree(node: Node) : FormattedTextTree {
 
         if (node instanceof HTMLAnchorElement) {
             const openInTab = node.target && (node.target.indexOf('_blank') >= 0);
-            return [{ type: 'link', target: node.href, open_in_tab: !!openInTab, contents: subTrees }];
+            return [{
+                type: 'link',
+                target: node.href,
+                open_in_tab: !!openInTab,
+                underline: getUnderlineSettings(node),
+                contents: subTrees,
+            }];
         }
 
         if (node instanceof HTMLFontElement) {
@@ -234,6 +242,7 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
             if (el.open_in_tab) {
                 node.target = '_blank';
             }
+            applyUnderlineSettings(node, el.underline);
             const contents = formattedTextTreeToDom(el.contents, true);
             node.append(...unwrapSpan(contents));
 
@@ -266,19 +275,6 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
     return wrapper;
 }
 
-// Taken from: https://stackoverflow.com/a/3627747
-function colorToHex(rgb: string): string {
-    if (/^#[0-9A-F]{3,6}$/i.test(rgb)) {
-        return rgb;
-    }
-
-    const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-    function hex(x) {
-        return ("0" + parseInt(x).toString(16)).slice(-2);
-    }
-    return "#" + hex(match[1]) + hex(match[2]) + hex(match[3]);
-}
-
 function editColorInSelection(dialog: MatDialog): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         const sel = window.getSelection();
@@ -301,12 +297,12 @@ function editColorInSelection(dialog: MatDialog): Promise<void> {
         }
         else {
             fontTag = document.createElement('font');
-            fontTag.style.color = '#000000';
+            fontTag.style.color = DEFAULT_FONT_COLOR;
             surroundRangeWithElement(range, fontTag);
         }
 
         const dialogRef = dialog.open(ConfigureFontColorDialogComponent, {
-            data: { text: text, color: colorToHex(fontTag.style.color) }
+            data: { text: text, color: colorToHex(fontTag.style.color ? fontTag.style.color : DEFAULT_FONT_COLOR) }
         });
 
         dialogRef.afterClosed().subscribe(async (result) => {
@@ -357,8 +353,10 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
 
         const openInTab = linkTag.target && linkTag.target.indexOf('_blank') >= 0;
 
+        const underline: UnderlineSettings = getUnderlineSettings(linkTag);
+
         const dialogRef = dialog.open(ConfigureLinkDialogComponent, {
-            data: { text: text, link: linkValue, openInTab: openInTab }
+            data: { text: text, link: linkValue, openInTab: openInTab, underline: underline }
         });
 
         dialogRef.afterClosed().subscribe(async (result) => {
@@ -382,6 +380,8 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
                 else {
                     linkTag.target = '';
                 }
+
+                applyUnderlineSettings(linkTag, result.value.underline);
             }
 
             resolve();

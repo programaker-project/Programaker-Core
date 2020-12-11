@@ -6,7 +6,7 @@ import { FlowBlock, Area2D } from "../../flow_block";
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
-const DefaultContent = "Click me!";
+const DefaultContent = "Button";
 
 export const SimpleButtonBuilder: UiFlowBlockBuilder = (canvas: SVGElement, group: SVGElement, block: UiFlowBlock, service: UiSignalService) => {
     return new SimpleButton(canvas, group, block, service);

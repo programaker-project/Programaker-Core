@@ -17,7 +17,28 @@
             <mat-error *ngIf="link.invalid">{{getUrlErrorMessage()}}</mat-error>
         </mat-form-field>
 
-        <mat-checkbox [(ngModel)]="openInTab">Open link in tab</mat-checkbox>
+        <ul class="extra-options">
+            <li>
+                <mat-checkbox [(ngModel)]="openInTab">Open link in tab</mat-checkbox>
+            </li>
+            <li>
+                <mat-checkbox [(ngModel)]="customizeUnderline"
+                    (change)="onUpdateUnderlineOptions()">
+                    Customize link's underline
+                </mat-checkbox>
+
+                <ul *ngIf="customizeUnderline">
+                    <mat-checkbox [(ngModel)]="noUnderline" (change)="onUpdateUnderlineOptions()">No underline</mat-checkbox>
+                </ul>
+            </li>
+        </ul>
+
+        <div class='color-picker' *ngIf="customizeUnderline && (!noUnderline)">
+            <div class="description">
+                Underline color:
+            </div>
+            <input #underlineColorPicker [disabled]="noUnderline" class="color-input" />
+        </div>
     </div>
 
     <div class="accept-cancel">
