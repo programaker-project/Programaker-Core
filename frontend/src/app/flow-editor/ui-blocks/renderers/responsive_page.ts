@@ -114,7 +114,9 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
 
         const inflexibleArea = combinedArea(
             fullContents
-            .filter(b => !(b instanceof ContainerFlowBlock))
+                .filter(b => !(
+                    (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
+                ))
                 .map(b => b.getBodyArea()));
 
         const pos = this.block.getOffset();
@@ -140,6 +142,9 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
 
         for (const content of this.contents) {
             if (content instanceof ContainerFlowBlock) {
+                content.updateContainer(this.block);
+            }
+            else if ((content instanceof UiFlowBlock) && content.isAutoresizable()) {
                 content.updateContainer(this.block);
             }
         }
@@ -243,7 +248,9 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     onContentUpdate(contents: FlowBlock[]) {
         // Obtain new distribution
         this.contents = contents.concat([]);
-        const uiContents = contents.filter(b => b instanceof UiFlowBlock) as UiFlowBlock[];
+        const uiContents = contents.filter(b => !(
+            (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
+        )) as UiFlowBlock[];
 
         // Update grid
         try {
@@ -433,7 +440,9 @@ function getRect(blocks: UiFlowBlock[]) {
 export const ResponsivePageGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
     // Format in a grid-like
     const uiPos = (blocks
-        .filter(b => b instanceof UiFlowBlock)
+        .filter(b => !(
+            (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
+        ))
         .map((b, i) => {
             return {i, a: b.getBodyArea(), b: (b as UiFlowBlock)};
         }));

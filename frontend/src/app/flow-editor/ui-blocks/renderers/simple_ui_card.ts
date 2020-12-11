@@ -143,7 +143,9 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
 
         const inflexibleArea = combinedArea(
             fullContents
-            .filter(b => !(b instanceof ContainerFlowBlock))
+                .filter(b => !(
+                    (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
+                ))
                 .map(b => b.getBodyArea()));
 
         const pos = this.block.getOffset();
@@ -168,6 +170,9 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
 
         for (const content of this._contents) {
             if (content instanceof ContainerFlowBlock) {
+                content.updateContainer(this.block);
+            }
+            else if ((content instanceof UiFlowBlock) && content.isAutoresizable()) {
                 content.updateContainer(this.block);
             }
         }
@@ -227,7 +232,9 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
         // Check that the container size is adequate, resize it if necessary
         const uiContents = (this.block
             .recursiveGetAllContents()
-            .filter(b => !(b instanceof ContainerFlowBlock)));
+            .filter(b => !(
+                (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
+            )));
 
         if (uiContents.length === 0) {
             return;

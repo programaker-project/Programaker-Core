@@ -25,6 +25,7 @@ export type UiFlowBlockBuilder = (canvas: SVGElement,
                                   service: UiSignalService,
                                   ops: UiFlowBlockBuilderInitOps) => UiFlowBlockHandler;
 export interface UiFlowBlockHandler {
+    readonly isAutoresizable?: boolean;
     onConnectionLost: (portIndex: number) => void;
     onConnectionValueUpdate : (input_index: number, value: string) => void;
     onClick: () => void,
@@ -628,6 +629,9 @@ export class UiFlowBlock implements FlowBlock {
         this.handler.onClick();
     }
 
+    isAutoresizable(): boolean {
+        return !!this.handler.isAutoresizable;
+    }
 
     // Container-related
     updateContainer(container: FlowBlock) {

@@ -121,6 +121,9 @@ class HorizontalSeparator implements UiFlowBlockHandler, ConfigurableSettingsEle
         }
     }
 
+    // Resizing
+    readonly isAutoresizable = true;
+
     // Handleable element
     getBodyArea(): Area2D {
         return this.block.getBodyArea();

@@ -727,6 +727,11 @@ svg.block_renderer g.flow_node.container_node.simple_card .node_body {
     stroke-width: 0;
 }
 
+svg.block_renderer g.flow_node.selected.container_node.simple_card .node_body {
+    stroke-width: 2;
+    stroke-dasharray: 10;
+}
+
 
 svg.block_renderer g.flow_node.container_node.highlighted .node_body {
     fill: #AFA !important;
