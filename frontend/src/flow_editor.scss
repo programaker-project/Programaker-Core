@@ -45,7 +45,9 @@ svg.block_renderer.selecting rect.selection {
     display: block;
 }
 
-svg.block_renderer g.flow_node > a {
+svg.block_renderer g.flow_node > a,
+svg.block_renderer g.flow_node > g
+{
     pointer-events: all;
     cursor: grab;
 }
@@ -688,9 +690,9 @@ path.var_path {
 
 // UI nodes
 svg.block_renderer g.flow_node.button_node .node_body {
-    fill: #fff;
+    fill: #EEE;
     stroke-width: 1;
-    stroke: #222;
+    stroke: #BBB;
 }
 
 svg.block_renderer g.flow_node.output_node .node_body {
@@ -719,6 +721,10 @@ svg.block_renderer g.flow_node.container_node .node_body {
     fill: #fff;
     stroke-width: 1;
     stroke: #000;
+}
+
+svg.block_renderer g.flow_node.container_node.simple_card .node_body {
+    stroke-width: 0;
 }
 
 

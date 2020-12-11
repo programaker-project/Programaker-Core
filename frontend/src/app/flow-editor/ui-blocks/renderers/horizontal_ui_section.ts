@@ -28,7 +28,7 @@ export const HorizontalUiSectionBuilder: ContainerFlowBlockBuilder = (canvas: SV
 class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElement, Resizeable, ConfigurableSettingsElement {
     subscription: Subscription;
     handle: UiElementHandle | null = null;
-    node: SVGAElement;
+    node: SVGGElement;
     rect: SVGRectElement;
     grid: SVGGElement;
     width: number;
@@ -43,7 +43,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         private service: UiSignalService,
         private initOps: UiFlowBlockBuilderInitOps) {
 
-        this.node = document.createElementNS(SvgNS, 'a');
+        this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.placeholder = document.createElementNS(SvgNS, 'text');
 
@@ -79,7 +79,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         this.updateSizes();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, initOps.workspace, ['resize_height', 'adjust_settings']);
+            this.handle = new UiElementHandle(this, this.node, initOps.workspace, ['resize_height', 'adjust_settings']);
         }
     }
 
@@ -241,8 +241,8 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     onConnectionValueUpdate(_inputIndex: number, value: string) {}
 
     // Container element
-    getBodyElement(): SVGElement {
-        return this.node;
+    getBodyElement(): SVGRectElement {
+        return this.rect;
     }
 
     getBlock(): FlowBlock {

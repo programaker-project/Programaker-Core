@@ -26,7 +26,7 @@ export type ContainerFlowBlockBuilder = (canvas: SVGElement,
 
 export interface ContainerFlowBlockHandler extends UiFlowBlockHandler, Resizeable {
     dropOnEndMove(): Movement2D;
-    getBodyElement(): SVGElement;
+    getBodyElement(): SVGGraphicsElement;
     updateContainer(container: UiFlowBlock): void;
     onContentUpdate: (contents: FlowBlock[]) => void;
 
@@ -136,7 +136,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     }
 
     public getBodyArea(): Area2D {
-        const rect = (this.handler.getBodyElement() as any).getBBox();
+        const rect = this.handler.getBodyElement().getBBox();
         return {
             x: this.position.x,
             y: this.position.y,

@@ -60,6 +60,15 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
         return this.rect.getBBox();
     }
 
+    getBodyArea(): Area2D {
+        return this.block.getBodyArea();
+    }
+
+    getBodyElement(): SVGRectElement {
+        return this.rect;
+    }
+
+
     onClick() {
         return this.service.sendBlockSignal(this.block.options.id, this.block.id);
     }

@@ -34,7 +34,7 @@ class FixedImage implements UiFlowBlockHandler, ConfigurableSettingsElement, Han
         private service: UiSignalService,
         private initOps: UiFlowBlockBuilderInitOps) {
 
-        const node = document.createElementNS(SvgNS, 'a');
+        const node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
         const contentsGroup = document.createElementNS(SvgNS, 'g');
 
@@ -76,7 +76,7 @@ class FixedImage implements UiFlowBlockHandler, ConfigurableSettingsElement, Han
         this._updateSize();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, initOps.workspace, ['adjust_settings', 'resize_width_height']);
+            this.handle = new UiElementHandle(this, node, initOps.workspace, ['adjust_settings', 'resize_width_height']);
         }
     }
 
@@ -155,7 +155,7 @@ class FixedImage implements UiFlowBlockHandler, ConfigurableSettingsElement, Han
     }
 
     // Handleable element
-    getBodyElement(): SVGElement {
+    getBodyElement(): SVGRectElement {
         return this.rect;
     }
 

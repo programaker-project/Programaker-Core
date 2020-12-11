@@ -32,7 +32,7 @@ export const SimpleUiCardBuilder: ContainerFlowBlockBuilder = (canvas: SVGElemen
 class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resizeable, ConfigurableSettingsElement {
     subscription: Subscription;
     handle: UiElementHandle | null = null;
-    node: SVGAElement;
+    node: SVGGElement;
     rect: SVGRectElement;
     rectShadow: SVGRectElement;
     grid: SVGGElement;
@@ -47,7 +47,7 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
         private service: UiSignalService,
         private initOps: UiFlowBlockBuilderInitOps) {
 
-        this.node = document.createElementNS(SvgNS, 'a');
+        this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.rectShadow = document.createElementNS(SvgNS, 'rect');
         this.placeholder = document.createElementNS(SvgNS, 'text');
@@ -91,7 +91,7 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
         this.updateSizes();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, initOps.workspace, ['resize_width_height', 'adjust_settings']);
+            this.handle = new UiElementHandle(this, this.node, initOps.workspace, ['resize_width_height', 'adjust_settings']);
         }
     }
 
@@ -212,8 +212,8 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     onConnectionValueUpdate(_inputIndex: number, value: string) {}
 
     // Container element
-    getBodyElement(): SVGElement {
-        return this.node;
+    getBodyElement(): SVGRectElement {
+        return this.rect;
     }
 
     getBlock(): FlowBlock {

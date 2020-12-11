@@ -84,7 +84,6 @@ function gen_settings_manipulator_icon(size: number): SVGElement {
 
 export class UiElementHandle {
     handleGroup: SVGGElement;
-    body: SVGElement;
     resizePrevPos: Position2D;
     settingsManipulator: SVGGElement;
 
@@ -93,11 +92,11 @@ export class UiElementHandle {
     widthResizeManipulator: SVGGElement;
 
     constructor(private element: HandleableElement,
+                private root: SVGGElement,
                 private workspace: FlowWorkspace,
                 private handleOptions: HandleOption[]) {}
 
     init() {
-        this.body = this.element.getBodyElement();
         this.handleGroup = document.createElementNS(SvgNS, 'g');
 
         this.handleGroup.setAttribute('class', 'manipulators hidden');
@@ -144,7 +143,7 @@ export class UiElementHandle {
             this.handleGroup.appendChild(m);
         }
 
-        this.body.parentNode.appendChild(this.handleGroup); // Avoid the manipulators affecting the element
+        this.root.appendChild(this.handleGroup); // Avoid the manipulators affecting the element
         this._reposition();
     }
 
@@ -280,7 +279,7 @@ export class UiElementHandle {
     }
 
     private _reposition() {
-        const box = this.body.getClientRects()[0];
+        const box = this.element.getBodyElement().getClientRects()[0];
         if (this.widthHeightResizeManipulator) {
             this.widthHeightResizeManipulator.setAttributeNS(null, 'transform', `translate(${box.width}, ${box.height})`);
         }

@@ -28,7 +28,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     subscription: Subscription;
     textBox: SVGTextElement;
     handle: UiElementHandle | null = null;
-    node: SVGAElement;
+    node: SVGGElement;
     textDim: { width: number; height: number; };
     rect: SVGRectElement;
     rectShadow: SVGRectElement;
@@ -47,7 +47,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
         const refBox = getRefBox(canvas);
 
         this.titleBox = document.createElementNS(SvgNS, 'rect');
-        this.node = document.createElementNS(SvgNS, 'a');
+        this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.rectShadow = document.createElementNS(SvgNS, 'rect');
 
@@ -97,7 +97,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
         this.updateSizes();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, initOps.workspace, [ 'resize_width_height' ]);
+            this.handle = new UiElementHandle(this, this.node, initOps.workspace, [ 'resize_width_height' ]);
         }
     }
 
@@ -232,8 +232,8 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     onConnectionValueUpdate(_inputIndex: number, value: string) {}
 
     // Container element
-    getBodyElement(): SVGElement {
-        return this.node;
+    getBodyElement(): SVGRectElement {
+        return this.rect;
     }
 
     getBlock(): FlowBlock {

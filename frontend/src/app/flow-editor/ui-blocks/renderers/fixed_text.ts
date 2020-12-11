@@ -38,7 +38,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         private service: UiSignalService,
         private initOps: UiFlowBlockBuilderInitOps) {
 
-        const node = document.createElementNS(SvgNS, 'a');
+        const node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
         const contentsGroup = document.createElementNS(SvgNS, 'g');
 
@@ -67,7 +67,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         this._updateSize();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, initOps.workspace, ['adjust_settings']);
+            this.handle = new UiElementHandle(this, node, initOps.workspace, ['adjust_settings']);
         }
     }
 
@@ -79,7 +79,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
 
     getArea(): Area2D {
-        return this.rect.getBBox();
+        return this.getBodyElement().getBBox();
     }
 
     isTextEditable(): this is TextEditable {
@@ -137,7 +137,11 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     }
 
     // Handleable element
-    getBodyElement(): SVGElement {
+    getBodyArea(): Area2D {
+        return this.block.getBodyArea();
+    }
+
+    getBodyElement(): SVGRectElement {
         return this.rect;
     }
 

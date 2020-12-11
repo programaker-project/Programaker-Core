@@ -1,7 +1,7 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { DirectValue } from "../../direct_value";
-import { FlowBlock } from "../../flow_block";
+import { FlowBlock, Area2D } from "../../flow_block";
 import { UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockHandler, TextEditable, TextReadable, UiFlowBlockBuilderInitOps } from "../ui_flow_block";
 import { UiElementHandle, HandleableElement, ConfigurableSettingsElement } from "./ui_element_handle";
 import { BlockAllowedConfigurations, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
@@ -12,12 +12,12 @@ const DefaultContent = "- Dynamic text -";
 const DEFAULT_BACKGROUND_COLOR = '#222';
 const DEFAULT_TEXT_COLOR = '#fc4';
 
-export const DynamicTextBuilder : UiFlowBlockBuilder = (canvas: SVGElement,
-                                                        group: SVGElement,
-                                                        block: UiFlowBlock,
-                                                        service: UiSignalService,
-                                                        initOps: UiFlowBlockBuilderInitOps,
-                                                       ) => {
+export const DynamicTextBuilder: UiFlowBlockBuilder = (canvas: SVGElement,
+    group: SVGElement,
+    block: UiFlowBlock,
+    service: UiSignalService,
+    initOps: UiFlowBlockBuilderInitOps,
+) => {
     const output = new DynamicText(canvas, group, block, service, initOps);
     output.init();
     return output;
@@ -34,11 +34,11 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
     private value: string;
 
     constructor(canvas: SVGElement, group: SVGElement,
-                private block: UiFlowBlock,
-                private service: UiSignalService,
-                private initOps: UiFlowBlockBuilderInitOps) {
+        private block: UiFlowBlock,
+        private service: UiSignalService,
+        private initOps: UiFlowBlockBuilderInitOps) {
 
-        const node = document.createElementNS(SvgNS, 'a');
+        const node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.rectShadow = document.createElementNS(SvgNS, 'rect');
 
@@ -46,7 +46,7 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
 
         this.textBox = document.createElementNS(SvgNS, 'text');
         this.textBox.setAttribute('class', 'output_text');
-        this.textBox.setAttributeNS(null,'textlength', '100%');
+        this.textBox.setAttributeNS(null, 'textlength', '100%');
 
         this.value = DefaultContent;
 
@@ -68,7 +68,7 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
         this._updateSize();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, initOps.workspace, ['adjust_settings']);
+            this.handle = new UiElementHandle(this, node, initOps.workspace, ['adjust_settings']);
         }
     }
 
@@ -144,7 +144,11 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
     }
 
     // Handleable element
-    getBodyElement(): SVGElement {
+    getBodyArea(): Area2D {
+        return this.block.getBodyArea();
+    }
+
+    getBodyElement(): SVGRectElement {
         return this.rect;
     }
 

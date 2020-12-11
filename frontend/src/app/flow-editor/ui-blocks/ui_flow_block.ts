@@ -32,6 +32,7 @@ export interface UiFlowBlockHandler {
     dispose: () => void,
     isTextEditable(): this is TextEditable,
     isTextReadable(): this is TextReadable,
+    getBodyElement(): SVGGraphicsElement,
 
     dropOnEndMove?: () => Movement2D;
     updateContainer?: (container: UiFlowBlock) => void;
@@ -434,7 +435,7 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     public getBodyArea(): Area2D {
-        const rect = (this.group as any).getBBox();
+        const rect = this.handler.getBodyElement().getBBox();
         return {
             x: this.position.x,
             y: this.position.y,
