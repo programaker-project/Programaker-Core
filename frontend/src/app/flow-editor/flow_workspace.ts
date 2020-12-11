@@ -117,6 +117,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public load(graph: FlowGraph) {
+        // TODO: Merge with _sortByDependencies?
         let to_go = Object.keys(graph.nodes);
 
         let processing = true;
@@ -218,7 +219,6 @@ export class FlowWorkspace implements BlockManager {
 
     private connection_group: SVGGElement;
     private block_group: SVGGElement;
-    private container_group: SVGGElement;
     private page_group: SVGGElement;
     private containers: (FlowBlock & ContainerBlock)[] = [];
 
@@ -283,14 +283,12 @@ export class FlowWorkspace implements BlockManager {
         this.trashcan = document.createElementNS(SvgNS, "g");
         this.connection_group = document.createElementNS(SvgNS, "g");
         this.block_group = document.createElementNS(SvgNS, 'g');
-        this.container_group = document.createElementNS(SvgNS, 'g');
         this.page_group = document.createElementNS(SvgNS, 'g');
 
         // The order of elements determines the relative Z-index
         // The "later" an element is added, the "higher" it is.
         // The elements are stored in groups so their Z-indexes are consistent.
         this.canvas.appendChild(this.page_group);
-        this.canvas.appendChild(this.container_group);
         this.canvas.appendChild(this.input_helper_section);
         this.canvas.appendChild(this.trashcan);
         this.canvas.appendChild(this.connection_group);
@@ -539,9 +537,103 @@ export class FlowWorkspace implements BlockManager {
         })
 
         this._selectedBlocks = blockIds.concat([]); // Clone the list, just for safety
+        this._raiseSelectedBlocks();
     }
 
-    private ensureBlockSelected(blockId) {
+    private _raiseSelectedBlocks() {
+        this._raiseBlocks(this._selectedBlocks);
+    }
+
+    private _raiseBlocks(blockIds: string[]) {
+        const allBlocksUnder = this._getAllBlocksContainedInGroup(blockIds);
+        const sortedBlocks = this._sortByDependencies(allBlocksUnder);
+
+        for (const id of sortedBlocks) {
+            const block = this.blocks[id].block;
+            const element = block.getBodyElement();
+
+            if (element instanceof ContainerFlowBlock) {
+                if (element.isPage) {
+                    // Pages are on a different group
+                    console.warn("Cannot raise a page");
+                    continue
+                }
+            }
+            element.parentNode.appendChild(element);
+        }
+    }
+
+    private _getAllBlocksContainedInGroup(blockIds: string[]): string[] {
+        // From a list of blocks, add to it all the blocks contained in its
+        // Container blocks.
+
+        const allKnown = {}; // Avoid duplicated results
+        for (const id of blockIds) {
+            if (allKnown[id]) {
+                // Already explored branch
+                continue;
+            }
+
+            allKnown[id] = true;
+            const block = this.blocks[id];
+
+            if (block.block instanceof ContainerFlowBlock) {
+
+                for (const content of block.block.recursiveGetAllContents()) {
+                    const contentId = this.getBlockId(content);
+                    allKnown[contentId] = true;
+                }
+            }
+        }
+
+        return Object.keys(allKnown);
+    }
+
+    private _sortByDependencies(blockIds: string[]): string[] {
+        let to_go = blockIds.concat([]).sort(); // First sort alphabetically, to stabilize the result
+        const sortedByDep = [];
+
+        const processedById: {[key: string]: boolean } = {};
+        for (const blockId of blockIds) {
+            // This is used to differenciate between dependencies not yet
+            // processed or not to be sorted.
+            processedById[blockId] = false;
+        }
+
+        let processing = true;
+
+        while ((to_go.length > 0) && processing) {
+            processing = false;
+            const skipped = [];
+
+            for (const blockId of to_go) {
+                const block = this.blocks[blockId];
+
+                if (block.container_id) {
+                    // Note that we are not interested on dependencies not in
+                    // the move. WE HAVE TO CHECK FOR `FALSE`, NOT FOR EXISTENCE
+                    if (processedById[block.container_id] === false) {
+                        skipped.push(blockId);
+                        continue;
+                    }
+                }
+
+                sortedByDep.push(blockId);
+                processedById[blockId] = true;
+                processing = true;
+            }
+
+            to_go = skipped;
+        }
+
+        if (to_go.length !== 0) {
+            throw new Error("Found container-contained circular dependency, on the following IDs: " + JSON.stringify(to_go));
+        }
+
+        return sortedByDep;
+    }
+
+    private ensureBlockSelected(blockId: string) {
         if (this._selectedBlocks.indexOf(blockId) >= 0) {
             // It's already selected, nothing to do
             return;
@@ -656,9 +748,6 @@ export class FlowWorkspace implements BlockManager {
         if (isContainer) {
             if ((block as ContainerFlowBlock).isPage) {
                 group = this.page_group;
-            }
-            else {
-                group = this.container_group;
             }
         }
         block.render(group, {
