@@ -41,7 +41,6 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     placeholder: SVGTextElement;
     container: ContainerFlowBlock;
     private _contents: FlowBlock[];
-    nestedHorizontal: boolean;
 
     constructor(canvas: SVGElement, group: SVGElement,
         public block: ContainerFlowBlock,
@@ -251,44 +250,38 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
         let updated = false;
 
         // Extend the section to include all elements, if needed
-        if (this.nestedHorizontal) {
-            // Can push horizontally
-            const aggregatedWidth = containedArea.width + (containedArea.x - oldPos.x);
-            if (this.width < aggregatedWidth) {
-                updated = true;
-                const oldWidth = this.width;
+        // Push horizontally
+        const aggregatedWidth = containedArea.width + (containedArea.x - oldPos.x);
+        if (this.width < aggregatedWidth) {
+            updated = true;
+            const oldWidth = this.width;
 
-                this.width = aggregatedWidth;
-                this.updateSizes();
+            this.width = aggregatedWidth;
 
-                // Push elements down
-                const pushRight = this.width - oldWidth;
-                if (this.container && pushRight > 0) {
-                    this.container.pushRight(oldPos.x + oldWidth, pushRight);
-                }
-
+            // Push elements down
+            const pushRight = this.width - oldWidth;
+            if (this.container && pushRight > 0) {
+                this.container.pushRight(oldPos.x + oldWidth, pushRight);
             }
         }
-        else {
-            // Can push vertically
-            const aggregatedHeight = containedArea.height + (containedArea.y - oldPos.y);
-            if (this.height < containedArea.height) {
-                updated = true;
-                const oldHeight = this.height;
+        // Push vertically
+        const aggregatedHeight = containedArea.height + (containedArea.y - oldPos.y);
+        if (this.height < containedArea.height) {
+            updated = true;
+            const oldHeight = this.height;
 
-                this.height = aggregatedHeight;
-                this.updateSizes();
+            this.height = aggregatedHeight;
 
-                // Push elements down
-                const pushDown = this.height - oldHeight;
-                if (this.container && pushDown > 0) {
-                    this.container.pushDown(oldPos.y + oldHeight, pushDown);
-                }
-
+            // Push elements down
+            const pushDown = this.height - oldHeight;
+            if (this.container && pushDown > 0) {
+                this.container.pushDown(oldPos.y + oldHeight, pushDown);
             }
+
         }
 
         if (updated) {
+            this.updateSizes();
             for (const content of this._contents) {
                 if (content instanceof ContainerFlowBlock) {
                     content.updateContainer(this.block);
@@ -300,20 +293,7 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     updateContainer(container: UiFlowBlock | null) {
         if (container instanceof ContainerFlowBlock) {
             this.container = container;
-            this.nestedHorizontal = this.container.handler instanceof SimpleUiCard;
         }
-        else {
-            this.container = null;
-
-            this.nestedHorizontal = false;
-        }
-        if (this.nestedHorizontal) {
-            this.handle.setResizeType('horizontal');
-        }
-        else {
-            this.handle.setResizeType('vertical');
-        }
-        this.updateSizes();
     }
 
     dropOnEndMove() {
