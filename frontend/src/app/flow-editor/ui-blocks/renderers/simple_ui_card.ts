@@ -246,9 +246,11 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
 
         for (const block of contents) {
             const blockArea = block.getBodyArea();
+
+            const xDiff = (current.x + SECTION_PADDING) - blockArea.x;
             const yDiff = (current.y + SECTION_PADDING) - blockArea.y;
-            if (yDiff > 0) {
-                block.moveBy({ x: 0, y: yDiff });
+            if ((yDiff > 0) || (xDiff > 0)) {
+                block.moveBy({ x: Math.max(0, xDiff), y: Math.max(0, yDiff) });
             }
         }
 
