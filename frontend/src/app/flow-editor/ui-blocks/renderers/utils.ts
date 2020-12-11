@@ -3,6 +3,7 @@ import { ConfigureFontColorDialogComponent } from "../../dialogs/configure-font-
 import { ConfigureLinkDialogComponent, UnderlineSettings } from "../../dialogs/configure-link-dialog/configure-link-dialog.component";
 import { Area2D, ManipulableArea2D } from "../../flow_block";
 import { extractContentsToRight, isTagOnAncestors, isTagOnTree, surroundRangeWithElement, getUnderlineSettings, applyUnderlineSettings, colorToHex, flattenAllTagsUnder } from "./dom_utils";
+import { uuidv4 } from "../../utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -396,10 +397,22 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
     });
 }
 
+
+const ButtonBarId = 'flow-editor-in-element-button-bar-' + uuidv4();
+
 export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, dialog: MatDialog, onDone: (text: FormattedTextTree) => void) {
     const elementPos = element.getClientRects()[0];
 
+    {
+        const oldButtonBar = document.getElementById(ButtonBarId);
+        if (oldButtonBar) {
+            console.warn("Old button bar found, this should now happen. Removing...")
+            oldButtonBar.parentElement.removeChild(oldButtonBar);
+        }
+    }
+
     const buttonBar = document.createElement('div');
+    buttonBar.setAttribute('id', ButtonBarId);
     {
         buttonBar.classList.add('floating-button-bar');
 

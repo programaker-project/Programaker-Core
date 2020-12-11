@@ -125,6 +125,9 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     }
 
     onLoseFocus() {
+        if (this.contentBox) {
+            this.contentBox.blur();
+        }
         if (!this.handle) {
             throw new Error("Cannot show manipulators as workspace has not been received.");
         }
