@@ -327,7 +327,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     updateContainer(container: UiFlowBlock | null) {
         if (container instanceof ContainerFlowBlock) {
             this.container = container;
-            this.nestedHorizontal = this.container.handler instanceof HorizontalUiSection;
+            this.nestedHorizontal = (this.container.handler instanceof HorizontalUiSection) && (!this.container.handler.nestedHorizontal);
         }
         else {
             this.container = null;
