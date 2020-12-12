@@ -144,11 +144,11 @@ export class UiElementHandle {
         }
 
         this.root.appendChild(this.handleGroup); // Avoid the manipulators affecting the element
-        this._reposition();
     }
 
     show() {
         this.handleGroup.classList.remove('hidden');
+        this.update()
     }
 
     hide() {
@@ -279,7 +279,8 @@ export class UiElementHandle {
     }
 
     private _reposition() {
-        const box = this.element.getBodyElement().getClientRects()[0];
+        const box = this.element.getBlock().getBodyArea();
+
         if (this.widthHeightResizeManipulator) {
             this.widthHeightResizeManipulator.setAttributeNS(null, 'transform', `translate(${box.width}, ${box.height})`);
         }

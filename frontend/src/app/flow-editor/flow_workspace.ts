@@ -997,8 +997,8 @@ export class FlowWorkspace implements BlockManager {
             const diffX = initialPos.x - pos.x;
             const diffY = initialPos.y - pos.y;
 
-            const newWidth = area.width - diffX;
-            const newHeight = area.height - diffY;
+            const newWidth = area.width   - diffX * this.inv_zoom_level;
+            const newHeight = area.height - diffY * this.inv_zoom_level;
 
             block.resize({ width: newWidth, height: newHeight });
         });
