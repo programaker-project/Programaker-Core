@@ -660,9 +660,11 @@ export class FlowWorkspace implements BlockManager {
         // Move trashcan
         const trashbox = this.trashcan.getElementsByTagName('image')[0].getBBox();
         if (trashbox) {
-            const left = width * this.inv_zoom_level - trashbox.width + this.top_left.x;
-            const top = height * this.inv_zoom_level - trashbox.height + this.top_left.y;
-            this.trashcan.setAttributeNS(null, 'transform', `translate(${left},${top})`);
+            // Move
+            const left = width * this.inv_zoom_level - trashbox.width * this.inv_zoom_level + this.top_left.x;
+            const top = height * this.inv_zoom_level - trashbox.height * this.inv_zoom_level + this.top_left.y;
+
+            this.trashcan.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
         }
     }
 
