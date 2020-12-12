@@ -27,6 +27,10 @@ const CUT_POINT_SEARCH_SPACING = CUT_POINT_SEARCH_INCREASES;
 const HELPER_BASE_SIZE = 25;
 const HELPER_SEPARATION = HELPER_BASE_SIZE * 1.5;
 
+// Zoom management
+const SMALL_ZOOM_INCREMENTS = 0.1;
+const LARGE_ZOOM_INCREMENTS = 0.25;
+
 
 type ConnectableNode = {
     block: FlowBlock,
@@ -674,10 +678,10 @@ export class FlowWorkspace implements BlockManager {
             this.inv_zoom_level = INV_MAX_ZOOM_LEVEL;
         }
         else if (this.inv_zoom_level <= 1) {
-            this.inv_zoom_level -= 0.5;
+            this.inv_zoom_level -= SMALL_ZOOM_INCREMENTS;
         }
         else {
-            this.inv_zoom_level -= 1;
+            this.inv_zoom_level -= LARGE_ZOOM_INCREMENTS;
         }
     }
 
@@ -690,10 +694,10 @@ export class FlowWorkspace implements BlockManager {
             this.inv_zoom_level = 0.5;
         }
         else if (this.inv_zoom_level < 1) {
-            this.inv_zoom_level += 0.5;
+            this.inv_zoom_level += SMALL_ZOOM_INCREMENTS;
         }
         else {
-            this.inv_zoom_level += 1;
+            this.inv_zoom_level += LARGE_ZOOM_INCREMENTS;
         }
     }
 
