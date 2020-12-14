@@ -349,7 +349,7 @@ formatted_element_to_html(E=#{ <<"type">> := <<"link">>
                              , <<"open_in_tab">> := OpenInTab
                              }) ->
     [ "<a href='", mochiweb_html:escape(Target)
-    , "' rel='noopener'", case OpenInTab of true -> " target='_blank'"; _ -> "" end
+    , "' rel='noopener noreferrer'", case OpenInTab of true -> " target='_blank'"; _ -> "" end
     , " style='", get_text_element_style(E), "'"
     , ">"
     , formatted_text_to_html(Contents)

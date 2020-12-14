@@ -242,6 +242,7 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
             node.href = el.target;
             if (el.open_in_tab) {
                 node.target = '_blank';
+                node.rel = 'noopener noreferrer';
             }
             applyUnderlineSettings(node, el.underline);
             const contents = formattedTextTreeToDom(el.contents, true);
@@ -384,6 +385,7 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
 
                 if (result.value.openInTab) {
                     linkTag.target = '_blank';
+                    linkTag.rel = 'noopener noreferrer';
                 }
                 else {
                     linkTag.target = '';
