@@ -4,7 +4,7 @@ import { Area2D, FlowBlock, Position2D, Resizeable } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { HandleableElement, UiElementHandle } from "./ui_element_handle";
-import { CutElement, CutNode, CutTree, CutType, UiElementRepr } from "./ui_tree_repr";
+import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr } from "./ui_tree_repr";
 import { combinedArea, combinedManipulableArea, getRefBox } from "./utils";
 
 
@@ -248,9 +248,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     onContentUpdate(contents: FlowBlock[]) {
         // Obtain new distribution
         this.contents = contents.concat([]);
-        const uiContents = contents.filter(b => !(
-            (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-        )) as UiFlowBlock[];
+        const uiContents = contents.filter(b => (b instanceof UiFlowBlock)) as UiFlowBlock[];
 
         // Update grid
         try {
@@ -345,6 +343,9 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
         if ((cut.tree as UiElementRepr).widget_type) {
             continue; // Single element, nothing to cut
         }
+        else if ((cut.tree as ContainerElementRepr).container_type) {
+            continue; // Visual container, nothing to cut
+        }
 
         const cTree = cut.tree as CutNode;
         const elements = cTree.groups.map(g => getElementsInGroup(g));
@@ -420,13 +421,25 @@ function getElementsInGroup(tree: CutTree): string[] {
     const todo = [tree];
     while (todo.length > 0) {
         const cut = todo.pop();
+
+        if (!cut) {
+            continue;
+        }
+
         if ((cut as UiElementRepr).widget_type) {
                 acc.push((cut as UiElementRepr).id);
         }
-        else {
+        else if ((cut as CutNode).groups) {
             for (const group of (cut as CutNode).groups) {
                 todo.push(group);
             }
+        }
+        else if ((cut as ContainerElementRepr).container_type) {
+            todo.push((cut as ContainerElementRepr).content);
+        }
+        else {
+            console.warn("Unexpected node:", cut);
+            throw Error("Unexpected node: "  + cut);
         }
     }
 
@@ -440,10 +453,7 @@ function getRect(blocks: UiFlowBlock[]) {
 export const ResponsivePageGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
     // Format in a grid-like
     const uiPos = (blocks
-        .filter(b =>
-            (b instanceof UiFlowBlock) && !(
-                (b instanceof ContainerFlowBlock) || b.isAutoresizable()
-            ))
+        .filter(b => (b instanceof UiFlowBlock))
         .map((b, i) => {
             return {i, a: b.getBodyArea(), b: (b as UiFlowBlock)};
         }));

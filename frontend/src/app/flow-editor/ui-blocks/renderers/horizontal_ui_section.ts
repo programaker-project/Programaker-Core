@@ -150,7 +150,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
                 const inflexibleArea = combinedArea(
                     fullContents
-                        .filter(b => !(b instanceof ContainerFlowBlock))
+                        .filter(b => !(
+                            (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
+                        ))
                         .map(b => b.getBodyArea()));
 
                 minWidth = inflexibleArea.x - pos.x + inflexibleArea.width;
@@ -164,7 +166,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
             const pushRight = newWidth - oldWidth;
             if (this.container && pushRight > 0) {
-                this.container.pushRight(pos.y + oldWidth, pushRight);
+                this.container.pushRight(pos.x + oldWidth, pushRight);
             }
         }
         else {
@@ -175,7 +177,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
                 const inflexibleArea = combinedArea(
                     fullContents
-                        .filter(b => !(b instanceof ContainerFlowBlock))
+                        .filter(b => !(
+                            (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
+                        ))
                         .map(b => b.getBodyArea()));
 
                 minHeight = inflexibleArea.y - pos.y + inflexibleArea.height;
@@ -197,6 +201,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
         for (const content of this._contents) {
             if (content instanceof ContainerFlowBlock) {
+                content.updateContainer(this.block);
+            }
+            else if ((content instanceof UiFlowBlock) && content.isAutoresizable()) {
                 content.updateContainer(this.block);
             }
         }
@@ -255,7 +262,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         // Check that the container size is adequate, resize it if necessary
         const uiContents = (this.block
             .recursiveGetAllContents()
-            .filter(b => !(b instanceof ContainerFlowBlock)));
+            .filter(b => !(
+                (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
+            )));
 
         if (uiContents.length === 0) {
             return;
