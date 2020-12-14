@@ -618,7 +618,7 @@ get_versioning(Nodes) ->
                         end
                 }
 
-                %% Add groups creation time
+                %% Add widget's last value table
               , #database_version_transformation
                 { id=20
                 , apply=fun() ->

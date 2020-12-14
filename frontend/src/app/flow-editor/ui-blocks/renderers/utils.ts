@@ -215,7 +215,7 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
         if (el.type === 'text') {
             if (el.value === '\n') {
                 if (group && (group.tagName.toLowerCase() === 'div') && group.innerText == '') {
-                    group.innerHTML = '&nbsp';
+                    group.innerHTML = '&nbsp;';
                 }
 
                 group = document.createElement('div');
@@ -261,7 +261,7 @@ export function formattedTextTreeToDom(tt: FormattedTextTree, nested?: boolean):
     }
 
     if (group && (group.tagName.toLowerCase() === 'div') && group.innerText == '') {
-        group.innerHTML = '&nbsp';
+        group.innerHTML = '&nbsp;';
     }
 
     if (nodes.length === 1) {
