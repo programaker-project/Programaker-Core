@@ -270,7 +270,11 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         this.contentBox = document.createElement('div');
         this.contentBox.style.width = 'max-content';
-        this.contentBox.contentEditable = 'true';
+
+        if (this.initOps.workspace) {
+            // Don't make editable on exhibitor
+            this.contentBox.contentEditable = 'true';
+        }
         this.contentBox.onfocus = this.onContentEditStart.bind(this);
 
         const content = formattedTextTreeToDom(this.textValue);
