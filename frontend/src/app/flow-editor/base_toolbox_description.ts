@@ -183,14 +183,8 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     type: "boolean",
                     quantity: "any",
                 },
-            }
-        ]
-    },
-    {
-        id: 'parallelization',
-        name: 'Parallelization',
-        blocks: [
-                        {
+            },
+            {
                 icon: PLATFORM_ICON,
                 message: 'Run on parallel',
                 block_function: 'op_fork_execution',
