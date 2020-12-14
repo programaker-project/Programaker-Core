@@ -740,7 +740,7 @@ export class FlowWorkspace implements BlockManager {
         this.canvas.setAttributeNS(null, 'viewBox',
                                    `${this.top_left.x} ${this.top_left.y} ${width * this.inv_zoom_level} ${height * this.inv_zoom_level}`);
 
-        this.canvas.style.backgroundPosition = `${-this.top_left.x}px ${-this.top_left.y}px`;
+        this.canvas.style.backgroundPosition = `${-this.top_left.x / this.inv_zoom_level}px ${-this.top_left.y / this.inv_zoom_level}px`;
 
         // Move trashcan
         const trashbox = this.trashcan.getElementsByTagName('image')[0].getBBox();
