@@ -500,6 +500,29 @@ svg.block_renderer .named_var .var_plate {
     fill: #ff4444;
 }
 
+// Floating buttons
+svg.block_renderer .fab-button-group {
+    .button {
+        cursor: pointer;
+    }
+
+    .button-body {
+        fill: #27212e;
+    }
+
+    .button-shadow {
+        // Separated in a different element to avoid problems
+        // in case filter problems make it disappear
+        filter: url("#shadow");
+        fill: rgba(0,0,0,0.3); // Shadow color
+    }
+
+    .button-symbol {
+        stroke: #fff;
+        stroke-width: 2px;
+    }
+}
+
 // Toolbox
 .toolbox {
     height: 100%;

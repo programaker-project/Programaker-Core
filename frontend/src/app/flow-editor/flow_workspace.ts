@@ -30,7 +30,7 @@ const HELPER_SEPARATION = HELPER_BASE_SIZE * 1.5;
 // Zoom management
 const SMALL_ZOOM_INCREMENTS = 0.1;
 const LARGE_ZOOM_INCREMENTS = 0.25;
-
+const FAB_BUTTON_PADDING = 5;
 
 type ConnectableNode = {
     block: FlowBlock,
@@ -230,6 +230,7 @@ export class FlowWorkspace implements BlockManager {
     private inv_zoom_level = 1;
     private input_helper_section: SVGGElement;
     private trashcan: SVGGElement;
+    private button_group: SVGGElement;
     private variables_in_use: { [key: string]: number } = {};
     private getEnum: EnumGetter;
 
@@ -289,6 +290,8 @@ export class FlowWorkspace implements BlockManager {
 
         this.input_helper_section = document.createElementNS(SvgNS, "g");
         this.trashcan = document.createElementNS(SvgNS, "g");
+        this.button_group = document.createElementNS(SvgNS, "g");
+
         this.connection_group = document.createElementNS(SvgNS, "g");
         this.block_group = document.createElementNS(SvgNS, 'g');
         this.page_group = document.createElementNS(SvgNS, 'g');
@@ -299,14 +302,18 @@ export class FlowWorkspace implements BlockManager {
         this.canvas.appendChild(this.page_group);
         this.canvas.appendChild(this.input_helper_section);
         this.canvas.appendChild(this.trashcan);
+
         this.canvas.appendChild(this.connection_group);
         this.canvas.appendChild(this.block_group);
+        this.canvas.appendChild(this.button_group);
         this.canvas.appendChild(this.selectionRect);
+
         this.baseElement.appendChild(this.canvas);
 
         this.init_definitions();
         this.set_events();
         this.init_trashcan();
+        this.init_buttons();
 
         this.update_top_left();
     }
@@ -359,6 +366,81 @@ export class FlowWorkspace implements BlockManager {
         this.trashcan.appendChild(shadow);
         this.trashcan.appendChild(rect);
         this.trashcan.appendChild(image);
+    }
+
+    private init_buttons() {
+        this.button_group.setAttribute('class', 'fab-button-group');
+        let button_size = null;
+
+        {
+            const zoom_in_button = document.createElementNS(SvgNS, 'g');
+            zoom_in_button.setAttribute('class', 'button');
+            zoom_in_button.onclick = () => { this.zoom_in(); }
+            const shadow = document.createElementNS(SvgNS, 'circle');
+            shadow.setAttributeNS(null, 'class', 'button-shadow');
+            shadow.setAttributeNS(null, 'r', '2ex');
+
+            const body = document.createElementNS(SvgNS, 'circle');
+            body.setAttributeNS(null, 'class', 'button-body');
+            body.setAttributeNS(null, 'r', '2ex');
+
+            const symbol = document.createElementNS(SvgNS, 'path');
+            symbol.setAttributeNS(null, 'class', 'button-symbol');
+            symbol.setAttributeNS(null, 'd', 'M-10,0 h20 m-10,-10 v20'); // A `+` sign
+
+            zoom_in_button.appendChild(shadow);
+            zoom_in_button.appendChild(body);
+            zoom_in_button.appendChild(symbol);
+            this.button_group.appendChild(zoom_in_button);
+
+            button_size = zoom_in_button.getBBox();
+        }
+
+        {
+            const zoom_out_button = document.createElementNS(SvgNS, 'g');
+            zoom_out_button.setAttribute('class', 'button');
+            zoom_out_button.setAttribute('transform', `translate(0, ${ button_size.height + FAB_BUTTON_PADDING * 2 })`);
+            zoom_out_button.onclick = () => { this.zoom_out(); }
+            const shadow = document.createElementNS(SvgNS, 'circle');
+            shadow.setAttributeNS(null, 'class', 'button-shadow');
+            shadow.setAttributeNS(null, 'r', '2ex');
+
+            const body = document.createElementNS(SvgNS, 'circle');
+            body.setAttributeNS(null, 'class', 'button-body');
+            body.setAttributeNS(null, 'r', '2ex');
+
+            const symbol = document.createElementNS(SvgNS, 'path');
+            symbol.setAttributeNS(null, 'class', 'button-symbol');
+            symbol.setAttributeNS(null, 'd', 'M-10,0 h20'); // A `-` sign
+
+            zoom_out_button.appendChild(shadow);
+            zoom_out_button.appendChild(body);
+            zoom_out_button.appendChild(symbol);
+            this.button_group.appendChild(zoom_out_button);
+        }
+
+        {
+            const zoom_reset_button = document.createElementNS(SvgNS, 'g');
+            zoom_reset_button.setAttribute('class', 'button');
+            zoom_reset_button.setAttribute('transform', `translate(0, ${ (button_size.height + FAB_BUTTON_PADDING * 2) * 2 })`);
+            zoom_reset_button.onclick = () => { this.zoom_reset(); }
+            const shadow = document.createElementNS(SvgNS, 'circle');
+            shadow.setAttributeNS(null, 'class', 'button-shadow');
+            shadow.setAttributeNS(null, 'r', '2ex');
+
+            const body = document.createElementNS(SvgNS, 'circle');
+            body.setAttributeNS(null, 'class', 'button-body');
+            body.setAttributeNS(null, 'r', '2ex');
+
+            const symbol = document.createElementNS(SvgNS, 'path');
+            symbol.setAttributeNS(null, 'class', 'button-symbol');
+            symbol.setAttributeNS(null, 'd', 'M-10,-5 h20 m-20,10 h20'); // An `=` sign
+
+            zoom_reset_button.appendChild(shadow);
+            zoom_reset_button.appendChild(body);
+            zoom_reset_button.appendChild(symbol);
+            this.button_group.appendChild(zoom_reset_button);
+        }
     }
 
     private set_events() {
@@ -475,7 +557,6 @@ export class FlowWorkspace implements BlockManager {
             else {
                 this.zoom_out();
             }
-            this.update_top_left();
         });
     }
 
@@ -669,6 +750,16 @@ export class FlowWorkspace implements BlockManager {
             const top = height * this.inv_zoom_level - trashbox.height * this.inv_zoom_level + this.top_left.y;
 
             this.trashcan.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
+
+            // Move buttons
+            {
+                const buttonBox = this.button_group.getBBox();
+
+                const left = width * this.inv_zoom_level - (buttonBox.width - FAB_BUTTON_PADDING) * this.inv_zoom_level + this.top_left.x;
+                const top = height * this.inv_zoom_level - (trashbox.height + FAB_BUTTON_PADDING + buttonBox.height) * this.inv_zoom_level + this.top_left.y;
+
+                this.button_group.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
+            }
         }
     }
 
@@ -689,6 +780,8 @@ export class FlowWorkspace implements BlockManager {
         else {
             this.inv_zoom_level -= LARGE_ZOOM_INCREMENTS;
         }
+
+        this.update_top_left();
     }
 
     private zoom_out() {
@@ -705,6 +798,15 @@ export class FlowWorkspace implements BlockManager {
         else {
             this.inv_zoom_level += LARGE_ZOOM_INCREMENTS;
         }
+
+        this.update_top_left();
+    }
+
+    private zoom_reset() {
+        this.inv_zoom_level = 1;
+        this.update_top_left(); // This has to be done before center() for it to work correctly
+
+        this.center();
     }
 
     // Perform an operation while resetting the zoom level
