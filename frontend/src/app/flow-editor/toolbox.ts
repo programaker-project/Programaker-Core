@@ -13,6 +13,7 @@ export class Toolbox {
     toolboxDiv: HTMLDivElement;
     blockShowcase: HTMLDivElement;
     categories: { [key: string]: HTMLDivElement } = {};
+    categoryShortcuts: { [key: string]: HTMLLIElement } = {};
     blocks: FlowBlockOptions[] = [];
     categoryShortcutList: HTMLUListElement;
 
@@ -70,8 +71,9 @@ export class Toolbox {
         }
     }
 
-    private getOrCreateCategory(cat:{ id: string, name: string }): [HTMLDivElement, boolean] {
+    private getOrCreateCategory(cat:{ id: string, name: string }): [HTMLDivElement, boolean, HTMLLIElement] {
         let category_div = this.categories[cat.id];
+        let categoryShortcut = this.categoryShortcuts[cat.id];
         let created_now = false;
 
         if (!category_div) {
@@ -94,7 +96,8 @@ export class Toolbox {
 
             created_now = true;
 
-            const categoryShortcut = document.createElement('li');
+            categoryShortcut = this.categoryShortcuts[cat.id] = document.createElement('li');
+            categoryShortcut.setAttribute('class', 'empty');
 
             const catName = document.createElement('div');
             catName.setAttribute('class', 'category-name');
@@ -113,7 +116,7 @@ export class Toolbox {
             this.categoryShortcutList.appendChild(categoryShortcut);
         }
 
-        return [category_div, created_now];
+        return [category_div, created_now, categoryShortcut];
     }
 
     addBlockGenerator(generator: BlockGenerator, category_id: string) {
@@ -127,8 +130,9 @@ export class Toolbox {
             return; // Don't show internal blocks
         }
 
-        const [category_div] = this.getOrCreateCategory({ id: category_id, name: category_id })
+        const [category_div, _created_now, category_shortcut] = this.getOrCreateCategory({ id: category_id, name: category_id })
         category_div.classList.remove('empty');
+        category_shortcut.classList.remove('empty');
 
         const block_exhibitor = BlockExhibitor.FromGenerator(generator, category_div);
         const element = block_exhibitor.getElement();
@@ -204,8 +208,9 @@ export class Toolbox {
             }
         }
 
-        const [category_div] = this.getOrCreateCategory({ id: category_id, name: category_id })
+        const [category_div, _created_now, category_shortcut] = this.getOrCreateCategory({ id: category_id, name: category_id })
         category_div.classList.remove('empty');
+        category_shortcut.classList.remove('empty');
 
         const actuator = generator();
         const element = actuator.render(category_div);

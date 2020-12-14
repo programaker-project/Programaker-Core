@@ -582,6 +582,10 @@ svg.block_renderer .fab-button-group {
     display: none;
 }
 
+.toolbox .category-shortcut-list .empty {
+    display: none;
+}
+
 .category .category_title {
     background-color: #27212e;
     padding: 0.5ex;
