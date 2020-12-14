@@ -233,6 +233,10 @@ export class FlowWorkspace implements BlockManager {
     private variables_in_use: { [key: string]: number } = {};
     private getEnum: EnumGetter;
 
+    public getInvZoomLevel(): number {
+        return this.inv_zoom_level;
+    }
+
     private blocks: {[key: string]: {
         block: FlowBlock,
         connections: string[],
@@ -703,6 +707,35 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    // Perform an operation while resetting the zoom level
+    private _withNoZoom(f: () => void) {
+        // Remove zoom
+        const zoomLevel = this.inv_zoom_level;
+        this.inv_zoom_level = 1;
+        this.update_top_left();
+
+        // Apply operation
+        let error = null;
+        let hadException = false;
+
+        try {
+            f();
+        }
+        catch (err) {
+            error = err;
+            hadException = true;
+        }
+
+        // Reset zoo
+        this.inv_zoom_level = zoomLevel;
+        this.update_top_left();
+
+        // Re-throw exception if one was found
+        if (hadException) {
+            throw error;
+        }
+    }
+
     public dispose() {
         if (this.inlineEditorContainer) {
             this.baseElement.removeChild(this.inlineEditorContainer);
@@ -724,8 +757,8 @@ export class FlowWorkspace implements BlockManager {
         const canvas_area = this.canvas.getClientRects()[0];
 
         const rel_pos = {
-            x: abs_position.x - canvas_area.x + this.top_left.x,
-            y: abs_position.y - canvas_area.y + this.top_left.y,
+            x: (abs_position.x - canvas_area.x) * this.inv_zoom_level + this.top_left.x,
+            y: (abs_position.y - canvas_area.y) * this.inv_zoom_level + this.top_left.y,
         };
 
         return this.draw(block, rel_pos);
@@ -756,10 +789,13 @@ export class FlowWorkspace implements BlockManager {
                 group = this.page_group;
             }
         }
-        block.render(group, {
-            block_id: block_id,
-            position: (position ? position : {x: 10, y: 10}),
-            workspace: this,
+
+        this._withNoZoom(() => {
+            block.render(group, {
+                block_id: block_id,
+                position: (position ? position : {x: 10, y: 10}),
+                workspace: this,
+            });
         });
 
         if (isContainer) {

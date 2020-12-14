@@ -440,9 +440,10 @@ function getRect(blocks: UiFlowBlock[]) {
 export const ResponsivePageGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
     // Format in a grid-like
     const uiPos = (blocks
-        .filter(b => !(
-            (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-        ))
+        .filter(b =>
+            (b instanceof UiFlowBlock) && !(
+                (b instanceof ContainerFlowBlock) || b.isAutoresizable()
+            ))
         .map((b, i) => {
             return {i, a: b.getBodyArea(), b: (b as UiFlowBlock)};
         }));

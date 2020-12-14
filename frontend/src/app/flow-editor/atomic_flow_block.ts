@@ -352,7 +352,7 @@ export class AtomicFlowBlock implements FlowBlock {
             throw Error("Not rendered");
         }
 
-        return this.node;
+        return this.group;
     }
 
     public getBodyArea(): Area2D {

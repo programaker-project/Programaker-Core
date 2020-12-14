@@ -145,8 +145,12 @@ export class Toolbox {
                 element.classList.add('hidden');
                 this.toolboxDiv.classList.add('subsumed');
 
-                const block_id = this.workspace.drawAbsolute(block, rect);
                 const pos = this.workspace._getPositionFromEvent(ev);
+                // Center rect on cursor
+                rect.x = pos.x - (rect.width / this.workspace.getInvZoomLevel()) / 2;
+                rect.y = pos.y - (rect.height / this.workspace.getInvZoomLevel()) / 2;
+
+                const block_id = this.workspace.drawAbsolute(block, rect);
 
                 (this.workspace as any)._mouseDownOnBlock(pos, block, (ev: Position2D) => {
 
