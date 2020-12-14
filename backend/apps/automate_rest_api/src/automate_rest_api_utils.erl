@@ -79,7 +79,7 @@ user_has_picture(UserId) ->
 -spec user_picture_path(binary()) -> binary().
 user_picture_path(UserId) ->
     binary:list_to_bin(
-      lists:flatten(io_lib:format("~s/~s", [automate_configuration:asset_directory("public/users/")
+      lists:flatten(io_lib:format("~s/~s/picture", [automate_configuration:asset_directory("public/users/")
                                            , UserId
                                            ]))).
 
@@ -89,9 +89,9 @@ group_has_picture(GroupId) ->
 -spec group_picture_path(binary()) -> binary().
 group_picture_path(GroupId) ->
     binary:list_to_bin(
-      lists:flatten(io_lib:format("~s/~s", [automate_configuration:asset_directory("public/groups/")
-                                           , GroupId
-                                           ]))).
+      lists:flatten(io_lib:format("~s/~s/picture", [automate_configuration:asset_directory("public/groups/")
+                                                   , GroupId
+                                                   ]))).
 
 -spec get_owner_asset_directory(owner_id()) -> binary().
 get_owner_asset_directory({OwnerType, OwnerId}) ->

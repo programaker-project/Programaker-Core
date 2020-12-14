@@ -638,7 +638,7 @@ get_versioning(Nodes) ->
                         end
                 }
 
-                %% Add asset table time
+                %% Add asset table time and re-structure the asset directories
               , #database_version_transformation
                 { id=21
                 , apply=fun() ->
@@ -651,10 +651,48 @@ get_versioning(Nodes) ->
                                                                    , { index, [ owner_id ] }
                                                                    ]),
 
-                                    ok = mnesia:wait_for_tables([ ?USER_ASSET_TABLE
-                                                                ],
-                                                                automate_configuration:get_table_wait_time())
+                                ok = mnesia:wait_for_tables([ ?USER_ASSET_TABLE
+                                                            ],
+                                                            automate_configuration:get_table_wait_time()),
 
+                                %% Update user/group picture paths
+                                {atomic, ok} = mnesia:transaction(
+                                                 fun() ->
+                                                         Migrate = fun(Tab, AssetDirectory) ->
+                                                                           G = mnesia:all_keys(Tab),
+                                                                           io:fwrite("~p ~p~n", [length(G), AssetDirectory]),
+
+                                                                           GetOldPath = fun(Id) ->
+                                                                                                list_to_binary([ automate_configuration:asset_directory(list_to_binary(["public/", AssetDirectory, "/"]))
+                                                                                                               , "/", Id
+                                                                                                               ])
+                                                                                        end,
+
+                                                                           HasPicture = (
+                                                                             fun(Id) ->
+                                                                                     Path = GetOldPath(Id),
+                                                                                     filelib:is_regular(Path)
+                                                                             end),
+
+                                                                           WithPicture = lists:filter(HasPicture, G),
+                                                                           io:fwrite("~p ~p with old picture~n", [length(WithPicture), AssetDirectory]),
+
+                                                                           ok = lists:foreach(
+                                                                                  fun(Id) ->
+                                                                                          io:fwrite("Updating ~p~n", [Id]),
+                                                                                          OldPath = GetOldPath(Id),
+                                                                                          TmpPath = list_to_binary([OldPath, ".tmp"]),
+                                                                                          NewPath = list_to_binary([OldPath, "/picture"]),
+
+                                                                                          ok = file:rename(OldPath, TmpPath),
+                                                                                          ok = filelib:ensure_dir(NewPath),
+                                                                                          ok = file:rename(TmpPath, NewPath)
+
+                                                                                  end, WithPicture)
+                                                                   end,
+                                                         ok = Migrate(?REGISTERED_USERS_TABLE, "users"),
+                                                         ok = Migrate(?USER_GROUPS_TABLE, "groups")
+                                                 end)
                         end
                 }
               ]
