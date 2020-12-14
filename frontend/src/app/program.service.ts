@@ -9,6 +9,7 @@ import { ContentType } from './content-type';
 import { toWebsocketUrl, addTokenQueryString } from './utils';
 import { Synchronizer } from './syncronizer';
 import { EnvironmentService } from './environment.service';
+import { ImageAssetConfiguration } from './flow-editor/dialogs/configure-block-dialog/configure-block-dialog.component';
 
 @Injectable()
 export class ProgramService {
@@ -85,6 +86,9 @@ export class ProgramService {
 
     async getProgramsStatusUrl(programId: string) {
         return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/status`;
+    }
+    getAssetUrlOnProgram(assetId: string, programId: string): string {
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/assets/by-id/${assetId}`;
     }
 
     getPrograms(): Promise<ProgramMetadata[]> {
@@ -175,14 +179,16 @@ export class ProgramService {
         );
     }
 
-    async updateProgramById(program: { id: string, type: ProgramType, orig: any, parsed: any }): Promise<boolean> {
+    async updateProgramById(program: { id: string, type: ProgramType, orig: any, parsed: any, pages?: {[key: string]: any} }): Promise<boolean> {
         const url = await this.getUpdateProgramUrl(program.id);
+
+        const data = {type: program.type, orig: program.orig, parsed: program.parsed, pages: program.pages};
 
         try {
             (await
              this.http
                  .put(url,
-                      JSON.stringify({type: program.type, orig: program.orig, parsed: program.parsed}),
+                      JSON.stringify(data),
                       {headers: this.sessionService.addContentType(
                           this.sessionService.getAuthHeader(),
                           ContentType.Json)})
@@ -283,6 +289,17 @@ export class ProgramService {
                                                                    ContentType.Json)})
                 .toPromise());
     }
+
+    public getPageUrl(programId: string, pagePath: string): any {
+        let baseServerPath = document.location.origin;
+        const apiHost = this.environmentService.getBrowserApiHost();
+        if (apiHost != '') {
+            baseServerPath = apiHost;
+        }
+
+        return `${baseServerPath}/api/v0/programs/by-id/${programId}/render${pagePath}`;
+    }
+
 
     watchProgramLogs(programId: string, options: { request_previous_logs?: boolean }): Observable<ProgramInfoUpdate> {
         let websocket: WebSocket | null = null;

@@ -1,11 +1,17 @@
+import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
 import { BlockManager } from './block_manager';
 import { DirectValue } from './direct_value';
-import { EnumValue, EnumDirectValue, EnumGetter } from './enum_direct_value';
-import { Area2D, Direction2D, FlowBlock, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, BridgeEnumInputPortDefinition } from './flow_block';
+import { EnumDirectValue, EnumGetter, EnumValue } from './enum_direct_value';
+import { Area2D, BridgeEnumInputPortDefinition, ContainerBlock, Direction2D, FlowBlock, FlowBlockData, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, Resizeable } from './flow_block';
 import { FlowConnection } from './flow_connection';
-import { uuidv4 } from './utils';
-import { FlowGraph, FlowGraphNode, FlowGraphEdge } from './flow_graph';
-import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
+import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
+import { Toolbox } from './toolbox';
+import { ContainerFlowBlock, ContainerFlowBlockData, isContainerFlowBlockData } from './ui-blocks/container_flow_block';
+import { UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
+import { isContainedIn, uuidv4 } from './utils';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfigureBlockDialogComponent, ConfigurableBlock, BlockConfigurationOptions } from './dialogs/configure-block-dialog/configure-block-dialog.component';
+import { ProgramService } from '../program.service';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -21,23 +27,33 @@ const CUT_POINT_SEARCH_SPACING = CUT_POINT_SEARCH_INCREASES;
 const HELPER_BASE_SIZE = 25;
 const HELPER_SEPARATION = HELPER_BASE_SIZE * 1.5;
 
+// Zoom management
+const SMALL_ZOOM_INCREMENTS = 0.1;
+const LARGE_ZOOM_INCREMENTS = 0.25;
+const FAB_BUTTON_PADDING = 5;
 
 type ConnectableNode = {
     block: FlowBlock,
-    type: 'in'|'out',
+    type: 'in' | 'out',
     index: number,
 };
 
 type State = 'waiting'     // Base state
     | 'dragging-block'     // Moving around a block
     | 'dragging-workspace' // Moving around the workspace
+    | 'selecting-workspace'
+    ;
 
 export class FlowWorkspace implements BlockManager {
     public static BuildOn(baseElement: HTMLElement,
-                          getEnum: EnumGetter): FlowWorkspace {
+                          getEnum: EnumGetter,
+                          dialog: MatDialog,
+                          programId: string,
+                          programService: ProgramService,
+                         ): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
-            workspace = new FlowWorkspace(baseElement, getEnum);
+            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId, programService);
             workspace.init();
         }
         catch(err) {
@@ -49,8 +65,16 @@ export class FlowWorkspace implements BlockManager {
         return workspace;
     }
 
+    public setToolbox(toolbox: Toolbox) {
+        this.toolbox = toolbox;
+    }
+
     public onResize() {
         this.update_top_left();
+    }
+
+    public getCanvas(): SVGSVGElement {
+        return this.canvas;
     }
 
     public getGraph(): FlowGraph {
@@ -60,7 +84,7 @@ export class FlowWorkspace implements BlockManager {
             const serialized = block.serialize();
             const position = block.getOffset();
 
-            blocks[block_id] = { data: serialized, position: position };
+            blocks[block_id] = { data: serialized, position: position, container_id: this.blocks[block_id].container_id };
         }
 
         const connections: FlowGraphEdge[] = [];
@@ -82,39 +106,62 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    public getPages(): {[key: string]: any} {
+        const pages: { [key: string]: any } = {};
+        for (const block_id of Object.keys(this.blocks)) {
+            const block = this.blocks[block_id].block;
+            if (block instanceof ContainerFlowBlock) {
+                if (block.isPage) {
+                    pages['/'] = { value: block.renderAsUiElement(), title: block.getPageTitle() };
+                }
+            }
+        }
+
+        return pages;
+    }
+
     public load(graph: FlowGraph) {
-        for (const block_id of Object.keys(graph.nodes)) {
-            const block = graph.nodes[block_id];
+        // TODO: Merge with _sortByDependencies?
+        let to_go = Object.keys(graph.nodes);
 
-            let created_block = null;
-            switch (block.data.type) {
-                case AtomicFlowBlock.GetBlockType():
-                    created_block = AtomicFlowBlock.Deserialize(block.data as AtomicFlowBlockData, this);
-                    break;
+        let processing = true;
 
-                case DirectValue.GetBlockType():
-                    created_block = DirectValue.Deserialize(block.data, this);
-                    break;
+        while ((to_go.length > 0) && processing) {
+            processing = false;
+            const skipped = [];
 
-                case EnumDirectValue.GetBlockType():
-                    created_block = EnumDirectValue.Deserialize(block.data, this, this.getEnum);
-                    break;
+            for (const block_id of to_go) {
+                const block = graph.nodes[block_id];
+                if (block.container_id && (!this.blocks[block.container_id])) {
+                    skipped.push(block_id);
+                    continue;
+                }
 
-                default:
-                    console.error("Unknown block type:", block.data.type);
+                const created_block = this.deserializeBlock(block.data);
+
+                if (!created_block) {
+                    console.error("Error deserializing block:", block.data);
+                    continue;
+                }
+
+                try {
+                    this.draw(created_block, block.position, block_id);
+                }
+                catch (err) {
+                    console.error("Error drawing block", err);
+                }
+
+                if (block.container_id) {
+                    this._updateBlockContainer(created_block, this.blocks[block.container_id].block);
+                }
+                processing = true;
             }
 
-            if (!created_block) {
-                console.error("Error deserializing block:", block.data);
-                continue;
-            }
+            to_go = skipped;
+        }
 
-            try {
-                this.draw(created_block, block.position, block_id);
-            }
-            catch (err) {
-                console.error("Error drawing block", err);
-            }
+        if (to_go.length !== 0) {
+            throw new Error("Found container-contained circular dependency, on the following IDs: " + JSON.stringify(to_go));
         }
 
         for (const conn of graph.edges) {
@@ -138,36 +185,83 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    private deserializeBlock(blockData: FlowBlockData) {
+        switch (blockData.type) {
+            case AtomicFlowBlock.GetBlockType():
+                return AtomicFlowBlock.Deserialize(blockData as AtomicFlowBlockData, this);
+
+            case UiFlowBlock.GetBlockType():
+                if (isContainerFlowBlockData(blockData)) {
+                    return ContainerFlowBlock.Deserialize(blockData as ContainerFlowBlockData, this, this.toolbox);
+                }
+                else {
+                    return UiFlowBlock.Deserialize(blockData as UiFlowBlockData, this, this.toolbox);
+                }
+
+            case DirectValue.GetBlockType():
+                return DirectValue.Deserialize(blockData, this);
+
+            case EnumDirectValue.GetBlockType():
+                return EnumDirectValue.Deserialize(blockData, this, this.getEnum);
+
+            default:
+                console.error("Unknown block type:", blockData.type);
+        }
+    }
+
+    private numPages = 0;
     private baseElement: HTMLElement;
     private inlineEditorContainer: HTMLDivElement;
     private inlineEditor: HTMLInputElement;
+    private inlineMultilineEditor: HTMLTextAreaElement;
     private state: State = 'waiting';
+    private toolbox: Toolbox;
 
     private popupGroup: HTMLDivElement;
     private canvas: SVGSVGElement;
+    private selectionRect: SVGRectElement;
+
     private connection_group: SVGGElement;
     private block_group: SVGGElement;
+    private page_group: SVGGElement;
+    private containers: (FlowBlock & ContainerBlock)[] = [];
 
     private top_left = { x: 0, y: 0 };
     private inv_zoom_level = 1;
     private input_helper_section: SVGGElement;
     private trashcan: SVGGElement;
+    private button_group: SVGGElement;
     private variables_in_use: { [key: string]: number } = {};
     private getEnum: EnumGetter;
+
+    public getInvZoomLevel(): number {
+        return this.inv_zoom_level;
+    }
 
     private blocks: {[key: string]: {
         block: FlowBlock,
         connections: string[],
         input_group: SVGGElement,
+        container_id: string | null,
     }};
+    private _selectedBlocks: string[] = [];
+
     private connections: {[key: string]: {
         connection: FlowConnection,
         element: SVGElement,
     }};
 
-    private constructor(baseElement: HTMLElement, getEnum: EnumGetter) {
+    public getDialog(): MatDialog {
+        return this.dialog;
+    }
+
+    private constructor(baseElement: HTMLElement,
+                        getEnum: EnumGetter,
+                        private dialog: MatDialog,
+                        private programId: string,
+                        private programService: ProgramService,
+                       ) {
         this.baseElement = baseElement;
-        this.inlineEditor = undefined;
         this.blocks = {};
         this.connections = {};
         this.getEnum = getEnum;
@@ -180,6 +274,8 @@ export class FlowWorkspace implements BlockManager {
         this.baseElement.appendChild(this.inlineEditorContainer);
         this.inlineEditor = document.createElement('input');
         this.inlineEditorContainer.appendChild(this.inlineEditor);
+        this.inlineMultilineEditor = document.createElement('textarea');
+        this.inlineEditorContainer.appendChild(this.inlineMultilineEditor);
 
         // Popup group
         this.popupGroup = document.createElement('div');
@@ -189,23 +285,35 @@ export class FlowWorkspace implements BlockManager {
         this.canvas = document.createElementNS(SvgNS, "svg");
         this.canvas.setAttribute('class', 'block_renderer');
 
+        this.selectionRect = document.createElementNS(SvgNS, "rect");
+        this.selectionRect.setAttribute('class', 'selection');
+
         this.input_helper_section = document.createElementNS(SvgNS, "g");
         this.trashcan = document.createElementNS(SvgNS, "g");
+        this.button_group = document.createElementNS(SvgNS, "g");
+
         this.connection_group = document.createElementNS(SvgNS, "g");
         this.block_group = document.createElementNS(SvgNS, 'g');
+        this.page_group = document.createElementNS(SvgNS, 'g');
 
         // The order of elements determines the relative Z-index
         // The "later" an element is added, the "higher" it is.
         // The elements are stored in groups so their Z-indexes are consistent.
+        this.canvas.appendChild(this.page_group);
         this.canvas.appendChild(this.input_helper_section);
         this.canvas.appendChild(this.trashcan);
+
         this.canvas.appendChild(this.connection_group);
         this.canvas.appendChild(this.block_group);
+        this.canvas.appendChild(this.button_group);
+        this.canvas.appendChild(this.selectionRect);
+
         this.baseElement.appendChild(this.canvas);
 
         this.init_definitions();
         this.set_events();
         this.init_trashcan();
+        this.init_buttons();
 
         this.update_top_left();
     }
@@ -260,7 +368,83 @@ export class FlowWorkspace implements BlockManager {
         this.trashcan.appendChild(image);
     }
 
+    private init_buttons() {
+        this.button_group.setAttribute('class', 'fab-button-group');
+        let button_size = null;
+
+        {
+            const zoom_in_button = document.createElementNS(SvgNS, 'g');
+            zoom_in_button.setAttribute('class', 'button');
+            zoom_in_button.onclick = () => { this.zoom_in(); }
+            const shadow = document.createElementNS(SvgNS, 'circle');
+            shadow.setAttributeNS(null, 'class', 'button-shadow');
+            shadow.setAttributeNS(null, 'r', '2ex');
+
+            const body = document.createElementNS(SvgNS, 'circle');
+            body.setAttributeNS(null, 'class', 'button-body');
+            body.setAttributeNS(null, 'r', '2ex');
+
+            const symbol = document.createElementNS(SvgNS, 'path');
+            symbol.setAttributeNS(null, 'class', 'button-symbol');
+            symbol.setAttributeNS(null, 'd', 'M-10,0 h20 m-10,-10 v20'); // A `+` sign
+
+            zoom_in_button.appendChild(shadow);
+            zoom_in_button.appendChild(body);
+            zoom_in_button.appendChild(symbol);
+            this.button_group.appendChild(zoom_in_button);
+
+            button_size = zoom_in_button.getBBox();
+        }
+
+        {
+            const zoom_out_button = document.createElementNS(SvgNS, 'g');
+            zoom_out_button.setAttribute('class', 'button');
+            zoom_out_button.setAttribute('transform', `translate(0, ${ button_size.height + FAB_BUTTON_PADDING * 2 })`);
+            zoom_out_button.onclick = () => { this.zoom_out(); }
+            const shadow = document.createElementNS(SvgNS, 'circle');
+            shadow.setAttributeNS(null, 'class', 'button-shadow');
+            shadow.setAttributeNS(null, 'r', '2ex');
+
+            const body = document.createElementNS(SvgNS, 'circle');
+            body.setAttributeNS(null, 'class', 'button-body');
+            body.setAttributeNS(null, 'r', '2ex');
+
+            const symbol = document.createElementNS(SvgNS, 'path');
+            symbol.setAttributeNS(null, 'class', 'button-symbol');
+            symbol.setAttributeNS(null, 'd', 'M-10,0 h20'); // A `-` sign
+
+            zoom_out_button.appendChild(shadow);
+            zoom_out_button.appendChild(body);
+            zoom_out_button.appendChild(symbol);
+            this.button_group.appendChild(zoom_out_button);
+        }
+
+        {
+            const zoom_reset_button = document.createElementNS(SvgNS, 'g');
+            zoom_reset_button.setAttribute('class', 'button');
+            zoom_reset_button.setAttribute('transform', `translate(0, ${ (button_size.height + FAB_BUTTON_PADDING * 2) * 2 })`);
+            zoom_reset_button.onclick = () => { this.zoom_reset(); }
+            const shadow = document.createElementNS(SvgNS, 'circle');
+            shadow.setAttributeNS(null, 'class', 'button-shadow');
+            shadow.setAttributeNS(null, 'r', '2ex');
+
+            const body = document.createElementNS(SvgNS, 'circle');
+            body.setAttributeNS(null, 'class', 'button-body');
+            body.setAttributeNS(null, 'r', '2ex');
+
+            const symbol = document.createElementNS(SvgNS, 'path');
+            symbol.setAttributeNS(null, 'class', 'button-symbol');
+            symbol.setAttributeNS(null, 'd', 'M-10,-5 h20 m-20,10 h20'); // An `=` sign
+
+            zoom_reset_button.appendChild(shadow);
+            zoom_reset_button.appendChild(body);
+            zoom_reset_button.appendChild(symbol);
+            this.button_group.appendChild(zoom_reset_button);
+        }
+    }
+
     private set_events() {
+        let lastMouseDownTime = null;
         this.canvas.onmousedown = ((ev: MouseEvent) => {
             if (this.state !== 'waiting') {
                 return;
@@ -270,26 +454,96 @@ export class FlowWorkspace implements BlockManager {
                 return;
             }
 
-            let last = { x: ev.x, y: ev.y };
+            this.ensureContextMenuHidden();
+
+            const time = new Date();
+            if (lastMouseDownTime && (((time as any) - lastMouseDownTime) < 1000))  {
+                const start = this._getPositionFromEvent(ev);
+                this.state = 'selecting-workspace';
+                this.canvas.classList.add('selecting');
+                this._updateSelectionRectangle(start, start);
+
+                this.canvas.onmousemove = ((ev: MouseEvent) => {
+                    this._updateSelectionRectangle(start, this._getPositionFromEvent(ev));
+                });
+
+                this.canvas.onmouseup = (() => {
+                    // TODO: Do something with the selection
+                    this.state = 'waiting';
+                    this.canvas.classList.remove('selecting');
+                    this.canvas.onmousemove = null;
+                    this.canvas.onmouseup = null;
+                });
+
+            }
+            else {
+
+                lastMouseDownTime = time;
+
+                let last = { x: ev.x, y: ev.y };
+
+                this.state = 'dragging-workspace';
+                this.canvas.classList.add('dragging');
+
+                this.canvas.onmousemove = ((ev: MouseEvent) => {
+                    this.top_left.x -= (ev.x - last.x) * this.inv_zoom_level;
+                    this.top_left.y -= (ev.y - last.y) * this.inv_zoom_level;
+                    last = { x: ev.x, y: ev.y };
+
+                    this.update_top_left();
+                });
+
+                this.canvas.onmouseup = (() => {
+                    this.state = 'waiting';
+                    this.canvas.classList.remove('dragging');
+                    this.canvas.onmousemove = null;
+                    this.canvas.onmouseup = null;
+                });
+            }
+        });
+
+        this.canvas.ontouchstart = ((ev: TouchEvent) => {
+            if (this.state !== 'waiting') {
+                return;
+            }
+
+            if (ev.target !== this.canvas) {
+                return;
+            }
+
+            lastMouseDownTime = new Date();
+            // TODO: Implement select mode
+
+            const touch = ev.targetTouches[0];
+            let last = { x: touch.clientX, y: touch.clientY };
 
             this.state = 'dragging-workspace';
             this.canvas.classList.add('dragging');
 
-            this.canvas.onmousemove = ((ev: MouseEvent) => {
-                this.top_left.x -= (ev.x - last.x) * this.inv_zoom_level;
-                this.top_left.y -= (ev.y - last.y) * this.inv_zoom_level;
-                last = { x: ev.x, y: ev.y };
+            this.canvas.ontouchmove = ((ev: TouchEvent) => {
+                if (ev.targetTouches.length == 0) {
+                    return;
+                }
+                if (ev.targetTouches.length == 1) {
+                    const touch = ev.targetTouches[0];
+                    this.top_left.x -= (touch.clientX - last.x) * this.inv_zoom_level;
+                    this.top_left.y -= (touch.clientY - last.y) * this.inv_zoom_level;
+                    last = { x: touch.clientX, y: touch.clientY };
 
-                this.update_top_left();
+                    this.update_top_left();
+                }
+                else {
+                    console.error("Unexpected action with more than one touch", ev);
+                }
             });
 
-            this.canvas.onmouseup = (() => {
+            this.canvas.ontouchend = (() => {
                 this.state = 'waiting';
                 this.canvas.classList.remove('dragging');
-                this.canvas.onmousemove = null;
-                this.canvas.onmouseup = null;
+                this.canvas.ontouchmove = null;
+                this.canvas.ontouchend = null;
             });
-        });
+        })
 
         this.canvas.onwheel = ((ev) => {
             if(!ev.deltaY){
@@ -303,8 +557,180 @@ export class FlowWorkspace implements BlockManager {
             else {
                 this.zoom_out();
             }
-            this.update_top_left();
         });
+    }
+
+    private _updateSelectionRectangle(origin: Position2D, edge: Position2D) {
+        const topLeft = { x: Math.min(origin.x, edge.x), y: Math.min(origin.y, edge.y) };
+        const botRight = { x: Math.max(origin.x, edge.x), y: Math.max(origin.y, edge.y) };
+        const area = this.absPosToWorkspace({
+            x: topLeft.x,
+            y: topLeft.y,
+            width: botRight.x - topLeft.x,
+            height: botRight.y - topLeft.y
+        });
+
+        this.selectionRect.setAttributeNS(null, 'x', area.x + '');
+        this.selectionRect.setAttributeNS(null, 'y', area.y + '');
+        this.selectionRect.setAttributeNS(null, 'width', area.width + '');
+        this.selectionRect.setAttributeNS(null, 'height', area.height + '');
+
+        const blocks = this._getBlocksInArea(area);
+        this.updateSelectBlockList(blocks);
+    }
+
+    private _getBlocksInArea(area: Area2D): string[] {
+        const blocks = [];
+
+        for (const blockId of Object.keys(this.blocks)) {
+            const blockArea = this.blocks[blockId].block.getBodyArea();
+            if (isContainedIn(blockArea, area)) {
+                blocks.push(blockId);
+            }
+        }
+
+        return blocks;
+    }
+
+    private updateSelectBlockList(blockIds: string[]) {
+        // Find blocks that are added and removed from the selection
+        const added = [];
+        const removed = [];
+        for (const blockId of blockIds) {
+            if (this._selectedBlocks.indexOf(blockId) < 0) {
+                added.push(blockId);
+            }
+        }
+
+        for (const blockId of this._selectedBlocks) {
+            if (blockIds.indexOf(blockId) < 0) {
+                removed.push(blockId);
+            }
+        }
+
+        // Update blocks style
+        added.forEach(blockId => {
+            const block = this.blocks[blockId].block;
+            block.getBodyElement().classList.add('selected');
+            block.onGetFocus();
+        })
+        removed.forEach(blockId => {
+            const blockInfo = this.blocks[blockId];
+            if (blockInfo) {
+                blockInfo.block.onLoseFocus();
+                blockInfo.block.getBodyElement().classList.remove('selected');
+            }
+            else {
+                console.error(`Error unselecting block (id: ${blockId}). Block not found.`);
+            }
+        })
+
+        this._selectedBlocks = blockIds.concat([]); // Clone the list, just for safety
+        this._raiseSelectedBlocks();
+    }
+
+    private _raiseSelectedBlocks() {
+        this._raiseBlocks(this._selectedBlocks);
+    }
+
+    private _raiseBlocks(blockIds: string[]) {
+        const allBlocksUnder = this._getAllBlocksContainedInGroup(blockIds);
+        const sortedBlocks = this._sortByDependencies(allBlocksUnder);
+
+        for (const id of sortedBlocks) {
+            const block = this.blocks[id].block;
+            const element = block.getBodyElement();
+
+            if (element instanceof ContainerFlowBlock) {
+                if (element.isPage) {
+                    // Pages are on a different group
+                    console.warn("Cannot raise a page");
+                    continue
+                }
+            }
+            element.parentNode.appendChild(element);
+        }
+    }
+
+    private _getAllBlocksContainedInGroup(blockIds: string[]): string[] {
+        // From a list of blocks, add to it all the blocks contained in its
+        // Container blocks.
+
+        const allKnown = {}; // Avoid duplicated results
+        for (const id of blockIds) {
+            if (allKnown[id]) {
+                // Already explored branch
+                continue;
+            }
+
+            allKnown[id] = true;
+            const block = this.blocks[id];
+
+            if (block.block instanceof ContainerFlowBlock) {
+
+                for (const content of block.block.recursiveGetAllContents()) {
+                    const contentId = this.getBlockId(content);
+                    allKnown[contentId] = true;
+                }
+            }
+        }
+
+        return Object.keys(allKnown);
+    }
+
+    private _sortByDependencies(blockIds: string[]): string[] {
+        let to_go = blockIds.concat([]).sort(); // First sort alphabetically, to stabilize the result
+        const sortedByDep = [];
+
+        const processedById: {[key: string]: boolean } = {};
+        for (const blockId of blockIds) {
+            // This is used to differenciate between dependencies not yet
+            // processed or not to be sorted.
+            processedById[blockId] = false;
+        }
+
+        let processing = true;
+
+        while ((to_go.length > 0) && processing) {
+            processing = false;
+            const skipped = [];
+
+            for (const blockId of to_go) {
+                const block = this.blocks[blockId];
+
+                if (block.container_id) {
+                    // Note that we are not interested on dependencies not in
+                    // the move. WE HAVE TO CHECK FOR `FALSE`, NOT FOR EXISTENCE
+                    if (processedById[block.container_id] === false) {
+                        skipped.push(blockId);
+                        continue;
+                    }
+                }
+
+                sortedByDep.push(blockId);
+                processedById[blockId] = true;
+                processing = true;
+            }
+
+            to_go = skipped;
+        }
+
+        if (to_go.length !== 0) {
+            throw new Error("Found container-contained circular dependency, on the following IDs: " + JSON.stringify(to_go));
+        }
+
+        return sortedByDep;
+    }
+
+    private ensureBlockSelected(blockId: string) {
+        if (this._selectedBlocks.indexOf(blockId) >= 0) {
+            // It's already selected, nothing to do
+            return;
+        }
+        else {
+            // Update selection
+            this.updateSelectBlockList([blockId]);
+        }
     }
 
     private update_top_left() {
@@ -314,12 +740,26 @@ export class FlowWorkspace implements BlockManager {
         this.canvas.setAttributeNS(null, 'viewBox',
                                    `${this.top_left.x} ${this.top_left.y} ${width * this.inv_zoom_level} ${height * this.inv_zoom_level}`);
 
+        this.canvas.style.backgroundPosition = `${-this.top_left.x / this.inv_zoom_level}px ${-this.top_left.y / this.inv_zoom_level}px`;
+
         // Move trashcan
         const trashbox = this.trashcan.getElementsByTagName('image')[0].getBBox();
         if (trashbox) {
-            const left = width * this.inv_zoom_level - trashbox.width + this.top_left.x;
-            const top = height * this.inv_zoom_level - trashbox.height + this.top_left.y;
-            this.trashcan.setAttributeNS(null, 'transform', `translate(${left},${top})`);
+            // Move
+            const left = width * this.inv_zoom_level - trashbox.width * this.inv_zoom_level + this.top_left.x;
+            const top = height * this.inv_zoom_level - trashbox.height * this.inv_zoom_level + this.top_left.y;
+
+            this.trashcan.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
+
+            // Move buttons
+            {
+                const buttonBox = this.button_group.getBBox();
+
+                const left = width * this.inv_zoom_level - (buttonBox.width - FAB_BUTTON_PADDING) * this.inv_zoom_level + this.top_left.x;
+                const top = height * this.inv_zoom_level - (trashbox.height + FAB_BUTTON_PADDING + buttonBox.height) * this.inv_zoom_level + this.top_left.y;
+
+                this.button_group.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
+            }
         }
     }
 
@@ -335,11 +775,13 @@ export class FlowWorkspace implements BlockManager {
             this.inv_zoom_level = INV_MAX_ZOOM_LEVEL;
         }
         else if (this.inv_zoom_level <= 1) {
-            this.inv_zoom_level -= 0.5;
+            this.inv_zoom_level -= SMALL_ZOOM_INCREMENTS;
         }
         else {
-            this.inv_zoom_level -= 1;
+            this.inv_zoom_level -= LARGE_ZOOM_INCREMENTS;
         }
+
+        this.update_top_left();
     }
 
     private zoom_out() {
@@ -351,10 +793,48 @@ export class FlowWorkspace implements BlockManager {
             this.inv_zoom_level = 0.5;
         }
         else if (this.inv_zoom_level < 1) {
-            this.inv_zoom_level += 0.5;
+            this.inv_zoom_level += SMALL_ZOOM_INCREMENTS;
         }
         else {
-            this.inv_zoom_level += 1;
+            this.inv_zoom_level += LARGE_ZOOM_INCREMENTS;
+        }
+
+        this.update_top_left();
+    }
+
+    private zoom_reset() {
+        this.inv_zoom_level = 1;
+        this.update_top_left(); // This has to be done before center() for it to work correctly
+
+        this.center();
+    }
+
+    // Perform an operation while resetting the zoom level
+    private _withNoZoom(f: () => void) {
+        // Remove zoom
+        const zoomLevel = this.inv_zoom_level;
+        this.inv_zoom_level = 1;
+        this.update_top_left();
+
+        // Apply operation
+        let error = null;
+        let hadException = false;
+
+        try {
+            f();
+        }
+        catch (err) {
+            error = err;
+            hadException = true;
+        }
+
+        // Reset zoo
+        this.inv_zoom_level = zoomLevel;
+        this.update_top_left();
+
+        // Re-throw exception if one was found
+        if (hadException) {
+            throw error;
         }
     }
 
@@ -379,8 +859,8 @@ export class FlowWorkspace implements BlockManager {
         const canvas_area = this.canvas.getClientRects()[0];
 
         const rel_pos = {
-            x: abs_position.x - canvas_area.x + this.top_left.x,
-            y: abs_position.y - canvas_area.y + this.top_left.y,
+            x: (abs_position.x - canvas_area.x) * this.inv_zoom_level + this.top_left.x,
+            y: (abs_position.y - canvas_area.y) * this.inv_zoom_level + this.top_left.y,
         };
 
         return this.draw(block, rel_pos);
@@ -404,51 +884,442 @@ export class FlowWorkspace implements BlockManager {
             this.variables_in_use[slots.variable]++;
         }
 
-        block.render(this.block_group, position ? position: {x: 10, y: 10});
-        const bodyElement = block.getBodyElement();
-        bodyElement.onmousedown = ((ev: MouseEvent) => {
+        let group = this.block_group;
+        const isContainer = block instanceof ContainerFlowBlock;
+        if (isContainer) {
+            if ((block as ContainerFlowBlock).isPage) {
+                group = this.page_group;
+            }
+        }
 
+        this._withNoZoom(() => {
+            block.render(group, {
+                block_id: block_id,
+                position: (position ? position : {x: 10, y: 10}),
+                workspace: this,
+            });
+        });
+
+        if (isContainer) {
+            // Obtaining the area has to be done AFTER the rendering
+            this.containers.push((block as FlowBlock & ContainerBlock));
+
+            if ((block as ContainerFlowBlock).isPage) {
+                this.numPages++;
+            }
+        }
+
+        const bodyElement = block.getBodyElement();
+
+        bodyElement.oncontextmenu = (ev: MouseEvent) => {
+            ev.preventDefault();
+            this.showBlockContextMenu(this._getPositionFromEvent(ev));
+        };
+
+        bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
             if (this.state !== 'waiting'){
                 return;
             }
 
             if (this.current_io_selected) { return; }
 
-            this._mouseDownOnBlock(ev, block);
+            this.ensureContextMenuHidden();
+
+            if ((ev as MouseEvent).button === 2) {
+                // On right click just make sure it is selected, the context
+                // menu will be handled by 'oncontextmenu'.
+                this.ensureBlockSelected(block_id);
+                // TODO: How to perform this action on touch event? Long touch?
+            }
+            else {
+                this._mouseDownOnBlock(this._getPositionFromEvent(ev), block);
+            }
         });
         const input_group = this.drawBlockInputHelpers(block);
 
-        this.blocks[block_id] = { block: block, connections: [], input_group: input_group };
+        this.blocks[block_id] = { block: block, connections: [], input_group: input_group, container_id: null };
 
         return block_id;
     }
 
-    private _mouseDownOnBlock(ev: MouseEvent, block: FlowBlock, on_done?: (ev: MouseEvent) => void) {
+    public centerOnBlock(blockId: string) {
+        const block = this.blocks[blockId].block;
+        const area = block.getBodyArea();
+        const centerX = area.x + area.width / 2;
+        const centerY = area.y + area.height / 2;
+
+        this.centerOnPoint({ x: centerX, y: centerY });
+    }
+
+    public centerOnPoint(pos: Position2D) {
+        // Consider toolbox overlap
+        let marginRight = 0;
+        if (this.toolbox.blockShowcase){
+            marginRight = this.toolbox.blockShowcase.getBoundingClientRect().width;
+        }
+
+        const width = this.canvas.width.baseVal.value - marginRight;
+        const height = this.canvas.height.baseVal.value;
+
+        this.top_left.x = (pos.x - width/2) - marginRight;
+        this.top_left.y = pos.y - height/2;
+        this.update_top_left();
+    }
+
+    public center() {
+        // Find the center of all blocks, and center the view there
+        const blockIds = Object.keys(this.blocks);
+        if (blockIds.length === 0) {
+            return this.centerOnPoint({ x: 0, y: 0 });
+        }
+
+        const block1Area = this.blocks[blockIds[0]].block.getBodyArea();
+        const rect = {
+            left: block1Area.x,
+            top: block1Area.y,
+            right: block1Area.x + block1Area.width,
+            bottom: block1Area.y + block1Area.height,
+        };
+
+        for (let i = 1 ; i < blockIds.length; i++) {
+            const blockArea = this.blocks[blockIds[i]].block.getBodyArea();
+
+            if (blockArea.x < rect.left) {
+                rect.left = blockArea.x;
+            }
+            if (blockArea.y < rect.top) {
+                rect.top = blockArea.y;
+            }
+
+            const right = blockArea.x + blockArea.width;
+            const bottom = blockArea.y + blockArea.height;
+            if (right > rect.right) {
+                rect.right = right;
+            }
+            if (bottom > rect.bottom) {
+                rect.bottom = bottom;
+            }
+        }
+
+        const center = {
+            x: (rect.left + rect.right) / 2,
+            y: (rect.top + rect.bottom) / 2,
+        };
+
+        return this.centerOnPoint(center);
+    }
+
+    public showBlockContextMenu(pos: Position2D) {
+        // Base positioning
+        this.popupGroup.innerHTML = '';
+        this.popupGroup.setAttribute('class', 'popup_group context_menu');
+
+        const canvas_rect = this.canvas.getClientRects()[0];
+        const workspacePos = { x: pos.x - canvas_rect.x, y: pos.y - canvas_rect.y };
+
+        this.popupGroup.style.left = workspacePos.x + 'px';
+        this.popupGroup.style.top = workspacePos.y + 'px';
+        delete this.popupGroup.style.maxHeight;
+
+        // Block operations
+        const block_ops = document.createElement('ul');
+
+        // Default options
+        if (this._selectedBlocks.some(this._canCloneBlock.bind(this))) {
+            const clone_entry = document.createElement('li');
+            clone_entry.innerText = 'Clone';
+            clone_entry.onclick = (ev) => { this.ensureContextMenuHidden(); this.cloneSelection(); };
+
+            block_ops.appendChild(clone_entry);
+        }
+
+        // Single block options
+        if (this._selectedBlocks.length === 1) {
+            const blockId = this._selectedBlocks[0];
+            const block = this.blocks[blockId].block;
+            const actions = block.getBlockContextActions();
+
+            for (const action of actions) {
+                const entry = document.createElement('li');
+                entry.innerText = action.title;
+                entry.onclick = (ev) => { this.ensureContextMenuHidden(); action.run(); };
+                block_ops.appendChild(entry);
+            }
+        }
+
+        this.popupGroup.appendChild(block_ops);
+    }
+
+    public cloneSelection(): string[] {
+        const newIds = [];
+
+        // Unselect blocks that cannot be cloned
+        const blocks = this._selectedBlocks.filter(this._canCloneBlock.bind(this));
+
+        for (const blockId of blocks) {
+
+            const blockInfo = this.blocks[blockId];
+            const info = blockInfo.block.serialize();
+
+            const clone = this.deserializeBlock(info);
+            const newId = uuidv4();
+
+            const prevPos = blockInfo.block.getBodyArea();
+            this.draw(clone, { x: prevPos.x + 20, y: prevPos.y - 20 }, newId);
+            newIds.push(newId);
+        }
+
+        // Replicate connections among the selected blocks
+        for (const connectionId of Object.keys(this.connections)) {
+            const connection = this.connections[connectionId].connection;
+
+            // Look for matching sink
+            const sink = connection.getSink();
+            const sinkIndex = blocks.indexOf(sink.block_id);
+            if (sinkIndex < 0) {
+                continue;
+            }
+
+            // Look for matching source
+            const source = connection.getSource();
+            const sourceIndex = blocks.indexOf(source.block_id);
+            if (sourceIndex < 0) {
+                continue;
+            }
+
+            this.establishConnection(
+                {
+                    block: this.blocks[newIds[sourceIndex]].block,
+                    type: 'out',
+                    index: connection.source.output_index,
+                },
+                {
+                    block: this.blocks[newIds[sinkIndex]].block,
+                    type: 'in',
+                    index: connection.sink.input_index,
+                },
+            );
+        }
+
+        this.updateSelectBlockList(newIds);
+
+        return newIds;
+    }
+
+    public ensureContextMenuHidden() {
+        this.popupGroup.classList.remove('context_menu');
+        this.popupGroup.classList.add('hidden');
+    }
+
+    public _getPositionFromEvent(ev: MouseEvent | TouchEvent) : Position2D | null {
+        if ((ev as TouchEvent).targetTouches) {
+            const touchEv = ev as TouchEvent;
+            if (touchEv.targetTouches.length === 0) {
+                return null;
+            }
+            return { x: touchEv.targetTouches[0].clientX, y: touchEv.targetTouches[0].clientY };
+        }
+        else {
+            const mouseEv = ev as MouseEvent;
+            return { x: mouseEv.clientX, y: mouseEv.clientY };
+        }
+    }
+
+    public startResizing(block: Resizeable, ev: MouseEvent | TouchEvent) {
+        const initialPos = this._getPositionFromEvent(ev);
+        const area = block.getBodyArea();
+
+        this.canvas.onmousemove = this.canvas.ontouchmove = ((ev: MouseEvent | TouchEvent) => {
+            const pos = this._getPositionFromEvent(ev);
+
+            const diffX = initialPos.x - pos.x;
+            const diffY = initialPos.y - pos.y;
+
+            const newWidth = area.width   - diffX * this.inv_zoom_level;
+            const newHeight = area.height - diffY * this.inv_zoom_level;
+
+            block.resize({ width: newWidth, height: newHeight });
+        });
+
+        this.canvas.onmouseup = this.canvas.ontouchend = ((ev: MouseEvent | TouchEvent) => {
+            this.canvas.onmousemove = null;
+            this.canvas.onmouseup = null;
+        });
+    }
+
+    private _canCloneBlock(blockId: string): boolean {
+        const block = this.blocks[blockId].block;
+
+        if (block instanceof ContainerFlowBlock) {
+            if (block.isPage) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private _findContainerInPos(pos: Position2D, excluding?: FlowBlock): FlowBlock | null {
+        const candidates: (ContainerBlock & FlowBlock)[] = [];
+
+        for (const container of this.containers) {
+            if (excluding === container) {
+                continue;
+            }
+
+            const area = container.getBodyElement().getClientRects()[0];
+            if (!area) {
+                continue;
+            }
+
+            const diffX = pos.x - area.x;
+            const diffY = pos.y - area.y;
+
+            if ((diffX >= 0) && (diffY >= 0)
+                && (diffX <= area.width)
+                && (diffY <= area.height)) {
+
+                candidates.push(container);
+            }
+        }
+
+        if (candidates.length === 0) {
+            return null;
+        }
+
+        // Candidate priority
+        //  1. First, the ones that are not pages
+        //  2. The ones with less height
+        //  3. The ones with less width
+        const pages = [];
+        const notPages = [];
+
+        for (const container of candidates) {
+            if (container.isPage) {
+                pages.push(container);
+            }
+            else {
+                notPages.push(container);
+            }
+        }
+
+        const partition = notPages.length > 0 ? notPages : pages;
+        partition.sort((a, b) => {
+            const areaA = a.getBodyArea();
+            const areaB = b.getBodyArea();
+            const heightDiff = areaA.height - areaB.height;
+
+            if (heightDiff) {
+                return heightDiff;
+            }
+
+            return areaA.width - areaB.width;
+        })
+
+        return partition[0];
+    }
+
+    private _getContainerOfBlock(blockId: string): FlowBlock | null {
+        const blockInfo = this.blocks[blockId];
+        if (!blockInfo) {
+            throw new Error("Can't find block info of " + blockId);
+        }
+        if (blockInfo.container_id) {
+
+            if (!blockInfo) {
+                throw new Error("Can't find container: " + blockInfo.container_id);
+            }
+
+            return this.blocks[blockInfo.container_id].block;
+        }
+
+        return null;
+    }
+
+    private _updateBlockContainer(block: FlowBlock, container?: FlowBlock) {
+        const block_id = this.getBlockId(block);
+        const wasInContainer = this._getContainerOfBlock(block_id);
+
+        const container_id = container ? this.getBlockId(container) : null;
+
+        if (wasInContainer !== container) {
+            if (wasInContainer) {
+                (wasInContainer as any as ContainerBlock).removeContentBlock(block);
+            }
+
+            if (container) {
+                (container as any as ContainerBlock).addContentBlock(block);
+            }
+            this.blocks[block_id].container_id = container_id;
+
+            if (block instanceof UiFlowBlock) {
+                block.updateContainer(container);
+            }
+        }
+        else if (container) {
+            (container as any as ContainerBlock).update();
+        }
+    }
+
+    private _mouseDownOnBlock(pos: Position2D, block: FlowBlock, on_done?: (pos: Position2D) => void) {
+        const block_id = this.getBlockId(block);
+        this.ensureBlockSelected(block_id);
+
         if (this.state !== 'waiting') {
             console.error('Forcing start of MouseDown with Workspace state='+this.state);
         }
         this.state = 'dragging-block';
 
         const bodyElement = block.getBodyElement();
-        const block_id = this.getBlockId(block);
 
-        let last = {x: ev.x, y: ev.y};
-        this.canvas.onmousemove = ((ev: MouseEvent) => {
+        let last = pos;
+        let lastContainer: FlowBlock | null = null;
+
+        this.canvas.onmousemove = this.canvas.ontouchmove = ((ev: MouseEvent | TouchEvent) => {
+            const pos = this._getPositionFromEvent(ev);
+            const container = this._findContainerInPos(pos, block);
+
+            if (lastContainer !== container) {
+                if (lastContainer) {
+                    lastContainer.getBodyElement().classList.remove('highlighted');
+                }
+
+                if (container) {
+                    container.getBodyElement().classList.add('highlighted');
+                }
+
+                lastContainer = container;
+            }
+
+
+
             try {
                 const distance = {
-                    x: (ev.x - last.x) * this.inv_zoom_level,
-                    y: (ev.y - last.y) * this.inv_zoom_level,
+                    x: (pos.x - last.x) * this.inv_zoom_level,
+                    y: (pos.y - last.y) * this.inv_zoom_level,
                 };
-                last = {x: ev.x, y: ev.y};
+                last = {x: pos.x, y: pos.y};
 
-                block.moveBy(distance);
+                for (const blockId of this._selectedBlocks) {
+                    const container = this._getContainerOfBlock(blockId);
+                    const isContainerSelected = container === null ? false : this._selectedBlocks.indexOf(this.getBlockId(container)) >= 0;
+                    if (isContainerSelected) {
+                        // Container of the block is also selected, avoid moving it twice
+                        continue;
+                    }
 
-                for (const conn of this.blocks[block_id].connections) {
-                    this.updateConnection(conn);
+                    const draggedBlocks = this.blocks[blockId].block.moveBy(distance).map(block => this.getBlockId(block));
+
+                    for (const movedId of draggedBlocks.concat([blockId])) {
+                        for (const conn of this.blocks[movedId].connections) {
+                            this.updateConnection(conn);
+                        }
+
+                        this.updateBlockInputHelpersPosition(movedId);
+                    }
                 }
-                this.updateBlockInputHelpersPosition(block_id);
 
-                if (this.isInTrashcan(ev)) {
+                if (this.isInTrashcan(pos)) {
                     this.trashcan.classList.add('to-be-activated');
                     bodyElement.classList.add('to-be-removed');
                 }
@@ -461,10 +1332,42 @@ export class FlowWorkspace implements BlockManager {
                 console.error(err);
             }
         });
-        this.canvas.onmouseup = ((ev: MouseEvent) => {
+        this.canvas.onmouseup = this.canvas.ontouchend = ((ev: MouseEvent | TouchEvent) => {
+            if (lastContainer) {
+                lastContainer.getBodyElement().classList.remove('highlighted');
+            }
+
+            const wasInContainer = this._getContainerOfBlock(block_id) !== null;
+            const pos = this._getPositionFromEvent(ev);
+            const container = this._findContainerInPos(pos, block);
+            const containerId = container === null ? null : this.getBlockId(container);
+
+            // Only move to container if either:
+            //  - The dragged block was in a container and now is not
+            //  - The dragged block is dropped in a container not in the selected group
+            if ((wasInContainer && (!containerId))
+                || (containerId && (this._selectedBlocks.indexOf(containerId) < 0))) {
+
+                for (const blockId of this._selectedBlocks.concat([])) {
+                    this._updateBlockContainer(this.blocks[blockId].block, container);
+
+                    const draggedBlocks = this.blocks[blockId].block.endMove().map(block => this.getBlockId(block));
+
+                    for (const movedId of draggedBlocks.concat([blockId])) {
+                        for (const conn of this.blocks[movedId].connections) {
+                            this.updateConnection(conn);
+                        }
+
+                        this.updateBlockInputHelpersPosition(movedId);
+                    }
+                }
+            }
+
             try {
+                const pos = this._getPositionFromEvent(ev) || last;
+
                 if (on_done) {
-                    on_done(ev);
+                    on_done(pos);
                 }
 
                 this.state = 'waiting';
@@ -473,8 +1376,10 @@ export class FlowWorkspace implements BlockManager {
                 this.trashcan.classList.remove('to-be-activated');
                 bodyElement.classList.remove('to-be-removed');
 
-                if (this.isInTrashcan(ev)) {
-                    this.removeBlock(block_id);
+                if (this.isInTrashcan(pos)) {
+                    for (const blockId of this._selectedBlocks.concat([])) {
+                        this.removeBlock(blockId);
+                    }
                 }
             }
             catch (err) {
@@ -641,53 +1546,76 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
-    private editInline(block: DirectValue, type: MessageType, update: (value: string) => void): void {
-        this.inlineEditor.value = block.value;
-        this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
-        if (type === 'integer') {
+    public editInline(area: Area2D, value: string, type: MessageType, update: (value: string) => void): void {
+        let editor = null;
+        let hiddenEditor = null;
+        if (type === 'boolean') {
+            editor = this.inlineEditor;
+            hiddenEditor = this.inlineMultilineEditor;
+
+            this.inlineEditor.step = '';
+            this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
+        }
+        else if (type === 'integer') {
+            editor = this.inlineEditor;
+            hiddenEditor = this.inlineMultilineEditor;
+
             this.inlineEditor.step = '1';
+            this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
         }
         else if (type === 'float') {
-            this.inlineEditor.step = '0.001';
+            editor = this.inlineEditor;
+            hiddenEditor = this.inlineMultilineEditor;
+
+            this.inlineEditor.step = '0.1';
+            this.inlineEditor.type = FlowWorkspace.MessageTypeToInputType(type);
         }
         else {
-            this.inlineEditor.step = '';
+            editor = this.inlineMultilineEditor;
+            hiddenEditor = this.inlineEditor;
+        }
+        editor.value = value;
+
+        if (editor === hiddenEditor) {
+            throw Error("Hidden editor and used one should NOT be the same");
         }
 
-        const valueArea = this.getWorkspaceRelArea(block.getValueArea());
+        const valueArea = this.getWorkspaceRelArea(area);
 
         this.inlineEditorContainer.style.top = valueArea.y + 2 + 'px';
         this.inlineEditorContainer.style.left = valueArea.x + 'px';
-        this.inlineEditor.style.width = valueArea.width + 'px';
-        this.inlineEditor.style.height = valueArea.height - 4 + 'px';
-        this.inlineEditor.style.fontSize = (1 / this.inv_zoom_level) * 100 + '%';
+        editor.style.width = valueArea.width + 'px';
+        editor.style.height = valueArea.height - 4 + 'px';
+        editor.style.fontSize = (1 / this.inv_zoom_level) * 100 + '%';
 
         this.inlineEditorContainer.classList.remove('hidden');
+        editor.classList.remove('hidden');
+        hiddenEditor.classList.add('hidden');
 
         const finishEdition = () => {
-            this.inlineEditor.onblur = null;
-            this.inlineEditor.onkeypress = null;
+            editor.onblur = null;
+            editor.onkeypress = null;
             this.inlineEditorContainer.classList.add('hidden');
 
             if (type === 'boolean') {
                 update(this.inlineEditor.checked ? 'true' : 'false');
             }
             else {
-                update(this.inlineEditor.value);
+                update(editor.value);
             }
         }
 
-        this.inlineEditor.onblur = () => {
+        editor.onblur = () => {
             finishEdition();
         };
 
-        this.inlineEditor.onkeypress = (ev:KeyboardEvent) => {
-            if (ev.key === 'Enter') {
+        editor.onkeypress = (ev:KeyboardEvent) => {
+            if ((ev.shiftKey) && (ev.key === 'Enter')) {
                 finishEdition();
             }
         };
 
-        this.inlineEditor.focus();
+        editor.focus();
     }
 
     private updateBlockInputHelpersPosition(block_id: string) {
@@ -730,9 +1658,28 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    public get hasPages() {
+        return this.numPages > 0;
+    }
+
     public removeBlock(blockId: string) {
         const info = this.blocks[blockId];
-        console.log("Removing block:", info);
+        console.debug("Removing block:", info);
+
+        if (info.block instanceof ContainerFlowBlock) {
+            const parent_container_id = info.container_id;
+            const parent_container = parent_container_id ? this.blocks[parent_container_id].block : null;
+
+            for (const content of info.block.contents.concat([])) {
+                this._updateBlockContainer(content, parent_container);
+            }
+
+            if (info.block.isPage) {
+                this.numPages--;
+            }
+        }
+
+        this._updateBlockContainer(info.block, null);
 
         // Make a copy of the array to avoid problems for modifying it during the loop
         for (const conn_id of info.connections.concat([])) {
@@ -743,6 +1690,11 @@ export class FlowWorkspace implements BlockManager {
         info.block.dispose();
 
         delete this.blocks[blockId];
+
+        const idx = this._selectedBlocks.indexOf(blockId);
+        if (idx >= 0) {
+            this._selectedBlocks.splice(idx, 1);
+        }
     }
 
     private getBlockRel(block: FlowBlock, position: Position2D): Position2D {
@@ -758,6 +1710,16 @@ export class FlowWorkspace implements BlockManager {
             y: off.y + area.y,
             width: area.width,
             height: area.height,
+        };
+    }
+
+    private absPosToWorkspace(area: Area2D): Area2D {
+        const canvas_rect = this.canvas.getClientRects()[0];
+        return {
+            x: ((area.x - canvas_rect.left) * this.inv_zoom_level) + this.top_left.x,
+            y: ((area.y - canvas_rect.top) * this.inv_zoom_level) + this.top_left.y,
+            width: area.width * this.inv_zoom_level,
+            height: area.height * this.inv_zoom_level,
         };
     }
 
@@ -869,7 +1831,12 @@ export class FlowWorkspace implements BlockManager {
         }
 
         for (const block_id of Object.keys(this.blocks)) {
-            const body = this.blocks[block_id].block.getBodyArea();
+            const block = this.blocks[block_id].block;
+            if (block instanceof ContainerFlowBlock) {
+                continue;
+            }
+
+            const body = block.getBodyArea();
             if (((body.y + body.height) > top.y) && ((body.y < bottom.y))) {
                 occupied_sections.push( { left: body.x, right: body.x + body.width } );
             }
@@ -935,12 +1902,13 @@ export class FlowWorkspace implements BlockManager {
             this.removeConnection(conn);
         };
         this.connection_group.appendChild(path);
-        source.block.addConnection('out', conn.getSource().output_index);
-        source.connections.push(conn.id);
 
         const sink = this.blocks[conn.getSink().block_id];
+        source.block.addConnection('out', conn.getSource().output_index, sink.block);
+        source.connections.push(conn.id);
+
         sink.connections.push(conn.id);
-        sink.block.addConnection('in', conn.getSink().input_index);
+        sink.block.addConnection('in', conn.getSink().input_index, source.block);
 
         this.connections[conn.id] = { connection: conn, element: path };
         this.updateBlockInputHelpersVisibility(conn.getSink().block_id);
@@ -949,10 +1917,11 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private removeConnection(conn: FlowConnection) {
-        // Disconnect from source
         const source = this.blocks[conn.getSource().block_id];
+        const sink = this.blocks[conn.getSink().block_id];
 
-        source.block.removeConnection('out', conn.getSource().output_index);
+        // Disconnect from source
+        source.block.removeConnection('out', conn.getSource().output_index, sink.block);
         const source_conn_index = source.connections.indexOf(conn.id);
         if (source_conn_index < 0) {
             console.error('Connection not found when going to remove. For block', source);
@@ -963,9 +1932,7 @@ export class FlowWorkspace implements BlockManager {
         this.updateBlockInputHelpersVisibility(conn.getSource().block_id);
 
         // Disconnect from sink
-        const sink = this.blocks[conn.getSink().block_id];
-
-        sink.block.removeConnection('in', conn.getSink().input_index);
+        sink.block.removeConnection('in', conn.getSink().input_index, source.block);
         const sink_conn_index = sink.connections.indexOf(conn.id);
         if (sink_conn_index < 0) {
             console.error('Connection not found when going to remove. For block', sink);
@@ -1461,7 +2428,27 @@ export class FlowWorkspace implements BlockManager {
     }
 
     onRequestEdit(block: DirectValue, type: MessageType, update: (value: string) => void): void {
-        this.editInline(block, type, update);
+        this.editInline(block.getValueArea(), block.value, type, update);
     }
     // </Block manager interface>
+
+    // Block configuration
+    startBlockConfiguration(block: ConfigurableBlock) {
+        const dialogRef = this.dialog.open(ConfigureBlockDialogComponent, {
+            data: { block: block, programId: this.programId }
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!(result && result.success)) {
+                console.log("Cancelled");
+                return;
+            }
+
+            block.applyConfiguration((result.settings as BlockConfigurationOptions));
+        });
+    }
+
+    getAssetUrlOnProgram(assetId: string): string {
+        return this.programService.getAssetUrlOnProgram(assetId, this.programId);
+    }
 }

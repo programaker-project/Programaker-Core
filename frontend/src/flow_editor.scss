@@ -12,16 +12,66 @@ $unknown-color: #7f7f7f;
 #workspace > svg {
     width: 100%;
     height: 100%;
-    background-color: #ddd;
+
+    // Taken from https://codepen.io/tennowman/pen/ynrih
+    background-color: #269;
+    background-image:
+        linear-gradient(rgba(255,255,255,.3) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(255,255,255,.3) 2px, transparent 2px),
+        linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
+    background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+    background-position: -2px -2px, -2px -2px, -1px -1px, -1px -1px;
 }
 
 svg.block_renderer.dragging {
     cursor: grabbing;
 }
 
-svg.block_renderer g.flow_node > a {
+svg.block_renderer.selecting {
+    cursor: crosshair;
+}
+
+svg.block_renderer rect.selection {
+    display: none;
+
+    fill: rgba(255,255,0,0.3);
+    stroke-width: 2px;
+    stroke: #fff;
+    stroke-dasharray: 5;
+}
+
+svg.block_renderer.selecting rect.selection {
+    display: block;
+}
+
+svg.block_renderer g.flow_node > a,
+svg.block_renderer g.flow_node > g
+{
     pointer-events: all;
     cursor: grab;
+}
+
+svg.block_renderer g.flow_node.selected rect.node_body, svg.block_renderer g.flow_node .selected rect.node_body {
+    stroke: #A05;
+    stroke-width: 3px;
+    stroke-dasharray: 0;
+}
+
+// Generic rect control
+rect.hidden {
+    visibility: hidden;
+}
+
+// Block type names are hidden by default
+svg.block_renderer .block_type_annotation {
+    visibility: hidden;
+}
+
+// Only shown when the block is selected or on the toolbox showcases
+svg.block_renderer g.flow_node.selected .block_type_annotation,
+.showcase svg.block_renderer .block_type_annotation {
+    visibility: visible;
 }
 
 svg.block_renderer path.building {
@@ -117,8 +167,25 @@ svg.block_renderer g.flow_node rect.body_shadow {
     fill: rgba(0,0,0,0.3); // Shadow color
 }
 
-svg.block_renderer g.flow_node a.to-be-removed rect.node_body {
-    fill: #ff4444;
+svg.block_renderer g.flow_node .to-be-removed rect.node_body,
+svg.block_renderer g.flow_node.to-be-removed rect.node_body {
+    fill-opacity: 0.50;
+    fill: #f88;
+    color: #fff;
+}
+
+.grid-division {
+    stroke: #88f;
+    stroke-width: 1px;
+    stroke-dasharray: 3;
+
+    &.vert-cut {
+        stroke: #f88;
+    }
+
+    &.horiz-cut {
+        stroke: #8f8;
+    }
 }
 
 svg.block_renderer.drawing rect.node_body {
@@ -231,7 +298,7 @@ svg.block_renderer g.flow_node.direct_value_node text.node_name {
     cursor: text;
 }
 
-svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
+svg.block_renderer g.flow_node.editing rect.node_body {
     stroke-width: 2px;
     stroke: #009688;
 }
@@ -242,6 +309,10 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
 }
 
 #workspace > .inline_editor_container.hidden {
+    display: none;
+}
+
+#workspace > .inline_editor_container .hidden {
     display: none;
 }
 
@@ -258,6 +329,71 @@ svg.block_renderer g.flow_node.direct_value_node.editing rect.node_body {
         margin: 0;
     }
     -moz-appearance: textfield;
+}
+
+// ContentEditable divs
+div[contenteditable="true"] {
+    cursor: text;
+}
+
+#workspace div[contenteditable="true"] a {
+    color: revert;
+    text-decoration: revert;
+
+    &:hover {
+        color: revert;
+        text-decoration: revert;
+    }
+}
+
+#workspace foreignObject div[contenteditable="true"] font a {
+    // If an <a> tag is found inside a <font> one respect the <font>'s color.
+    color: inherit;
+
+    &:hover {
+        color: inherit;
+    }
+}
+
+// Floating button bar over fixed text elements
+.floating-button-bar {
+    position: absolute;
+    z-index: 3; // Less than backdrop
+
+    border-radius: 4px;
+    box-shadow: 0 0 1px 1px rgba(0,0,0,0.3);
+
+    button {
+        border-radius: 4px;
+        border: none;
+        min-width: 4ex;
+        min-height: 4ex;
+        vertical-align: bottom;
+
+        &:hover {
+            background-color: #27212e;
+            color: white;
+
+            img.icon {
+                // Same effect as changing font color, but for images
+                filter: invert(100%);
+            }
+        }
+    }
+
+
+
+    .bold-button {
+        font-weight: bold;
+    }
+
+    .italic-button {
+        font-style: italic;
+    }
+
+    .underline-button {
+        text-decoration: underline;
+    }
 }
 
 // Variable dropdown editor
@@ -279,7 +415,6 @@ svg.block_renderer .named_var .var_plate {
 // Popup
 .popup_group {
     position: absolute;
-    border: 1px solid #888;
     background-color: #fafafa;
     box-shadow: 0 0 4px rgba(0,0,0,0.5);
 
@@ -287,6 +422,26 @@ svg.block_renderer .named_var .var_plate {
 
     &.hidden {
         display: none;
+    }
+
+    &.context_menu {
+        border-radius: 4px;
+        padding: 4px 0;
+
+        ul {
+            margin: 0;
+            padding: 0;
+
+            li {
+                cursor: pointer;
+                padding: 0.5ex 1ex;
+
+                &:hover {
+                    color: #fff;
+                    background-color: #009688;
+                }
+            }
+        }
     }
 }
 
@@ -345,16 +500,41 @@ svg.block_renderer .named_var .var_plate {
     fill: #ff4444;
 }
 
+// Floating buttons
+svg.block_renderer .fab-button-group {
+    .button {
+        cursor: pointer;
+    }
+
+    .button-body {
+        fill: #27212e;
+    }
+
+    .button-shadow {
+        // Separated in a different element to avoid problems
+        // in case filter problems make it disappear
+        filter: url("#shadow");
+        fill: rgba(0,0,0,0.3); // Shadow color
+    }
+
+    .button-symbol {
+        stroke: #fff;
+        stroke-width: 2px;
+    }
+}
+
 // Toolbox
 .toolbox {
     height: 100%;
     min-width: 5ex;
-    max-width: 40vw;
+    max-width: min(30vw, 30rem);
     background-color: rgba(0,0,0,0.3);
     position: absolute;
     top: 0;
     left: 0;
-    overflow: auto;
+    display: flex;
+
+    padding-left: 6rem; // Space for the shortcut list
 }
 
 .toolbox.subsumed {
@@ -362,7 +542,47 @@ svg.block_renderer .named_var .var_plate {
     opacity: 0.2;
 }
 
+.toolbox ul.category-shortcut-list {
+    margin: 0;
+    padding: 0;
+    width: 6rem;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: inherit;
+    overflow-y: auto;
+    background-color: #0f110e;
+
+    li {
+        cursor: pointer;
+        color: white;
+        text-align: center;
+        margin: 0.5ex 2px 0.5ex 2px;
+        background-color: #262826;
+        border-radius: 4px;
+        padding: 4px;
+        font-size: small;
+        word-wrap: break-word;
+        user-select: none;
+    }
+}
+
+.toolbox-flow-button {
+    margin: 1ex;
+    padding: 1ex;
+    background: #009688;
+    color: #fff;
+    border: none;
+    font-weight: 500;
+    box-shadow: 0 0 1px 1px rgba(0,0,0,0.3);
+}
+
 .toolbox .category.empty {
+    display: none;
+}
+
+.toolbox .category-shortcut-list .empty {
     display: none;
 }
 
@@ -377,6 +597,8 @@ svg.block_renderer .named_var .var_plate {
 
 .toolbox .showcase {
     width: max-content;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .toolbox .block_exhibitor {
@@ -491,4 +713,116 @@ path.var_path {
 
 .node_icon, .node_icon_separator, .node_icon_plate {
     pointer-events: none;
+}
+
+// UI nodes
+svg.block_renderer g.flow_node.button_node .node_body {
+    fill: #EEE;
+    stroke-width: 1;
+    stroke: #BBB;
+}
+
+svg.block_renderer g.flow_node.output_node .node_body {
+    fill: #222;
+}
+
+svg.block_renderer g.flow_node.output_node .output_text {
+    fill: #fc4;
+}
+
+svg.block_renderer g.flow_node.image_node image {
+    pointer-events: none;
+}
+
+svg.block_renderer g.flow_node.image_node .node_body {
+    fill: rgba(255,255,255,0.3)
+}
+
+svg.block_renderer g.flow_node.separator_node .representation {
+    stroke: #fff;
+    mix-blend-mode: difference;
+    stroke-width: 2px;
+}
+
+svg.block_renderer g.flow_node.container_node .node_body {
+    fill: #fff;
+    stroke-width: 1;
+    stroke: #000;
+}
+
+svg.block_renderer g.flow_node.container_node.simple_card .node_body {
+    stroke-width: 0;
+}
+
+svg.block_renderer g.flow_node.selected.container_node.simple_card .node_body {
+    stroke-width: 2;
+    stroke-dasharray: 10;
+}
+
+
+svg.block_renderer g.flow_node.container_node.highlighted .node_body {
+    fill: #AFA !important;
+}
+
+svg.block_renderer g.flow_node.section_node .node_body {
+    fill: rgba(255,255,255,0.5);
+}
+
+
+svg.block_renderer g.flow_node.text_node .node_body {
+    fill: rgba(255,255,255,0.5);
+}
+
+// Don't use transparency on showcase
+.showcase svg.block_renderer g.flow_node.text_node .node_body {
+    fill: #fff;
+}
+
+.showcase svg.block_renderer g.flow_node.section_node .node_body {
+    fill: #fff;
+}
+
+svg.block_renderer g.flow_node.container_node.responsive_page .output_text {
+    fill: #fff;
+    font-style: normal;
+}
+
+svg.block_renderer g.flow_node.container_node .output_text {
+    fill: #222;
+    font-style: italic;
+}
+
+svg.block_renderer g.flow_node .manipulators .manipulator path {
+    fill: transparent;
+    stroke: #ff0;
+    stroke-width: 2px;
+}
+
+svg.block_renderer g.flow_node .manipulators .manipulator.hidden {
+    display: none;
+}
+
+svg.block_renderer g.flow_node .manipulators .manipulator .handle-icon-background {
+    fill: #222;
+}
+
+svg.block_renderer g.flow_node .manipulators .resize-manipulator {
+    cursor: se-resize;
+}
+
+svg.block_renderer g.flow_node .manipulators .height-resizer.resize-manipulator {
+    cursor: s-resize;
+}
+
+svg.block_renderer g.flow_node .manipulators .width-resizer.resize-manipulator {
+    cursor: e-resize;
+}
+
+svg.block_renderer g.flow_node .manipulators .manipulator.settings-manipulator image {
+    cursor: pointer;
+    filter: invert(100%);
+}
+
+svg.block_renderer g.flow_node .manipulators.hidden {
+    display: none;
 }

@@ -2,6 +2,8 @@
 
 -define(CHANNEL_MESSAGE_CONTENT, <<"content">>).
 
+-type common_channel_keys() :: undefined | ui_events | ui_events_show | variable_events | block_run_events.
+
 -record(live_channels_table_entry, { live_channel_id :: binary()
                                    , stats :: [_]
                                    }).

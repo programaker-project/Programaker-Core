@@ -39,7 +39,7 @@ delete_channel(ChannelId) ->
 listen_channel(ChannelId) ->
     listen_channel(ChannelId, {undefined, undefined}).
 
--spec listen_channel(binary(), {binary()} | {binary() | undefined, binary() | undefined}) -> ok | {error, channel_not_found}.
+-spec listen_channel(binary(), {binary()} | {binary() | common_channel_keys(), binary() | undefined}) -> ok | {error, channel_not_found}.
 listen_channel(ChannelId, {Key}) ->
     listen_channel(ChannelId, {Key, undefined});
 
@@ -47,8 +47,8 @@ listen_channel(ChannelId, {Key, SubKey}) ->
     Pid = self(),
     Node = node(),
     case automate_channel_engine_mnesia_backend:add_listener_to_channel(ChannelId, Pid, Node,
-                                                                        canonicalize_selector(Key),
-                                                                        canonicalize_selector(SubKey)) of
+                                                                        automate_channel_engine_utils:canonicalize_selector(Key),
+                                                                        automate_channel_engine_utils:canonicalize_selector(SubKey)) of
         ok ->
             ?MONITOR:monitor_listener(Pid);
         Error ->
@@ -114,8 +114,8 @@ get_appropriate_listeners_key_subkey(ChannelId, {Key, SubKey}) ->
         {error, Reason } ->
             {error, Reason};
         {ok, Listeners} ->
-            CanonicalKey = canonicalize_selector(Key),
-            CanonicalSubKey = canonicalize_selector(SubKey),
+            CanonicalKey = automate_channel_engine_utils:canonicalize_selector(Key),
+            CanonicalSubKey = automate_channel_engine_utils:canonicalize_selector(SubKey),
             Uniques = sets:from_list(lists:filtermap(fun(#listeners_table_entry{pid=Pid, key=ListenerKey, subkey=ListenerSubKey}) ->
                                                              AcceptedKey = case ListenerKey of
                                                                                CanonicalKey -> true;
@@ -136,10 +136,3 @@ get_appropriate_listeners_key_subkey(ChannelId, {Key, SubKey}) ->
                                                      Listeners)),
             {ok, sets:to_list(Uniques)}
     end.
-
-canonicalize_selector(undefined) ->
-    undefined;
-canonicalize_selector(null) ->
-    null;
-canonicalize_selector(Selector) ->
-    string:lowercase(Selector).

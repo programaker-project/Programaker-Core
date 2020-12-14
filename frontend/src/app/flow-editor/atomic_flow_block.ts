@@ -1,5 +1,5 @@
 import { BlockManager } from './block_manager';
-import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData } from './flow_block';
+import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts, BlockContextAction } from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -18,12 +18,19 @@ export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     type: AtomicFlowBlockOperationType;
     icon?: string,
     block_function: string,
+    message: string;
+    subkey?: { "type": "argument", "index": number };
 }
 
 export interface AtomicFlowBlockData extends FlowBlockData {
     type: AtomicFlowBlockType,
     value: {
         options: AtomicFlowBlockOptions,
+        slots: {[key: string]: string},
+
+        // This is used to indicate if a result of this block is used on another
+        // flow, and thus, if a signal reporting the result of this block has to be sent.
+        report_state?: boolean,
 
         // These counts are needed to keep the consistency when linking
         // inline arguments to it's ports
@@ -48,6 +55,15 @@ function is_digit(char: string): boolean {
     }
 }
 
+export function isAtomicFlowBlockOptions(opt: FlowBlockOptions): opt is AtomicFlowBlockOptions {
+    return ((opt as AtomicFlowBlockOptions).type === 'operation'
+        ||  (opt as AtomicFlowBlockOptions).type === 'getter'
+        ||  (opt as AtomicFlowBlockOptions).type === 'trigger');
+}
+
+export function isAtomicFlowBlockData(opt: FlowBlockData): opt is AtomicFlowBlockData {
+    return opt.type === BLOCK_TYPE;
+}
 
 function parse_chunks(message: string): MessageChunk[] {
     const result: MessageChunk[] = [];
@@ -150,6 +166,7 @@ export class AtomicFlowBlock implements FlowBlock {
     options: AtomicFlowBlockOptions;
     synthetic_input_count = 0;
     synthetic_output_count = 0;
+    namedChunkTextBoxes: {[key: string]: SVGTextElement } = {};
 
     constructor(options: AtomicFlowBlockOptions, synthetic_input_count?: number, synthetic_output_count?: number) {
         if (!(options.message)) {
@@ -300,7 +317,7 @@ export class AtomicFlowBlock implements FlowBlock {
             type: BLOCK_TYPE,
             value: {
                 options: JSON.parse(JSON.stringify(this.options)),
-
+                slots: this.getSlots(),
                 synthetic_input_count: this.synthetic_input_count,
                 synthetic_output_count: this.synthetic_output_count,
             },
@@ -317,10 +334,17 @@ export class AtomicFlowBlock implements FlowBlock {
         options.on_inputs_changed = manager.onInputsChanged.bind(manager);
         options.on_io_selected = manager.onIoSelected.bind(manager);
 
-        return new AtomicFlowBlock(options,
-                                   data.value.synthetic_input_count,
-                                   data.value.synthetic_output_count
-                                  );
+        const block = new AtomicFlowBlock(options,
+                                          data.value.synthetic_input_count,
+                                          data.value.synthetic_output_count
+                                         );
+
+        for (const slot of Object.keys(data.value.slots)) {
+            const chunk = block.chunks.find((val) => val.type === 'named_var'  && val.name === slot );
+            block.updateChunk(chunk, data.value.slots[slot]);
+        }
+
+        return block;
     }
 
     public getBodyElement(): SVGElement {
@@ -328,7 +352,7 @@ export class AtomicFlowBlock implements FlowBlock {
             throw Error("Not rendered");
         }
 
-        return this.node;
+        return this.group;
     }
 
     public getBodyArea(): Area2D {
@@ -345,7 +369,7 @@ export class AtomicFlowBlock implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
-    public moveBy(distance: {x: number, y: number}) {
+    public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
         }
@@ -353,7 +377,17 @@ export class AtomicFlowBlock implements FlowBlock {
         this.position.x += distance.x;
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+
+        return [];
     }
+
+    public endMove(): FlowBlock[] {
+        return [];
+    }
+
+    public onGetFocus() {}
+    public onLoseFocus() {}
+
     public getPositionOfInput(index: number, edge?: boolean): Position2D {
         const group = this.input_groups[index];
         const circle = group.getElementsByTagName('circle')[0];
@@ -518,7 +552,7 @@ export class AtomicFlowBlock implements FlowBlock {
         this.input_groups[index] = in_group;
     }
 
-    private updateChunk(chunk: MessageChunk, textBox: SVGTextElement, new_value: string) {
+    private updateChunk(chunk: MessageChunk, new_value: string) {
         if (chunk.type === 'const') {
             console.warn('Constant value chunks cannot be updated');
             return;
@@ -529,8 +563,11 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         chunk.val = new_value;
-        textBox.textContent = new_value;
-        this.updateBody();
+        if (this.namedChunkTextBoxes[chunk.name]) {
+            // Might not exist before initialization
+            this.namedChunkTextBoxes[chunk.name].textContent = new_value;
+            this.updateBody();
+        }
     }
 
     private updateBody() {
@@ -644,6 +681,10 @@ export class AtomicFlowBlock implements FlowBlock {
         this.rectShadow.setAttributeNS(null, 'width', box_width + "");
     }
 
+    public getBlockContextActions(): BlockContextAction[] {
+        return [];
+    }
+
     public getSlots(): {[key: string]: string} {
         const slots = {};
         for (const chunk of this.chunks) {
@@ -682,10 +723,10 @@ export class AtomicFlowBlock implements FlowBlock {
         return (chunk.index + this.synthetic_output_count); // Skip outputs not specified by the user
     }
 
-    public render(canvas: SVGElement, position?: {x: number, y: number}): SVGElement {
+    public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         this.canvas = canvas;
-        if (position) {
-            this.position = { x: position.x, y: position.y };
+        if (initOpts.position) {
+            this.position = { x: initOpts.position.x, y: initOpts.position.y };
         }
         else {
             if (this.options.inputs && this.options.inputs.length > 0) {
@@ -706,7 +747,7 @@ export class AtomicFlowBlock implements FlowBlock {
         const output_plating_x_margin = 3; // px
 
         this.group = document.createElementNS(SvgNS, 'g');
-        this.node = document.createElementNS(SvgNS, 'a');
+        this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
         this.rectShadow = document.createElementNS(SvgNS, 'rect');
         this.chunkGroup = document.createElementNS(SvgNS, 'g');
@@ -729,9 +770,8 @@ export class AtomicFlowBlock implements FlowBlock {
 
             this.iconPlate = document.createElementNS(SvgNS, 'rect');
             this.iconPlate.setAttributeNS(null, 'class', 'node_icon_plate');
-            this.iconPlate.setAttributeNS(null, 'x', '0');
-            this.iconPlate.setAttributeNS(null, 'y', '0');
-            this.iconPlate.setAttributeNS(null, 'rx', '2');
+            this.iconPlate.setAttributeNS(null, 'x', '1.5');
+            this.iconPlate.setAttributeNS(null, 'y', '1.5');
 
             this.iconSeparator = document.createElementNS(SvgNS, 'path');
             this.iconSeparator.setAttributeNS(null, 'class', 'node_icon_separator');
@@ -903,6 +943,8 @@ export class AtomicFlowBlock implements FlowBlock {
                 image.setAttributeNS(null, 'height', '2ex');
                 image.setAttributeNS(null, 'y', box_height/2 - image.getClientRects()[0].height/2  + "");
 
+                this.namedChunkTextBoxes[chunk.name] = text;
+
                 if (this.options.on_dropdown_extended) {
                     group.onclick = () => {
                         this.options.on_dropdown_extended(this,
@@ -910,7 +952,7 @@ export class AtomicFlowBlock implements FlowBlock {
                                                           chunk.val,
                                                           plate.getBBox(),
                                                           (new_value: string) => {
-                                                              this.updateChunk(chunk, text, new_value);
+                                                              this.updateChunk(chunk, new_value);
                                                           }
                                                          );
                     };
@@ -981,7 +1023,7 @@ export class AtomicFlowBlock implements FlowBlock {
             this.iconSeparator.setAttributeNS(null, 'd', `M${ separator_x },0 L${separator_x},${box_height}`);
 
             this.iconPlate.setAttributeNS(null, 'width', separator_x + 1 + ''); // +1 to cover separator stroke-width
-            this.iconPlate.setAttributeNS(null, 'height', box_height + '');
+            this.iconPlate.setAttributeNS(null, 'height', box_height - 3 + '');
 
         }
 

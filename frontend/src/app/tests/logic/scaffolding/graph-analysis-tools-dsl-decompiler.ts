@@ -11,6 +11,9 @@ function repr_single_arg(arg: CompiledBlockArg, depth: number): string {
     if (arg.type === 'constant') {
         return JSON.stringify(arg.value);
     }
+    else if (arg.type === 'variable' || arg.type === 'list') {
+        return arg.value;
+    }
     else if (arg.type === 'block') {
         return repr_contents(arg.value, depth, { skip_first_indent: true });
     }
@@ -30,8 +33,15 @@ function repr_args(args: CompiledBlockArgs, depth: number): string {
         const values = repr_args(call_args.service_call_values, depth);
         return `id: ${call_args.service_id} action: ${call_args.service_action} values: (${values})`;
     }
+    else if ((args as any).key) {
+        const selector = args as any;
+        if (selector.subkey) {
+            return `key: ${selector.key} subkey: ${selector.subkey}`;
+        }
+        return `key: ${selector.key}`;
+    }
     else {
-        throw new Error(`Unknown args type: ${args}`)
+        throw new Error(`Unknown args type: ${JSON.stringify(args)}`)
     }
 }
 

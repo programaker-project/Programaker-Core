@@ -16,7 +16,7 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
 
     // Stepped section
     const trigger = builder.add_trigger('on_new_message', {id: 'trigger', namespace: chat, args: []});
-    const waited = builder.add_trigger('on_new_message', { namespace: chat, args: []});
+    const waited = builder.add_trigger('on_new_message', {id: 'waited', namespace: chat, args: []});
 
     const operation = builder.add_op('control_wait_for_next_value', { args: [[ waited, 1]]
                                                                     });
@@ -39,7 +39,7 @@ describe('Flow-27-01: Wait for value might have direct connection from a bridge 
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (services.de5baefb-13da-457e-90a5-57a753da8891.on_new_message )
-                (control_wait_for_next_value (services.de5baefb-13da-457e-90a5-57a753da8891.on_new_message ))
+                (control_wait_for_next_value (flow-last-value waited 1))
                 `))
         ]);
     });

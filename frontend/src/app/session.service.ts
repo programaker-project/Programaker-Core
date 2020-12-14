@@ -57,6 +57,9 @@ export class SessionService {
     getPasswordUpdateUrl(): string {
         return this.environmentService.getApiRoot() + '/sessions/login/reset/update';
     }
+    getUploadAssetToProgramIdUrl(programId: string): string {
+        return this.environmentService.getApiRoot() + `/programs/by-id/${programId}/assets`;
+    }
 
 
     async getUserApiRoot(): Promise<string> {
@@ -318,6 +321,17 @@ export class SessionService {
         const url = await this.getUpdateUserAvatarUrl();
 
         await this.http.post(url, formData, { headers: this.getAuthHeader() }).toPromise()
+    }
+
+    async uploadAsset(file: File, programId: string): Promise<{ success: true, value: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const url = await this.getUploadAssetToProgramIdUrl(programId);
+
+        const result = await this.http.post(url, formData, { headers: this.getAuthHeader() }).toPromise();
+
+        return result as any;
     }
 
     private _monitorSession() {

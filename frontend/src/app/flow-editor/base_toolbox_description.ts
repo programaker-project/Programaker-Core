@@ -1,10 +1,12 @@
-import { PLATFORM_ICON } from './definitions';
 import { AtomicFlowBlockOptions } from './atomic_flow_block';
+import { PLATFORM_ICON } from './definitions';
+import { UiFlowBlockOptions } from './ui-blocks/ui_flow_block';
+import { ContainerFlowBlockOptions } from './ui-blocks/container_flow_block';
 
 interface Category {
     id: string,
     name: string,
-    blocks: AtomicFlowBlockOptions[],
+    blocks: ((AtomicFlowBlockOptions | UiFlowBlockOptions | ContainerFlowBlockOptions) & { is_internal?: boolean })[],
 }
 
 export type ToolboxDescription = Category[];
@@ -22,6 +24,27 @@ export const OP_PRELOAD_BLOCK: AtomicFlowBlockOptions = {
     ],
     outputs: [],
 };
+
+export const OP_ON_BLOCK_RUN: AtomicFlowBlockOptions = {
+    icon: PLATFORM_ICON,
+    message: 'On block run',
+    block_function: 'op_on_block_run',
+    type: 'trigger',
+    inputs: [
+        {
+            name: "block_id",
+            type: "string",
+        },
+        {
+            name: "block_id",
+            type: "integer",
+        },
+    ],
+    outputs: [],
+};
+
+export const ADVANCED_CATEGORY = 'advanced';
+export const INTERNAL_CATEGORY = '__internal__';
 
 export const BaseToolboxDescription: ToolboxDescription = [
     {
@@ -160,14 +183,8 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     type: "boolean",
                     quantity: "any",
                 },
-            }
-        ]
-    },
-    {
-        id: 'parallelization',
-        name: 'Parallelization',
-        blocks: [
-                        {
+            },
+            {
                 icon: PLATFORM_ICON,
                 message: 'Run on parallel',
                 block_function: 'op_fork_execution',
@@ -622,12 +639,6 @@ export const BaseToolboxDescription: ToolboxDescription = [
                         name: 'new value',
                         type: "any",
                     },
-                ],
-                outputs: [
-                    {
-                        name: 'saved value',
-                        type: 'any',
-                    }
                 ]
             },
             {
@@ -775,7 +786,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
         ]
     },
     {
-        id: 'advanced',
+        id: ADVANCED_CATEGORY,
         name: 'Advanced',
         blocks: [
             {
@@ -789,7 +800,14 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     },
                 ],
             },
+        ]
+    },
+    {
+        id: INTERNAL_CATEGORY,
+        name: 'Internal blocks', // Not to be placed manually!
+        blocks: [
             OP_PRELOAD_BLOCK,
+            OP_ON_BLOCK_RUN,
         ]
     }
 ];

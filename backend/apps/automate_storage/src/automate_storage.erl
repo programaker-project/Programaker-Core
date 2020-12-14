@@ -47,6 +47,9 @@
         , delete_running_process/1
         , update_program_status/2
         , is_user_allowed/3
+        , get_program_page/2
+        , add_user_asset/3
+        , get_user_asset_info/2
 
         , get_program_owner/1
         , get_program_pid/1
@@ -74,6 +77,8 @@
 
         , set_program_variable/3
         , get_program_variable/2
+        , set_widget_value/3
+        , get_widget_values_in_program/1
 
         , log_program_error/1
         , mark_successful_call_to_bridge/2
@@ -99,7 +104,6 @@
 
         , add_mnesia_node/1
         , register_table/2
-
 
           %% Utils
         , wrap_transaction/1
@@ -607,6 +611,37 @@ is_user_allowed(Owner, ProgramId, Action) ->
         { aborted, Reason } ->
             {error, Reason}
     end.
+
+-spec get_program_page(ProgramId :: binary(), Path :: binary()) -> {ok, #program_pages_entry{}} | {error, not_found}.
+get_program_page(ProgramId, Path) ->
+    T = fun() ->
+                case mnesia:read(?PROGRAM_PAGES_TABLE, {ProgramId, Path}) of
+                    [ Page ] -> {ok, Page};
+                    [] -> {error, not_found}
+                end
+        end,
+    wrap_transaction(mnesia:ets(T)).
+
+-spec add_user_asset(OwnerId :: owner_id(), AssetId :: binary(), MimeType :: mime_type()) -> ok.
+add_user_asset(OwnerId, AssetId, MimeType) ->
+    T = fun() ->
+                mnesia:write(?USER_ASSET_TABLE, #user_asset_entry{ asset_id={ OwnerId, AssetId }
+                                                                 , owner_id=OwnerId
+                                                                 , mime_type=MimeType
+                                                                 }, write)
+        end,
+    wrap_transaction(mnesia:transaction(T)).
+
+-spec get_user_asset_info(OwnerId :: owner_id(), AssetId :: binary()) -> { ok, #user_asset_entry{} } | {error, not_found}.
+get_user_asset_info(OwnerId, AssetId) ->
+    T = fun() ->
+                case mnesia:read(?USER_ASSET_TABLE, { OwnerId, AssetId }) of
+                    [] -> {error, not_found};
+                    [Entry] -> {ok, Entry}
+                end
+        end,
+    wrap_transaction(mnesia:ets(T)).
+
 
 -spec update_program(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
 update_program(Username, ProgramName, Content)->
@@ -2003,6 +2038,7 @@ store_new_program_content(Username, ProgramName,
                           #stored_program_content{ orig=ProgramOrig
                                                  , parsed=ProgramParsed
                                                  , type=ProgramType
+                                                 , pages=Pages
                                                  })->
     io:fwrite("\033[7m[store_new_program_content(Username, ProgramName,...)] To be deprecated\033[0m~n"),
 
@@ -2065,6 +2101,24 @@ store_new_program_content(Username, ProgramName,
 
                                           ok = mnesia:delete(?USER_PROGRAM_EVENTS_TABLE, ProgramId, write),
 
+                                          %% Refresh pages
+                                          %% Remove old pages
+                                          PagesInDb = mnesia:index_read(?PROGRAM_PAGES_TABLE, ProgramId, program_id),
+                                          ok = lists:foreach(fun (PageInDb) ->
+                                                                     ok = mnesia:delete_object(?PROGRAM_PAGES_TABLE, PageInDb, write)
+                                                             end,
+                                                             PagesInDb),
+
+                                          %% Add new pages
+                                          ok = lists:foreach(fun({Path, Page}) ->
+                                                                        ok = mnesia:write(?PROGRAM_PAGES_TABLE
+                                                                                         , #program_pages_entry{ page_id={ ProgramId, Path }
+                                                                                                               , program_id=ProgramId
+                                                                                                               , contents=Page
+                                                                                                               }
+                                                                                         , write)
+                                                                end, maps:to_list(Pages)),
+
                                           { ok, ProgramId }
                                   end
                           end
@@ -2084,6 +2138,7 @@ store_new_program_content(ProgramId,
                           #stored_program_content{ orig=ProgramOrig
                                                  , parsed=ProgramParsed
                                                  , type=ProgramType
+                                                 , pages=Pages
                                                  })->
     CurrentTime = erlang:system_time(second),
     Transaction = fun() ->
@@ -2099,6 +2154,24 @@ store_new_program_content(ProgramId,
                                                                               , last_upload_time=CurrentTime
                                                                               }, write),
                                   ok = mnesia:delete(?USER_PROGRAM_EVENTS_TABLE, ProgramId, write),
+
+                                  %% Refresh pages
+                                  %% Remove old pages
+                                  PagesInDb = mnesia:index_read(?PROGRAM_PAGES_TABLE, ProgramId, program_id),
+                                  ok = lists:foreach(fun (PageInDb) ->
+                                                             ok = mnesia:delete_object(?PROGRAM_PAGES_TABLE, PageInDb, write)
+                                                    end,
+                                               PagesInDb),
+
+                                  %% Add new pages
+                                  ok = lists:foreach(fun({Path, Contents}) ->
+                                                             ok = mnesia:write(?PROGRAM_PAGES_TABLE
+                                                                              , #program_pages_entry{ page_id={ ProgramId, Path }
+                                                                                                    , program_id=ProgramId
+                                                                                                    , contents= Contents
+                                                                                                    }
+                                                                              , write)
+                                                     end, maps:to_list(Pages)),
 
                                   { ok, ProgramId }
                           end
@@ -2182,6 +2255,33 @@ set_program_variable(ProgramId, Key, Value) ->
             io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
     end.
+
+-spec set_widget_value(ProgramId :: binary(), WidgetId :: binary(), Value :: any()) -> ok.
+set_widget_value(ProgramId, WidgetId, Value) ->
+    Transaction = fun() ->
+                          mnesia:write(?PROGRAM_WIDGET_VALUE_TABLE, #program_widget_value_entry{ widget_id={ProgramId, WidgetId}
+                                                                                               , program_id=ProgramId
+                                                                                               , value=Value
+                                                                                               },
+                                       write)
+                  end,
+    wrap_transaction(mnesia:transaction(Transaction)).
+
+-spec get_widget_values_in_program(ProgramId :: binary()) -> {ok, #{ binary() => any() }}.
+get_widget_values_in_program(ProgramId) ->
+    T = fun() ->
+                mnesia:index_read(?PROGRAM_WIDGET_VALUE_TABLE, ProgramId, program_id)
+        end,
+    case wrap_transaction(mnesia:ets(T)) of
+        {error, Reason}  ->
+            {error, Reason};
+        Values ->
+            MappedValues = maps:from_list(lists:map(fun(#program_widget_value_entry{ widget_id={ _, WidgetId }, value=Value }) ->
+                                                            { WidgetId, Value }
+                                                    end, Values)),
+            {ok, MappedValues}
+    end.
+
 
 
 -spec apply_group_metadata_changes(#user_group_entry{}, group_metadata_edition()) -> #user_group_entry{}.

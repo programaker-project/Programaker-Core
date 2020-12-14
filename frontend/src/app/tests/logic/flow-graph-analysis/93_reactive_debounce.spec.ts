@@ -55,7 +55,7 @@ describe('Flow-93: [Reactive] Debounce operation.', () => {
             (set-var latest (flow_get_thread_id))
             (wait-seconds 1)
             (if (= (get-var latest) (flow_get_thread_id))
-                ((log (flow-last-value "source" "0"))))
+                ((log (flow-last-value "source" 0))))
             `
         );
 

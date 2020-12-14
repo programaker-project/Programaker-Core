@@ -1,7 +1,12 @@
+import { FlowWorkspace } from "./flow_workspace";
+
 export type MessageType = 'integer' | 'float' | 'boolean' | 'string' | 'any' | 'pulse';
 
 export interface Position2D { x: number; y: number };
 export interface Area2D { x: number, y: number, width: number, height: number  };
+export interface ManipulableArea2D { left: number, top: number, right: number, bottom: number  };
+
+export interface Movement2D { x: number; y: number };
 
 export interface OutputPortDefinition {
     type?: MessageType;
@@ -48,7 +53,7 @@ export type OnDropdownExtended = ((block: FlowBlock,
                                   ) => void);
 
 export interface FlowBlockOptions {
-    message: string;
+    message?: string;
     title?: string;
     outputs?: OutputPortDefinition[];
     inputs?: InputPortDefinition[];
@@ -62,20 +67,35 @@ export interface FlowBlockOptions {
 
 export type Direction2D = 'up' | 'down' | 'left' | 'right';
 export type FlowBlockData = { type: string, value: any };
+export interface FlowBlockInitOpts {
+    position?: Position2D;
+    block_id?: string;
+    workspace?: FlowWorkspace;
+};
+
+export interface BlockContextAction {
+    title: string,
+    run: () => void,
+};
 
 export interface FlowBlock {
     dispose(): void;
-    render(canvas: SVGElement, position?: Position2D): SVGElement;
+    render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement;
     serialize(): FlowBlockData;
 
     getBodyElement(): SVGElement;
     getBodyArea(): Area2D;
 
     getOffset(): Position2D;
-    moveBy(distance: Position2D): void;
+    moveBy(distance: Position2D): FlowBlock[];
+    endMove(): FlowBlock[];
 
-    addConnection(direction: 'in' | 'out', input: number): void;
-    removeConnection(direction: 'in' | 'out', index: number): void;
+    onGetFocus(): void;
+    onLoseFocus(): void;
+
+    addConnection(direction: 'in' | 'out', input: number, block: FlowBlock): void;
+    removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): void;
+    getBlockContextActions(): BlockContextAction[];
 
     getSlots(): {[key: string]: string};
     getInputs(): InputPortDefinition[];
@@ -83,4 +103,21 @@ export interface FlowBlock {
     getPositionOfOutput(index: number, edge?: boolean): Position2D;
     getOutputType(index: number): string;
     getOutputRunwayDirection(): Direction2D;
+}
+
+export interface ContainerBlock {
+    update(): void;
+    removeContentBlock(block: FlowBlock): void;
+    addContentBlock(block: FlowBlock): void;
+    isPage: boolean;
+}
+
+export interface Resizeable {
+    resize: (dimensions: { width: number, height: number }) => void;
+    getBodyArea: () => Area2D;
+}
+
+export interface FlowActuator {
+    onclick(): void;
+    render(div: HTMLDivElement): HTMLElement;
 }

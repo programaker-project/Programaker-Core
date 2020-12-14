@@ -1,9 +1,11 @@
-import {
-    FlowBlock,
-    InputPortDefinition, OnIOSelected,
-    Area2D, Direction2D, Position2D, MessageType, FlowBlockData,
-} from './flow_block';
 import { BlockManager } from './block_manager';
+import {
+    Area2D, BlockContextAction, Direction2D, FlowBlock,
+
+    FlowBlockData, FlowBlockInitOpts, InputPortDefinition,
+    MessageType, OnIOSelected,
+    Position2D
+} from './flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -46,6 +48,10 @@ export interface EnumDirectValueOptions {
     on_select_requested?: OnSelectRequested,
 };
 
+export function isEnumDirectValueBlockData(opt: FlowBlockData): opt is EnumDirectValueFlowBlockData {
+    return opt.type === BLOCK_TYPE;
+}
+
 export class EnumDirectValue implements FlowBlock {
     options: EnumDirectValueOptions;
     value_id: string = undefined;
@@ -65,6 +71,7 @@ export class EnumDirectValue implements FlowBlock {
     private group: SVGElement;
     private node: SVGElement;
     private rect: SVGElement;
+    private rectShadow: SVGElement;
     private textBox: SVGElement;
     private canvas: SVGElement;
     private _defaultText: string;
@@ -99,7 +106,6 @@ export class EnumDirectValue implements FlowBlock {
 
         const block = new EnumDirectValue(options);
 
-        console.log("Val", data.value);
         block.value_id = data.value.value_id;
         block._defaultText = data.value.value_text;
 
@@ -137,7 +143,7 @@ export class EnumDirectValue implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
-    public moveBy(distance: {x: number, y: number}) {
+    public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
         }
@@ -145,7 +151,16 @@ export class EnumDirectValue implements FlowBlock {
         this.position.x += distance.x;
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+
+        return [];
     }
+
+    public endMove(): FlowBlock[] {
+        return [];
+    }
+
+    public onGetFocus() {}
+    public onLoseFocus() {}
 
     public addConnection(direction: 'in' | 'out', _index: number) {
         if (direction === 'in') {
@@ -154,6 +169,10 @@ export class EnumDirectValue implements FlowBlock {
     }
 
     public removeConnection(_direction: 'in' | 'out', _index: number) {
+    }
+
+    public getBlockContextActions(): BlockContextAction[] {
+        return [];
     }
 
     public getSlots(): {[key: string]: string} {
@@ -249,14 +268,15 @@ export class EnumDirectValue implements FlowBlock {
                                                 + box_width/2
                                                 - ((this.textBox as any).getBBox().width/2)) + "");
         this.rect.setAttributeNS(null, 'width', box_width + "");
+        this.rectShadow.setAttributeNS(null, 'width', box_width + "");
     }
 
-    public render(canvas: SVGElement, position?: {x: number, y: number}): SVGElement {
+    public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group }
 
         this.canvas = canvas;
-        if (position) {
-            this.position = { x: position.x, y: position.y };
+        if (initOpts.position) {
+            this.position = { x: initOpts.position.x, y: initOpts.position.y };
         }
         else {
             this.position = {x: 0, y: 0};
@@ -265,8 +285,9 @@ export class EnumDirectValue implements FlowBlock {
         const y_padding = 5; // px
 
         this.group = document.createElementNS(SvgNS, 'g');
-        this.node = document.createElementNS(SvgNS, 'a');
+        this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
+        this.rectShadow = document.createElementNS(SvgNS, 'rect');
         this.textBox = document.createElementNS(SvgNS, 'text');
 
         this.group.setAttribute('class', 'flow_node direct_value_node');
@@ -277,6 +298,7 @@ export class EnumDirectValue implements FlowBlock {
         this.textBox.setAttributeNS(null, 'x', "0");
         this.textBox.setAttributeNS(null, 'y', "0");
 
+        this.node.appendChild(this.rectShadow);
         this.node.appendChild(this.rect);
         this.node.appendChild(this.textBox);
         this.group.appendChild(this.node);
@@ -344,8 +366,15 @@ export class EnumDirectValue implements FlowBlock {
         this.rect.setAttributeNS(null, 'y', "0");
         this.rect.setAttributeNS(null, 'width', box_width + "");
         this.rect.setAttributeNS(null, 'height', box_height + "");
-
         this.rect.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
+
+
+        this.rectShadow.setAttributeNS(null, 'class', "body_shadow");
+        this.rectShadow.setAttributeNS(null, 'x', "0");
+        this.rectShadow.setAttributeNS(null, 'y', "0");
+        this.rectShadow.setAttributeNS(null, 'width', box_width + "");
+        this.rectShadow.setAttributeNS(null, 'height', box_height + "");
+        this.rectShadow.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
 
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 

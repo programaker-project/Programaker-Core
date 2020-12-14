@@ -593,7 +593,106 @@ get_versioning(Nodes) ->
                                                          {user_group_entry, Id, Name, CanonicalName, Public, 0}
                                                  end,
                                                  [ id, name, canonical_name, public, creation_time ],
-                                                 user_group_entry)
+                                                 user_group_entry
+                                                )
+                        end
+                }
+
+                %% Add groups creation time
+              , #database_version_transformation
+                { id=19
+                , apply=fun() ->
+
+                                {atomic, ok} = mnesia:create_table(?PROGRAM_PAGES_TABLE,
+                                                                   [ { attributes, [ page_id, program_id, contents ] }
+                                                                   , { disc_copies, Nodes }
+                                                                   , { record_name, program_pages_entry }
+                                                                   , { type, set }
+                                                                   , { index, [ program_id ] }
+                                                                   ]),
+
+                                    ok = mnesia:wait_for_tables([ ?PROGRAM_PAGES_TABLE
+                                                                ],
+                                                                automate_configuration:get_table_wait_time())
+
+                        end
+                }
+
+                %% Add widget's last value table
+              , #database_version_transformation
+                { id=20
+                , apply=fun() ->
+
+                                {atomic, ok} = mnesia:create_table(?PROGRAM_WIDGET_VALUE_TABLE,
+                                                                   [ { attributes, [ widget_id, program_id, value ] }
+                                                                   , { disc_copies, Nodes }
+                                                                   , { record_name, program_widget_value_entry }
+                                                                   , { type, set }
+                                                                   , { index, [ program_id ] }
+                                                                   ]),
+
+                                    ok = mnesia:wait_for_tables([ ?PROGRAM_WIDGET_VALUE_TABLE
+                                                                ],
+                                                                automate_configuration:get_table_wait_time())
+
+                        end
+                }
+
+                %% Add asset table time and re-structure the asset directories
+              , #database_version_transformation
+                { id=21
+                , apply=fun() ->
+
+                                {atomic, ok} = mnesia:create_table(?USER_ASSET_TABLE,
+                                                                   [ { attributes, [ asset_id, owner_id, mime_type ] }
+                                                                   , { disc_copies, Nodes }
+                                                                   , { record_name, user_asset_entry }
+                                                                   , { type, set }
+                                                                   , { index, [ owner_id ] }
+                                                                   ]),
+
+                                ok = mnesia:wait_for_tables([ ?USER_ASSET_TABLE
+                                                            ],
+                                                            automate_configuration:get_table_wait_time()),
+
+                                %% Update user/group picture paths
+                                {atomic, ok} = mnesia:transaction(
+                                                 fun() ->
+                                                         Migrate = fun(Tab, AssetDirectory) ->
+                                                                           G = mnesia:all_keys(Tab),
+                                                                           io:fwrite("~p ~p~n", [length(G), AssetDirectory]),
+
+                                                                           GetOldPath = fun(Id) ->
+                                                                                                list_to_binary([ automate_configuration:asset_directory(list_to_binary(["public/", AssetDirectory, "/"]))
+                                                                                                               , "/", Id
+                                                                                                               ])
+                                                                                        end,
+
+                                                                           HasPicture = (
+                                                                             fun(Id) ->
+                                                                                     Path = GetOldPath(Id),
+                                                                                     filelib:is_regular(Path)
+                                                                             end),
+
+                                                                           WithPicture = lists:filter(HasPicture, G),
+                                                                           io:fwrite("~p ~p with old picture~n", [length(WithPicture), AssetDirectory]),
+
+                                                                           ok = lists:foreach(
+                                                                                  fun(Id) ->
+                                                                                          io:fwrite("Updating ~p~n", [Id]),
+                                                                                          OldPath = GetOldPath(Id),
+                                                                                          TmpPath = list_to_binary([OldPath, ".tmp"]),
+                                                                                          NewPath = list_to_binary([OldPath, "/picture"]),
+
+                                                                                          ok = file:rename(OldPath, TmpPath),
+                                                                                          ok = filelib:ensure_dir(NewPath),
+                                                                                          ok = file:rename(TmpPath, NewPath)
+
+                                                                                  end, WithPicture)
+                                                                   end,
+                                                         ok = Migrate(?REGISTERED_USERS_TABLE, "users"),
+                                                         ok = Migrate(?USER_GROUPS_TABLE, "groups")
+                                                 end)
                         end
                 }
               ]

@@ -119,7 +119,7 @@ accept_json_program(Req, State) ->
 %% PUT handler
 update_program(Req, State=#state{program_id=ProgramId}) ->
     {ok, Body, Req1} = ?UTILS:read_body(Req),
-    Parsed = [jiffy:decode(Body, [return_maps])],
+    Parsed = jiffy:decode(Body, [return_maps]),
     Program = decode_program(Parsed),
     case automate_rest_api_backend:update_program_by_id(ProgramId, Program) of
         ok ->
@@ -163,11 +163,15 @@ decode_program_metadata([#{ <<"name">> := ProgramName
                                     }.
 
 
-decode_program([#{ <<"type">> := ProgramType
-                 , <<"orig">> := ProgramOrig
-                 , <<"parsed">> := ProgramParsed
-                 }]) ->
+decode_program(P=#{ <<"type">> := ProgramType
+                  , <<"orig">> := ProgramOrig
+                  , <<"parsed">> := ProgramParsed
+                  }) ->
     #program_content { type=ProgramType
                      , orig=ProgramOrig
                      , parsed=ProgramParsed
+                     , pages=case P of
+                                 #{ <<"pages">> := Pags } -> Pags;
+                                 _ -> #{}
+                             end
                      }.

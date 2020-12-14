@@ -24,6 +24,7 @@
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/nprogress/nprogress.css",
+              "node_modules/huebee/dist/huebee.min.css",
               "src/styles.scss",
               "src/material_theme.scss"
             ],
@@ -34,7 +35,8 @@
               "node_modules/scratch-blocks/blocks_compressed.js",
               "node_modules/scratch-blocks/blocks_compressed_vertical.js",
               "node_modules/fuse.js/dist/fuse.min.js",
-              "node_modules/nprogress/nprogress.js"
+              "node_modules/nprogress/nprogress.js",
+              "node_modules/huebee/dist/huebee.pkgd.min.js"
             ]
           },
           "configurations": {
@@ -125,11 +127,13 @@
               "node_modules/scratch-blocks/blocks_compressed.js",
               "node_modules/scratch-blocks/blocks_compressed_vertical.js",
               "node_modules/fuse.js/dist/fuse.min.js",
-              "node_modules/nprogress/nprogress.js"
+              "node_modules/nprogress/nprogress.js",
+              "node_modules/huebee/dist/huebee.pkgd.min.js"
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/nprogress/nprogress.css",
+              "node_modules/huebee/dist/huebee.min.css",
               "src/styles.scss",
               "src/material_theme.scss"
             ],

@@ -3,31 +3,72 @@ import { BridgeService } from '../bridges/bridge.service';
 import { ResolvedBlockArgument, ResolvedCustomBlock, ResolvedDynamicBlockArgument } from '../custom_block';
 import { CustomBlockService } from '../custom_block.service';
 import { iconDataToUrl } from '../utils';
-import { AtomicFlowBlock } from './atomic_flow_block';
+import { AtomicFlowBlock, isAtomicFlowBlockOptions } from './atomic_flow_block';
 import { InputPortDefinition, MessageType, OutputPortDefinition } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
 import { Toolbox } from './toolbox';
 import { BaseToolboxDescription } from './base_toolbox_description';
 import { EnvironmentService } from 'app/environment.service';
+import { UiToolboxDescription } from './ui-blocks/ui_toolbox_description';
+import { UiFlowBlock, isUiFlowBlockOptions } from './ui-blocks/ui_flow_block';
+import { UiSignalService } from 'app/services/ui-signal.service';
+import { Session } from 'app/session';
+import { ContainerFlowBlock, isContainerFlowBlockOptions } from './ui-blocks/container_flow_block';
+import { ConnectionService } from 'app/connection.service';
+import { ToolboxFlowButton } from './toolbox-flow-button';
+import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 
 
-export function buildBaseToolbox(baseElement: HTMLElement, workspace: FlowWorkspace): Toolbox {
-    const tb = Toolbox.BuildOn(baseElement, workspace);
+export function buildBaseToolbox(baseElement: HTMLElement,
+                                 workspace: FlowWorkspace,
+                                 uiSignalService: UiSignalService,
+                                 session: Session,
+                                ): Toolbox {
+    const tb = Toolbox.BuildOn(baseElement, workspace, uiSignalService, session);
 
-    for (const category of BaseToolboxDescription) {
+    for (const category of [...UiToolboxDescription, ...BaseToolboxDescription]) {
         tb.setCategory({ id: category.id, name: category.name });
         for (const block of category.blocks) {
-            tb.addBlockGenerator((manager) => {
+            tb.addBlock(block);
 
-                const desc = Object.assign({
-                    on_io_selected: manager.onIoSelected.bind(manager),
-                    on_dropdown_extended: manager.onDropdownExtended.bind(manager),
-                    on_inputs_changed: manager.onInputsChanged.bind(manager),
-                }, block);
+            if (block.is_internal) {
+                continue; // Skip
+            }
 
-                return new AtomicFlowBlock(desc);
-            }, category.id);
+            if (isAtomicFlowBlockOptions(block)) {
+                tb.addBlockGenerator((manager) => {
 
+                    const desc = Object.assign({
+                        on_io_selected: manager.onIoSelected.bind(manager),
+                        on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+                        on_inputs_changed: manager.onInputsChanged.bind(manager),
+                    }, block);
+
+                    return new AtomicFlowBlock(desc);
+                }, category.id);
+            }
+            else {
+                tb.addBlockGenerator((manager) => {
+                    const desc = Object.assign({
+                        on_io_selected: manager.onIoSelected.bind(manager),
+                        on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+                        on_inputs_changed: manager.onInputsChanged.bind(manager),
+                    }, block);
+
+                    if (isContainerFlowBlockOptions(desc)) {
+                        return new ContainerFlowBlock(desc, uiSignalService);
+                    }
+                    // This is a more generic class. It has to be checked after
+                    // the more specific ones so they have a chance of matching.
+                    else if (isUiFlowBlockOptions(desc)) {
+                        return new UiFlowBlock(desc, uiSignalService);
+                    }
+                    else {
+                        throw new Error("Unknown block options: " + JSON.stringify(block))
+                    }
+                }, category.id);
+            }
         }
     }
 
@@ -40,9 +81,15 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                                              bridgeService: BridgeService,
                                              environmentService: EnvironmentService,
                                              programId: string,
+                                             uiSignalService: UiSignalService,
+                                             connectionService: ConnectionService,
+                                             session: Session,
+                                             dialog: MatDialog,
+                                             triggerToolboxReload: () => void,
                                             ): Promise<Toolbox> {
-    const base = buildBaseToolbox(baseElement, workspace);
+    const base = buildBaseToolbox(baseElement, workspace, uiSignalService, session);
 
+    const availableConnectionsQuery = connectionService.getAvailableBridgesForNewConnectionOnProgram(programId);
     const data = await bridgeService.listUserBridges();
 
     const bridges = data.bridges;
@@ -63,19 +110,57 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
             icon = iconDataToUrl(environmentService, bridge.icon, bridge.id);
         }
 
+        const [message, translationTable] = get_block_message(block);
+
+        let subkey = undefined;
+        if (block.subkey) {
+            subkey = {
+                type: 'argument',
+                index: translationTable[block.subkey.index + 1],
+            };
+        }
+
         base.addBlockGenerator((manager) => {
             return new AtomicFlowBlock({
                 icon: icon,
-                message: get_block_message(block),
+                message: message,
                 block_function: 'services.' + bridge.id + '.' + block.function_name,
                 type: (block.block_type as any),
                 inputs: get_block_inputs(block),
                 outputs: get_block_outputs(block),
+                subkey: subkey,
                 on_io_selected: manager.onIoSelected.bind(manager),
                 on_dropdown_extended: manager.onDropdownExtended.bind(manager),
                 on_inputs_changed: manager.onInputsChanged.bind(manager),
             })
         }, block.service_port_id);
+    }
+
+    const availableBridges = await availableConnectionsQuery;
+    for (const bridge of availableBridges) {
+        base.addActuator(() =>
+            new ToolboxFlowButton({
+                message: "Connect to " + bridge.name,
+                action: () => {
+                    const dialogRef = dialog.open(AddConnectionDialogComponent, {
+                        disableClose: false,
+                        data: {
+                            programId: programId,
+                            bridgeInfo: bridge,
+                        }
+                    });
+
+                    dialogRef.afterClosed().subscribe(async (result) => {
+                        if (!result) {
+                            console.log("Cancelled");
+                            return;
+                        }
+
+                        console.debug("Reloading toolbox...");
+                        triggerToolboxReload();
+                    });
+                }
+            }), bridge.id);
     }
 
     return base;
@@ -100,21 +185,28 @@ function get_output_indexes(block: ResolvedCustomBlock): number[] {
     return output_indexes;
 }
 
-function get_block_message(block: ResolvedCustomBlock): string {
+function get_block_message(block: ResolvedCustomBlock): [string, number[]] {
     const output_indexes = get_output_indexes(block);
 
-    return block.message.replace(/%(\d+)/g, (_match, digits) => {
+    const translationTable = [];
+    let offset = 0;
+
+    const message = block.message.replace(/%(\d+)/g, (_match, digits) => {
         const num = parseInt(digits);
         if (output_indexes.indexOf(num - 1) < 0) { // %num are 1-indexed
-            return `%i${digits}`;
+            translationTable[num] = num - offset;
+            return `%i${num - offset}`;
         }
         else {
+            offset += 1;
             if (output_indexes.length !== 1) {
                 console.error('TODO: Index output remapping', block);
             }
             return '%o1';
         }
     });
+
+    return [message, translationTable];
 }
 
 function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {

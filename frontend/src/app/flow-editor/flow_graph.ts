@@ -8,6 +8,7 @@ export interface FlowGraphEdge {
 export interface FlowGraphNode {
     data: FlowBlockData,
     position: Position2D,
+    container_id?: string | null,
 };
 
 export interface FlowGraph {
@@ -18,6 +19,11 @@ export interface FlowGraph {
 // Compiled graph
 export interface CompiledConstantArg {
     type: 'constant',
+    value: any,
+};
+
+export interface CompiledVariableArg {
+    type: 'variable' | 'list',
     value: any,
 };
 
@@ -46,7 +52,12 @@ export interface CompiledBlockArgBlock {
     value: CompiledBlock[]
 }
 
-export type CompiledBlockArg = CompiledBlockArgBlock | CompiledConstantArg;
+interface CompiledBlockServiceCallSelectorArgs {
+    key: string,
+    subkey?: { type: 'argument', index: number },
+};
+
+export type CompiledBlockArg = CompiledBlockArgBlock | CompiledConstantArg | CompiledVariableArg;
 
 export type CompiledBlockArgList = CompiledBlockArg[];
 
@@ -62,18 +73,29 @@ export type CompiledBlockType = "wait_for_monitor"
     | "logging_add_log" | "flow_get_thread_id"
     | "jump_to_position"
     | "jump_to_block"
-    | "jump_point" // Not found on executable stage, will be removed in link phase
     | "op_fork_execution"
     | "trigger_when_all_completed"
     | "trigger_when_first_completed"
     | "op_preload_getter"
     | "data_lengthoflist" | "data_deleteoflist" | "data_addtolist"
 
+// Signal-only
+    | "on_data_variable_update"
+    | "op_on_block_run"
+
+// Not found on executable stage, will be removed in link phase
+    | "jump_point"
+
 // Operations should not appear on a properly compiled AST
     | "trigger_when_all_completed" | "trigger_when_first_completed"
     | "trigger_on_signal" | "trigger_when_all_true"
     ;
-export type CompiledBlockArgs = CompiledBlockArgMonitorDict | CompiledBlockArgCallServiceDict | CompiledBlockArgList;
+export type CompiledBlockArgs
+    = CompiledBlockArgMonitorDict
+    | CompiledBlockArgCallServiceDict
+    | CompiledBlockArgList
+    | CompiledBlockServiceCallSelectorArgs
+;
 
 export interface ContentBlock {
     contents: (CompiledBlock | ContentBlock)[],
@@ -84,6 +106,7 @@ export interface CompiledBlock {
     type: CompiledBlockType,
     args?: CompiledBlockArgs,
     contents?: (CompiledBlock | ContentBlock)[],
+    report_state?: boolean,
 };
 
 export type CompiledFlowGraph = CompiledBlock[];

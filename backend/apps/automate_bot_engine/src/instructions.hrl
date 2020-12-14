@@ -7,6 +7,7 @@
 -define(BLOCK_ID, <<"id">>).
 -define(VALUE, <<"value">>).
 -define(TEMPLATE_NAME_TYPE, <<"constant">>).
+-define(REPORT_STATE, <<"report_state">>).
 
 %%%% Variables
 -define(VARIABLE_BLOCK, <<"block">>).

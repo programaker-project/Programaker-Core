@@ -1,0 +1,66 @@
+<h2 class="dialog-title" mat-dialog-title>
+    <mat-icon>link</mat-icon>
+    <span class="dialog-name">Link</span>
+</h2>
+
+<section class="link-settings">
+    <div class="data">
+        <mat-form-field appearance="standard">
+            <mat-label>Text</mat-label>
+            <input matInput [formControl]="text" placeholder="Text in link">
+        </mat-form-field>
+
+        <mat-form-field appearance="standard">
+            <mat-label>Link Target</mat-label>
+            <input matInput [formControl]="link" placeholder="https://programaker.com/...">
+            <mat-hint><span class="url-sample">http://...</span> or <span class="url-sample">mailto:some@mail.com</span></mat-hint>
+            <mat-error *ngIf="link.invalid">{{getUrlErrorMessage()}}</mat-error>
+        </mat-form-field>
+
+        <ul class="extra-options">
+            <li>
+                <mat-checkbox [(ngModel)]="openInTab">Open link in tab</mat-checkbox>
+            </li>
+            <li>
+                <mat-checkbox [(ngModel)]="customizeUnderline"
+                    (change)="onUpdateUnderlineOptions()">
+                    Customize link's underline
+                </mat-checkbox>
+
+                <ul *ngIf="customizeUnderline">
+                    <mat-checkbox [(ngModel)]="noUnderline" (change)="onUpdateUnderlineOptions()">No underline</mat-checkbox>
+                </ul>
+            </li>
+        </ul>
+
+        <div class='color-picker' *ngIf="customizeUnderline && (!noUnderline)">
+            <div class="description">
+                Underline color:
+            </div>
+            <input #underlineColorPicker [disabled]="noUnderline" class="color-input" />
+        </div>
+    </div>
+
+    <div class="accept-cancel">
+        <button mat-button mat-raised-button  class="cancel-button"
+            (click)="cancelChanges()">
+            <mat-icon>clear</mat-icon>
+            Cancel
+        </button>
+
+        <button mat-button mat-raised-button  class="cancel-button" color="warn"
+            (click)="removeLink()">
+            <mat-icon>link_off</mat-icon>
+            Remove link
+        </button>
+
+        <button #acceptSaveConfigButton mat-button mat-raised-button  class="save-button confirm-button"
+            [disabled]="link.invalid || text.invalid"
+            (click)="acceptChanges()">
+            <span class="load-bg"></span>
+            <mat-icon>save</mat-icon>
+            Accept changes
+        </button>
+    </div>
+
+</section>

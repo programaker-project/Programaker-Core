@@ -1,0 +1,125 @@
+<h2 class="dialog-title" mat-dialog-title>
+    <mat-icon>settings</mat-icon>
+    <span class="dialog-name">Block settings</span>
+</h2>
+
+<section class="block-settings">
+    <div class="background-configuration" *ngIf="allowedConfigurations.background">
+        <h3>Background configuration</h3>
+        <div class="section-contents">
+            <mat-radio-group #bgTypeSelector
+                [(ngModel)]="selectedBackgroundType"
+                (change)="onNewBgType($event)"
+            >
+                <mat-radio-button value="color">Color</mat-radio-button>
+                <!-- <mat-radio-button value="image">Image</mat-radio-button> -->
+                <mat-radio-button value="transparent">Transparent</mat-radio-button>
+            </mat-radio-group>
+
+            <div [class]="'color-picker ' + ((allowedConfigurations.background.color && selectedBackgroundType=='color') ? '' : 'hidden' ) ">
+                <input #bgColorPicker class="color-input" />
+            </div>
+        </div>
+    </div>
+
+    <div class="text-configuration" *ngIf="allowedConfigurations.text">
+        <h3>Text configuration</h3>
+        <div class="section-contents">
+            <div class='color-picker' *ngIf="allowedConfigurations.text.color">
+                <div class="description">
+                    Text color:
+                </div>
+                <input #textColorPicker class="color-input" />
+            </div>
+
+            <div class='font-size-picker' *ngIf="allowedConfigurations.text.fontSize">
+                <div class="description">
+                    Font size: <span #fontSizeValueViewer></span>px
+                </div>
+                <input #textFontSizePicker type="range" min="10" max="120" />
+            </div>
+
+            <div class='font-weight-picker' *ngIf="allowedConfigurations.text.fontWeight">
+                <div class="description">
+                    Boldness:
+                </div>
+                <mat-radio-group #fontWeightTakenSelector
+                    [(ngModel)]="fontWeightTaken"
+                    (change)="onNewFontWeightTaken($event)"
+                >
+                    <mat-radio-button value="super-light">SuperLight</mat-radio-button>
+                    <mat-radio-button value="light">Light</mat-radio-button>
+                    <mat-radio-button value="normal">Normal</mat-radio-button>
+                    <mat-radio-button value="bold">Bold</mat-radio-button>
+                    <mat-radio-button value="super-bold">SuperBold</mat-radio-button>
+                </mat-radio-group>
+            </div>
+
+            <div class='text-sample'>
+                <label>Result sample:</label>
+                <div #textSampleResult class="result">
+                    The quick brown fox jumps over the lazy dog
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-configuration" *ngIf="allowedConfigurations.body">
+        <h3>Element configuration</h3>
+        <div class="section-contents">
+            <div class="image-picker" *ngIf="allowedConfigurations.body.image">
+                <div class="avatar">
+                    <img #bodyImgPreview
+                        src="{{  bodyCurrentImage ? bodyCurrentImage : '/assets/icons/no-image.svg' }}"
+                        onError="this.src='/assets/icons/no-image.svg'" />
+                </div>
+                <button color="primary" class="picture-upload-button"
+                    (click)="bodyImgFileInput.click()"
+                    mat-raised-button>
+                    <mat-icon>edit</mat-icon> Upload {{ bodyCurrentImage ? ' a new ' : '' }} picture
+                </button>
+                <input hidden accept="image/*" type="file" #bodyImgFileInput (change)="previewImage($event)"/>
+            </div>
+
+            <div class="body-width-picker" *ngIf="allowedConfigurations.body.widthTaken">
+                <div class="description">
+                    Element width
+                </div>
+                <mat-radio-group #widthTakenSelector
+                    [(ngModel)]="widthTaken"
+                    (change)="onNewWidthTaken($event)"
+                >
+                    <mat-radio-button
+                        *ngFor="let width of allowedWidthTypes"
+                        [value]="width"
+                    >{{ width }}</mat-radio-button>
+                </mat-radio-group>
+                <div [class]="'width-sample ' + (widthTaken ? '' : 'hidden')" >
+                    <label>Width sample:</label>
+                    <div class="sample-container">
+                        <div #widthSampleResult class="result">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <div class="accept-cancel">
+        <button mat-button mat-raised-button  class="cancel-button"
+            (click)="cancelChanges()">
+            <mat-icon>clear</mat-icon>
+            Cancel
+        </button>
+
+        <button #acceptSaveConfigButton mat-button mat-raised-button  class="save-button confirm-button"
+            (click)="acceptChanges()">
+            <span class="load-bg"></span>
+            <mat-icon>save</mat-icon>
+            Accept changes
+        </button>
+    </div>
+
+</section>

@@ -32,10 +32,14 @@ import { unixMsToStr } from '../utils';
 import { Session } from '../session';
 import { BridgeService } from '../bridges/bridge.service';
 import { FlowGraph } from './flow_graph';
-import { EnumGetter, EnumValue } from './enum_direct_value';
+import { EnumValue } from './enum_direct_value';
 import { compile } from './graph_analysis';
 import { BrowserService } from 'app/browser.service';
 import { EnvironmentService } from 'app/environment.service';
+import { UiSignalService } from 'app/services/ui-signal.service';
+import { ContainerFlowBlock } from './ui-blocks/container_flow_block';
+import { UI_ICON } from './definitions';
+import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/renderers/responsive_page';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -44,7 +48,7 @@ import { EnvironmentService } from 'app/environment.service';
         BridgeService,
         ConnectionService, CustomBlockService, CustomSignalService,
         MonitorService, ProgramService, ServiceService, SessionService,
-        TemplateService
+        TemplateService, UiSignalService,
     ],
     styleUrls: [
         'flow-editor.component.css',
@@ -67,6 +71,8 @@ export class FlowEditorComponent implements OnInit {
 
     portraitMode: boolean;
     smallScreen: boolean;
+    pages: { name: string; url: string; }[];
+    workspaceElement: HTMLElement;
 
     constructor(
         private browser: BrowserService,
@@ -85,6 +91,7 @@ export class FlowEditorComponent implements OnInit {
         private connectionService: ConnectionService,
         private sessionService: SessionService,
         private bridgeService: BridgeService,
+        private uiSignalService: UiSignalService,
         private environmentService: EnvironmentService,
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
@@ -112,6 +119,13 @@ export class FlowEditorComponent implements OnInit {
                     this.route.params.pipe(
                         switchMap((params: Params) => {
                             this.programId = params['program_id'];
+
+                            // Note that configuring the UiSignal this way means
+                            // that it can be in a semi-initialized state, which
+                            // is not good. This should be fixed in the future
+                            // if we still need this same data.
+                            this.uiSignalService.setProgramId(this.programId);
+
                             return this.programService.getProgramById(params['program_id']).catch(err => {
                                 console.error("Error:", err);
                                 this.goBack();
@@ -124,7 +138,7 @@ export class FlowEditorComponent implements OnInit {
                                 this.load_program(program);
                                 resolve();
                             }).catch(err => {
-                                console.error("Error:", err);
+                                console.error(err);
                                 resolve();
                                 this.goBack();
                             });
@@ -142,7 +156,37 @@ export class FlowEditorComponent implements OnInit {
             this.workspace.load(program.orig as FlowGraph);
         }
 
+        this.workspace.center();
+
         this.initializeListeners();
+
+        const pages = this.workspace.getPages();
+        this.updateViewPages(Object.keys(pages));
+    }
+
+    addResponsivePage() {
+        const block = new ContainerFlowBlock({
+            icon: UI_ICON,
+            type: 'ui_flow_block',
+            subtype: 'container_flow_block',
+            id: 'responsive_page_holder',
+            builder: ResponsivePageBuilder,
+            gen_tree: ResponsivePageGenerateTree,
+            isPage: true,
+        }, this.uiSignalService);
+
+        const blockId = this.workspace.draw(block);
+
+        this.workspace.centerOnBlock(blockId);
+    }
+
+    updateViewPages(pages: string[]) {
+        this.pages = pages.map(page => { return { name: page, url: this.programService.getPageUrl(this.programId, page) } });
+    }
+
+    openDefaultPage() {
+        const url = this.programService.getPageUrl(this.programId, '/');
+        let res = window.open(url,'_blank', 'noopener,noreferrer');
     }
 
     initializeListeners() {
@@ -172,25 +216,55 @@ export class FlowEditorComponent implements OnInit {
     }
 
     async injectWorkspace() {
-        const workspaceElement = document.getElementById('workspace');
+        this.workspaceElement = document.getElementById('workspace');
         const programHeaderElement = document.getElementById('program-header');
 
         this.browser.window.onresize = (() => {
-            this.calculate_size(workspaceElement);
+            this.calculate_size(this.workspaceElement);
             this.calculate_program_header_size(programHeaderElement);
             this.workspace.onResize();
             this.toolbox.onResize();
         });
-        this.calculate_size(workspaceElement);
+        this.calculate_size(this.workspaceElement);
         this.calculate_program_header_size(programHeaderElement);
 
-        this.workspace = FlowWorkspace.BuildOn(workspaceElement, this.getEnumValues.bind(this));
-        this.toolbox = await fromCustomBlockService(workspaceElement, this.workspace,
+        this.workspace = FlowWorkspace.BuildOn(this.workspaceElement,
+                                               this.getEnumValues.bind(this),
+                                               this.dialog,
+                                               this.programId,
+                                               this.programService,
+                                              );
+        this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
                                                     this.customBlockService,
                                                     this.bridgeService,
                                                     this.environmentService,
                                                     this.program.id,
+                                                    this.uiSignalService,
+                                                    this.connectionService,
+                                                    this.session,
+                                                    this.dialog,
+                                                    this.reloadToolbox.bind(this),
                                                    );
+        this.workspace.setToolbox(this.toolbox);
+    }
+
+    async reloadToolbox() {
+        const old = this.toolbox;
+        this.toolbox = null;
+        old.dispose();
+
+        this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
+                                                    this.customBlockService,
+                                                    this.bridgeService,
+                                                    this.environmentService,
+                                                    this.program.id,
+                                                    this.uiSignalService,
+                                                    this.connectionService,
+                                                    this.session,
+                                                    this.dialog,
+                                                    this.reloadToolbox.bind(this),
+                                                   );
+        this.workspace.setToolbox(this.toolbox);
     }
 
     async getEnumValues(enum_namespace: string, enum_name: string): Promise<EnumValue[]> {
@@ -211,7 +285,7 @@ export class FlowEditorComponent implements OnInit {
 
         const window_height = Math.max(document.documentElement.clientHeight, this.browser.window.innerHeight || 0);
 
-        workspace.style.height = (window_height - header_end) + 'px';
+        workspace.style.height = (window_height - header_end - 1) + 'px';
     }
 
     calculate_program_header_size(programHeader: HTMLElement) {
@@ -252,6 +326,8 @@ export class FlowEditorComponent implements OnInit {
 
     async sendProgram(): Promise<boolean> {
         const graph = this.workspace.getGraph();
+        const pages = this.workspace.getPages();
+        this.updateViewPages(Object.keys(pages));
 
         const t0 = new Date();
         const compiled_program = compile(graph);
@@ -267,6 +343,7 @@ export class FlowEditorComponent implements OnInit {
         const program = {
             type: 'flow_program' as ProgramType,
             parsed: { blocks: compiled_program, variables: [] },
+            pages: pages,
             orig: graph,
             id: this.programId,
         };

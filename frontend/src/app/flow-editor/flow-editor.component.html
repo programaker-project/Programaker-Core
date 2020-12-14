@@ -38,6 +38,22 @@
             (click)="stopThreadsProgram()" mat-button>
             <mat-icon>stop</mat-icon> Stop all
         </button>
+
+        <button id="navigateToPageControls" color="secondary"
+            *ngIf="workspace && workspace.hasPages"
+            [disabled]="!pages || pages.length === 0"
+            (click)="openDefaultPage()"
+            mat-button>
+            <mat-icon>launch</mat-icon>Open web
+        </button>
+
+        <button id="addResponsiveGridControls" color="secondary"
+            *ngIf="workspace && !workspace.hasPages"
+            (click)="addResponsivePage()"
+            mat-button>
+            <mat-icon>grid_on</mat-icon>Add web UI
+        </button>
+
         <!-- Advanced functions, on a menu -->
         <button id="advancedProgramControls" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
@@ -51,7 +67,6 @@
                 Tags
             </button>
         </mat-menu>
-
 
         <!-- Dangerous stuff, on its own -->
         <button id="program-delete-button" color="warn"

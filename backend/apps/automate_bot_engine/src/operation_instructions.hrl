@@ -45,6 +45,7 @@
 -define(COMMAND_SET_VARIABLE, <<"data_setvariableto">>).
 -define(COMMAND_CHANGE_VARIABLE, <<"data_changevariableby">>).
 -define(COMMAND_DATA_VARIABLE, <<"data_variable">>).
+-define(COMMAND_DATA_VARIABLE_ON_CHANGE, <<"on_data_variable_update">>).
 
 %% List control
 -define(COMMAND_ADD_TO_LIST, <<"data_addtolist">>).
@@ -62,6 +63,7 @@
 %% Introduced by compiler
 -define(FLOW_LAST_VALUE, <<"flow_last_value">>).
 -define(COMMAND_PRELOAD_GETTER, <<"op_preload_getter">>).
+-define(FLOW_ON_BLOCK_RUN, <<"op_on_block_run">>).
 
 %% Debugging
 -define(COMMAND_LOG_VALUE, <<"logging_add_log">>).

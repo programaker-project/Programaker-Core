@@ -67,8 +67,11 @@ start_link() ->
                         , {"/api/v0/programs/by-id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []}
                         , {"/api/v0/programs/by-id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
                         , {"/api/v0/programs/by-id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
+                        , {"/api/v0/programs/by-id/:program_id/ui-events", automate_rest_api_program_specific_ui_events, []}
+                        , {"/api/v0/programs/by-id/:program_id/ui-values", automate_rest_api_program_specific_ui_values, []}
                         , {"/api/v0/programs/by-id/:program_id/custom-blocks", automate_rest_api_program_custom_blocks, []}
                         , {"/api/v0/programs/by-id/:program_id/bridges/by-id/:bridge_id/callbacks/:callback", automate_rest_api_program_bridge_callback, []}
+                        , {"/api/v0/programs/by-id/:program_id/render/[...]", automate_rest_api_program_render, []}
 
                           %% Program operation
                         , {"/api/v0/users/id/:user_id/programs/id/:program_id/logs", automate_rest_api_program_logs, []} %% DEPR
@@ -80,6 +83,8 @@ start_link() ->
                         , {"/api/v0/programs/by-id/:program_id/tags", automate_rest_api_program_tags, []}
                         , {"/api/v0/programs/by-id/:program_id/stop-threads", automate_rest_api_program_stop, []}
                         , {"/api/v0/programs/by-id/:program_id/status", automate_rest_api_program_status, []}
+                        , {"/api/v0/programs/by-id/:program_id/assets", automate_rest_api_program_assets_root, []}
+                        , {"/api/v0/programs/by-id/:program_id/assets/by-id/:asset_id", automate_rest_api_program_assets_by_id, []}
 
                           %% Connection management
                         , {"/api/v0/users/id/:user_id/connections/available", automate_rest_api_connections_available_root, []}

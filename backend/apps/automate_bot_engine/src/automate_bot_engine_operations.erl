@@ -159,16 +159,36 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                 run_instruction(Instruction, Thread, Message)
             of
                 Result ->
+                    case {Result, Instruction} of
+                        { {ran_this_tick, Thread2}
+                        , #{ ?BLOCK_ID := BlockId
+                           , ?REPORT_STATE := true
+                           }
+                        } ->
+                            {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
+
+                            Value = case automate_bot_engine_variables:retrieve_instruction_memory(Thread2, BlockId) of
+                                        {error, not_found} -> none;
+                                        {ok, BlockMem} -> BlockMem
+                                    end,
+
+                            %% Trigger element update
+                            ok = automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => block_run_events
+                                                                                     , <<"subkey">> => BlockId
+                                                                                     , <<"value">> => Value
+                                                                                     } );
+                        _ -> ok
+                    end,
                     Result
             catch ErrorNS:Error:StackTrace ->
-                    io:fwrite("[ERROR][Thread][ProgId=~p,ThreadId=~p] Critical error: ~p~n~p~n",
+                    io:fwrite("[ERROR][Thread][ProgId=~p,ThreadId=~p] Critical error: ~0tp~n~0tp~n",
                               [ProgramId, ThreadId, {ErrorNS, Error}, StackTrace]),
 
                     UserId = case automate_storage:get_program_owner(ProgramId) of
                                  {ok, OwnerId} ->
                                      OwnerId;
                                  {error, Reason} ->
-                                     io:fwrite("[Double ERROR][ThreadId=~p] Now owner found: ~p~n",
+                                     io:fwrite("[Double ERROR][ThreadId=~p] Now owner found: ~0tp~n",
                                                [ThreadId, Reason]),
                                      none
                              end,
@@ -259,6 +279,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_SET_VARIABLE
 
     {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, Op),
     {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, VariableName, Value),
+    ok = notify_variable_update(VariableName, Thread3),
     {ran_this_tick, increment_position(Thread3)};
 
 
@@ -280,6 +301,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                                                  })
                      end,
     {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, VariableName, NewValue),
+    ok = notify_variable_update(VariableName, Thread3),
     {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
@@ -420,6 +442,8 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_ADD_TO_LIST
     ValueAfter = ValueBefore ++ [NewValue],
 
     {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, ListName, ValueAfter),
+
+    ok = notify_variable_update(ListName, Thread3),
     {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
@@ -444,6 +468,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
     ValueAfter = automate_bot_engine_naive_lists:remove_nth(ValueBefore, Index),
 
     {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, ListName, ValueAfter),
+    ok = notify_variable_update(ListName, Thread3),
     {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
@@ -454,6 +479,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
                  }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Thread2 } = automate_bot_engine_variables:set_program_variable(Thread, ListName, []),
+    ok = notify_variable_update(ListName, Thread2),
     {ran_this_tick, increment_position(Thread2)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
@@ -481,6 +507,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
     ValueAfter = automate_bot_engine_naive_lists:insert_nth(PaddedValue, Index, Value),
 
     {ok, Thread4 } = automate_bot_engine_variables:set_program_variable(Thread3, ListName, ValueAfter),
+    ok = notify_variable_update(ListName, Thread4),
     {ran_this_tick, increment_position(Thread4)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
@@ -507,6 +534,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
     ValueAfter = automate_bot_engine_naive_lists:replace_nth(PaddedValue, Index, Value),
 
     {ok, Thread4 } = automate_bot_engine_variables:set_program_variable(Thread3, ListName, ValueAfter),
+    ok = notify_variable_update(ListName, Thread4),
     {ran_this_tick, increment_position(Thread4)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
@@ -522,8 +550,28 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
     {Values, Thread2} = eval_args(Arguments, Thread, Op),
 
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, Thread3, _Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
-    {ran_this_tick, increment_position(Thread3)};
+    {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
+    Thread4 = case ?UTILS:get_block_id(Op) of
+                  none -> Thread3;
+                  BlockId -> automate_bot_engine_variables:set_instruction_memory(Thread3, Value, BlockId)
+              end,
+    {ran_this_tick, increment_position(Thread4)};
+
+run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
+                           , ?ARGUMENTS := Arguments
+                           }, Thread=#program_thread{ program_id=ProgramId },
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+    {Values, Thread2} = eval_args(Arguments, Thread, Operation),
+    {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
+    ok = automate_storage:set_widget_value(ProgramId, UiElement, Values),
+
+    %% Trigger element update
+    ok = automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => ui_events_show
+                                                             , <<"subkey">> => UiElement
+                                                             , <<"values">> => Values
+                                                             } ),
+    {ran_this_tick, increment_position(Thread2)};
+
 
 run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
                            , ?ARGUMENTS := Arguments
@@ -1247,11 +1295,18 @@ get_block_result(Op=#{ ?TYPE := <<"services.", _ServiceCall/binary>> }, Thread) 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
                      , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
                                       , ?SERVICE_ACTION := Action
-                                      , ?SERVICE_CALL_VALUES := #{ ?ARGUMENTS := Arguments }
+                                      , ?SERVICE_CALL_VALUES := Args
                                       }
                      }, Thread=#program_thread{ program_id=PID }) ->
 
     {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(PID),
+    Arguments = case Args of
+                    %% This first form was generated on the Scratch's
+                    %% serialization, but it's not found on the getters and it's
+                    %% redundant.
+                    #{ ?ARGUMENTS := A } -> A;
+                    _ -> Args
+                end,
 
     {Values, Thread2} = eval_args(Arguments, Thread, Op),
 
@@ -1336,3 +1391,15 @@ eval_args(Arguments, Thread, Op) ->
     %% regarding argument parsing arises. (This is considering the reader's
     %% native language is left-to-right, which might not be true...)
     {lists:reverse(RevValues), Thread2}.
+
+-spec notify_variable_update(VariableName :: binary(), #program_thread{}) -> ok | {error, _}.
+notify_variable_update(VariableName, #program_thread{ program_id=ProgramId }) ->
+    case automate_storage:get_program_from_id(ProgramId) of
+        {ok, #user_program_entry{ program_channel=ChannelId }} ->
+            automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => variable_events
+                                                                  %% This canonicalization is done also on the channel engine, but it's not saved to the subkey
+                                                                , <<"subkey">> => automate_channel_engine_utils:canonicalize_selector(VariableName)
+                                                                });
+        {error, Reason} ->
+            {error, Reason}
+    end.

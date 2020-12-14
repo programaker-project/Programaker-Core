@@ -13,20 +13,32 @@ type _IfElseOp = ['control_if_else', SimpleArrayAstArgument, SimpleArrayAstOpera
 type _ForkExecOp = ['op_fork_execution', SimpleArrayAstArgument[], SimpleArrayAstOperation[]]
 
 export type SimpleArrayAstArgument = SimpleArrayAstOperation | string | number
-export type SimpleArrayAstOperation = _AndOp | _EqualsOp
+export type SimpleArrayAstArgs = _AndOp | _EqualsOp
     | _CallServiceOp
     | _WaitForMonitorOp | _LastValueOp
     | _IfElseOp
     | _ForkExecOp
 ;
 
+export type SimpleArrayAstOperation = SimpleArrayAstArgs;
+
 export type SimpleArrayAst = SimpleArrayAstOperation[];
+
+const SLOT_OPS = {
+    data_variable: 'variable',
+    on_data_variable_update: 'variable',
+    data_setvariableto: 'variable',
+
+    data_lengthoflist: 'list',
+    data_deleteoflist: 'list',
+    data_addtolist: 'list',
+};
 
 function convert_argument(arg: SimpleArrayAstArgument): CompiledBlockArg {
     if ((typeof arg === 'string') || (typeof arg === 'number')) {
         return {
             type: 'constant',
-            value: arg + '',
+            value: arg,
         };
     }
 
@@ -53,7 +65,6 @@ function convert_contents(contents: SimpleArrayAstOperation[]): ContentBlock {
 }
 
 function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
-
     if (op[0] === 'wait_for_monitor') {
         return {
             type: op[0],
@@ -102,15 +113,28 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
         }
     }
 
-    const args: SimpleArrayAstArgument[] = op.slice(1);
+    if (op[0].startsWith('services.') && (!op[0].startsWith('services.ui.'))) {
+        return {
+            type: op[0],
+            args: {
+                key: op[0].split('.').reverse()[0]
+            },
+        };
+    }
 
-    if (typeof args !== 'object') {
-        throw new Error(`ASTCompilationError: Expected argument array, found: ${JSON.stringify(args)}. Check for errors on argument nesting`);
+    if (typeof op !== 'object') {
+        throw new Error(`ASTCompilationError: Expected argument array, found: ${JSON.stringify(op)}. Check for errors on argument nesting`);
+    }
+
+    const compiled_args = (op.slice(1) as SimpleArrayAstArgument[]).map(v => convert_argument(v));
+
+    if (SLOT_OPS[op[0]]) {
+        compiled_args[0].type = SLOT_OPS[op[0]];
     }
 
     return {
         type: op[0],
-        args: args.map(v => convert_argument(v)),
+        args: compiled_args,
         contents: []
     }
 }
@@ -122,6 +146,9 @@ export function gen_compiled(ast: SimpleArrayAst): CompiledFlowGraph {
 
 function canonicalize_arg(arg: CompiledBlockArg): CompiledBlockArg {
     if (arg.type === 'constant') {
+        return arg;
+    }
+    else if (arg.type === 'variable' || arg.type === 'list') {
         return arg;
     }
     else {
@@ -172,11 +199,13 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "operator_gt":
         case "data_setvariableto":
         case "data_variable":
+        case "on_data_variable_update":
         case "data_lengthoflist":
         case "flow_get_thread_id":
         case "data_deleteoflist":
         case "data_addtolist":
         case "op_preload_getter":
+        case "op_on_block_run":
             if (op.args) {
                 op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
             }
@@ -217,7 +246,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
 
         default:
             if (op.type.startsWith('services.')) {
-                if (op.args) {
+                if (op.args && Array.isArray(op.args)) {
                     op.args = (op.args as CompiledBlockArgList).map(arg => canonicalize_arg(arg));
                 }
                 if (op.contents) {
@@ -228,6 +257,8 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
                 console.warn(`Unknown operation: ${op.type}`);
             }
     }
+
+    delete op.report_state;
 
     return op;
 }

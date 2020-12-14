@@ -1,11 +1,11 @@
-import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
-import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
+import { AtomicFlowBlock, AtomicFlowBlockData, isAtomicFlowBlockData } from './atomic_flow_block';
+import { FlowGraph, FlowGraphNode } from './flow_graph';
 import { index_connections, reverse_index_connections, IndexedFlowGraphEdge, EdgeIndex } from './graph_utils';
-import { FlowEditorComponent } from './flow-editor.component';
-import { DirectValue, DirectValueFlowBlockData } from './direct_value';
-import { EnumDirectValue } from './enum_direct_value';
+import { DirectValue, DirectValueFlowBlockData, isDirectValueBlockData } from './direct_value';
+import { EnumDirectValue, isEnumDirectValueBlockData } from './enum_direct_value';
 import { uuidv4 } from './utils';
-import { OP_PRELOAD_BLOCK } from './base_toolbox_description';
+import { OP_ON_BLOCK_RUN, OP_PRELOAD_BLOCK } from './base_toolbox_description';
+import { isUiFlowBlockData, UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
 
 function graph_scan_nodes(graph: FlowGraph, check: (node_id: string, node: FlowGraphNode) => boolean): string[] {
     const results = [];
@@ -172,7 +172,7 @@ export function scan_upstream(graph: FlowGraph, source_id: string,
                 return branch_path;
             }
             else {
-                throw new Error('Unknown "scan" command: ' + result);
+                throw new Error('Unknown "scan" (upstream) command: ' + result);
             }
         }
 
@@ -212,7 +212,7 @@ export function scan_downstream(graph: FlowGraph, source_id: string,
                 return branch_path;
             }
             else {
-                throw new Error('Unknown "scan" command: ' + result);
+                throw new Error('Unknown "scan" (downstream) command: ' + result);
             }
         }
 
@@ -243,6 +243,21 @@ export function is_pulse_output(block: FlowGraphNode, index: number): boolean {
     }
     else if (block.data.type === EnumDirectValue.GetBlockType()){
         return false;
+    }
+    else if (block.data.type === UiFlowBlock.GetBlockType()){
+        const data = block.data as UiFlowBlockData;
+
+        if (!data.value.options) {
+            throw new Error(`No options found on ${JSON.stringify(block)}`)
+        }
+
+        const outputs = data.value.options.outputs;
+        if (!outputs[index]) {
+            throw new Error(`IndexError: Index (${index}) not found on outputs (${JSON.stringify(outputs)})`)
+        }
+
+        // If it has no pulse inputs its a source block
+        return outputs[index].type === 'pulse';
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
@@ -280,7 +295,7 @@ export function scan_pulse_upstream(graph: FlowGraph, source_id: string,
                 return branch_path;
             }
             else {
-                throw new Error('Unknown "scan" command: ' + result);
+                throw new Error('Unknown "scan" (pulse-upstream) command: ' + result);
             }
         }
 
@@ -604,3 +619,124 @@ export function lift_common_ops(graph: FlowGraph): FlowGraph {
     } while (updated);
     return graph;
 }
+
+function is_streaming_node(conn_index: EdgeIndex, rev_conn_index: EdgeIndex, graph: FlowGraph, nodeId: string): boolean {
+    const node = graph.nodes[nodeId];
+    if (isAtomicFlowBlockData(node.data)) {
+        const nodeHasPulseInputs = (rev_conn_index[nodeId] || []).some( (edge: IndexedFlowGraphEdge) => is_pulse_output( graph.nodes[edge.from.id], edge.from.output_index ) );
+
+        return !nodeHasPulseInputs;
+    }     
+    else if (isDirectValueBlockData(node.data) || isEnumDirectValueBlockData(node.data)) {
+        return true;
+    }
+    else if (isUiFlowBlockData(node.data)) {
+        const nodeHasPulseInputs = (rev_conn_index[nodeId] || []).some( (edge: IndexedFlowGraphEdge) => is_pulse_output( graph.nodes[edge.from.id], edge.from.output_index ) );
+
+        return !nodeHasPulseInputs;
+    }
+    else {
+        throw new Error(`Unexpected block type: ${node.data.type}`);
+    }
+}
+
+function is_stepped_node(conn_index: EdgeIndex, rev_conn_index: EdgeIndex, graph: FlowGraph, nodeId: string): boolean {
+    return !is_streaming_node(conn_index, rev_conn_index, graph, nodeId);
+}
+
+export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
+    // Detect flow blocks preceded by a stepping one
+    const backTransitions = [];
+
+    {
+        // Scope the indexes, as they'll be unusabe when we start updating the graph.
+        const conn_index = index_connections(graph);
+        const rev_conn_index = reverse_index_connections(graph);
+
+        for (const nodeId of Object.keys(graph.nodes)) {
+            if (is_streaming_node(conn_index, rev_conn_index, graph, nodeId)) {
+                for (const conn of rev_conn_index[nodeId] || []) {
+                    if (is_stepped_node(conn_index, rev_conn_index, graph, conn.from.id)) {
+                        backTransitions.push(graph.edges[conn.index]);
+                    }
+                }
+            }
+        }
+    }
+
+    for (const conn of backTransitions) {
+        // Mark origin block as report-state
+        const origSourceBlock = conn.from.id;
+        const origSourcePort = conn.from.output_index;
+        const source = graph.nodes[origSourceBlock];
+
+        if (isAtomicFlowBlockData(source.data)) {
+            source.data.value.report_state = true;
+        }
+
+        // Update connection to generate from a (virtual) on-block-update
+        const onBlockRunRef = uuidv4();
+
+        const [block_options, synth_in, synth_out] = AtomicFlowBlock.add_synth_io(OP_ON_BLOCK_RUN);
+        const on_run_op = {
+            type: AtomicFlowBlock.GetBlockType(),
+            value: {
+                options: block_options,
+                synthetic_input_count: synth_in,
+                synthetic_output_count: synth_out,
+            }
+        };
+
+        graph.nodes[onBlockRunRef] = { data: on_run_op, position: null };
+
+        conn.from.id = onBlockRunRef;
+        conn.from.output_index = 0;
+
+        // Add direct value to notify the on-block-update which block to monitor
+        const blockRunIdValue = uuidv4();
+
+        graph.nodes[blockRunIdValue] = { data: {
+            type: DirectValue.GetBlockType(),
+            value: {
+                type: 'string',
+                value: origSourceBlock,
+            }
+        }, position: null };
+
+        graph.edges.push({  
+            from: {
+                id: blockRunIdValue,
+                output_index: 0,
+            },
+            to: {
+                id: onBlockRunRef,
+                input_index: 0,
+            } 
+        });
+
+        // Add direct value for the output port
+        const blockRunPortIdxValue = uuidv4();
+
+        graph.nodes[blockRunPortIdxValue] = { data: {
+            type: DirectValue.GetBlockType(),
+            value: {
+                type: 'integer',
+                value: origSourcePort,
+            }
+        }, position: null };
+
+        graph.edges.push({  
+            from: {
+                id: blockRunPortIdxValue,
+                output_index: 0,
+            },
+            to: {
+                id: onBlockRunRef,
+                input_index: 1,
+            } 
+        });
+    }
+
+    return graph;
+}
+

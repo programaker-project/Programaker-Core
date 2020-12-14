@@ -90,6 +90,7 @@ start_program_launch_thread_and_disable_program_it_continues() ->
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
                                           , orig=?JUST_WAIT_PROGRAM_ORIG
+                                          , pages=#{}
                                           })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
@@ -166,6 +167,7 @@ start_program_and_disable_it_no_commands() ->
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
                                           , orig=?JUST_WAIT_PROGRAM_ORIG
+                                          , pages=#{}
                                           })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
@@ -207,6 +209,7 @@ start_program_disable_enable_and_launch_command()->
                                                     , <<"variables">> => ?JUST_WAIT_PROGRAM_VARIABLES
                                                     }
                                           , orig=?JUST_WAIT_PROGRAM_ORIG
+                                          , pages=#{}
                                           })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),

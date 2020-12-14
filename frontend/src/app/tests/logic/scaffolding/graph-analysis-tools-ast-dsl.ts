@@ -18,9 +18,11 @@ export const OP_TRANSLATIONS = {
     'wait-seconds': 'control_wait',
     'call-service': 'command_call_service',
     'preload': 'op_preload_getter',
+    'on-block-run': 'op_on_block_run',
 
     // Variables
     'set-var': 'data_setvariableto',
+    'on-var': 'on_data_variable_update',
     'get-var': 'data_variable',
     'flow-last-value': 'flow_last_value',
     'wait-for-monitor': 'wait_for_monitor',
@@ -109,36 +111,6 @@ function transform_call(args: any[]): any[] {
             args[1].service_call_values = args[1].values;
             delete args[1].values;
         }
-    }
-
-    if (op === 'data_variable') {
-        // Remove args, as they will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1);
-    }
-
-    if (op === 'data_lengthoflist') {
-        // Remove first arg, as it will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1, 1);
-    }
-
-    if (op === 'data_setvariableto') {
-        // Remove first arg, as it will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1, 1);
-    }
-
-    if (op === 'data_deleteoflist') {
-        // Remove first arg, as it will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1, 1);
-    }
-
-    if (op === 'data_addtolist') {
-        // Remove first arg, as it will go into the "slots"
-        // TODO: Send to slots
-        args.splice(1, 1);
     }
 
     if (op === 'op_fork_execution') {
@@ -294,6 +266,9 @@ function read(s: string, idx: number, linenum: number, colnum: number): [SimpleA
         op = token.join('');
         if (token.filter(c => is_digit(c)).length === token.length) { // All are digits
             op = parseInt(op);
+        }
+        else if (op.match(/(^\d*\.\d+$)|(^\d+\.\d$)/)) {
+            op = parseFloat(op);
         }
     }
     else {

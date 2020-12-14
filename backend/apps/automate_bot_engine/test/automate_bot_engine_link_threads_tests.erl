@@ -85,6 +85,7 @@ thread_link(OrigCall, ResultAction, ServiceId) ->
                                                     , <<"variables">> => []
                                                     }
                                           , orig= <<"">>
+                                          , pages=#{}
                                           })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),

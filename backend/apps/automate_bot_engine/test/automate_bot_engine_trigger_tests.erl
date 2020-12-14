@@ -118,6 +118,7 @@ save_to_test() ->
                                                                , <<"variables">> => []
                                                                }
                                                      , orig=undefined
+                                                     , pages=#{}
                                                      })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
@@ -178,6 +179,7 @@ trigger_with_time() ->
                                                                , <<"variables">> => []
                                                                }
                                                      , orig=undefined
+                                                     , pages=#{}
                                                      })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
@@ -237,6 +239,7 @@ trigger_with_tz_time() ->
                                                                , <<"variables">> => []
                                                                }
                                                      , orig=undefined
+                                                     , pages=#{}
                                                      })),
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),

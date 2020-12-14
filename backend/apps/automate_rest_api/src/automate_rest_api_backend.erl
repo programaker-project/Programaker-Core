@@ -217,12 +217,16 @@ lists_programs_from_username(Username) ->
 update_program(Username, ProgramName,
                #program_content{ orig=Orig
                                , parsed=Parsed
-                               , type=Type }) ->
+                               , type=Type
+                               , pages=Pages
+                               }) ->
 
     case automate_storage:update_program(Username, ProgramName,
                                          #stored_program_content{ orig=Orig
                                                                 , parsed=Parsed
-                                                                , type=Type }) of
+                                                                , type=Type
+                                                                , pages=Pages
+                                                                }) of
         { ok, ProgramId } ->
             automate_bot_engine_launcher:update_program(ProgramId);
         { error, Reason } ->
@@ -232,12 +236,16 @@ update_program(Username, ProgramName,
 update_program_by_id(ProgramId,
                      #program_content{ orig=Orig
                                      , parsed=Parsed
-                                     , type=Type }) ->
+                                     , type=Type
+                                     , pages=Pages
+                                     }) ->
 
     case automate_storage:update_program_by_id(ProgramId,
                                                #stored_program_content{ orig=Orig
                                                                       , parsed=Parsed
-                                                                      , type=Type }) of
+                                                                      , type=Type
+                                                                      , pages=Pages
+                                                                      }) of
         { ok, ProgramId } ->
             automate_bot_engine_launcher:update_program(ProgramId);
         { error, Reason } ->

@@ -1,21 +1,30 @@
 import { BlockExhibitor } from './block_exhibitor';
 import { BlockManager } from './block_manager';
-import { FlowBlock } from './flow_block';
+import { FlowBlock, Position2D, FlowBlockOptions, FlowActuator } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
+import { UiSignalService } from 'app/services/ui-signal.service';
+import { Session } from 'app/session';
+import { ADVANCED_CATEGORY, INTERNAL_CATEGORY } from './base_toolbox_description';
 
 export type BlockGenerator = (manager: BlockManager) => FlowBlock;
+export type ActuatorGenerator = () => FlowActuator;
 
 export class Toolbox {
-    baseElement: HTMLElement;
     toolboxDiv: HTMLDivElement;
     blockShowcase: HTMLDivElement;
-    workspace: FlowWorkspace;
     categories: { [key: string]: HTMLDivElement } = {};
+    categoryShortcuts: { [key: string]: HTMLLIElement } = {};
+    blocks: FlowBlockOptions[] = [];
+    categoryShortcutList: HTMLUListElement;
 
-    public static BuildOn(baseElement: HTMLElement, workspace: FlowWorkspace): Toolbox {
+    public static BuildOn(baseElement: HTMLElement,
+                          workspace: FlowWorkspace,
+                          uiSignalService: UiSignalService,
+                          session: Session,
+                         ): Toolbox {
         let toolbox: Toolbox;
         try {
-            toolbox = new Toolbox(baseElement, workspace);
+            toolbox = new Toolbox(baseElement, workspace, uiSignalService, session);
             toolbox.init();
         }
         catch(err) {
@@ -28,10 +37,11 @@ export class Toolbox {
     }
 
 
-    private constructor(baseElement: HTMLElement, workspace: FlowWorkspace) {
-        this.baseElement = baseElement;
-        this.workspace = workspace;
-    }
+    private constructor(private baseElement: HTMLElement,
+                        private workspace: FlowWorkspace,
+                        public uiSignalService: UiSignalService,
+                        private session: Session,
+                       ) { }
 
     onResize() {}
 
@@ -43,6 +53,10 @@ export class Toolbox {
         this.toolboxDiv = document.createElement('div');
         this.toolboxDiv.setAttribute('class', 'toolbox');
         this.baseElement.appendChild(this.toolboxDiv);
+
+        this.categoryShortcutList = document.createElement('ul');
+        this.categoryShortcutList.setAttribute('class', 'category-shortcut-list');
+        this.toolboxDiv.appendChild(this.categoryShortcutList);
 
         this.blockShowcase = document.createElement('div');
         this.blockShowcase.setAttribute('class', 'showcase');
@@ -57,8 +71,9 @@ export class Toolbox {
         }
     }
 
-    private getOrCreateCategory(cat:{ id: string, name: string }): [HTMLDivElement, boolean] {
+    private getOrCreateCategory(cat:{ id: string, name: string }): [HTMLDivElement, boolean, HTMLLIElement] {
         let category_div = this.categories[cat.id];
+        let categoryShortcut = this.categoryShortcuts[cat.id];
         let created_now = false;
 
         if (!category_div) {
@@ -80,18 +95,48 @@ export class Toolbox {
             };
 
             created_now = true;
+
+            categoryShortcut = this.categoryShortcuts[cat.id] = document.createElement('li');
+            categoryShortcut.setAttribute('class', 'empty');
+
+            const catName = document.createElement('div');
+            catName.setAttribute('class', 'category-name');
+            catName.innerText = cat.name;
+            categoryShortcut.appendChild(catName);
+
+            categoryShortcut.onclick = () => {
+                // Expand if it's collapsed
+                if (category_div.classList.contains('collapsed')) {
+                    category_div.classList.remove('collapsed');
+                }
+
+                // Then scroll to it
+                category_div.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest", });
+            };
+            this.categoryShortcutList.appendChild(categoryShortcut);
         }
 
-        return [category_div, created_now];
+        return [category_div, created_now, categoryShortcut];
     }
 
     addBlockGenerator(generator: BlockGenerator, category_id: string) {
-        const [category_div] = this.getOrCreateCategory({ id: category_id, name: category_id })
+        if (category_id === ADVANCED_CATEGORY) {
+            if (!this.session.tags.is_advanced) {
+                return; // Skip advaced blocks if the user has not activated them
+            }
+        }
+
+        if (category_id === INTERNAL_CATEGORY) {
+            return; // Don't show internal blocks
+        }
+
+        const [category_div, _created_now, category_shortcut] = this.getOrCreateCategory({ id: category_id, name: category_id })
         category_div.classList.remove('empty');
+        category_shortcut.classList.remove('empty');
 
         const block_exhibitor = BlockExhibitor.FromGenerator(generator, category_div);
         const element = block_exhibitor.getElement();
-        element.onmousedown = (ev: MouseEvent) => {
+        element.onmousedown = element.ontouchstart = (ev: MouseEvent | TouchEvent) => {
             try {
                 const rect = block_exhibitor.getInnerElementRect();
 
@@ -104,8 +149,14 @@ export class Toolbox {
                 element.classList.add('hidden');
                 this.toolboxDiv.classList.add('subsumed');
 
+                const pos = this.workspace._getPositionFromEvent(ev);
+                // Center rect on cursor
+                rect.x = pos.x - (rect.width / this.workspace.getInvZoomLevel()) / 2;
+                rect.y = pos.y - (rect.height / this.workspace.getInvZoomLevel()) / 2;
+
                 const block_id = this.workspace.drawAbsolute(block, rect);
-                (this.workspace as any)._mouseDownOnBlock(ev, block, (ev: MouseEvent) => {
+
+                (this.workspace as any)._mouseDownOnBlock(pos, block, (ev: Position2D) => {
 
                     element.classList.remove('hidden');
                     this.toolboxDiv.classList.remove('subsumed');
@@ -121,10 +172,54 @@ export class Toolbox {
                     }
 
                 });
+
+                if ((ev as TouchEvent).targetTouches) {
+                    // Redirect touch events to the canvas. If we don't do this,
+                    // the canvas won't receive touchmove or touchend events.
+                    ev.preventDefault();
+
+                    element.ontouchmove = (ev) => {
+                        ev.preventDefault();
+                        this.workspace.getCanvas().dispatchEvent(new TouchEvent('touchmove', {
+                            targetTouches: Array.from(ev.targetTouches)
+                        }));
+                    }
+                    element.ontouchend = (ev) => {
+                        element.ontouchmove = null;
+                        element.ontouchend = null;
+
+                        ev.preventDefault();
+                        this.workspace.getCanvas().dispatchEvent(new TouchEvent('touchend', {
+                            targetTouches: Array.from(ev.targetTouches)
+                        }));
+                    }
+                }
             }
             catch (err) {
                 console.error(err);
             }
         };
+    }
+
+    addActuator(generator: ActuatorGenerator, category_id: string) {
+        if (category_id === ADVANCED_CATEGORY) {
+            if (!this.session.tags.is_advanced) {
+                return; // Skip advaced blocks if the user has not activated them
+            }
+        }
+
+        const [category_div, _created_now, category_shortcut] = this.getOrCreateCategory({ id: category_id, name: category_id })
+        category_div.classList.remove('empty');
+        category_shortcut.classList.remove('empty');
+
+        const actuator = generator();
+        const element = actuator.render(category_div);
+        element.onclick = (ev: MouseEvent) => {
+            actuator.onclick();
+        };
+    }
+
+    addBlock(block: FlowBlockOptions) {
+        this.blocks.push(block);
     }
 }

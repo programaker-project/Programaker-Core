@@ -399,10 +399,11 @@ constant_val(Val) ->
      }.
 
 empty_thread() ->
+    {_, _, ProgramId} = automate_bot_engine_test_utils:create_anonymous_program(),
     #program_thread{ position = [1]
                    , program=[undefined]
                    , global_memory=#{}
                    , instruction_memory=#{}
-                   , program_id=binary:list_to_bin(uuid:to_string(uuid:uuid4()))
+                   , program_id=ProgramId
                    , thread_id=undefined
                    }.

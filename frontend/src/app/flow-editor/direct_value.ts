@@ -1,9 +1,10 @@
 import {
     FlowBlock,
     InputPortDefinition, OnIOSelected,
-    Area2D, Direction2D, Position2D, MessageType, FlowBlockData,
+    Area2D, Direction2D, Position2D, MessageType, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, BlockContextAction,
 } from './flow_block';
 import { BlockManager } from './block_manager';
+import { UiFlowBlock } from './ui-blocks/ui_flow_block';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -28,9 +29,14 @@ export interface DirectValueFlowBlockData extends FlowBlockData {
     value: DirectValueOptions,
 };
 
+export function isDirectValueBlockData(opt: FlowBlockData): opt is DirectValueFlowBlockData {
+    return opt.type === BLOCK_TYPE;
+}
+
 export class DirectValue implements FlowBlock {
     options: DirectValueOptions;
     value: string;
+    sinks: FlowBlock[] = [];
 
     constructor(options: DirectValueOptions) {
         this.options = options;
@@ -70,11 +76,14 @@ export class DirectValue implements FlowBlock {
     private group: SVGElement;
     private node: SVGElement;
     private rect: SVGElement;
-    private textBox: SVGElement;
+    private rectShadow: SVGElement;
+    private textBox: SVGTextElement;
     private canvas: SVGElement;
 
+    private port_external: SVGCircleElement;
+    private port_internal: SVGCircleElement;
+
     private position: {x: number, y: number};
-    private textCorrection: {x: number, y: number};
     private size: { width: number, height: number };
 
     public static GetBlockType(): string {
@@ -134,7 +143,7 @@ export class DirectValue implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
-    public moveBy(distance: {x: number, y: number}) {
+    public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
         }
@@ -142,15 +151,39 @@ export class DirectValue implements FlowBlock {
         this.position.x += distance.x;
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+
+        return [];
     }
 
-    public addConnection(direction: 'in' | 'out', _index: number) {
+    public endMove(): FlowBlock[] {
+        return [];
+    }
+
+    public onGetFocus() {}
+    public onLoseFocus() {}
+
+    public addConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {
         if (direction === 'in') {
             console.warn("Should NOT be possible to add a connection to a DirectValue block");
+            return;
         }
+
+        this.sinks.push(block);
     }
 
-    public removeConnection(_direction: 'in' | 'out', _index: number) {
+    public removeConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {
+        if (direction === 'in') {
+            console.warn("Should NOT be possible to have input connections on a DirectValue block");
+            return;
+        }
+
+        const index = this.sinks.findIndex(x => x === block);
+
+        this.sinks.splice(index, 1);
+    }
+
+    public getBlockContextActions(): BlockContextAction[] {
+        return [];
     }
 
     public getSlots(): {[key: string]: string} {
@@ -185,46 +218,94 @@ export class DirectValue implements FlowBlock {
         this.value = new_value;
 
         if (this.group) {
-            this.textBox.textContent = this.value || '-';
+            this.updateText();
             this.updateSize();
+        }
+
+        for (const block of this.sinks) {
+            if (block instanceof UiFlowBlock) {
+                block.updateConnectionValue(this, new_value);
+            }
+        }
+    }
+
+    private updateText() {
+        const content = this.value || '-';
+        this.textBox.innerHTML = '';
+
+        const lines = content.split('\n')
+        for (let line of lines) {
+            if (line.length === 0) {
+                line = ' '
+            }
+            const span = document.createElementNS(SvgNS, 'tspan');
+            span.setAttributeNS(null, 'x', '0');
+            span.setAttributeNS(null, 'dy', '1.2em');
+            span.textContent = line;
+
+            this.textBox.appendChild(span);
         }
     }
 
     private updateSize() {
+        const y_padding = 5; // px
+        const textArea = this.textBox.getBBox();
+
         let widest_section = MIN_WIDTH;
-        widest_section = Math.max(widest_section, (this.textBox as any).getBBox().width + OUTPUT_PORT_SIZE);
+        widest_section = Math.max(widest_section, textArea.width + OUTPUT_PORT_SIZE);
 
         const box_width = widest_section;
+        const box_height = (this.textBox.getBBox().height * 1.5 + y_padding * 2);
+
+        // Fix output port
+        const port_y_center = box_height / 2;
+
+        this.port_internal.setAttributeNS(null, 'cy', port_y_center + '');
+        this.port_external.setAttributeNS(null, 'cy', port_y_center + '');
 
         // Center text box
-        this.textBox.setAttributeNS(null, 'x', (this.textCorrection.x
-                                                + OUTPUT_PORT_SIZE/4
-                                                + box_width/2
-                                                - ((this.textBox as any).getBBox().width/2)) + "");
+
+        this.textBox.setAttributeNS(null, 'y', (box_height - textArea.height) / 2 + "");
+        for (const line of Array.from(this.textBox.childNodes)) {
+            if (line instanceof SVGTSpanElement) {
+                line.setAttributeNS(null, 'x',
+                                    (OUTPUT_PORT_SIZE/4
+                                        + box_width/2
+                                        - (textArea.width/2)) + "");
+            }
+        }
+
+        // Set rect size
         this.rect.setAttributeNS(null, 'width', box_width + "");
+        this.rect.setAttributeNS(null, 'height', box_height + "");
+
+        this.rectShadow.setAttributeNS(null, 'width', box_width + "");
+        this.rectShadow.setAttributeNS(null, 'height', box_height + "");
+
+
+        this.size = { width: box_width, height: box_height };
+
     }
 
-    public render(canvas: SVGElement, position?: {x: number, y: number}): SVGElement {
+    public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group }
 
         this.canvas = canvas;
-        if (position) {
-            this.position = { x: position.x, y: position.y };
+        if (initOpts.position) {
+            this.position = { x: initOpts.position.x, y: initOpts.position.y };
         }
         else {
             this.position = {x: 0, y: 0};
         }
 
-        const y_padding = 5; // px
-
         this.group = document.createElementNS(SvgNS, 'g');
-        this.node = document.createElementNS(SvgNS, 'a');
+        this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
+        this.rectShadow = document.createElementNS(SvgNS, 'rect');
         this.textBox = document.createElementNS(SvgNS, 'text');
 
         this.group.setAttribute('class', 'flow_node direct_value_node');
         this.textBox.setAttribute('class', 'node_name');
-        this.textBox.textContent = "test";
         this.textBox.setAttributeNS(null,'textlength', '100%');
         this.textBox.onclick = (() => {
             if (this.options.on_request_edit) {
@@ -242,20 +323,13 @@ export class DirectValue implements FlowBlock {
         this.textBox.setAttributeNS(null, 'x', "0");
         this.textBox.setAttributeNS(null, 'y', "0");
 
+        this.node.appendChild(this.rectShadow);
         this.node.appendChild(this.rect);
         this.node.appendChild(this.textBox);
         this.group.appendChild(this.node);
         this.canvas.appendChild(this.group);
 
-        // Read text correction
-        this.textCorrection = {
-            x: -(this.textBox.getClientRects()[0].left - this.node.getClientRects()[0].left),
-            y: -(this.textBox.getClientRects()[0].top - this.node.getClientRects()[0].top)
-        };
-
-        this.textBox.textContent = this.value;
-
-        const box_height = (this.textBox.getClientRects()[0].height * 2 + y_padding * 2);
+        this.updateText();
 
         // Add direct output
         const out_group = document.createElementNS(SvgNS, 'g');
@@ -270,53 +344,39 @@ export class DirectValue implements FlowBlock {
 
         // Draw the output port
         const port_x_center = 0;
-        const port_y_center = box_height / 2;
 
-        const port_external = document.createElementNS(SvgNS, 'circle');
-        port_external.setAttributeNS(null, 'class', 'output external_port ' + type_class);
-        port_external.setAttributeNS(null, 'cx', port_x_center + '');
-        port_external.setAttributeNS(null, 'cy', port_y_center + '');
-        port_external.setAttributeNS(null, 'r', OUTPUT_PORT_REAL_SIZE + '');
+        this.port_external = document.createElementNS(SvgNS, 'circle');
+        this.port_external.setAttributeNS(null, 'class', 'output external_port ' + type_class);
+        this.port_external.setAttributeNS(null, 'cx', port_x_center + '');
+        this.port_external.setAttributeNS(null, 'r', OUTPUT_PORT_REAL_SIZE + '');
 
-        const port_internal = document.createElementNS(SvgNS, 'circle');
-        port_internal.setAttributeNS(null, 'class', 'output internal_port');
-        port_internal.setAttributeNS(null, 'cx', port_x_center + '');
-        port_internal.setAttributeNS(null, 'cy', port_y_center + '');
-        port_internal.setAttributeNS(null, 'r', output_port_internal_size + '');
+        this.port_internal = document.createElementNS(SvgNS, 'circle');
+        this.port_internal.setAttributeNS(null, 'class', 'output internal_port');
+        this.port_internal.setAttributeNS(null, 'cx', port_x_center + '');
+        this.port_internal.setAttributeNS(null, 'r', output_port_internal_size + '');
 
-        out_group.appendChild(port_external);
-        out_group.appendChild(port_internal);
+        out_group.appendChild(this.port_external);
+        out_group.appendChild(this.port_internal);
 
         if (this.options.on_io_selected) {
             out_group.onclick = ((_ev: MouseEvent) => {
-                this.options.on_io_selected(this, 'out', 0, { type: this.options.type },
-                                            { x: port_x_center, y: port_y_center });
+                this.options.on_io_selected(this, 'out', 0, { type: this.options.type }, this.getPositionOfOutput(0));
             });
         }
-
-        let widest_section = MIN_WIDTH;
-        widest_section = Math.max(widest_section, this.textBox.getClientRects()[0].width + OUTPUT_PORT_SIZE);
-
-        const box_width = widest_section;
-
-        // Center text box
-        this.textBox.setAttributeNS(null, 'x', (this.textCorrection.x
-                                                + OUTPUT_PORT_SIZE/4
-                                                + box_width/2
-                                                - ((this.textBox as any).getBBox().width/2)) + "");
-        this.textBox.setAttributeNS(null, 'y', ((this.textBox as any).getBBox().height*1.75 + this.textCorrection.y) + "");
 
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
         this.rect.setAttributeNS(null, 'y', "0");
-        this.rect.setAttributeNS(null, 'width', box_width + "");
-        this.rect.setAttributeNS(null, 'height', box_height + "");
-
         this.rect.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
+
+        this.rectShadow.setAttributeNS(null, 'class', "body_shadow");
+        this.rectShadow.setAttributeNS(null, 'x', "0");
+        this.rectShadow.setAttributeNS(null, 'y', "0");
+        this.rectShadow.setAttributeNS(null, 'rx', "2px"); // Like border-radius, in px
 
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
-        this.size = { width: box_width, height: box_height };
+        this.updateSize();
 
         return this.group;
     }

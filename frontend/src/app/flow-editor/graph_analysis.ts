@@ -1,19 +1,23 @@
-import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions } from './atomic_flow_block';
+import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions, isAtomicFlowBlockOptions, isAtomicFlowBlockData } from './atomic_flow_block';
 import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_description';
-import { DirectValue, DirectValueFlowBlockData } from './direct_value';
-import { EnumDirectValue, EnumDirectValueFlowBlockData } from './enum_direct_value';
+import { DirectValue, DirectValueFlowBlockData, isDirectValueBlockData } from './direct_value';
+import { EnumDirectValue, EnumDirectValueFlowBlockData, isEnumDirectValueBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
-import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream } from './graph_transformations';
-import { index_connections, reverse_index_connections } from './graph_utils';
+import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream, split_streaming_after_stepped } from './graph_transformations';
+import { index_connections, reverse_index_connections, EdgeIndex } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
+import { isUiFlowBlockData } from './ui-blocks/ui_flow_block';
 
 function index_toolbox_description(desc: ToolboxDescription): {[key: string]: AtomicFlowBlockOptions} {
     const result: {[key: string]: AtomicFlowBlockOptions} = {};
 
     for (const cat of desc) {
         for (const block of cat.blocks) {
-            result[block.block_function] = block;
+            // TODO: This will most probably require UI block definitions too
+            if (isAtomicFlowBlockOptions(block)) {
+                result[block.block_function] = block;
+            }
         }
     }
 
@@ -27,8 +31,8 @@ const JUMP_TO_BLOCK_OPERATION = 'jump_to_block';
 const FORK_OPERATION = 'op_fork_execution';
 
 function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
-        const data = block.data as AtomicFlowBlockData;
+    if (isAtomicFlowBlockData(block.data)){
+        const data = block.data;
 
         if (data.value.options.type !== 'operation') {
             // Getter or trigger
@@ -47,11 +51,14 @@ function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
 
         return input.type === 'pulse';
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
+    else if (isDirectValueBlockData(block.data)){
         throw new Error('Connection from reached block to value (backwards?)');
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         throw new Error('Connection from reached block to value (backwards?)');
+    }
+    else if (isUiFlowBlockData(block.data)) {
+        return true;
     }
 }
 
@@ -80,7 +87,7 @@ function set_difference(whole: any[], subset: {[key: string]: boolean}|string[])
 }
 
 function is_getter_node(block: FlowGraphNode): boolean {
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
+    if (isAtomicFlowBlockData(block.data)){
         const data = block.data as AtomicFlowBlockData;
 
         if (data.value.options.type !== 'operation') {
@@ -89,14 +96,100 @@ function is_getter_node(block: FlowGraphNode): boolean {
         }
         return false;
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
+    else if (isDirectValueBlockData(block.data)){
         return true;
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         return true;
     }
 }
 
+
+function is_trigger_node(graph: FlowGraph, block_id: string, conn_index: EdgeIndex, rev_conn_index: EdgeIndex): boolean {
+    const block = graph.nodes[block_id];
+    if (isAtomicFlowBlockData(block.data) || isUiFlowBlockData(block.data)){
+        const data = block.data;
+
+        const inputs = data.value.options.inputs || [];
+
+        // If it has any pulse input, it's not a source block
+        if (inputs.filter(v => v.type === 'pulse').length > 0) {
+            return false;
+        }
+
+        // If it has a getter input, it's not a source block (the getter is)
+        let has_block_inputs = false;
+        for (const conn of rev_conn_index[block_id] || []) {
+            const orig = graph.nodes[conn.from.id];
+            if (orig.data.type === AtomicFlowBlock.GetBlockType()) {
+                has_block_inputs = true;
+                break;
+            }
+        }
+
+        if (has_block_inputs) {
+            return false;
+        }
+
+        // If it's a getter check that it gets derived into a trigger
+        if (data.value.options.type === 'getter') {
+            const find_triggers_downstream_controller = ((_node_id: string, node: FlowGraphNode, _: string[]) => {
+                if (isAtomicFlowBlockData(node.data)) {
+                    const a_node = node.data;
+
+                    if (a_node.value.options.type === 'getter') {
+                        return 'continue'; // This path might be valid, continue checking downstream
+                    }
+                    else if (a_node.value.options.type === 'operation') {
+                        return 'stop'; // This path is not valid
+                    }
+                    else if (a_node.value.options.type === 'trigger') {
+                        return 'capture'; // This is a valid path
+                    }
+                }
+                else if (isUiFlowBlockData(node.data)) {
+                    const hasSignalInput = !!((node.data.value.options.inputs || []).find(inp => inp.type === 'pulse'));
+                    const hasSignalOutput = !!((node.data.value.options.outputs || []).find(outp => outp.type === 'pulse'));
+
+                    if (!hasSignalInput && hasSignalOutput) {
+                        // Trigger block, like a button
+                        return 'capture'
+                    }
+
+                    if (!hasSignalInput && !hasSignalOutput) {
+                        // Probably a sink, like a display.
+                        //
+                        // There are not any cases where a UI block
+                        // generates data that doesn't have a trigger-like
+                        // function.
+                        return 'capture';
+                    }
+
+                    if (hasSignalInput) {
+                        // Operation, like a counter.
+                        // The cases where this should be used for a UI block are not clear.
+                        return 'stop';
+                    }
+                }
+                else {
+                    throw new Error(`Unexpected: Direct value block should not have an input`);
+                }
+
+                throw new Error(`Unexpected signal properties: ${JSON.stringify(node.data)} | ${isUiFlowBlockData(node.data)}`)
+
+            });
+
+            if (!scan_downstream(graph, block_id, conn_index, find_triggers_downstream_controller)) {
+                return false; // Ignore this entry if id doesn't derive into a trigger
+            }
+        }
+
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 export function get_unreachable(graph: FlowGraph): string[] {
     const reached = build_index(get_source_signals(graph));
@@ -156,90 +249,33 @@ export function get_source_signals(graph: FlowGraph): string[] {
     const rev_conn_index = reverse_index_connections(graph);
 
     for (const block_id of Object.keys(graph.nodes)) {
-        const block = graph.nodes[block_id];
-        if (block.data.type === AtomicFlowBlock.GetBlockType()){
-            const data = block.data as AtomicFlowBlockData;
-
-            const inputs = data.value.options.inputs || [];
-
-            // If it has any pulse input, it's not a source block
-            if (inputs.filter(v => v.type === 'pulse').length > 0) {
-                continue;
-            }
-
-            // If it has a getter input, it's not a source block (the getter is)
-            let has_block_inputs = false;
-            for (const conn of rev_conn_index[block_id] || []) {
-                const orig = graph.nodes[conn.from.id];
-                if (orig.data.type === AtomicFlowBlock.GetBlockType()) {
-                    const a_block = orig.data as AtomicFlowBlockData;
-                    if (a_block.value.options.type === 'getter') {
-                        has_block_inputs = true;
-                        break;
-                    }
-                    else if (a_block.value.options.type === 'trigger') {
-                        has_block_inputs = true;
-                        break;
-                    }
-                    else {
-                        throw new Error(`Unexpected input block (id: ${conn.from.id}, type: ${a_block.value.options.type}), expected a "getter" or "trigger"`);
-                    }
-                }
-            }
-
-            if (has_block_inputs) {
-                continue;
-            }
-
-            // If it's a getter check that it gets derived into a trigger
-            if (data.value.options.type === 'getter') {
-                const find_triggers_downstream_controller = ((_node_id: string, node: FlowGraphNode, _: string[]) => {
-                    if (node.data.type === AtomicFlowBlock.GetBlockType()) {
-                        const a_node = node.data as AtomicFlowBlockData;
-
-                        if (a_node.value.options.type === 'getter') {
-                            return 'continue'; // This path might be valid, continue checking downstream
-                        }
-                        else if (a_node.value.options.type === 'operation') {
-                            return 'stop'; // This path is not valid
-                        }
-                        else if (a_node.value.options.type === 'trigger') {
-                            return 'capture'; // This is a valid path
-                        }
-                    }
-                    else {
-                        throw new Error(`Unexpected: Direct value block should not have an input`);
-                    }
-                });
-
-                if (!scan_downstream(graph, block_id, conn_index, find_triggers_downstream_controller)) {
-                    continue; // Ignore this entry if id doesn't derive into a trigger
-                }
-            }
-
+        if (is_trigger_node(graph, block_id, conn_index, rev_conn_index)) {
             signals.push(block_id);
         }
     }
+
 
     return signals;
 }
 
 function has_pulse_output(block: FlowGraphNode): boolean {
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
-        const data = block.data as AtomicFlowBlockData;
+    if (isAtomicFlowBlockData(block.data)){
+        const outputs = block.data.value.options.outputs || [];
 
-        const outputs = data.value.options.outputs || [];
-
-        // If it has no pulse inputs its a source block
         return outputs.filter(v => v.type === 'pulse').length > 0;
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
+    else if (isDirectValueBlockData(block.data)){
         const data = block.data as DirectValueFlowBlockData;
 
         return data.value.type === 'pulse';
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         return false;
+    }
+    else if (isUiFlowBlockData(block.data)){
+        const outputs = block.data.value.options.outputs || [];
+
+        return outputs.filter(v => v.type === 'pulse').length > 0;
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
@@ -247,23 +283,39 @@ function has_pulse_output(block: FlowGraphNode): boolean {
 }
 
 function has_pulse_input(block: FlowGraphNode): boolean {
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
+    if (isAtomicFlowBlockData(block.data)){
         const data = block.data as AtomicFlowBlockData;
 
         const inputs = data.value.options.inputs || [];
 
-        // If it has no pulse inputs its a source block
         return inputs.filter(v => v.type === 'pulse').length > 0;
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
+    else if (isDirectValueBlockData(block.data)){
         return false;
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         return false;
+    }
+    else if (isUiFlowBlockData(block.data)){
+        const inputs = block.data.value.options.inputs || [];
+
+        return inputs.filter(v => v.type === 'pulse').length > 0;
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
     }
+}
+
+function is_node_conversor_streaming_to_step(node: FlowGraphNode): boolean {
+    if (has_pulse_output(node) && !has_pulse_input(node)) {
+        return true;
+    }
+
+    if (isUiFlowBlockData(node.data)) {
+        return true;
+    }
+
+    return false;
 }
 
 export function get_conversions_to_stepped(graph: FlowGraph, source_block_id: string): string[] {
@@ -273,6 +325,20 @@ export function get_conversions_to_stepped(graph: FlowGraph, source_block_id: st
     let remaining_connections: FlowGraphEdge[] = [].concat(graph.edges);
     let empty_pass = false;
 
+    // If the source node feeds into a non getter, it should also be considered as a conversor
+    const source_block = graph.nodes[source_block_id];
+    if (is_node_conversor_streaming_to_step(source_block)) {
+        for (const conn of remaining_connections) {
+            if (conn.from.id === source_block_id) {
+                const target = graph.nodes[conn.to.id];
+                if (has_pulse_input(target)) {
+                    results[source_block_id] = true;
+                    break;
+                }
+            }
+        }
+    }
+
     do {
         empty_pass = true;
 
@@ -280,7 +346,7 @@ export function get_conversions_to_stepped(graph: FlowGraph, source_block_id: st
         for (const conn of remaining_connections) {
             if (reached[conn.from.id]) {
                 const node = graph.nodes[conn.to.id];
-                if (has_pulse_output(node) && !has_pulse_input(node)) {
+                if (is_node_conversor_streaming_to_step(node)) {
                     // Conversor to step
                     results[conn.to.id] = true;
                 }
@@ -327,6 +393,11 @@ export interface BlockTreeArgument {
 export interface BlockTree {
     block_id: string,
     arguments: BlockTreeArgument[],
+};
+
+interface BlockTreeOutputValue {
+    block: BlockTree;
+    output_index: number;
 };
 
 export interface SteppedBlockTreeBlock extends BlockTree  {
@@ -386,39 +457,66 @@ export function get_filters(graph: FlowGraph, source_block_id: string): BlockTre
     const conversions = get_conversions_to_stepped(graph, source_block_id);
 
     return conversions.map((bottom_id) => {
+        if (bottom_id === source_block_id) {
+            // Although the source performs the conversion, there's no filter.
+            return null;
+        }
         return get_tree_with_ends(graph, source_block_id, bottom_id)
     });
 }
 
-export function get_stepped_block_arguments(graph: FlowGraph, block_id: string): BlockTreeArgument[] {
+export function get_stepped_block_arguments(graph: FlowGraph, block_id: string,
+                                            source_id: string,
+                                            conn_index: EdgeIndex,
+                                            rev_conn_index: EdgeIndex,
+                                           ): BlockTreeArgument[] {
     const args: BlockTreeArgument[] = [];
 
     let pulse_offset = 0;
     let pulse_ports = {};
 
-    for (const conn of graph.edges) {
+    const arg_conns = [];
 
-        if (conn.to.id === block_id) {
-            if (is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index)) {
-                pulse_ports[conn.to.input_index] = true;
-                pulse_offset = Math.max(pulse_offset, conn.to.input_index + 1);
+    for (const conn of rev_conn_index[block_id] || []) {
+        if (is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index)) {
+            pulse_ports[conn.to.input_index] = true;
+            pulse_offset = Math.max(pulse_offset, conn.to.input_index + 1);
+        }
+        else {
+            const idx = conn.to.input_index;
+            pulse_ports[idx] = false;
+
+            if (!arg_conns[idx]) {
+                arg_conns[idx] = [];
             }
-            else {
-                pulse_ports[conn.to.input_index] = false;
+            arg_conns[idx].push(conn);
+        }
+    }
 
-                if (args[conn.to.input_index] !== undefined) {
-                    throw new Error("Multiple inputs on single port");
-                }
+    for (let idx = 0; idx < arg_conns.length;idx++) {
 
-                args[conn.to.input_index] = {
-                    tree: {
-                        block_id: conn.from.id,
-                        arguments: get_stepped_block_arguments(graph, conn.from.id),
-                    },
-                    output_index: conn.from.output_index,
-                };
+        if (!arg_conns[idx]) {
+            continue;
+        }
+
+        let conn = arg_conns[idx][0];
+        if (arg_conns[idx].length > 1) {
+            // If multiple connections, take the one from source_id, if not found, that's an error.
+            conn = arg_conns[idx].find(c => c.from.id === source_id);
+
+            if (!conn) {
+                throw new Error("Multiple inputs on single port."
+                                + " This is only allowed if the inputs correspond to the different triggers, but it's not the case here.");
             }
         }
+
+        args[conn.to.input_index] = {
+            tree: {
+                block_id: conn.from.id,
+                arguments: get_stepped_block_arguments(graph, conn.from.id, source_id, conn_index, rev_conn_index),
+            },
+            output_index: conn.from.output_index,
+        };
     }
 
     // Validate that all pulse's are grouped
@@ -436,6 +534,9 @@ export function get_stepped_block_arguments(graph: FlowGraph, block_id: string):
 
 function get_stepped_ast_continuation(graph: FlowGraph,
                                       continuation: FlowGraphEdge,
+                                      source_id: string,
+                                      conn_index: EdgeIndex,
+                                      rev_conn_index: EdgeIndex,
                                       ast: SteppedBlockTree[],
                                       reached: {[key: string]: boolean}) {
 
@@ -452,7 +553,7 @@ function get_stepped_ast_continuation(graph: FlowGraph,
     else {
         ast.push({
             block_id: block_id,
-            arguments: get_stepped_block_arguments(graph, block_id),
+            arguments: get_stepped_block_arguments(graph, block_id, source_id, conn_index, rev_conn_index),
             contents: [],
         });
 
@@ -742,6 +843,9 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][],
 function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: SteppedBlockTree[], reached: {[key: string]: boolean}) {
     let continuations = get_pulse_continuations(graph, source_id);
 
+    const conn_index = index_connections(graph);
+    const rev_conn_index = reverse_index_connections(graph);
+
     if (continuations.length > 1) {
         let contents = [];
 
@@ -756,7 +860,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             }
             else {
                 const subreached = Object.assign({}, reached)
-                get_stepped_ast_continuation(graph, cont[0], subast, subreached);
+                get_stepped_ast_continuation(graph, cont[0], source_id, conn_index, rev_conn_index, subast, subreached);
                 contents.push(subast);
             }
         }
@@ -814,7 +918,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
     if (continuations.length == 1) {
         if (continuations[0].length == 1) {
             const block = graph.nodes[source_id];
-            const is_atomic_block = block.data.type === AtomicFlowBlock.GetBlockType();
+            const is_atomic_block = isAtomicFlowBlockData(block.data);
             let atom_data: AtomicFlowBlockData = null;
             let func_name: string = null;
             if (is_atomic_block) {
@@ -825,12 +929,12 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             if (is_atomic_block && func_name === 'control_if_else') {
                 // IF statement with only one output
                 const contents = [];
-                get_stepped_ast_continuation(graph, continuations[0][0], contents, reached);
+                get_stepped_ast_continuation(graph, continuations[0][0], source_id, conn_index, rev_conn_index, contents, reached);
 
                 ast[ast.length - 1].contents = [contents, []]; // Update parent block contents
             }
             else {
-                get_stepped_ast_continuation(graph, continuations[0][0], ast, reached);
+                get_stepped_ast_continuation(graph, continuations[0][0], source_id, conn_index, rev_conn_index, ast, reached);
             }
         }
         else {
@@ -934,9 +1038,36 @@ function already_used_in_past(graph: FlowGraph, arg_id: string,
 function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, orig: string): CompiledBlockArg {
     const block = graph.nodes[arg.tree.block_id];
 
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
-        const data = block.data as AtomicFlowBlockData;
+    if (isAtomicFlowBlockData(block.data)){
+        if (block.data.value.options.block_function === 'op_on_block_run') {
+            const values = arg.tree.arguments.map(arg => graph.nodes[arg.tree.block_id].data);
+            if ((values.length != 2)
+                || !isDirectValueBlockData(values[0])
+                || !isDirectValueBlockData(values[1])) {
 
+                    throw new Error(`Expected 2 direct values for op_on_block_run, found: ${JSON.stringify(values)}`)
+            }
+
+            return {
+                type: 'block',
+                value: [
+                    {
+                        type: 'flow_last_value',
+                        contents: [],
+                        args: [
+                            {
+                                type: 'constant',
+                                value: values[0].value.value,
+                            },
+                            {
+                                type: 'constant',
+                                value: values[1].value.value,
+                            },
+                        ],
+                    }
+                ]
+            }
+        }
         if (already_used_in_past(graph, arg.tree.block_id, parent, orig)) {
             return {
                 type: 'block',
@@ -951,7 +1082,7 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
                             },
                             {
                                 type: 'constant',
-                                value: arg.output_index + '',
+                                value: arg.output_index,
                             }
                         ]
                     }
@@ -968,20 +1099,22 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
             }
         }
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
-        const data = block.data as DirectValueFlowBlockData;
-
+    else if (isDirectValueBlockData(block.data)){
         return {
             type: 'constant',
-            value: data.value.value,
+            value: block.data.value.value,
         };
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
-        const data = block.data as EnumDirectValueFlowBlockData;
-
+    else if (isEnumDirectValueBlockData(block.data)){
         return {
             type: 'constant',
-            value: data.value.value_id,
+            value: block.data.value.value_id,
+        };
+    }
+    else if (isUiFlowBlockData(block.data)) {
+        return {
+            type: 'constant',
+            value: block.data.value.extra.textContent,
         };
     }
     else {
@@ -1055,8 +1188,8 @@ function compile_block(graph: FlowGraph,
         }
     }
 
-    if (block.data.type === AtomicFlowBlock.GetBlockType()){
-        const data = block.data as AtomicFlowBlockData;
+    if (isAtomicFlowBlockData(block.data)){
+        const data = block.data;
 
         let compiled_contents = [];
         if (contents && contents.length) {
@@ -1083,6 +1216,20 @@ function compile_block(graph: FlowGraph,
                                                                          block_id,
                                                                          relatives.exec_orig ? relatives.exec_orig : block_id));
         const block_fun = data.value.options.block_function;
+        const slot_args = [];
+
+        const slots = data.value.slots;
+
+        if (slots) {
+            for (const slot of Object.keys(slots)){
+                slot_args.push({ type: slot, value: slots[slot]})
+            }
+        }
+
+        // Prepend slots (sorted) to args
+        compiled_args = slot_args.sort((a, b) => {
+            return (a.name).localeCompare(b.name);
+        }).concat(compiled_args);
 
         if (block_fun === 'flow_utc_time') {
             block_type = "wait_for_monitor";
@@ -1108,6 +1255,35 @@ function compile_block(graph: FlowGraph,
             if (data.value.options.type === 'trigger') {
                 // Ignore
                 block_type = block_fun;
+
+                if (flags.inside_args) {
+                    return {
+                        type: "flow_last_value",
+                        args: [
+                            {
+                                type: 'constant',
+                                value: block_id,
+                            },
+                            {
+                                type: 'constant',
+                                value: 1, // TODO: Not hardcode this
+                            }
+                        ],
+                        contents: [],
+                    };
+                }
+                else {
+                    const listenerArgs: {key: string, subkey?: any} = {
+                        key: block_fun.split('.').reverse()[0],
+                    };
+
+                    const subkey = data.value.options.subkey;
+                    if (subkey) {
+                        listenerArgs.subkey = compiled_args[subkey.index - 1];
+                    }
+
+                    compiled_args = (listenerArgs as any);
+                }
             }
             else {
                 block_type = "command_call_service";
@@ -1217,10 +1393,11 @@ function compile_block(graph: FlowGraph,
             type: block_type,
             args: compiled_args,
             contents: compiled_contents,
+            report_state: block.data.value.report_state,
         };
     }
-    else if (block.data.type === DirectValue.GetBlockType()){
-        const data = block.data as DirectValueFlowBlockData;
+    else if (isDirectValueBlockData(block.data)){
+        const data = block.data;
 
         if (contents.length > 0) {
             throw new Error("AssertionError: Contents.length > 0 in DirectValue block")
@@ -1233,7 +1410,7 @@ function compile_block(graph: FlowGraph,
             // Not really a compiled block, this would be an argument, but this simplifies things
         } as any as CompiledBlock;
     }
-    else if (block.data.type === EnumDirectValue.GetBlockType()){
+    else if (isEnumDirectValueBlockData(block.data)){
         const data = block.data as EnumDirectValueFlowBlockData;
 
         if (contents.length > 0) {
@@ -1246,6 +1423,20 @@ function compile_block(graph: FlowGraph,
 
             // Not really a compiled block, this would be an argument, but this simplifies things
         } as any as CompiledBlock;
+    }
+    else if (isUiFlowBlockData(block.data)) {
+
+        const compiled_args: CompiledBlockArgs = args.map(v => compile_arg(graph, v,
+                                                                         block_id,
+                                                                         relatives.exec_orig ? relatives.exec_orig : block_id));
+
+        return {
+            id: block_id,
+            type: ('services.ui.' + block.data.value.options.id + '.' + block_id) as any,
+            args: compiled_args,
+            contents: [],
+        };
+
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
@@ -1317,25 +1508,176 @@ export function _link_graph(graph: CompiledFlowGraph): CompiledFlowGraph {
     return graph;
 }
 
+function get_argument_sources(graph: FlowGraph, block: BlockTree, output_index: number): BlockTreeOutputValue[] {
+    const blockArgs = block.arguments.filter( arg => {
+        const node = graph.nodes[arg.tree.block_id];
+
+        if (isAtomicFlowBlockData(node.data) || isUiFlowBlockData(node.data)) {
+            return true;
+        }
+        else if (isDirectValueBlockData(node.data) || isEnumDirectValueBlockData(node.data)) {
+            return false;
+        }
+        else {
+            throw new Error("Unknown block type: " + node.data.type)
+        }
+    });
+
+    if (blockArgs.length === 0) {
+        return [{block, output_index}];
+    }
+
+    // This could be done with a flatMap, but that is fairly recent, so if we
+    // can increase the compatibility with a little boilerplate, it's not a bad
+    // tradeoff
+    let results = [];
+    for (const arg of blockArgs) {
+        results = results.concat(get_argument_sources(graph, arg.tree, arg.output_index));
+    }
+    return results;
+}
+
+function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue): CompiledBlock {
+    const source_node = graph.nodes[source.block.block_id];
+    if (isAtomicFlowBlockData(source_node.data)) {
+        const desc = source_node.data.value.options;
+        if (desc.block_function === 'data_variable') {
+            return {
+                id: source.block.block_id,
+                type: "on_data_variable_update",
+                args: [
+                    {
+                        type: "variable",
+                        value: source_node.data.value.slots['variable'],
+                    }
+                ],
+                contents: [],
+            }
+        }
+        else if (desc.type === 'operation') {
+            return {
+                type: "flow_last_value",
+                args: [
+                    {
+                        type: 'constant',
+                        value: source.block.block_id,
+                    },
+                    {
+                        type: 'constant',
+                        value: source.output_index + '',
+                    }
+                ]
+            }
+        }
+        else if (desc.block_function === 'op_on_block_run') {
+            const compiled_args: CompiledBlockArgs = source.block.arguments.map(v => compile_arg(graph, v,
+                                                                                        source.block.block_id,
+                                                                                        source.block.block_id));
+
+            return {
+                id: source.block.block_id,
+                type: "op_on_block_run",
+                args: compiled_args,
+                contents: [],
+            }
+        }
+        else if (desc.block_function.startsWith('services.')) {
+            // Rewrite service calls to custom triggers
+            const compiled_args: CompiledBlockArgs = source.block.arguments.map(v => compile_arg(graph, v,
+                                                                                                 source.block.block_id,
+                                                                                                 source.block.block_id));
+
+            const listenerArgs: {key: string, subkey?: any} = {
+                key: desc.block_function.split('.').reverse()[0],
+            };
+
+            const subkey = desc.subkey;
+            if (subkey) {
+                listenerArgs.subkey = compiled_args[subkey.index - 1];
+            }
+
+            return {
+                id: source.block.block_id,
+                type: (desc.block_function as any),
+                args: (listenerArgs as any),
+                contents: [],
+            }
+        }
+        else {
+            throw new Error(`Unexpected flow source node: (fun: ${desc.block_function}, type: ${source_node.data.type}, id: ${source.block.block_id})`);
+        }
+    }
+    else if (isUiFlowBlockData(source_node.data)) {
+        const compiled_args: CompiledBlockArgs = source.block.arguments.map(v => compile_arg(graph, v,
+                                                                                             source.block.block_id,
+                                                                                             source.block.block_id));
+
+        return {
+            id: source.block.block_id,
+            type: ('services.ui.' + source_node.data.value.options.id + '.' + source.block.block_id) as any,
+            args: compiled_args,
+            contents: [],
+        };
+    }
+    else {
+        throw new Error(`Unexpected flow source node: (type: ${source_node.data.type}, id: ${source.block.block_id})`);
+    }
+}
+
+function build_stream_for_source(graph: FlowGraph,
+                                 source: BlockTreeOutputValue,
+                                 sink: BlockTree): CompiledBlock[] {
+    const signal = build_signal_from_source(graph, source);
+
+    return [
+        signal,
+        compile_block(graph, sink.block_id, sink.arguments, [],
+                      { inside_args: false, orig_tree: null },
+                      { before: null }),
+    ];
+}
+
+function build_streaming_flow_to(graph: FlowGraph,
+                                 sink: BlockTree,
+                                ) : CompiledBlock[][] {
+
+    if (sink.arguments.length != 1) {
+        throw new Error("Not implemented `build_streaming_flow_to` for argument list length != 1");
+    }
+
+    const sources = get_argument_sources(graph, sink, null);
+    const programs = sources.map((source: BlockTreeOutputValue) => build_stream_for_source(graph, source, sink));
+
+    return programs;
+}
+
 export function assemble_flow(graph: FlowGraph,
                               signal_id: string,
-                              filter: BlockTree,
-                              stepped_ast: SteppedBlockTree[]): CompiledFlowGraph {
+                              filter: BlockTree | null,
+                              stepped_ast: SteppedBlockTree[]): CompiledFlowGraph[] {
 
-    const signal_ast = compile_block(graph, signal_id, [], [],
+    const conn_index = index_connections(graph);
+    const rev_conn_index = reverse_index_connections(graph);
+
+    const signal_ast = compile_block(graph, signal_id, get_stepped_block_arguments(graph, signal_id, null, conn_index, rev_conn_index), [],
                                      { inside_args: false, orig_tree: null },
                                      { before: null });
 
     let skip_filter = false;
-    let compiled_graph = null;
+    let compiled_graph: CompiledBlock[] = null;
 
     if (filter) {
         const filter_node = graph.nodes[filter.block_id];
 
-        if (filter_node.data.type === AtomicFlowBlock.GetBlockType()) {
-            const f_block = (filter_node.data as AtomicFlowBlockData);
-            if (f_block.value.options.block_function === 'trigger_on_signal') {
+        if (isAtomicFlowBlockData(filter_node.data)) {
+            if (filter_node.data.value.options.block_function === 'trigger_on_signal') {
                 skip_filter = true;
+            }
+        }
+        else if (isUiFlowBlockData(filter_node.data)) {
+            if (!has_pulse_output(filter_node)) {
+                const flows = build_streaming_flow_to(graph, filter);
+                return flows.map(flow => _link_graph(flow));
             }
         }
         else {
@@ -1370,7 +1712,7 @@ export function assemble_flow(graph: FlowGraph,
         ];
     }
 
-    return _link_graph(compiled_graph);
+    return [_link_graph(compiled_graph)];
 }
 
 export function compile(graph: FlowGraph): CompiledFlowGraph[] {
@@ -1380,6 +1722,7 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
 
     graph = lift_common_ops(graph);
     graph = extract_internally_reused_arguments(graph);
+    graph = split_streaming_after_stepped(graph);
 
     const source_signals = get_source_signals(graph);
     const filters: BlockTree[][] = [];
@@ -1396,7 +1739,17 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
 
         if (subfilters.length > 0) {
             for (const subfilter of subfilters) {
-                columns.push(get_stepped_ast(graph, subfilter.block_id));
+                if (subfilter !== null) {
+                    columns.push(get_stepped_ast(graph, subfilter.block_id));
+                }
+                else {
+                    // If the source is a trigger, the filter does not exist itself
+                    const ast = get_stepped_ast(graph, source_signals[i]);
+                    if (ast.length > 0) {
+                        // Skip triggers with no AST or filter
+                        columns.push(ast);
+                    }
+                }
             }
         }
         else {
@@ -1407,7 +1760,7 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
     }
 
     // Finally assemble everything
-    const flows: CompiledFlowGraph[] = [];
+    let flows: CompiledFlowGraph[] = [];
     for (let i = 0; i < source_signals.length; i++) {
         const signal_id = source_signals[i];
 
@@ -1415,16 +1768,22 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
             for (let j = 0; j < filters[i].length; j++) {
                 const filter = filters[i][j];
                 const ast = stepped_asts[i][j];
-                flows.push(assemble_flow(graph, signal_id, filter, ast));
+
+                if (ast) {
+                    flows = flows.concat(assemble_flow(graph, signal_id, filter, ast));
+                }
             }
         }
         else {
             const ast = stepped_asts[i][0];
             if (ast.length > 0) { // Ignore triggers with no operations
-                flows.push(assemble_flow(graph, signal_id, null, ast));
+                flows = flows.concat(assemble_flow(graph, signal_id, null, ast));
             }
         }
     }
+
+
+    // TODO: Deduplicate programs
 
     return flows;
 }

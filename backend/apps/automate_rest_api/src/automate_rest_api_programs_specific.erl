@@ -119,7 +119,7 @@ update_program(Req, State) ->
     #get_program_seq{program_name=ProgramName, username=Username} = State,
 
     {ok, Body, Req1} = ?UTILS:read_body(Req),
-    Parsed = [jiffy:decode(Body, [return_maps])],
+    Parsed = jiffy:decode(Body, [return_maps]),
     Program = decode_program(Parsed),
     case automate_rest_api_backend:update_program(Username, ProgramName, Program) of
         ok ->
@@ -166,13 +166,17 @@ decode_program_metadata([#{ <<"name">> := ProgramName
                                     }.
 
 
-decode_program([#{ <<"type">> := ProgramType
-                 , <<"orig">> := ProgramOrig
-                 , <<"parsed">> := ProgramParsed
-                 }]) ->
+decode_program(P=#{ <<"type">> := ProgramType
+                  , <<"orig">> := ProgramOrig
+                  , <<"parsed">> := ProgramParsed
+                  }) ->
     #program_content { type=ProgramType
                      , orig=ProgramOrig
                      , parsed=ProgramParsed
+                     , pages=case P of
+                                 #{ <<"pages">> := Pages} -> Pages;
+                                 _ -> #{}
+                             end
                      }.
 
 
