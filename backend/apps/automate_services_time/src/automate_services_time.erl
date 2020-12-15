@@ -79,6 +79,26 @@ call(get_tz_seconds, [Timezone], Thread, _UserId) ->
     {{_Y1970, _Mon, _Day}, {_Hour, _Min, Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
     {ok, Thread, Sec};
 
+call(get_tz_day_of_month, [Timezone], Thread, _UserId) ->
+    {{_Y1970, _Mon, Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {ok, Thread, Day};
+
+call(get_tz_month_of_year, [Timezone], Thread, _UserId) ->
+    {{_Y1970, Mon, _Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {ok, Thread, Mon};
+
+call(get_tz_year, [Timezone], Thread, _UserId) ->
+    {{Y1970, _Mon, _Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {ok, Thread, Y1970};
+
+call(get_tz_day_of_week, [Timezome], Thread, _UserId) ->
+    {{Y1970, Mon, Day}, {_Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    %% Note that technically, calendar:day_of_the_week takes a Year, not Year1970 .
+    %%  It should not affect this calculation, but keep it in mind.
+    %%  See http://erlang.org/doc/man/calendar.html#type-year
+    DayOfWeek = calendar:day_of_the_week(Y1970, Mon, Day),
+    {ok, Thread, DayOfWeek};
+
 call(<<"utc_is_day_of_week">>, [DayOfWeek], Thread, _UserId) ->
     {{Y1970, Mon, Day}, {_Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
     %% Note that technically, calendar:day_of_the_week takes a Year, not Year1970 .

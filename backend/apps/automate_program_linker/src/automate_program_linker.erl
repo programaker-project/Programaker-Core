@@ -136,10 +136,46 @@ relink_value(Value = #{ ?TYPE := <<"time_get_tz_minute">>
                       }
      };
 
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_day_of_week">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_day_of_week
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
 relink_value(Value = #{ ?TYPE := <<"time_get_tz_seconds">>
                       }) ->
     #{ ?TYPE => ?COMMAND_CALL_SERVICE
      , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_seconds
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_day_of_month">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_day_of_month
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_month_of_year">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_month_of_year
+                      , ?SERVICE_ID => automate_services_time:get_uuid()
+                      , ?SERVICE_CALL_VALUES => Value
+                      }
+     };
+
+relink_value(Value = #{ ?TYPE := <<"time_get_tz_year">>
+                      }) ->
+    #{ ?TYPE => ?COMMAND_CALL_SERVICE
+     , ?ARGUMENTS => #{ ?SERVICE_ACTION => get_tz_year
                       , ?SERVICE_ID => automate_services_time:get_uuid()
                       , ?SERVICE_CALL_VALUES => Value
                       }
