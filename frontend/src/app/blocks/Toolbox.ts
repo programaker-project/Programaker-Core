@@ -358,7 +358,7 @@ export class Toolbox {
                             tzArg,
                         ],
                         'category': Blockly.Categories.event,
-                        'extensions': ['colours_time', 'output_string']
+                        'extensions': ['colours_time', 'output_number']
                     });
                 }
             };
@@ -372,7 +372,7 @@ export class Toolbox {
                             tzArg,
                         ],
                         'category': Blockly.Categories.event,
-                        'extensions': ['colours_time', 'output_string']
+                        'extensions': ['colours_time', 'output_number']
                     });
                 }
             };
@@ -386,10 +386,67 @@ export class Toolbox {
                             tzArg,
                         ],
                         'category': Blockly.Categories.event,
-                        'extensions': ['colours_time', 'output_string']
+                        'extensions': ['colours_time', 'output_number']
                     });
                 }
             };
+
+            Blockly.Blocks['time_get_tz_day_of_month'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'time_get_tz_day_of_month',
+                        'message0': 'Day of the month at %1',
+                        'args0': [
+                            tzArg,
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_time', 'output_number']
+                    });
+                }
+            };
+
+            Blockly.Blocks['time_get_tz_month_of_year'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'time_get_tz_month_of_hear',
+                        'message0': 'Month of the year at %1 (January=1, Februrary=2, ...)',
+                        'args0': [
+                            tzArg,
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_time', 'output_number']
+                    });
+                }
+            };
+
+            Blockly.Blocks['time_get_tz_year'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'time_get_tz_year',
+                        'message0': 'Current year (at %1)',
+                        'args0': [
+                            tzArg,
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_time', 'output_number']
+                    });
+                }
+            };
+
+            Blockly.Blocks['time_get_tz_day_of_week'] = {
+                init: function () {
+                    this.jsonInit({
+                        'id': 'time_get_tz_day_of_week',
+                        'message0': 'Numeric day of week at %1 (Monday=1, Tuesday=2, ...)',
+                        'args0': [
+                            tzArg,
+                        ],
+                        'category': Blockly.Categories.event,
+                        'extensions': ['colours_time', 'output_number']
+                    });
+                }
+            };
+
         });
 
         Blockly.Blocks[UtcTimeOfDayBlockId] = {
@@ -1045,7 +1102,7 @@ export class Toolbox {
 
         const timeCategory = `
         <category name="Time" id="time" colour="#85CCB3" secondaryColour="#1D1D5F">
-            <block type="time_trigger_at_tz" id="time_trigger_at_tz">
+          <block type="time_trigger_at_tz" id="time_trigger_at_tz">
             <value name="HOUR1">
               <shadow type="math_positive_number">
                 <field name="NUM">19</field>
@@ -1080,11 +1137,28 @@ export class Toolbox {
               <shadow type="field_dropdown"></shadow>
             </value>
           </block>
-          <block type="${UtcTimeOfDayBlockId}" id="${UtcTimeOfDayBlockId}">
-            <value name="DAY_OF_WEEK">
+
+          <block type="time_get_tz_day_of_month" id="time_get_tz_day_of_month">
+            <value name="TIMEZONE">
               <shadow type="field_dropdown"></shadow>
             </value>
           </block>
+          <block type="time_get_tz_month_of_year" id="time_get_tz_month_of_year">
+            <value name="TIMEZONE">
+              <shadow type="field_dropdown"></shadow>
+            </value>
+          </block>
+          <block type="time_get_tz_year" id="time_get_tz_year">
+            <value name="TIMEZONE">
+              <shadow type="field_dropdown"></shadow>
+            </value>
+          </block>
+          <block type="time_get_tz_day_of_week" id="time_get_tz_day_of_week">
+            <value name="TIMEZONE">
+              <shadow type="field_dropdown"></shadow>
+            </value>
+          </block>
+
         </category>
         `;
 
