@@ -768,6 +768,10 @@ svg.block_renderer g.flow_node.section_node .node_body {
     fill: rgba(255,255,255,0.5);
 }
 
+svg.block_renderer g.flow_node.action_area .node_body {
+    fill: rgba(255,255,255,0.5);
+    stroke-dasharray: 5;
+}
 
 svg.block_renderer g.flow_node.text_node .node_body {
     fill: rgba(255,255,255,0.5);

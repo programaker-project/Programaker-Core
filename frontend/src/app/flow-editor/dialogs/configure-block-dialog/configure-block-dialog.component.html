@@ -106,7 +106,21 @@
         </div>
     </div>
 
-
+    <div class="text-configuration" *ngIf="allowedConfigurations.target">
+        <h3>Element target</h3>
+        <div class="section-contents">
+            <div class="target-link-picker" *ngIf="allowedConfigurations.target.link">
+                <div class="form">
+                    <mat-form-field appearance="standard">
+                        <mat-label>Link Target</mat-label>
+                        <input matInput [formControl]="targetLinkControl" placeholder="https://programaker.com/...">
+                        <mat-hint><span class="url-sample">http://...</span> or <span class="url-sample">mailto:some@mail.com</span></mat-hint>
+                        <mat-error *ngIf="targetLinkControl.invalid">{{getUrlErrorMessage()}}</mat-error>
+                    </mat-form-field>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="accept-cancel">
         <button mat-button mat-raised-button  class="cancel-button"
             (click)="cancelChanges()">
@@ -115,6 +129,7 @@
         </button>
 
         <button #acceptSaveConfigButton mat-button mat-raised-button  class="save-button confirm-button"
+            [disabled]="!isValid()"
             (click)="acceptChanges()">
             <span class="load-bg"></span>
             <mat-icon>save</mat-icon>

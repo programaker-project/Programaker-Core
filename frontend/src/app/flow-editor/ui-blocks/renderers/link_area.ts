@@ -11,30 +11,28 @@ import { ResponsivePageGenerateTree } from "./responsive_page";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
-const BLOCK_TYPE_ANNOTATION = 'Ui Card'
+const BLOCK_TYPE_ANNOTATION = 'Link Area'
 const SECTION_PADDING = 5;
-const DEFAULT_COLOR = '';
 
 const MIN_WIDTH = 100;
 const MIN_HEIGHT = 100;
 
-export const SimpleUiCardBuilder: ContainerFlowBlockBuilder = (canvas: SVGElement,
+export const LinkAreaBuilder: ContainerFlowBlockBuilder = (canvas: SVGElement,
     group: SVGElement,
     block: ContainerFlowBlock,
     service: UiSignalService,
     initOps: UiFlowBlockBuilderInitOps,
 ) => {
-    const element = new SimpleUiCard(canvas, group, block, service, initOps);
+    const element = new LinkArea(canvas, group, block, service, initOps);
     element.init();
     return element;
 }
 
-class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resizeable, ConfigurableSettingsElement {
+class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Resizeable, ConfigurableSettingsElement {
     subscription: Subscription;
     handle: UiElementHandle | null = null;
     node: SVGGElement;
     rect: SVGRectElement;
-    rectShadow: SVGRectElement;
     grid: SVGGElement;
     width: number;
     height: number;
@@ -49,14 +47,12 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
 
         this.node = document.createElementNS(SvgNS, 'g');
         this.rect = document.createElementNS(SvgNS, 'rect');
-        this.rectShadow = document.createElementNS(SvgNS, 'rect');
         this.placeholder = document.createElementNS(SvgNS, 'text');
 
-        group.setAttribute('class', 'flow_node ui_node container_node card_node simple_card');
+        group.setAttribute('class', 'flow_node ui_node container_node card_node action_area');
 
         this.grid = document.createElementNS(SvgNS, 'g');
 
-        this.node.appendChild(this.rectShadow);
         this.node.appendChild(this.rect);
         this.node.appendChild(this.grid);
         this.node.appendChild(this.placeholder);
@@ -78,16 +74,9 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
         this.rect.setAttributeNS(null, 'y', "0");
-        this.rect.setAttributeNS(null, 'rx', "4");
-
-        this.rectShadow.setAttributeNS(null, 'class', "body_shadow");
-        this.rectShadow.setAttributeNS(null, 'x', "0");
-        this.rectShadow.setAttributeNS(null, 'y', "0");
-        this.rectShadow.setAttributeNS(null, 'rx', "4");
 
         this.grid.setAttribute('class', 'division_grid');
 
-        this.updateStyle();
         this.updateSizes();
 
         if (initOps.workspace) {
@@ -106,9 +95,6 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
         this.rect.setAttributeNS(null, 'width', this.width + '');
         this.rect.setAttributeNS(null, 'height', this.height + '');
 
-        this.rectShadow.setAttributeNS(null, 'width', this.width + '');
-        this.rectShadow.setAttributeNS(null, 'height', this.height + '');
-
         this.block.blockData.dimensions = { width: this.width, height: this.height };
 
         this._updateInternalElementSizes();
@@ -120,9 +106,6 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     _updateInternalElementSizes() {
         this.rect.setAttributeNS(null, 'width', this.width + '');
         this.rect.setAttributeNS(null, 'height', this.height + '');
-
-        this.rectShadow.setAttributeNS(null, 'width', this.width + '');
-        this.rectShadow.setAttributeNS(null, 'height', this.height + '');
 
         const textBox = this.placeholder.getBBox();
         this.placeholder.setAttributeNS(null, 'x', (this.width - textBox.width) / 2 + '');
@@ -226,7 +209,7 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     }
 
     onContentUpdate(contents: FlowBlock[]) {
-        // TODO: Merge this with ResponsivePage.onContentUpdate()
+        // TODO: Merge this with SimpleUiCard.onContentUpdate()?
         this._contents = contents;
 
         // Check that the container size is adequate, resize it if necessary
@@ -319,7 +302,7 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     }
 
     getAllowedConfigurations(): BlockAllowedConfigurations {
-        return { background: {color: true, image: true} };
+        return { target: { link: true } };
     }
 
     getCurrentConfiguration(): BlockConfigurationOptions {
@@ -327,54 +310,39 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     }
 
     applyConfiguration(settings: BlockConfigurationOptions): void {
-        if (settings.bg) {
-            this.block.blockData.settings = Object.assign(this.block.blockData.settings || {}, {bg: settings.bg});
+        const settingsStorage = Object.assign({}, this.block.blockData.settings || {});
 
-            this.updateStyle();
-        }
-    }
-
-    // Style management
-    updateStyle(){
-        const settings = this.block.blockData.settings;
-        if (!settings) {
-            return;
-        }
-        if (settings.bg) {
-            // Get color to apply
-            let color = DEFAULT_COLOR;
-            if (settings.bg.type === 'color') {
-                color = settings.bg.value;
+        if (settings.target && settings.target.link) {
+            if (!settingsStorage.target) {
+                settingsStorage.target = {};
             }
-
-            // Apply it to the element's background
-            this.rect.style.fill = color;
+            settingsStorage.target.link = { value: settings.target.link.value };
         }
+
+        this.block.blockData.settings = settingsStorage;
     }
 
     // Compilation
     treeWith(content: CutTree): CutTree {
         const tree: ContainerElementRepr = {
-            container_type: 'simple_card',
+            container_type: 'link_area',
             id: this.block.id,
             content: content,
-            settings: {},
+            settings: this.block.blockData.settings || {},
         };
 
         const settings = this.block.blockData.settings;
         if (settings) {
-            if (settings.bg && settings.bg.type === 'color') {
-                tree.settings.bg = settings.bg;
-            }
+            tree.settings = settings;
         }
 
         return tree;
     }
 }
 
-export const SimpleUiCardGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
+export const LinkAreaGenerateTree: GenTreeProc = (handler: UiFlowBlockHandler, blocks: FlowBlock[]) => {
     const content = ResponsivePageGenerateTree(handler, blocks);
 
     // Finally generate the tree
-    return (handler as SimpleUiCard).treeWith(content);
+    return (handler as LinkArea).treeWith(content);
 };

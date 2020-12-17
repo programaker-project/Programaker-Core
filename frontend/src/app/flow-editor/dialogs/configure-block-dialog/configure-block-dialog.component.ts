@@ -4,6 +4,8 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatRadioChange, MatRadioGroup } from '@angular/material/radio';
 import { SessionService } from '../../../session.service';
 import { BackgroundPropertyConfiguration } from '../../ui-blocks/renderers/ui_tree_repr';
+import { UrlPattern } from '../configure-link-dialog/configure-link-dialog.component';
+import { Validators, FormControl } from '@angular/forms';
 
 declare const Huebee: any;
 
@@ -17,10 +19,12 @@ export type ImageAssetConfiguration = {
     id: string,
 };
 export type WidthTakenOption = {widthTaken?: {name: string, style: string}[]};
+type LinkOption = { link: boolean };
 
 export type SurfaceOption = ColorOption & ImageOption;
 export type TextOptions = ColorOption & FontSizeOption & FontWeightOption;
 export type BodyOptions = ImageOption & WidthTakenOption;
+export type TargetOptions = LinkOption;
 
 export type TextPropertyConfiguration = {
     color?: { value: string },
@@ -34,15 +38,21 @@ export type BodyPropertyConfiguration = {
     widthTaken?: { value: string },
 }
 
+type TargetPropertyConfiguration = {
+    link?: { value: string };
+};
+
 export type BlockConfigurationOptions = {
     bg?: BackgroundPropertyConfiguration,
     text?: TextPropertyConfiguration,
     body?: BodyPropertyConfiguration,
+    target?: TargetPropertyConfiguration,
 };
 export interface BlockAllowedConfigurations {
     background?: SurfaceOption,
     text?: TextOptions,
     body?: BodyOptions,
+    target?: TargetOptions,
 };
 
 export interface ConfigurableBlock {
@@ -87,14 +97,17 @@ const DEFAULT_TEXT_SIZE = 14;
 })
 export class ConfigureBlockDialogComponent implements AfterViewInit {
     loadedImage: File = null;
-    selectedBackgroundType: 'color' | 'image' | 'transparent' = 'transparent';
 
+    // General
+    selectedBackgroundType: 'color' | 'image' | 'transparent' = 'transparent';
     @ViewChild('acceptSaveConfigButton') acceptSaveConfigButton: MatButton;
 
+    // Background
     @ViewChild('bgColorPicker') bgColorPicker: ElementRef<HTMLInputElement>;
     @ViewChild('bgTypeSelector') bgTypeSelector: MatRadioGroup;
     private hbBgColorPicker: any;
 
+    // Text color/size/bold
     @ViewChild('textColorPicker') textColorPicker: ElementRef<HTMLInputElement>;
     @ViewChild('textSampleResult') textSampleResult: ElementRef<HTMLDivElement>;
     @ViewChild('fontSizeValueViewer') fontSizeValueViewer: ElementRef<HTMLElement>;
@@ -102,12 +115,16 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
     fontWeightTaken: FontWeight = 'normal';
     private hbTextColorPicker: any;
 
+    // Body image/width
     @ViewChild('bodyImgPreview') bodyImgPreview: ElementRef<HTMLImageElement>;
     @ViewChild('bodyImgFileInput') bodyImgFileInput: ElementRef<HTMLInputElement>;
     bodyCurrentImage: string;
     @ViewChild('widthSampleResult') widthSampleResult: ElementRef<HTMLDivElement>;
     allowedWidthTypes: string[];
     widthTaken: string;
+
+    // Target link
+    targetLinkControl : FormControl | null = null;
 
     currentConfig: BlockConfigurationOptions;
     allowedConfigurations: BlockAllowedConfigurations;
@@ -143,6 +160,16 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
         if (this.currentConfig.text) {
             if (this.currentConfig.text.fontWeight) {
                 this.fontWeightTaken = this.currentConfig.text.fontWeight.value;
+            }
+        }
+
+        if (this.allowedConfigurations.target) {
+            if (this.allowedConfigurations.target.link) {
+                this.targetLinkControl = new FormControl('', [Validators.pattern(UrlPattern)]);
+
+                if (this.currentConfig.target && this.currentConfig.target.link) {
+                    this.targetLinkControl.setValue(this.currentConfig.target.link.value);
+                }
             }
         }
     }
@@ -280,6 +307,20 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
         }
     }
 
+    getUrlErrorMessage() {
+        if (this.targetLinkControl.hasError('required')) {
+            return 'You must enter a value';
+        }
+
+        return this.targetLinkControl.hasError('pattern') ? 'Not a valid link' : '';
+    }
+
+    isValid(): boolean {
+        if (this.targetLinkControl && !(this.targetLinkControl.valid)) {
+            return false;
+        }
+        return true;
+    }
 
     // Accept/cancel
     cancelChanges() {
@@ -324,6 +365,13 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
 
             if (this.widthTaken) {
                 settings.body.widthTaken = { value: this.widthTaken };
+            }
+        }
+
+        if (this.allowedConfigurations.target) {
+            settings.target = {};
+            if (this.allowedConfigurations.target.link) {
+                settings.target.link = { value: this.targetLinkControl.value };
             }
         }
 

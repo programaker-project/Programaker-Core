@@ -47,6 +47,10 @@ h2 mat-icon {
         }
     }
 
+    .target-link-picker mat-form-field {
+        width: 50ex;
+        max-width: 90vw;
+    }
 }
 
 .width-sample .sample-container {

@@ -483,8 +483,8 @@ function reduceTree(tree: CutTree): CutTree {
         const newGroups = reduceGroups(cNode);
 
         const recasted: CutTree = { cut_type: cNode.cut_type, groups: newGroups };
-        if (cNode.background) {
-            recasted.background = cNode.background;
+        if (cNode.settings && cNode.settings.bg) {
+            recasted.settings = cNode.settings;
         }
         return recasted;
     };
@@ -503,7 +503,8 @@ function reduceGroups(cNode: CutNode): CutTree[] {
         }
 
         const cTree = tree as CutNode;
-        if ((!cNode.background) && (cTree.cut_type === cType) && (!cTree.background)) {
+        // Trees and nodes with settings are not merged to avoid losing "colors" in the process
+        if ((!(cNode.settings && cNode.settings.bg)) && (cTree.cut_type === cType) && (!(cTree.settings && cTree.settings.bg))) {
             for (const group of cTree.groups) {
                 aux(group);
             }

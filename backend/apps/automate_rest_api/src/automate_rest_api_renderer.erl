@@ -70,9 +70,9 @@ render_element(E=#{ <<"cut_type">> := CutType
                   }, ProgramId, Values, Req) ->
 
     ElementBackground = case E of
-                            #{ <<"background">> := #{ <<"type">> := <<"color">>
-                                                    , <<"value">> := Color
-                                                    }} ->
+                            #{ <<"settings">> := #{ <<"bg">> := #{ <<"type">> := <<"color">>
+                                                                         , <<"value">> := Color
+                                                                         }}} ->
                                 [ "background-color:"
                                 , Color %% TODO: Validate that the color is a correct one.
                                 ];
@@ -91,9 +91,9 @@ render_element(E=#{ <<"container_type">> := <<"simple_card">>
                   , <<"content">> := Content
                   }, ProgramId, Values, Req) ->
     ElementBackground = case E of
-                            #{ <<"background">> := #{ <<"type">> := <<"color">>
-                                                    , <<"value">> := Color
-                                                    }} ->
+                            #{ <<"settings">> := #{ <<"bg">> := #{ <<"type">> := <<"color">>
+                                                                         , <<"value">> := Color
+                                                                         }}} ->
                                 [ "background-color:"
                                 , Color %% TODO: Validate that the color is a correct one.
                                 ];
@@ -109,6 +109,25 @@ render_element(E=#{ <<"container_type">> := <<"simple_card">>
           _ -> render_element(Content, ProgramId, Values, Req)
       end
     , <<"</div></div>">>
+    ];
+
+render_element(E=#{ <<"container_type">> := <<"link_area">>
+                  , <<"content">> := Content
+                  }, ProgramId, Values, Req) ->
+    Target = case E of
+                 #{ <<"settings">> := #{ <<"target">> := #{ <<"link">> := #{ <<"value">> := Link }
+                                                          }}} ->
+                     Link; %% TODO: Validate link types
+                 _ -> "#"
+             end,
+    [ "<a class='link_area' href='", Target, "'>"
+    , "<div class='inner-box' "
+    , ">"
+    , case Content of
+          null -> "";
+          _ -> render_element(Content, ProgramId, Values, Req)
+      end
+    , <<"</div></a>">>
     ];
 
 render_element(E=#{ <<"widget_type">> := <<"simple_button">>
@@ -211,6 +230,7 @@ render_styles(RenderAs) ->
     , Root, "hr.size-full { width: calc(100% - 2px); } "
     , Root, ".hbox > .inner-box { margin: 0 auto; width: max-content; max-width: 100%; text-align: center; }"
     , Root, ".hbox > .inner-box > .vbox, .hbox > .inner-box > .simple_card { display: inline-flex; vertical-align: top; max-width: 100%; }"
+    , Root, "a.link_area { display: inline-flex; text-decoration: inherit; }"
     , Root, ".simple_card { margin: 0 auto; width: max-content; }"
     , Root, ".simple_card > .inner-box { margin: 1ex; padding: 1ex; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
     , Root, ".simple_card > .inner-box > .vbox { margin: auto; }"

@@ -431,7 +431,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
     // Compilation
     generateTreeWithGroups(groups: CutTree[]): CutTree {
-        const tree: CutTree = { cut_type: 'hbox', groups: groups };
+        const tree: CutTree = { cut_type: 'hbox', groups: groups, settings: {} };
 
         if (this.nestedHorizontal) {
             // Then this works more like a VBox
@@ -441,7 +441,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         const settings = this.block.blockData.settings;
         if (settings) {
             if (settings.bg && settings.bg.type === 'color') {
-                tree.background = settings.bg;
+                tree.settings.bg = settings.bg;
             }
         }
 
