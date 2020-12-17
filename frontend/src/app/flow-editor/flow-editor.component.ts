@@ -116,6 +116,12 @@ export class FlowEditorComponent implements OnInit {
             this.sessionService.getSession()
                 .then((session) => {
                     this.session = session;
+                    if (!session.active) {
+                        this.router.navigate(['/login'], {replaceUrl:true});
+                        resolve();
+                        return;
+                    }
+
                     this.route.params.pipe(
                         switchMap((params: Params) => {
                             this.programId = params['program_id'];

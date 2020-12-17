@@ -74,7 +74,7 @@ export class AdminService {
 
     async getStats(): Promise<PlatformStatsInfo> {
         const url = this.getAdminStatsUrl();
-        return (this.http.get(url,
+        return await (this.http.get(url,
                               { headers: this.sessionService.getAuthHeader() }
                              ).toPromise() as Promise<PlatformStatsInfo>);
     }

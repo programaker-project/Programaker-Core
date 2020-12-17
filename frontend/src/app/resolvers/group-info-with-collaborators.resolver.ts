@@ -20,14 +20,20 @@ export class GroupInfoWithCollaboratorsResolver implements Resolve<Info> {
 
         const groupName = params.group_name;
 
-        const groupInfo = await this.groupService.getGroupWithName(groupName);
-        const collaborators = await this.groupService.getCollaboratorsOnGroup(groupInfo.id);
+        try {
+            const groupInfo = await this.groupService.getGroupWithName(groupName);
+            const collaborators = await this.groupService.getCollaboratorsOnGroup(groupInfo.id);
 
-        const result = {
-            info: groupInfo,
-            collaborators: collaborators,
-        };
+            const result = {
+                info: groupInfo,
+                collaborators: collaborators,
+            };
 
-        return result;
+            return result;
+        }
+        catch(err) {
+            console.error(err);
+            return null;
+        }
     }
 }

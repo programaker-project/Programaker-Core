@@ -13,6 +13,9 @@ export class AdminStatsResolver implements Resolve<PlatformStatsInfo> {
         _route: ActivatedRouteSnapshot,
         _state: RouterStateSnapshot
     ): Promise<PlatformStatsInfo> {
-        return this.adminService.getStats();
+        return this.adminService.getStats().catch(err => {
+            console.error(err);
+            return null;
+        });
     }
 }

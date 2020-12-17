@@ -134,7 +134,15 @@ export class ProgramDetailComponent implements OnInit {
         }
         this.smallScreen = this.browser.window.innerWidth < 750;
 
-        progbar.track(new Promise((resolve) => {
+        progbar.track(new Promise(async (resolve) => {
+
+            const session = await this.sessionService.getSession();
+            if (!session.active) {
+                this.router.navigate(['/login'], {replaceUrl:true});
+                resolve();
+                return;
+            }
+
             this.route.params.pipe(
                 switchMap((params: Params) => {
                     const user = params['user_id'];

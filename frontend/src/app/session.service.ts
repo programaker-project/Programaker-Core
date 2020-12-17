@@ -66,6 +66,9 @@ export class SessionService {
         let session = SessionService.EstablishedSession;
         if (session === null) {
             session = await this.getSession();
+            if (!session.active) {
+                throw Error("No session");
+            }
         }
 
         return this.getApiRootForUser(session.username);
@@ -80,6 +83,9 @@ export class SessionService {
             let session = SessionService.EstablishedSession;
             if (!session) {
                 session = await this.getSession();
+                if (!session.active) {
+                    throw Error("No session");
+                }
             }
             user_id = session.user_id;
         }
@@ -91,6 +97,9 @@ export class SessionService {
             let session = SessionService.EstablishedSession;
             if (!session) {
                 session = await this.getSession();
+                if (!session.active) {
+                    throw Error("No session");
+                }
             }
             user_id = session.user_id;
         }

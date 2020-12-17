@@ -13,6 +13,9 @@ export class AdminUserListResolver implements Resolve<UserAdminData[]> {
         _route: ActivatedRouteSnapshot,
         _state: RouterStateSnapshot
     ): Promise<UserAdminData[]> {
-        return this.adminService.listAllUsers();
+        return this.adminService.listAllUsers().catch(err => {
+            console.error(err);
+            return null;
+        });
     }
 }
