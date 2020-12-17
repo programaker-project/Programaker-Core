@@ -1,6 +1,6 @@
 -module(automate_rest_api_renderer).
 
--export([ render_page/2
+-export([ render_page/4
         ]).
 
 -define(DEFAULT_TITLE, <<"Page title">>).
@@ -8,34 +8,42 @@
 %%====================================================================
 %% API functions
 %%====================================================================
--spec render_page(binary(), _) -> iolist().
-render_page(ProgramId, Page) ->
+-spec render_page(binary(), _, cowboy_req:req(), page | element) -> iolist().
+render_page(ProgramId, Page, Req, RenderAs) ->
     {ok, Values} = automate_storage:get_widget_values_in_program(ProgramId),
-    [ render_page_header(Page)
-    , render_page_body(Page, ProgramId, Values)
-    , render_page_footer(ProgramId, Page)
+    [ render_page_header(Page, RenderAs)
+    , render_page_body(Page, ProgramId, Values, Req)
+    , render_page_footer(ProgramId, Page, RenderAs)
     ].
 
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
-render_page_header(Page) ->
-    Title = unicode:characters_to_binary("<TODO> have configurable titles ¯\\_(ツ)_/¯"),
+render_page_header(Page, page) ->
     [ <<"<!DOCTYPE html>\n">>
     , <<"<html><head><meta charset=\"UTF-8\">\n">>
     , <<"<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=0'>">>
     , <<"<title>">>, html_escape(maps:get(<<"title">>, Page, ?DEFAULT_TITLE)), <<"</title>">>
-    , render_styles()
+    , render_styles(page)
     , <<"</head>\n<body>\n">>
+    ];
+render_page_header(Page, element) ->
+    [ "<div class='programaker-element'>"
+    , render_styles(element)
     ].
 
-render_page_body(#{ <<"value">> := Contents }, ProgramId, Values) ->
-    render_element(Contents, ProgramId, Values).
+render_page_body(#{ <<"value">> := Contents }, ProgramId, Values, Req) ->
+    render_element(Contents, ProgramId, Values, Req).
 
-render_page_footer(ProgramId, #{ <<"value">> := Contents }) ->
+render_page_footer(ProgramId, #{ <<"value">> := Contents }, page) ->
     [ render_scripts(ProgramId, Contents)
     , <<"\n</html>">>
+    ];
+
+render_page_footer(ProgramId, #{ <<"value">> := Contents }, element) ->
+    [ render_scripts(ProgramId, Contents)
+    , "\n</div>"
     ].
 
 raw_to_html(Bin) when is_binary(Bin) ->
@@ -53,13 +61,13 @@ html_escape(Str) ->
 %%====================================================================
 %% Element rendering
 %%====================================================================
-render_element(null, _ProgramId, _Values) ->
+render_element(null, _ProgramId, _Values, _Req) ->
     [<<"<div class='vbox'>&#x1F6A7; Work in progress &#x1F6A7;</div>">>
     ];
 
 render_element(E=#{ <<"cut_type">> := CutType
                   , <<"groups">> := Groups
-                  }, ProgramId, Values) ->
+                  }, ProgramId, Values, Req) ->
 
     ElementBackground = case E of
                             #{ <<"background">> := #{ <<"type">> := <<"color">>
@@ -75,13 +83,13 @@ render_element(E=#{ <<"cut_type">> := CutType
     , "style='", ElementBackground, "' "
     ,  ">"
     , "<div class='inner-box'>"
-    , lists:map(fun(E) -> render_element(E, ProgramId, Values) end, Groups)
+    , lists:map(fun(E) -> render_element(E, ProgramId, Values, Req) end, Groups)
     , <<"</div></div>">>
     ];
 
 render_element(E=#{ <<"container_type">> := <<"simple_card">>
                   , <<"content">> := Content
-                  }, ProgramId, Values) ->
+                  }, ProgramId, Values, Req) ->
     ElementBackground = case E of
                             #{ <<"background">> := #{ <<"type">> := <<"color">>
                                                     , <<"value">> := Color
@@ -98,14 +106,14 @@ render_element(E=#{ <<"container_type">> := <<"simple_card">>
     , ">"
     , case Content of
           null -> "";
-          _ -> render_element(Content, ProgramId, Values)
+          _ -> render_element(Content, ProgramId, Values, Req)
       end
     , <<"</div></div>">>
     ];
 
 render_element(E=#{ <<"widget_type">> := <<"simple_button">>
                   , <<"id">> := WidgetId
-                  }, _ProgramId, _Values) ->
+                  }, _ProgramId, _Values, _Req) ->
     [ <<"<div class=widget-container><button class='widget simple_button' id='elem-">>
     , WidgetId
     , <<"'>">>
@@ -115,7 +123,7 @@ render_element(E=#{ <<"widget_type">> := <<"simple_button">>
 
 render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
                   , <<"id">> := WidgetId
-                  }, _ProgramId, _Values) ->
+                  }, _ProgramId, _Values, _Req) ->
     ElementStyle = get_text_element_style(E),
     [ <<"<div class=widget-container><div class='widget text fixed_text' id='elem-">>
     , WidgetId
@@ -128,7 +136,7 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
 
 render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
                   , <<"id">> := WidgetId
-                  }, _ProgramId, Values) ->
+                  }, _ProgramId, Values, _Req) ->
     Contents = raw_to_html(maps:get(<<"text">>, E,
                                     maps:get(<<Type/binary, ".", WidgetId/binary>>, Values,
                                              <<"- No content yet -">>))),
@@ -143,8 +151,8 @@ render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
 
 render_element(E=#{ <<"widget_type">> := <<"fixed_image">>
                   , <<"id">> := WidgetId
-                  }, ProgramId, _Values) ->
-    ImgUrl = get_image_url(E, ProgramId),
+                  }, ProgramId, _Values, Req) ->
+    ImgUrl = get_image_url(E, ProgramId, Req),
     [ <<"<div class=widget-container>">>
     , "<img class='widget' src='", ImgUrl, "'/>"
     , <<"</div>">>
@@ -152,7 +160,7 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_image">>
 
 render_element(E=#{ <<"widget_type">> := <<"horizontal_separator">>
                   , <<"id">> := _WidgetId
-                  }, _ProgramId, _Values) ->
+                  }, _ProgramId, _Values, _Req) ->
     [ "<hr "
     , case E of
           #{ <<"settings">> := #{ <<"body">> := #{ <<"widthTaken">> := #{ <<"value">> := Width } } } } ->
@@ -167,36 +175,48 @@ render_element(E=#{ <<"widget_type">> := <<"horizontal_separator">>
 %%====================================================================
 %% Auxiliary sections
 %%====================================================================
-render_styles() ->
+render_styles(RenderAs) ->
     MaterialShadow = "0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12)",
 
+    {Root, RootStyle} = case RenderAs of
+                            page -> { "",
+                                      [ "body { height: 100vh; text-align: center; } "
+                                      , " body {"
+                                      ,   "font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;"
+                                      ,   "font-size: 1rem;"
+                                      ,   "font-weight: 400;"
+                                      ,   "line-height: 1.5;"
+                                      ,   "color: #212529;"
+                                      ,   "text-align: left; }"
+                                      , " * { margin: 0; padding: 0; box-sizing: border-box; } "
+                                      ]};
+                            element ->
+                                RootEl = "div.programaker-element ",
+                                { RootEl,
+                                  [ RootEl, "* { margin: 0; padding: 0; box-sizing: border-box; } "
+                                  , RootEl, "{ text-align: center; } "
+                                  ]}
+                        end,
+
     [ <<"<style>">>
-    , <<"* { margin: 0; padding: 0; box-sizing: border-box; } ">>
-    , <<"body { height: 100vh; text-align: center; background-color: #fff; } ">>
-    , "body {"
-    ,   "font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;"
-    ,   "font-size: 1rem;"
-    ,   "font-weight: 400;"
-    ,   "line-height: 1.5;"
-    ,   "color: #212529;"
-    ,   "text-align: left; }"
-    , <<".hbox { justify-content: space-evenly; } ">>
-    , <<".vbox { flex-flow: column; justify-content: space-evenly; } ">>
-    , <<".dynamic_text { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
-    , ".fixed_text { max-width: 50em; overflow-wrap: anywhere; } "
-    , <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
-    , <<".widget { margin: 0 auto; width: max-content; height: max-content; padding: 1ex; } ">>
-    , "hr { width: calc(50% - 2px); margin: 1ex auto; border: 1px solid #fff; mix-blend-mode: difference; } "
-    , "hr.size-short { width: calc(min(100%, 20ex) - 2px); } "
-    , "hr.size-full { width: calc(100% - 2px); } "
-    , ".hbox > .inner-box { margin: 0 auto; width: max-content; max-width: 100%; text-align: center; }"
-    , ".hbox > .inner-box > .vbox, .hbox > .inner-box > .simple_card { display: inline-flex; vertical-align: top; max-width: 100%; }"
-    , ".simple_card { margin: 0 auto; width: max-content; }"
-    , ".simple_card > .inner-box { margin: 1ex; padding: 1ex; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
-    , ".simple_card > .inner-box > .vbox { margin: auto; }"
-    , ".simple_card > .inner-box > .widget-container > .widget { margin: auto; }"
-    , "img { max-width: 100vw; max-height: 100vw; }" % Set some baseline to image sizes
-    , "font a { color: inherit; }"
+    , RootStyle
+    , Root, <<".hbox { justify-content: space-evenly; } ">>
+    , Root, <<".vbox { flex-flow: column; justify-content: space-evenly; } ">>
+    , Root, <<".dynamic_text { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
+    , Root, ".fixed_text { max-width: 50em; overflow-wrap: anywhere; } "
+    , Root, <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
+    , Root, <<".widget { margin: 0 auto; padding: 1ex; } ">>
+    , Root, "hr { width: calc(50% - 2px); margin: 1ex auto; border: 1px solid #aaa; } "
+    , Root, "hr.size-short { width: calc(min(100%, 20ex) - 2px); } "
+    , Root, "hr.size-full { width: calc(100% - 2px); } "
+    , Root, ".hbox > .inner-box { margin: 0 auto; width: max-content; max-width: 100%; text-align: center; }"
+    , Root, ".hbox > .inner-box > .vbox, .hbox > .inner-box > .simple_card { display: inline-flex; vertical-align: top; max-width: 100%; }"
+    , Root, ".simple_card { margin: 0 auto; width: max-content; }"
+    , Root, ".simple_card > .inner-box { margin: 1ex; padding: 1ex; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
+    , Root, ".simple_card > .inner-box > .vbox { margin: auto; }"
+    , Root, ".simple_card > .inner-box > .widget-container > .widget { margin: auto; }"
+    , Root, "img { max-width: 100vw; max-height: 100vw; }" % Set some baseline to image sizes
+    , Root, "font a { color: inherit; }"
     , <<"</style>">>
     ].
 
@@ -312,13 +332,14 @@ get_text_element_background_color_style(#{ <<"settings">> := #{ <<"bg">> := #{ <
 get_text_element_background_color_style(_) ->
     [].
 
-get_image_url(#{ <<"settings">> := #{ <<"body">> := #{ <<"image">> := #{ <<"id">> := ImgId } } } }, ProgramId) ->
-    [ "/api/v0/programs/by-id/"
-    , ProgramId
-    , "/assets/by-id/"
-    , ImgId
-    ];
-get_image_url(_, _) ->
+get_image_url(#{ <<"settings">> := #{ <<"body">> := #{ <<"image">> := #{ <<"id">> := ImgId } } } }, ProgramId, Req) ->
+    ImagePath = [ "/api/v0/programs/by-id/"
+                , ProgramId
+                , "/assets/by-id/"
+                , ImgId
+                ],
+    cowboy_req:uri(Req, #{path => ImagePath, qs => undefined});
+get_image_url(_, _, _) ->
     []. %% TODO: Add a default image?
 
 get_text_element_underline_color_style(#{ <<"underline">> := <<"none">>}) ->
