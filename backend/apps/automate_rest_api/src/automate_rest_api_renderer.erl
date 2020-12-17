@@ -215,7 +215,7 @@ render_styles(RenderAs) ->
     , Root, ".simple_card > .inner-box { margin: 1ex; padding: 1ex; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
     , Root, ".simple_card > .inner-box > .vbox { margin: auto; }"
     , Root, ".simple_card > .inner-box > .widget-container > .widget { margin: auto; }"
-    , Root, "img { max-width: 100vw; max-height: 100vw; }" % Set some baseline to image sizes
+    , Root, "img { max-width: 75vw; max-height: 75vh; }" % Set some baseline to image sizes
     , Root, "font a { color: inherit; }"
     , <<"</style>">>
     ].
@@ -312,7 +312,7 @@ get_text_element_text_color_style(_) ->
     [].
 
 get_text_element_font_size_style(#{ <<"settings">> := #{ <<"text">> := #{ <<"fontSize">> := #{ <<"value">> := Value } } } }) ->
-    [ "font-size: ", integer_to_binary(Value), "px;"
+    [ "font-size: ", responsive_font_size(Value), ";"
     ];
 get_text_element_font_size_style(_) ->
     [].
@@ -414,3 +414,12 @@ font_weight_to_css(<<"super-light">>) ->
     "100";
 font_weight_to_css(<<"super-bold">>) ->
     "900".
+
+%% Set limits to font size
+responsive_font_size(FontSizeInPx) ->
+    MinSize = "0.5rem",
+    MaxSize = "10vw",
+    [ "clamp(", MinSize
+    , ", ", integer_to_binary(FontSizeInPx), "px"
+    , ", ", MaxSize, ")"
+    ].
