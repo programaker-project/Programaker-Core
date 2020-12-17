@@ -11,7 +11,7 @@ RUN npm run ${BUILD_COMMAND}
 # Copy final app to runner
 FROM nginx:alpine as runner
 
-copy --from=builder /app/dist/ /usr/share/nginx/html/
+copy --from=builder /app/dist/programaker/browser /usr/share/nginx/html/
 
 # Add nginx configuration
 ADD config/simple-nginx.conf /etc/nginx/conf.d/default.conf

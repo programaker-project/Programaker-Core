@@ -141,7 +141,7 @@ tag-ssr-frontend-branch:
     - master
 
 ## Programaker Frontend
-build-programaker-ssr-frontend:
+build-programaker-frontend:
   stage: build
   before_script:
     - mkdir -p tmp_docker_images/ || true
@@ -152,18 +152,18 @@ build-programaker-ssr-frontend:
       - tmp_docker_images/
     expire_in: 24h # No need to keep it around
   script:
-    - docker build --build-arg BUILD_COMMAND=build:programaker-ssr -t $DOCKER_IMAGE_FRONTEND  -f scripts/ci-partial-ssr.dockerfile .
+    - docker build --build-arg BUILD_COMMAND=build-programaker -t $DOCKER_IMAGE_FRONTEND  -f scripts/ci-partial.dockerfile .
     - docker save $DOCKER_IMAGE_FRONTEND -o ../tmp_docker_images/programaker-frontend.tar
   only:
     - develop
     - master
 
-push-programaker-ssr-frontend:
+push-programaker-frontend:
   stage: push-commit
   dependencies:
-    - build-programaker-ssr-frontend
+    - build-programaker-frontend
   needs:
-    - build-programaker-ssr-frontend
+    - build-programaker-frontend
     - test-frontend-logic
     - test-frontend-on-browser
   before_script:
@@ -177,12 +177,12 @@ push-programaker-ssr-frontend:
     - develop
     - master
 
-tag-programaker-ssr-frontend-branch:
+tag-programaker-frontend-branch:
   stage: push-branch
   dependencies:
-    - build-programaker-ssr-frontend
+    - build-programaker-frontend
   needs:
-    - build-programaker-ssr-frontend
+    - build-programaker-frontend
     - test-frontend-logic
     - test-frontend-on-browser
   before_script:
