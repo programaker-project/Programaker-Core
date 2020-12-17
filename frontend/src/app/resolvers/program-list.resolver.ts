@@ -22,7 +22,13 @@ export class ProgramListResolver implements Resolve<ProgramMetadata[]> {
         if (params.group_name) {
             const groupName = params.group_name;
 
-            asGroup = (await this.groupService.getGroupWithName(groupName)).id;
+            try {
+                asGroup = (await this.groupService.getGroupWithName(groupName)).id;
+            }
+            catch(err) {
+                console.error(err);
+                return null;
+            }
         }
 
         let programListing: Promise<ProgramMetadata[]>;
@@ -33,6 +39,9 @@ export class ProgramListResolver implements Resolve<ProgramMetadata[]> {
             programListing = this.programService.getPrograms();
         }
 
-        return programListing;
+        return programListing.catch(err => {
+            console.error(err);
+            return null;
+        });
     }
 }

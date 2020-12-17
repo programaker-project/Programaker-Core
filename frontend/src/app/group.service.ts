@@ -111,10 +111,9 @@ export class GroupService {
     }
 
     async getGroupWithName(groupName: any): Promise<GroupInfo> {
-        const url = await this.getGroupInfoUrl(groupName);
+        const url = this.getGroupInfoUrl(groupName);
 
-        const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
-            .toPromise();
+        const result = await (this.http.get(url, { headers: this.sessionService.getAuthHeader()}).toPromise());
 
         return result['group'];
     }

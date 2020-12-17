@@ -46,9 +46,11 @@ export class AdminSettingsComponent {
                     this.session = data.session;
                     if (!data.session.active) {
                         this.router.navigate(['/login'], {replaceUrl:true});
+                        return;
                     }
                     else if (!data.session.tags.is_admin) {
                         this.router.navigate(['/settings'], {replaceUrl:true});
+                        return;
                     }
 
                     this.stats = data.adminStats;
