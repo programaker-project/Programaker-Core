@@ -22,10 +22,10 @@ export class SessionService {
     //   are obtained through Dependency Injection, it allows for every instance
     //   of the class to share the relevant state.
     // The shared state is the established session, it's Observable and Observer.
-    static EstablishedSession: Session = null;
-    static sessionInfoObservable: Observable<SessionInfoUpdate> = null;
-    private static _sessionInfoObserver: Observer<SessionInfoUpdate> = null;
-    static EstablishmentPromise: Promise<Session> = null;
+    private  EstablishedSessions:    {[key: string]: Session} = {};
+    private  sessionInfoObservables: {[key: string]: Observable<SessionInfoUpdate>} = {};
+    private  _sessionInfoObservers:  {[key: string]: Observer<SessionInfoUpdate>} = {};
+    private  EstablishmentPromises:  {[key: string]: Promise<Session>} = {};
 
     constructor(
         private http: HttpClient,
@@ -63,12 +63,9 @@ export class SessionService {
 
 
     async getUserApiRoot(): Promise<string> {
-        let session = SessionService.EstablishedSession;
-        if (session === null) {
-            session = await this.getSession();
-            if (!session.active) {
-                throw Error("No session");
-            }
+        const session = await this.getSession();
+        if (!session.active) {
+            throw Error("No session");
         }
 
         return this.getApiRootForUser(session.username);
@@ -80,12 +77,9 @@ export class SessionService {
 
     async getApiRootForUserId(user_id?: string): Promise<string> {
         if (!user_id) {
-            let session = SessionService.EstablishedSession;
-            if (!session) {
-                session = await this.getSession();
-                if (!session.active) {
-                    throw Error("No session");
-                }
+            const session = await this.getSession();
+            if (!session.active) {
+                throw Error("No session");
             }
             user_id = session.user_id;
         }
@@ -94,12 +88,9 @@ export class SessionService {
 
     async getApiRootForUserIdNew(user_id?: string): Promise<string> {
         if (!user_id) {
-            let session = SessionService.EstablishedSession;
-            if (!session) {
-                session = await this.getSession();
-                if (!session.active) {
-                    throw Error("No session");
-                }
+            const session = await this.getSession();
+            if (!session.active) {
+                throw Error("No session");
             }
             user_id = session.user_id;
         }
@@ -172,18 +163,25 @@ export class SessionService {
     }
 
     async getSessionMonitor(): Promise<{session: Session, monitor: Observable<SessionInfoUpdate>}> {
-        if (!SessionService.sessionInfoObservable) {
+        const token = this.getToken();
+        if (!token) {
+            throw new Error("Cannot monitor session with no token");
+        }
+
+
+        if (!this.sessionInfoObservables[token]) {
             this._monitorSession();
         }
 
         return {
             session: await this.getSession(),
-            monitor: SessionService.sessionInfoObservable,
+            monitor: this.sessionInfoObservables[token],
         };
     }
 
     getSession(): Promise<Session> {
-        if (this.getToken() === null) {
+        const token = this.getToken();
+        if (token === null) {
             // Return unactive session
             return Promise.resolve({
                 username: null,
@@ -202,15 +200,35 @@ export class SessionService {
             this._duplicateSessionTokenToCookie();
         }
 
-        if (SessionService.EstablishedSession !== null) {
-            return Promise.resolve(SessionService.EstablishedSession);
+        if (this.EstablishedSessions[token] && this.EstablishedSessions[token].active) {
+            return Promise.resolve(this.EstablishedSessions[token]);
         }
 
-        if (!SessionService.EstablishmentPromise) {
-            SessionService.EstablishmentPromise = this.forceUpdateSession();
+        if (!this.EstablishmentPromises[token]) {
+            const thisPromise = this.EstablishmentPromises[token] = this.forceUpdateSession().catch(err => {
+                console.error(err);
+
+                // "Un-cache" the failed session
+                if (this.EstablishmentPromises[token] === thisPromise) {
+                    this.EstablishmentPromises[token] = null;
+                    this._updateSession(null);
+                }
+
+                // Return unactive session
+                return Promise.resolve({
+                    username: null,
+                    user_id: null,
+                    active: false,
+                    tags: {
+                        is_admin: false,
+                        is_advanced: false,
+                        is_in_preview: false,
+                    }
+                });
+            });
         }
 
-        return SessionService.EstablishmentPromise;
+        return this.EstablishmentPromises[token];
     }
 
     login(username: string, password: string): Promise<boolean> {
@@ -232,8 +250,8 @@ export class SessionService {
     }
 
     logout() {
-        this.removeToken();
         this._updateSession(null);
+        this.removeToken();
     }
 
     register(username: string, email: string, password: string): Promise<{ success: boolean, continue_to_login: boolean}> {
@@ -344,18 +362,31 @@ export class SessionService {
     }
 
     private _monitorSession() {
-        const service = this;
+        const token = this.getToken();
+        if (!token) {
+            throw new Error("Cannot monitor session with no token");
+        }
 
-        SessionService.sessionInfoObservable = new Observable((observer) => {
-            SessionService._sessionInfoObserver = observer;
+        this.sessionInfoObservables[token] = new Observable((observer) => {
+            this._sessionInfoObservers[token] = observer;
             // This will be operated from `_updateSession`
         });
     }
 
     private _updateSession(session: Session) {
-        SessionService.EstablishedSession = session;
-        if (SessionService._sessionInfoObserver) {
-            SessionService._sessionInfoObserver.next({ session: session });
+        const token = this.getToken();
+        if (!token) {
+            if (session) {
+                throw new Error("Cannot update session with no token");
+            }
+            else {
+                throw new Error("Finishing session when token is null, this should NOT happen");
+            }
+        }
+
+        this.EstablishedSessions[token] = session;
+        if (this._sessionInfoObservers[token]) {
+            this._sessionInfoObservers[token].next({ session: session });
         }
     }
 
