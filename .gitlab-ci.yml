@@ -119,6 +119,7 @@ push-ssr-frontend:
   only:
     - develop
     - master
+  when: manual
 
 tag-ssr-frontend-branch:
   stage: push-branch
@@ -139,6 +140,7 @@ tag-ssr-frontend-branch:
   only:
     - develop
     - master
+  when: manual
 
 ## Programaker Frontend
 build-programaker-frontend:
