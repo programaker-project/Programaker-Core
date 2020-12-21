@@ -242,7 +242,7 @@ export class FlowEditorComponent implements OnInit {
                                               );
         this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
                                                     this.customBlockService,
-                                                    this.bridgeService,
+                                                    this.serviceService,
                                                     this.environmentService,
                                                     this.program.id,
                                                     this.uiSignalService,
@@ -261,7 +261,7 @@ export class FlowEditorComponent implements OnInit {
 
         this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
                                                     this.customBlockService,
-                                                    this.bridgeService,
+                                                    this.serviceService,
                                                     this.environmentService,
                                                     this.program.id,
                                                     this.uiSignalService,
