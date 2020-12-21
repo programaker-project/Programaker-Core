@@ -1,23 +1,23 @@
-import { BridgeIndexData } from '../bridges/bridge';
-import { BridgeService } from '../bridges/bridge.service';
+import { MatDialog } from '@angular/material/dialog';
+import { BridgeConnection } from 'app/connection';
+import { ConnectionService } from 'app/connection.service';
+import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
+import { EnvironmentService } from 'app/environment.service';
+import { ServiceService } from 'app/service.service';
+import { UiSignalService } from 'app/services/ui-signal.service';
+import { Session } from 'app/session';
 import { ResolvedBlockArgument, ResolvedCustomBlock, ResolvedDynamicBlockArgument } from '../custom_block';
 import { CustomBlockService } from '../custom_block.service';
 import { iconDataToUrl } from '../utils';
 import { AtomicFlowBlock, isAtomicFlowBlockOptions } from './atomic_flow_block';
+import { BaseToolboxDescription } from './base_toolbox_description';
 import { InputPortDefinition, MessageType, OutputPortDefinition } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
 import { Toolbox } from './toolbox';
-import { BaseToolboxDescription } from './base_toolbox_description';
-import { EnvironmentService } from 'app/environment.service';
-import { UiToolboxDescription } from './ui-blocks/ui_toolbox_description';
-import { UiFlowBlock, isUiFlowBlockOptions } from './ui-blocks/ui_flow_block';
-import { UiSignalService } from 'app/services/ui-signal.service';
-import { Session } from 'app/session';
-import { ContainerFlowBlock, isContainerFlowBlockOptions } from './ui-blocks/container_flow_block';
-import { ConnectionService } from 'app/connection.service';
 import { ToolboxFlowButton } from './toolbox-flow-button';
-import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
-import { MatDialog } from '@angular/material/dialog';
+import { ContainerFlowBlock, isContainerFlowBlockOptions } from './ui-blocks/container_flow_block';
+import { isUiFlowBlockOptions, UiFlowBlock } from './ui-blocks/ui_flow_block';
+import { UiToolboxDescription } from './ui-blocks/ui_toolbox_description';
 
 
 export function buildBaseToolbox(baseElement: HTMLElement,
@@ -78,7 +78,7 @@ export function buildBaseToolbox(baseElement: HTMLElement,
 export async function fromCustomBlockService(baseElement: HTMLElement,
                                              workspace: FlowWorkspace,
                                              customBlockService: CustomBlockService,
-                                             bridgeService: BridgeService,
+                                             serviceService: ServiceService,
                                              environmentService: EnvironmentService,
                                              programId: string,
                                              uiSignalService: UiSignalService,
@@ -90,14 +90,20 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
     const base = buildBaseToolbox(baseElement, workspace, uiSignalService, session);
 
     const availableConnectionsQuery = connectionService.getAvailableBridgesForNewConnectionOnProgram(programId);
-    const data = await bridgeService.listUserBridges();
 
-    const bridges = data.bridges;
-    const bridge_by_id: {[key: string]: BridgeIndexData} = {} ;
+    const [connections, services] =  await Promise.all([
+        connectionService.getConnectionsOnProgram(programId),
+        serviceService.getAvailableServicesOnProgram(programId),
+    ]);
 
-    for (const bridge of bridges) {
-        bridge_by_id[bridge.id] = bridge;
-        base.setCategory({ id: bridge.id, name: bridge.name });
+    const connection_by_id: {[key: string]: BridgeConnection} = {};
+
+    for (const connection of connections) {
+        connection_by_id[connection.bridge_id] = connection;
+    }
+
+    for (const service of services) {
+        base.setCategory({ id: service.id, name: service.name });
     }
 
     const skip_resolve_argument_options = true; // Enum options will be filled when needed
@@ -105,10 +111,14 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
     for (const block of blocks) {
         let icon = null;
 
-        const bridge = bridge_by_id[block.service_port_id];
-        if (bridge) {
-            icon = iconDataToUrl(environmentService, bridge.icon, bridge.id);
+        const connection = connection_by_id[block.service_port_id];
+        if (connection) {
+            icon = iconDataToUrl(environmentService, connection.icon, connection.bridge_id);
         }
+        else {
+            console.error("No connection found for", block, connection_by_id);
+        }
+
 
         const [message, translationTable] = get_block_message(block);
 
@@ -124,7 +134,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
             return new AtomicFlowBlock({
                 icon: icon,
                 message: message,
-                block_function: 'services.' + bridge.id + '.' + block.function_name,
+                block_function: 'services.' + block.service_port_id + '.' + block.function_name,
                 type: (block.block_type as any),
                 inputs: get_block_inputs(block),
                 outputs: get_block_outputs(block),
