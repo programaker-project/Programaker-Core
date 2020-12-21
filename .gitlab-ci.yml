@@ -6,6 +6,7 @@ stages:
   - integration-test
   - push-commit
   - push-branch  # To avoid duplicating the upload do it sequentially
+  - push-extras
 
 variables:
   DOCKER_IMAGE_FRONTEND: programaker-core-frontend
@@ -85,56 +86,20 @@ tag-frontend-branch:
     - master
 
 ## SSR Frontend
-build-ssr-frontend:
-  stage: build
-  before_script:
-    - mkdir -p tmp_docker_images/ || true
-    - cd frontend
-  needs: []
-  artifacts:
-    paths:
-      - tmp_docker_images/
-    expire_in: 24h # No need to keep it around
-  script:
-    - docker build --build-arg BUILD_COMMAND=build:ssr -t $DOCKER_IMAGE_FRONTEND  -f scripts/ci-partial-ssr.dockerfile .
-    - docker save $DOCKER_IMAGE_FRONTEND -o ../tmp_docker_images/ssr-frontend.tar
-  when: manual
-
-push-ssr-frontend:
-  stage: push-commit
+build-tag-push-ssr-frontend:
+  stage: push-extras
   dependencies:
-    - build-ssr-frontend
-  needs:
-    - build-ssr-frontend
     - test-ssr-frontend
     - test-frontend-logic
     - test-frontend-on-browser
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker load -i tmp_docker_images/ssr-frontend.tar
-    - cd frontend
+  needs: []
   script:
+    # Build
+    - docker build --build-arg BUILD_COMMAND=build:ssr -t $DOCKER_IMAGE_FRONTEND  -f scripts/ci-partial-ssr.dockerfile .
+    # Push as commit
     - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend-ssr:$CI_COMMIT_SHA
     - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend-ssr:$CI_COMMIT_SHA
-  only:
-    - develop
-    - master
-  when: manual
-
-tag-ssr-frontend-branch:
-  stage: push-branch
-  dependencies:
-    - build-ssr-frontend
-  needs:
-    - build-ssr-frontend
-    - test-ssr-frontend
-    - test-frontend-logic
-    - test-frontend-on-browser
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker load -i tmp_docker_images/ssr-frontend.tar
-    - cd frontend
-  script:
+    # Push as branch
     - docker tag $DOCKER_IMAGE_FRONTEND "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend-ssr:$CI_COMMIT_REF_NAME
     - docker push "$CI_REGISTRY"/"$CI_PROJECT_PATH"/frontend-ssr:$CI_COMMIT_REF_NAME
   only:
