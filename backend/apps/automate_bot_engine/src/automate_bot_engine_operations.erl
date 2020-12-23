@@ -199,8 +199,7 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                           , block_id=BlockId
                                           } ->
                                 { Error
-                                , binary:list_to_bin(
-                                    lists:flatten(io_lib:format("Variable '~s' not set", [VariableName])))
+                                , list_to_binary(io_lib:format("Variable '~s' not set", [VariableName]))
                                 , BlockId
                                 };
 
@@ -208,8 +207,7 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                           , block_id=BlockId
                                           } ->
                                 { Error
-                                , binary:list_to_bin(
-                                    lists:flatten(io_lib:format("List '~s' not set", [ListName])))
+                                , list_to_binary(io_lib:format("List '~s' not set", [ListName]))
                                 , BlockId
                                 };
 
@@ -220,9 +218,8 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                           , block_id=BlockId
                                           } ->
                                 { Error
-                                , binary:list_to_bin(
-                                    lists:flatten(io_lib:format("Cannot access position ~s on list '~s'. Only ~s elements",
-                                                                [Index, ListName, MaxIndex])))
+                                , list_to_binary(io_lib:format("Cannot access position ~0tp on list '~s'. Only ~0tp elements",
+                                                               [Index, ListName, MaxIndex]))
                                 , BlockId
                                 };
 
@@ -232,10 +229,9 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                           , block_id=BlockId
                                           } ->
                                 { Error
-                                , binary:list_to_bin(
-                                    lists:flatten(io_lib:format("Trying to access non valid position list '~s'. "
-                                                                "Position must be a non-negative number. Found '~s'.",
-                                                                [ListName, Index])))
+                                , list_to_binary(io_lib:format("Trying to access non valid position list '~s'. "
+                                                               "Position must be a non-negative number. Found '~0tp'.",
+                                                               [ListName, Index]))
                                 , BlockId
                                 };
 
@@ -243,9 +239,8 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                           , block_id=BlockId
                                           } ->
                                 { Error
-                                , binary:list_to_bin(
-                                    lists:flatten(io_lib:format("Unknown operation found! Please, report this to the administrator",
-                                                               [])))
+                                , list_to_binary(io_lib:format("Unknown operation found! Please, report this to the administrator",
+                                                               []))
                                 , BlockId
                                 };
                             _ ->
