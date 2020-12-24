@@ -47,6 +47,7 @@
         , delete_running_process/1
         , update_program_status/2
         , is_user_allowed/3
+        , get_program_pages/1
         , get_program_page/2
         , add_user_asset/3
         , get_user_asset_info/2
@@ -611,6 +612,13 @@ is_user_allowed(Owner, ProgramId, Action) ->
         { aborted, Reason } ->
             {error, Reason}
     end.
+
+-spec get_program_pages(ProgramId :: binary()) -> {ok, [#program_pages_entry{}]} | {error, not_found}.
+get_program_pages(ProgramId) ->
+    T = fun() ->
+                {ok, mnesia:index_read(?PROGRAM_PAGES_TABLE, ProgramId, #program_pages_entry.program_id)}
+        end,
+    wrap_transaction(mnesia:ets(T)).
 
 -spec get_program_page(ProgramId :: binary(), Path :: binary()) -> {ok, #program_pages_entry{}} | {error, not_found}.
 get_program_page(ProgramId, Path) ->

@@ -82,6 +82,14 @@ content_types_provided(Req, State) ->
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
 to_json(Req, State=#state{program_id=ProgramId, user_id=UserId}) ->
+    Qs = cowboy_req:parse_qs(Req),
+    IncludePages = case proplists:get_value(<<"retrieve_pages">>, Qs) of
+                       <<"yes">> ->
+                           true;
+                       _ ->
+                           false
+               end,
+
     case automate_rest_api_backend:get_program(ProgramId) of
         { ok, Program=#user_program{last_upload_time=ProgramTime} } ->
             Checkpoint = case automate_storage:get_last_checkpoint_content(ProgramId) of
@@ -95,14 +103,26 @@ to_json(Req, State=#state{program_id=ProgramId, user_id=UserId}) ->
                              {error, not_found} ->
                                  null
                          end,
+
             Json = ?FORMATTING:program_data_to_json(Program, Checkpoint),
+
             {ok, CanEdit} = automate_storage:is_user_allowed({user, UserId}, ProgramId, edit_program),
-            Output = Json#{ readonly => not CanEdit },
+            Json2 = Json#{ readonly => not CanEdit },
+            Json3 = case IncludePages of
+                        false -> Json2;
+                        true ->
+                            {ok, Pages} = automate_storage:get_program_pages(ProgramId),
+                            Json#{ pages => maps:from_list(lists:map(fun (#program_pages_entry{ page_id={_, Path}
+                                                                                              , contents=Contents}) ->
+                                                                             {Path, Contents}
+                                                                     end, Pages))
+                                 }
+                    end,
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            { jiffy:encode(Output), Res2, State }
+            { jiffy:encode(Json3), Res2, State }
     end.
 content_types_accepted(Req, State) ->
     {[{{<<"application">>, <<"json">>, []}, accept_json_program}],
