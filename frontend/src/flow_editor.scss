@@ -45,6 +45,12 @@ svg.block_renderer.selecting rect.selection {
     display: block;
 }
 
+svg.block_renderer.read-only g.flow_node > a,
+svg.block_renderer.read-only g.flow_node > g
+{
+    cursor: not-allowed;
+}
+
 svg.block_renderer g.flow_node > a,
 svg.block_renderer g.flow_node > g
 {
@@ -153,6 +159,10 @@ svg.block_renderer:not(.drawing) {
             stroke: #3f3f3f;
         }
     }
+
+    &.read-only path.established:hover {
+        cursor: not-allowed
+    }
 }
 
 svg.block_renderer g.flow_node rect.node_body {
@@ -194,6 +204,10 @@ svg.block_renderer.drawing rect.node_body {
 
 svg.block_renderer g.flow_node .input, svg.block_renderer g.flow_node .output  {
     cursor: pointer;
+}
+
+svg.block_renderer.read-only g.flow_node .input, svg.block_renderer g.flow_node .output  {
+    cursor: not-allowed;
 }
 
 svg.block_renderer g.flow_node rect.port_plating {
@@ -267,6 +281,10 @@ svg.block_renderer g.input_helper {
     cursor: pointer;
 }
 
+svg.block_renderer.read-only g.input_helper {
+    cursor: not-allowed;
+}
+
 svg.block_renderer g.input_helper.hidden {
     display: none;
 }
@@ -296,6 +314,10 @@ svg.block_renderer g.input_helper path.connection_line {
 svg.block_renderer g.flow_node.direct_value_node text.node_name {
     font-family: helvetica;
     cursor: text;
+}
+
+svg.block_renderer.read-only g.flow_node.direct_value_node text.node_name {
+    cursor: not-allowed;
 }
 
 svg.block_renderer g.flow_node.editing rect.node_body {
@@ -334,6 +356,11 @@ svg.block_renderer g.flow_node.editing rect.node_body {
 // ContentEditable divs
 div[contenteditable="true"] {
     cursor: text;
+}
+
+svg.read-only div[contenteditable="true"] {
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 #workspace div[contenteditable="true"] a {
@@ -399,6 +426,10 @@ div[contenteditable="true"] {
 // Variable dropdown editor
 svg.block_renderer .named_var {
     cursor: pointer;
+}
+
+svg.block_renderer.read-only .named_var {
+    cursor: not-allowed;
 }
 
 svg.block_renderer .named_var .var_name {
@@ -485,6 +516,10 @@ svg.block_renderer .named_var .var_plate {
 }
 
 // Trashcan
+.trashcan.invisible {
+    visibility: invisible;
+}
+
 .trashcan .backdrop {
     fill: #fafafa;
 }

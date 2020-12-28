@@ -73,6 +73,7 @@ export class FlowEditorComponent implements OnInit {
     smallScreen: boolean;
     pages: { name: string; url: string; }[];
     workspaceElement: HTMLElement;
+    read_only: boolean;
 
     constructor(
         private browser: BrowserService,
@@ -140,6 +141,7 @@ export class FlowEditorComponent implements OnInit {
                         }))
                         .subscribe(program => {
                             this.program = program;
+                            this.read_only = program.readonly;
                             this.prepareWorkspace().then(() => {
                                 this.load_program(program);
                                 resolve();
@@ -239,6 +241,7 @@ export class FlowEditorComponent implements OnInit {
                                                this.dialog,
                                                this.programId,
                                                this.programService,
+                                               this.read_only,
                                               );
         this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
                                                     this.customBlockService,
@@ -250,6 +253,7 @@ export class FlowEditorComponent implements OnInit {
                                                     this.session,
                                                     this.dialog,
                                                     this.reloadToolbox.bind(this),
+                                                    this.read_only,
                                                    );
         this.workspace.setToolbox(this.toolbox);
     }
@@ -269,6 +273,7 @@ export class FlowEditorComponent implements OnInit {
                                                     this.session,
                                                     this.dialog,
                                                     this.reloadToolbox.bind(this),
+                                                    this.read_only,
                                                    );
         this.workspace.setToolbox(this.toolbox);
     }

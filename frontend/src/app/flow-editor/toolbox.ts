@@ -21,10 +21,11 @@ export class Toolbox {
                           workspace: FlowWorkspace,
                           uiSignalService: UiSignalService,
                           session: Session,
+                          logic_only: boolean,
                          ): Toolbox {
         let toolbox: Toolbox;
         try {
-            toolbox = new Toolbox(baseElement, workspace, uiSignalService, session);
+            toolbox = new Toolbox(baseElement, workspace, uiSignalService, session, logic_only);
             toolbox.init();
         }
         catch(err) {
@@ -41,6 +42,7 @@ export class Toolbox {
                         private workspace: FlowWorkspace,
                         public uiSignalService: UiSignalService,
                         private session: Session,
+                        private logic_only: boolean,
                        ) { }
 
     onResize() {}
@@ -50,6 +52,10 @@ export class Toolbox {
     }
 
     init() {
+        if (this.logic_only) {
+            return;
+        }
+
         this.toolboxDiv = document.createElement('div');
         this.toolboxDiv.setAttribute('class', 'toolbox');
         this.baseElement.appendChild(this.toolboxDiv);
@@ -65,7 +71,7 @@ export class Toolbox {
 
     setCategory(cat:{ id: string, name: string }) {
         const [div, updated] = this.getOrCreateCategory(cat);
-        if (!updated) {
+        if (!updated && !this.logic_only) {
             const title = div.getElementsByClassName('category_title')[0] as HTMLDivElement;
             title.innerText = cat.name;
         }
@@ -76,7 +82,7 @@ export class Toolbox {
         let categoryShortcut = this.categoryShortcuts[cat.id];
         let created_now = false;
 
-        if (!category_div) {
+        if (!category_div && !this.logic_only) {
             category_div = this.categories[cat.id] = document.createElement('div');
             category_div.setAttribute('class', 'category empty cat_name_' + cat.name + ' cat_id_' + cat.id);
             this.blockShowcase.appendChild(category_div);
@@ -120,6 +126,10 @@ export class Toolbox {
     }
 
     addBlockGenerator(generator: BlockGenerator, category_id: string) {
+        if (this.logic_only) {
+            return;
+        }
+
         if (category_id === ADVANCED_CATEGORY) {
             if (!this.session.tags.is_advanced) {
                 return; // Skip advaced blocks if the user has not activated them
@@ -202,6 +212,10 @@ export class Toolbox {
     }
 
     addActuator(generator: ActuatorGenerator, category_id: string) {
+        if (this.logic_only) {
+            return;
+        }
+
         if (category_id === ADVANCED_CATEGORY) {
             if (!this.session.tags.is_advanced) {
                 return; // Skip advaced blocks if the user has not activated them
