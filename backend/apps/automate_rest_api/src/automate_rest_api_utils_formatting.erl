@@ -14,6 +14,7 @@
         , collaborator_to_json/1
         , bridge_to_json/1
         , connection_to_json/1
+        , asset_list_to_json/1
         ]).
 
 -include("./records.hrl").
@@ -259,6 +260,22 @@ connection_to_json(#user_to_bridge_connection_entry{ id=Id
         {error, _Reason} ->
             false
     end.
+
+-spec asset_list_to_json([#user_asset_entry{}]) -> [map()].
+asset_list_to_json(Assets) ->
+    lists:map(fun(#user_asset_entry{ asset_id={ {OwnerType, OwnerId}, AssetId }, mime_type=MimeType }) ->
+                      #{ id => AssetId
+                       , owner_full => #{ type => OwnerType
+                                        , id => OwnerId
+                                        }
+                       , mime_type => case MimeType of
+                                          { Type, undefined } ->
+                                              Type;
+                                          { Type, Subtype } ->
+                                              <<Type/binary, "/", Subtype/binary>>
+                                      end
+                       }
+              end, Assets).
 
 serialize_string_or_undefined(undefined) ->
     null;
