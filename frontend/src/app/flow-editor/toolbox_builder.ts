@@ -24,8 +24,9 @@ export function buildBaseToolbox(baseElement: HTMLElement,
                                  workspace: FlowWorkspace,
                                  uiSignalService: UiSignalService,
                                  session: Session,
+                                 logic_only: boolean,
                                 ): Toolbox {
-    const tb = Toolbox.BuildOn(baseElement, workspace, uiSignalService, session);
+    const tb = Toolbox.BuildOn(baseElement, workspace, uiSignalService, session, logic_only);
 
     for (const category of [...UiToolboxDescription, ...BaseToolboxDescription]) {
         tb.setCategory({ id: category.id, name: category.name });
@@ -86,8 +87,13 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                                              session: Session,
                                              dialog: MatDialog,
                                              triggerToolboxReload: () => void,
+                                             logic_only: boolean,
                                             ): Promise<Toolbox> {
-    const base = buildBaseToolbox(baseElement, workspace, uiSignalService, session);
+    const base = buildBaseToolbox(baseElement, workspace, uiSignalService, session, logic_only);
+
+    if (logic_only) {
+        return base;
+    }
 
     const availableConnectionsQuery = connectionService.getAvailableBridgesForNewConnectionOnProgram(programId);
 

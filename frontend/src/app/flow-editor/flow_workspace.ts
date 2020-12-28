@@ -50,10 +50,11 @@ export class FlowWorkspace implements BlockManager {
                           dialog: MatDialog,
                           programId: string,
                           programService: ProgramService,
+                          read_only: boolean,
                          ): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
-            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId, programService);
+            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId, programService, read_only);
             workspace.init();
         }
         catch(err) {
@@ -260,6 +261,7 @@ export class FlowWorkspace implements BlockManager {
                         private dialog: MatDialog,
                         private programId: string,
                         private programService: ProgramService,
+                        private read_only: boolean,
                        ) {
         this.baseElement = baseElement;
         this.blocks = {};
@@ -283,7 +285,7 @@ export class FlowWorkspace implements BlockManager {
         this.baseElement.appendChild(this.popupGroup);
 
         this.canvas = document.createElementNS(SvgNS, "svg");
-        this.canvas.setAttribute('class', 'block_renderer');
+        this.canvas.setAttribute('class', 'block_renderer ' + (this.read_only ? "read-only" : ''));
 
         this.selectionRect = document.createElementNS(SvgNS, "rect");
         this.selectionRect.setAttribute('class', 'selection');
@@ -346,7 +348,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private init_trashcan() {
-        this.trashcan.setAttribute('class', 'trashcan helper');
+        this.trashcan.setAttribute('class', 'trashcan helper ' + (this.read_only ? 'invisible' : '') );
 
         const rect = document.createElementNS(SvgNS, 'rect');
         rect.setAttributeNS(null, 'class', 'backdrop');
@@ -457,7 +459,7 @@ export class FlowWorkspace implements BlockManager {
             this.ensureContextMenuHidden();
 
             const time = new Date();
-            if (lastMouseDownTime && (((time as any) - lastMouseDownTime) < 1000))  {
+            if (!this.read_only && lastMouseDownTime && (((time as any) - lastMouseDownTime) < 1000))  {
                 const start = this._getPositionFromEvent(ev);
                 this.state = 'selecting-workspace';
                 this.canvas.classList.add('selecting');
@@ -911,13 +913,23 @@ export class FlowWorkspace implements BlockManager {
 
         const bodyElement = block.getBodyElement();
 
+        // Events are set even on read-only contexts, so in later iterations,
+        // that property can be changed dynamically.
         bodyElement.oncontextmenu = (ev: MouseEvent) => {
             ev.preventDefault();
+
+            if (this.read_only) {
+                return;
+            }
+
             this.showBlockContextMenu(this._getPositionFromEvent(ev));
         };
 
         bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
             if (this.state !== 'waiting'){
+                return;
+            }
+            if (this.read_only) {
                 return;
             }
 
@@ -1409,8 +1421,11 @@ export class FlowWorkspace implements BlockManager {
             existing_inputs = inputHelperGroup.children.length;
         }
 
+        let inputs = block.getInputs();
+        if (this.read_only) { inputs = []; }
+
         let index = -1;
-        for (const input of block.getInputs()) {
+        for (const input of inputs) {
             index++;
 
             if (index < existing_inputs) {
@@ -1899,6 +1914,8 @@ export class FlowWorkspace implements BlockManager {
             };
         }
         path.onclick = () => {
+            if (this.read_only) { return }
+
             this.removeConnection(conn);
         };
         this.connection_group.appendChild(path);
@@ -2032,6 +2049,7 @@ export class FlowWorkspace implements BlockManager {
                  definition: InputPortDefinition | OutputPortDefinition,
                  port_center: Position2D,
                 ): void {
+        if (this.read_only) { return; }
 
         if (!this.current_io_selected) {
             const real_center = this.getBlockRel(block, port_center);
@@ -2097,6 +2115,7 @@ export class FlowWorkspace implements BlockManager {
                       values: EnumValue[],
                       value_dict: {[key:string]: EnumValue},
                       update: (new_value: string) => void) : void {
+        if (this.read_only) { return; }
 
         const backdrop = document.createElement('div');
         this.baseElement.appendChild(backdrop);
@@ -2337,6 +2356,7 @@ export class FlowWorkspace implements BlockManager {
                        current_rect: Area2D,
                        update: (new_value: string) => void,
                       ): void {
+        if (this.read_only) { return; }
 
         const backdrop = document.createElement('div');
         this.baseElement.appendChild(backdrop);

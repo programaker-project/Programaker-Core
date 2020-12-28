@@ -13,7 +13,7 @@
         <!-- Basic functions -->
         <button mat-button mat-raised-button
             id="program-start-button" color="primary"
-            *ngIf="program !== undefined"
+            *ngIf="!read_only && program !== undefined"
             (click)="sendProgram()">
 
             <span class="load-bg"></span>
@@ -21,12 +21,12 @@
             Upload
         </button>
         <button id="program-rename-button" color="secondary"
-            *ngIf="program !== undefined"
+            *ngIf="!read_only && program !== undefined"
             (click)="renameProgram()" mat-button>
             <mat-icon>edit</mat-icon> Rename
         </button>
         <button id="program-logs-button" color="secondary"
-            *ngIf="program !== undefined"
+            *ngIf="!read_only && program !== undefined"
             (click)="toggleLogsPanel()" mat-button>
             <mat-icon>error_outline</mat-icon>
             <span *ngIf="logs_drawer.opened">Hide</span>
@@ -34,7 +34,7 @@
             logs
         </button>
         <button id="program-stop-button" color="warn"
-            *ngIf="program !== undefined"
+            *ngIf="!read_only && program !== undefined"
             (click)="stopThreadsProgram()" mat-button>
             <mat-icon>stop</mat-icon> Stop all
         </button>
@@ -48,7 +48,7 @@
         </button>
 
         <button id="addResponsiveGridControls" color="secondary"
-            *ngIf="workspace && !workspace.hasPages"
+            *ngIf="!read_only && workspace && !workspace.hasPages"
             (click)="addResponsivePage()"
             mat-button>
             <mat-icon>grid_on</mat-icon>Add web UI
@@ -57,7 +57,7 @@
         <!-- Advanced functions, on a menu -->
         <button id="advancedProgramControls" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
-            *ngIf="program !== undefined" mat-button>
+            *ngIf="!read_only && program !== undefined" mat-button>
             <mat-icon>more_vert</mat-icon> Advanced
         </button>
         <mat-menu #advancedProgramControls="matMenu">
@@ -70,7 +70,7 @@
 
         <!-- Dangerous stuff, on its own -->
         <button id="program-delete-button" color="warn"
-            *ngIf="program !== undefined"
+            *ngIf="!read_only && program !== undefined"
             (click)="deleteProgram()" mat-button>
             <mat-icon>delete_forever</mat-icon> Delete program
         </button>
