@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
-import { RouterModule, Routes, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
+import { AdminService } from './admin.service';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { FlowEditorComponent } from './flow-editor/flow-editor.component';
 import { GroupService } from './group.service';
@@ -14,23 +15,21 @@ import { VerifyCodeComponent } from './login-form/verify-code.component';
 import { NewGroupComponent } from './new/group/new-group.component';
 import { ProgramDetailComponent } from './program-detail.component';
 import { ProgramService } from './program.service';
+import { AdminStatsResolver } from './resolvers/admin-stats.resolver';
+import { AdminUserListResolver } from './resolvers/admin-user-list.resolver';
+import { GroupInfoWithCollaboratorsResolver } from './resolvers/group-info-with-collaborators.resolver';
 import { ProgramListResolver } from './resolvers/program-list.resolver';
+import { RenderedAboutResolver } from './resolvers/rendered-about.resolver';
 import { SessionResolver } from './resolvers/session.resolver';
-import { ServicesComponent } from './services.component';
 import { SessionService } from './session.service';
 import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
 import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
 import { SettingsComponent } from './settings/user-settings/settings.component';
-import { Session } from './session';
-import { GroupInfoWithCollaboratorsResolver } from './resolvers/group-info-with-collaborators.resolver';
-import { AdminService } from './admin.service';
-import { AdminStatsResolver } from './resolvers/admin-stats.resolver';
-import { AdminUserListResolver } from './resolvers/admin-user-list.resolver';
 
 
 const routes: Routes = [
     { path: '', component: HomeRedirectComponent, pathMatch: 'full' },
-    { path: 'about', component: AboutPageComponent },
+    { path: 'about', component: AboutPageComponent, resolve: { renderedAbout: RenderedAboutResolver } },
 
     { path: 'login', component: LoginFormComponent },
     { path: 'login/reset', component: ResetPasswordStartComponent },
@@ -73,6 +72,7 @@ const routes: Routes = [
         GroupInfoWithCollaboratorsResolver,
         AdminStatsResolver,
         AdminUserListResolver,
+        RenderedAboutResolver,
 
         AdminService,
         SessionService,
