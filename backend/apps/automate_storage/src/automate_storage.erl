@@ -47,9 +47,11 @@
         , delete_running_process/1
         , update_program_status/2
         , is_user_allowed/3
+        , get_program_pages/1
         , get_program_page/2
         , add_user_asset/3
         , get_user_asset_info/2
+        , list_user_assets/1
 
         , get_program_owner/1
         , get_program_pid/1
@@ -612,6 +614,13 @@ is_user_allowed(Owner, ProgramId, Action) ->
             {error, Reason}
     end.
 
+-spec get_program_pages(ProgramId :: binary()) -> {ok, [#program_pages_entry{}]} | {error, not_found}.
+get_program_pages(ProgramId) ->
+    T = fun() ->
+                {ok, mnesia:index_read(?PROGRAM_PAGES_TABLE, ProgramId, #program_pages_entry.program_id)}
+        end,
+    wrap_transaction(mnesia:ets(T)).
+
 -spec get_program_page(ProgramId :: binary(), Path :: binary()) -> {ok, #program_pages_entry{}} | {error, not_found}.
 get_program_page(ProgramId, Path) ->
     T = fun() ->
@@ -639,6 +648,13 @@ get_user_asset_info(OwnerId, AssetId) ->
                     [] -> {error, not_found};
                     [Entry] -> {ok, Entry}
                 end
+        end,
+    wrap_transaction(mnesia:ets(T)).
+
+-spec list_user_assets(OwnerId :: owner_id()) -> { ok, [#user_asset_entry{}] }.
+list_user_assets(OwnerId) ->
+    T = fun() ->
+                {ok, mnesia:index_read(?USER_ASSET_TABLE, OwnerId, #user_asset_entry.owner_id)}
         end,
     wrap_transaction(mnesia:ets(T)).
 

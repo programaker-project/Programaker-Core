@@ -339,7 +339,7 @@ export class AtomicFlowBlock implements FlowBlock {
                                           data.value.synthetic_output_count
                                          );
 
-        for (const slot of Object.keys(data.value.slots)) {
+        for (const slot of Object.keys(data.value.slots || {})) {
             const chunk = block.chunks.find((val) => val.type === 'named_var'  && val.name === slot );
             block.updateChunk(chunk, data.value.slots[slot]);
         }

@@ -12,6 +12,7 @@ export type UiElementWidgetType
     | 'horizontal_ui_section'
     | 'horizontal_separator'
     | 'simple_card'
+    | 'link_area'
 ;
 
 export type AtomicUiElementWidget
@@ -24,6 +25,7 @@ export type AtomicUiElementWidget
 
 export type UiElementWidgetContainer
     = 'simple_card'
+    | 'link_area'
 ;
 
 
@@ -39,8 +41,7 @@ export interface ContainerElementRepr {
     id?: string,
     container_type: UiElementWidgetContainer,
     content: CutTree,
-    background?: BackgroundPropertyConfiguration,
-    // TODO: Should this background me moved into a settings property?
+    settings?: BlockConfigurationOptions,
 };
 
 export interface CutElement {
@@ -49,7 +50,7 @@ export interface CutElement {
 };
 export type CutType = 'vbox' | 'hbox' | 'no-box';
 export interface CutNode {
-    background?: BackgroundPropertyConfiguration;
+    settings?: BlockConfigurationOptions,
     cut_type: CutType,
     groups: CutTree[],
 };

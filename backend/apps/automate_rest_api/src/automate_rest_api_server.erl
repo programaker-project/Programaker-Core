@@ -41,6 +41,8 @@ start_link() ->
                         , {"/api/v0/users", automate_rest_api_users_root, []}
                         , {"/api/v0/users/:user_id", automate_rest_api_users_specific, []}
                         , {"/api/v0/users/by-id/:user_id/picture", automate_rest_api_users_picture, []}
+                        , {"/api/v0/users/by-id/:user_id/assets", automate_rest_api_user_assets, [user]}
+                        , {"/api/v0/users/by-id/:user_id/assets/by-id/:asset_id", automate_rest_api_user_asset_by_id, [user]}
 
                           %% Miscellaneous
                         , {"/api/v0/users/id/:user_id/custom_signals/", automate_rest_api_custom_signals_root, []}
@@ -145,6 +147,9 @@ start_link() ->
                         , {"/api/v0/groups/by-id/:group_id/picture", automate_rest_api_group_picture, [] }
                         , {"/api/v0/groups/by-id/:group_id/bridges", automate_rest_api_group_bridge_root, [] }
                         , {"/api/v0/groups/by-id/:group_id/shared-resources", automate_rest_api_group_shared_resources, [] }
+
+                        , {"/api/v0/groups/by-id/:group_id/assets", automate_rest_api_user_assets, [group]}
+                        , {"/api/v0/groups/by-id/:group_id/assets/by-id/:asset_id", automate_rest_api_user_asset_by_id, [group]}
 
                           %% Monitor
                         , {"/api/v0/users/:user_id/monitors", automate_rest_api_monitors_root, []}

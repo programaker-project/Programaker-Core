@@ -1,4 +1,5 @@
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
+-include("../../automate_common_types/src/types.hrl").
 
 -record(rest_session,
         { user_id

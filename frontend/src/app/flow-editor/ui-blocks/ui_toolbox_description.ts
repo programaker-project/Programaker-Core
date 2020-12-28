@@ -8,6 +8,7 @@ import { DynamicTextBuilder } from './renderers/dynamic_text';
 import { FixedImageBuilder } from './renderers/fixed_image';
 import { HorizontalSeparatorBuilder } from './renderers/horizontal_separator';
 import { SimpleUiCardBuilder, SimpleUiCardGenerateTree } from './renderers/simple_ui_card';
+import { LinkAreaBuilder, LinkAreaGenerateTree } from './renderers/link_area';
 
 export const UiToolboxDescription: ToolboxDescription = [
     {
@@ -83,6 +84,14 @@ export const UiToolboxDescription: ToolboxDescription = [
                 id: 'simple_card',
                 builder: SimpleUiCardBuilder,
                 gen_tree: SimpleUiCardGenerateTree,
+            },
+            {
+                icon: UI_ICON,
+                type: 'ui_flow_block',
+                subtype: 'container_flow_block',
+                id: 'link_area',
+                builder: LinkAreaBuilder,
+                gen_tree: LinkAreaGenerateTree,
             },
         ]
     }

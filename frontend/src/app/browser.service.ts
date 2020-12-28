@@ -5,6 +5,7 @@ interface WindowPlaceholder {
     innerWidth?: number,
     dispatchEvent: (event: Event) => void,
     localStorage?: Storage,
+    sessionStorage?: Storage,
     onresize?: ((this: GlobalEventHandlers, ev: UIEvent) => any) | null,
     onload?: ((this: GlobalEventHandlers, ev: Event) => any) | null,
     open?: (url?: string, target?: string, features?: string, replace?: boolean) => Window | null,

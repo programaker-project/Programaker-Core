@@ -4,7 +4,7 @@ import { Validators, FormControl } from '@angular/forms';
 
 declare const Huebee: any;
 
-const UrlPattern = new RegExp(/(https?:\/\/.{2,}\..{2,})|(mailto:.*@.*)/);
+export const UrlPattern = new RegExp(/(https?:\/\/.{2,}\..{2,})|(mailto:.*@.*)/);
 
 export type UnderlineSettings = 'default' | 'none' | { color: string };
 

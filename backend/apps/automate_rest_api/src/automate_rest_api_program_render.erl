@@ -20,16 +20,28 @@
 
 -record(state, { program_id :: binary()
                , path :: binary()
+               , render_as :: page | element
                }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     ProgramId = cowboy_req:binding(program_id, Req),
+    Qs = cowboy_req:parse_qs(Req),
+    RenderAs = case proplists:get_value(<<"_render_as">>, Qs) of
+                   <<"element">> ->
+                       element;
+                   <<"page">> ->
+                       page;
+                   _ ->
+                       page
+               end,
+
     Path = build_page_path(cowboy_req:path_info(Req)),
     Req1 = automate_rest_api_cors:set_headers(Req),
     {cowboy_rest, Req1
     , #state{ program_id=ProgramId
             , path=Path
+            , render_as=RenderAs
             }}.
 
 %% CORS
@@ -53,13 +65,13 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {iolist(),cowboy_req:req(), #state{}}.
-to_json(Req, State=#state{program_id=ProgramId, path=Path}) ->
+to_json(Req, State=#state{program_id=ProgramId, path=Path, render_as=RenderAs}) ->
     Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
     Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"text/html">>, Res1),
 
     {ok, #program_pages_entry{ contents=Contents }} = automate_storage:get_program_page(ProgramId, Path),
 
-    { automate_rest_api_renderer:render_page(ProgramId, Contents), Res2, State }.
+    { automate_rest_api_renderer:render_page(ProgramId, Contents, Req, RenderAs), Res2, State }.
 
 
 build_page_path(Path) ->

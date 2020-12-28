@@ -208,7 +208,7 @@ export class CustomBlockService {
     }
 
     private async getCachedArgOptions(programId: string, arg: DynamicBlockArgument, block: CustomBlock): Promise<[string, string][]> {
-        const storage = this.browser.window.localStorage;
+        const storage = this.browser.window.sessionStorage;
         const results = storage.getItem(this.getCallbackCacheId(programId, block.service_port_id, arg.callback));
 
         if ((results === null) || (results.length == 0)) {
@@ -218,7 +218,7 @@ export class CustomBlockService {
     }
 
     private async cacheArgOptions(programId: string, bridgeId: string, callbackName: string, result: [string, string][]) {
-        const storage = this.browser.window.localStorage;
+        const storage = this.browser.window.sessionStorage;
         const results = storage.setItem(this.getCallbackCacheId(programId, bridgeId, callbackName),
                                         JSON.stringify(result));
     }
@@ -231,7 +231,7 @@ export class CustomBlockService {
         }
         catch (err) {
             // Pull from disk cache if there's an error on the service
-            const storage = this.browser.window.localStorage;
+            const storage = this.browser.window.sessionStorage;
             const results = storage.getItem(this.getCallbackCacheId(programId, bridgeId, callbackName));
 
             // Check if it's in cache

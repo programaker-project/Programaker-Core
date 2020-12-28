@@ -7,4 +7,5 @@ export const environment = {
     contact_mail: 'configure-this@on-environment.com',
     production: false,
     ApiHost: 'http://localhost:8888',
+    aboutPageRender: null,
   };
