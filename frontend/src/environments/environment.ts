@@ -7,5 +7,6 @@ export const environment = {
     contact_mail: 'configure-this@on-environment.com',
     production: false,
     ApiHost: 'http://localhost:8888',
-    aboutPageRender: null,
-  };
+    aboutPageRender: 'https://programaker.com/api/v0/programs/by-id/5fad1d5e-9f69-4f7f-93db-cbb6816d8b22/render/',
+    SSRAboutPageRender: null,
+};

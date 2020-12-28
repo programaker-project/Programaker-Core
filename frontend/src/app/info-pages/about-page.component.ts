@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
-import { SessionService } from '../session.service';
+import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from 'environments/environment';
+import { SessionService } from '../session.service';
 
 @Component({
     selector: 'app-about-page',
@@ -17,24 +17,21 @@ import { environment } from 'environments/environment';
 export class AboutPageComponent implements AfterViewInit {
     environment: { [key: string]: any };
     @ViewChild('container') container: ElementRef<HTMLDivElement>;
-    loadAbout: Promise<string>;
 
     constructor (
         private router: Router,
-        httpClient: HttpClient,
+        private route: ActivatedRoute,
     ) {
         this.environment = environment;
-        this.router = router;
-
-
-        if (this.environment.aboutPageRender) {
-            this.loadAbout = httpClient.get<string>(this.environment.aboutPageRender, { responseType: 'text' as 'json' }).toPromise();
-        }
     }
+
     ngAfterViewInit(): void {
-        if (this.loadAbout) {
-            this.loadAbout.then(html => this.container.nativeElement.innerHTML = html);
-        }
+        this.route.data
+            .subscribe((data: {renderedAbout: string }) => {
+                if (data.renderedAbout) {
+                    this.container.nativeElement.innerHTML = data.renderedAbout;
+                }
+            });
     }
 
     followCallToAction() {
