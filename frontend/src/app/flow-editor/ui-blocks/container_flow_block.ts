@@ -25,6 +25,7 @@ export type ContainerFlowBlockBuilder = (canvas: SVGElement,
                                          ops: UiFlowBlockBuilderInitOps) => ContainerFlowBlockHandler;
 
 export interface ContainerFlowBlockHandler extends UiFlowBlockHandler, Resizeable {
+    repositionContents(): void;
     dropOnEndMove(): Movement2D;
     getBodyElement(): SVGGraphicsElement;
     updateContainer(container: UiFlowBlock): void;
@@ -287,5 +288,9 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         if (this.handler.container) {
             this.handler.container.pushRight(startX, pushRight);
         }
+    }
+
+    repositionContents(){
+        this.handler.repositionContents();
     }
 }

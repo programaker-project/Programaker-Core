@@ -8,6 +8,7 @@ import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from 
 import { CutTree, ContainerElementRepr } from "./ui_tree_repr";
 import { combinedArea, getRefBox } from "./utils";
 import { ResponsivePageGenerateTree } from "./responsive_page";
+import { PositionResponsiveContents } from "./positioning";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -286,6 +287,10 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Resizeab
         if (container instanceof ContainerFlowBlock) {
             this.container = container;
         }
+    }
+
+    repositionContents(): void {
+        PositionResponsiveContents(this, this._contents);
     }
 
     dropOnEndMove() {

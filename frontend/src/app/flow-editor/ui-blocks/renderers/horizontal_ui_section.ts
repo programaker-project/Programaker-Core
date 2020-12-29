@@ -7,6 +7,7 @@ import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiF
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutTree } from "./ui_tree_repr";
 import { combinedArea, getRefBox } from "./utils";
+import { PositionHorizontalContents, PositionVerticalContents } from "./positioning";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -130,6 +131,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
         this.block.blockData.dimensions = { width: this.width, height: this.height };
     }
+
+    // Resizing
+    readonly isAutoresizable = true;
 
     getBodyArea(): Area2D {
         return this.block.getBodyArea();
@@ -352,6 +356,17 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
             this.handle.setResizeType('vertical');
         }
         this.updateSizes();
+    }
+
+    repositionContents(): void {
+        let dimensions : { width: number, height: number };
+        if (this.nestedHorizontal) {
+            dimensions = PositionVerticalContents(this, this._contents, this.getBodyArea());
+        }
+        else {
+            dimensions = PositionHorizontalContents(this, this._contents, this.getBodyArea());
+        }
+        this.resize(dimensions);
     }
 
     dropOnEndMove() {

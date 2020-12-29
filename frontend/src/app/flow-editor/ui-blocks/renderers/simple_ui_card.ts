@@ -8,6 +8,7 @@ import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from 
 import { CutTree, ContainerElementRepr } from "./ui_tree_repr";
 import { combinedArea, getRefBox } from "./utils";
 import { ResponsivePageGenerateTree } from "./responsive_page";
+import { PositionResponsiveContents } from "./positioning";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -297,6 +298,10 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
                 }
             }
         }
+    }
+
+    repositionContents(): void {
+        PositionResponsiveContents(this, this._contents);
     }
 
     updateContainer(container: UiFlowBlock | null) {

@@ -1354,7 +1354,9 @@ export class FlowWorkspace implements BlockManager {
             const container = this._findContainerInPos(pos, block);
             const containerId = container === null ? null : this.getBlockId(container);
 
-            // Only move to container if either:
+            let moved = [];
+
+            // Only update container if either:
             //  - The dragged block was in a container and now is not
             //  - The dragged block is dropped in a container not in the selected group
             if ((wasInContainer && (!containerId))
@@ -1362,19 +1364,18 @@ export class FlowWorkspace implements BlockManager {
 
                 for (const blockId of this._selectedBlocks.concat([])) {
                     this._updateBlockContainer(this.blocks[blockId].block, container);
-
-                    const draggedBlocks = this.blocks[blockId].block.endMove().map(block => this.getBlockId(block));
-
-                    for (const movedId of draggedBlocks.concat([blockId])) {
-                        for (const conn of this.blocks[movedId].connections) {
-                            this.updateConnection(conn);
-                        }
-
-                        this.updateBlockInputHelpersPosition(movedId);
-                    }
                 }
             }
 
+            // Track the blocks dragged
+            for (const blockId of this._selectedBlocks.concat([])) {
+                const draggedBlocks = this.blocks[blockId].block.endMove().map(block => this.getBlockId(block));
+
+                moved.push(blockId)
+                moved = moved.concat(draggedBlocks);
+            }
+
+            let removed = false;
             try {
                 const pos = this._getPositionFromEvent(ev) || last;
 
@@ -1389,6 +1390,7 @@ export class FlowWorkspace implements BlockManager {
                 bodyElement.classList.remove('to-be-removed');
 
                 if (this.isInTrashcan(pos)) {
+                    removed = true;
                     for (const blockId of this._selectedBlocks.concat([])) {
                         this.removeBlock(blockId);
                     }
@@ -1397,7 +1399,108 @@ export class FlowWorkspace implements BlockManager {
             catch (err) {
                 console.error(err);
             }
+
+            if (!removed) {
+                // Update moved block's connections
+                for (const movedId of moved) {
+                    for (const conn of this.blocks[movedId].connections) {
+                        this.updateConnection(conn);
+                    }
+
+                    this.updateBlockInputHelpersPosition(movedId);
+                }
+            }
+
+            this._invalidateBlockPositions(moved);
         });
+    }
+
+    private _invalidateBlockPositions(blocks: string[]) {
+        // This would be a good point to save the invalidated blocks and not
+        // launch the repositioning in case the initial "build" is not finished
+        this._reposition(blocks);
+    }
+
+    private _reposition(blockIds: string[]) {
+        // Build the list of dependencies (contents) for each block repositioned
+        const dependencies: {[key: string]: string[]} = {};
+
+        const considered = {};
+        for (const id of blockIds) {
+            considered[id] = true;
+        }
+
+        const allAffected = [];
+        const toExplore = blockIds.concat([]);
+        while (toExplore.length > 0) {
+            const id = toExplore.shift();
+            allAffected.push(id);
+
+            const block = this.blocks[id];
+
+            if (block.container_id) {
+                const dep = block.container_id;
+                if (!considered[dep]) {
+                    toExplore.push(dep);
+                    considered[dep] = true;
+                }
+
+                if (!dependencies[dep]){
+                    dependencies[dep] = [];
+                }
+
+                dependencies[dep].push(id);
+            }
+        }
+
+        const processed = [];
+        let toGo = allAffected.concat([]);
+        let processedThisTurn = true;
+        while (toGo.length > 0 && processedThisTurn) {
+            processedThisTurn = false;
+            const skipped = [];
+
+            for (const bId of toGo) {
+                const data = this.blocks[bId];
+                if ((dependencies[bId] || []).some(x => processed.indexOf(x) < 0)) {
+                    // Not all contents have been repositioned yet
+                    skipped.push(bId);
+                }
+                else {
+                    const block = data.block;
+                    if (block instanceof ContainerFlowBlock) {
+                        block.repositionContents();
+                    }
+
+                    processedThisTurn = true;
+                    processed.push(bId);
+                }
+            }
+
+            toGo = skipped;
+        }
+
+        if (toGo.length > 0) {
+            console.error("Circular dependency found on", toGo);
+            console.error("Circular dependency found on", toGo.map(id => this.blocks[id]));
+        }
+    }
+
+    private _pullAllDependenciesInList(id: string, group: string[]): string[] {
+        let deps = [];
+        const block = this.blocks[id];
+
+        if (block.container_id && group.indexOf(block.container_id) >= 0) {
+            deps.push(block.container_id);
+
+            const subdeps = this._pullAllDependenciesInList(block.container_id, group);
+
+            if (subdeps.length > 0) {
+                deps = deps.concat(subdeps);
+            }
+        }
+
+        return deps;
     }
 
     private isInTrashcan(pos: Position2D): boolean {

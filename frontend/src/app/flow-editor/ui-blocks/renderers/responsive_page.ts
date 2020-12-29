@@ -6,6 +6,7 @@ import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiF
 import { HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr } from "./ui_tree_repr";
 import { combinedArea, combinedManipulableArea, getRefBox } from "./utils";
+import { PositionResponsiveContents } from "./positioning";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -303,6 +304,10 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
 
     updateContainer(_container: UiFlowBlock) {
         throw new Error("A webpage cannot be put inside a container.");
+    }
+
+    repositionContents(): void {
+        PositionResponsiveContents(this, this.contents);
     }
 
     get container(): ContainerFlowBlock {
