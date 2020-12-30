@@ -206,7 +206,7 @@ svg.block_renderer g.flow_node .input, svg.block_renderer g.flow_node .output  {
     cursor: pointer;
 }
 
-svg.block_renderer.read-only g.flow_node .input, svg.block_renderer g.flow_node .output  {
+svg.block_renderer.read-only g.flow_node .input, svg.block_renderer.read-only g.flow_node .output  {
     cursor: not-allowed;
 }
 
