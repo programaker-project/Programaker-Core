@@ -48,7 +48,10 @@ export interface CutElement {
     i: number,
     a: Area2D,
 };
-export type CutType = 'vbox' | 'hbox' | 'no-box';
+export type CutType = 'vbox' | 'hbox';
+
+export const DEFAULT_CUT_TYPE = 'hbox';
+
 export interface CutNode {
     settings?: BlockConfigurationOptions,
     cut_type: CutType,

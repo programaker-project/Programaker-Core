@@ -4,7 +4,7 @@ import { Area2D, FlowBlock, Position2D, Resizeable } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { HandleableElement, UiElementHandle } from "./ui_element_handle";
-import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr } from "./ui_tree_repr";
+import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr, DEFAULT_CUT_TYPE } from "./ui_tree_repr";
 import { combinedArea, combinedManipulableArea, getRefBox } from "./utils";
 import { PositionResponsiveContents } from "./positioning";
 
@@ -411,7 +411,6 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
                 }
             }
         }
-        else if (cTree.cut_type === 'no-box') {}
         else {
             throw new Error("Unknown cut type: " + cTree.cut_type);
         }
@@ -560,23 +559,13 @@ function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
         else {
             const cut = cleanestCut(next.elems);
 
-            if (cut.cutType === 'no-box') {
-                const asElements = cut.groups[0].map(e => {
-                    const block = blocks[e.i];
-                    return block.renderAsUiElement();
-                });
-                result = { cut_type: cut.cutType, groups: asElements };
-            }
-            else {
-                const resultGroups = [];
-                result = { cut_type: cut.cutType, groups: resultGroups };
-                for (const g of cut.groups){
-                    if (g.length > 0) {
-                        todo.push({ container: resultGroups, elems: g });
-                    }
+            const resultGroups = [];
+            result = { cut_type: cut.cutType, groups: resultGroups };
+            for (const g of cut.groups){
+                if (g.length > 0) {
+                    todo.push({ container: resultGroups, elems: g });
                 }
             }
-
         }
 
         next.container.push(result);
@@ -603,13 +592,13 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
 
         if (endX === null) {
             endX = e.a.x + e.a.width;
-            horizSpaces.push([ -1, idx, e ]);
+            horizSpaces.push([ -Infinity, idx, e ]);
             continue;
         }
 
         const diff = e.a.x - endX;
         if (diff <= 0) {
-            horizSpaces.push([ -1, idx, e ]);
+            horizSpaces.push([ diff, idx, e ]);
             continue;
         }
         endX = e.a.x + e.a.width;
@@ -617,7 +606,17 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
         horizSpaces.push([ diff, idx, e ]);
     }
 
-    horizSpaces.sort(([a, _aIdx], [b, _bIdx]) => b - a)
+    horizSpaces.sort(([a, aIdx], [b, bIdx]) => {
+        if (b != a) {
+            return b - a
+        }
+        else {
+            // If the biggest gap cannot be found, avoid using the first gap
+            // (between nothing and the first element) as cut point.
+            // To do this, for gaps with the same size, put the ones with higher "index" first.
+            return bIdx - aIdx;
+        }
+    })
 
     // Measure vertical spaces
     const vertSpaces = [];
@@ -627,13 +626,13 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
 
         if (endY === null) {
             endY = e.a.y + e.a.height;
-            vertSpaces.push([ -1, idx, e ]);
+            vertSpaces.push([ -Infinity, idx, e ]);
             continue;
         }
 
         const diff = e.a.y - endY;
         if (diff <= 0) {
-            vertSpaces.push([ -1, idx, e ]);
+            vertSpaces.push([ diff, idx, e ]);
             continue;
         }
         endY = e.a.y + e.a.height;
@@ -641,13 +640,23 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
         vertSpaces.push([ diff, idx, e ]);
     }
 
-    vertSpaces.sort(([a, _aIdx], [b, _bIdx]) => b - a)
+    vertSpaces.sort(([a, aIdx], [b, bIdx]) => {
+        if (b != a) {
+            return b - a
+        }
+        else {
+            // If the biggest gap cannot be found, avoid using the first gap
+            // (between nothing and the first element) as cut point.
+            // To do this, for gaps with the same size, put the ones with higher "index" first.
+            return bIdx - aIdx;
+        }
+    })
 
     // Find how to cut, horizontally or vertically
-    let cutType : CutType = 'no-box';
+    let cutType : CutType = DEFAULT_CUT_TYPE;
     if (horizSpaces.length < 1) {
         if (vertSpaces.length < 1) {
-            cutType = 'no-box';
+            cutType = DEFAULT_CUT_TYPE;
         }
         else {
             cutType = 'vbox';
@@ -660,19 +669,12 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
         const maxHoriz = horizSpaces[0][0];
         const maxVert = vertSpaces[0][0];
 
-        if ((maxHoriz < 1) && (maxVert < 1)) {
-            cutType = 'no-box';
-        }
-        else if (maxHoriz > maxVert) {
+        if (maxHoriz > maxVert) {
             cutType = 'hbox';
         }
         else {
             cutType = 'vbox';
         }
-    }
-
-    if (cutType === 'no-box') {
-        return { cutType:'no-box', groups: [elems] };
     }
 
     // Perform the cut on the index with the most space
@@ -686,6 +688,10 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
         const cutIdx = vertSpaces[0][1];
         before = vert.slice(0, cutIdx);
         after = vert.slice(cutIdx);
+    }
+
+    if((before.length === 0) || (after.length === 0)) {
+        throw Error(`Splitting with no elements on one side (${before.length} -split- ${after.length})`);
     }
 
     return { cutType: cutType, groups: [before, after] };
