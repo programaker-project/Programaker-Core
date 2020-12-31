@@ -249,26 +249,9 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     onContentUpdate(contents: FlowBlock[]) {
         // Obtain new distribution
         this.contents = contents.concat([]);
-        const uiContents = contents.filter(b => (b instanceof UiFlowBlock)) as UiFlowBlock[];
 
-        // Update grid
-        try {
-            const tree = ResponsivePageGenerateTree(this, contents);
-
-            this.grid.innerHTML = ''; // Clear it
-            const cuts = performCuts(tree, uiContents, this.width, this.height, this.block.getOffset());
-
-            for (const cut of cuts) {
-                const path = document.createElementNS(SvgNS, 'path');
-                path.setAttribute('class', `grid-division ${cut.type}-cut`);
-                path.setAttributeNS(null, 'd', `M${ cut.from.x },${cut.from.y} L${cut.to.x},${cut.to.y}`);
-                this.grid.appendChild(path);
-            }
-        }
-        catch(err) {
-            console.error(err);
-            this.grid.innerHTML = ''; // Make sure it's clear
-        }
+        this._updateCutGrid();
+        return;
 
         // Check that the container size is adequate, resize it if necessary
         const fullContents = this.block.recursiveGetAllContents();
@@ -298,6 +281,29 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
         }
     }
 
+    _updateCutGrid() {
+        const uiContents = this.contents.filter(b => (b instanceof UiFlowBlock)) as UiFlowBlock[];
+
+        // Update grid
+        try {
+            const tree = ResponsivePageGenerateTree(this, this.contents);
+
+            this.grid.innerHTML = ''; // Clear it
+            const cuts = performCuts(tree, uiContents, this.width, this.height, this.block.getOffset());
+
+            for (const cut of cuts) {
+                const path = document.createElementNS(SvgNS, 'path');
+                path.setAttribute('class', `grid-division ${cut.type}-cut`);
+                path.setAttributeNS(null, 'd', `M${ cut.from.x },${cut.from.y} L${cut.to.x},${cut.to.y}`);
+                this.grid.appendChild(path);
+            }
+        }
+        catch(err) {
+            console.error(err);
+            this.grid.innerHTML = ''; // Make sure it's clear
+        }
+    }
+
     dropOnEndMove() {
         return {x: 0, y: 0};
     }
@@ -307,7 +313,15 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     }
 
     repositionContents(): void {
-        PositionResponsiveContents(this, this.contents);
+        console.warn("Rep", () => {this.repositionContents()});
+        const area = this.getBodyArea();
+
+        const titleHeight = this.titleBox.getBBox().height;
+        area.y += titleHeight;
+
+        PositionResponsiveContents(this, this.contents, this.block.recursiveGetAllContents(), area);
+
+        this._updateCutGrid();
     }
 
     get container(): ContainerFlowBlock {
@@ -319,8 +333,11 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     }
 }
 
-function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, height: number, offset: Position2D) {
-    const acc = [];
+type GridCut = { from: Position2D, to: Position2D, type: 'vert' | 'horiz' };
+
+function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, height: number, offset: Position2D
+                    ): GridCut[] {
+    const acc: GridCut[] = [];
     let todo = [{ tree: tree, area: { x: 0, y: 0, width, height } }];
 
     const blocks = {};
@@ -419,7 +436,7 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
     return acc;
 }
 
-function getElementsInGroup(tree: CutTree): string[] {
+export function getElementsInGroup(tree: CutTree): string[] {
     let acc = [];
 
     const todo = [tree];
@@ -434,6 +451,9 @@ function getElementsInGroup(tree: CutTree): string[] {
                 acc.push((cut as UiElementRepr).id);
         }
         else if ((cut as CutNode).groups) {
+            if ((cut as CutNode).block_id) {
+                acc.push((cut as CutNode).block_id);
+            }
             for (const group of (cut as CutNode).groups) {
                 todo.push(group);
             }
@@ -450,7 +470,43 @@ function getElementsInGroup(tree: CutTree): string[] {
     return acc;
 }
 
-function getRect(blocks: UiFlowBlock[]) {
+export function getShallowElementsInGroup(tree: CutTree): string[] {
+    let acc = [];
+
+    const todo = [tree];
+    while (todo.length > 0) {
+        const cut = todo.pop();
+
+        if (!cut) {
+            continue;
+        }
+
+        if ((cut as UiElementRepr).widget_type) {
+            acc.push((cut as UiElementRepr).id);
+        }
+        else if ((cut as CutNode).groups) {
+            if ((cut as CutNode).block_id) {
+                acc.push((cut as CutNode).block_id);
+            }
+            // else {
+            //     for (const group of (cut as CutNode).groups) {
+            //         todo.push(group);
+            //     }
+            // }
+        }
+        // else if ((cut as ContainerElementRepr).container_type) {
+        //     todo.push((cut as ContainerElementRepr).content);
+        // }
+        else {
+            console.warn("Unexpected node:", cut);
+            throw Error("Unexpected node: "  + cut);
+        }
+    }
+
+    return acc;
+}
+
+export function getRect(blocks: UiFlowBlock[]) {
     return combinedManipulableArea(blocks.map(b => b.getBodyArea()));
 }
 
@@ -526,7 +582,7 @@ function reduceGroups(cNode: CutNode): CutTree[] {
 }
 
 // Recursively perform cleanestCut, until all elements are partitioned.
-function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
+export function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
     const topLevel = [];
 
     const todo = [ { container: topLevel, elems: elems } ]
@@ -691,6 +747,8 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
     }
 
     if((before.length === 0) || (after.length === 0)) {
+        console.log(cutType)
+        console.log("VERT", vertSpaces, vert);
         throw Error(`Splitting with no elements on one side (${before.length} -split- ${after.length})`);
     }
 

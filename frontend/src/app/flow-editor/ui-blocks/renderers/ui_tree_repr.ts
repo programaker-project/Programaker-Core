@@ -54,6 +54,7 @@ export const DEFAULT_CUT_TYPE = 'hbox';
 
 export interface CutNode {
     settings?: BlockConfigurationOptions,
+    block_id?: string,
     cut_type: CutType,
     groups: CutTree[],
 };

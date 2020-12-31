@@ -64,7 +64,7 @@ export function combinedManipulableArea(areas: Area2D[]): ManipulableArea2D {
     return rect;
 }
 
-function manipulableAreaToArea2D(area: ManipulableArea2D) {
+export function manipulableAreaToArea2D(area: ManipulableArea2D) {
     return {
         x: area.left,
         y: area.top,

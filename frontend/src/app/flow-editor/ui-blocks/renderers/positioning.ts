@@ -29,13 +29,120 @@ export function PositionResponsiveContents (handler: UiFlowBlockHandler, blocks:
     return PositionTreeContentsFromTree(tree, blockMap, offset);
 }
 
-const SEPARATION = 10;
+function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiFlowBlock}, offset: Position2D, nonTopLevel?: boolean): Area2D | undefined{
+    if (!(tree as CutNode).cut_type) {
+        return;
+    }
 
-export function PositionResponsiveContents (handler: UiFlowBlockHandler, blocks: FlowBlock[]) {
-    console.log("Resp", handler, blocks);
+    const cTree = tree as CutNode;
+    console.error('>>', cTree.cut_type, "|", offset.x, offset.y);
+
+    // First position subtrees
+    const subTreeOffset: Position2D = {
+        x: offset.x + (nonTopLevel ? 0 : SEPARATION),
+        y: offset.y + (nonTopLevel ? 0 : SEPARATION),
+    };
+
+    for (const group of cTree.groups) {
+        let area: Area2D;
+
+        if ((group as CutNode).block_id) {
+            // Treat as a single block
+            const block = blocks[(group as CutNode).block_id];
+            area = block.getBodyArea();
+
+            console.log("Y - ST", subTreeOffset.y, "A", area.y);
+
+            const mov = {
+                x: subTreeOffset.x - area.x,
+                y: subTreeOffset.y - area.y,
+            };
+
+            if (block.isAutoresizable()) {
+                // Don't push away from borders
+                if (cTree.cut_type === 'vbox') {
+                    mov.x = 0;
+                }
+                else if (cTree.cut_type === 'hbox') {
+                    mov.y = 0;
+                }
+            }
+
+            console.log("MoveBox", mov, block.options.id);
+            block.moveBy(mov);
+            console.log("=>", JSON.stringify((block as any).position));
+        }
+        else {
+            // Treat as a group
+            // console.log("C", contents.map(id => blocks[id]));
+
+            const subOffset = { x: subTreeOffset.x, y: subTreeOffset.y };
+
+            // if (cTree.cut_type === 'hbox') {
+            //     subOffset.y -= SEPARATION;
+            // }
+            // else {
+            //     subOffset.x -= SEPARATION;
+            // }
+
+            // console.log(">>>>")
+            PositionTreeContentsFromTree(group, blocks, subOffset, true);
+            // console.log("<<<<");
+
+            const contents = getElementsInGroup(group);
+            area = manipulableAreaToArea2D(getRect(contents.map(id => blocks[id])));
+            const mov = {
+                x: subTreeOffset.x - area.x,
+                y: subTreeOffset.y - area.y,
+            };
+
+            const elementsToMove = getShallowElementsInGroup(group).map(id => blocks[id]);
+            console.log("MOV", elementsToMove, mov);
+
+            for (const block of elementsToMove) {
+                console.error("MoveBy", mov, block.options.id);
+
+                if (block.isAutoresizable()) {
+
+                    // This really means "is this considered on PositionTreeContentsFromTree()"
+                    // TODO: Update this approximation when testing with simple_cards
+                    if (block instanceof ContainerFlowBlock) {
+                        continue;
+                    }
+
+                    // Don't push away from borders
+                    if (cTree.cut_type === 'vbox') {
+                        mov.x = 0;
+                    }
+                    else if (cTree.cut_type === 'hbox') {
+                        mov.y = 0;
+                    }
+                }
+
+                block.moveBy(mov);
+            }
+
+            area = manipulableAreaToArea2D(getRect(contents.map(id => blocks[id])));
+        }
+
+        if (cTree.cut_type === 'vbox') {
+            console.error("V>", subTreeOffset.y, area.height, SEPARATION);
+            subTreeOffset.y += area.height + SEPARATION;
+            console.error("RV>", subTreeOffset.y);
+        }
+        else if (cTree.cut_type === 'hbox') {
+            console.error("H>", subTreeOffset.x, area.width, SEPARATION);
+            subTreeOffset.x += area.width + SEPARATION;
+            console.error("RH>", subTreeOffset.x);
+        }
+    }
+
+    console.error('<< ', cTree.cut_type);
 }
 
 export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks: FlowBlock[], area: Area2D): { width: number, height: number } {
+    console.log("Horiz");
+
     const blockAreas: [UiFlowBlock, Area2D][] = (
         blocks
             .filter(b => b instanceof UiFlowBlock)
@@ -79,6 +186,8 @@ export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks:
 }
 
 export function PositionVerticalContents (handler: UiFlowBlockHandler, blocks: FlowBlock[], area: Area2D): { width: number, height: number } {
+    console.log("Vert");
+
     const blockAreas: [UiFlowBlock, Area2D][] = (
         blocks
             .filter(b => b instanceof UiFlowBlock)

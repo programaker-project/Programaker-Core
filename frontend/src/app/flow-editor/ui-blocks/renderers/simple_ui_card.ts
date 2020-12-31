@@ -301,7 +301,7 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     }
 
     repositionContents(): void {
-        PositionResponsiveContents(this, this._contents);
+        PositionResponsiveContents(this, this._contents, this.block.recursiveGetAllContents(), this.getBodyArea());
     }
 
     updateContainer(container: UiFlowBlock | null) {

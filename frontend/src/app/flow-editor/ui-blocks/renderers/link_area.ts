@@ -290,7 +290,7 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Resizeab
     }
 
     repositionContents(): void {
-        PositionResponsiveContents(this, this._contents);
+        PositionResponsiveContents(this, this._contents, this.block.recursiveGetAllContents(), this.getBodyArea());
     }
 
     dropOnEndMove() {
