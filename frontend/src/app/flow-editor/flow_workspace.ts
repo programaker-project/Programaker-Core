@@ -1421,6 +1421,10 @@ export class FlowWorkspace implements BlockManager {
         this._reposition(blocks);
     }
 
+    public repositionAll() {
+        return this._reposition(Object.keys(this.blocks));
+    }
+
     private _reposition(blockIds: string[]) {
         // Build the list of dependencies (contents) for each block repositioned
         const dependencies: {[key: string]: string[]} = {};

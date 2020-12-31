@@ -44,12 +44,6 @@ import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/r
 @Component({
     selector: 'app-my-flow-editor',
     templateUrl: './flow-editor.component.html',
-    providers: [
-        BridgeService,
-        ConnectionService, CustomBlockService, CustomSignalService,
-        MonitorService, ProgramService, ServiceService, SessionService,
-        TemplateService, UiSignalService,
-    ],
     styleUrls: [
         'flow-editor.component.css',
         '../libs/css/material-icons.css',
@@ -78,27 +72,23 @@ export class FlowEditorComponent implements OnInit {
     constructor(
         private browser: BrowserService,
 
-        private monitorService: MonitorService,
         private programService: ProgramService,
         private customBlockService: CustomBlockService,
-        private customSignalService: CustomSignalService,
         private route: ActivatedRoute,
         private router: Router,
-        private _location: Location,
+        private location: Location,
         private dialog: MatDialog,
-        private templateService: TemplateService,
         private serviceService: ServiceService,
         private notification: MatSnackBar,
         private connectionService: ConnectionService,
         private sessionService: SessionService,
-        private bridgeService: BridgeService,
         private uiSignalService: UiSignalService,
         private environmentService: EnvironmentService,
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
     }
 
-    ngOnInit(): void {
+    ngOnInit(): Promise<void> {
         this.environment = environment;
 
         if (isPlatformServer(this.platformId)) {
@@ -113,7 +103,7 @@ export class FlowEditorComponent implements OnInit {
         }
         this.smallScreen = this.browser.window.innerWidth < 750;
 
-        progbar.track(new Promise((resolve) => {
+        return progbar.track(new Promise((resolve, reject) => {
             this.sessionService.getSession()
                 .then((session) => {
                     this.session = session;
@@ -136,6 +126,7 @@ export class FlowEditorComponent implements OnInit {
                             return this.programService.getProgramById(params['program_id']).catch(err => {
                                 console.error("Error:", err);
                                 this.goBack();
+                                reject();
                                 throw Error("Error loading");
                             });
                         }))
@@ -154,6 +145,7 @@ export class FlowEditorComponent implements OnInit {
                 })
                 .catch(err => {
                     console.error("Error loading program:", err);
+                    reject();
                     this.goBack();
                 });
         }));
@@ -328,7 +320,7 @@ export class FlowEditorComponent implements OnInit {
 
     goBack(): boolean {
         this.dispose();
-        this._location.back();
+        this.location.back();
         return false;
     }
 
