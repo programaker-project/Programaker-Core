@@ -1,84 +1,17 @@
-import { HttpClient } from '@angular/common/http';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { async, TestBed } from '@angular/core/testing';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { RouterTestingModule } from '@angular/router/testing';
-import { CookiesService } from '@ngx-utils/cookies';
-import { BrowserCookiesModule, BrowserCookiesService } from '@ngx-utils/cookies/browser';
-import { ConnectionService } from 'app/connection.service';
-import { ProgramService } from 'app/program.service';
-import { UiSignalService } from 'app/services/ui-signal.service';
 import { FlowEditorComponent } from '../../../flow-editor/flow-editor.component';
 import { FlowGraph } from '../../../flow-editor/flow_graph';
 import { FlowWorkspace } from '../../../flow-editor/flow_workspace';
-import { SessionService } from '../../../session.service';
-import { FakeConnectionService } from './fake-connection.service';
-import { FakeCustomBlockService } from './fake-custom-block.service';
-import { FakeProgramService } from './fake-program.service';
-import { FakeServiceService } from './fake-service.service';
-import { FakeSessionService } from './fake-session.service';
-import { FakeUiSignalService } from './fake-ui-signal.service';
-import { ServiceService } from 'app/service.service';
-import { CustomBlockService } from 'app/custom_block.service';
 import { SEPARATION as PositioningSeparation } from 'app/flow-editor/ui-blocks/renderers/positioning';
+import { configureTestBed } from './builder';
 
-describe('FlowUI positioning: 01. Flow Editor positioning. ', () => {
+describe('FlowUI positioning: 01. Simple positioning. ', () => {
 
     beforeEach(async(() => {
-        TestBed.configureTestingModule({
-            imports: [
-                BrowserCookiesModule.forRoot(),
-                RouterTestingModule,
-                HttpClientTestingModule,
-                MatDialogModule,
-                MatSnackBarModule,
-                MatMenuModule,
-                NoopAnimationsModule,
-            ],
-            declarations: [
-                FlowEditorComponent,
-            ],
-            providers: [
-                {
-                    provide: CookiesService,
-                    useClass: BrowserCookiesService,
-                },
-                {
-                    provide: HttpClient,
-                    useValue: {}
-                },
-                {
-                    provide: SessionService,
-                    useClass: FakeSessionService,
-                },
-                {
-                    provide: ProgramService,
-                    useClass: FakeProgramService,
-                },
-                {
-                    provide: UiSignalService,
-                    useClass: FakeUiSignalService,
-                },
-                {
-                    provide: ConnectionService,
-                    useClass: FakeConnectionService,
-                },
-                {
-                    provide: ServiceService,
-                    useClass: FakeServiceService,
-                },
-                {
-                    provide: CustomBlockService,
-                    useClass: FakeCustomBlockService,
-                }
-            ]
-        });
+        configureTestBed(TestBed);
     }));
 
-    it('Should create the component', async () => {
+    it('Should work vertically', async () => {
         const fixture = TestBed.createComponent(FlowEditorComponent);
 
         const app: FlowEditorComponent = fixture.debugElement.componentInstance;

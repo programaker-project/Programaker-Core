@@ -857,6 +857,10 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    public getBlock(blockId: string): FlowBlock {
+        return this.blocks[blockId].block;
+    }
+
     public drawAbsolute(block: FlowBlock, abs_position: Position2D): string {
         const canvas_area = this.canvas.getClientRects()[0];
 

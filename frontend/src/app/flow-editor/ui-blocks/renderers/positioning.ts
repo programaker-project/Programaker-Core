@@ -5,7 +5,7 @@ import { CutNode, CutTree } from "./ui_tree_repr";
 import { manipulableAreaToArea2D } from "./utils";
 import { ContainerFlowBlock } from "../container_flow_block";
 
-export const SEPARATION = 10;
+export const SEPARATION = 25;
 
 export function PositionResponsiveContents (handler: UiFlowBlockHandler, blocks: FlowBlock[], allBlocks: FlowBlock[], offset: Position2D): Area2D {
     // Format in a grid-like
@@ -35,6 +35,7 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
     }
 
     const cTree = tree as CutNode;
+    const toCenter: UiFlowBlock[] = [];
     console.error('>>', cTree.cut_type, "|", offset.x, offset.y);
 
     // First position subtrees
@@ -71,6 +72,7 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
             console.log("MoveBox", mov, block.options.id);
             block.moveBy(mov);
             console.log("=>", JSON.stringify((block as any).position));
+            toCenter.push(block);
         }
         else {
             // Treat as a group
@@ -118,6 +120,9 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
                         mov.y = 0;
                     }
                 }
+                else {
+                    toCenter.push(block);
+                }
 
                 block.moveBy(mov);
             }
@@ -135,6 +140,23 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
             subTreeOffset.x += area.width + SEPARATION;
             console.error("RH>", subTreeOffset.x);
         }
+    }
+
+    const fullArea = manipulableAreaToArea2D(getRect(getElementsInGroup(cTree).map(id => blocks[id])));
+    for (const elem of toCenter) {
+        const eArea = elem.getBodyArea();
+
+        const mov = { x: 0, y: 0 };
+        if (cTree.cut_type === 'vbox') {
+            const xPos = fullArea.x + ((fullArea.width - eArea.width) / 2)
+            mov.x = xPos - eArea.x;
+        }
+        else if (cTree.cut_type === 'hbox') {
+            const yPos = fullArea.y + ((fullArea.height - eArea.height) / 2)
+            mov.y = yPos - eArea.y;
+        }
+
+        elem.moveBy(mov);
     }
 
     console.error('<< ', cTree.cut_type);

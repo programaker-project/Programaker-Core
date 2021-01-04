@@ -313,7 +313,6 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     }
 
     repositionContents(): void {
-        console.warn("Rep", () => {this.repositionContents()});
         const area = this.getBodyArea();
 
         const titleHeight = this.titleBox.getBBox().height;
@@ -653,10 +652,6 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
         }
 
         const diff = e.a.x - endX;
-        if (diff <= 0) {
-            horizSpaces.push([ diff, idx, e ]);
-            continue;
-        }
         endX = e.a.x + e.a.width;
 
         horizSpaces.push([ diff, idx, e ]);
@@ -687,10 +682,6 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
         }
 
         const diff = e.a.y - endY;
-        if (diff <= 0) {
-            vertSpaces.push([ diff, idx, e ]);
-            continue;
-        }
         endY = e.a.y + e.a.height;
 
         vertSpaces.push([ diff, idx, e ]);
