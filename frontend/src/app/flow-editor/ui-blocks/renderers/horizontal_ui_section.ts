@@ -6,15 +6,17 @@ import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandle
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutTree } from "./ui_tree_repr";
-import { combinedArea, getRefBox } from "./utils";
-import { PositionHorizontalContents, PositionVerticalContents } from "./positioning";
+import { combinedArea } from "./utils";
+import { PositionHorizontalContents, PositionVerticalContents, SEPARATION } from "./positioning";
 import { CannotSetAsContentsError } from "../cannot_set_as_contents_error";
-
 
 const SvgNS = "http://www.w3.org/2000/svg";
 const BLOCK_TYPE_ANNOTATION = 'Horizontal section'
 const SECTION_PADDING = 5;
 const DEFAULT_COLOR = '';
+
+const MIN_HEIGHT = SEPARATION;
+const MIN_WIDTH = SEPARATION;
 
 export const HorizontalUiSectionBuilder: ContainerFlowBlockBuilder = (canvas: SVGElement,
     group: SVGElement,
@@ -37,7 +39,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     height: number;
     placeholder: SVGTextElement;
     container: ContainerFlowBlock;
-    private _contents: FlowBlock[];
+    private _contents: FlowBlock[] = [];
     nestedHorizontal: boolean;
 
     constructor(canvas: SVGElement, group: SVGElement,
@@ -137,7 +139,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     readonly isAutoresizable = true;
 
     get isNotHorizontallyStackable() {
-        return !this.nestedHorizontal;
+        return this.nestedHorizontal === false;
     }
 
     getBodyArea(): Area2D {
@@ -168,7 +170,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
             }
 
             const oldWidth = this.width;
-            const newWidth = Math.max(minWidth, dimensions.width);
+            const newWidth = Math.max(MIN_WIDTH, minWidth, dimensions.width);
 
             this.width = newWidth;
             this.updateSizes();
@@ -195,7 +197,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
             }
 
             const oldHeight = this.height;
-            const newHeight = Math.max(minHeight, dimensions.height);
+            const newHeight = Math.max(MIN_HEIGHT, minHeight, dimensions.height);
 
             this.height = newHeight;
             this.updateSizes();
@@ -269,7 +271,13 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
         // Reject elements that cannot be horizontally stacked
         if (!this.nestedHorizontal) {
-            const problematic = contents.filter((e) => (e instanceof UiFlowBlock) && (!e.isHorizontallyStackable()))
+            const problematic = contents.filter((e) => {
+                if (e instanceof ContainerFlowBlock && e.handler instanceof HorizontalUiSection) {
+                    return false; // These can always be nested
+                }
+                return (e instanceof UiFlowBlock) && (!e.isHorizontallyStackable())
+            });
+
             if (problematic.length > 0) {
                 throw new CannotSetAsContentsError("Elements that cannot be horizontally stacked cannot be added to a HorizontalUiSection", problematic);
             }

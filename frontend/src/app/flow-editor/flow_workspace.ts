@@ -123,6 +123,8 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public load(graph: FlowGraph) {
+        this.autoposition = false;
+
         // TODO: Merge with _sortByDependencies?
         let to_go = Object.keys(graph.nodes);
 
@@ -195,6 +197,8 @@ export class FlowWorkspace implements BlockManager {
                 console.error("Error establishing connection", err);
             }
         }
+
+        this.autoposition = true;
     }
 
     private deserializeBlock(blockData: FlowBlockData) {
@@ -228,6 +232,7 @@ export class FlowWorkspace implements BlockManager {
     private inlineMultilineEditor: HTMLTextAreaElement;
     private state: State = 'waiting';
     private toolbox: Toolbox;
+    private autoposition: boolean;
 
     private popupGroup: HTMLDivElement;
     private canvas: SVGSVGElement;
@@ -1400,7 +1405,7 @@ export class FlowWorkspace implements BlockManager {
                     }
                     catch (err) {
                         if (err instanceof CannotSetAsContentsError) {
-                            console.error("Cannot set as content"); // TODO: Show as notification
+                            console.error("Cannot set as content", err.problematicContents); // TODO: Show as notification
                             this._updateBlockContainer(this.blocks[blockId].block, null);
                         }
                     }
@@ -1463,7 +1468,9 @@ export class FlowWorkspace implements BlockManager {
     private _invalidateBlockPositions(blocks: string[]) {
         // This would be a good point to save the invalidated blocks and not
         // launch the repositioning in case the initial "build" is not finished
-        this._reposition(blocks);
+        if (this.autoposition) {
+            this._reposition(blocks);
+        }
     }
 
     public repositionAll() {

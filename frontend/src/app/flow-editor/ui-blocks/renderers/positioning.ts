@@ -165,8 +165,6 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
 }
 
 export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks: FlowBlock[], area: Area2D): { width: number, height: number } {
-    console.log("Horiz");
-
     const blockAreas: [UiFlowBlock, Area2D][] = (
         blocks
             .filter(b => b instanceof UiFlowBlock)

@@ -103,6 +103,7 @@ export class UiFlowBlock implements FlowBlock {
     protected handler: UiFlowBlockHandler;
     private input_blocks: [FlowBlock, number][] = [];
     protected _workspace: FlowWorkspace | null;
+    private _container: UiFlowBlock;
 
     blockData: UiFlowBlockExtraData = {};
 
@@ -648,7 +649,20 @@ export class UiFlowBlock implements FlowBlock {
     updateContainer(container: FlowBlock) {
         if (this.handler.updateContainer) {
             this.handler.updateContainer(container as (UiFlowBlock | null));
+
         }
+        this._container = container as (UiFlowBlock | null);
+    }
+
+
+    hasAncestor(block: FlowBlock) {
+        if (!this._container) {
+            return false;
+        }
+        if (this._container === block) {
+            return true;
+        }
+        return this._container.hasAncestor(block);
     }
 
 

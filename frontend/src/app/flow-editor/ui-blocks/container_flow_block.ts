@@ -74,6 +74,17 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     }
 
     addContentBlock(block: FlowBlock): void {
+        if (block === this) {
+            throw Error("Block cannot be it's own content");
+        }
+
+        if (block instanceof UiFlowBlock && (block.hasAncestor(this))) {
+            throw Error("This would create a container ↻ content loop");
+        }
+        else if (block instanceof ContainerFlowBlock && (block.contents.indexOf(this) >= 0)) {
+            throw Error("This would create a container ↻ content loop");
+        }
+
         this.handler.onContentUpdate(this.contents.concat([block]));
         this.contents.push(block);
     }

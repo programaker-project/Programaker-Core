@@ -296,10 +296,10 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     }
 
     _updateSize(opts?: { anchor?: 'bottom-center' | 'top-left' }) {
-        let maxWidth = Infinity;
+        let maxWidth = 500;
         if (this._container) {
             const containerArea = this._container.getBodyArea();
-            maxWidth = containerArea.width - ( this.block.getOffset().x - containerArea.x );
+            maxWidth = Math.min(maxWidth, containerArea.width - ( this.block.getOffset().x - containerArea.x ));
         }
 
         const anchor = opts && opts.anchor ? opts.anchor : 'top-left';
