@@ -1,5 +1,6 @@
 import { Area2D } from "../../flow_block";
 import { BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
+import { UiFlowBlock } from "../ui_flow_block";
 
 export type BackgroundPropertyConfiguration = { type: 'transparent' } | { type: 'color', value: string };
 
@@ -47,6 +48,7 @@ export interface ContainerElementRepr {
 export interface CutElement {
     i: number,
     a: Area2D,
+    b: UiFlowBlock,
 };
 export type CutType = 'vbox' | 'hbox';
 

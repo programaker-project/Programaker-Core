@@ -23,6 +23,7 @@ import { FakeSessionService } from './fake-session.service';
 import { FakeUiSignalService } from './fake-ui-signal.service';
 import { FlowGraph } from '../../../flow-editor/flow_graph';
 import { uuidv4 } from '../../../flow-editor/utils';
+import { UiElementWidgetType } from '../../../flow-editor/ui-blocks/renderers/ui_tree_repr';
 
 export function configureTestBed(testBed: TestBedStatic) {
     testBed.configureTestingModule({
@@ -75,7 +76,7 @@ export function configureTestBed(testBed: TestBedStatic) {
     });
 }
 
-export function pageGraph(elements: { type: string, x: number, y: number }[]): [FlowGraph, string[]] {
+export function pageGraph(elements: { type: UiElementWidgetType, x: number, y: number }[]): [FlowGraph, string[], string] {
     const graph: FlowGraph = { edges: [], nodes: {} };
 
     const pageId = uuidv4();
@@ -121,5 +122,5 @@ export function pageGraph(elements: { type: string, x: number, y: number }[]): [
         }
     }
 
-    return [graph, ids];
+    return [graph, ids, pageId];
 }

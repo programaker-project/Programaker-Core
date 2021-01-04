@@ -523,3 +523,14 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
 
     element.onblur = onBlur;
 }
+
+export function listToDict<T>(list: T[], getKey: (elem: T) => string): {[key: string]: T} {
+    const result = {};
+
+    for (const elem of list) {
+        const key = getKey(elem);
+        result[key] = elem;
+    }
+
+    return result;
+}

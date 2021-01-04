@@ -123,6 +123,7 @@ class HorizontalSeparator implements UiFlowBlockHandler, ConfigurableSettingsEle
 
     // Resizing
     readonly isAutoresizable = true;
+    readonly isNotHorizontallyStackable = true;
 
     // Handleable element
     getBodyArea(): Area2D {

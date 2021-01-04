@@ -5,7 +5,7 @@ import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandle
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr, DEFAULT_CUT_TYPE } from "./ui_tree_repr";
-import { combinedArea, combinedManipulableArea, getRefBox } from "./utils";
+import { combinedArea, combinedManipulableArea, getRefBox, listToDict, manipulableAreaToArea2D } from "./utils";
 import { PositionResponsiveContents } from "./positioning";
 
 
@@ -249,36 +249,6 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     onContentUpdate(contents: FlowBlock[]) {
         // Obtain new distribution
         this.contents = contents.concat([]);
-
-        this._updateCutGrid();
-        return;
-
-        // Check that the container size is adequate, resize it if necessary
-        const fullContents = this.block.recursiveGetAllContents();
-
-        if (fullContents.length === 0) {
-            return;
-        }
-
-        // Move contents down if they are not (vertically) completely inside the section
-        // This is done one-by-one, so the order of addition of blocks to the contained does not affect the final state.
-        const current = this.block.getOffset();
-
-        for (const block of contents) {
-            const blockArea = block.getBodyArea();
-            const yDiff = (current.y + PAGE_PADDING) - blockArea.y;
-            if (yDiff > 0) {
-                block.moveBy({ x: 0, y: yDiff });
-            }
-        }
-
-        const containedArea = combinedArea(fullContents.map(b => b.getBodyArea()));
-
-        // Extend the section to include all elements, if needed
-        if (this.height < containedArea.height) {
-            this.height = containedArea.height;
-            this.updateSizes();
-        }
     }
 
     _updateCutGrid() {
@@ -318,9 +288,18 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
         const titleHeight = this.titleBox.getBBox().height;
         area.y += titleHeight;
 
-        PositionResponsiveContents(this, this.contents, this.block.recursiveGetAllContents(), area);
+        const allContents = this.block.recursiveGetAllContents();
+
+        const cutTree = PositionResponsiveContents(this, this.contents, allContents, area);
 
         this._updateCutGrid();
+
+        const contentDict = listToDict(allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[], c => c.id);
+
+        const newArea = getRect(getElementsInGroup(cutTree).map(id => contentDict[id]))
+
+        // As it is now, resizing to { w: 0, h: 0 } would also do the trick
+        this.resize(manipulableAreaToArea2D(newArea));
     }
 
     get container(): ContainerFlowBlock {
@@ -631,9 +610,25 @@ export function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTre
 
 // Perform a single cut that divides the elements on the place where there is more empty space.
 function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElement[][] } {
-
     // Sort horizantally and vertically
-    const horiz = elems.concat([]);
+    const horiz = elems.map(e => {
+        if (e.b.isHorizontallyStackable()) {
+            return e;
+        }
+        else {
+            return {
+                b: e.b,
+                i: e.i,
+                a: {
+                    y: e.a.y,
+                    height: e.a.height,
+                    // Don't stack horizontally
+                    x: -Infinity,
+                    width: Infinity,
+                }
+            }
+        }
+    });
     horiz.sort((a, b) => a.a.x - b.a.x );
 
     const vert = elems.concat([]);

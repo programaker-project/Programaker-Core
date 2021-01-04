@@ -7,7 +7,7 @@ import { ContainerFlowBlock } from "../container_flow_block";
 
 export const SEPARATION = 25;
 
-export function PositionResponsiveContents (handler: UiFlowBlockHandler, blocks: FlowBlock[], allBlocks: FlowBlock[], offset: Position2D): Area2D {
+export function PositionResponsiveContents(handler: UiFlowBlockHandler, blocks: FlowBlock[], allBlocks: FlowBlock[], offset: Position2D): CutTree {
     // Format in a grid-like
     const uiPos = (blocks
         .filter(b => (b instanceof UiFlowBlock))
@@ -26,10 +26,12 @@ export function PositionResponsiveContents (handler: UiFlowBlockHandler, blocks:
     console.log('RESP Tree', tree);
 
 
-    return PositionTreeContentsFromTree(tree, blockMap, offset);
+    PositionTreeContentsFromTree(tree, blockMap, offset);
+
+    return tree;
 }
 
-function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiFlowBlock}, offset: Position2D, nonTopLevel?: boolean): Area2D | undefined{
+function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiFlowBlock}, offset: Position2D, nonTopLevel?: boolean) {
     if (!(tree as CutNode).cut_type) {
         return;
     }
