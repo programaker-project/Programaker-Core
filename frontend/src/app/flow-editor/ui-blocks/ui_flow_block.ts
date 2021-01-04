@@ -551,29 +551,35 @@ export class UiFlowBlock implements FlowBlock {
         if (handler.isTextEditable()) {
             actions.push({
                 title: 'Edit ' + handler.editableTextName,
-                run: () => {
-                    const prevValue = handler.text;
-
-                    const area = handler.getArea();
-                    const offset = this.getOffset();
-
-                    area.x += offset.x;
-                    area.y += offset.y;
-                    this.group.classList.add('editing');
-
-                    this._workspace.editInline(area, prevValue, 'string', (newValue: string) => {
-                        this.group.classList.remove('editing');
-
-                        if (newValue.trim().length > 0) {
-                            handler.text = newValue.trim();
-                        }
-                    });
-
-                }
+                run: this.startEditing.bind(this)
             });
         }
 
         return actions;
+    }
+
+    startEditing() {
+        const handler = this.handler;
+        if (!handler.isTextEditable()) {
+            throw new Error("Not editable");
+        }
+
+        const prevValue = handler.text;
+
+        const area = handler.getArea();
+        const offset = this.getOffset();
+
+        area.x += offset.x;
+        area.y += offset.y;
+        this.group.classList.add('editing');
+
+        this._workspace.editInline(area, prevValue, 'string', (newValue: string) => {
+            this.group.classList.remove('editing');
+
+            if (newValue.trim().length > 0) {
+                handler.text = newValue.trim();
+            }
+        });
     }
 
     getSlots(): { [key: string]: string; } {

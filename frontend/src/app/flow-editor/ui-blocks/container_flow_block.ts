@@ -96,6 +96,11 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         return !!this.options.isPage;
     }
 
+    get cannotBeMoved(): boolean {
+        // Right now only the pages cannot be moved, but this might change in the future
+        return this.isPage;
+    }
+
     getPageTitle(): string {
         if (!this.isPage) {
             return null;

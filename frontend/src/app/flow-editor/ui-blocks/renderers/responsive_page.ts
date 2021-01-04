@@ -165,6 +165,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
 
     // UiFlowBlock
     onClick() {
+        this.block.startEditing();
     }
 
     onGetFocus() {

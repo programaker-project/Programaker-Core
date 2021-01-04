@@ -821,6 +821,23 @@ svg.block_renderer g.flow_node.text_node .node_body {
     fill: #fff;
 }
 
+svg.block_renderer g.flow_node.container_node.responsive_page {
+
+    .node_body {
+        cursor: auto;
+
+    }
+
+    rect {
+        pointer-events: none;
+    }
+
+    rect.titlebox, text {
+        pointer-events: all;
+        cursor: text
+    }
+}
+
 svg.block_renderer g.flow_node.container_node.responsive_page .output_text {
     fill: #fff;
     font-style: normal;

@@ -929,28 +929,37 @@ export class FlowWorkspace implements BlockManager {
             this.showBlockContextMenu(this._getPositionFromEvent(ev));
         };
 
-        bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
-            if (this.state !== 'waiting'){
-                return;
-            }
-            if (this.read_only) {
-                return;
-            }
+        let canBeMoved = true;
+        if (block instanceof ContainerFlowBlock) {
+            canBeMoved = !block.cannotBeMoved;
+        }
 
-            if (this.current_io_selected) { return; }
+        if (canBeMoved) {
+            bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
+                if (this.state !== 'waiting'){
+                    return;
+                }
 
-            this.ensureContextMenuHidden();
+                if (this.read_only) {
+                    return;
+                }
 
-            if ((ev as MouseEvent).button === 2) {
-                // On right click just make sure it is selected, the context
-                // menu will be handled by 'oncontextmenu'.
-                this.ensureBlockSelected(block_id);
-                // TODO: How to perform this action on touch event? Long touch?
-            }
-            else {
-                this._mouseDownOnBlock(this._getPositionFromEvent(ev), block);
-            }
-        });
+                if (this.current_io_selected) { return; }
+
+                this.ensureContextMenuHidden();
+
+                if ((ev as MouseEvent).button === 2) {
+                    // On right click just make sure it is selected, the context
+                    // menu will be handled by 'oncontextmenu'.
+                    this.ensureBlockSelected(block_id);
+                    // TODO: How to perform this action on touch event? Long touch?
+                }
+                else {
+                    this._mouseDownOnBlock(this._getPositionFromEvent(ev), block);
+                }
+            });
+        }
+
         const input_group = this.drawBlockInputHelpers(block);
 
         this.blocks[block_id] = { block: block, connections: [], input_group: input_group, container_id: null };
