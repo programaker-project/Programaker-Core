@@ -74,8 +74,8 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     }
 
     addContentBlock(block: FlowBlock): void {
+        this.handler.onContentUpdate(this.contents.concat([block]));
         this.contents.push(block);
-        this.handler.onContentUpdate(this.contents);
     }
 
     removeContentBlock(block: FlowBlock): void {

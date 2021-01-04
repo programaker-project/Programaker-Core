@@ -12,6 +12,7 @@ import { isContainedIn, uuidv4 } from './utils';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfigureBlockDialogComponent, ConfigurableBlock, BlockConfigurationOptions } from './dialogs/configure-block-dialog/configure-block-dialog.component';
 import { ProgramService } from '../program.service';
+import { CannotSetAsContentsError } from './ui-blocks/cannot_set_as_contents_error';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -153,7 +154,17 @@ export class FlowWorkspace implements BlockManager {
                 }
 
                 if (block.container_id) {
-                    this._updateBlockContainer(created_block, this.blocks[block.container_id].block);
+                    try {
+                        this._updateBlockContainer(created_block, this.blocks[block.container_id].block);
+                    }
+                    catch (err) {
+                        if (err instanceof CannotSetAsContentsError) {
+                            this._updateBlockContainer(created_block, null);
+                        }
+                        else {
+                            throw err;
+                        }
+                    }
                 }
                 processing = true;
             }
@@ -1273,7 +1284,15 @@ export class FlowWorkspace implements BlockManager {
             }
 
             if (container) {
-                (container as any as ContainerBlock).addContentBlock(block);
+                try {
+                    (container as any as ContainerBlock).addContentBlock(block);
+                }
+                catch (err) {
+                    if (err instanceof CannotSetAsContentsError) {
+                        this.blocks[block_id].container_id = null;
+                    }
+                    throw err;
+                }
             }
             this.blocks[block_id].container_id = container_id;
 
@@ -1376,7 +1395,15 @@ export class FlowWorkspace implements BlockManager {
                 || (containerId && (this._selectedBlocks.indexOf(containerId) < 0))) {
 
                 for (const blockId of this._selectedBlocks.concat([])) {
-                    this._updateBlockContainer(this.blocks[blockId].block, container);
+                    try {
+                        this._updateBlockContainer(this.blocks[blockId].block, container);
+                    }
+                    catch (err) {
+                        if (err instanceof CannotSetAsContentsError) {
+                            console.error("Cannot set as content"); // TODO: Show as notification
+                            this._updateBlockContainer(this.blocks[blockId].block, null);
+                        }
+                    }
                 }
             }
 
@@ -1811,7 +1838,17 @@ export class FlowWorkspace implements BlockManager {
             const parent_container = parent_container_id ? this.blocks[parent_container_id].block : null;
 
             for (const content of info.block.contents.concat([])) {
-                this._updateBlockContainer(content, parent_container);
+                try {
+                    this._updateBlockContainer(content, parent_container);
+                }
+                catch (err) {
+                    if (err instanceof CannotSetAsContentsError) {
+                        this._updateBlockContainer(content, null); // Ignore container]
+                    }
+                    else {
+                        throw err;
+                    }
+                }
             }
 
             if (info.block.isPage) {

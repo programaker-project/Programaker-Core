@@ -8,6 +8,7 @@ import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from 
 import { CutTree } from "./ui_tree_repr";
 import { combinedArea, getRefBox } from "./utils";
 import { PositionHorizontalContents, PositionVerticalContents } from "./positioning";
+import { CannotSetAsContentsError } from "../cannot_set_as_contents_error";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -265,6 +266,15 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     }
 
     onContentUpdate(contents: FlowBlock[]) {
+
+        // Reject elements that cannot be horizontally stacked
+        if (!this.nestedHorizontal) {
+            const problematic = contents.filter((e) => (e instanceof UiFlowBlock) && (!e.isHorizontallyStackable()))
+            if (problematic.length > 0) {
+                throw new CannotSetAsContentsError("Elements that cannot be horizontally stacked cannot be added to a HorizontalUiSection", problematic);
+            }
+        }
+
         this._contents = contents;
 
         // Check that the container size is adequate, resize it if necessary
