@@ -135,6 +135,10 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     // Resizing
     readonly isAutoresizable = true;
 
+    get isNotHorizontallyStackable() {
+        return !this.nestedHorizontal;
+    }
+
     getBodyArea(): Area2D {
         return this.block.getBodyArea();
     }

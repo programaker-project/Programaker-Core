@@ -7,12 +7,16 @@ import { HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr, DEFAULT_CUT_TYPE } from "./ui_tree_repr";
 import { combinedArea, combinedManipulableArea, getRefBox, listToDict, manipulableAreaToArea2D } from "./utils";
 import { PositionResponsiveContents } from "./positioning";
+import { SEPARATION } from "./positioning";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
 const Title = "Responsive page";
 const TITLE_PADDING = 5;
 const PAGE_PADDING = 5;
+
+const MIN_WIDTH = 200;
+const MIN_HEIGHT = 600;
 
 export const ResponsivePageBuilder : ContainerFlowBlockBuilder = (canvas: SVGElement,
                                                                   group: SVGElement,
@@ -25,7 +29,7 @@ export const ResponsivePageBuilder : ContainerFlowBlockBuilder = (canvas: SVGEle
     return element;
 }
 
-class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Resizeable, TextEditable {
+class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, TextEditable {
     subscription: Subscription;
     textBox: SVGTextElement;
     handle: UiElementHandle | null = null;
@@ -98,7 +102,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
         this.updateSizes();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, this.node, initOps.workspace, [ 'resize_width_height' ]);
+            this.handle = new UiElementHandle(this, this.node, initOps.workspace, []);
         }
     }
 
@@ -109,32 +113,15 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     }
 
     // Resizeable
-    resize(dim: { width: number; height: number; }) {
-        // Check that what the minimum available size is
-        const fullContents = this.block.recursiveGetAllContents();
+    resize(dim: Area2D) {
+        const newWidth = Math.max(MIN_WIDTH, dim.width + SEPARATION * 2);
+        const newHeight = Math.max(MIN_HEIGHT, dim.height + SEPARATION * 2);
 
-        const inflexibleArea = combinedArea(
-            fullContents
-                .filter(b => !(
-                    (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-                ))
-                .map(b => b.getBodyArea()));
+        const diffWidth = this.width - newWidth;
+        const diffHeight = this.height - newHeight;
 
-        const pos = this.block.getOffset();
-
-        const minWidth = Math.max(
-            this.textDim.width,
-            inflexibleArea.x - pos.x + inflexibleArea.width,
-        );
-
-        const minHeight = Math.max(
-            this.textDim.height,
-            inflexibleArea.y - pos.y + inflexibleArea.height,
-        );
-
-        this.width = Math.max(minWidth, dim.width);
-        this.height = Math.max(minHeight, dim.height);
-
+        this.width = newWidth;
+        this.height = newHeight;
 
         this.updateSizes();
 
@@ -294,11 +281,18 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
 
         this._updateCutGrid();
 
-        const contentDict = listToDict(allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[], c => c.id);
+        const contentDict = listToDict(
+            allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],
+            c => c.id);
 
-        const newArea = getRect(getElementsInGroup(cutTree).map(id => contentDict[id]))
+        const elems = getElementsInGroup(cutTree)
+            .map(id => contentDict[id])
+            .filter(x => x.isHorizontallyStackable());
 
-        // As it is now, resizing to { w: 0, h: 0 } would also do the trick
+        const newArea = getRect(elems);
+
+        console.log("Elems", elems);
+        console.log("Res", manipulableAreaToArea2D(newArea));
         this.resize(manipulableAreaToArea2D(newArea));
     }
 

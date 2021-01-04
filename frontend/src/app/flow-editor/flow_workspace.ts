@@ -1353,7 +1353,7 @@ export class FlowWorkspace implements BlockManager {
                 lastContainer.getBodyElement().classList.remove('highlighted');
             }
 
-            const wasInContainer = this._getContainerOfBlock(block_id) !== null;
+            const oldContainer: string | null = this.blocks[block_id].container_id;
             const pos = this._getPositionFromEvent(ev);
             const container = this._findContainerInPos(pos, block);
             const containerId = container === null ? null : this.getBlockId(container);
@@ -1363,7 +1363,7 @@ export class FlowWorkspace implements BlockManager {
             // Only update container if either:
             //  - The dragged block was in a container and now is not
             //  - The dragged block is dropped in a container not in the selected group
-            if ((wasInContainer && (!containerId))
+            if ((oldContainer && (!containerId))
                 || (containerId && (this._selectedBlocks.indexOf(containerId) < 0))) {
 
                 for (const blockId of this._selectedBlocks.concat([])) {
@@ -1413,6 +1413,11 @@ export class FlowWorkspace implements BlockManager {
 
                     this.updateBlockInputHelpersPosition(movedId);
                 }
+            }
+
+            // Take into account the old container
+            if (oldContainer) {
+                moved.push(oldContainer);
             }
 
             this._invalidateBlockPositions(moved);
