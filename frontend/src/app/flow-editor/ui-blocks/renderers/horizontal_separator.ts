@@ -1,7 +1,7 @@
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { BlockAllowedConfigurations, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
 import { Area2D, FlowBlock } from "../../flow_block";
-import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
+import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilder, UiFlowBlockBuilderInitOps, UiFlowBlockHandler, Autoresizable } from "../ui_flow_block";
 import { UiElementHandle, ConfigurableSettingsElement } from "./ui_element_handle";
 import { ContainerFlowBlock } from "../container_flow_block";
 
@@ -21,13 +21,14 @@ export const HorizontalSeparatorBuilder: UiFlowBlockBuilder = (canvas: SVGElemen
     return element;
 }
 
-class HorizontalSeparator implements UiFlowBlockHandler, ConfigurableSettingsElement {
+class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, ConfigurableSettingsElement {
     private textBox: SVGTextElement;
     private rect: SVGRectElement;
     readonly MinWidth = 120;
     private handle: UiElementHandle;
     private _container: ContainerFlowBlock;
     private separatorPath: SVGPathElement;
+    private _minSize: { width: number, height: number };
 
     constructor(canvas: SVGElement, group: SVGElement,
         private block: UiFlowBlock,
@@ -64,6 +65,8 @@ class HorizontalSeparator implements UiFlowBlockHandler, ConfigurableSettingsEle
 
         this.updateStyle();
         this._updateSize();
+
+        this._minSize = this.rect.getBBox();
 
         if (initOps.workspace) {
             this.handle = new UiElementHandle(this, node, initOps.workspace, ['adjust_settings']);
@@ -122,8 +125,17 @@ class HorizontalSeparator implements UiFlowBlockHandler, ConfigurableSettingsEle
     }
 
     // Resizing
-    readonly isAutoresizable = true;
     readonly isNotHorizontallyStackable = true;
+    isAutoresizable(): this is Autoresizable {
+        return true;
+    }
+
+    getMinSize() {
+        return {
+            width: this._minSize.width,
+            height: this._minSize.height,
+        }
+    }
 
     // Handleable element
     getBodyArea(): Area2D {

@@ -168,7 +168,16 @@ export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks:
     const blockAreas: [UiFlowBlock, Area2D][] = (
         blocks
             .filter(b => b instanceof UiFlowBlock)
-            .map((b: UiFlowBlock) => [b, b.getBodyArea()]));
+            .map((b: UiFlowBlock) => {
+                const area = b.getBodyArea()
+                if (b.isAutoresizable()) {
+                    const min = b.getMinSize();
+                    area.width = min.width;
+                    area.height = min.height;
+                }
+
+                return [b, area];
+            }));
 
     const minBlockHeights = blockAreas.filter(([b, _]) => !b.isAutoresizable())
         .map(([_, a]) => a.height);
@@ -214,7 +223,16 @@ export function PositionVerticalContents (handler: UiFlowBlockHandler, blocks: F
     const blockAreas: [UiFlowBlock, Area2D][] = (
         blocks
             .filter(b => b instanceof UiFlowBlock)
-            .map((b: UiFlowBlock) => [b, b.getBodyArea()]));
+            .map((b: UiFlowBlock) => {
+                const area = b.getBodyArea()
+                if (b.isAutoresizable()) {
+                    const min = b.getMinSize();
+                    area.width = min.width;
+                    area.height = min.height;
+                }
+
+                return [b, area];
+            }));
 
     const blockWidths = blockAreas.map(([_, a]) => a.width);
     const blockHeights = blockAreas.map(([_, a]) => a.height);

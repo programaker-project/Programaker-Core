@@ -24,8 +24,8 @@ export type UiFlowBlockBuilder = (canvas: SVGElement,
                                   block: UiFlowBlock,
                                   service: UiSignalService,
                                   ops: UiFlowBlockBuilderInitOps) => UiFlowBlockHandler;
+
 export interface UiFlowBlockHandler {
-    readonly isAutoresizable?: boolean;
     readonly isNotHorizontallyStackable?: boolean;
     onConnectionLost: (portIndex: number) => void;
     onConnectionValueUpdate : (input_index: number, value: string) => void;
@@ -36,12 +36,17 @@ export interface UiFlowBlockHandler {
     isTextReadable(): this is TextReadable,
     getBodyElement(): SVGGraphicsElement,
 
+    isAutoresizable?: () => this is Autoresizable;
     dropOnEndMove?: () => Movement2D;
     updateContainer?: (container: UiFlowBlock) => void;
     onGetFocus?: () => void;
     onLoseFocus?: () => void;
 }
 
+export interface Autoresizable {
+    isAutoresizable: () => this is Autoresizable;
+    getMinSize(): { width: number, height: number  }
+};
 
 export interface TextReadable {
     readonly text: string,
@@ -637,12 +642,25 @@ export class UiFlowBlock implements FlowBlock {
         this.handler.onClick();
     }
 
-    isAutoresizable(): boolean {
-        return !!this.handler.isAutoresizable;
+    isAutoresizable(): this is Autoresizable {
+        if (!this.handler.isAutoresizable) {
+            return false;
+        }
+
+        return this.handler.isAutoresizable();
     }
 
     isHorizontallyStackable(): boolean {
         return !this.handler.isNotHorizontallyStackable;
+    }
+
+    getMinSize(): { width: number, height: number } {
+        if (this.handler.isAutoresizable()) {
+            return this.handler.getMinSize();
+        }
+        else {
+            throw Error("Element is not Autoresizeable")
+        }
     }
 
     // Container-related
