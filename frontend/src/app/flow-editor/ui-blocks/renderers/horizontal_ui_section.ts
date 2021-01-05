@@ -29,7 +29,7 @@ export const HorizontalUiSectionBuilder: ContainerFlowBlockBuilder = (canvas: SV
     return element;
 }
 
-class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElement, Autoresizable, Resizeable, ConfigurableSettingsElement {
+class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElement, Autoresizable, ConfigurableSettingsElement {
     subscription: Subscription;
     handle: UiElementHandle | null = null;
     node: SVGGElement;
@@ -80,47 +80,16 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         this.grid.setAttribute('class', 'division_grid');
 
         this.updateStyle();
-        this.updateSizes();
+        this._updateInternalElementSizes();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, this.node, initOps.workspace, ['resize_height', 'adjust_settings']);
+            this.handle = new UiElementHandle(this, this.node, initOps.workspace, ['adjust_settings']);
         }
     }
 
     init() {
         if (this.handle) {
             this.handle.init();
-        }
-    }
-
-    updateSizes() {
-        if (this.container) {
-            const area = this.container.getBodyArea();
-            if (this.nestedHorizontal) {
-                // If the parent is an horizontal element, cover all height
-                this.height = area.height - 2;
-
-                const offset = this.block.getOffset();
-                const ydiff = offset.y - (area.y + 1);
-                if (ydiff != 2) {
-                    this.block.moveBy({ x: 0, y: -ydiff});
-                }
-            }
-            else {
-                this.width = area.width - 2;
-
-                const offset = this.block.getOffset();
-                const xdiff = offset.x - (area.x + 1);
-                if (xdiff != 2) {
-                    this.block.moveBy({ x: -xdiff, y: 0});
-                }
-            }
-        }
-
-        this._updateInternalElementSizes();
-
-        if (this.handle) {
-            this.handle.update();
         }
     }
 
@@ -136,6 +105,10 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     }
 
     // Resizing
+    doesTakeAllHorizontal() {
+        return !this.nestedHorizontal;
+    }
+
     isAutoresizable(): this is Autoresizable {
         return true;
     }
@@ -144,7 +117,12 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         if (this._contents.length === 0) {
             return { width: MIN_WIDTH, height: MIN_HEIGHT };
         }
-        return this.rect.getBBox();
+        const area = this.rect.getBBox();
+
+        return {
+            width: Math.max(area.width, MIN_WIDTH),
+            height: Math.max(area.height, MIN_HEIGHT),
+        }
     }
 
     get isNotHorizontallyStackable() {
@@ -156,11 +134,16 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     }
 
     // Resizeable
-    resize(dimensions: { width: number; height: number; }) {
+    resize(dimensions: { width: number; height: number; }, repositioning?: boolean) {
         // Make sure what's the minimum possible height
         const fullContents = this.block.recursiveGetAllContents();
 
         const pos = this.block.getOffset();
+
+        if (repositioning) {
+            this.width = dimensions.width;
+            this.height = dimensions.height;
+        }
 
         if (this.nestedHorizontal) {
             // Resize vertically
@@ -175,14 +158,22 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                         ))
                         .map(b => b.getBodyArea()));
 
-                minWidth = inflexibleArea.x - pos.x + inflexibleArea.width;
+                const mov = {
+                    x: (inflexibleArea.x - SEPARATION) - pos.x,
+                    y: 0,
+                };
+
+                this.block.moveWithoutCarrying(mov);
+
+                minWidth = inflexibleArea.width;
             }
 
             const oldWidth = this.width;
             const newWidth = Math.max(MIN_WIDTH, minWidth, dimensions.width);
 
             this.width = newWidth;
-            this.updateSizes();
+
+            this._updateInternalElementSizes();
 
             const pushRight = newWidth - oldWidth;
             if (this.container && pushRight > 0) {
@@ -202,6 +193,13 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                         ))
                         .map(b => b.getBodyArea()));
 
+                const mov = {
+                    x: 0,
+                    y: (inflexibleArea.y - SEPARATION) - pos.y,
+                };
+
+                this.block.moveWithoutCarrying(mov);
+
                 minHeight = inflexibleArea.y - pos.y + inflexibleArea.height;
             }
 
@@ -209,7 +207,8 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
             const newHeight = Math.max(MIN_HEIGHT, minHeight, dimensions.height);
 
             this.height = newHeight;
-            this.updateSizes();
+
+            this._updateInternalElementSizes();
 
             const pushDown = newHeight - oldHeight;
             if (this.container && pushDown > 0) {
@@ -217,7 +216,8 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
             }
         }
 
-        (this.block as ContainerFlowBlock).update();
+        this.block.update();
+
 
         for (const content of this._contents) {
             if (content instanceof ContainerFlowBlock) {
@@ -227,7 +227,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                 content.updateContainer(this.block);
             }
         }
-   }
+    }
 
     // UiFlowBlock
     onClick() {
@@ -277,7 +277,6 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     }
 
     onContentUpdate(contents: FlowBlock[]) {
-
         // Reject elements that cannot be horizontally stacked
         if (!this.nestedHorizontal) {
             const problematic = contents.filter((e) => {
@@ -293,81 +292,6 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         }
 
         this._contents = contents;
-
-        // Check that the container size is adequate, resize it if necessary
-        const uiContents = (this.block
-            .recursiveGetAllContents()
-            .filter(b => !(
-                (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-            )));
-
-        if (uiContents.length === 0) {
-            return;
-        }
-
-        // Move contents down if they are not (vertically) completely inside the section
-        // This is done one-by-one, so the order of addition of blocks to the contained does not affect the final state.
-        const current = this.block.getOffset();
-
-        for (const block of contents) {
-            const blockArea = block.getBodyArea();
-
-            const xDiff = (current.x + SECTION_PADDING) - blockArea.x;
-            const yDiff = (current.y + SECTION_PADDING) - blockArea.y;
-            if ((yDiff > 0) || (xDiff > 0)) {
-                block.moveBy({ x: Math.max(0, xDiff), y: Math.max(0, yDiff) });
-            }
-        }
-
-        const containedArea = combinedArea(uiContents.map(b => b.getBodyArea()));
-        const oldPos = this.block.getOffset();
-        let updated = false;
-
-        // Extend the section to include all elements, if needed
-        if (this.nestedHorizontal !== false) {
-            // Can push horizontally
-            const aggregatedWidth = containedArea.width + (containedArea.x - oldPos.x);
-            if (this.width < aggregatedWidth) {
-                updated = true;
-                const oldWidth = this.width;
-
-                this.width = aggregatedWidth;
-
-                // Push elements down
-                const pushRight = this.width - oldWidth;
-                if (this.container && pushRight > 0) {
-                    this.container.pushRight(oldPos.x + oldWidth, pushRight);
-                }
-
-            }
-        }
-        if (this.nestedHorizontal !== true) {
-            // Can push vertically
-            const aggregatedHeight = containedArea.height + (containedArea.y - oldPos.y);
-            if (this.height < containedArea.height) {
-                updated = true;
-                const oldHeight = this.height;
-
-                this.height = aggregatedHeight;
-
-                // Push elements down
-                const pushDown = this.height - oldHeight;
-                if (this.container && pushDown > 0) {
-                    this.container.pushDown(oldPos.y + oldHeight, pushDown);
-                }
-
-            }
-        }
-
-        this.updateSizes();
-
-        if (updated) {
-            for (const content of this._contents) {
-                if (content instanceof ContainerFlowBlock) {
-                    content.updateContainer(this.block);
-                }
-            }
-        }
     }
 
     updateContainer(container: UiFlowBlock | null) {
@@ -386,7 +310,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         else {
             this.handle.setResizeType('vertical');
         }
-        this.updateSizes();
+        this._updateInternalElementSizes();
     }
 
     repositionContents(): void {
@@ -397,7 +321,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         else {
             dimensions = PositionHorizontalContents(this, this._contents, this.getBodyArea());
         }
-        this.resize(dimensions);
+        this.resize(dimensions, true);
     }
 
     dropOnEndMove() {

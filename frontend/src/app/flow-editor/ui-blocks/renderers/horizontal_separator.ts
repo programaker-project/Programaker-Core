@@ -130,6 +130,14 @@ class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, Configur
         return true;
     }
 
+    doesTakeAllHorizontal() {
+        return true;
+    }
+
+    resize(_dims: any) {
+        this._updateSize();
+    }
+
     getMinSize() {
         return {
             width: this._minSize.width,

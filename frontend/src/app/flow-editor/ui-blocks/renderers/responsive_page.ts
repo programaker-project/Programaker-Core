@@ -162,6 +162,10 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
         return this.block.getBodyArea();
     }
 
+    getMinSize() {
+        return this.getBodyArea(); // This is not actually used, so a non-stable value can be accepted
+    }
+
     // UiFlowBlock
     onClick() {
         this.block.startEditing();
@@ -722,8 +726,6 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
     }
 
     if((before.length === 0) || (after.length === 0)) {
-        console.log(cutType)
-        console.log("VERT", vertSpaces, vert);
         throw Error(`Splitting with no elements on one side (${before.length} -split- ${after.length})`);
     }
 

@@ -11,8 +11,15 @@ export function PositionResponsiveContents(handler: UiFlowBlockHandler, blocks: 
     // Format in a grid-like
     const uiPos = (blocks
         .filter(b => (b instanceof UiFlowBlock))
-        .map((b, i) => {
-            return {i, a: b.getBodyArea(), b: (b as UiFlowBlock)};
+        .map((b: UiFlowBlock, i) => {
+            const area = b.getBodyArea()
+            if (b.isAutoresizable()) {
+                const min = b.getMinSize();
+                area.width = min.width;
+                area.height = min.height;
+            }
+
+            return {i, a: area, b: (b as UiFlowBlock)};
         }));
 
     const tree = cleanestTree(uiPos, uiPos.map(({b: block}) => block));
@@ -23,7 +30,7 @@ export function PositionResponsiveContents(handler: UiFlowBlockHandler, blocks: 
         blockMap[block.id] = block;
     }
 
-    console.log('RESP Tree', tree);
+    console.log('RESPONSIVE Tree', tree);
 
 
     PositionTreeContentsFromTree(tree, blockMap, offset);
@@ -66,7 +73,9 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
             if (block.isAutoresizable()) {
                 // Don't push away from borders
                 if (cTree.cut_type === 'vbox') {
-                    mov.x = 0;
+                    if (block.doesTakeAllHorizontal()) {
+                        mov.x = 0;
+                    }
                 }
                 else if (cTree.cut_type === 'hbox') {
                     mov.y = 0;
@@ -77,19 +86,14 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
             block.moveBy(mov);
             console.log("=>", JSON.stringify((block as any).position));
             toCenter.push(block);
+
+            area = block.getBodyArea();
         }
         else {
             // Treat as a group
             // console.log("C", contents.map(id => blocks[id]));
 
             const subOffset = { x: subTreeOffset.x, y: subTreeOffset.y };
-
-            // if (cTree.cut_type === 'hbox') {
-            //     subOffset.y -= SEPARATION;
-            // }
-            // else {
-            //     subOffset.x -= SEPARATION;
-            // }
 
             // console.log(">>>>")
             PositionTreeContentsFromTree(group, blocks, subOffset, true);
@@ -176,13 +180,15 @@ export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks:
                     area.width = min.width;
                     area.height = min.height;
                 }
+                else {
+                    area.height += SEPARATION * 2;
+                }
 
                 return [b, area];
             }));
 
-    const minBlockHeights = blockAreas.filter(([b, _]) => !b.isAutoresizable())
-        .map(([_, a]) => a.height);
-    const maxHeight = Math.max(...minBlockHeights);
+    const blockHeights = blockAreas.map(([_, a]) => a.height);
+    const maxHeight = Math.max(...blockHeights);
 
     const blockWidths = blockAreas.map(([_, a]) => a.width);
     const reqBlockWidth = blockWidths.reduce((a,b) => a + b, 0);
@@ -190,7 +196,7 @@ export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks:
     const sumPaddings = SEPARATION * (blocks.length + 1);
     const reqWidth = reqBlockWidth + sumPaddings;
     const width = Math.max(area.width, reqWidth);
-    const height = maxHeight + SEPARATION * 2;
+    const height = maxHeight;
 
     const separation = width === reqWidth
         ? SEPARATION
@@ -215,12 +221,10 @@ export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks:
         });
     }
 
-    return { width, height };
+    return { width: xpos, height };
 }
 
 export function PositionVerticalContents (handler: UiFlowBlockHandler, blocks: FlowBlock[], area: Area2D): { width: number, height: number } {
-    console.log("Vert");
-
     const blockAreas: [UiFlowBlock, Area2D][] = (
         blocks
             .filter(b => b instanceof UiFlowBlock)
@@ -255,8 +259,7 @@ export function PositionVerticalContents (handler: UiFlowBlockHandler, blocks: F
     let ypos = separation;
     for (const [block, blockArea] of blockAreas) {
         const y = ypos;
-        const x = block.isAutoresizable() ? 0 : (width - blockArea.width) / 2;
-        ypos += blockArea.height + separation;
+        const x = block.isAutoresizable() && block.doesTakeAllHorizontal() ? 0 : (width - blockArea.width) / 2;
 
         const absX = area.x + x;
         const absY = area.y + y;
@@ -265,7 +268,16 @@ export function PositionVerticalContents (handler: UiFlowBlockHandler, blocks: F
             x: absX - blockArea.x,
             y: absY - blockArea.y,
         });
+
+        const areaAfterMove = block.getBodyArea()
+        if (block.isAutoresizable()) {
+            const min = block.getMinSize();
+            areaAfterMove.width = min.width;
+            areaAfterMove.height = min.height;
+        }
+
+        ypos += areaAfterMove.height + separation;
     }
 
-    return { width, height };
+    return { width, height: ypos };
 }

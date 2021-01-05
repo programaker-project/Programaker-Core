@@ -1,14 +1,14 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { BlockAllowedConfigurations, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
-import { Area2D, FlowBlock, Resizeable } from "../../flow_block";
+import { Area2D, FlowBlock } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
-import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
+import { Autoresizable, TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
+import { PositionResponsiveContents, SEPARATION } from "./positioning";
+import { getElementsInGroup, getRect, ResponsivePageGenerateTree } from "./responsive_page";
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
-import { CutTree, ContainerElementRepr } from "./ui_tree_repr";
-import { combinedArea, getRefBox } from "./utils";
-import { ResponsivePageGenerateTree } from "./responsive_page";
-import { PositionResponsiveContents } from "./positioning";
+import { ContainerElementRepr, CutTree } from "./ui_tree_repr";
+import { combinedArea, listToDict, manipulableAreaToArea2D } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -29,7 +29,7 @@ export const LinkAreaBuilder: ContainerFlowBlockBuilder = (canvas: SVGElement,
     return element;
 }
 
-class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Resizeable, ConfigurableSettingsElement {
+class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Autoresizable, ConfigurableSettingsElement {
     subscription: Subscription;
     handle: UiElementHandle | null = null;
     node: SVGGElement;
@@ -121,27 +121,41 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Resizeab
 
 
     // Resizeable
-    resize(dim: { width: number; height: number; }) {
+    resize(dim: { x?: number, y?: number, width: number; height: number; }) {
         // Check that what the minimum available size is
         const fullContents = this.block.recursiveGetAllContents();
 
         const inflexibleArea = combinedArea(
             fullContents
-                .filter(b => !(
-                    (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-                ))
-                .map(b => b.getBodyArea()));
+                .filter(b => b instanceof UiFlowBlock)
+                .filter(b => (!(b instanceof ContainerFlowBlock)) || (b.isAutoresizable()))
+                .map((b: UiFlowBlock) => {
+                    const area = b.getBodyArea();
 
-        const pos = this.block.getOffset();
+                    if (b.isAutoresizable()) {
+                        const min = b.getMinSize();
+                        area.width = min.width;
+                        area.height = min.height;
+                    }
+                    return area;
+                }));
+        const wasPos = this.block.getOffset();
+
+        const mov = {
+            x: (inflexibleArea.x - SEPARATION) - wasPos.x,
+            y: (inflexibleArea.y - SEPARATION) - wasPos.y,
+        };
+
+        (this.block as ContainerFlowBlock).moveWithoutCarrying(mov);
 
         const minWidth = Math.max(
             MIN_WIDTH,
-            inflexibleArea.x - pos.x + inflexibleArea.width,
+            inflexibleArea.width === 0 ? 0 : inflexibleArea.width + SEPARATION * 2,
         );
 
         const minHeight = Math.max(
             MIN_HEIGHT,
-            inflexibleArea.y - pos.y + inflexibleArea.height,
+            inflexibleArea.height === 0 ? 0 : inflexibleArea.height + SEPARATION * 2,
         );
 
         this.width = Math.max(minWidth, dim.width);
@@ -164,6 +178,26 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Resizeab
 
     // UiFlowBlock
     onClick() {
+    }
+
+    isAutoresizable(): this is Autoresizable {
+        return true;
+    }
+
+    getMinSize() {
+        if (this._contents.length === 0) {
+            return { width: MIN_WIDTH, height: MIN_HEIGHT };
+        }
+        const area = this.rect.getBBox();
+
+        return {
+            width: Math.max(area.width, MIN_WIDTH),
+            height: Math.max(area.height, MIN_HEIGHT),
+        }
+    }
+
+    doesTakeAllHorizontal() {
+        return false;
     }
 
     onGetFocus() {
@@ -210,77 +244,7 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Resizeab
     }
 
     onContentUpdate(contents: FlowBlock[]) {
-        // TODO: Merge this with SimpleUiCard.onContentUpdate()?
         this._contents = contents;
-
-        // Check that the container size is adequate, resize it if necessary
-        const uiContents = (this.block
-            .recursiveGetAllContents()
-            .filter(b => !(
-                (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-            )));
-
-        if (uiContents.length === 0) {
-            return;
-        }
-
-        // Move contents down if they are not (vertically) completely inside the section
-        // This is done one-by-one, so the order of addition of blocks to the contained does not affect the final state.
-        const current = this.block.getOffset();
-
-        for (const block of contents) {
-            const blockArea = block.getBodyArea();
-
-            const xDiff = (current.x + SECTION_PADDING) - blockArea.x;
-            const yDiff = (current.y + SECTION_PADDING) - blockArea.y;
-            if ((yDiff > 0) || (xDiff > 0)) {
-                block.moveBy({ x: Math.max(0, xDiff), y: Math.max(0, yDiff) });
-            }
-        }
-
-        const containedArea = combinedArea(uiContents.map(b => b.getBodyArea()));
-        const oldPos = this.block.getOffset();
-        let updated = false;
-
-        // Extend the section to include all elements, if needed
-        // Push horizontally
-        const aggregatedWidth = containedArea.width + (containedArea.x - oldPos.x);
-        if (this.width < aggregatedWidth) {
-            updated = true;
-            const oldWidth = this.width;
-
-            this.width = aggregatedWidth;
-
-            // Push elements down
-            const pushRight = this.width - oldWidth;
-            if (this.container && pushRight > 0) {
-                this.container.pushRight(oldPos.x + oldWidth, pushRight);
-            }
-        }
-        // Push vertically
-        const aggregatedHeight = containedArea.height + (containedArea.y - oldPos.y);
-        if (this.height < containedArea.height) {
-            updated = true;
-            const oldHeight = this.height;
-
-            this.height = aggregatedHeight;
-
-            // Push elements down
-            const pushDown = this.height - oldHeight;
-            if (this.container && pushDown > 0) {
-                this.container.pushDown(oldPos.y + oldHeight, pushDown);
-            }
-
-        }
-
-        if (updated) {
-            this.updateSizes();
-            for (const content of this._contents) {
-                if (content instanceof ContainerFlowBlock) {
-                    content.updateContainer(this.block);
-                }
-            }
-        }
     }
 
     updateContainer(container: UiFlowBlock | null) {
@@ -290,7 +254,24 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Resizeab
     }
 
     repositionContents(): void {
-        PositionResponsiveContents(this, this._contents, this.block.recursiveGetAllContents(), this.getBodyArea());
+        if (this._contents.length === 0) {
+            return;
+        }
+
+        const allContents = this.block.recursiveGetAllContents();
+        const cutTree = PositionResponsiveContents(this, this._contents, allContents, this.getBodyArea());
+
+        const contentDict = listToDict(
+            allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],
+            c => c.id);
+
+        const elems = getElementsInGroup(cutTree)
+            .map(id => contentDict[id])
+            .filter(x => x.isHorizontallyStackable());
+
+        const newArea = getRect(elems);
+
+        this.resize(manipulableAreaToArea2D(newArea));
     }
 
     dropOnEndMove() {

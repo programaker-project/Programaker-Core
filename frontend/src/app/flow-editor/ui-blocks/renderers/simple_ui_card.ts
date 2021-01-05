@@ -1,14 +1,14 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { BlockAllowedConfigurations, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
-import { Area2D, FlowBlock, Resizeable } from "../../flow_block";
+import { Area2D, FlowBlock } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
-import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
-import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
-import { CutTree, ContainerElementRepr } from "./ui_tree_repr";
-import { combinedArea, getRefBox, listToDict, manipulableAreaToArea2D, manipulableAreaToArea2D } from "./utils";
-import { ResponsivePageGenerateTree, getElementsInGroup, getRect } from "./responsive_page";
+import { Autoresizable, TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { PositionResponsiveContents, SEPARATION } from "./positioning";
+import { getElementsInGroup, getRect, ResponsivePageGenerateTree } from "./responsive_page";
+import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
+import { ContainerElementRepr, CutTree } from "./ui_tree_repr";
+import { combinedArea, listToDict, manipulableAreaToArea2D } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -30,7 +30,7 @@ export const SimpleUiCardBuilder: ContainerFlowBlockBuilder = (canvas: SVGElemen
     return element;
 }
 
-class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resizeable, ConfigurableSettingsElement {
+class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Autoresizable, ConfigurableSettingsElement {
     subscription: Subscription;
     handle: UiElementHandle | null = null;
     node: SVGGElement;
@@ -144,25 +144,28 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
 
         const inflexibleArea = combinedArea(
             fullContents
-                .filter(b => !(
-                    (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-                ))
-                .map(b => b.getBodyArea()));
+                .filter(b => b instanceof UiFlowBlock)
+                .filter(b => (!(b instanceof ContainerFlowBlock)) || (b.isAutoresizable()))
+                .map((b: UiFlowBlock) => {
+                    const area = b.getBodyArea();
 
+                    if (b.isAutoresizable()) {
+                        const min = b.getMinSize();
+                        area.width = min.width;
+                        area.height = min.height;
+                    }
+                    return area;
+                }));
 
-        if (dim.x || dim.y) {
-            const mov = { x: 0, y: 0 };
-            const wasPos = this.block.getOffset();
+        const wasPos = this.block.getOffset();
 
-            if (dim.x) {
-                mov.x = (dim.x - SEPARATION) - wasPos.x;
-            }
-            if (dim.y) {
-                mov.y = (dim.y - SEPARATION) - wasPos.y;
-            }
+        const mov = {
+            x: (inflexibleArea.x - SEPARATION) - wasPos.x,
+            y: (inflexibleArea.y - SEPARATION) - wasPos.y,
+        };
 
-            (this.block as ContainerFlowBlock).moveWithoutCarrying(mov);
-        }
+        (this.block as ContainerFlowBlock).moveWithoutCarrying(mov);
+
         const pos = this.block.getOffset();
 
         const minWidth = Math.max(
@@ -190,6 +193,26 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
             else if ((content instanceof UiFlowBlock) && content.isAutoresizable()) {
                 content.updateContainer(this.block);
             }
+        }
+    }
+
+    isAutoresizable(): this is Autoresizable {
+        return true;
+    }
+
+    doesTakeAllHorizontal() {
+        return false;
+    }
+
+    getMinSize() {
+        if (this._contents.length === 0) {
+            return { width: MIN_WIDTH, height: MIN_HEIGHT };
+        }
+        const area = this.rect.getBBox();
+
+        return {
+            width: Math.max(area.width, MIN_WIDTH),
+            height: Math.max(area.height, MIN_HEIGHT),
         }
     }
 

@@ -1,6 +1,6 @@
 import { UiSignalService } from '../../services/ui-signal.service';
 import { BlockManager } from '../block_manager';
-import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, InputPortDefinition, Position2D, Movement2D } from '../flow_block';
+import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, InputPortDefinition, Position2D, Movement2D, Resizeable } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
 import { uuidv4 } from '../utils';
@@ -43,9 +43,10 @@ export interface UiFlowBlockHandler {
     onLoseFocus?: () => void;
 }
 
-export interface Autoresizable {
+export interface Autoresizable extends Resizeable {
     isAutoresizable: () => this is Autoresizable;
-    getMinSize(): { width: number, height: number  }
+    getMinSize(): { width: number, height: number  },
+    doesTakeAllHorizontal: () => boolean,
 };
 
 export interface TextReadable {
@@ -655,13 +656,23 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     getMinSize(): { width: number, height: number } {
-        if (this.handler.isAutoresizable()) {
-            return this.handler.getMinSize();
+        if (!this.handler.isAutoresizable || !this.handler.isAutoresizable()) {
+            throw Error("Not autoresizable")
         }
-        else {
-            throw Error("Element is not Autoresizeable")
-        }
+
+        return this.handler.getMinSize();
     }
+
+
+    doesTakeAllHorizontal(): boolean {
+        if (!this.handler.isAutoresizable || !this.handler.isAutoresizable()) {
+            throw Error("Not autoresizable")
+        }
+
+        return this.handler.doesTakeAllHorizontal();
+    }
+
+
 
     // Container-related
     updateContainer(container: FlowBlock) {
