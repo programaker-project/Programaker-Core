@@ -170,10 +170,11 @@ export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks:
             .filter(b => b instanceof UiFlowBlock)
             .map((b: UiFlowBlock) => [b, b.getBodyArea()]));
 
-    const blockWidths = blockAreas.map(([_, a]) => a.width);
-    const blockHeights = blockAreas.map(([_, a]) => a.height);
+    const minBlockHeights = blockAreas.filter(([b, _]) => !b.isAutoresizable())
+        .map(([_, a]) => a.height);
+    const maxHeight = Math.max(...minBlockHeights);
 
-    const maxHeight = Math.max(...blockHeights);
+    const blockWidths = blockAreas.map(([_, a]) => a.width);
     const reqBlockWidth = blockWidths.reduce((a,b) => a + b, 0);
 
     const sumPaddings = SEPARATION * (blocks.length + 1);

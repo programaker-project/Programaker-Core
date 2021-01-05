@@ -13,10 +13,9 @@ import { SEPARATION } from "./positioning";
 const SvgNS = "http://www.w3.org/2000/svg";
 const Title = "Responsive page";
 const TITLE_PADDING = 5;
-const PAGE_PADDING = 5;
 
 const MIN_WIDTH = 200;
-const MIN_HEIGHT = 600;
+const MIN_HEIGHT = 400;
 
 export const ResponsivePageBuilder : ContainerFlowBlockBuilder = (canvas: SVGElement,
                                                                   group: SVGElement,

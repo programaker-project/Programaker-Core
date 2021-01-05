@@ -74,8 +74,7 @@ svg.block_renderer .block_type_annotation {
     visibility: hidden;
 }
 
-// Only shown when the block is selected or on the toolbox showcases
-svg.block_renderer g.flow_node.selected .block_type_annotation,
+// Only shown on the toolbox showcases
 .showcase svg.block_renderer .block_type_annotation {
     visibility: visible;
 }

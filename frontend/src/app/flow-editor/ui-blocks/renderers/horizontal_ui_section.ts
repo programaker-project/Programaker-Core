@@ -11,7 +11,7 @@ import { PositionHorizontalContents, PositionVerticalContents, SEPARATION } from
 import { CannotSetAsContentsError } from "../cannot_set_as_contents_error";
 
 const SvgNS = "http://www.w3.org/2000/svg";
-const BLOCK_TYPE_ANNOTATION = 'Horizontal section'
+const BLOCK_TYPE_ANNOTATION = 'Section'
 const SECTION_PADDING = 5;
 const DEFAULT_COLOR = '';
 
