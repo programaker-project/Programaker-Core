@@ -39,7 +39,7 @@ export interface UiElementRepr {
 };
 
 export interface ContainerElementRepr {
-    id?: string,
+    id: string,
     container_type: UiElementWidgetContainer,
     content: CutTree,
     settings?: BlockConfigurationOptions,

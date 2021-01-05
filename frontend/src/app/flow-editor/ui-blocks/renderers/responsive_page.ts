@@ -460,15 +460,10 @@ export function getShallowElementsInGroup(tree: CutTree): string[] {
             if ((cut as CutNode).block_id) {
                 acc.push((cut as CutNode).block_id);
             }
-            // else {
-            //     for (const group of (cut as CutNode).groups) {
-            //         todo.push(group);
-            //     }
-            // }
         }
-        // else if ((cut as ContainerElementRepr).container_type) {
-        //     todo.push((cut as ContainerElementRepr).content);
-        // }
+        else if ((cut as ContainerElementRepr).container_type) {
+            acc.push((cut as ContainerElementRepr).id);
+        }
         else {
             console.warn("Unexpected node:", cut);
             throw Error("Unexpected node: "  + cut);

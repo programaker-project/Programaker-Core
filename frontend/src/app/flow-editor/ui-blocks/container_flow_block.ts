@@ -176,6 +176,11 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         return result;
     }
 
+    public moveWithoutCarrying(distance: {x: number, y: number}) {
+        return super.moveBy(distance);
+    }
+
+
     public endMove(): FlowBlock[] {
         const movement = this.handler.dropOnEndMove();
         return this.moveBy(movement);

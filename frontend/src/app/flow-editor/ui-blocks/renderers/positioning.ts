@@ -1,7 +1,7 @@
 import { Area2D, FlowBlock, Position2D } from "../../flow_block";
 import { UiFlowBlock, UiFlowBlockHandler } from "../ui_flow_block";
 import { cleanestTree, getElementsInGroup, getRect, getShallowElementsInGroup } from "./responsive_page";
-import { CutNode, CutTree } from "./ui_tree_repr";
+import { CutNode, CutTree, ContainerElementRepr } from "./ui_tree_repr";
 import { manipulableAreaToArea2D } from "./utils";
 import { ContainerFlowBlock } from "../container_flow_block";
 
@@ -49,9 +49,11 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
     for (const group of cTree.groups) {
         let area: Area2D;
 
-        if ((group as CutNode).block_id) {
+        if (((group as CutNode).block_id) || ((group as ContainerElementRepr).container_type) ) {
             // Treat as a single block
-            const block = blocks[(group as CutNode).block_id];
+
+            const id = (group as CutNode).block_id ? (group as CutNode).block_id : (group as ContainerElementRepr).id ;
+            const block = blocks[id];
             area = block.getBodyArea();
 
             console.log("Y - ST", subTreeOffset.y, "A", area.y);
@@ -109,7 +111,6 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
                 if (block.isAutoresizable()) {
 
                     // This really means "is this considered on PositionTreeContentsFromTree()"
-                    // TODO: Update this approximation when testing with simple_cards
                     if (block instanceof ContainerFlowBlock) {
                         continue;
                     }
