@@ -1436,7 +1436,7 @@ export class FlowWorkspace implements BlockManager {
 
                 if (this.isInTrashcan(pos)) {
                     removed = true;
-                    for (const blockId of this._selectedBlocks.concat([])) {
+                    for (const blockId of moved.concat([])) {
                         this.removeBlock(blockId);
                     }
                 }
@@ -1454,14 +1454,14 @@ export class FlowWorkspace implements BlockManager {
 
                     this.updateBlockInputHelpersPosition(movedId);
                 }
-            }
 
-            // Take into account the old container
-            if (oldContainer) {
-                moved.push(oldContainer);
-            }
+                // Take into account the old container
+                if (oldContainer) {
+                    moved.push(oldContainer);
+                }
 
-            this._invalidateBlockPositions(moved);
+                this._invalidateBlockPositions(moved);
+            }
         });
     }
 
