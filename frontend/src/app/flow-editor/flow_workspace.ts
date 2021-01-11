@@ -1477,6 +1477,50 @@ export class FlowWorkspace implements BlockManager {
         return this._reposition(Object.keys(this.blocks));
     }
 
+    async repositionIteratively() {
+        // For positioning debugging purposes
+        const its = [];
+
+        for (let i = 0; i < 100; i++) {
+            console.time("It " + (i + 1));
+
+            const prevPos: [string, Area2D][] = Object.keys(this.blocks).map( id => [id, this.blocks[id].block.getBodyArea() ] )
+            this.repositionAll();
+
+            const diffs = prevPos.map(([id, prev]) => {
+                const after = this.blocks[id].block.getBodyArea();
+
+                return {
+                    x: Math.abs(after.x - prev.x),
+                    y: Math.abs(after.y - prev.y),
+                    width: Math.abs(after.width - prev.width),
+                    height: Math.abs(after.height - prev.height),
+                }
+            })
+
+            const mov = {
+                x: Math.max(...diffs.map(d => d.x)),
+                y: Math.max(...diffs.map(d => d.y)),
+                width: Math.max(...diffs.map(d => d.width)),
+                height: Math.max(...diffs.map(d => d.height)),
+            };
+            its.push(mov)
+            console.timeEnd("It " + (i + 1));
+            console.log('=>', mov)
+
+            if ((Math.abs(mov.x) < 1) && (Math.abs(mov.y) < 1) && (Math.abs(mov.width) < 1) && (Math.abs(mov.height) < 1)) {
+                console.log("Stable on it", i + 1);
+                break;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        console.log("Iterations:", its);
+
+        return its;
+    }
+
     private _reposition(blockIds: string[]) {
         // Build the list of dependencies (contents) for each block repositioned
         const dependencies: {[key: string]: string[]} = {};

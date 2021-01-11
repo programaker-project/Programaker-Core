@@ -157,6 +157,7 @@ export class FlowEditorComponent implements OnInit {
 
             // For debugging
             (window as any).reposition = this.workspace.repositionAll.bind(this.workspace);
+            (window as any).repositionIt = this.workspace.repositionIteratively.bind(this.workspace);
 
             this.workspace.repositionAll();
         }
