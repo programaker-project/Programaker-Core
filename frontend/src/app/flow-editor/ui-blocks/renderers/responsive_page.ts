@@ -318,15 +318,13 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
 
     const blocks = {};
     for (const block of contents) {
+        blocks[block.id] = block;
         if (block instanceof ContainerFlowBlock) {
             for (const subBlock of block.recursiveGetAllContents()) {
                 if (subBlock instanceof UiFlowBlock) {
                     blocks[subBlock.id] = subBlock;
                 }
             }
-        }
-        else {
-            blocks[block.id] = block;
         }
     }
 
