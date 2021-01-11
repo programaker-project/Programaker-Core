@@ -1248,14 +1248,9 @@ export class FlowWorkspace implements BlockManager {
         partition.sort((a, b) => {
             const areaA = a.getBodyArea();
             const areaB = b.getBodyArea();
-            const heightDiff = areaA.height - areaB.height;
 
-            if (heightDiff) {
-                return heightDiff;
-            }
-
-            return areaA.width - areaB.width;
-        })
+            return (areaA.height * areaA.width) - (areaB.height * areaB.width);
+        });
 
         return partition[0];
     }
