@@ -1506,7 +1506,7 @@ export class FlowWorkspace implements BlockManager {
             };
             its.push(mov)
             console.timeEnd("It " + (i + 1));
-            console.log('=>', mov)
+            console.debug('Max movement in iteration:', mov)
 
             if ((Math.abs(mov.x) < 1) && (Math.abs(mov.y) < 1) && (Math.abs(mov.width) < 1) && (Math.abs(mov.height) < 1)) {
                 console.log("Stable on it", i + 1);

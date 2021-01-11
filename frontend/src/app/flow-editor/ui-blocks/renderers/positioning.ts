@@ -30,7 +30,7 @@ export function PositionResponsiveContents(handler: UiFlowBlockHandler, blocks: 
         blockMap[block.id] = block;
     }
 
-    console.log('RESPONSIVE Tree', tree);
+    console.debug('RESPONSIVE Tree', tree);
 
 
     PositionTreeContentsFromTree(tree, blockMap, offset);
@@ -45,7 +45,6 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
 
     const cTree = tree as CutNode;
     const toCenter: UiFlowBlock[] = [];
-    console.error('>>', cTree.cut_type, "|", offset.x, offset.y);
 
     // First position subtrees
     const subTreeOffset: Position2D = {
@@ -62,8 +61,6 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
             const id = (group as CutNode).block_id ? (group as CutNode).block_id : (group as ContainerElementRepr).id ;
             const block = blocks[id];
             area = block.getBodyArea();
-
-            console.log("Y - ST", subTreeOffset.y, "A", area.y);
 
             const mov = {
                 x: subTreeOffset.x - area.x,
@@ -82,9 +79,7 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
                 }
             }
 
-            console.log("MoveBox", mov, block.options.id);
             block.moveBy(mov);
-            console.log("=>", JSON.stringify((block as any).position));
             toCenter.push(block);
 
             area = block.getBodyArea();
@@ -96,13 +91,9 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
         }
         else {
             // Treat as a group
-            // console.log("C", contents.map(id => blocks[id]));
-
             const subOffset = { x: subTreeOffset.x, y: subTreeOffset.y };
 
-            // console.log(">>>>")
             PositionTreeContentsFromTree(group, blocks, subOffset, true);
-            // console.log("<<<<");
 
             const contents = getElementsInGroup(group);
             area = manipulableAreaToArea2D(getRect(contents.map(id => blocks[id])));
@@ -112,10 +103,8 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
             };
 
             const elementsToMove = getShallowElementsInGroup(group).map(id => blocks[id]);
-            console.log("MOV", elementsToMove, mov);
 
             for (const block of elementsToMove) {
-                console.error("MoveBy", mov, block.options.id);
 
                 if (block.isAutoresizable()) {
 
@@ -143,14 +132,10 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
         }
 
         if (cTree.cut_type === 'vbox') {
-            console.error("V>", subTreeOffset.y, area.height, SEPARATION);
             subTreeOffset.y += area.height + SEPARATION;
-            console.error("RV>", subTreeOffset.y);
         }
         else if (cTree.cut_type === 'hbox') {
-            console.error("H>", subTreeOffset.x, area.width, SEPARATION);
             subTreeOffset.x += area.width + SEPARATION;
-            console.error("RH>", subTreeOffset.x);
         }
     }
 
@@ -170,8 +155,6 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
 
         elem.moveBy(mov);
     }
-
-    console.error('<< ', cTree.cut_type);
 }
 
 export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks: FlowBlock[], area: Area2D): { width: number, height: number } {
@@ -214,8 +197,6 @@ export function PositionHorizontalContents (handler: UiFlowBlockHandler, blocks:
         const x = xpos;
         const y = block.isAutoresizable() ? 0 : (height - blockArea.height) / 2;
         xpos += blockArea.width + separation;
-
-        console.log(block.isAutoresizable(), block.options.id);
 
         const absX = area.x + x;
         const absY = area.y + y;
