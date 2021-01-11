@@ -1,6 +1,6 @@
 import { Area2D, FlowBlock, Position2D } from "../../flow_block";
 import { UiFlowBlock, UiFlowBlockHandler } from "../ui_flow_block";
-import { cleanestTree, getElementsInGroup, getRect, getShallowElementsInGroup } from "./responsive_page";
+import { cleanestTree, getElementsInGroup, getRect, getShallowElementsInGroup, safeReduceTree } from "./responsive_page";
 import { CutNode, CutTree, ContainerElementRepr } from "./ui_tree_repr";
 import { manipulableAreaToArea2D } from "./utils";
 import { ContainerFlowBlock } from "../container_flow_block";
@@ -22,7 +22,7 @@ export function PositionResponsiveContents(handler: UiFlowBlockHandler, blocks: 
             return {i, a: area, b: (b as UiFlowBlock)};
         }));
 
-    const tree = cleanestTree(uiPos, uiPos.map(({b: block}) => block));
+    const tree = safeReduceTree(cleanestTree(uiPos, uiPos.map(({b: block}) => block)));
 
     const uiBlocks = allBlocks.filter(b => b instanceof UiFlowBlock) as UiFlowBlock[];
     const blockMap: {[key: string]: UiFlowBlock} = {};
@@ -88,6 +88,11 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
             toCenter.push(block);
 
             area = block.getBodyArea();
+            if (block.isAutoresizable) {
+                const minSize = block.getMinSize();
+                area.height = Math.max(minSize.height, area.height);
+                area.width = Math.max(minSize.width, area.width);
+            }
         }
         else {
             // Treat as a group

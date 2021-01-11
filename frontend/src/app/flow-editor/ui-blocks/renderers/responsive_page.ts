@@ -1,13 +1,12 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
-import { Area2D, FlowBlock, Position2D, Resizeable } from "../../flow_block";
+import { Area2D, FlowBlock, Position2D, ManipulableArea2D } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr, DEFAULT_CUT_TYPE } from "./ui_tree_repr";
 import { combinedArea, combinedManipulableArea, getRefBox, listToDict, manipulableAreaToArea2D } from "./utils";
-import { PositionResponsiveContents } from "./positioning";
-import { SEPARATION } from "./positioning";
+import { PositionResponsiveContents, SEPARATION } from "./positioning";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -113,8 +112,35 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
 
     // Resizeable
     resize(dim: Area2D) {
-        const newWidth = Math.max(MIN_WIDTH, dim.width + SEPARATION * 2);
-        const newHeight = Math.max(MIN_HEIGHT, dim.height + SEPARATION * 2);
+        const baseWidth = Math.max(MIN_WIDTH, dim.width + SEPARATION * 2);
+        const baseHeight = Math.max(MIN_HEIGHT, dim.height + SEPARATION * 2);
+
+        const off = this.block.getOffset();
+        let right = off.x + baseWidth;
+        let bottom = off.y + baseHeight;
+
+        const contents = this.block.recursiveGetAllContents();
+        for (const c of contents) {
+
+            if (! (c instanceof UiFlowBlock)) {
+                continue;
+            }
+
+            const bArea = c.getBodyArea();
+
+            const bRight = bArea.x + bArea.width + (c.isAutoresizable() ? 0 : SEPARATION);
+            const bBottom = bArea.y + bArea.height + (c.isAutoresizable() ? 0 : SEPARATION);
+
+            if (bRight > right) {
+                right = bRight;
+            }
+            if (bBottom > bottom) {
+                bottom = bBottom;
+            }
+        }
+
+        const newWidth = (right - off.x);
+        const newHeight = (bottom - off.y);
 
         const diffWidth = this.width - newWidth;
         const diffHeight = this.height - newHeight;
@@ -160,10 +186,6 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
 
     getBodyArea(): Area2D {
         return this.block.getBodyArea();
-    }
-
-    getMinSize() {
-        return this.getBodyArea(); // This is not actually used, so a non-stable value can be accepted
     }
 
     // UiFlowBlock
@@ -291,7 +313,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
 
         const elems = getElementsInGroup(cutTree)
             .map(id => contentDict[id])
-            .filter(x => x.isHorizontallyStackable());
+            .filter(b => !b.isAutoresizable());
 
         const newArea = getRect(elems);
 
@@ -433,6 +455,10 @@ export function getElementsInGroup(tree: CutTree): string[] {
             }
         }
         else if ((cut as ContainerElementRepr).container_type) {
+            if ((cut as ContainerElementRepr).id) {
+                acc.push((cut as ContainerElementRepr).id);
+            }
+
             todo.push((cut as ContainerElementRepr).content);
         }
         else {
@@ -502,18 +528,29 @@ export const ResponsivePageGenerateTree: GenTreeProc = (handler: UiFlowBlockHand
 // These two "reduce" functions might be merged into a single one. It's just not
 // a priority right now, but it might be interesting to do it to check if it
 // results on simpler code.
+export function safeReduceTree(tree: CutTree) {
+    return _reduceTree(tree, true);
+}
+
 function reduceTree(tree: CutTree): CutTree {
+    return _reduceTree(tree, false);
+}
+
+function _reduceTree(tree: CutTree, safe: boolean): CutTree {
     const aux = (node: CutTree) => {
         if (!((node as CutNode).cut_type)) {
             return node;
         }
 
         const cNode = node as CutNode;
-        const newGroups = reduceGroups(cNode);
+        const newGroups = _reduceGroups(cNode, safe);
 
-        const recasted: CutTree = { cut_type: cNode.cut_type, groups: newGroups };
-        if (cNode.settings && cNode.settings.bg) {
+        const recasted: CutNode = { cut_type: cNode.cut_type, groups: newGroups };
+        if (cNode.settings) {
             recasted.settings = cNode.settings;
+        }
+        if (cNode.block_id) {
+            recasted.block_id = cNode.block_id;
         }
         return recasted;
     };
@@ -521,7 +558,7 @@ function reduceTree(tree: CutTree): CutTree {
     return aux(tree);
 }
 
-function reduceGroups(cNode: CutNode): CutTree[] {
+function _reduceGroups(cNode: CutNode, safe: boolean): CutTree[] {
     let acc = [];
     const cType = cNode.cut_type;
 
@@ -532,14 +569,25 @@ function reduceGroups(cNode: CutNode): CutTree[] {
         }
 
         const cTree = tree as CutNode;
+
         // Trees and nodes with settings are not merged to avoid losing "colors" in the process
-        if ((!(cNode.settings && cNode.settings.bg)) && (cTree.cut_type === cType) && (!(cTree.settings && cTree.settings.bg))) {
+        let canMerge = ((!(cNode.settings && cNode.settings.bg))
+            && (cTree.cut_type === cType) // Cut type must be the same
+            && (!(cTree.settings && cTree.settings.bg)));
+
+        if (canMerge && safe) {
+            // Additional checks:
+            //  - Neither of the blocks can have an ID
+            canMerge = canMerge && (!cNode.block_id) && (!cTree.block_id);
+        }
+
+        if (canMerge) {
             for (const group of cTree.groups) {
                 aux(group);
             }
         }
         else {
-            acc.push(reduceTree(cTree));
+            acc.push(_reduceTree(cTree, safe));
         }
     }
 

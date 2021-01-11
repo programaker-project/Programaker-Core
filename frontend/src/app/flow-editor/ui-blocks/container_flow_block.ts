@@ -3,7 +3,7 @@ import { BlockManager } from '../block_manager';
 import { Area2D, ContainerBlock, FlowBlock, FlowBlockData, FlowBlockOptions, Movement2D, Resizeable } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
-import { CutTree, UiElementWidgetType, AtomicUiElementWidget } from './renderers/ui_tree_repr';
+import { CutTree, UiElementWidgetType } from './renderers/ui_tree_repr';
 import { isUiFlowBlockData, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockData, UiFlowBlockHandler, UiFlowBlockOptions } from './ui_flow_block';
 
 export type ContainerFlowBlockType = 'container_flow_block';
