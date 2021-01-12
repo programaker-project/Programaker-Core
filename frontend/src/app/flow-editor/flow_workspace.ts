@@ -1548,7 +1548,7 @@ export class FlowWorkspace implements BlockManager {
             }
         }
 
-        const processed = [];
+        const processed: string[] = [];
         let toGo = allAffected.concat([]);
         let processedThisTurn = true;
         while (toGo.length > 0 && processedThisTurn) {
@@ -1578,6 +1578,15 @@ export class FlowWorkspace implements BlockManager {
         if (toGo.length > 0) {
             console.error("Circular dependency found on", toGo);
             console.error("Circular dependency found on", toGo.map(id => this.blocks[id]));
+        }
+
+        // After all are processed, give then the option to "settle" on their new position
+        for (const elementId of processed.reverse()) {
+            const block = this.blocks[elementId].block;
+
+            // This have a reasonably-close semantic, but it might not be
+            // enough. A new function might be needed to cover this meaning.
+            block.endMove();
         }
     }
 

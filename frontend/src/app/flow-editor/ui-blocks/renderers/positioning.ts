@@ -43,6 +43,19 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
         return;
     }
 
+    if ((tree as CutNode).block_id) {
+        const id = (tree as CutNode).block_id;
+        const block = blocks[id];
+
+        if (block instanceof ContainerFlowBlock) {
+            block.repositionContents();
+        }
+        else {
+            throw Error("Cut with blockId that didn't correspond to a ContainerFlowBlock");
+        }
+        return;
+    }
+
     const cTree = tree as CutNode;
     const toCenter: UiFlowBlock[] = [];
 
@@ -75,7 +88,9 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
                     }
                 }
                 else if (cTree.cut_type === 'hbox') {
-                    mov.y = 0;
+                    // if (block.doesTakeAllVertical()) {
+                    //     mov.y = 0;
+                    // }
                 }
             }
 

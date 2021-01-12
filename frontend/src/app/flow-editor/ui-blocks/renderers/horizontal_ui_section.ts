@@ -1,18 +1,18 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { BlockAllowedConfigurations, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
-import { Area2D, FlowBlock, Resizeable } from "../../flow_block";
+import { Area2D, FlowBlock } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler, Autoresizable } from "../ui_flow_block";
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutTree } from "./ui_tree_repr";
-import { combinedArea } from "./utils";
+import { combinedArea, manipulableAreaToArea2D } from "./utils";
 import { PositionHorizontalContents, PositionVerticalContents, SEPARATION } from "./positioning";
 import { CannotSetAsContentsError } from "../cannot_set_as_contents_error";
+import { getRect } from "./responsive_page";
 
 const SvgNS = "http://www.w3.org/2000/svg";
 const BLOCK_TYPE_ANNOTATION = 'Section'
-const SECTION_PADDING = 5;
 const DEFAULT_COLOR = '';
 
 const MIN_HEIGHT = SEPARATION;
@@ -70,8 +70,11 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         const textDim = { width: text_width, height: text_height };
 
         const bdims = block.blockData.dimensions;
-        this.width = bdims ? bdims.width : textDim.width * 1.5;
-        this.height = bdims ? bdims.height : textDim.height * 2;
+
+        const minWidth = textDim.width * 1.5;
+        const minHeight = textDim.height * 2;
+        this.width = bdims && bdims.width > minWidth ? bdims.width : minWidth;
+        this.height = bdims && bdims.height > minHeight ? bdims.height : minHeight;
 
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
@@ -117,11 +120,12 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         if (this._contents.length === 0) {
             return { width: MIN_WIDTH, height: MIN_HEIGHT };
         }
-        const area = this.rect.getBBox();
+
+        const rect = manipulableAreaToArea2D(getRect(this._contents.filter(b => b instanceof UiFlowBlock) as UiFlowBlock[]));
 
         return {
-            width: Math.max(area.width, MIN_WIDTH),
-            height: Math.max(area.height, MIN_HEIGHT),
+            width: Math.max(rect.width + SEPARATION, MIN_WIDTH),
+            height: Math.max(rect.height + SEPARATION, MIN_HEIGHT),
         }
     }
 
@@ -158,12 +162,14 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                         ))
                         .map(b => b.getBodyArea()));
 
-                const mov = {
-                    x: (inflexibleArea.x - SEPARATION) - pos.x,
-                    y: 0,
-                };
+                // const mov = {
+                //     x: 0, // (inflexibleArea.x - SEPARATION) - pos.x,
+                //     y: 0,
+                // };
 
-                this.block.moveWithoutCarrying(mov);
+                // if (inflexibleArea.width != 0) {
+                //     this.block.moveWithoutCarrying(mov);
+                // }
 
                 minWidth = inflexibleArea.width;
             }
@@ -193,12 +199,15 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                         ))
                         .map(b => b.getBodyArea()));
 
-                const mov = {
-                    x: 0,
-                    y: (inflexibleArea.y - SEPARATION) - pos.y,
-                };
+                // const mov = {
+                //     x: 0,
+                //     y: (inflexibleArea.y - SEPARATION) - pos.y,
+                // };
 
-                this.block.moveWithoutCarrying(mov);
+
+                // if (inflexibleArea.height != 0) {
+                //     this.block.moveWithoutCarrying(mov);
+                // }
 
                 minHeight = inflexibleArea.y - pos.y + inflexibleArea.height;
             }
@@ -212,7 +221,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
             const pushDown = newHeight - oldHeight;
             if (this.container && pushDown > 0) {
-                this.container.pushDown(pos.y + oldHeight, pushDown);
+                // this.container.pushDown(pos.y + oldHeight, pushDown);
             }
         }
 
@@ -303,12 +312,6 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
             this.container = null;
 
             this.nestedHorizontal = null;
-        }
-        if (this.nestedHorizontal) {
-            this.handle.setResizeType('horizontal');
-        }
-        else {
-            this.handle.setResizeType('vertical');
         }
         this._updateInternalElementSizes();
     }

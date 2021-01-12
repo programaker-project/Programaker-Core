@@ -285,8 +285,6 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Auto
 
         const newArea = getRect(elems);
 
-        console.log("Elems", elems);
-        console.log("Res", manipulableAreaToArea2D(newArea));
         this.resize(manipulableAreaToArea2D(newArea));
     }
 
