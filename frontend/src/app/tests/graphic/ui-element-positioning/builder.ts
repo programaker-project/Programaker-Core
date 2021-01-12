@@ -76,7 +76,14 @@ export function configureTestBed(testBed: TestBedStatic) {
     });
 }
 
-export function pageGraph(elements: { type: UiElementWidgetType, x: number, y: number }[]): [FlowGraph, string[], string] {
+type TestGraphElement = {
+    type: UiElementWidgetType,
+    x: number, y: number,
+    contents?: TestGraphElement[],
+    dimensions?: { width: number, height: number },
+};
+
+export function pageGraph(elements: TestGraphElement[]): [FlowGraph, string[], string] {
     const graph: FlowGraph = { edges: [], nodes: {} };
 
     const pageId = uuidv4();
@@ -101,8 +108,11 @@ export function pageGraph(elements: { type: UiElementWidgetType, x: number, y: n
     };
 
     const ids = [];
+    const todo: (TestGraphElement & { container?: string })[] = elements.concat();
 
-    for (const el of elements) {
+    while (todo.length > 0) {
+        const el = todo.shift();
+
         const id = uuidv4();
         ids.push(id);
 
@@ -117,8 +127,23 @@ export function pageGraph(elements: { type: UiElementWidgetType, x: number, y: n
 		        },
 		        "type": "ui_flow_block"
 	        },
-            container_id: pageId,
+            container_id: el.container ? el.container : pageId,
             position: { x: el.x, y: el.y }
+        }
+
+        if (el.dimensions) {
+            graph.nodes[id].data.value.extra.dimensions = el.dimensions;
+        }
+
+        if (el.contents) {
+            graph.nodes[id].data.subtype = 'container_flow_block';
+
+
+            for (const subEl of el.contents.concat([]).reverse()) {
+                (subEl as any).container = id;
+                todo.unshift(subEl);
+            }
+
         }
     }
 
