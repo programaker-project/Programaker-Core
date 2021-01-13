@@ -155,12 +155,15 @@ export class FlowEditorComponent implements OnInit {
         if (program.orig && program.orig !== 'undefined') {
             this.workspace.load(program.orig as FlowGraph);
 
-            // For debugging
-            (window as any).reposition = this.workspace.repositionAll.bind(this.workspace);
-            (window as any).repositionIt = this.workspace.repositionIteratively.bind(this.workspace);
-
             this.workspace.repositionAll();
         }
+        else {
+            this.workspace.initializeEmpty();
+        }
+
+        // For debugging
+        (window as any).reposition = this.workspace.repositionAll.bind(this.workspace);
+        (window as any).repositionIt = this.workspace.repositionIteratively.bind(this.workspace);
 
         this.workspace.center();
 

@@ -201,6 +201,10 @@ export class FlowWorkspace implements BlockManager {
         this.autoposition = true;
     }
 
+    public initializeEmpty() {
+        this.autoposition = true;
+    }
+
     private deserializeBlock(blockData: FlowBlockData) {
         switch (blockData.type) {
             case AtomicFlowBlock.GetBlockType():
