@@ -302,6 +302,8 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
     }
 
     dropOnEndMove() {
+        this._updateCutGrid();
+
         return {x: 0, y: 0};
     }
 
@@ -318,8 +320,6 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
         const allContents = this.block.recursiveGetAllContents();
 
         const cutTree = PositionResponsiveContents(this, this.contents, allContents, area);
-
-        this._updateCutGrid();
 
         const contentDict = listToDict(
             allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],

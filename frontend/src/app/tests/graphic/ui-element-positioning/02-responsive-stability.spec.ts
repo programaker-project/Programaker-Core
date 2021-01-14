@@ -3,6 +3,7 @@ import { FlowEditorComponent } from '../../../flow-editor/flow-editor.component'
 import { FlowWorkspace } from '../../../flow-editor/flow_workspace';
 import { SEPARATION } from 'app/flow-editor/ui-blocks/renderers/positioning';
 import { configureTestBed, pageGraph } from './builder';
+import { doesNotChangePositionsOnReposition } from './utils';
 
 describe('FlowUI positioning: 02. Responsive stability. ', () => {
 
@@ -37,6 +38,7 @@ describe('FlowUI positioning: 02. Responsive stability. ', () => {
 
         workspace.load(graph);
         workspace.repositionAll();
+        workspace.center();
 
         const result = workspace.getGraph();
 
@@ -65,6 +67,7 @@ describe('FlowUI positioning: 02. Responsive stability. ', () => {
             expect(result.nodes[topLeft].position.x
                 + workspace.getBlock(topLeft).getBodyArea().width
                 + SEPARATION).toEqual(result.nodes[right].position.x);
+
             expect(result.nodes[botLeft].position.x
                 + workspace.getBlock(topLeft).getBodyArea().width
                 + SEPARATION).toEqual(result.nodes[right].position.x);
@@ -80,8 +83,8 @@ describe('FlowUI positioning: 02. Responsive stability. ', () => {
         // Check once
         check();
 
-        // Re-position
-        workspace.repositionAll();
+        // Re-position to check for stability
+        doesNotChangePositionsOnReposition(workspace, [ topLeft, botLeft, right ]);
 
         // Check again
         check();

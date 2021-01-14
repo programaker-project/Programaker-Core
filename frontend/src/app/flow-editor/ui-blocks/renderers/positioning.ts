@@ -62,8 +62,8 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
 
     // First position subtrees
     const subTreeOffset: Position2D = {
-        x: offset.x + SEPARATION,
-        y: offset.y + SEPARATION,
+        x: offset.x + (nonTopLevel ? 0 : SEPARATION),
+        y: offset.y + (nonTopLevel ? 0 : SEPARATION),
     };
 
     for (const group of cTree.groups) {
