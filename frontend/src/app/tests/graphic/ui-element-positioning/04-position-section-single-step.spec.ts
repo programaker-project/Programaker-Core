@@ -43,7 +43,7 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
             },
         ]);
 
-        const [ section, left_btn, center_btn, right_btn ] = blocks;
+        const [ topLevel, left_btn, center_btn, right_btn ] = blocks;
 
         workspace.load(graph);
         workspace.repositionAll();
@@ -77,18 +77,18 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
                           `On button pair ${pair}. ${areaLeft.x} + ${areaLeft.width} =/= ${areaRight.x} - ${SEPARATION}`);
             }
 
+            const areaTopLevel = workspace.getBlock(topLevel).getBodyArea();
             // Button position on section
             for (const [name, btn] of [['left', left_btn], ['center', center_btn], ['right', right_btn]]) {
-                const areaSection = workspace.getBlock(section).getBodyArea();
                 const areaButton = workspace.getBlock(btn).getBodyArea();
 
-                expect(areaSection.height)
+                expect(areaTopLevel.height)
                     .toBe(areaButton.height + SEPARATION * 2,
-                          `On section-group ${name}. Height=${areaSection.height} =/= ${areaButton.height} + ${SEPARATION} * 2 `);
+                          `On section-group ${name}. Height=${areaTopLevel.height} =/= ${areaButton.height} + ${SEPARATION} * 2 `);
 
-                expect(areaSection.y + SEPARATION)
+                expect(areaTopLevel.y + SEPARATION)
                     .toBe(areaButton.y,
-                          `On section-group ${name}. Y=${areaSection.y} + ${SEPARATION} =/= ${areaButton.y}`);
+                          `On section-group ${name}. Y=${areaTopLevel.y} + ${SEPARATION} =/= ${areaButton.y}`);
             }
         };
 
@@ -155,7 +155,7 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
             },
         ]);
 
-        const [ section, left, left_btn, center, center_btn, right, right_btn ] = blocks;
+        const [ topLevel, left, left_btn, center, center_btn, right, right_btn ] = blocks;
 
         workspace.load(graph);
         workspace.repositionAll();
@@ -225,6 +225,300 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
                     .toBe(areaButton.y,
                           `On section-group ${name}. Y=${areaSection.y} + ${SEPARATION} =/= ${areaButton.y}`);
             }
+        };
+
+        // Check once
+        check();
+
+        // Re-position to check for stability
+        doesNotChangePositionsOnReposition(workspace, blocks);
+
+        // Check again
+        check();
+    });
+
+    it('3 elements in a SINGLE NESTED section in heavily distorted positions.', async () => {
+        const fixture = TestBed.createComponent(FlowEditorComponent);
+
+        const app: FlowEditorComponent = fixture.debugElement.componentInstance;
+        expect(app).toBeInstanceOf(FlowEditorComponent);
+        await app.ngOnInit();
+
+        const workspace = app.workspace;
+        expect(workspace).toBeInstanceOf(FlowWorkspace);
+
+        const [graph, blocks, page] = pageGraph([
+            {
+                type: "horizontal_ui_section",
+                x: 10, y: 100,
+                contents: [
+                    {
+                        type: "horizontal_ui_section",
+                        x: 10, y: 100,
+                        contents: [
+                            {
+                                type: 'simple_button',
+                                x: 10, y: 10,
+                            },
+                            {
+                                type: 'simple_button',
+                                x: 10, y: 11,
+                            },
+                            {
+                                type: 'simple_button',
+                                x: 10, y: 12,
+                            },
+                        ],
+                        dimensions: { width: 9999, height: 9999 },
+                    }
+                ],
+                dimensions: { width: 9999, height: 9999 },
+            },
+        ]);
+
+        const [ topLevel, vert, top_btn, center_btn, bot_btn ] = blocks;
+
+        workspace.load(graph);
+        workspace.repositionAll();
+        workspace.center();
+
+        const result = workspace.getGraph();
+
+        expect(Object.keys(result.nodes).length).toBe(6);
+        /**
+         * Layout:
+         *
+         *  +-------------+
+         *  |+-----------+|
+         *  ||+---------+||
+         *  ||| Top Btn |||
+         *  ||+---------+||
+         *  ||+---------+||
+         *  ||| CenterB |||
+         *  ||+---------+||
+         *  ||+---------+||
+         *  ||| BottomB |||
+         *  ||+---------+||
+         *  || Vertical  ||
+         *  ||   Section ||
+         *  |+-----------+|
+         *  | Horizontal  |
+         *  |     Section |
+         *  +-------------+
+         *
+         **/
+
+        const check = () => {
+            // Button alignment
+            for (const [pair, pair_top, pair_bottom] of [['top-center', top_btn, center_btn], ['center-bot', center_btn, bot_btn]]) {
+                const areaTop = workspace.getBlock(pair_top).getBodyArea();
+                const areaBottom = workspace.getBlock(pair_bottom).getBodyArea();
+
+                expect(areaTop.x).toBe(areaBottom.x);
+
+                expect(areaTop.y + areaTop.height + SEPARATION)
+                    .toBe(areaBottom.y,
+                          `On button pair ${pair}. ${areaTop.y} + ${areaTop.height} + ${SEPARATION} =/= ${areaBottom.y}`);
+            }
+
+            const areaTopLevel = workspace.getBlock(topLevel).getBodyArea();
+            // Button position on section
+            for (const [name, btn] of [['top', top_btn], ['center', center_btn], ['bottom', bot_btn]]) {
+                const areaButton = workspace.getBlock(btn).getBodyArea();
+
+                expect(areaTopLevel.width)
+                    .toBe(areaButton.width + SEPARATION * 4,
+                          `On section-group ${name}. Width=${areaTopLevel.width} =/= ${areaButton.width} + ${SEPARATION} * 4`);
+
+                expect(areaTopLevel.x + SEPARATION * 2)
+                    .toBe(areaButton.x,
+                          `On section-group ${name}. X=${areaTopLevel.x} + ${SEPARATION} * 2 =/= ${areaButton.x}`);
+            }
+
+            const areaTopButton = workspace.getBlock(top_btn).getBodyArea();
+            const areaBotButton = workspace.getBlock(bot_btn).getBodyArea();
+
+            expect(areaTopLevel.y + SEPARATION)
+                .toBe(areaTopButton.y,
+                      `Y=${areaTopLevel.y} + ${SEPARATION} =/= ${areaTopButton.y}`);
+
+            expect(areaTopLevel.y + areaTopLevel.height)
+                .toBe(areaBotButton.y + areaBotButton.height + SEPARATION,
+                      `Y=${areaTopLevel.y} + ${areaTopLevel.height} =/= ${areaBotButton.y} + ${areaBotButton.height} + ${SEPARATION}`);
+        };
+
+        // Check once
+        check();
+
+        // Re-position to check for stability
+        doesNotChangePositionsOnReposition(workspace, blocks);
+
+        // Check again
+        check();
+    });
+
+    it('3 elements in NESTED HORIZONTALS in a VERTICAL SINGLE NESTED section in heavily distorted positions.', async () => {
+        const fixture = TestBed.createComponent(FlowEditorComponent);
+
+        const app: FlowEditorComponent = fixture.debugElement.componentInstance;
+        expect(app).toBeInstanceOf(FlowEditorComponent);
+        await app.ngOnInit();
+
+        const workspace = app.workspace;
+        expect(workspace).toBeInstanceOf(FlowWorkspace);
+
+        const [graph, blocks, page] = pageGraph([
+            {
+                type: "horizontal_ui_section",
+                x: 10, y: 100,
+                contents: [
+                    {
+                        type: "horizontal_ui_section",
+                        x: 10, y: 100,
+                        contents: [
+                            {
+                                type: "horizontal_ui_section",
+                                x: 10, y: 100,
+                                contents: [
+                                    {
+                                        type: 'simple_button',
+                                        x: 10, y: 10,
+                                    },
+                                ]
+                            },
+                            {
+                                type: "horizontal_ui_section",
+                                x: 10, y: 101,
+                                contents: [
+                                    {
+                                        type: 'simple_button',
+                                        x: 10, y: 10,
+                                    },
+                                ]
+                            },
+                            {
+                                type: "horizontal_ui_section",
+                                x: 10, y: 102,
+                                contents: [
+                                    {
+                                        type: 'simple_button',
+                                        x: 10, y: 10,
+                                    },
+                                ]
+                            },
+                        ],
+                        dimensions: { width: 9999, height: 9999 },
+                    }
+                ],
+                dimensions: { width: 9999, height: 9999 },
+            },
+        ]);
+
+        const [ topLevel, vert, top, top_btn, center, center_btn, bot, bot_btn ] = blocks;
+
+        workspace.load(graph);
+        workspace.repositionAll();
+        workspace.center();
+
+        const result = workspace.getGraph();
+
+        expect(Object.keys(result.nodes).length).toBe(9);
+        /**
+         * Layout:
+         *
+         *  +--------------------+
+         *  |                    |
+         *  | +---------------+  |
+         *  | | +-----------+ |  |
+         *  | | |+---------+| |  |
+         *  | | || Top Btn || |  |
+         *  | | |+---------+| |  |
+         *  | | |Horizontal | |  |
+         *  | | |   Section | |  |
+         *  | | +-----------+ |  |
+         *  | |               |  |
+         *  | | +-----------+ |  |
+         *  | | |+---------+| |  |
+         *  | | || CenterB || |  |
+         *  | | |+---------+| |  |
+         *  | | |Horizontal | |  |
+         *  | | |   Section | |  |
+         *  | | +-----------+ |  |
+         *  | |               |  |
+         *  | | +-----------+ |  |
+         *  | | |+---------+| |  |
+         *  | | || BottomB || |  |
+         *  | | |+---------+| |  |
+         *  | | |Horizontal | |  |
+         *  | | |   Section | |  |
+         *  | | +-----------+ |  |
+         *  | |  Vertical     |  |
+         *  | |      Section  |  |
+         *  | +---------------+  |
+         *  |                    |
+         *  |  Horizontal        |
+         *  |      Section       |
+         *  +--------------------+
+         **/
+
+        const check = () => {
+            // Button alignment
+            for (const [pair, pair_top, pair_bottom] of [['top-center', top_btn, center_btn], ['center-bot', center_btn, bot_btn]]) {
+                const areaTop = workspace.getBlock(pair_top).getBodyArea();
+                const areaBottom = workspace.getBlock(pair_bottom).getBodyArea();
+
+                expect(areaTop.x).toBe(areaBottom.x);
+
+                expect(areaTop.y + areaTop.height + SEPARATION * 2)
+                    .toBe(areaBottom.y - SEPARATION,
+                          `On button pair ${pair}. ${areaTop.y} + ${areaTop.height} + ${SEPARATION} =/= ${areaBottom.y} - ${SEPARATION}`);
+            }
+
+            // Section alignment
+            for (const [pair, pair_top, pair_bottom] of [['top-center', top, center], ['center-bottom', center, bot]]) {
+                const areaTop = workspace.getBlock(pair_top).getBodyArea();
+                const areaBottom = workspace.getBlock(pair_bottom).getBodyArea();
+
+                expect(areaTop.x).toBe(areaBottom.x);
+                expect(areaTop.y + areaTop.height)
+                    .toBe(areaBottom.y - SEPARATION,
+                          `On section pair ${pair}. ${areaTop.y} + ${areaTop.height} =/= ${areaBottom.y} - ${SEPARATION}`);
+            }
+
+            // Button position on section
+            for (const [name, section, btn] of [['top', top, top_btn], ['center', center, center_btn], ['bottom', bot, bot_btn]]) {
+                const areaSection = workspace.getBlock(section).getBodyArea();
+                const areaButton = workspace.getBlock(btn).getBodyArea();
+
+                expect(areaSection.width)
+                    .toBe(areaButton.width + SEPARATION * 2,
+                          `On section-group ${name}. Width=${areaSection.width} =/= ${areaButton.width} + ${SEPARATION} * 2`);
+
+                expect(areaSection.x + SEPARATION)
+                    .toBe(areaButton.x,
+                          `On section-group ${name}. X=${areaSection.x} + ${SEPARATION} =/= ${areaButton.x}`);
+
+                expect(areaSection.height)
+                    .toBe(areaButton.height + SEPARATION * 2,
+                          `On section-group ${name}. Height=${areaSection.height} =/= ${areaButton.height} + ${SEPARATION} * 2 `);
+
+                expect(areaSection.y + SEPARATION)
+                    .toBe(areaButton.y,
+                          `On section-group ${name}. Y=${areaSection.y} + ${SEPARATION} =/= ${areaButton.y}`);
+            }
+
+            const areaTopLevel = workspace.getBlock(topLevel).getBodyArea();
+            const areaTopButton = workspace.getBlock(top_btn).getBodyArea();
+            const areaBotButton = workspace.getBlock(bot_btn).getBodyArea();
+
+            expect(areaTopLevel.y + SEPARATION * 2)
+                .toBe(areaTopButton.y,
+                      `On section-group ${name}. Y=${areaTopLevel.y} + ${SEPARATION} * 2 =/= ${areaTopButton.y}`);
+
+            expect(areaTopLevel.y + areaTopLevel.height)
+                .toBe(areaBotButton.y + areaBotButton.height + SEPARATION * 2,
+                      `Y=${areaTopLevel.y} + ${areaTopLevel.height} =/= ${areaBotButton.y} + ${areaBotButton.height} + ${SEPARATION} * 2`);
+
         };
 
         // Check once
