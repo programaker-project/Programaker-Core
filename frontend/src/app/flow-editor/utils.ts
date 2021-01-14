@@ -20,3 +20,18 @@ export function isContainedIn(contained: Area2D, container: Area2D): boolean {
         && ((container.height - diffY) >= contained.height)
            );
 }
+
+export function maxKey<T>(list: T[], key: (el: T) => number): T | null {
+    let max = null;
+    let maxEl = null;
+    for (const el of list) {
+        const num = key(el);
+
+        if ((max == null) || (num > max)) {
+            max = num;
+            maxEl = el;
+        }
+    }
+
+    return maxEl;
+}

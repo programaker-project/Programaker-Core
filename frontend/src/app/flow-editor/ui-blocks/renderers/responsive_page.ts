@@ -112,8 +112,8 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
 
     // Resizeable
     resize(dim: Area2D) {
-        const baseWidth = Math.max(MIN_WIDTH, dim.width + SEPARATION * 2);
-        const baseHeight = Math.max(MIN_HEIGHT, dim.height + SEPARATION * 2);
+        const baseWidth = Math.max(MIN_WIDTH, dim.width);
+        const baseHeight = Math.max(MIN_HEIGHT, dim.height);
 
         const off = this.block.getOffset();
         let right = off.x + baseWidth;
@@ -128,8 +128,22 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
 
             const bArea = c.getBodyArea();
 
-            const bRight = bArea.x + bArea.width + (c.isAutoresizable() ? 0 : SEPARATION);
-            const bBottom = bArea.y + bArea.height + (c.isAutoresizable() ? 0 : SEPARATION);
+            let separationX = SEPARATION;
+            const separationY = SEPARATION;
+
+            if (c.isAutoresizable()) {
+                const minArea = c.getMinSize();
+
+                bArea.width = minArea.width;
+                bArea.height = minArea.height;
+
+                if (!c.isHorizontallyStackable()) {
+                    separationX = 0
+                }
+            }
+
+            const bRight  = bArea.x + bArea.width  + separationX;
+            const bBottom = bArea.y + bArea.height + separationY;
 
             if (bRight > right) {
                 right = bRight;

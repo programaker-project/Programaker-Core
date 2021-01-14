@@ -258,7 +258,7 @@ class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, Configur
 
         if (this._container) {
             const parentArea = this._container.getBodyArea();
-            box_width = parentArea.width - 2;
+            box_width = parentArea.width;
         }
 
         this.textBox.setAttributeNS(null, 'y', box_height/2 + "");

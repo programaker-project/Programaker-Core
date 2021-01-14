@@ -5,13 +5,13 @@ import { SEPARATION } from 'app/flow-editor/ui-blocks/renderers/positioning';
 import { configureTestBed, pageGraph } from './builder';
 import { doesNotChangePositionsOnReposition } from './utils';
 
-fdescribe('FlowUI positioning: 04. Position sections in a single step. ', () => {
+describe('FlowUI positioning: 04. Position sections in a single step.', () => {
 
     beforeEach(async(() => {
         configureTestBed(TestBed);
     }));
 
-    it('3 elements in nested section .', async () => {
+    it('3 elements in nested section in heavily distorted positions.', async () => {
         const fixture = TestBed.createComponent(FlowEditorComponent);
 
         const app: FlowEditorComponent = fixture.debugElement.componentInstance;
@@ -35,7 +35,7 @@ fdescribe('FlowUI positioning: 04. Position sections in a single step. ', () => 
                                 x: 10, y: 10,
                             },
                         ],
-                        dimensions: { width: 300, height: 300 },
+                        dimensions: { width: 9999, height: 9999 },
                     },
                     {
                         type: "horizontal_ui_section",
@@ -46,7 +46,7 @@ fdescribe('FlowUI positioning: 04. Position sections in a single step. ', () => 
                                 x: 10, y: 10,
                             },
                         ],
-                        dimensions: { width: 300, height: 300 },
+                        dimensions: { width: 9999, height: 9999 },
                     },
                     {
                         type: "horizontal_ui_section",
@@ -57,9 +57,10 @@ fdescribe('FlowUI positioning: 04. Position sections in a single step. ', () => 
                                 x: 10, y: 10,
                             },
                         ],
-                        dimensions: { width: 300, height: 300 },
+                        dimensions: { width: 9999, height: 9999 },
                     }
-                ]
+                ],
+                dimensions: { width: 9999, height: 9999 },
             },
         ]);
 
@@ -67,6 +68,7 @@ fdescribe('FlowUI positioning: 04. Position sections in a single step. ', () => 
 
         workspace.load(graph);
         workspace.repositionAll();
+        workspace.center();
 
         const result = workspace.getGraph();
 
@@ -74,38 +76,64 @@ fdescribe('FlowUI positioning: 04. Position sections in a single step. ', () => 
         /**
          * Layout:
          *
-         *     +--------------------------------------+
-         *     |+-----------++-----------++----------+|
-         *     || +-------+ ||+---------+||+--------+||
-         *     || | LeftB | ||| CenterB |||| RightB |||
-         *     || +-------+ ||+---------+||+--------+||
-         *     ||  Vert     || Vert      || Vert     ||
-         *     ||  Section  ||  Section  ||  Section ||
-         *     |+-----------++-----------++----------+|
-         *     |           Horizontal Section         |
-         *     +--------------------------------------+
+         *     +------------------------------------+
+         *     |+---------++-----------++----------+|
+         *     ||+-------+||+---------+||+--------+||
+         *     ||| LeftB |||| CenterB |||| RightB |||
+         *     ||+-------+||+---------+||+--------+||
+         *     || Vert    || Vert      || Vert     ||
+         *     || Section ||  Section  ||  Section ||
+         *     |+---------++-----------++----------+|
+         *     |         Horizontal Section         |
+         *     +------------------------------------+
          *
          **/
 
         const check = () => {
             // Button alignment
-            expect(result.nodes[left_btn].position.y).toEqual(result.nodes[center_btn].position.y);
-            expect(result.nodes[center_btn].position.y).toEqual(result.nodes[right_btn].position.y);
+            for (const [pair, pair_left, pair_right] of [['left-center', left_btn, center_btn], ['center-right', center_btn, right_btn]]) {
+                const areaLeft = workspace.getBlock(pair_left).getBodyArea();
+                const areaRight = workspace.getBlock(pair_right).getBodyArea();
 
-            expect(result.nodes[left_btn].position.x).toBeLessThan(result.nodes[center_btn].position.x);
-            expect(result.nodes[center_btn].position.x).toBeLessThan(result.nodes[right_btn].position.x);
+                expect(areaLeft.y).toBe(areaRight.y);
+
+                expect(areaLeft.x + areaLeft.width + SEPARATION * 2)
+                    .toBe(areaRight.x - SEPARATION,
+                          `On button pair ${pair}. ${areaLeft.x} + ${areaLeft.width} + ${SEPARATION * 2} =/= ${areaRight.x} - ${SEPARATION}`);
+            }
 
             // Section alignment
-            expect(result.nodes[left].position.y).toEqual(result.nodes[center].position.y);
-            expect(result.nodes[center].position.y).toEqual(result.nodes[right].position.y);
+            for (const [pair, pair_left, pair_right] of [['left-center', left, center], ['center-right', center, right]]) {
+                const areaLeft = workspace.getBlock(pair_left).getBodyArea();
+                const areaRight = workspace.getBlock(pair_right).getBodyArea();
 
-            expect(result.nodes[left].position.x).toBeLessThan(result.nodes[center].position.x);
-            expect(result.nodes[center].position.x).toBeLessThan(result.nodes[right].position.x);
+                expect(areaLeft.y).toBe(areaRight.y);
+                expect(areaLeft.x + areaLeft.width)
+                    .toBe(areaRight.x - SEPARATION,
+                          `On section pair ${pair}. ${areaLeft.x} + ${areaLeft.width} =/= ${areaRight.x} - ${SEPARATION}`);
+            }
 
+            // Button position on section
+            for (const [name, section, btn] of [['left', left, left_btn], ['center', center, center_btn], ['right', right, right_btn]]) {
+                const areaSection = workspace.getBlock(section).getBodyArea();
+                const areaButton = workspace.getBlock(btn).getBodyArea();
 
-            // expect(result.nodes[left].position.y
-            //         + workspace.getBlock(up).getBodyArea().height
-            //         + SEPARATION).toEqual(result.nodes[down].position.y);
+                expect(areaSection.width)
+                    .toBe(areaButton.width + SEPARATION * 2,
+                          `On section-group ${name}. Width=${areaSection.width} =/= ${areaButton.width} + ${SEPARATION} * 2 `);
+
+                expect(areaSection.x + SEPARATION)
+                    .toBe(areaButton.x,
+                          `On section-group ${name}. X=${areaSection.x} + ${SEPARATION} =/= ${areaButton.x}`);
+
+                expect(areaSection.height)
+                    .toBe(areaButton.height + SEPARATION * 2,
+                          `On section-group ${name}. Height=${areaSection.height} =/= ${areaButton.height} + ${SEPARATION} * 2 `);
+
+                expect(areaSection.y + SEPARATION)
+                    .toBe(areaButton.y,
+                          `On section-group ${name}. Y=${areaSection.y} + ${SEPARATION} =/= ${areaButton.y}`);
+            }
         };
 
         // Check once
@@ -116,6 +144,5 @@ fdescribe('FlowUI positioning: 04. Position sections in a single step. ', () => 
 
         // Check again
         check();
-        });
-
+    });
 });

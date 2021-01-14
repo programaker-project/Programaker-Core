@@ -1,6 +1,5 @@
 import { FlowWorkspace } from "app/flow-editor/flow_workspace";
 import { Area2D } from "app/flow-editor/flow_block";
-import { fail } from "assert";
 
 export function doesNotChangePositionsOnReposition(workspace: FlowWorkspace, blocks: string[]) {
     // Get all block's positions
