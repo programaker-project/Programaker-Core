@@ -312,17 +312,20 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     }
 
     repositionContents(): void {
-        let dimensions : { width: number, height: number };
+        const dimensions = this._repositionContents();
 
+        this.resize(dimensions, true);
+    }
+
+    _repositionContents() : { width: number, height: number } {
         this.stickToContainer();
 
         if (this.nestedHorizontal) {
-            dimensions = PositionVerticalContents(this, this._contents, this.getBodyArea());
+            return PositionVerticalContents(this, this._contents, this.getBodyArea());
         }
         else {
-            dimensions = PositionHorizontalContents(this, this._contents, this.getBodyArea());
+            return PositionHorizontalContents(this, this._contents, this.getBodyArea());
         }
-        this.resize(dimensions, true);
     }
 
     stickToContainer(){
@@ -377,7 +380,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
         this._updateInternalElementSizes();
 
-        this.repositionContents();
+        if (this._contents.length > 0) {
+            this._repositionContents();
+        }
 
         return result;
     }

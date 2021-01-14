@@ -174,21 +174,24 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
 }
 
 export function PositionHorizontalContents(handler: UiFlowBlockHandler, blocks: FlowBlock[], area: Area2D): { width: number, height: number } {
-    const blockAreas: [UiFlowBlock, Area2D][] = (
+    const blockAreas: [UiFlowBlock, Area2D, Area2D][] = (
         blocks
             .filter(b => b instanceof UiFlowBlock)
             .map((b: UiFlowBlock) => {
                 const area = b.getBodyArea()
+                let minArea;
                 if (b.isAutoresizable()) {
                     const min = b.getMinSize();
                     area.width = min.width;
                     area.height = min.height;
+                    minArea = area;
                 }
                 else {
+                    minArea = Object.assign({}, area);
                     area.height += SEPARATION * 2;
                 }
 
-                return [b, area];
+                return [b, area, minArea];
             }));
 
     const blockHeights = blockAreas.map(([_, a]) => a.height);
@@ -204,11 +207,11 @@ export function PositionHorizontalContents(handler: UiFlowBlockHandler, blocks: 
 
     const separation = SEPARATION;
 
-    blockAreas.sort(([_1, a1], [_2, a2]) => a1.x - a2.x);
+    blockAreas.sort(([_11, a1, _13], [_21, a2, _23]) => a1.x - a2.x);
     let xpos = separation;
-    for (const [block, blockArea] of blockAreas) {
+    for (const [block, blockArea, minArea] of blockAreas) {
         const x = xpos;
-        const y = block.isAutoresizable() ? 0 : (height - blockArea.height) / 2;
+        const y = block.isAutoresizable() ? 0 : (height - minArea.height) / 2;
 
         const absX = area.x + x;
         const absY = area.y + y;
