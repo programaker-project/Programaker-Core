@@ -8,7 +8,7 @@ import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { Toolbox } from './toolbox';
 import { ContainerFlowBlock, ContainerFlowBlockData, isContainerFlowBlockData } from './ui-blocks/container_flow_block';
 import { UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
-import { isContainedIn, uuidv4 } from './utils';
+import { isContainedIn, uuidv4, maxKey } from './utils';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfigureBlockDialogComponent, ConfigurableBlock, BlockConfigurationOptions } from './dialogs/configure-block-dialog/configure-block-dialog.component';
 import { ProgramService } from '../program.service';
@@ -1490,6 +1490,7 @@ export class FlowWorkspace implements BlockManager {
                 const after = this.blocks[id].block.getBodyArea();
 
                 return {
+                    block: this.blocks[id].block,
                     x: Math.abs(after.x - prev.x),
                     y: Math.abs(after.y - prev.y),
                     width: Math.abs(after.width - prev.width),
@@ -1498,17 +1499,23 @@ export class FlowWorkspace implements BlockManager {
             })
 
             const mov = {
-                x: Math.max(...diffs.map(d => d.x)),
-                y: Math.max(...diffs.map(d => d.y)),
-                width: Math.max(...diffs.map(d => d.width)),
-                height: Math.max(...diffs.map(d => d.height)),
+                x: maxKey(diffs, e => e.x),
+                y: maxKey(diffs, e => e.y),
+                width: maxKey(diffs, e => e.width),
+                height: maxKey(diffs, e => e.height),
             };
             its.push(mov)
             console.timeEnd("It " + (i + 1));
-            console.debug('Max movement in iteration:', mov)
+            console.debug('Max movement in iteration:',
+                          {
+                x: { x: mov.x.x, block: mov.x.block },
+                y: { y: mov.y.y, block: mov.y.block },
+                width: { width: mov.width.width, block: mov.width.block },
+                height: { height: mov.height.x, block: mov.height.block },
+            });
 
-            if ((Math.abs(mov.x) < 1) && (Math.abs(mov.y) < 1) && (Math.abs(mov.width) < 1) && (Math.abs(mov.height) < 1)) {
-                console.log("Stable on it", i + 1);
+            if ((Math.abs(mov.x.x) < 1) && (Math.abs(mov.y.y) < 1) && (Math.abs(mov.width.width) < 1) && (Math.abs(mov.height.height) < 1)) {
+                console.log("Stable on it", i); // No +1 because it was already stable from last iteration
                 break;
             }
 
