@@ -468,7 +468,7 @@ different_user_cannot_revoke_token_on_group_bridge(Port) ->
 
 
 %%====================================================================
-%% Tests
+%% Utils
 %%====================================================================
 fmt_list(FmtStr, Params) ->
     lists:flatten(io_lib:format(FmtStr, Params)).

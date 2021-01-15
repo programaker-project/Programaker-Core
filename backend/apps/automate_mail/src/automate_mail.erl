@@ -28,9 +28,31 @@ is_enabled() ->
 
 -spec send_registration_verification(binary(), binary(), binary()) -> {ok, binary()} | {error, any()}.
 send_registration_verification(ReceiverName, ReceiverMail, Code) ->
+    {ok, MailGateway} = application:get_env(?APPLICATION, mail_gateway),
+    case MailGateway of
+        { test_ets, EtsTable } ->
+            send_registration_verification_through_ets(ReceiverName, ReceiverMail, Code, EtsTable);
+        MailGateway ->
+            send_registration_verification_through_mail(ReceiverName, ReceiverMail, Code, MailGateway)
+    end.
+
+%% For debugging
+%% Note that for this to work, the ETS table must be public.
+send_registration_verification_through_ets(ReceiverName, ReceiverMail, Code, EtsTable) ->
+    Url = case application:get_env(?APPLICATION, registration_verification_url_pattern) of
+              {ok, UrlPattern} ->
+                  binary:list_to_bin(
+                    lists:flatten(io_lib:format(UrlPattern, [Code])));
+              undefined ->
+                  none
+          end,
+    true = ets:insert(EtsTable, [{ ReceiverMail, ReceiverName, Code, Url }]),
+    {ok, Url}.
+
+-spec send_registration_verification_through_mail(binary(), binary(), binary(), binary()) -> {ok, binary()} | {error, any()}.
+send_registration_verification_through_mail(ReceiverName, ReceiverMail, Code, MailGateway) ->
     {ok, Sender} = application:get_env(?APPLICATION, registration_verification_sender),
     PlatformName = application:get_env(?APPLICATION, platform_name, ?DEFAULT_PLATFORM_NAME),
-    {ok, MailGateway} = application:get_env(?APPLICATION, mail_gateway),
     {ok, UrlPattern} = application:get_env(?APPLICATION, registration_verification_url_pattern),
     Url = binary:list_to_bin(
             lists:flatten(io_lib:format(UrlPattern, [Code]))),
