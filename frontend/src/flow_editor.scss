@@ -355,6 +355,7 @@ svg.block_renderer g.flow_node.editing rect.node_body {
 // ContentEditable divs
 div[contenteditable="true"] {
     cursor: text;
+    width: max-content;
 }
 
 svg.read-only div[contenteditable="true"] {
@@ -370,6 +371,10 @@ svg.read-only div[contenteditable="true"] {
         color: revert;
         text-decoration: revert;
     }
+}
+
+div[contenteditable="true"] > div {
+    width: max-content;
 }
 
 #workspace foreignObject div[contenteditable="true"] font a {

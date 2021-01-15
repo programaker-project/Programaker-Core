@@ -402,7 +402,9 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
 
 const ButtonBarId = 'flow-editor-in-element-button-bar-' + uuidv4();
 
-export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, dialog: MatDialog, onDone: (text: FormattedTextTree) => void) {
+const ON_ELEMENT_EDITOR_MARGIN = 50;
+
+export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, dialog: MatDialog, onDone: (text: FormattedTextTree) => void, resize: (width: number, height: number) => void) {
     const elementPos = element.getClientRects()[0];
 
     {
@@ -472,6 +474,12 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
 
 
     element.oninput = () => {
+        // Update size
+        const area = (element.firstChild as HTMLElement).getBoundingClientRect();
+        resize(
+            area.width + ON_ELEMENT_EDITOR_MARGIN,
+            area.height + ON_ELEMENT_EDITOR_MARGIN,
+        );
     }
 
     element.onkeydown = (ev: KeyboardEvent) => {
