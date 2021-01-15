@@ -27,6 +27,7 @@ export function doesNotChangePositionsOnReposition(workspace: FlowWorkspace, blo
 
 
     if ((Math.abs(mov.x) >= 1) && (Math.abs(mov.y) >= 1) && (Math.abs(mov.width) >= 1) && (Math.abs(mov.height) >= 1)) {
+        // @ts-ignore Avoid importing this from assert() as that one has 2 more parameters
         fail("Movement on iteration that should not change positions: " + JSON.stringify(mov));
     }
 }

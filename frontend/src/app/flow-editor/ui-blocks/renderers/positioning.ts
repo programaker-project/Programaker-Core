@@ -235,38 +235,44 @@ export function PositionHorizontalContents(handler: UiFlowBlockHandler, blocks: 
 }
 
 export function PositionVerticalContents(handler: UiFlowBlockHandler, blocks: FlowBlock[], area: Area2D): { width: number, height: number } {
-    const blockAreas: [UiFlowBlock, Area2D][] = (
+    const blockAreas: [UiFlowBlock, Area2D, Area2D][] = (
         blocks
             .filter(b => b instanceof UiFlowBlock)
             .map((b: UiFlowBlock) => {
-                const area = b.getBodyArea()
+                const area = b.getBodyArea();
+                let minArea;
                 if (b.isAutoresizable()) {
                     const min = b.getMinSize();
                     area.width = min.width;
                     area.height = min.height;
+                    minArea = area;
+                }
+                else {
+                    minArea = Object.assign({}, area);
+                    area.width += SEPARATION * 2;
                 }
 
-                return [b, area];
+                return [b, area, minArea];
             }));
 
     const blockWidths = blockAreas.map(([_, a]) => a.width);
-    const blockHeights = blockAreas.map(([_, a]) => a.height);
-
     const maxWidth = Math.max(...blockWidths);
+
+    const blockHeights = blockAreas.map(([_, a]) => a.height);
     const reqBlockHeight = blockHeights.reduce((a,b) => a + b, 0);
 
     const sumPaddings = SEPARATION * (blocks.length + 1);
     const reqHeight = reqBlockHeight + sumPaddings;
-    const height = Math.max(area.width, reqHeight);
-    const width = maxWidth + SEPARATION * 2;
+    const height = Math.max(area.height, reqHeight);
+    const width = maxWidth;
 
     const separation = SEPARATION;
 
-    blockAreas.sort(([_1, a1], [_2, a2]) => a1.y - a2.y);
+    blockAreas.sort(([_11, a1, _13], [_21, a2, _23]) => a1.y - a2.y);
     let ypos = separation;
-    for (const [block, blockArea] of blockAreas) {
+    for (const [block, blockArea, minArea] of blockAreas) {
         const y = ypos;
-        const x = block.isAutoresizable() && block.doesTakeAllHorizontal() ? 0 : (width - blockArea.width) / 2;
+        const x = block.isAutoresizable() && block.doesTakeAllHorizontal() ? 0 : (width - minArea.width) / 2;
 
         const absX = area.x + x;
         const absY = area.y + y;
