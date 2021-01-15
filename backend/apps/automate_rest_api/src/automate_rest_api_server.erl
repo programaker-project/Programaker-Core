@@ -174,6 +174,12 @@ start_link() ->
              spawn(fun () -> handler(Pid) end)};
 
         %% For debug purposes
+        { error, { already_started, Pid } } ->
+            { ok
+            , Pid
+            };
+
+        %% For debug purposes
         {error, eaddrinuse} ->
             {ok, spawn(fun() -> handler(none) end)}
     end.
