@@ -403,19 +403,27 @@ verify_registration_with_code(RegistrationCode) ->
                           case mnesia:read(?USER_VERIFICATION_TABLE, RegistrationCode) of
                               [] ->
                                   {error, not_found};
-                              [#user_verification_entry{ user_id=UserId
-                                                       , verification_type=registration_mail_verification
-                                                       }] ->
+                              [Verification=#user_verification_entry{ user_id=UserId
+                                                                    , verification_type=registration_mail_verification
+                                                                    , used=false
+                                                                    }] ->
                                   case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
                                       [] ->
                                           {error, user_not_found};
                                       [User=#registered_user_entry{status=mail_not_verified}] ->
                                           ok = mnesia:write(?REGISTERED_USERS_TABLE, User#registered_user_entry{ status=ready }, write),
-                                          ok = mnesia:delete({?USER_VERIFICATION_TABLE, RegistrationCode}),
+                                          ok = mnesia:write(?USER_VERIFICATION_TABLE, Verification#user_verification_entry{ used=true }, write),
                                           {ok, UserId};
                                       [#registered_user_entry{status=Status}] ->
                                           {error, {status_mismatch, Status}}
                                   end;
+
+                              [#user_verification_entry{ user_id=UserId
+                                                       , verification_type=registration_mail_verification
+                                                       , used=true
+                                                       }] ->
+                                  {ok, UserId};
+
                               [#user_verification_entry{ verification_type=VerificationType }] ->
                                   {error, {invalid_verification_type, VerificationType}}
                           end
@@ -485,6 +493,8 @@ reset_password(VerificationCode, Password) ->
                                           ok = mnesia:write(?REGISTERED_USERS_TABLE,
                                                             User#registered_user_entry{ password=HashedPassword },
                                                             write),
+
+                                          %% Cannot be used more than once
                                           ok = mnesia:delete({?USER_VERIFICATION_TABLE, VerificationCode})
                                   end;
                               [#user_verification_entry{ verification_type=OtherVerificationType }] ->
@@ -1786,11 +1796,15 @@ apply_user_permissions(User, Settings) ->
 -spec create_verification_entry(binary(), verification_type()) -> {ok, binary()} | {error, _}.
 create_verification_entry(UserId, VerificationType) ->
     VerificationId = generate_id(),
+    CurrentTime = erlang:system_time(second),
+
     Transaction = fun() ->
                           ok = mnesia:write(?USER_VERIFICATION_TABLE,
                                             #user_verification_entry{ verification_id=VerificationId
                                                                     , user_id=UserId
                                                                     , verification_type=VerificationType
+                                                                    , creation_time=CurrentTime
+                                                                    , used=false
                                                                     }, write)
                   end,
     case mnesia:transaction(Transaction) of

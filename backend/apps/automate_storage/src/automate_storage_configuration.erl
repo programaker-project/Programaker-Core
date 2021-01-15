@@ -695,6 +695,28 @@ get_versioning(Nodes) ->
                                                  end)
                         end
                 }
+
+                %% Add `creation_time` and `used` fields to user verification entries.
+                %%
+                %% This should allow to keep it for longer to avoid showing errors when applied twice.
+              , #database_version_transformation
+                { id=22
+                , apply=fun() ->
+                                CurrentTime = erlang:system_time(second),
+
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_VERIFICATION_TABLE,
+                                                 fun({user_verification_entry, Id, UserId, VerificationType }) ->
+                                                         %% Replicate the entry. Set Creation and used to { current_time(), false }.
+                                                         { user_verification_entry, Id, UserId, VerificationType
+                                                         , CurrentTime, false }
+                                                 end,
+                                                 [ id, user_id, verification_type, creation_time, used ],
+                                                 user_verification_entry
+                                                )
+                        end
+                }
+
               ]
         }.
 
