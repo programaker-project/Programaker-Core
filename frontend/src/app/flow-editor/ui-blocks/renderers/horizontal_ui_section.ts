@@ -382,6 +382,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
         if (this._contents.length > 0) {
             this._repositionContents();
+
+            // If we're repositioning, there's not much to do additionally
+            result = { x: 0, y: 0 };
         }
 
         return result;
