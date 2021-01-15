@@ -472,8 +472,7 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
         buttonBar.style.left = elementPos.x + 'px';
     }
 
-
-    element.oninput = () => {
+    const updateSize = () => {
         // Update size
         const area = (element.firstChild as HTMLElement).getBoundingClientRect();
         resize(
@@ -481,6 +480,9 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
             area.height + ON_ELEMENT_EDITOR_MARGIN,
         );
     }
+
+    element.oninput = updateSize;
+    updateSize();
 
     element.onkeydown = (ev: KeyboardEvent) => {
         if (ev.ctrlKey && ev.code === 'KeyB') {

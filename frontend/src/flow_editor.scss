@@ -355,7 +355,11 @@ svg.block_renderer g.flow_node.editing rect.node_body {
 // ContentEditable divs
 div[contenteditable="true"] {
     cursor: text;
-    width: max-content;
+    width: 100%;
+
+    &.editing {
+        width: max-content;
+    }
 }
 
 svg.read-only div[contenteditable="true"] {
@@ -374,6 +378,10 @@ svg.read-only div[contenteditable="true"] {
 }
 
 div[contenteditable="true"] > div {
+    width: 100%;
+}
+
+div[contenteditable="true"].editing > div {
     width: max-content;
 }
 
