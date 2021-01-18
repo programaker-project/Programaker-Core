@@ -20,6 +20,7 @@ declare const Fuse: any;
 const SvgNS = "http://www.w3.org/2000/svg";
 
 const INV_MAX_ZOOM_LEVEL = 5;
+const TIME_BETWEEN_POSITION_ITERATIONS = 100; // In milliseconds
 
 const CUT_POINT_SEARCH_INCREASES = 10;
 const CUT_POINT_SEARCH_SPACING = CUT_POINT_SEARCH_INCREASES;
@@ -1530,7 +1531,7 @@ export class FlowWorkspace implements BlockManager {
                 break;
             }
 
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, TIME_BETWEEN_POSITION_ITERATIONS));
         }
 
         return its;
