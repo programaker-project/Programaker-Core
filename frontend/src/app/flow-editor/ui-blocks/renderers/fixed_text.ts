@@ -280,6 +280,9 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
                                  this.editing = false;
                                  this._updateTextBox();
                                  this._updateSize();
+                                 if (this.workspace) {
+                                     this.workspace.invalidateBlock(this.block.id);
+                                 }
                              },
                              (width: number, height: number) => {
                                  width = Math.max(width, this.MinWidth);

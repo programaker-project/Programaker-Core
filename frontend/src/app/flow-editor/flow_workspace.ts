@@ -1464,6 +1464,10 @@ export class FlowWorkspace implements BlockManager {
         });
     }
 
+    public invalidateBlock(blockId: string) {
+        this._invalidateBlockPositions([blockId]);
+    }
+
     private _invalidateBlockPositions(blocks: string[]) {
         // This would be a good point to save the invalidated blocks and not
         // launch the repositioning in case the initial "build" is not finished
