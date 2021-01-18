@@ -27,6 +27,16 @@
     font-weight: bold;
 }
 
+.description > .disabled-explanation {
+    background-color: #f66;
+    padding: 1ex;
+    border-radius: 5px;
+    color: black;
+    margin: 0.5ex;
+    text-align: center;
+    font-weight: bold;
+}
+
 .title {
     text-align: center;
 }
