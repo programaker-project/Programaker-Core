@@ -350,6 +350,28 @@ button.completed > span > .load-bg {
     animation-name: button-load-completed;
     animation-duration: 0.3s;
 }
+/* Annotated buttons */
+.annotated-icon > .mat-button-wrapper {
+    display: inline grid;
+}
+
+.annotated-icon mat-icon {
+    grid-row: 1;
+    grid-column: 1;
+    text-align: center;
+    width: 100%;
+}
+
+.annotated-icon .label {
+    grid-row: 2;
+    grid-column: 1;
+    font-size: small;
+    line-height: initial;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0px;
+}
 
 /* Settings */
 .toggle-setting > mat-slide-toggle > label {

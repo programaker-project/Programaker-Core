@@ -12,49 +12,72 @@
         </span>
         <!-- Basic functions -->
         <button mat-button mat-raised-button
+            class="annotated-icon"
             id="program-start-button" color="primary"
             *ngIf="!read_only && program !== undefined"
             (click)="sendProgram()">
 
             <span class="load-bg"></span>
             <mat-icon class="action-icon">cloud_upload</mat-icon>
-            Upload
+            <label class="label">
+                Upload
+            </label>
         </button>
         <button id="program-rename-button" color="secondary"
+            class="annotated-icon"
             *ngIf="!read_only && program !== undefined"
-            (click)="renameProgram()" mat-button>
-            <mat-icon>edit</mat-icon> Rename
+            (click)="renameProgram()" mat-button mat-raised-button>
+            <mat-icon>edit</mat-icon>
+            <label class="label">
+                Rename
+            </label>
         </button>
         <button id="program-logs-button" color="secondary"
+            class="annotated-icon"
             *ngIf="!read_only && program !== undefined"
-            (click)="toggleLogsPanel()" mat-button>
+            (click)="toggleLogsPanel()" mat-button mat-raised-button>
             <mat-icon>error_outline</mat-icon>
-            <span *ngIf="logs_drawer.opened">Hide</span>
-            <span *ngIf="!logs_drawer.opened">Show</span>
-            logs
-        </button>
-        <button id="program-stop-button" color="warn"
-            *ngIf="!read_only && program !== undefined"
-            (click)="stopThreadsProgram()" mat-button>
-            <mat-icon>stop</mat-icon> Stop all
+            <label class="label">
+                <span *ngIf="logs_drawer.opened">Hide</span>
+                <span *ngIf="!logs_drawer.opened">Show</span>
+                logs
+            </label>
         </button>
 
         <button id="navigateToPageControls" color="secondary"
+            class="annotated-icon"
             *ngIf="workspace && workspace.hasPages"
             [disabled]="!pages || pages.length === 0"
             (click)="openDefaultPage()"
-            mat-button>
-            <mat-icon>launch</mat-icon>Open web
+            mat-button mat-raised-button>
+            <mat-icon>launch</mat-icon>
+            <label class="label">
+                Open web
+            </label>
         </button>
 
         <button id="addResponsiveGridControls" color="secondary"
+            class="annotated-icon"
             *ngIf="!read_only && workspace && !workspace.hasPages"
             (click)="addResponsivePage()"
-            mat-button>
-            <mat-icon>grid_on</mat-icon>Add web UI
+            mat-button mat-raised-button>
+            <mat-icon>grid_on</mat-icon>
+            <label class="label">
+                Add web UI
+            </label>
         </button>
 
         <!-- Advanced functions, on a menu -->
+        <button id="program-stop-button" color="warn"
+            class="annotated-icon"
+            *ngIf="!read_only && program !== undefined"
+            (click)="stopThreadsProgram()" mat-button mat-raised-button>
+            <mat-icon>stop</mat-icon>
+            <label class="label">
+                Stop all
+            </label>
+        </button>
+
         <button id="advancedProgramControls" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
             *ngIf="!read_only && program !== undefined" mat-button>
@@ -71,7 +94,7 @@
         <!-- Dangerous stuff, on its own -->
         <button id="program-delete-button" color="warn"
             *ngIf="!read_only && program !== undefined"
-            (click)="deleteProgram()" mat-button>
+            (click)="deleteProgram()" mat-button mat-raised-button>
             <mat-icon>delete_forever</mat-icon> Delete program
         </button>
     </div>

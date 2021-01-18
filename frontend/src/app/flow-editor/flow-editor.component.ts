@@ -45,7 +45,7 @@ import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/r
     selector: 'app-my-flow-editor',
     templateUrl: './flow-editor.component.html',
     styleUrls: [
-        'flow-editor.component.css',
+        'flow-editor.component.scss',
         '../libs/css/material-icons.css',
         '../libs/css/bootstrap.min.css',
     ],
