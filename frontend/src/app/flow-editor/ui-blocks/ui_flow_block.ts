@@ -693,7 +693,4 @@ export class UiFlowBlock implements FlowBlock {
         }
         return this._container.hasAncestor(block);
     }
-
-
-    pushDown(startHeight: number, pushDown: number) {}
 }

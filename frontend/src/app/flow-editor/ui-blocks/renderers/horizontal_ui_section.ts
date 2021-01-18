@@ -162,15 +162,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                 minWidth = inflexibleArea.width;
             }
 
-            const oldWidth = this.width;
             const newWidth = Math.max(MIN_WIDTH, minWidth, dimensions.width);
 
             this.width = newWidth;
-
-            const pushRight = newWidth - oldWidth;
-            if (this.container && pushRight > 0) {
-                this.container.pushRight(pos.x + oldWidth, pushRight);
-            }
         }
         else {
             // Resize horizontally
@@ -188,15 +182,9 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                 minHeight = inflexibleArea.height;
             }
 
-            const oldHeight = this.height;
             const newHeight = Math.max(MIN_HEIGHT, minHeight, dimensions.height);
 
             this.height = newHeight;
-
-            const pushDown = newHeight - oldHeight;
-            if (this.container && pushDown > 0) {
-                // this.container.pushDown(pos.y + oldHeight, pushDown);
-            }
         }
 
         this._updateInternalElementSizes();
