@@ -191,9 +191,6 @@ mat-card.call-to-action > h4 {
 .actionable-icon > mat-icon {
     vertical-align: sub;
 }
-.actionable-icon > .icon {
-    text-align: center;
-}
 
 .test-result {
     whitespace: pre;
@@ -358,17 +355,11 @@ button.completed > span > .load-bg {
     display: inline grid;
 }
 
-.annotated-icon mat-icon, .annotated-icon .icon {
+.annotated-icon mat-icon {
     grid-row: 1;
     grid-column: 1;
     text-align: center;
-
     width: 100%;
-
-    & > img {
-        height: 2ex;
-    }
-
 }
 
 .annotated-icon .label {

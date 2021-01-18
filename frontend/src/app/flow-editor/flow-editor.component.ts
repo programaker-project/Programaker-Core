@@ -1,6 +1,6 @@
 import { Location, isPlatformServer } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, ViewChild, Inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Inject, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { ProgramContent, ProgramLogEntry, ProgramInfoUpdate, ProgramType } from '../program';
 import { ProgramService } from '../program.service';
@@ -36,7 +36,6 @@ import { UiSignalService } from 'app/services/ui-signal.service';
 import { ContainerFlowBlock } from './ui-blocks/container_flow_block';
 import { UI_ICON } from './definitions';
 import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/renderers/responsive_page';
-import { MatSlideToggleChange, MatSlideToggle } from '@angular/material/slide-toggle';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -47,10 +46,9 @@ import { MatSlideToggleChange, MatSlideToggle } from '@angular/material/slide-to
         '../libs/css/bootstrap.min.css',
     ],
 })
-export class FlowEditorComponent implements OnInit, AfterViewInit {
+export class FlowEditorComponent implements OnInit {
     @Input() program: ProgramContent;
     @ViewChild('logs_drawer') logs_drawer: MatDrawer;
-    @ViewChild('autoposition_toggle') autopositionToggle: MatSlideToggle;
 
     session: Session;
     programId: string;
@@ -66,8 +64,6 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
     pages: { name: string; url: string; }[];
     workspaceElement: HTMLElement;
     read_only: boolean;
-
-    loaded = false;
 
     constructor(
         private browser: BrowserService,
@@ -135,17 +131,6 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
                             this.read_only = program.readonly;
                             this.prepareWorkspace().then(() => {
                                 this.load_program(program);
-
-                                this.loaded = true;
-                                if (this.autopositionToggle) {
-                                    if ((!this.read_only) && session.tags.is_advanced && session.tags.is_in_preview) {
-                                        // Enable by default for preview, advanced, users.
-                                        this.autopositionToggle.checked = true;
-                                    }
-
-                                    this.workspace.setAutoReposition(this.autopositionToggle.checked);
-                                }
-
                                 resolve();
                             }).catch(err => {
                                 console.error(err);
@@ -162,20 +147,12 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
         }));
     }
 
-    ngAfterViewInit() {
-        if (this.loaded) {
-            if ((!this.read_only) && this.session.tags.is_advanced && this.session.tags.is_in_preview) {
-                // Enable by default for preview, advanced, users.
-                this.autopositionToggle.checked = true;
-            }
-
-            this.workspace.setAutoReposition(this.autopositionToggle.checked);
-        }
-    }
-
     load_program(program: ProgramContent) {
         if (program.orig && program.orig !== 'undefined') {
             this.workspace.load(program.orig as FlowGraph);
+
+            console.time("Positioning");
+            this.workspace.repositionIteratively().then(() => console.timeEnd("Positioning"));
         }
         else {
             this.workspace.initializeEmpty();
@@ -207,10 +184,6 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
         const blockId = this.workspace.draw(block);
 
         this.workspace.centerOnBlock(blockId);
-    }
-
-    autopositionUpdated(event: MatSlideToggleChange) {
-        this.workspace.setAutoReposition(event.checked);
     }
 
     updateViewPages(pages: string[]) {
