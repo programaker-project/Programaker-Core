@@ -191,6 +191,9 @@ mat-card.call-to-action > h4 {
 .actionable-icon > mat-icon {
     vertical-align: sub;
 }
+.actionable-icon > .icon {
+    text-align: center;
+}
 
 .test-result {
     whitespace: pre;
@@ -355,11 +358,17 @@ button.completed > span > .load-bg {
     display: inline grid;
 }
 
-.annotated-icon mat-icon {
+.annotated-icon mat-icon, .annotated-icon .icon {
     grid-row: 1;
     grid-column: 1;
     text-align: center;
+
     width: 100%;
+
+    & > img {
+        height: 2ex;
+    }
+
 }
 
 .annotated-icon .label {
@@ -371,6 +380,33 @@ button.completed > span > .load-bg {
     width: 100%;
     text-align: center;
     margin-bottom: 0px;
+}
+
+mat-slide-toggle.annotated-toggle, .annotated-toggle {
+    height: max-content;
+    box-sizing: border-box;
+
+    &.raised {
+        box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+    }
+
+    label {
+        display: grid;
+        margin-bottom: 0;
+        margin-top: 1px;
+
+        .mat-slide-toggle-bar {
+            grid-row: 1;
+            margin: 0.5ex auto 1px auto;
+        }
+
+        .mat-slide-toggle-content {
+            grid-row: 2;
+            margin: 0.1ex;
+            font-size: small;
+            font-weight: 500;
+        }
+    }
 }
 
 /* Settings */

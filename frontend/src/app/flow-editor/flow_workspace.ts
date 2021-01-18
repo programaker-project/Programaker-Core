@@ -197,12 +197,10 @@ export class FlowWorkspace implements BlockManager {
                 console.error("Error establishing connection", err);
             }
         }
-
-        this.autoposition = true;
     }
 
     public initializeEmpty() {
-        this.autoposition = true;
+        // Nothing to do here
     }
 
     private deserializeBlock(blockData: FlowBlockData) {
@@ -1462,6 +1460,15 @@ export class FlowWorkspace implements BlockManager {
                 this._invalidateBlockPositions(moved);
             }
         });
+    }
+
+    public setAutoReposition(enabled: boolean) {
+        if (enabled) {
+            console.time("Repositioning");
+            this.repositionIteratively().then(() => console.timeEnd("Repositioning"));
+        }
+
+        this.autoposition = enabled;
     }
 
     public invalidateBlock(blockId: string) {

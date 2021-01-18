@@ -67,6 +67,13 @@
             </label>
         </button>
 
+        <mat-slide-toggle #autoposition_toggle
+            id="program-reposition"
+            [class]="'annotated-toggle raised ' + ((!read_only && workspace && workspace.hasPages) ? 'hidden' : '')"
+            (change)="autopositionUpdated($event)"
+            [checked]="false"
+        >Autoposition</mat-slide-toggle>
+
         <!-- Advanced functions, on a menu -->
         <button id="program-stop-button" color="warn"
             class="annotated-icon"
@@ -74,7 +81,7 @@
             (click)="stopThreadsProgram()" mat-button mat-raised-button>
             <mat-icon>stop</mat-icon>
             <label class="label">
-                Stop all
+                Cancel running
             </label>
         </button>
 
