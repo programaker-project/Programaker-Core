@@ -272,10 +272,6 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         this.editing = true;
 
-        this.contentBox.onmousedown = (ev: MouseEvent) => {
-            ev.stopImmediatePropagation();
-        }
-
         startOnElementEditor(this.contentBox, this.textBox, this.block.workspace.getDialog(),
                              (tt: FormattedTextTree) => {
                                  this.block.blockData.content = this.textValue = tt;
@@ -308,6 +304,9 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
             this.contentBox.contentEditable = 'true';
         }
         this.contentBox.onfocus = this.onContentEditStart.bind(this);
+        this.contentBox.onmousedown = (ev: MouseEvent) => {
+            ev.stopImmediatePropagation();
+        }
 
         const container = document.createElement('div');
         const content = formattedTextTreeToDom(this.textValue);
