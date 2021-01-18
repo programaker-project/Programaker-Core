@@ -29,7 +29,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     private textBox: SVGForeignObjectElement;
     private textValue: FormattedTextTree;
     private rect: SVGRectElement;
-    readonly MinWidth = 140;
+    readonly MinWidth = 200;
     readonly MinHeight = 140;
     private handle: UiElementHandle;
     private _container: ContainerFlowBlock;
