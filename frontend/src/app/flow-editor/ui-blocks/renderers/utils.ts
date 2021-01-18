@@ -64,7 +64,7 @@ export function combinedManipulableArea(areas: Area2D[]): ManipulableArea2D {
     return rect;
 }
 
-function manipulableAreaToArea2D(area: ManipulableArea2D) {
+export function manipulableAreaToArea2D(area: ManipulableArea2D) {
     return {
         x: area.left,
         y: area.top,
@@ -402,7 +402,9 @@ function editLinkInSelection(dialog: MatDialog): Promise<void> {
 
 const ButtonBarId = 'flow-editor-in-element-button-bar-' + uuidv4();
 
-export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, dialog: MatDialog, onDone: (text: FormattedTextTree) => void) {
+const ON_ELEMENT_EDITOR_MARGIN = 50;
+
+export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, dialog: MatDialog, onDone: (text: FormattedTextTree) => void, resize: (width: number, height: number) => void) {
     const elementPos = element.getClientRects()[0];
 
     {
@@ -470,9 +472,17 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
         buttonBar.style.left = elementPos.x + 'px';
     }
 
-
-    element.oninput = () => {
+    const updateSize = () => {
+        // Update size
+        const area = (element.firstChild as HTMLElement).getBoundingClientRect();
+        resize(
+            area.width + ON_ELEMENT_EDITOR_MARGIN,
+            area.height + ON_ELEMENT_EDITOR_MARGIN,
+        );
     }
+
+    element.oninput = updateSize;
+    updateSize();
 
     element.onkeydown = (ev: KeyboardEvent) => {
         if (ev.ctrlKey && ev.code === 'KeyB') {
@@ -522,4 +532,15 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
     };
 
     element.onblur = onBlur;
+}
+
+export function listToDict<T>(list: T[], getKey: (elem: T) => string): {[key: string]: T} {
+    const result = {};
+
+    for (const elem of list) {
+        const key = getKey(elem);
+        result[key] = elem;
+    }
+
+    return result;
 }

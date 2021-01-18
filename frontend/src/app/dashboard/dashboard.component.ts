@@ -193,33 +193,21 @@ export class DashboardComponent {
     }
 
     addProgram(): void {
-        if (this.session.tags.is_in_preview) {
-            const dialogRef = this.dialog.open(SelectProgrammingModelDialogComponent, { width: '90%' });
+        const dialogRef = this.dialog.open(SelectProgrammingModelDialogComponent, { width: '90%', data: { is_advanced_user: this.session.tags.is_advanced }});
 
-            dialogRef.afterClosed().subscribe((result: {success: boolean, program_type: ProgramType, program_name: string}) => {
-                if (result && result.success) {
-                    let programCreation: Promise<ProgramMetadata>;
-                    if (this.groupInfo) {
-                        programCreation = this.programService.createProgramOnGroup(result.program_type, result.program_name, this.groupInfo.id);
-                    }
-                    else {
-                        programCreation = this.programService.createProgram(result.program_type, result.program_name);
-                    }
-
-                    programCreation.then(program => this.openProgram(program));
+        dialogRef.afterClosed().subscribe((result: {success: boolean, program_type: ProgramType, program_name: string}) => {
+            if (result && result.success) {
+                let programCreation: Promise<ProgramMetadata>;
+                if (this.groupInfo) {
+                    programCreation = this.programService.createProgramOnGroup(result.program_type, result.program_name, this.groupInfo.id);
                 }
-            });
-        }
-        else {
-            let programCreation: Promise<ProgramMetadata>;
-            if (this.groupInfo) {
-                programCreation = this.programService.createProgramOnGroup('scratch_program', null, this.groupInfo.id);
+                else {
+                    programCreation = this.programService.createProgram(result.program_type, result.program_name);
+                }
+
+                programCreation.then(program => this.openProgram(program));
             }
-            else {
-                programCreation = this.programService.createProgram('scratch_program');
-            }
-            programCreation.then(program => this.openProgram(program));
-        }
+        });
     }
 
     addBridge(): void {

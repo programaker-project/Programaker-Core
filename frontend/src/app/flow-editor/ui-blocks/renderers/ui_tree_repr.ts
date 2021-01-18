@@ -1,5 +1,6 @@
 import { Area2D } from "../../flow_block";
 import { BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
+import { UiFlowBlock } from "../ui_flow_block";
 
 export type BackgroundPropertyConfiguration = { type: 'transparent' } | { type: 'color', value: string };
 
@@ -38,7 +39,7 @@ export interface UiElementRepr {
 };
 
 export interface ContainerElementRepr {
-    id?: string,
+    id: string,
     container_type: UiElementWidgetContainer,
     content: CutTree,
     settings?: BlockConfigurationOptions,
@@ -47,10 +48,15 @@ export interface ContainerElementRepr {
 export interface CutElement {
     i: number,
     a: Area2D,
+    b: UiFlowBlock,
 };
-export type CutType = 'vbox' | 'hbox' | 'no-box';
+export type CutType = 'vbox' | 'hbox';
+
+export const DEFAULT_CUT_TYPE = 'hbox';
+
 export interface CutNode {
     settings?: BlockConfigurationOptions,
+    block_id?: string,
     cut_type: CutType,
     groups: CutTree[],
 };

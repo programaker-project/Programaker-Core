@@ -1,17 +1,20 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
-import { Area2D, FlowBlock, Position2D, Resizeable } from "../../flow_block";
+import { Area2D, FlowBlock, Position2D } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { HandleableElement, UiElementHandle } from "./ui_element_handle";
-import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr } from "./ui_tree_repr";
-import { combinedArea, combinedManipulableArea, getRefBox } from "./utils";
+import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr, DEFAULT_CUT_TYPE } from "./ui_tree_repr";
+import { combinedManipulableArea, getRefBox, listToDict, manipulableAreaToArea2D } from "./utils";
+import { PositionResponsiveContents, SEPARATION } from "./positioning";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
 const Title = "Responsive page";
 const TITLE_PADDING = 5;
-const PAGE_PADDING = 5;
+
+export const MIN_WIDTH = 200;
+export const MIN_HEIGHT = 400;
 
 export const ResponsivePageBuilder : ContainerFlowBlockBuilder = (canvas: SVGElement,
                                                                   group: SVGElement,
@@ -24,7 +27,7 @@ export const ResponsivePageBuilder : ContainerFlowBlockBuilder = (canvas: SVGEle
     return element;
 }
 
-class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Resizeable, TextEditable {
+class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, TextEditable {
     subscription: Subscription;
     textBox: SVGTextElement;
     handle: UiElementHandle | null = null;
@@ -97,7 +100,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
         this.updateSizes();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, this.node, initOps.workspace, [ 'resize_width_height' ]);
+            this.handle = new UiElementHandle(this, this.node, initOps.workspace, []);
         }
     }
 
@@ -108,32 +111,56 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     }
 
     // Resizeable
-    resize(dim: { width: number; height: number; }) {
-        // Check that what the minimum available size is
-        const fullContents = this.block.recursiveGetAllContents();
+    resize(dim: Area2D) {
+        const baseWidth = Math.max(MIN_WIDTH, dim.width);
+        const baseHeight = Math.max(MIN_HEIGHT, dim.height);
 
-        const inflexibleArea = combinedArea(
-            fullContents
-                .filter(b => !(
-                    (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-                ))
-                .map(b => b.getBodyArea()));
+        const off = this.block.getOffset();
+        let right = off.x + baseWidth;
+        let bottom = off.y + baseHeight;
 
-        const pos = this.block.getOffset();
+        const contents = this.block.recursiveGetAllContents();
+        for (const c of contents) {
 
-        const minWidth = Math.max(
-            this.textDim.width,
-            inflexibleArea.x - pos.x + inflexibleArea.width,
-        );
+            if (! (c instanceof UiFlowBlock)) {
+                continue;
+            }
 
-        const minHeight = Math.max(
-            this.textDim.height,
-            inflexibleArea.y - pos.y + inflexibleArea.height,
-        );
+            const bArea = c.getBodyArea();
 
-        this.width = Math.max(minWidth, dim.width);
-        this.height = Math.max(minHeight, dim.height);
+            let separationX = SEPARATION;
+            const separationY = SEPARATION;
 
+            if (c.isAutoresizable()) {
+                const minArea = c.getMinSize();
+
+                bArea.width = minArea.width;
+                bArea.height = minArea.height;
+
+                if (!c.isHorizontallyStackable()) {
+                    separationX = 0
+                }
+            }
+
+            const bRight  = bArea.x + bArea.width  + separationX;
+            const bBottom = bArea.y + bArea.height + separationY;
+
+            if (bRight > right) {
+                right = bRight;
+            }
+            if (bBottom > bottom) {
+                bottom = bBottom;
+            }
+        }
+
+        const newWidth = (right - off.x);
+        const newHeight = (bottom - off.y);
+
+        const diffWidth = this.width - newWidth;
+        const diffHeight = this.height - newHeight;
+
+        this.width = newWidth;
+        this.height = newHeight;
 
         this.updateSizes();
 
@@ -177,6 +204,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
 
     // UiFlowBlock
     onClick() {
+        this.block.startEditing();
     }
 
     onGetFocus() {
@@ -248,11 +276,14 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     onContentUpdate(contents: FlowBlock[]) {
         // Obtain new distribution
         this.contents = contents.concat([]);
-        const uiContents = contents.filter(b => (b instanceof UiFlowBlock)) as UiFlowBlock[];
+    }
+
+    _updateCutGrid() {
+        const uiContents = this.contents.filter(b => (b instanceof UiFlowBlock)) as UiFlowBlock[];
 
         // Update grid
         try {
-            const tree = ResponsivePageGenerateTree(this, contents);
+            const tree = ResponsivePageGenerateTree(this, this.contents);
 
             this.grid.innerHTML = ''; // Clear it
             const cuts = performCuts(tree, uiContents, this.width, this.height, this.block.getOffset());
@@ -268,41 +299,39 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
             console.error(err);
             this.grid.innerHTML = ''; // Make sure it's clear
         }
-
-        // Check that the container size is adequate, resize it if necessary
-        const fullContents = this.block.recursiveGetAllContents();
-
-        if (fullContents.length === 0) {
-            return;
-        }
-
-        // Move contents down if they are not (vertically) completely inside the section
-        // This is done one-by-one, so the order of addition of blocks to the contained does not affect the final state.
-        const current = this.block.getOffset();
-
-        for (const block of contents) {
-            const blockArea = block.getBodyArea();
-            const yDiff = (current.y + PAGE_PADDING) - blockArea.y;
-            if (yDiff > 0) {
-                block.moveBy({ x: 0, y: yDiff });
-            }
-        }
-
-        const containedArea = combinedArea(fullContents.map(b => b.getBodyArea()));
-
-        // Extend the section to include all elements, if needed
-        if (this.height < containedArea.height) {
-            this.height = containedArea.height;
-            this.updateSizes();
-        }
     }
 
     dropOnEndMove() {
+        this._updateCutGrid();
+
         return {x: 0, y: 0};
     }
 
     updateContainer(_container: UiFlowBlock) {
         throw new Error("A webpage cannot be put inside a container.");
+    }
+
+    repositionContents(): void {
+        const area = this.getBodyArea();
+
+        const titleHeight = this.titleBox.getBBox().height;
+        area.y += titleHeight;
+
+        const allContents = this.block.recursiveGetAllContents();
+
+        const cutTree = PositionResponsiveContents(this, this.contents, allContents, area);
+
+        const contentDict = listToDict(
+            allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],
+            c => c.id);
+
+        const elems = getElementsInGroup(cutTree)
+            .map(id => contentDict[id])
+            .filter(b => !b.isAutoresizable());
+
+        const newArea = getRect(elems);
+
+        this.resize(manipulableAreaToArea2D(newArea));
     }
 
     get container(): ContainerFlowBlock {
@@ -314,21 +343,22 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Re
     }
 }
 
-function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, height: number, offset: Position2D) {
-    const acc = [];
+type GridCut = { from: Position2D, to: Position2D, type: 'vert' | 'horiz' };
+
+function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, height: number, offset: Position2D
+                    ): GridCut[] {
+    const acc: GridCut[] = [];
     let todo = [{ tree: tree, area: { x: 0, y: 0, width, height } }];
 
     const blocks = {};
     for (const block of contents) {
+        blocks[block.id] = block;
         if (block instanceof ContainerFlowBlock) {
             for (const subBlock of block.recursiveGetAllContents()) {
                 if (subBlock instanceof UiFlowBlock) {
                     blocks[subBlock.id] = subBlock;
                 }
             }
-        }
-        else {
-            blocks[block.id] = block;
         }
     }
 
@@ -406,7 +436,6 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
                 }
             }
         }
-        else if (cTree.cut_type === 'no-box') {}
         else {
             throw new Error("Unknown cut type: " + cTree.cut_type);
         }
@@ -415,7 +444,7 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
     return acc;
 }
 
-function getElementsInGroup(tree: CutTree): string[] {
+export function getElementsInGroup(tree: CutTree): string[] {
     let acc = [];
 
     const todo = [tree];
@@ -430,11 +459,18 @@ function getElementsInGroup(tree: CutTree): string[] {
                 acc.push((cut as UiElementRepr).id);
         }
         else if ((cut as CutNode).groups) {
+            if ((cut as CutNode).block_id) {
+                acc.push((cut as CutNode).block_id);
+            }
             for (const group of (cut as CutNode).groups) {
                 todo.push(group);
             }
         }
         else if ((cut as ContainerElementRepr).container_type) {
+            if ((cut as ContainerElementRepr).id) {
+                acc.push((cut as ContainerElementRepr).id);
+            }
+
             todo.push((cut as ContainerElementRepr).content);
         }
         else {
@@ -446,7 +482,38 @@ function getElementsInGroup(tree: CutTree): string[] {
     return acc;
 }
 
-function getRect(blocks: UiFlowBlock[]) {
+export function getShallowElementsInGroup(tree: CutTree): string[] {
+    let acc = [];
+
+    const todo = [tree];
+    while (todo.length > 0) {
+        const cut = todo.pop();
+
+        if (!cut) {
+            continue;
+        }
+
+        if ((cut as UiElementRepr).widget_type) {
+            acc.push((cut as UiElementRepr).id);
+        }
+        else if ((cut as CutNode).groups) {
+            if ((cut as CutNode).block_id) {
+                acc.push((cut as CutNode).block_id);
+            }
+        }
+        else if ((cut as ContainerElementRepr).container_type) {
+            acc.push((cut as ContainerElementRepr).id);
+        }
+        else {
+            console.warn("Unexpected node:", cut);
+            throw Error("Unexpected node: "  + cut);
+        }
+    }
+
+    return acc;
+}
+
+export function getRect(blocks: UiFlowBlock[]) {
     return combinedManipulableArea(blocks.map(b => b.getBodyArea()));
 }
 
@@ -473,26 +540,33 @@ export const ResponsivePageGenerateTree: GenTreeProc = (handler: UiFlowBlockHand
 // These two "reduce" functions might be merged into a single one. It's just not
 // a priority right now, but it might be interesting to do it to check if it
 // results on simpler code.
-function reduceTree(tree: CutTree): CutTree {
-    const aux = (node: CutTree) => {
-        if (!((node as CutNode).cut_type)) {
-            return node;
-        }
-
-        const cNode = node as CutNode;
-        const newGroups = reduceGroups(cNode);
-
-        const recasted: CutTree = { cut_type: cNode.cut_type, groups: newGroups };
-        if (cNode.settings && cNode.settings.bg) {
-            recasted.settings = cNode.settings;
-        }
-        return recasted;
-    };
-
-    return aux(tree);
+export function safeReduceTree(tree: CutTree) {
+    return _reduceTree(tree, true);
 }
 
-function reduceGroups(cNode: CutNode): CutTree[] {
+function reduceTree(tree: CutTree): CutTree {
+    return _reduceTree(tree, false);
+}
+
+function _reduceTree(tree: CutTree, safe: boolean): CutTree {
+    if (!((tree as CutNode).cut_type)) {
+        return tree;
+    }
+
+    const cNode = tree as CutNode;
+    const newGroups = _reduceGroups(cNode, safe);
+
+    const recasted: CutNode = { cut_type: cNode.cut_type, groups: newGroups };
+    if (cNode.settings) {
+        recasted.settings = cNode.settings;
+    }
+    if (cNode.block_id) {
+        recasted.block_id = cNode.block_id;
+    }
+    return recasted;
+}
+
+function _reduceGroups(cNode: CutNode, safe: boolean): CutTree[] {
     let acc = [];
     const cType = cNode.cut_type;
 
@@ -503,14 +577,25 @@ function reduceGroups(cNode: CutNode): CutTree[] {
         }
 
         const cTree = tree as CutNode;
+
         // Trees and nodes with settings are not merged to avoid losing "colors" in the process
-        if ((!(cNode.settings && cNode.settings.bg)) && (cTree.cut_type === cType) && (!(cTree.settings && cTree.settings.bg))) {
+        let canMerge = ((!(cNode.settings && cNode.settings.bg))
+            && (cTree.cut_type === cType) // Cut type must be the same
+            && (!(cTree.settings && cTree.settings.bg)));
+
+        if (canMerge && safe) {
+            // Additional checks:
+            //  - Neither of the blocks can have an ID
+            canMerge = canMerge && (!cNode.block_id) && (!cTree.block_id);
+        }
+
+        if (canMerge) {
             for (const group of cTree.groups) {
                 aux(group);
             }
         }
         else {
-            acc.push(reduceTree(cTree));
+            acc.push(_reduceTree(cTree, safe));
         }
     }
 
@@ -522,7 +607,7 @@ function reduceGroups(cNode: CutNode): CutTree[] {
 }
 
 // Recursively perform cleanestCut, until all elements are partitioned.
-function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
+export function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
     const topLevel = [];
 
     const todo = [ { container: topLevel, elems: elems } ]
@@ -555,23 +640,13 @@ function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
         else {
             const cut = cleanestCut(next.elems);
 
-            if (cut.cutType === 'no-box') {
-                const asElements = cut.groups[0].map(e => {
-                    const block = blocks[e.i];
-                    return block.renderAsUiElement();
-                });
-                result = { cut_type: cut.cutType, groups: asElements };
-            }
-            else {
-                const resultGroups = [];
-                result = { cut_type: cut.cutType, groups: resultGroups };
-                for (const g of cut.groups){
-                    if (g.length > 0) {
-                        todo.push({ container: resultGroups, elems: g });
-                    }
+            const resultGroups = [];
+            result = { cut_type: cut.cutType, groups: resultGroups };
+            for (const g of cut.groups){
+                if (g.length > 0) {
+                    todo.push({ container: resultGroups, elems: g });
                 }
             }
-
         }
 
         next.container.push(result);
@@ -582,9 +657,25 @@ function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
 
 // Perform a single cut that divides the elements on the place where there is more empty space.
 function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElement[][] } {
-
     // Sort horizantally and vertically
-    const horiz = elems.concat([]);
+    const horiz = elems.map(e => {
+        if (e.b.isHorizontallyStackable()) {
+            return e;
+        }
+        else {
+            return {
+                b: e.b,
+                i: e.i,
+                a: {
+                    y: e.a.y,
+                    height: e.a.height,
+                    // Don't stack horizontally
+                    x: -Infinity,
+                    width: Infinity,
+                }
+            }
+        }
+    });
     horiz.sort((a, b) => a.a.x - b.a.x );
 
     const vert = elems.concat([]);
@@ -598,21 +689,27 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
 
         if (endX === null) {
             endX = e.a.x + e.a.width;
-            horizSpaces.push([ -1, idx, e ]);
+            horizSpaces.push([ -Infinity, idx, e ]);
             continue;
         }
 
         const diff = e.a.x - endX;
-        if (diff <= 0) {
-            horizSpaces.push([ -1, idx, e ]);
-            continue;
-        }
         endX = e.a.x + e.a.width;
 
         horizSpaces.push([ diff, idx, e ]);
     }
 
-    horizSpaces.sort(([a, _aIdx], [b, _bIdx]) => b - a)
+    horizSpaces.sort(([a, aIdx], [b, bIdx]) => {
+        if (b != a) {
+            return b - a
+        }
+        else {
+            // If the biggest gap cannot be found, avoid using the first gap
+            // (between nothing and the first element) as cut point.
+            // To do this, for gaps with the same size, put the ones with higher "index" first.
+            return bIdx - aIdx;
+        }
+    })
 
     // Measure vertical spaces
     const vertSpaces = [];
@@ -622,27 +719,33 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
 
         if (endY === null) {
             endY = e.a.y + e.a.height;
-            vertSpaces.push([ -1, idx, e ]);
+            vertSpaces.push([ -Infinity, idx, e ]);
             continue;
         }
 
         const diff = e.a.y - endY;
-        if (diff <= 0) {
-            vertSpaces.push([ -1, idx, e ]);
-            continue;
-        }
         endY = e.a.y + e.a.height;
 
         vertSpaces.push([ diff, idx, e ]);
     }
 
-    vertSpaces.sort(([a, _aIdx], [b, _bIdx]) => b - a)
+    vertSpaces.sort(([a, aIdx], [b, bIdx]) => {
+        if (b != a) {
+            return b - a
+        }
+        else {
+            // If the biggest gap cannot be found, avoid using the first gap
+            // (between nothing and the first element) as cut point.
+            // To do this, for gaps with the same size, put the ones with higher "index" first.
+            return bIdx - aIdx;
+        }
+    })
 
     // Find how to cut, horizontally or vertically
-    let cutType : CutType = 'no-box';
+    let cutType : CutType = DEFAULT_CUT_TYPE;
     if (horizSpaces.length < 1) {
         if (vertSpaces.length < 1) {
-            cutType = 'no-box';
+            cutType = DEFAULT_CUT_TYPE;
         }
         else {
             cutType = 'vbox';
@@ -655,19 +758,12 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
         const maxHoriz = horizSpaces[0][0];
         const maxVert = vertSpaces[0][0];
 
-        if ((maxHoriz < 1) && (maxVert < 1)) {
-            cutType = 'no-box';
-        }
-        else if (maxHoriz > maxVert) {
+        if (maxHoriz > maxVert) {
             cutType = 'hbox';
         }
         else {
             cutType = 'vbox';
         }
-    }
-
-    if (cutType === 'no-box') {
-        return { cutType:'no-box', groups: [elems] };
     }
 
     // Perform the cut on the index with the most space
@@ -681,6 +777,10 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
         const cutIdx = vertSpaces[0][1];
         before = vert.slice(0, cutIdx);
         after = vert.slice(cutIdx);
+    }
+
+    if((before.length === 0) || (after.length === 0)) {
+        throw Error(`Splitting with no elements on one side (${before.length} -split- ${after.length})`);
     }
 
     return { cutType: cutType, groups: [before, after] };

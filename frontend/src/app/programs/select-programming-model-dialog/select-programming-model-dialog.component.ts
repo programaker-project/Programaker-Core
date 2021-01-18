@@ -22,7 +22,10 @@ export class SelectProgrammingModelDialogComponent implements OnInit {
                 public connectionService: ConnectionService,
 
                 @Inject(MAT_DIALOG_DATA)
-                public data: {  }) {
+                public data: { is_advanced_user: boolean }) {
+        if (!data.is_advanced_user) {
+            this.selectedType = 'scratch_program';
+        }
     }
 
     ngOnInit(): void {
@@ -38,6 +41,11 @@ export class SelectProgrammingModelDialogComponent implements OnInit {
     }
 
     selectType(program_type: ProgramType) {
+        if (program_type === 'flow_program' && !this.data.is_advanced_user) {
+            // This option cannot be accepted
+            return;
+        }
+
         this.selectedType = program_type;
     }
 

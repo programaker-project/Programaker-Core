@@ -8,10 +8,11 @@ import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { Toolbox } from './toolbox';
 import { ContainerFlowBlock, ContainerFlowBlockData, isContainerFlowBlockData } from './ui-blocks/container_flow_block';
 import { UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
-import { isContainedIn, uuidv4 } from './utils';
+import { isContainedIn, uuidv4, maxKey } from './utils';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfigureBlockDialogComponent, ConfigurableBlock, BlockConfigurationOptions } from './dialogs/configure-block-dialog/configure-block-dialog.component';
 import { ProgramService } from '../program.service';
+import { CannotSetAsContentsError } from './ui-blocks/cannot_set_as_contents_error';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -19,6 +20,7 @@ declare const Fuse: any;
 const SvgNS = "http://www.w3.org/2000/svg";
 
 const INV_MAX_ZOOM_LEVEL = 5;
+const TIME_BETWEEN_POSITION_ITERATIONS = 100; // In milliseconds
 
 const CUT_POINT_SEARCH_INCREASES = 10;
 const CUT_POINT_SEARCH_SPACING = CUT_POINT_SEARCH_INCREASES;
@@ -122,6 +124,8 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public load(graph: FlowGraph) {
+        this.autoposition = false;
+
         // TODO: Merge with _sortByDependencies?
         let to_go = Object.keys(graph.nodes);
 
@@ -153,7 +157,17 @@ export class FlowWorkspace implements BlockManager {
                 }
 
                 if (block.container_id) {
-                    this._updateBlockContainer(created_block, this.blocks[block.container_id].block);
+                    try {
+                        this._updateBlockContainer(created_block, this.blocks[block.container_id].block);
+                    }
+                    catch (err) {
+                        if (err instanceof CannotSetAsContentsError) {
+                            this._updateBlockContainer(created_block, null);
+                        }
+                        else {
+                            throw err;
+                        }
+                    }
                 }
                 processing = true;
             }
@@ -184,6 +198,12 @@ export class FlowWorkspace implements BlockManager {
                 console.error("Error establishing connection", err);
             }
         }
+
+        this.autoposition = true;
+    }
+
+    public initializeEmpty() {
+        this.autoposition = true;
     }
 
     private deserializeBlock(blockData: FlowBlockData) {
@@ -217,6 +237,7 @@ export class FlowWorkspace implements BlockManager {
     private inlineMultilineEditor: HTMLTextAreaElement;
     private state: State = 'waiting';
     private toolbox: Toolbox;
+    private autoposition: boolean;
 
     private popupGroup: HTMLDivElement;
     private canvas: SVGSVGElement;
@@ -857,6 +878,10 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    public getBlock(blockId: string): FlowBlock {
+        return this.blocks[blockId].block;
+    }
+
     public drawAbsolute(block: FlowBlock, abs_position: Position2D): string {
         const canvas_area = this.canvas.getClientRects()[0];
 
@@ -925,28 +950,37 @@ export class FlowWorkspace implements BlockManager {
             this.showBlockContextMenu(this._getPositionFromEvent(ev));
         };
 
-        bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
-            if (this.state !== 'waiting'){
-                return;
-            }
-            if (this.read_only) {
-                return;
-            }
+        let canBeMoved = true;
+        if (block instanceof ContainerFlowBlock) {
+            canBeMoved = !block.cannotBeMoved;
+        }
 
-            if (this.current_io_selected) { return; }
+        if (canBeMoved) {
+            bodyElement.onmousedown = bodyElement.ontouchstart = ((ev: MouseEvent | TouchEvent) => {
+                if (this.state !== 'waiting'){
+                    return;
+                }
 
-            this.ensureContextMenuHidden();
+                if (this.read_only) {
+                    return;
+                }
 
-            if ((ev as MouseEvent).button === 2) {
-                // On right click just make sure it is selected, the context
-                // menu will be handled by 'oncontextmenu'.
-                this.ensureBlockSelected(block_id);
-                // TODO: How to perform this action on touch event? Long touch?
-            }
-            else {
-                this._mouseDownOnBlock(this._getPositionFromEvent(ev), block);
-            }
-        });
+                if (this.current_io_selected) { return; }
+
+                this.ensureContextMenuHidden();
+
+                if ((ev as MouseEvent).button === 2) {
+                    // On right click just make sure it is selected, the context
+                    // menu will be handled by 'oncontextmenu'.
+                    this.ensureBlockSelected(block_id);
+                    // TODO: How to perform this action on touch event? Long touch?
+                }
+                else {
+                    this._mouseDownOnBlock(this._getPositionFromEvent(ev), block);
+                }
+            });
+        }
+
         const input_group = this.drawBlockInputHelpers(block);
 
         this.blocks[block_id] = { block: block, connections: [], input_group: input_group, container_id: null };
@@ -1219,14 +1253,9 @@ export class FlowWorkspace implements BlockManager {
         partition.sort((a, b) => {
             const areaA = a.getBodyArea();
             const areaB = b.getBodyArea();
-            const heightDiff = areaA.height - areaB.height;
 
-            if (heightDiff) {
-                return heightDiff;
-            }
-
-            return areaA.width - areaB.width;
-        })
+            return (areaA.height * areaA.width) - (areaB.height * areaB.width);
+        });
 
         return partition[0];
     }
@@ -1260,7 +1289,15 @@ export class FlowWorkspace implements BlockManager {
             }
 
             if (container) {
-                (container as any as ContainerBlock).addContentBlock(block);
+                try {
+                    (container as any as ContainerBlock).addContentBlock(block);
+                }
+                catch (err) {
+                    if (err instanceof CannotSetAsContentsError) {
+                        this.blocks[block_id].container_id = null;
+                    }
+                    throw err;
+                }
             }
             this.blocks[block_id].container_id = container_id;
 
@@ -1349,32 +1386,41 @@ export class FlowWorkspace implements BlockManager {
                 lastContainer.getBodyElement().classList.remove('highlighted');
             }
 
-            const wasInContainer = this._getContainerOfBlock(block_id) !== null;
+            const oldContainer: string | null = this.blocks[block_id].container_id;
             const pos = this._getPositionFromEvent(ev);
             const container = this._findContainerInPos(pos, block);
             const containerId = container === null ? null : this.getBlockId(container);
 
-            // Only move to container if either:
+            let moved = [];
+
+            // Only update container if either:
             //  - The dragged block was in a container and now is not
             //  - The dragged block is dropped in a container not in the selected group
-            if ((wasInContainer && (!containerId))
+            if ((oldContainer && (!containerId))
                 || (containerId && (this._selectedBlocks.indexOf(containerId) < 0))) {
 
                 for (const blockId of this._selectedBlocks.concat([])) {
-                    this._updateBlockContainer(this.blocks[blockId].block, container);
-
-                    const draggedBlocks = this.blocks[blockId].block.endMove().map(block => this.getBlockId(block));
-
-                    for (const movedId of draggedBlocks.concat([blockId])) {
-                        for (const conn of this.blocks[movedId].connections) {
-                            this.updateConnection(conn);
+                    try {
+                        this._updateBlockContainer(this.blocks[blockId].block, container);
+                    }
+                    catch (err) {
+                        if (err instanceof CannotSetAsContentsError) {
+                            console.error("Cannot set as content", err.problematicContents); // TODO: Show as notification
+                            this._updateBlockContainer(this.blocks[blockId].block, null);
                         }
-
-                        this.updateBlockInputHelpersPosition(movedId);
                     }
                 }
             }
 
+            // Track the blocks dragged
+            for (const blockId of this._selectedBlocks.concat([])) {
+                const draggedBlocks = this.blocks[blockId].block.endMove().map(block => this.getBlockId(block));
+
+                moved.push(blockId)
+                moved = moved.concat(draggedBlocks);
+            }
+
+            let removed = false;
             try {
                 const pos = this._getPositionFromEvent(ev) || last;
 
@@ -1389,7 +1435,8 @@ export class FlowWorkspace implements BlockManager {
                 bodyElement.classList.remove('to-be-removed');
 
                 if (this.isInTrashcan(pos)) {
-                    for (const blockId of this._selectedBlocks.concat([])) {
+                    removed = true;
+                    for (const blockId of moved.concat([])) {
                         this.removeBlock(blockId);
                     }
                 }
@@ -1397,7 +1444,180 @@ export class FlowWorkspace implements BlockManager {
             catch (err) {
                 console.error(err);
             }
+
+            if (!removed) {
+                // Update moved block's connections
+                for (const movedId of moved) {
+                    for (const conn of this.blocks[movedId].connections) {
+                        this.updateConnection(conn);
+                    }
+
+                    this.updateBlockInputHelpersPosition(movedId);
+                }
+
+                // Take into account the old container
+                if (oldContainer) {
+                    moved.push(oldContainer);
+                }
+            }
+            this.repositionAll();
         });
+    }
+
+    public invalidateBlock(blockId: string) {
+        this._invalidateBlockPositions([blockId]);
+    }
+
+    private _invalidateBlockPositions(blocks: string[]) {
+        // This would be a good point to save the invalidated blocks and not
+        // launch the repositioning in case the initial "build" is not finished
+        if (this.autoposition) {
+            this._reposition(blocks);
+        }
+    }
+
+    public repositionAll() {
+        return this._reposition(Object.keys(this.blocks));
+    }
+
+    async repositionIteratively() {
+        // For positioning debugging purposes
+        const its = [];
+
+        for (let i = 0; i < 100; i++) {
+            console.time("It " + (i + 1));
+
+            const prevPos: [string, Area2D][] = Object.keys(this.blocks).map( id => [id, this.blocks[id].block.getBodyArea() ] )
+            this.repositionAll();
+
+            const diffs = prevPos.map(([id, prev]) => {
+                const after = this.blocks[id].block.getBodyArea();
+
+                return {
+                    block: this.blocks[id].block,
+                    x: Math.abs(after.x - prev.x),
+                    y: Math.abs(after.y - prev.y),
+                    width: Math.abs(after.width - prev.width),
+                    height: Math.abs(after.height - prev.height),
+                }
+            })
+
+            const mov = {
+                x: maxKey(diffs, e => e.x),
+                y: maxKey(diffs, e => e.y),
+                width: maxKey(diffs, e => e.width),
+                height: maxKey(diffs, e => e.height),
+            };
+            its.push(mov)
+            console.timeEnd("It " + (i + 1));
+            console.debug('Max movement in iteration:',
+                          {
+                x: { x: mov.x.x, block: mov.x.block },
+                y: { y: mov.y.y, block: mov.y.block },
+                width: { width: mov.width.width, block: mov.width.block },
+                height: { height: mov.height.x, block: mov.height.block },
+            });
+
+            if ((Math.abs(mov.x.x) < 1) && (Math.abs(mov.y.y) < 1) && (Math.abs(mov.width.width) < 1) && (Math.abs(mov.height.height) < 1)) {
+                console.log("Stable on it", i); // No +1 because it was already stable from last iteration
+                break;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, TIME_BETWEEN_POSITION_ITERATIONS));
+        }
+
+        return its;
+    }
+
+    private _reposition(blockIds: string[]) {
+        // Build the list of dependencies (contents) for each block repositioned
+        const dependencies: {[key: string]: string[]} = {};
+
+        const considered = {};
+        for (const id of blockIds) {
+            considered[id] = true;
+        }
+
+        const allAffected = [];
+        const toExplore = blockIds.concat([]);
+        while (toExplore.length > 0) {
+            const id = toExplore.shift();
+            allAffected.push(id);
+
+            const block = this.blocks[id];
+
+            if (block.container_id) {
+                const dep = block.container_id;
+                if (!considered[dep]) {
+                    toExplore.push(dep);
+                    considered[dep] = true;
+                }
+
+                if (!dependencies[dep]){
+                    dependencies[dep] = [];
+                }
+
+                dependencies[dep].push(id);
+            }
+        }
+
+        const processed: string[] = [];
+        let toGo = allAffected.concat([]);
+        let processedThisTurn = true;
+        while (toGo.length > 0 && processedThisTurn) {
+            processedThisTurn = false;
+            const skipped = [];
+
+            for (const bId of toGo) {
+                const data = this.blocks[bId];
+                if ((dependencies[bId] || []).some(x => processed.indexOf(x) < 0)) {
+                    // Not all contents have been repositioned yet
+                    skipped.push(bId);
+                }
+                else {
+                    const block = data.block;
+                    if (block instanceof ContainerFlowBlock) {
+                        block.repositionContents();
+                    }
+
+                    processedThisTurn = true;
+                    processed.push(bId);
+                }
+            }
+
+            toGo = skipped;
+        }
+
+        if (toGo.length > 0) {
+            console.error("Circular dependency found on", toGo);
+            console.error("Circular dependency found on", toGo.map(id => this.blocks[id]));
+        }
+
+        // After all are processed, give then the option to "settle" on their new position
+        for (const elementId of processed.reverse()) {
+            const block = this.blocks[elementId].block;
+
+            // This have a reasonably-close semantic, but it might not be
+            // enough. A new function might be needed to cover this meaning.
+            block.endMove();
+        }
+    }
+
+    private _pullAllDependenciesInList(id: string, group: string[]): string[] {
+        let deps = [];
+        const block = this.blocks[id];
+
+        if (block.container_id && group.indexOf(block.container_id) >= 0) {
+            deps.push(block.container_id);
+
+            const subdeps = this._pullAllDependenciesInList(block.container_id, group);
+
+            if (subdeps.length > 0) {
+                deps = deps.concat(subdeps);
+            }
+        }
+
+        return deps;
     }
 
     private isInTrashcan(pos: Position2D): boolean {
@@ -1686,7 +1906,17 @@ export class FlowWorkspace implements BlockManager {
             const parent_container = parent_container_id ? this.blocks[parent_container_id].block : null;
 
             for (const content of info.block.contents.concat([])) {
-                this._updateBlockContainer(content, parent_container);
+                try {
+                    this._updateBlockContainer(content, parent_container);
+                }
+                catch (err) {
+                    if (err instanceof CannotSetAsContentsError) {
+                        this._updateBlockContainer(content, null); // Ignore container
+                    }
+                    else {
+                        throw err;
+                    }
+                }
             }
 
             if (info.block.isPage) {

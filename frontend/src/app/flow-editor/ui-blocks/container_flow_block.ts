@@ -3,7 +3,7 @@ import { BlockManager } from '../block_manager';
 import { Area2D, ContainerBlock, FlowBlock, FlowBlockData, FlowBlockOptions, Movement2D, Resizeable } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
-import { CutTree, UiElementWidgetType, AtomicUiElementWidget } from './renderers/ui_tree_repr';
+import { CutTree, UiElementWidgetType } from './renderers/ui_tree_repr';
 import { isUiFlowBlockData, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockData, UiFlowBlockHandler, UiFlowBlockOptions } from './ui_flow_block';
 
 export type ContainerFlowBlockType = 'container_flow_block';
@@ -25,6 +25,7 @@ export type ContainerFlowBlockBuilder = (canvas: SVGElement,
                                          ops: UiFlowBlockBuilderInitOps) => ContainerFlowBlockHandler;
 
 export interface ContainerFlowBlockHandler extends UiFlowBlockHandler, Resizeable {
+    repositionContents(): void;
     dropOnEndMove(): Movement2D;
     getBodyElement(): SVGGraphicsElement;
     updateContainer(container: UiFlowBlock): void;
@@ -73,8 +74,19 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     }
 
     addContentBlock(block: FlowBlock): void {
+        if (block === this) {
+            throw Error("Block cannot be it's own content");
+        }
+
+        if (block instanceof UiFlowBlock && (block.hasAncestor(this))) {
+            throw Error("This would create a container ↻ content loop");
+        }
+        else if (block instanceof ContainerFlowBlock && (block.contents.indexOf(this) >= 0)) {
+            throw Error("This would create a container ↻ content loop");
+        }
+
+        this.handler.onContentUpdate(this.contents.concat([block]));
         this.contents.push(block);
-        this.handler.onContentUpdate(this.contents);
     }
 
     removeContentBlock(block: FlowBlock): void {
@@ -93,6 +105,11 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
 
     get isPage(): boolean {
         return !!this.options.isPage;
+    }
+
+    get cannotBeMoved(): boolean {
+        // Right now only the pages cannot be moved, but this might change in the future
+        return this.isPage;
     }
 
     getPageTitle(): string {
@@ -159,6 +176,11 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         return result;
     }
 
+    public moveWithoutCarrying(distance: {x: number, y: number}) {
+        return super.moveBy(distance);
+    }
+
+
     public endMove(): FlowBlock[] {
         const movement = this.handler.dropOnEndMove();
         return this.moveBy(movement);
@@ -190,102 +212,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         return acc;
     }
 
-    pushDown(startHeight: number, pushDown: number) {
-        // The elements are not always pushed down, only when the movement would
-        // collide with an element or with the end of the block. This helps avoiding
-        // cases where a slight resize up and resizing back down again would "pump"
-        // the elements down.
-        let triggered = false;
-
-        // Push down if the movement collides with the lower border of the container
-        const area = this.getBodyArea();
-        if ((startHeight + pushDown + PUSH_DOWN_MARGIN)
-            >= (area.y + area.height)) {
-            triggered = true;
-        }
-
-        // Push down if in the movement any block might be affected
-        if (!triggered) {
-            for (const block of this.contents) {
-                const pos = block.getOffset();
-                if (pos.y >= startHeight) {
-                    if ((pos.y - (startHeight + pushDown)) < PUSH_DOWN_MARGIN ) {
-                        triggered = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (!triggered) {
-            return;
-        }
-
-        const movement = Math.max(pushDown, PUSH_DOWN_MARGIN);
-
-        for (const block of this.contents) {
-            const pos = block.getOffset();
-            if (pos.y >= startHeight) {
-
-                block.moveBy({ x: 0, y: movement });
-            }
-        }
-
-        const size = this.handler.getBodyArea();
-        size.height += movement;
-        this.handler.resize(size);
-
-        // Propagate the PushDown if it has been triggered
-        if (this.handler.container) {
-            this.handler.container.pushDown(startHeight, pushDown);
-        }
-    }
-
-    pushRight(startX: number, pushRight: number) {
-        // This takes the same logic as `pushDown` and applies it horizontally.
-        let triggered = false;
-
-        // Push down if the movement collides with the lower border of the container
-        const area = this.getBodyArea();
-        if ((startX + pushRight + PUSH_RIGHT_MARGIN)
-            >= (area.x + area.width)) {
-            triggered = true;
-        }
-
-        // Push down if in the movement any block might be affected
-        if (!triggered) {
-            for (const block of this.contents) {
-                const pos = block.getOffset();
-                if (pos.x >= startX) {
-                    if ((pos.x - (startX + pushRight)) < PUSH_RIGHT_MARGIN ) {
-                        triggered = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (!triggered) {
-            return;
-        }
-
-        const movement = Math.max(pushRight, PUSH_RIGHT_MARGIN);
-
-        for (const block of this.contents) {
-            const pos = block.getOffset();
-            if (pos.x >= startX) {
-
-                block.moveBy({ x: movement, y: 0 });
-            }
-        }
-
-        const size = this.handler.getBodyArea();
-        size.width += movement;
-        this.handler.resize(size);
-
-        // Propagate the PushDown if it has been triggered
-        if (this.handler.container) {
-            this.handler.container.pushRight(startX, pushRight);
-        }
+    repositionContents(){
+        this.handler.repositionContents();
     }
 }

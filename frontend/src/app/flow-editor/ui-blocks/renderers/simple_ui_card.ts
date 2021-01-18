@@ -1,18 +1,18 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { BlockAllowedConfigurations, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
-import { Area2D, FlowBlock, Resizeable } from "../../flow_block";
+import { Area2D, FlowBlock } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
-import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
+import { Autoresizable, TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
+import { PositionResponsiveContents, SEPARATION } from "./positioning";
+import { getElementsInGroup, getRect, ResponsivePageGenerateTree } from "./responsive_page";
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
-import { CutTree, ContainerElementRepr } from "./ui_tree_repr";
-import { combinedArea, getRefBox } from "./utils";
-import { ResponsivePageGenerateTree } from "./responsive_page";
+import { ContainerElementRepr, CutTree } from "./ui_tree_repr";
+import { combinedArea, listToDict, manipulableAreaToArea2D } from "./utils";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
 const BLOCK_TYPE_ANNOTATION = 'Ui Card'
-const SECTION_PADDING = 5;
 const DEFAULT_COLOR = '';
 
 const MIN_WIDTH = 100;
@@ -29,7 +29,7 @@ export const SimpleUiCardBuilder: ContainerFlowBlockBuilder = (canvas: SVGElemen
     return element;
 }
 
-class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resizeable, ConfigurableSettingsElement {
+class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Autoresizable, ConfigurableSettingsElement {
     subscription: Subscription;
     handle: UiElementHandle | null = null;
     node: SVGGElement;
@@ -40,7 +40,7 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     height: number;
     placeholder: SVGTextElement;
     container: ContainerFlowBlock;
-    private _contents: FlowBlock[];
+    private _contents: FlowBlock[] = [];
 
     constructor(canvas: SVGElement, group: SVGElement,
         public block: ContainerFlowBlock,
@@ -137,27 +137,44 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
 
 
     // Resizeable
-    resize(dim: { width: number; height: number; }) {
+    resize(dim: { x?: number, y?: number, width: number; height: number; }) {
         // Check that what the minimum available size is
         const fullContents = this.block.recursiveGetAllContents();
 
         const inflexibleArea = combinedArea(
             fullContents
-                .filter(b => !(
-                    (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-                ))
-                .map(b => b.getBodyArea()));
+                .filter(b => b instanceof UiFlowBlock)
+                .filter(b => (!(b instanceof ContainerFlowBlock)) || (b.isAutoresizable()))
+                .map((b: UiFlowBlock) => {
+                    const area = b.getBodyArea();
+
+                    if (b.isAutoresizable()) {
+                        const min = b.getMinSize();
+                        area.width = min.width;
+                        area.height = min.height;
+                    }
+                    return area;
+                }));
+
+        const wasPos = this.block.getOffset();
+
+        const mov = {
+            x: (inflexibleArea.x - SEPARATION) - wasPos.x,
+            y: (inflexibleArea.y - SEPARATION) - wasPos.y,
+        };
+
+        (this.block as ContainerFlowBlock).moveWithoutCarrying(mov);
 
         const pos = this.block.getOffset();
 
         const minWidth = Math.max(
             MIN_WIDTH,
-            inflexibleArea.x - pos.x + inflexibleArea.width,
+            inflexibleArea.width === 0 ? 0 : inflexibleArea.x - pos.x + inflexibleArea.width + SEPARATION,
         );
 
         const minHeight = Math.max(
             MIN_HEIGHT,
-            inflexibleArea.y - pos.y + inflexibleArea.height,
+            inflexibleArea.height === 0 ? 0 : inflexibleArea.y - pos.y + inflexibleArea.height + SEPARATION,
         );
 
         this.width = Math.max(minWidth, dim.width);
@@ -175,6 +192,26 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
             else if ((content instanceof UiFlowBlock) && content.isAutoresizable()) {
                 content.updateContainer(this.block);
             }
+        }
+    }
+
+    isAutoresizable(): this is Autoresizable {
+        return true;
+    }
+
+    doesTakeAllHorizontal() {
+        return false;
+    }
+
+    getMinSize() {
+        if (this._contents.length === 0) {
+            return { width: MIN_WIDTH, height: MIN_HEIGHT };
+        }
+        const area = this.rect.getBBox();
+
+        return {
+            width: Math.max(area.width, MIN_WIDTH),
+            height: Math.max(area.height, MIN_HEIGHT),
         }
     }
 
@@ -226,77 +263,28 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Resi
     }
 
     onContentUpdate(contents: FlowBlock[]) {
-        // TODO: Merge this with ResponsivePage.onContentUpdate()
         this._contents = contents;
+    }
 
-        // Check that the container size is adequate, resize it if necessary
-        const uiContents = (this.block
-            .recursiveGetAllContents()
-            .filter(b => !(
-                (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-            )));
-
-        if (uiContents.length === 0) {
+    repositionContents(): void {
+        if (this._contents.length === 0) {
             return;
         }
 
-        // Move contents down if they are not (vertically) completely inside the section
-        // This is done one-by-one, so the order of addition of blocks to the contained does not affect the final state.
-        const current = this.block.getOffset();
+        const allContents = this.block.recursiveGetAllContents();
+        const cutTree = PositionResponsiveContents(this, this._contents, allContents, this.getBodyArea());
 
-        for (const block of contents) {
-            const blockArea = block.getBodyArea();
+        const contentDict = listToDict(
+            allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],
+            c => c.id);
 
-            const xDiff = (current.x + SECTION_PADDING) - blockArea.x;
-            const yDiff = (current.y + SECTION_PADDING) - blockArea.y;
-            if ((yDiff > 0) || (xDiff > 0)) {
-                block.moveBy({ x: Math.max(0, xDiff), y: Math.max(0, yDiff) });
-            }
-        }
+        const elems = getElementsInGroup(cutTree)
+            .map(id => contentDict[id])
+            .filter(x => x.isHorizontallyStackable());
 
-        const containedArea = combinedArea(uiContents.map(b => b.getBodyArea()));
-        const oldPos = this.block.getOffset();
-        let updated = false;
+        const newArea = getRect(elems);
 
-        // Extend the section to include all elements, if needed
-        // Push horizontally
-        const aggregatedWidth = containedArea.width + (containedArea.x - oldPos.x);
-        if (this.width < aggregatedWidth) {
-            updated = true;
-            const oldWidth = this.width;
-
-            this.width = aggregatedWidth;
-
-            // Push elements down
-            const pushRight = this.width - oldWidth;
-            if (this.container && pushRight > 0) {
-                this.container.pushRight(oldPos.x + oldWidth, pushRight);
-            }
-        }
-        // Push vertically
-        const aggregatedHeight = containedArea.height + (containedArea.y - oldPos.y);
-        if (this.height < containedArea.height) {
-            updated = true;
-            const oldHeight = this.height;
-
-            this.height = aggregatedHeight;
-
-            // Push elements down
-            const pushDown = this.height - oldHeight;
-            if (this.container && pushDown > 0) {
-                this.container.pushDown(oldPos.y + oldHeight, pushDown);
-            }
-
-        }
-
-        if (updated) {
-            this.updateSizes();
-            for (const content of this._contents) {
-                if (content instanceof ContainerFlowBlock) {
-                    content.updateContainer(this.block);
-                }
-            }
-        }
+        this.resize(manipulableAreaToArea2D(newArea));
     }
 
     updateContainer(container: UiFlowBlock | null) {

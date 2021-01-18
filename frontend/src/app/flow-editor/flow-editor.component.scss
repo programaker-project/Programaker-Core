@@ -66,13 +66,20 @@ button#program-logs-button,
 button#advancedProgramControls,
 button#navigateToPageControls,
 button#addResponsiveGridControls {
+
     vertical-align: top;
     padding: 1ex;
-    margin-top: 2px;
+    margin-left: 0.5ex;
+    margin-top: 1px;
+
+    &.annotated-icon {
+        padding: 0.25ex;
+    }
 }
 
 button#program-delete-button{
     float: right;
+    margin-right: 1px;
 }
 
 button#program-start-button .action-icon {

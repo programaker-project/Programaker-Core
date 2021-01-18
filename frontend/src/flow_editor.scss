@@ -74,8 +74,7 @@ svg.block_renderer .block_type_annotation {
     visibility: hidden;
 }
 
-// Only shown when the block is selected or on the toolbox showcases
-svg.block_renderer g.flow_node.selected .block_type_annotation,
+// Only shown on the toolbox showcases
 .showcase svg.block_renderer .block_type_annotation {
     visibility: visible;
 }
@@ -206,7 +205,7 @@ svg.block_renderer g.flow_node .input, svg.block_renderer g.flow_node .output  {
     cursor: pointer;
 }
 
-svg.block_renderer.read-only g.flow_node .input, svg.block_renderer g.flow_node .output  {
+svg.block_renderer.read-only g.flow_node .input, svg.block_renderer.read-only g.flow_node .output  {
     cursor: not-allowed;
 }
 
@@ -356,6 +355,11 @@ svg.block_renderer g.flow_node.editing rect.node_body {
 // ContentEditable divs
 div[contenteditable="true"] {
     cursor: text;
+    width: 100%;
+
+    &.editing {
+        width: max-content;
+    }
 }
 
 svg.read-only div[contenteditable="true"] {
@@ -371,6 +375,14 @@ svg.read-only div[contenteditable="true"] {
         color: revert;
         text-decoration: revert;
     }
+}
+
+div[contenteditable="true"] > div {
+    width: 100%;
+}
+
+div[contenteditable="true"].editing > div {
+    width: max-content;
 }
 
 #workspace foreignObject div[contenteditable="true"] font a {
@@ -773,16 +785,22 @@ svg.block_renderer g.flow_node.image_node .node_body {
     fill: rgba(255,255,255,0.3)
 }
 
-svg.block_renderer g.flow_node.separator_node .representation {
-    stroke: #fff;
-    mix-blend-mode: difference;
-    stroke-width: 2px;
+svg.block_renderer g.flow_node.separator_node {
+    .representation {
+        stroke: #000;
+        mix-blend-mode: difference;
+        stroke-width: 2px;
+    }
+
+    .node_body {
+        fill: rgba(255,255,255,0.3);
+    }
 }
 
 svg.block_renderer g.flow_node.container_node .node_body {
-    fill: #fff;
     stroke-width: 1;
-    stroke: #000;
+    stroke-dasharray: 5;
+    stroke: rgba(0,0,0,0.5);
 }
 
 svg.block_renderer g.flow_node.container_node.simple_card .node_body {
@@ -819,6 +837,23 @@ svg.block_renderer g.flow_node.text_node .node_body {
 
 .showcase svg.block_renderer g.flow_node.section_node .node_body {
     fill: #fff;
+}
+
+svg.block_renderer g.flow_node.container_node.responsive_page {
+
+    .node_body {
+        cursor: auto;
+
+    }
+
+    rect {
+        pointer-events: none;
+    }
+
+    rect.titlebox, text {
+        pointer-events: all;
+        cursor: text
+    }
 }
 
 svg.block_renderer g.flow_node.container_node.responsive_page .output_text {

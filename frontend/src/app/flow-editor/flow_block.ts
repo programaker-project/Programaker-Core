@@ -66,7 +66,7 @@ export interface FlowBlockOptions {
 }
 
 export type Direction2D = 'up' | 'down' | 'left' | 'right';
-export type FlowBlockData = { type: string, value: any };
+export type FlowBlockData = { type: string, value: any, subtype?: string };
 export interface FlowBlockInitOpts {
     position?: Position2D;
     block_id?: string;

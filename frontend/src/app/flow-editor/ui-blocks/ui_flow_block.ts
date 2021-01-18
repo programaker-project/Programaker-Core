@@ -1,6 +1,6 @@
 import { UiSignalService } from '../../services/ui-signal.service';
 import { BlockManager } from '../block_manager';
-import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, InputPortDefinition, Position2D, Movement2D } from '../flow_block';
+import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, InputPortDefinition, Position2D, Movement2D, Resizeable } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
 import { uuidv4 } from '../utils';
@@ -24,8 +24,9 @@ export type UiFlowBlockBuilder = (canvas: SVGElement,
                                   block: UiFlowBlock,
                                   service: UiSignalService,
                                   ops: UiFlowBlockBuilderInitOps) => UiFlowBlockHandler;
+
 export interface UiFlowBlockHandler {
-    readonly isAutoresizable?: boolean;
+    readonly isNotHorizontallyStackable?: boolean;
     onConnectionLost: (portIndex: number) => void;
     onConnectionValueUpdate : (input_index: number, value: string) => void;
     onClick: () => void,
@@ -35,12 +36,18 @@ export interface UiFlowBlockHandler {
     isTextReadable(): this is TextReadable,
     getBodyElement(): SVGGraphicsElement,
 
+    isAutoresizable?: () => this is Autoresizable;
     dropOnEndMove?: () => Movement2D;
     updateContainer?: (container: UiFlowBlock) => void;
     onGetFocus?: () => void;
     onLoseFocus?: () => void;
 }
 
+export interface Autoresizable extends Resizeable {
+    isAutoresizable: () => this is Autoresizable;
+    getMinSize(): { width: number, height: number  },
+    doesTakeAllHorizontal: () => boolean,
+};
 
 export interface TextReadable {
     readonly text: string,
@@ -102,6 +109,7 @@ export class UiFlowBlock implements FlowBlock {
     protected handler: UiFlowBlockHandler;
     private input_blocks: [FlowBlock, number][] = [];
     protected _workspace: FlowWorkspace | null;
+    private _container: UiFlowBlock;
 
     blockData: UiFlowBlockExtraData = {};
 
@@ -550,29 +558,35 @@ export class UiFlowBlock implements FlowBlock {
         if (handler.isTextEditable()) {
             actions.push({
                 title: 'Edit ' + handler.editableTextName,
-                run: () => {
-                    const prevValue = handler.text;
-
-                    const area = handler.getArea();
-                    const offset = this.getOffset();
-
-                    area.x += offset.x;
-                    area.y += offset.y;
-                    this.group.classList.add('editing');
-
-                    this._workspace.editInline(area, prevValue, 'string', (newValue: string) => {
-                        this.group.classList.remove('editing');
-
-                        if (newValue.trim().length > 0) {
-                            handler.text = newValue.trim();
-                        }
-                    });
-
-                }
+                run: this.startEditing.bind(this)
             });
         }
 
         return actions;
+    }
+
+    startEditing() {
+        const handler = this.handler;
+        if (!handler.isTextEditable()) {
+            throw new Error("Not editable");
+        }
+
+        const prevValue = handler.text;
+
+        const area = handler.getArea();
+        const offset = this.getOffset();
+
+        area.x += offset.x;
+        area.y += offset.y;
+        this.group.classList.add('editing');
+
+        this._workspace.editInline(area, prevValue, 'string', (newValue: string) => {
+            this.group.classList.remove('editing');
+
+            if (newValue.trim().length > 0) {
+                handler.text = newValue.trim();
+            }
+        });
     }
 
     getSlots(): { [key: string]: string; } {
@@ -629,17 +643,54 @@ export class UiFlowBlock implements FlowBlock {
         this.handler.onClick();
     }
 
-    isAutoresizable(): boolean {
-        return !!this.handler.isAutoresizable;
+    isAutoresizable(): this is Autoresizable {
+        if (!this.handler.isAutoresizable) {
+            return false;
+        }
+
+        return this.handler.isAutoresizable();
     }
+
+    isHorizontallyStackable(): boolean {
+        return !this.handler.isNotHorizontallyStackable;
+    }
+
+    getMinSize(): { width: number, height: number } {
+        if (!this.handler.isAutoresizable || !this.handler.isAutoresizable()) {
+            throw Error("Not autoresizable")
+        }
+
+        return this.handler.getMinSize();
+    }
+
+
+    doesTakeAllHorizontal(): boolean {
+        if (!this.handler.isAutoresizable || !this.handler.isAutoresizable()) {
+            throw Error("Not autoresizable")
+        }
+
+        return this.handler.doesTakeAllHorizontal();
+    }
+
+
 
     // Container-related
     updateContainer(container: FlowBlock) {
         if (this.handler.updateContainer) {
             this.handler.updateContainer(container as (UiFlowBlock | null));
+
         }
+        this._container = container as (UiFlowBlock | null);
     }
 
 
-    pushDown(startHeight: number, pushDown: number) {}
+    hasAncestor(block: FlowBlock) {
+        if (!this._container) {
+            return false;
+        }
+        if (this._container === block) {
+            return true;
+        }
+        return this._container.hasAncestor(block);
+    }
 }

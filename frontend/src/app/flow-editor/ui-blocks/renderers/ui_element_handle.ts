@@ -159,18 +159,6 @@ export class UiElementHandle {
         this._reposition();
     }
 
-    public setResizeType(newType: 'horizontal' | 'vertical') {
-        if (newType === 'horizontal') {
-            this._hideHeightResizeManipulator();
-            this._showWidthResizeManipulator();
-        }
-        else if (newType === 'vertical') {
-            this._hideWidthResizeManipulator();
-            this._showHeightResizeManipulator();
-        }
-        this._reposition();
-    }
-
     private _createWidthResizeManipulator() {
         const m = this.widthResizeManipulator = document.createElementNS(SvgNS, 'g');
 
@@ -189,22 +177,6 @@ export class UiElementHandle {
         this.handleGroup.appendChild(m);
     }
 
-    private _showWidthResizeManipulator() {
-        if (this.widthResizeManipulator) {
-            this.widthResizeManipulator.classList.remove('hidden');
-        }
-        else {
-            this._createWidthResizeManipulator();
-        }
-    }
-
-    private _hideWidthResizeManipulator() {
-        if (!this.widthResizeManipulator) {
-            return;
-        }
-        this.widthResizeManipulator.classList.add("hidden")
-    }
-
     private _createHeightResizeManipulator() {
         const m = this.heightResizeManipulator = document.createElementNS(SvgNS, 'g');
 
@@ -221,22 +193,6 @@ export class UiElementHandle {
 
         m.setAttribute('class', 'manipulator resize-manipulator height-resizer');
         this.handleGroup.appendChild(m);
-    }
-
-    private _showHeightResizeManipulator() {
-        if (this.heightResizeManipulator) {
-            this.heightResizeManipulator.classList.remove('hidden');
-        }
-        else {
-            this._createHeightResizeManipulator();
-        }
-    }
-
-    private _hideHeightResizeManipulator() {
-        if (!this.heightResizeManipulator) {
-            return;
-        }
-        this.heightResizeManipulator.classList.add("hidden")
     }
 
     // Event handling

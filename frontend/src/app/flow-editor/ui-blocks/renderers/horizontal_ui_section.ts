@@ -1,18 +1,21 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
 import { BlockAllowedConfigurations, BlockConfigurationOptions } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
-import { Area2D, FlowBlock, Resizeable } from "../../flow_block";
+import { Area2D, FlowBlock } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
-import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
+import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler, Autoresizable } from "../ui_flow_block";
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutTree } from "./ui_tree_repr";
-import { combinedArea, getRefBox } from "./utils";
-
+import { combinedArea } from "./utils";
+import { PositionHorizontalContents, PositionVerticalContents, SEPARATION, GetMinSizeHorizontal, GetMinSizeVertical } from "./positioning";
+import { CannotSetAsContentsError } from "../cannot_set_as_contents_error";
 
 const SvgNS = "http://www.w3.org/2000/svg";
-const BLOCK_TYPE_ANNOTATION = 'Horizontal section'
-const SECTION_PADDING = 5;
+const BLOCK_TYPE_ANNOTATION = 'Section'
 const DEFAULT_COLOR = '';
+
+const MIN_HEIGHT = SEPARATION;
+const MIN_WIDTH = SEPARATION;
 
 export const HorizontalUiSectionBuilder: ContainerFlowBlockBuilder = (canvas: SVGElement,
     group: SVGElement,
@@ -25,7 +28,7 @@ export const HorizontalUiSectionBuilder: ContainerFlowBlockBuilder = (canvas: SV
     return element;
 }
 
-class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElement, Resizeable, ConfigurableSettingsElement {
+class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElement, Autoresizable, ConfigurableSettingsElement {
     subscription: Subscription;
     handle: UiElementHandle | null = null;
     node: SVGGElement;
@@ -35,7 +38,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     height: number;
     placeholder: SVGTextElement;
     container: ContainerFlowBlock;
-    private _contents: FlowBlock[];
+    private _contents: FlowBlock[] = [];
     nestedHorizontal: boolean;
 
     constructor(canvas: SVGElement, group: SVGElement,
@@ -66,8 +69,11 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         const textDim = { width: text_width, height: text_height };
 
         const bdims = block.blockData.dimensions;
-        this.width = bdims ? bdims.width : textDim.width * 1.5;
-        this.height = bdims ? bdims.height : textDim.height * 2;
+
+        const minWidth = textDim.width * 1.5;
+        const minHeight = textDim.height * 2;
+        this.width = bdims && bdims.width > minWidth ? bdims.width : minWidth;
+        this.height = bdims && bdims.height > minHeight ? bdims.height : minHeight;
 
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
@@ -76,47 +82,16 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         this.grid.setAttribute('class', 'division_grid');
 
         this.updateStyle();
-        this.updateSizes();
+        this._updateInternalElementSizes();
 
         if (initOps.workspace) {
-            this.handle = new UiElementHandle(this, this.node, initOps.workspace, ['resize_height', 'adjust_settings']);
+            this.handle = new UiElementHandle(this, this.node, initOps.workspace, ['adjust_settings']);
         }
     }
 
     init() {
         if (this.handle) {
             this.handle.init();
-        }
-    }
-
-    updateSizes() {
-        if (this.container) {
-            const area = this.container.getBodyArea();
-            if (this.nestedHorizontal) {
-                // If the parent is an horizontal element, cover all height
-                this.height = area.height - 2;
-
-                const offset = this.block.getOffset();
-                const ydiff = offset.y - (area.y + 1);
-                if (ydiff != 2) {
-                    this.block.moveBy({ x: 0, y: -ydiff});
-                }
-            }
-            else {
-                this.width = area.width - 2;
-
-                const offset = this.block.getOffset();
-                const xdiff = offset.x - (area.x + 1);
-                if (xdiff != 2) {
-                    this.block.moveBy({ x: -xdiff, y: 0});
-                }
-            }
-        }
-
-        this._updateInternalElementSizes();
-
-        if (this.handle) {
-            this.handle.update();
         }
     }
 
@@ -131,16 +106,45 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         this.block.blockData.dimensions = { width: this.width, height: this.height };
     }
 
+    // Resizing
+    doesTakeAllHorizontal() {
+        return !this.nestedHorizontal;
+    }
+
+    isAutoresizable(): this is Autoresizable {
+        return true;
+    }
+
+    getMinSize() {
+        if (this._contents.length === 0) {
+            return { width: MIN_WIDTH, height: MIN_HEIGHT };
+        }
+
+        if (this.nestedHorizontal) {
+            return GetMinSizeVertical(this._contents);
+        }
+        return GetMinSizeHorizontal(this._contents);
+    }
+
+    get isNotHorizontallyStackable() {
+        return this.nestedHorizontal === false;
+    }
+
     getBodyArea(): Area2D {
         return this.block.getBodyArea();
     }
 
     // Resizeable
-    resize(dimensions: { width: number; height: number; }) {
+    resize(dimensions: { width: number; height: number; }, repositioning?: boolean) {
         // Make sure what's the minimum possible height
         const fullContents = this.block.recursiveGetAllContents();
 
         const pos = this.block.getOffset();
+
+        if (repositioning) {
+            this.width = dimensions.width;
+            this.height = dimensions.height;
+        }
 
         if (this.nestedHorizontal) {
             // Resize vertically
@@ -155,19 +159,12 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                         ))
                         .map(b => b.getBodyArea()));
 
-                minWidth = inflexibleArea.x - pos.x + inflexibleArea.width;
+                minWidth = inflexibleArea.width;
             }
 
-            const oldWidth = this.width;
-            const newWidth = Math.max(minWidth, dimensions.width);
+            const newWidth = Math.max(MIN_WIDTH, minWidth, dimensions.width);
 
             this.width = newWidth;
-            this.updateSizes();
-
-            const pushRight = newWidth - oldWidth;
-            if (this.container && pushRight > 0) {
-                this.container.pushRight(pos.x + oldWidth, pushRight);
-            }
         }
         else {
             // Resize horizontally
@@ -182,22 +179,17 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                         ))
                         .map(b => b.getBodyArea()));
 
-                minHeight = inflexibleArea.y - pos.y + inflexibleArea.height;
+                minHeight = inflexibleArea.height;
             }
 
-            const oldHeight = this.height;
-            const newHeight = Math.max(minHeight, dimensions.height);
+            const newHeight = Math.max(MIN_HEIGHT, minHeight, dimensions.height);
 
             this.height = newHeight;
-            this.updateSizes();
-
-            const pushDown = newHeight - oldHeight;
-            if (this.container && pushDown > 0) {
-                this.container.pushDown(pos.y + oldHeight, pushDown);
-            }
         }
 
-        (this.block as ContainerFlowBlock).update();
+        this._updateInternalElementSizes();
+        this.block.update();
+
 
         for (const content of this._contents) {
             if (content instanceof ContainerFlowBlock) {
@@ -207,7 +199,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                 content.updateContainer(this.block);
             }
         }
-   }
+    }
 
     // UiFlowBlock
     onClick() {
@@ -257,82 +249,21 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     }
 
     onContentUpdate(contents: FlowBlock[]) {
+        // Reject elements that cannot be horizontally stacked
+        if (!this.nestedHorizontal) {
+            const problematic = contents.filter((e) => {
+                if (e instanceof ContainerFlowBlock && e.handler instanceof HorizontalUiSection) {
+                    return false; // These can always be nested
+                }
+                return (e instanceof UiFlowBlock) && (!e.isHorizontallyStackable())
+            });
+
+            if (problematic.length > 0) {
+                throw new CannotSetAsContentsError("Elements that cannot be horizontally stacked cannot be added to a HorizontalUiSection", problematic);
+            }
+        }
+
         this._contents = contents;
-
-        // Check that the container size is adequate, resize it if necessary
-        const uiContents = (this.block
-            .recursiveGetAllContents()
-            .filter(b => !(
-                (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
-            )));
-
-        if (uiContents.length === 0) {
-            return;
-        }
-
-        // Move contents down if they are not (vertically) completely inside the section
-        // This is done one-by-one, so the order of addition of blocks to the contained does not affect the final state.
-        const current = this.block.getOffset();
-
-        for (const block of contents) {
-            const blockArea = block.getBodyArea();
-
-            const xDiff = (current.x + SECTION_PADDING) - blockArea.x;
-            const yDiff = (current.y + SECTION_PADDING) - blockArea.y;
-            if ((yDiff > 0) || (xDiff > 0)) {
-                block.moveBy({ x: Math.max(0, xDiff), y: Math.max(0, yDiff) });
-            }
-        }
-
-        const containedArea = combinedArea(uiContents.map(b => b.getBodyArea()));
-        const oldPos = this.block.getOffset();
-        let updated = false;
-
-        // Extend the section to include all elements, if needed
-        if (this.nestedHorizontal) {
-            // Can push horizontally
-            const aggregatedWidth = containedArea.width + (containedArea.x - oldPos.x);
-            if (this.width < aggregatedWidth) {
-                updated = true;
-                const oldWidth = this.width;
-
-                this.width = aggregatedWidth;
-                this.updateSizes();
-
-                // Push elements down
-                const pushRight = this.width - oldWidth;
-                if (this.container && pushRight > 0) {
-                    this.container.pushRight(oldPos.x + oldWidth, pushRight);
-                }
-
-            }
-        }
-        else {
-            // Can push vertically
-            const aggregatedHeight = containedArea.height + (containedArea.y - oldPos.y);
-            if (this.height < containedArea.height) {
-                updated = true;
-                const oldHeight = this.height;
-
-                this.height = aggregatedHeight;
-                this.updateSizes();
-
-                // Push elements down
-                const pushDown = this.height - oldHeight;
-                if (this.container && pushDown > 0) {
-                    this.container.pushDown(oldPos.y + oldHeight, pushDown);
-                }
-
-            }
-        }
-
-        if (updated) {
-            for (const content of this._contents) {
-                if (content instanceof ContainerFlowBlock) {
-                    content.updateContainer(this.block);
-                }
-            }
-        }
     }
 
     updateContainer(container: UiFlowBlock | null) {
@@ -343,15 +274,49 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         else {
             this.container = null;
 
-            this.nestedHorizontal = false;
+            this.nestedHorizontal = null;
         }
+        this._updateInternalElementSizes();
+    }
+
+    repositionContents(): void {
+        const dimensions = this._repositionContents();
+
+        this.resize(dimensions, true);
+    }
+
+    _repositionContents() : { width: number, height: number } {
+        this.stickToContainer();
+
         if (this.nestedHorizontal) {
-            this.handle.setResizeType('horizontal');
+            return PositionVerticalContents(this, this._contents, this.getBodyArea());
         }
         else {
-            this.handle.setResizeType('vertical');
+            return PositionHorizontalContents(this, this._contents, this.getBodyArea());
         }
-        this.updateSizes();
+    }
+
+    stickToContainer(){
+        if (!this.container) {
+            return;
+        }
+
+        const offset = this.block.getOffset();
+        const area = this.container.getBodyArea();
+        if (this.nestedHorizontal) {
+            const ydiff = offset.y - area.y;
+
+            if (ydiff != 0) {
+                this.block.moveBy({ x: 0, y: -ydiff});
+            }
+        }
+        else {
+            const xdiff = offset.x - area.x;
+
+            if (xdiff != 0) {
+                this.block.moveBy({ x: -xdiff, y: 0});
+            }
+        }
     }
 
     dropOnEndMove() {
@@ -361,28 +326,35 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
         let result = {x: 0, y: 0};
 
+        const offset = this.block.getOffset();
         const area = this.container.getBodyArea();
         if (this.nestedHorizontal) {
             // If the parent is an horizontal element, cover all height
-            this.height = area.height - 2;
+            this.height = area.height;
 
-            const offset = this.block.getOffset();
-            const ydiff = offset.y - (area.y + 1);
-            if (ydiff != 2) {
+            const ydiff = offset.y - area.y;
+            if (ydiff) {
                 result = { x: 0, y: -ydiff};
             }
         }
         else {
-           this.width = area.width - 2;
+           this.width = area.width;
 
-            const offset = this.block.getOffset();
-            const xdiff = offset.x - (area.x + 1);
-            if (xdiff != 2) {
+            const xdiff = offset.x - area.x;
+            if (xdiff) {
                 result = { x: -xdiff, y: 0};
             }
         }
 
         this._updateInternalElementSizes();
+
+        if (this._contents.length > 0) {
+            this._repositionContents();
+
+            // If we're repositioning, there's not much to do additionally
+            result = { x: 0, y: 0 };
+        }
+
         return result;
     }
 
@@ -431,7 +403,7 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
     // Compilation
     generateTreeWithGroups(groups: CutTree[]): CutTree {
-        const tree: CutTree = { cut_type: 'hbox', groups: groups, settings: {} };
+        const tree: CutTree = { cut_type: 'hbox', groups: groups, settings: {}, block_id: this.block.id };
 
         if (this.nestedHorizontal) {
             // Then this works more like a VBox

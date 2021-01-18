@@ -2,7 +2,7 @@ import { Location, isPlatformServer } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild, Inject, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, FlowProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramType } from '../program';
+import { ProgramContent, ProgramLogEntry, ProgramInfoUpdate, ProgramType } from '../program';
 import { ProgramService } from '../program.service';
 
 import * as progbar from '../ui/progbar';
@@ -11,7 +11,6 @@ import { fromCustomBlockService } from './toolbox_builder';
 
 import { FlowWorkspace } from './flow_workspace';
 
-import { MonitorService } from '../monitor.service';
 import { CustomBlockService } from '../custom_block.service';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -22,15 +21,12 @@ import { RenameProgramDialogComponent } from '../RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from '../DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from '../StopThreadProgramDialogComponent';
 import { SetProgramTagsDialogComponent } from '../program_tags/SetProgramTagsDialogComponent';
-import { TemplateService } from '../templates/template.service';
 import { ServiceService } from '../service.service';
-import { CustomSignalService } from '../custom_signals/custom_signal.service';
 import { ConnectionService } from '../connection.service';
 import { SessionService } from '../session.service';
 import { environment } from '../../environments/environment';
 import { unixMsToStr } from '../utils';
 import { Session } from '../session';
-import { BridgeService } from '../bridges/bridge.service';
 import { FlowGraph } from './flow_graph';
 import { EnumValue } from './enum_direct_value';
 import { compile } from './graph_analysis';
@@ -44,14 +40,8 @@ import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/r
 @Component({
     selector: 'app-my-flow-editor',
     templateUrl: './flow-editor.component.html',
-    providers: [
-        BridgeService,
-        ConnectionService, CustomBlockService, CustomSignalService,
-        MonitorService, ProgramService, ServiceService, SessionService,
-        TemplateService, UiSignalService,
-    ],
     styleUrls: [
-        'flow-editor.component.css',
+        'flow-editor.component.scss',
         '../libs/css/material-icons.css',
         '../libs/css/bootstrap.min.css',
     ],
@@ -78,27 +68,23 @@ export class FlowEditorComponent implements OnInit {
     constructor(
         private browser: BrowserService,
 
-        private monitorService: MonitorService,
         private programService: ProgramService,
         private customBlockService: CustomBlockService,
-        private customSignalService: CustomSignalService,
         private route: ActivatedRoute,
         private router: Router,
-        private _location: Location,
+        private location: Location,
         private dialog: MatDialog,
-        private templateService: TemplateService,
         private serviceService: ServiceService,
         private notification: MatSnackBar,
         private connectionService: ConnectionService,
         private sessionService: SessionService,
-        private bridgeService: BridgeService,
         private uiSignalService: UiSignalService,
         private environmentService: EnvironmentService,
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
     }
 
-    ngOnInit(): void {
+    ngOnInit(): Promise<void> {
         this.environment = environment;
 
         if (isPlatformServer(this.platformId)) {
@@ -113,7 +99,7 @@ export class FlowEditorComponent implements OnInit {
         }
         this.smallScreen = this.browser.window.innerWidth < 750;
 
-        progbar.track(new Promise((resolve) => {
+        return progbar.track(new Promise((resolve, reject) => {
             this.sessionService.getSession()
                 .then((session) => {
                     this.session = session;
@@ -136,6 +122,7 @@ export class FlowEditorComponent implements OnInit {
                             return this.programService.getProgramById(params['program_id']).catch(err => {
                                 console.error("Error:", err);
                                 this.goBack();
+                                reject();
                                 throw Error("Error loading");
                             });
                         }))
@@ -154,6 +141,7 @@ export class FlowEditorComponent implements OnInit {
                 })
                 .catch(err => {
                     console.error("Error loading program:", err);
+                    reject();
                     this.goBack();
                 });
         }));
@@ -162,7 +150,17 @@ export class FlowEditorComponent implements OnInit {
     load_program(program: ProgramContent) {
         if (program.orig && program.orig !== 'undefined') {
             this.workspace.load(program.orig as FlowGraph);
+
+            console.time("Positioning");
+            this.workspace.repositionIteratively().then(() => console.timeEnd("Positioning"));
         }
+        else {
+            this.workspace.initializeEmpty();
+        }
+
+        // For debugging
+        (window as any).reposition = this.workspace.repositionAll.bind(this.workspace);
+        (window as any).repositionIt = this.workspace.repositionIteratively.bind(this.workspace);
 
         this.workspace.center();
 
@@ -328,7 +326,7 @@ export class FlowEditorComponent implements OnInit {
 
     goBack(): boolean {
         this.dispose();
-        this._location.back();
+        this.location.back();
         return false;
     }
 
