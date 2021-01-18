@@ -13,7 +13,6 @@ import { combinedArea, listToDict, manipulableAreaToArea2D } from "./utils";
 
 const SvgNS = "http://www.w3.org/2000/svg";
 const BLOCK_TYPE_ANNOTATION = 'Ui Card'
-const SECTION_PADDING = 5;
 const DEFAULT_COLOR = '';
 
 const MIN_WIDTH = 100;

@@ -1533,8 +1533,6 @@ export class FlowWorkspace implements BlockManager {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        console.log("Iterations:", its);
-
         return its;
     }
 
@@ -1920,7 +1918,7 @@ export class FlowWorkspace implements BlockManager {
                 }
                 catch (err) {
                     if (err instanceof CannotSetAsContentsError) {
-                        this._updateBlockContainer(content, null); // Ignore container]
+                        this._updateBlockContainer(content, null); // Ignore container
                     }
                     else {
                         throw err;

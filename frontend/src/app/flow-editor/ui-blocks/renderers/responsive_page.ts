@@ -1,11 +1,11 @@
 import { Subscription } from "rxjs";
 import { UiSignalService } from "../../../services/ui-signal.service";
-import { Area2D, FlowBlock, Position2D, ManipulableArea2D } from "../../flow_block";
+import { Area2D, FlowBlock, Position2D } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
 import { HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr, DEFAULT_CUT_TYPE } from "./ui_tree_repr";
-import { combinedArea, combinedManipulableArea, getRefBox, listToDict, manipulableAreaToArea2D } from "./utils";
+import { combinedManipulableArea, getRefBox, listToDict, manipulableAreaToArea2D } from "./utils";
 import { PositionResponsiveContents, SEPARATION } from "./positioning";
 
 

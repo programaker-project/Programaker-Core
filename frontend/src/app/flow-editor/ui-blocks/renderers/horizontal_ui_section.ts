@@ -6,10 +6,9 @@ import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandle
 import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler, Autoresizable } from "../ui_flow_block";
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutTree } from "./ui_tree_repr";
-import { combinedArea, manipulableAreaToArea2D } from "./utils";
+import { combinedArea } from "./utils";
 import { PositionHorizontalContents, PositionVerticalContents, SEPARATION, GetMinSizeHorizontal, GetMinSizeVertical } from "./positioning";
 import { CannotSetAsContentsError } from "../cannot_set_as_contents_error";
-import { getRect } from "./responsive_page";
 
 const SvgNS = "http://www.w3.org/2000/svg";
 const BLOCK_TYPE_ANNOTATION = 'Section'
@@ -160,15 +159,6 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                         ))
                         .map(b => b.getBodyArea()));
 
-                // const mov = {
-                //     x: 0, // (inflexibleArea.x - SEPARATION) - pos.x,
-                //     y: 0,
-                // };
-
-                // if (inflexibleArea.width != 0) {
-                //     this.block.moveWithoutCarrying(mov);
-                // }
-
                 minWidth = inflexibleArea.width;
             }
 
@@ -194,16 +184,6 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
                             (b instanceof ContainerFlowBlock) || ((b instanceof UiFlowBlock) && b.isAutoresizable())
                         ))
                         .map(b => b.getBodyArea()));
-
-                // const mov = {
-                //     x: 0,
-                //     y: (inflexibleArea.y - SEPARATION) - pos.y,
-                // };
-
-
-                // if (inflexibleArea.height != 0) {
-                //     this.block.moveWithoutCarrying(mov);
-                // }
 
                 minHeight = inflexibleArea.height;
             }

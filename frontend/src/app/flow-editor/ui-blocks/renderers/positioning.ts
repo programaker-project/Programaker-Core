@@ -31,9 +31,6 @@ export function PositionResponsiveContents(handler: UiFlowBlockHandler, blocks: 
         blockMap[block.id] = block;
     }
 
-    console.debug('RESPONSIVE Tree', tree);
-
-
     PositionTreeContentsFromTree(tree, blockMap, offset);
 
     return tree;
@@ -87,11 +84,6 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
                     if (block.doesTakeAllHorizontal()) {
                         mov.x = 0;
                     }
-                }
-                else if (cTree.cut_type === 'hbox') {
-                    // if (block.doesTakeAllVertical()) {
-                    //     mov.y = 0;
-                    // }
                 }
             }
 
@@ -179,7 +171,7 @@ export function PositionHorizontalContents(handler: UiFlowBlockHandler, blocks: 
             .filter(b => b instanceof UiFlowBlock)
             .map((b: UiFlowBlock) => {
                 const area = b.getBodyArea()
-                let minArea;
+                let minArea: Area2D;
                 if (b.isAutoresizable()) {
                     const min = b.getMinSize();
                     area.width = min.width;
@@ -202,7 +194,6 @@ export function PositionHorizontalContents(handler: UiFlowBlockHandler, blocks: 
 
     const sumPaddings = SEPARATION * (blocks.length + 1);
     const reqWidth = reqBlockWidth + sumPaddings;
-    const width = Math.max(area.width, reqWidth);
     const height = maxHeight;
 
     const separation = SEPARATION;
@@ -240,7 +231,7 @@ export function PositionVerticalContents(handler: UiFlowBlockHandler, blocks: Fl
             .filter(b => b instanceof UiFlowBlock)
             .map((b: UiFlowBlock) => {
                 const area = b.getBodyArea();
-                let minArea;
+                let minArea: Area2D;
                 if (b.isAutoresizable()) {
                     const min = b.getMinSize();
                     area.width = min.width;
@@ -263,7 +254,6 @@ export function PositionVerticalContents(handler: UiFlowBlockHandler, blocks: Fl
 
     const sumPaddings = SEPARATION * (blocks.length + 1);
     const reqHeight = reqBlockHeight + sumPaddings;
-    const height = Math.max(area.height, reqHeight);
     const width = maxWidth;
 
     const separation = SEPARATION;

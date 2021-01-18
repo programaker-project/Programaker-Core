@@ -2,7 +2,7 @@ import { Location, isPlatformServer } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild, Inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, FlowProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramType } from '../program';
+import { ProgramContent, ProgramLogEntry, ProgramInfoUpdate, ProgramType } from '../program';
 import { ProgramService } from '../program.service';
 
 import * as progbar from '../ui/progbar';
@@ -11,7 +11,6 @@ import { fromCustomBlockService } from './toolbox_builder';
 
 import { FlowWorkspace } from './flow_workspace';
 
-import { MonitorService } from '../monitor.service';
 import { CustomBlockService } from '../custom_block.service';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -22,15 +21,12 @@ import { RenameProgramDialogComponent } from '../RenameProgramDialogComponent';
 import { DeleteProgramDialogComponent } from '../DeleteProgramDialogComponent';
 import { StopThreadProgramDialogComponent } from '../StopThreadProgramDialogComponent';
 import { SetProgramTagsDialogComponent } from '../program_tags/SetProgramTagsDialogComponent';
-import { TemplateService } from '../templates/template.service';
 import { ServiceService } from '../service.service';
-import { CustomSignalService } from '../custom_signals/custom_signal.service';
 import { ConnectionService } from '../connection.service';
 import { SessionService } from '../session.service';
 import { environment } from '../../environments/environment';
 import { unixMsToStr } from '../utils';
 import { Session } from '../session';
-import { BridgeService } from '../bridges/bridge.service';
 import { FlowGraph } from './flow_graph';
 import { EnumValue } from './enum_direct_value';
 import { compile } from './graph_analysis';
