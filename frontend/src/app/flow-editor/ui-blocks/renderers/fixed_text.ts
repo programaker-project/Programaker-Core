@@ -5,7 +5,8 @@ import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from 
 import { BlockConfigurationOptions, BlockAllowedConfigurations, fontWeightToCss } from "../../dialogs/configure-block-dialog/configure-block-dialog.component";
 import { ContainerFlowBlock } from "../container_flow_block";
 import { startOnElementEditor, FormattedTextTree, formattedTextTreeToDom } from "./utils";
-import { FlowWorkspace } from "app/flow-editor/flow_workspace";
+import { FlowWorkspace } from "../../flow_workspace";
+
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -346,8 +347,6 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
         const box_height = Math.max(this.textArea.height + 50, this.MinHeight);
         const box_width = Math.min(maxWidth, Math.max(this.textArea.width + 50, this.MinWidth));
 
-        console.log(zoom, maxWidth, box_width);
-
         if (anchor === 'bottom-center') {
             // Move the box around to respect the anchor point
             this.block.moveBy({
@@ -363,6 +362,8 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         this.textBox.setAttributeNS(null, 'x', (box_width - this.textArea.width)/2 + "");
         this.textBox.setAttributeNS(null, 'y', (box_height - this.textArea.height)/2 + "");
+        this.textBox.setAttributeNS(null, 'height', this.textArea.height + "");
+
         this.rect.setAttributeNS(null, 'height', box_height + "");
         this.rect.setAttributeNS(null, 'width', box_width + "");
 
