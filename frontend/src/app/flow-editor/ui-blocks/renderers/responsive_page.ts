@@ -549,25 +549,21 @@ function reduceTree(tree: CutTree): CutTree {
 }
 
 function _reduceTree(tree: CutTree, safe: boolean): CutTree {
-    const aux = (node: CutTree) => {
-        if (!((node as CutNode).cut_type)) {
-            return node;
-        }
+    if (!((tree as CutNode).cut_type)) {
+        return tree;
+    }
 
-        const cNode = node as CutNode;
-        const newGroups = _reduceGroups(cNode, safe);
+    const cNode = tree as CutNode;
+    const newGroups = _reduceGroups(cNode, safe);
 
-        const recasted: CutNode = { cut_type: cNode.cut_type, groups: newGroups };
-        if (cNode.settings) {
-            recasted.settings = cNode.settings;
-        }
-        if (cNode.block_id) {
-            recasted.block_id = cNode.block_id;
-        }
-        return recasted;
-    };
-
-    return aux(tree);
+    const recasted: CutNode = { cut_type: cNode.cut_type, groups: newGroups };
+    if (cNode.settings) {
+        recasted.settings = cNode.settings;
+    }
+    if (cNode.block_id) {
+        recasted.block_id = cNode.block_id;
+    }
+    return recasted;
 }
 
 function _reduceGroups(cNode: CutNode, safe: boolean): CutTree[] {
