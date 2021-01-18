@@ -347,8 +347,8 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         const oldHeight = this.rect.height.baseVal.value;
         const oldWidth = this.rect.width.baseVal.value;
-        const box_height = Math.max(this.textArea.height + 50, this.MinHeight);
-        const box_width = Math.min(maxWidth, Math.max(this.textArea.width + 50, this.MinWidth));
+        const box_height = Math.max(this.textArea.height + 50 * zoom, this.MinHeight);
+        const box_width = Math.min(maxWidth, Math.max(this.textArea.width + 50 * zoom, this.MinWidth));
 
         if (anchor === 'bottom-center') {
             // Move the box around to respect the anchor point
