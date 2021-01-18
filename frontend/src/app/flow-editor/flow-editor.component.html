@@ -67,13 +67,6 @@
             </label>
         </button>
 
-        <mat-slide-toggle #autoposition_toggle
-            id="program-reposition"
-            [class]="'annotated-toggle raised ' + ((!read_only && workspace && workspace.hasPages) ? 'hidden' : '')"
-            (change)="autopositionUpdated($event)"
-            [checked]="false"
-        >Autoposition</mat-slide-toggle>
-
         <!-- Advanced functions, on a menu -->
         <button id="program-stop-button" color="warn"
             class="annotated-icon"
@@ -96,6 +89,12 @@
                 <mat-icon class="example-tab-icon">label</mat-icon>
                 Tags
             </button>
+
+            <mat-slide-toggle #autoposition_toggle
+                id="program-reposition"
+                (change)="autopositionUpdated($event)"
+                [ngModel]="false"
+            >Autoposition</mat-slide-toggle>
         </mat-menu>
 
         <!-- Dangerous stuff, on its own -->

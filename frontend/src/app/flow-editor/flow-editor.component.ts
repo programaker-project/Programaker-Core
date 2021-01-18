@@ -142,6 +142,11 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
 
                                 this.loaded = true;
                                 if (this.autopositionToggle) {
+                                    if ((!this.read_only) && session.tags.is_advanced && session.tags.is_in_preview) {
+                                        // Enable by default for preview, advanced, users.
+                                        this.autopositionToggle.checked = true;
+                                    }
+
                                     this.workspace.setAutoReposition(this.autopositionToggle.checked);
                                 }
 
@@ -163,6 +168,11 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
 
     ngAfterViewInit() {
         if (this.loaded) {
+            if ((!this.read_only) && this.session.tags.is_advanced && this.session.tags.is_in_preview) {
+                // Enable by default for preview, advanced, users.
+                this.autopositionToggle.checked = true;
+            }
+
             this.workspace.setAutoReposition(this.autopositionToggle.checked);
         }
     }
