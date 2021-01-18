@@ -1459,9 +1459,8 @@ export class FlowWorkspace implements BlockManager {
                 if (oldContainer) {
                     moved.push(oldContainer);
                 }
-
-                this._invalidateBlockPositions(moved);
             }
+            this.repositionAll();
         });
     }
 
