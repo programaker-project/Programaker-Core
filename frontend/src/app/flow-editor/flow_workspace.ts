@@ -468,12 +468,31 @@ export class FlowWorkspace implements BlockManager {
 
     private set_events() {
         let lastMouseDownTime = null;
-        this.canvas.onmousedown = ((ev: MouseEvent) => {
-            if (this.state !== 'waiting') {
-                return;
-            }
+        const startMove: (ev?: MouseEvent) => (() => void) = ((ev: MouseEvent | undefined)  => {
+            let last = ev ?  { x: ev.x, y: ev.y } : null;
 
-            if (ev.target !== this.canvas) {
+            this.state = 'dragging-workspace';
+            this.canvas.classList.add('dragging');
+
+            this.canvas.onmousemove = ((ev: MouseEvent) => {
+                if (last) {
+                    this.top_left.x -= (ev.x - last.x) * this.inv_zoom_level;
+                    this.top_left.y -= (ev.y - last.y) * this.inv_zoom_level;
+                }
+                last = { x: ev.x, y: ev.y };
+
+                this.update_top_left();
+            });
+
+            return () => {
+                this.state = 'waiting';
+                this.canvas.classList.remove('dragging');
+                this.canvas.onmousemove = null;
+            }
+        });
+
+        this.canvas.onmousedown = (ev: MouseEvent) => {
+            if (this.state !== 'waiting') {
                 return;
             }
 
@@ -497,31 +516,34 @@ export class FlowWorkspace implements BlockManager {
                     this.canvas.onmousemove = null;
                     this.canvas.onmouseup = null;
                 });
-
             }
             else {
-
                 lastMouseDownTime = time;
 
-                let last = { x: ev.x, y: ev.y };
-
-                this.state = 'dragging-workspace';
-                this.canvas.classList.add('dragging');
-
-                this.canvas.onmousemove = ((ev: MouseEvent) => {
-                    this.top_left.x -= (ev.x - last.x) * this.inv_zoom_level;
-                    this.top_left.y -= (ev.y - last.y) * this.inv_zoom_level;
-                    last = { x: ev.x, y: ev.y };
-
-                    this.update_top_left();
-                });
-
+                const stopMove = startMove(ev);
                 this.canvas.onmouseup = (() => {
-                    this.state = 'waiting';
-                    this.canvas.classList.remove('dragging');
-                    this.canvas.onmousemove = null;
                     this.canvas.onmouseup = null;
+                    stopMove();
                 });
+            }
+        };
+
+        // Capture key presses directed to canvas
+        document.body.onkeydown = ((ev: KeyboardEvent) => {
+            if (this.state !== 'waiting') {
+                return;
+            }
+
+            if ((ev.target === document.body) && (ev.code === 'Space')) {
+                const stopMove = startMove(null);
+
+                document.body.onkeyup = ((ev: KeyboardEvent) => {
+                    if (ev.code === 'Space') {
+                        document.body.onkeyup = null;
+                        stopMove();
+                    }
+                });
+
             }
         });
 

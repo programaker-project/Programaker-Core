@@ -58,6 +58,12 @@ svg.block_renderer g.flow_node > g
     cursor: grab;
 }
 
+svg.block_renderer.dragging g.flow_node > a,
+svg.block_renderer.dragging g.flow_node > g {
+    cursor: grabbing;
+}
+
+
 svg.block_renderer g.flow_node.selected rect.node_body, svg.block_renderer g.flow_node .selected rect.node_body {
     stroke: #A05;
     stroke-width: 3px;
@@ -125,7 +131,7 @@ svg.block_renderer path.unknown_wire {
     stroke: $unknown-color;
 }
 
-svg.block_renderer:not(.drawing) {
+svg.block_renderer:not(.drawing):not(.dragging) {
     path.established:hover {
         stroke-width: 10px;
         cursor: crosshair;
@@ -209,6 +215,10 @@ svg.block_renderer.read-only g.flow_node .input, svg.block_renderer.read-only g.
     cursor: not-allowed;
 }
 
+svg.block_renderer.dragging g.flow_node .input, svg.block_renderer.dragging g.flow_node .output {
+    cursor: grabbing;
+}
+
 svg.block_renderer g.flow_node rect.port_plating {
     fill: #27212e;
 }
@@ -284,6 +294,10 @@ svg.block_renderer.read-only g.input_helper {
     cursor: not-allowed;
 }
 
+svg.block_renderer.dragging g.input_helper {
+    cursor: grabbing;
+}
+
 svg.block_renderer g.input_helper.hidden {
     display: none;
 }
@@ -317,6 +331,10 @@ svg.block_renderer g.flow_node.direct_value_node text.node_name {
 
 svg.block_renderer.read-only g.flow_node.direct_value_node text.node_name {
     cursor: not-allowed;
+}
+
+svg.block_renderer.dragging {
+    cursor: grabbing;
 }
 
 svg.block_renderer g.flow_node.editing rect.node_body {
@@ -365,6 +383,10 @@ div[contenteditable="true"] {
 svg.read-only div[contenteditable="true"] {
     cursor: not-allowed;
     pointer-events: none;
+}
+
+svg.dragging div[contenteditable="true"] {
+    cursor: grabbing;
 }
 
 #workspace div[contenteditable="true"] a {
@@ -442,6 +464,10 @@ svg.block_renderer .named_var {
 
 svg.block_renderer.read-only .named_var {
     cursor: not-allowed;
+}
+
+svg.block_renderer.dragging .named_var {
+    cursor: grabbing;
 }
 
 svg.block_renderer .named_var .var_name {
@@ -856,6 +882,16 @@ svg.block_renderer g.flow_node.container_node.responsive_page {
     }
 }
 
+svg.block_renderer.dragging g.flow_node.container_node.responsive_page {
+    .node_body {
+        cursor: grabbing;
+    }
+    rect.titlebox, text {
+        cursor: grabbing;
+    }
+}
+
+
 svg.block_renderer g.flow_node.container_node.responsive_page .output_text {
     fill: #fff;
     font-style: normal;
@@ -890,6 +926,9 @@ svg.block_renderer g.flow_node .manipulators .height-resizer.resize-manipulator 
 
 svg.block_renderer g.flow_node .manipulators .width-resizer.resize-manipulator {
     cursor: e-resize;
+}
+svg.block_renderer.dragging g.flow_node .manipulators .resize-manipulator {
+    cursor: grabbing;
 }
 
 svg.block_renderer g.flow_node .manipulators .manipulator.settings-manipulator image {
