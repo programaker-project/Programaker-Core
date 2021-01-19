@@ -1445,7 +1445,8 @@ export class FlowWorkspace implements BlockManager {
                 console.error(err);
             }
 
-            if (!removed) {
+            // If autoposition is not activated, only move the connections present
+            if (!removed && !this.autoposition) {
                 // Update moved block's connections
                 for (const movedId of moved) {
                     for (const conn of this.blocks[movedId].connections) {
@@ -1460,7 +1461,11 @@ export class FlowWorkspace implements BlockManager {
                     moved.push(oldContainer);
                 }
             }
-            this.repositionAll();
+
+            // Else, just rely on the autopositioning
+            if (this.autoposition) {
+                this.repositionAll();
+            }
         });
     }
 
@@ -1477,7 +1482,16 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public repositionAll() {
-        return this._reposition(Object.keys(this.blocks));
+        const blocks = Object.keys(this.blocks);
+        this._reposition(blocks);
+
+        for (const blockId of blocks) {
+            for (const conn of this.blocks[blockId].connections) {
+                this.updateConnection(conn);
+            }
+
+            this.updateBlockInputHelpersPosition(blockId);
+        }
     }
 
     async repositionIteratively() {
