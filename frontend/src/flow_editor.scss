@@ -404,7 +404,9 @@ div[contenteditable="true"] > div {
 }
 
 div[contenteditable="true"].editing > div {
-    width: max-content;
+    padding: 1ex;
+    border: 1px solid #27212e;
+    max-width: max-content;
 }
 
 #workspace foreignObject div[contenteditable="true"] font a {

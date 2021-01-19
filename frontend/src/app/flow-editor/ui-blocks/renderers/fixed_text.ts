@@ -33,11 +33,11 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     readonly MinHeight = 140;
     private handle: UiElementHandle;
     private _container: ContainerFlowBlock;
-    private textArea: Area2D;
     private contentBox: HTMLDivElement;
     private editing = false;
 
     private readonly workspace: FlowWorkspace;
+    private fullTextArea: Area2D;
 
     constructor(canvas: SVGElement, group: SVGElement,
         private block: UiFlowBlock,
@@ -229,6 +229,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
     dropOnEndMove() {
         if (!this.editing) {
+            this._updateTextBox();
             this._updateSize();
         }
         return { x: 0, y: 0 };
@@ -266,9 +267,8 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         this.contentBox.style.height = height + 'px';
         this.contentBox.style.maxWidth = '';
-        this.contentBox.style.width = '100%';
-        this.contentBox.style.height = '100%';
-        this.contentBox.style.overflow = 'auto';
+        this.contentBox.style.width = width + 'px';
+        this.contentBox.style.height = height + 'px';
         this.contentBox.classList.add('editing');
 
         this.editing = true;
@@ -285,7 +285,7 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
                                  }
                              },
                              (width: number, height: number) => {
-                                 width = Math.max(width, this.MinWidth);
+                                 width = Math.min(MAX_WIDTH, Math.max(width, this.MinWidth));
                                  height = Math.max(height, this.MinHeight);
 
                                  const zoom = this.workspace ? this.workspace.getInvZoomLevel() : 1;
@@ -294,6 +294,9 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
                                  this.rect.setAttributeNS(null, 'height', height * zoom + '');
                                  this.textBox.setAttributeNS(null, 'width', width * zoom + '');
                                  this.textBox.setAttributeNS(null, 'height', height * zoom + '');
+
+                                 this.contentBox.style.width = width * zoom + 'px';
+                                 this.contentBox.style.height = height * zoom + 'px';
                              });
     }
 
@@ -317,20 +320,24 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
 
         container.appendChild(content);
         this.contentBox.appendChild(container);
+
+        // Give all available width
+        this.contentBox.style.maxWidth = MAX_WIDTH + 'px';
+        this.contentBox.style.width = 'max-content';
+
+        this.textBox.setAttributeNS(null, 'width', MAX_WIDTH + '');
+
+        // Then add it to the ForeignObject
         this.textBox.appendChild(this.contentBox);
 
-        // Then mark that as max-width
-        this.contentBox.style.maxWidth = 'max-content';
-        this.contentBox.style.width = '';
-
-        this._updateTextArea();
+        this._updateFullTextArea();
     }
 
-    _updateTextArea() {
+    _updateFullTextArea() {
         const textArea = this.contentBox.getClientRects()[0];
         const zoom = this.workspace ? this.workspace.getInvZoomLevel() : 1;
 
-        this.textArea = {
+        this.fullTextArea = {
             x: textArea.x,
             y: textArea.y,
             width: textArea.width * zoom,
@@ -341,14 +348,12 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
     _updateSize(opts?: { anchor?: 'bottom-center' | 'top-left' }) {
         // Obtain size taken by all the text
         const zoom = this.workspace ? this.workspace.getInvZoomLevel() : 1;
-        let maxWidth = MAX_WIDTH;
-
         const anchor = opts && opts.anchor ? opts.anchor : 'top-left';
 
         const oldHeight = this.rect.height.baseVal.value;
         const oldWidth = this.rect.width.baseVal.value;
-        const box_height = Math.max(this.textArea.height + 50 * zoom, this.MinHeight);
-        const box_width = Math.min(maxWidth, Math.max(this.textArea.width + 50 * zoom, this.MinWidth));
+        const box_height = Math.max(this.fullTextArea.height + 50 * zoom, this.MinHeight);
+        const box_width = Math.min(MAX_WIDTH, Math.max(this.fullTextArea.width + 50 * zoom, this.MinWidth));
 
         if (anchor === 'bottom-center') {
             // Move the box around to respect the anchor point
@@ -358,14 +363,10 @@ class FixedText implements UiFlowBlockHandler, TextEditable, ConfigurableSetting
             })
         }
 
+        this.textBox.setAttributeNS(null, 'x', (box_width - this.fullTextArea.width)/2 + "");
+        this.textBox.setAttributeNS(null, 'y', (box_height - this.fullTextArea.height)/2 + "");
         this.textBox.setAttributeNS(null, 'width', box_width + "");
-        this.textBox.setAttributeNS(null, 'height', this.textArea.height + "");
-
-        this._updateTextArea();
-
-        this.textBox.setAttributeNS(null, 'x', (box_width - this.textArea.width)/2 + "");
-        this.textBox.setAttributeNS(null, 'y', (box_height - this.textArea.height)/2 + "");
-        this.textBox.setAttributeNS(null, 'height', this.textArea.height + "");
+        this.textBox.setAttributeNS(null, 'height', this.fullTextArea.height + "");
 
         this.rect.setAttributeNS(null, 'height', box_height + "");
         this.rect.setAttributeNS(null, 'width', box_width + "");
