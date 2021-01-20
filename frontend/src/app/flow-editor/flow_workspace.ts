@@ -625,7 +625,14 @@ export class FlowWorkspace implements BlockManager {
         this.selectionRect.setAttributeNS(null, 'height', area.height + '');
 
         const blocks = this._getBlocksInArea(area);
-        this.updateSelectBlockList(blocks);
+
+        // Discard blocks that cannot be selected
+        const selectableBlocks = blocks.filter(b => {
+            const block = this.blocks[b].block;
+
+            return !((block instanceof ContainerFlowBlock) && (block.isPage));
+        });
+        this.updateSelectBlockList(selectableBlocks);
     }
 
     private _getBlocksInArea(area: Area2D): string[] {
