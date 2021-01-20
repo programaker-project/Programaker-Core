@@ -1,14 +1,24 @@
 import { Area2D, FlowBlock, Position2D } from "../../flow_block";
 import { UiFlowBlock, UiFlowBlockHandler } from "../ui_flow_block";
 import { cleanestTree, getElementsInGroup, getRect, getShallowElementsInGroup, safeReduceTree } from "./responsive_page";
-import { CutNode, CutTree, ContainerElementRepr } from "./ui_tree_repr";
+import { CutNode, CutTree, ContainerElementRepr, CutType } from "./ui_tree_repr";
 import { manipulableAreaToArea2D } from "./utils";
 import { ContainerFlowBlock } from "../container_flow_block";
 
 export const SEPARATION = 25;
 
+interface ResponsivePositionToCenter {
+    cut_type: CutType,
+    elements: UiFlowBlock[],
+    treeElements: UiFlowBlock[],
+};
+
 // Positioning
-export function PositionResponsiveContents(handler: UiFlowBlockHandler, blocks: FlowBlock[], allBlocks: FlowBlock[], offset: Position2D): CutTree {
+export function PositionResponsiveContents(handler: UiFlowBlockHandler,
+                                           blocks: FlowBlock[],
+                                           allBlocks: FlowBlock[],
+                                           offset: Position2D,
+                                          ): {tree: CutTree, toCenter: ResponsivePositionToCenter[]} {
     // Format in a grid-like
     const uiPos = (blocks
         .filter(b => (b instanceof UiFlowBlock))
@@ -31,14 +41,14 @@ export function PositionResponsiveContents(handler: UiFlowBlockHandler, blocks: 
         blockMap[block.id] = block;
     }
 
-    PositionTreeContentsFromTree(tree, blockMap, offset);
+    const toCenter = PositionTreeContentsFromTree(tree, blockMap, offset);
 
-    return tree;
+    return { tree, toCenter };
 }
 
-function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiFlowBlock}, offset: Position2D, nonTopLevel?: boolean) {
+function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiFlowBlock}, offset: Position2D, nonTopLevel?: boolean): ResponsivePositionToCenter[] {
     if (!(tree as CutNode).cut_type) {
-        return;
+        return [];
     }
 
     if ((tree as CutNode).block_id) {
@@ -51,8 +61,10 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
         else {
             throw Error("Cut with blockId that didn't correspond to a ContainerFlowBlock");
         }
-        return;
+        return [];
     }
+
+    let positions = [];
 
     const cTree = tree as CutNode;
     const toCenter: UiFlowBlock[] = [];
@@ -101,7 +113,7 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
             // Treat as a group
             const subOffset = { x: subTreeOffset.x, y: subTreeOffset.y };
 
-            PositionTreeContentsFromTree(group, blocks, subOffset, true);
+            positions = positions.concat(PositionTreeContentsFromTree(group, blocks, subOffset, true));
 
             const contents = getElementsInGroup(group);
             area = manipulableAreaToArea2D(getRect(contents.map(id => blocks[id])));
@@ -123,10 +135,10 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
 
                     // Don't push away from borders
                     if (cTree.cut_type === 'vbox') {
-                        mov.x = 0;
+                        mov.x -= SEPARATION;
                     }
                     else if (cTree.cut_type === 'hbox') {
-                        mov.y = 0;
+                        mov.y -= SEPARATION;
                     }
                 }
                 else {
@@ -147,22 +159,9 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
         }
     }
 
-    const fullArea = manipulableAreaToArea2D(getRect(getElementsInGroup(cTree).map(id => blocks[id])));
-    for (const elem of toCenter) {
-        const eArea = elem.getBodyArea();
+    positions.push({ cut_type: cTree.cut_type, elements: toCenter, treeElements: getElementsInGroup(cTree).map(id => blocks[id]) });
+    return positions;
 
-        const mov = { x: 0, y: 0 };
-        if (cTree.cut_type === 'vbox') {
-            const xPos = fullArea.x + ((fullArea.width - eArea.width) / 2)
-            mov.x = xPos - eArea.x;
-        }
-        else if (cTree.cut_type === 'hbox') {
-            const yPos = fullArea.y + ((fullArea.height - eArea.height) / 2)
-            mov.y = yPos - eArea.y;
-        }
-
-        elem.moveBy(mov);
-    }
 }
 
 export function PositionHorizontalContents(handler: UiFlowBlockHandler, blocks: FlowBlock[], area: Area2D): { width: number, height: number } {
@@ -344,4 +343,34 @@ export function GetMinSizeVertical(blocks: FlowBlock[]): { width: number, height
     const reqHeight = reqBlockHeight + sumPaddings;
 
     return { width: maxWidth, height: reqHeight };
+}
+
+// Centering
+export function CenterElements(groups: ResponsivePositionToCenter[]) {
+    for (const group of groups) {
+        const fullArea = manipulableAreaToArea2D(getRect(group.treeElements));
+        for (const elem of group.elements) {
+            const eArea = elem.getBodyArea();
+
+
+            if (elem.isAutoresizable()) {
+                const minArea = elem.getMinSize();
+
+                eArea.width = minArea.width;
+                eArea.height = minArea.height;
+            }
+
+            const mov = { x: 0, y: 0 };
+            if (group.cut_type === 'vbox') {
+                const xPos = fullArea.x + ((fullArea.width - eArea.width) / 2)
+                mov.x = xPos - eArea.x;
+            }
+            else if (group.cut_type === 'hbox') {
+                const yPos = fullArea.y + ((fullArea.height - eArea.height) / 2)
+                mov.y = yPos - eArea.y;
+            }
+
+            elem.moveBy(mov);
+        }
+    }
 }
