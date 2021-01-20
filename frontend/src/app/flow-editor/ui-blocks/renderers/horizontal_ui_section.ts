@@ -40,6 +40,8 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
     container: ContainerFlowBlock;
     private _contents: FlowBlock[] = [];
     nestedHorizontal: boolean;
+    private readonly freeWidth: number;
+    private readonly freeHeight: number;
 
     constructor(canvas: SVGElement, group: SVGElement,
         public block: ContainerFlowBlock,
@@ -72,8 +74,8 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
         const minWidth = textDim.width * 1.5;
         const minHeight = textDim.height * 2;
-        this.width = bdims && bdims.width > minWidth ? bdims.width : minWidth;
-        this.height = bdims && bdims.height > minHeight ? bdims.height : minHeight;
+        this.freeWidth = this.width = bdims && bdims.width > minWidth ? bdims.width : minWidth;
+        this.freeHeight = this.height = bdims && bdims.height > minHeight ? bdims.height : minHeight;
 
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
@@ -275,11 +277,17 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
             this.container = null;
 
             this.nestedHorizontal = null;
+            this.width = this.freeWidth;
+            this.height = this.freeHeight;
         }
         this._updateInternalElementSizes();
     }
 
     repositionContents(): void {
+        if (this._contents.length === 0) {
+            return;
+        }
+
         const dimensions = this._repositionContents();
 
         this.resize(dimensions, true);

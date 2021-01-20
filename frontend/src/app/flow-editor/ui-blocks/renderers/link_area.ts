@@ -39,7 +39,7 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Autoresi
     height: number;
     placeholder: SVGTextElement;
     container: ContainerFlowBlock;
-    private _contents: FlowBlock[];
+    private _contents: FlowBlock[] = [];
 
     constructor(canvas: SVGElement, group: SVGElement,
         public block: ContainerFlowBlock,
@@ -260,6 +260,11 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Autoresi
 
         const allContents = this.block.recursiveGetAllContents();
         const { tree: cutTree, toCenter: toCenter} = PositionResponsiveContents(this, this._contents, allContents, this.getBodyArea());
+
+        if (!cutTree) {
+            // No contents
+            return;
+        }
 
         const contentDict = listToDict(
             allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],

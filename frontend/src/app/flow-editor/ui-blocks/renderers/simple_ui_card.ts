@@ -274,6 +274,11 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Auto
         const allContents = this.block.recursiveGetAllContents();
         const { tree: cutTree, toCenter: toCenter} = PositionResponsiveContents(this, this._contents, allContents, this.getBodyArea());
 
+        if (!cutTree) {
+            // No contents
+            return;
+        }
+
         const contentDict = listToDict(
             allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],
             c => c.id);

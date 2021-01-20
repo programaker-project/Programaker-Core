@@ -1242,11 +1242,11 @@ export class FlowWorkspace implements BlockManager {
         return true;
     }
 
-    private _findContainerInPos(pos: Position2D, excluding?: FlowBlock): FlowBlock | null {
+    private _findContainerInPos(pos: Position2D, excludingList: string[]): FlowBlock | null {
         const candidates: (ContainerBlock & FlowBlock)[] = [];
 
         for (const container of this.containers) {
-            if (excluding === container) {
+            if (excludingList.indexOf(container.id) >= 0) {
                 continue;
             }
 
@@ -1272,8 +1272,7 @@ export class FlowWorkspace implements BlockManager {
 
         // Candidate priority
         //  1. First, the ones that are not pages
-        //  2. The ones with less height
-        //  3. The ones with less width
+        //  2. The ones with smaller area
         const pages = [];
         const notPages = [];
 
@@ -1363,7 +1362,7 @@ export class FlowWorkspace implements BlockManager {
 
         this.canvas.onmousemove = this.canvas.ontouchmove = ((ev: MouseEvent | TouchEvent) => {
             const pos = this._getPositionFromEvent(ev);
-            const container = this._findContainerInPos(pos, block);
+            const container = this._findContainerInPos(pos, this._selectedBlocks.concat([block_id]));
 
             if (lastContainer !== container) {
                 if (lastContainer) {
@@ -1425,7 +1424,7 @@ export class FlowWorkspace implements BlockManager {
 
             const oldContainer: string | null = this.blocks[block_id].container_id;
             const pos = this._getPositionFromEvent(ev);
-            const container = this._findContainerInPos(pos, block);
+            const container = this._findContainerInPos(pos, this._selectedBlocks);
             const containerId = container === null ? null : this.getBlockId(container);
 
             let moved = [];
@@ -1437,13 +1436,20 @@ export class FlowWorkspace implements BlockManager {
                 || (containerId && (this._selectedBlocks.indexOf(containerId) < 0))) {
 
                 for (const blockId of this._selectedBlocks.concat([])) {
+                    const blockInfo = this.blocks[blockId];
+
                     try {
-                        this._updateBlockContainer(this.blocks[blockId].block, container);
+                        // Don't update container if it's on the selection
+                        if (blockInfo.container_id && this._selectedBlocks.indexOf(blockInfo.container_id) >= 0) {
+                            continue;
+                        }
+
+                        this._updateBlockContainer(blockInfo.block, container);
                     }
                     catch (err) {
                         if (err instanceof CannotSetAsContentsError) {
                             console.error("Cannot set as content", err.problematicContents); // TODO: Show as notification
-                            this._updateBlockContainer(this.blocks[blockId].block, null);
+                            this._updateBlockContainer(blockInfo.block, null);
                         }
                     }
                 }
@@ -1959,6 +1965,11 @@ export class FlowWorkspace implements BlockManager {
     public removeBlock(blockId: string) {
         const info = this.blocks[blockId];
         console.debug("Removing block:", info);
+
+        if (!info) {
+            console.debug("Already removed", blockId);
+            return;
+        }
 
         if (info.block instanceof ContainerFlowBlock) {
             const parent_container_id = info.container_id;
