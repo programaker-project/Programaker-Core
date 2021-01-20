@@ -4,6 +4,7 @@ import { FlowWorkspace } from '../../../flow-editor/flow_workspace';
 import { SEPARATION } from 'app/flow-editor/ui-blocks/renderers/positioning';
 import { configureTestBed, pageGraph } from './builder';
 import { doesNotChangePositionsOnReposition } from './utils';
+import { MAX_WIDTH as TEXT_MAX_WIDTH } from 'app/flow-editor/ui-blocks/renderers/fixed_text';
 
 describe('FlowUI positioning: 04. Position sections in a single step.', () => {
 
@@ -39,7 +40,7 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
                         x: 10, y: 10,
                     },
                 ],
-                dimensions: { width: 9999, height: 9999 },
+                extra: { dimensions: { width: 9999, height: 9999 }},
             },
         ]);
 
@@ -126,7 +127,7 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
                                 x: 10, y: 10,
                             },
                         ],
-                        dimensions: { width: 9999, height: 9999 },
+                        extra: { dimensions: { width: 9999, height: 9999 }},
                     },
                     {
                         type: "horizontal_ui_section",
@@ -137,7 +138,7 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
                                 x: 10, y: 10,
                             },
                         ],
-                        dimensions: { width: 9999, height: 9999 },
+                        extra: { dimensions: { width: 9999, height: 9999 }},
                     },
                     {
                         type: "horizontal_ui_section",
@@ -148,10 +149,10 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
                                 x: 10, y: 10,
                             },
                         ],
-                        dimensions: { width: 9999, height: 9999 },
+                        extra: { dimensions: { width: 9999, height: 9999 }},
                     }
                 ],
-                dimensions: { width: 9999, height: 9999 },
+                extra: { dimensions: { width: 9999, height: 9999 }},
             },
         ]);
 
@@ -269,10 +270,10 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
                                 x: 10, y: 12,
                             },
                         ],
-                        dimensions: { width: 9999, height: 9999 },
+                        extra: { dimensions: { width: 9999, height: 9999 }},
                     }
                 ],
-                dimensions: { width: 9999, height: 9999 },
+                extra: { dimensions: { width: 9999, height: 9999 }},
             },
         ]);
 
@@ -407,10 +408,10 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
                                 ]
                             },
                         ],
-                        dimensions: { width: 9999, height: 9999 },
+                        extra: { dimensions: { width: 9999, height: 9999 }},
                     }
                 ],
-                dimensions: { width: 9999, height: 9999 },
+                extra: { dimensions: { width: 9999, height: 9999 }},
             },
         ]);
 
@@ -519,6 +520,116 @@ describe('FlowUI positioning: 04. Position sections in a single step.', () => {
                 .toBe(areaBotButton.y + areaBotButton.height + SEPARATION * 2,
                       `Y=${areaTopLevel.y} + ${areaTopLevel.height} =/= ${areaBotButton.y} + ${areaBotButton.height} + ${SEPARATION} * 2`);
 
+        };
+
+        // Check once
+        check();
+
+        // Re-position to check for stability
+        doesNotChangePositionsOnReposition(workspace, blocks);
+
+        // Check again
+        check();
+    });
+
+
+    it('Long and short FixedText separated by orizontalSeparator.', async () => {
+        const fixture = TestBed.createComponent(FlowEditorComponent);
+
+        const app: FlowEditorComponent = fixture.debugElement.componentInstance;
+        expect(app).toBeInstanceOf(FlowEditorComponent);
+        await app.ngOnInit();
+
+        const workspace = app.workspace;
+        expect(workspace).toBeInstanceOf(FlowWorkspace);
+
+        const [graph, blocks, page] = pageGraph([
+            {
+                type: 'fixed_text',
+                x: 10, y: 10,
+                extra: {
+                    content: [ {
+                        value: 'A small text',
+                        type: 'text'
+                    }],
+                },
+            },
+            {
+                type: 'horizontal_separator',
+                x: 10, y: 12,
+                extra: {
+                    dimensions: { width: TEXT_MAX_WIDTH * 2, height: 100 },
+                }
+            },
+            {
+                type: 'fixed_text',
+                x: 10, y: 14,
+                extra: {
+                    content: [ {
+                        value: 'A long text, which will take more than MAX_WIDTH and will require looking for the proper text break point so it fits on the allocated size, even if it is in a single line.',
+                        type: 'text'
+                    }],
+                },
+            },
+        ]);
+
+        const [ textTop, separator, textBot ] = blocks;
+
+        workspace.load(graph);
+        workspace.repositionAll();
+        workspace.center();
+
+        const result = workspace.getGraph();
+
+        expect(Object.keys(result.nodes).length).toBe(blocks.length + 1);
+
+        /**
+         * Layout:
+         *
+         *       +---------+
+         *       |  Text1  |
+         *       +---------+
+         *    +----------------+
+         *    |   Separator1   |
+         *    +----------------+
+         *      +------------+
+         *      | Long Text2 |
+         *      +------------+
+         *
+         **/
+
+        const check = () => {
+            const topTextArea = workspace.getBlock(textTop).getBodyArea();
+            const bottomTextArea = workspace.getBlock(textBot).getBodyArea();
+            const separatorArea = workspace.getBlock(separator).getBodyArea();
+            const pageArea = workspace.getBlock(page).getBodyArea();
+
+            // Separator has to take all width
+            expect(separatorArea.x).toEqual(pageArea.x);
+            expect(separatorArea.width).toEqual(pageArea.width);
+
+            // Top text (small) has to be centered
+            expect(topTextArea.x + topTextArea.width / 2 )
+                .toBe(pageArea.x + pageArea.width / 2,
+                      `TopText centered in page. ${topTextArea.x} + ${topTextArea.width} / 2 =/= ${pageArea.x} + ${pageArea.width} / 2`);
+
+            // Bottom text (large) has to take all width (minus separation)
+            expect(bottomTextArea.x)
+                .toBe(pageArea.x + SEPARATION,
+                      `Bottom text must start just after SEPARATION. ${bottomTextArea.x} =/= ${pageArea.x} + ${SEPARATION}`);
+            expect(bottomTextArea.width + SEPARATION * 2)
+                .toBe(pageArea.width,
+                     `Bottom text must take all width minus the SEPARATION left and right. ${bottomTextArea.width} + ${SEPARATION} * 2 =/= ${pageArea.width}`);
+
+
+            // Vertically, there must be a separation between the elements
+            expect(topTextArea.y + topTextArea.height + SEPARATION)
+                .toBe(separatorArea.y,
+                      `TopText → Separator. ${topTextArea.y} + ${topTextArea.height} + ${SEPARATION} =/= ${separatorArea.y}`);
+
+            expect(separatorArea.y + separatorArea.height + SEPARATION)
+                .toBe(bottomTextArea.y,
+                      `Separator → BottomText. ${separatorArea.y} + ${separatorArea.height} + ${SEPARATION} =/= ${bottomTextArea.y}`);
         };
 
         // Check once

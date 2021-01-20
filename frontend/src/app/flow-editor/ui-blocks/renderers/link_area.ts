@@ -4,7 +4,7 @@ import { BlockAllowedConfigurations, BlockConfigurationOptions } from "../../dia
 import { Area2D, FlowBlock } from "../../flow_block";
 import { ContainerFlowBlock, ContainerFlowBlockBuilder, ContainerFlowBlockHandler, GenTreeProc } from "../container_flow_block";
 import { Autoresizable, TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiFlowBlockHandler } from "../ui_flow_block";
-import { PositionResponsiveContents, SEPARATION } from "./positioning";
+import { PositionResponsiveContents, SEPARATION, CenterElements } from "./positioning";
 import { getElementsInGroup, getRect, ResponsivePageGenerateTree } from "./responsive_page";
 import { ConfigurableSettingsElement, HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { ContainerElementRepr, CutTree } from "./ui_tree_repr";
@@ -259,7 +259,7 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Autoresi
         }
 
         const allContents = this.block.recursiveGetAllContents();
-        const cutTree = PositionResponsiveContents(this, this._contents, allContents, this.getBodyArea());
+        const { tree: cutTree, toCenter: toCenter} = PositionResponsiveContents(this, this._contents, allContents, this.getBodyArea());
 
         const contentDict = listToDict(
             allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],
@@ -272,6 +272,7 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Autoresi
         const newArea = getRect(elems);
 
         this.resize(manipulableAreaToArea2D(newArea));
+        CenterElements(toCenter);
     }
 
     dropOnEndMove() {

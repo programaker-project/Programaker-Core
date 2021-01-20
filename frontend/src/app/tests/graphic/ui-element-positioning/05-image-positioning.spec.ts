@@ -30,10 +30,10 @@ describe('FlowUI positioning: 05. Image positioning.', () => {
                     {
                         type: 'fixed_image',
                         x: 10, y: 10,
-                        dimensions: { width: MIN_PAGE_WIDTH + 100, height: MIN_PAGE_WIDTH + 100 },
+                        extra: { dimensions: { width: MIN_PAGE_WIDTH + 100, height: MIN_PAGE_WIDTH + 100 }},
                     },
                 ],
-                dimensions: { width: 500, height: 500 },
+                extra: { dimensions: { width: 500, height: 500 }},
             },
             {
                 type: "horizontal_ui_section",
@@ -44,7 +44,7 @@ describe('FlowUI positioning: 05. Image positioning.', () => {
                         x: 10, y: 10,
                     },
                 ],
-                dimensions: { width: 500, height: 500 },
+                extra: { dimensions: { width: 500, height: 500 }},
             },
         ]);
 

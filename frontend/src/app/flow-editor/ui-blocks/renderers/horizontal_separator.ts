@@ -24,11 +24,10 @@ export const HorizontalSeparatorBuilder: UiFlowBlockBuilder = (canvas: SVGElemen
 class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, ConfigurableSettingsElement {
     private textBox: SVGTextElement;
     private rect: SVGRectElement;
-    readonly MinWidth = 120;
     private handle: UiElementHandle;
     private _container: ContainerFlowBlock;
     private separatorPath: SVGPathElement;
-    private _minSize: { width: number, height: number };
+    private readonly _minSize: { width: number, height: number };
 
     constructor(canvas: SVGElement, group: SVGElement,
         private block: UiFlowBlock,
@@ -56,6 +55,10 @@ class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, Configur
         node.appendChild(this.textBox);
         group.appendChild(node);
 
+        this._minSize = this.textBox.getBBox();
+        this._minSize.width += 50;
+        this._minSize.height *= 1.5;
+
         this.rect.setAttributeNS(null, 'class', "node_body");
         this.rect.setAttributeNS(null, 'x', "0");
         this.rect.setAttributeNS(null, 'y', "0");
@@ -65,8 +68,6 @@ class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, Configur
 
         this.updateStyle();
         this._updateSize();
-
-        this._minSize = this.rect.getBBox();
 
         if (initOps.workspace) {
             this.handle = new UiElementHandle(this, node, initOps.workspace, ['adjust_settings']);
@@ -230,8 +231,8 @@ class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, Configur
 
         const parentArea = this._container.getBodyArea();
         const offset = this.block.getOffset();
-        const xdiff = offset.x - (parentArea.x + 1);
-        if (xdiff != 2) {
+        const xdiff = offset.x - (parentArea.x);
+        if (xdiff != 0) {
             result = { x: -xdiff, y: 0};
         }
 
@@ -246,15 +247,16 @@ class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, Configur
             return;
         }
 
-        // Nothing to do here, actually...
+        // Nothing to do here, as the style change will be appreciated when
+        // `_updateSize()` is called.
     }
 
     // Aux
     _updateSize() {
         const textArea = this.textBox.getClientRects()[0];
 
-        const box_height = textArea.height * 1.5;
-        let box_width = Math.max(textArea.width + 50, this.MinWidth);
+        const box_height = this._minSize.height;
+        let box_width = this._minSize.width;
 
         if (this._container) {
             const parentArea = this._container.getBodyArea();

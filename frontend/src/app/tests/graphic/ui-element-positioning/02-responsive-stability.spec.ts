@@ -5,7 +5,7 @@ import { SEPARATION } from 'app/flow-editor/ui-blocks/renderers/positioning';
 import { configureTestBed, pageGraph } from './builder';
 import { doesNotChangePositionsOnReposition } from './utils';
 
-describe('FlowUI positioning: 02. Responsive stability. ', () => {
+describe('FlowUI positioning: 02. Responsive stability.', () => {
 
     beforeEach(async(() => {
         configureTestBed(TestBed);

@@ -19,6 +19,9 @@ declare const Fuse: any;
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
+const ABSOLUTE_MAX_ITERATIONS = 100;
+const DEFAULT_MAX_ITERATIONS = 10;
+
 const INV_MAX_ZOOM_LEVEL = 5;
 const TIME_BETWEEN_POSITION_ITERATIONS = 100; // In milliseconds
 
@@ -154,6 +157,7 @@ export class FlowWorkspace implements BlockManager {
                 }
                 catch (err) {
                     console.error("Error drawing block", err);
+                    continue;
                 }
 
                 if (block.container_id) {
@@ -468,12 +472,31 @@ export class FlowWorkspace implements BlockManager {
 
     private set_events() {
         let lastMouseDownTime = null;
-        this.canvas.onmousedown = ((ev: MouseEvent) => {
-            if (this.state !== 'waiting') {
-                return;
-            }
+        const startMove: (ev?: MouseEvent) => (() => void) = ((ev: MouseEvent | undefined)  => {
+            let last = ev ?  { x: ev.x, y: ev.y } : null;
 
-            if (ev.target !== this.canvas) {
+            this.state = 'dragging-workspace';
+            this.canvas.classList.add('dragging');
+
+            this.canvas.onmousemove = ((ev: MouseEvent) => {
+                if (last) {
+                    this.top_left.x -= (ev.x - last.x) * this.inv_zoom_level;
+                    this.top_left.y -= (ev.y - last.y) * this.inv_zoom_level;
+                }
+                last = { x: ev.x, y: ev.y };
+
+                this.update_top_left();
+            });
+
+            return () => {
+                this.state = 'waiting';
+                this.canvas.classList.remove('dragging');
+                this.canvas.onmousemove = null;
+            }
+        });
+
+        this.canvas.onmousedown = (ev: MouseEvent) => {
+            if (this.state !== 'waiting') {
                 return;
             }
 
@@ -497,31 +520,34 @@ export class FlowWorkspace implements BlockManager {
                     this.canvas.onmousemove = null;
                     this.canvas.onmouseup = null;
                 });
-
             }
             else {
-
                 lastMouseDownTime = time;
 
-                let last = { x: ev.x, y: ev.y };
-
-                this.state = 'dragging-workspace';
-                this.canvas.classList.add('dragging');
-
-                this.canvas.onmousemove = ((ev: MouseEvent) => {
-                    this.top_left.x -= (ev.x - last.x) * this.inv_zoom_level;
-                    this.top_left.y -= (ev.y - last.y) * this.inv_zoom_level;
-                    last = { x: ev.x, y: ev.y };
-
-                    this.update_top_left();
-                });
-
+                const stopMove = startMove(ev);
                 this.canvas.onmouseup = (() => {
-                    this.state = 'waiting';
-                    this.canvas.classList.remove('dragging');
-                    this.canvas.onmousemove = null;
                     this.canvas.onmouseup = null;
+                    stopMove();
                 });
+            }
+        };
+
+        // Capture key presses directed to canvas
+        document.body.onkeydown = ((ev: KeyboardEvent) => {
+            if (this.state !== 'waiting') {
+                return;
+            }
+
+            if ((ev.target === document.body) && (ev.code === 'Space')) {
+                const stopMove = startMove(null);
+
+                document.body.onkeyup = ((ev: KeyboardEvent) => {
+                    if (ev.code === 'Space') {
+                        document.body.onkeyup = null;
+                        stopMove();
+                    }
+                });
+
             }
         });
 
@@ -599,7 +625,14 @@ export class FlowWorkspace implements BlockManager {
         this.selectionRect.setAttributeNS(null, 'height', area.height + '');
 
         const blocks = this._getBlocksInArea(area);
-        this.updateSelectBlockList(blocks);
+
+        // Discard blocks that cannot be selected
+        const selectableBlocks = blocks.filter(b => {
+            const block = this.blocks[b].block;
+
+            return !((block instanceof ContainerFlowBlock) && (block.isPage));
+        });
+        this.updateSelectBlockList(selectableBlocks);
     }
 
     private _getBlocksInArea(area: Area2D): string[] {
@@ -879,6 +912,10 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public getBlock(blockId: string): FlowBlock {
+        if (!this.blocks[blockId]) {
+            throw Error(`Block (id=${blockId}) not found`);
+        }
+
         return this.blocks[blockId].block;
     }
 
@@ -1445,7 +1482,8 @@ export class FlowWorkspace implements BlockManager {
                 console.error(err);
             }
 
-            if (!removed) {
+            // If autoposition is not activated, only move the connections present
+            if (!removed && !this.autoposition) {
                 // Update moved block's connections
                 for (const movedId of moved) {
                     for (const conn of this.blocks[movedId].connections) {
@@ -1460,7 +1498,11 @@ export class FlowWorkspace implements BlockManager {
                     moved.push(oldContainer);
                 }
             }
-            this.repositionAll();
+
+            // Else, just rely on the autopositioning
+            if (this.autoposition) {
+                this.repositionAll();
+            }
         });
     }
 
@@ -1477,14 +1519,31 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public repositionAll() {
-        return this._reposition(Object.keys(this.blocks));
+        const blocks = Object.keys(this.blocks);
+        this._reposition(blocks);
+
+        for (const blockId of blocks) {
+            for (const conn of this.blocks[blockId].connections) {
+                this.updateConnection(conn);
+            }
+
+            this.updateBlockInputHelpersPosition(blockId);
+        }
     }
 
-    async repositionIteratively() {
+    async repositionIteratively(max_iterations?: number) {
         // For positioning debugging purposes
         const its = [];
 
-        for (let i = 0; i < 100; i++) {
+        if (!max_iterations) {
+            max_iterations = DEFAULT_MAX_ITERATIONS;
+        }
+        if (max_iterations > ABSOLUTE_MAX_ITERATIONS) {
+            max_iterations = ABSOLUTE_MAX_ITERATIONS;
+            console.warn(`Limited max iterations number. ${max_iterations} -> ${ABSOLUTE_MAX_ITERATIONS}`);
+        }
+
+        for (let i = 0; i < max_iterations; i++) {
             console.time("It " + (i + 1));
 
             const prevPos: [string, Area2D][] = Object.keys(this.blocks).map( id => [id, this.blocks[id].block.getBodyArea() ] )

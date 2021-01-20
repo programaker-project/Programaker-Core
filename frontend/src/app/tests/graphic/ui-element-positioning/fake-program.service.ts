@@ -36,6 +36,10 @@ export class FakeProgramService {
          return this._programGetter(programId);
     }
 
+    getAssetUrlOnProgram(assetId: string, programId: string): string {
+        return `http://localhost:9999/programs/by-id/${programId}/assets/by-id/${assetId}`;
+    }
+
     watchProgramLogs(programId: string, options: { request_previous_logs?: boolean }): Observable<ProgramInfoUpdate> {
         return new Observable<ProgramInfoUpdate>(observer => {
             this._observers.push(observer)

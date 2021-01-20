@@ -6,7 +6,7 @@ import { TextEditable, TextReadable, UiFlowBlock, UiFlowBlockBuilderInitOps, UiF
 import { HandleableElement, UiElementHandle } from "./ui_element_handle";
 import { CutElement, CutNode, CutTree, CutType, UiElementRepr, ContainerElementRepr, DEFAULT_CUT_TYPE } from "./ui_tree_repr";
 import { combinedManipulableArea, getRefBox, listToDict, manipulableAreaToArea2D } from "./utils";
-import { PositionResponsiveContents, SEPARATION } from "./positioning";
+import { PositionResponsiveContents, SEPARATION, CenterElements } from "./positioning";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
@@ -138,7 +138,8 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
                 bArea.height = minArea.height;
 
                 if (!c.isHorizontallyStackable()) {
-                    separationX = 0
+                    separationX = 0;
+                    bArea.x = off.x;
                 }
             }
 
@@ -319,7 +320,7 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
 
         const allContents = this.block.recursiveGetAllContents();
 
-        const cutTree = PositionResponsiveContents(this, this.contents, allContents, area);
+        const { tree: cutTree, toCenter: toCenter} = PositionResponsiveContents(this, this.contents, allContents, area);
 
         const contentDict = listToDict(
             allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],
@@ -332,6 +333,8 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
         const newArea = getRect(elems);
 
         this.resize(manipulableAreaToArea2D(newArea));
+
+        CenterElements(toCenter);
     }
 
     get container(): ContainerFlowBlock {

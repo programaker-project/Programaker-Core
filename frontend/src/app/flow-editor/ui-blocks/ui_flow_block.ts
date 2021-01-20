@@ -72,7 +72,7 @@ export interface UiFlowBlockOptions extends FlowBlockOptions {
     block_id?: string,
 }
 
-interface UiFlowBlockExtraData {
+export interface UiFlowBlockExtraData {
     textContent?: string,
     content?: any,
     dimensions?: { width: number, height: number },
@@ -417,7 +417,13 @@ export class UiFlowBlock implements FlowBlock {
         options.builder = templateOptions.builder;
 
         const block = new UiFlowBlock(options, toolbox.uiSignalService);
-        block.blockData = JSON.parse(JSON.stringify(data.value.extra));
+
+        if (data.value.extra) {
+            block.blockData = JSON.parse(JSON.stringify(data.value.extra));
+        }
+        else {
+            block.blockData = {};
+        }
 
         return block;
     }
