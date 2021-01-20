@@ -19,6 +19,9 @@ declare const Fuse: any;
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
+const ABSOLUTE_MAX_ITERATIONS = 100;
+const DEFAULT_MAX_ITERATIONS = 10;
+
 const INV_MAX_ZOOM_LEVEL = 5;
 const TIME_BETWEEN_POSITION_ITERATIONS = 100; // In milliseconds
 
@@ -1521,11 +1524,19 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
-    async repositionIteratively() {
+    async repositionIteratively(max_iterations?: number) {
         // For positioning debugging purposes
         const its = [];
 
-        for (let i = 0; i < 100; i++) {
+        if (!max_iterations) {
+            max_iterations = DEFAULT_MAX_ITERATIONS;
+        }
+        if (max_iterations > ABSOLUTE_MAX_ITERATIONS) {
+            max_iterations = ABSOLUTE_MAX_ITERATIONS;
+            console.warn(`Limited max iterations number. ${max_iterations} -> ${ABSOLUTE_MAX_ITERATIONS}`);
+        }
+
+        for (let i = 0; i < max_iterations; i++) {
             console.time("It " + (i + 1));
 
             const prevPos: [string, Area2D][] = Object.keys(this.blocks).map( id => [id, this.blocks[id].block.getBodyArea() ] )
