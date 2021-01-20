@@ -322,6 +322,14 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
 
         const { tree: cutTree, toCenter: toCenter} = PositionResponsiveContents(this, this.contents, allContents, area);
 
+        if (!cutTree) {
+            // No contents, just set to min size
+
+            this.resize({ x: area.x, y: area.y, width: MIN_WIDTH, height: MIN_HEIGHT });
+
+            return;
+        }
+
         const contentDict = listToDict(
             allContents.filter(x => x instanceof UiFlowBlock) as UiFlowBlock[],
             c => c.id);

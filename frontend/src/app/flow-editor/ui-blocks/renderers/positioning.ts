@@ -18,7 +18,7 @@ export function PositionResponsiveContents(handler: UiFlowBlockHandler,
                                            blocks: FlowBlock[],
                                            allBlocks: FlowBlock[],
                                            offset: Position2D,
-                                          ): {tree: CutTree, toCenter: ResponsivePositionToCenter[]} {
+                                          ): {tree: CutTree | null, toCenter: ResponsivePositionToCenter[]} {
     // Format in a grid-like
     const uiPos = (blocks
         .filter(b => (b instanceof UiFlowBlock))
@@ -32,6 +32,10 @@ export function PositionResponsiveContents(handler: UiFlowBlockHandler,
 
             return {i, a: area, b: (b as UiFlowBlock)};
         }));
+
+    if (uiPos.length === 0){
+        return { tree: null, toCenter: [] };
+    }
 
     const tree = safeReduceTree(cleanestTree(uiPos, uiPos.map(({b: block}) => block)));
 
