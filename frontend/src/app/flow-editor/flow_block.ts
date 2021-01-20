@@ -110,6 +110,7 @@ export interface ContainerBlock {
     removeContentBlock(block: FlowBlock): void;
     addContentBlock(block: FlowBlock): void;
     isPage: boolean;
+    id: string;
 }
 
 export interface Resizeable {
