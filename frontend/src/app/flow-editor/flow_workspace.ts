@@ -1966,6 +1966,11 @@ export class FlowWorkspace implements BlockManager {
         const info = this.blocks[blockId];
         console.debug("Removing block:", info);
 
+        if (!info) {
+            console.debug("Already removed", blockId);
+            return;
+        }
+
         if (info.block instanceof ContainerFlowBlock) {
             const parent_container_id = info.container_id;
             const parent_container = parent_container_id ? this.blocks[parent_container_id].block : null;
