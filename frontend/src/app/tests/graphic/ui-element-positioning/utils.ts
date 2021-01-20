@@ -11,6 +11,7 @@ export function doesNotChangePositionsOnReposition(workspace: FlowWorkspace, blo
         const after = workspace.getBlock(id).getBodyArea();
 
         return {
+            id: id,
             x: Math.abs(after.x - prev.x),
             y: Math.abs(after.y - prev.y),
             width: Math.abs(after.width - prev.width),
@@ -25,8 +26,7 @@ export function doesNotChangePositionsOnReposition(workspace: FlowWorkspace, blo
         height: Math.max(...diffs.map(d => d.height)),
     };
 
-
-    if ((Math.abs(mov.x) >= 1) && (Math.abs(mov.y) >= 1) && (Math.abs(mov.width) >= 1) && (Math.abs(mov.height) >= 1)) {
+    if ((mov.x >= 1) || (mov.y >= 1) || (mov.width >= 1) || (mov.height >= 1)) {
         // @ts-ignore Avoid importing this from assert() as that one has 2 more parameters
         fail("Movement on iteration that should not change positions: " + JSON.stringify(mov));
     }

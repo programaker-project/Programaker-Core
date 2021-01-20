@@ -154,6 +154,7 @@ export class FlowWorkspace implements BlockManager {
                 }
                 catch (err) {
                     console.error("Error drawing block", err);
+                    continue;
                 }
 
                 if (block.container_id) {
@@ -901,6 +902,10 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public getBlock(blockId: string): FlowBlock {
+        if (!this.blocks[blockId]) {
+            throw Error(`Block (id=${blockId}) not found`);
+        }
+
         return this.blocks[blockId].block;
     }
 

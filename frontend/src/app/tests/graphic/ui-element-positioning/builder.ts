@@ -24,6 +24,7 @@ import { FakeUiSignalService } from './fake-ui-signal.service';
 import { FlowGraph } from '../../../flow-editor/flow_graph';
 import { uuidv4 } from '../../../flow-editor/utils';
 import { UiElementWidgetType } from '../../../flow-editor/ui-blocks/renderers/ui_tree_repr';
+import { UiFlowBlockExtraData } from '../../../flow-editor/ui-blocks/ui_flow_block';
 
 export function configureTestBed(testBed: TestBedStatic) {
     testBed.configureTestingModule({
@@ -80,7 +81,7 @@ type TestGraphElement = {
     type: UiElementWidgetType,
     x: number, y: number,
     contents?: TestGraphElement[],
-    dimensions?: { width: number, height: number },
+    extra?: UiFlowBlockExtraData,
 };
 
 export function pageGraph(elements: TestGraphElement[]): [FlowGraph, string[], string] {
@@ -123,7 +124,6 @@ export function pageGraph(elements: TestGraphElement[]): [FlowGraph, string[], s
 				        "type": "ui_flow_block",
 				        "id": el.type,
 			        },
-                    extra: {}
 		        },
 		        "type": "ui_flow_block"
 	        },
@@ -131,13 +131,12 @@ export function pageGraph(elements: TestGraphElement[]): [FlowGraph, string[], s
             position: { x: el.x, y: el.y }
         }
 
-        if (el.dimensions) {
-            graph.nodes[id].data.value.extra.dimensions = el.dimensions;
+        if (el.extra) {
+            graph.nodes[id].data.value.extra = el.extra;
         }
 
         if (el.contents) {
             graph.nodes[id].data.subtype = 'container_flow_block';
-
 
             for (const subEl of el.contents.concat([]).reverse()) {
                 (subEl as any).container = id;

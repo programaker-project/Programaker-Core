@@ -10,7 +10,7 @@ import { FlowWorkspace } from "../../flow_workspace";
 
 
 const SvgNS = "http://www.w3.org/2000/svg";
-const MAX_WIDTH = 1024;
+export const MAX_WIDTH = 1024;
 
 const DefaultContent =  { type: 'text', value: "- Static (editable) text -"};
 
