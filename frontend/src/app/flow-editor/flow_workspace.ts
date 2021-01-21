@@ -249,7 +249,7 @@ export class FlowWorkspace implements BlockManager {
 
     private connection_group: SVGGElement;
     private block_group: SVGGElement;
-    private page_group: SVGGElement;
+    private container_group: SVGGElement;
     private containers: (FlowBlock & ContainerBlock)[] = [];
 
     private top_left = { x: 0, y: 0 };
@@ -321,12 +321,12 @@ export class FlowWorkspace implements BlockManager {
 
         this.connection_group = document.createElementNS(SvgNS, "g");
         this.block_group = document.createElementNS(SvgNS, 'g');
-        this.page_group = document.createElementNS(SvgNS, 'g');
+        this.container_group = document.createElementNS(SvgNS, 'g');
 
         // The order of elements determines the relative Z-index
         // The "later" an element is added, the "higher" it is.
         // The elements are stored in groups so their Z-indexes are consistent.
-        this.canvas.appendChild(this.page_group);
+        this.canvas.appendChild(this.container_group);
         this.canvas.appendChild(this.input_helper_section);
         this.canvas.appendChild(this.trashcan);
 
@@ -697,13 +697,6 @@ export class FlowWorkspace implements BlockManager {
             const block = this.blocks[id].block;
             const element = block.getBodyElement();
 
-            if (element instanceof ContainerFlowBlock) {
-                if (element.isPage) {
-                    // Pages are on a different group
-                    console.warn("Cannot raise a page");
-                    continue
-                }
-            }
             element.parentNode.appendChild(element);
         }
     }
@@ -951,9 +944,7 @@ export class FlowWorkspace implements BlockManager {
         let group = this.block_group;
         const isContainer = block instanceof ContainerFlowBlock;
         if (isContainer) {
-            if ((block as ContainerFlowBlock).isPage) {
-                group = this.page_group;
-            }
+            group = this.container_group;
         }
 
         this._withNoZoom(() => {
