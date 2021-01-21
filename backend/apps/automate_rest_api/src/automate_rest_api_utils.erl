@@ -6,8 +6,10 @@
         , stream_body_to_file_hashname/3
         , user_picture_path/1
         , user_has_picture/1
+        , user_picture_modification_time/1
         , group_picture_path/1
         , group_has_picture/1
+        , group_picture_modification_time/1
         , get_bridges_on_program_id/1
         , get_owner_asset_directory/1
         ]).
@@ -76,12 +78,18 @@ stream_body_to_file_hashname(Req, Path, FileKey) ->
 user_has_picture(UserId) ->
     filelib:is_file(user_picture_path(UserId)).
 
+user_picture_modification_time(UserId) ->
+    case filelib:last_modified(user_picture_path(UserId)) of
+        0 -> {error, not_found};
+        Date -> { ok, Date }
+    end.
+
 -spec user_picture_path(binary()) -> binary().
 user_picture_path(UserId) ->
     binary:list_to_bin(
       lists:flatten(io_lib:format("~s/~s/picture", [automate_configuration:asset_directory("public/users/")
-                                           , UserId
-                                           ]))).
+                                                   , UserId
+                                                   ]))).
 
 group_has_picture(GroupId) ->
     filelib:is_file(group_picture_path(GroupId)).
@@ -93,12 +101,18 @@ group_picture_path(GroupId) ->
                                                    , GroupId
                                                    ]))).
 
+group_picture_modification_time(GroupId) ->
+    case filelib:last_modified(group_picture_path(GroupId)) of
+        0 -> {error, not_found};
+        Date -> { ok, Date }
+    end.
+
 -spec get_owner_asset_directory(owner_id()) -> binary().
 get_owner_asset_directory({OwnerType, OwnerId}) ->
-     OwnerTypeDir = case OwnerType of
-                        user -> "users";
-                        group -> "groups"
-    end,
+    OwnerTypeDir = case OwnerType of
+                       user -> "users";
+                       group -> "groups"
+                   end,
     list_to_binary(io_lib:format("~s/~s/_assets",
                                  [automate_configuration:asset_directory("public/" ++ OwnerTypeDir ++ "/" )
                                  , OwnerId
