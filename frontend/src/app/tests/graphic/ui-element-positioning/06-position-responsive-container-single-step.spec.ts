@@ -4,7 +4,6 @@ import { FlowWorkspace } from '../../../flow-editor/flow_workspace';
 import { SEPARATION } from 'app/flow-editor/ui-blocks/renderers/positioning';
 import { configureTestBed, pageGraph } from './builder';
 import { doesNotChangePositionsOnReposition } from './utils';
-import { MAX_WIDTH as TEXT_MAX_WIDTH } from 'app/flow-editor/ui-blocks/renderers/fixed_text';
 
 describe('FlowUI positioning: 06. Position responsive container.', () => {
 
@@ -12,6 +11,9 @@ describe('FlowUI positioning: 06. Position responsive container.', () => {
         configureTestBed(TestBed);
     }));
 
+    // ----------------------------
+    // UI Card tests
+    // ----------------------------
     it('Simple UI cards should have a stable position', async () => {
         const fixture = TestBed.createComponent(FlowEditorComponent);
 
@@ -183,6 +185,205 @@ describe('FlowUI positioning: 06. Position responsive container.', () => {
             expect(sectionArea.height + SEPARATION * 2)
                 .toBe(cardArea.height,
                       `${sectionArea.height} + ${SEPARATION} * 2 =/= ${cardArea.height}`);
+
+            // Button must be SEPARATION to the left & top of the section
+            expect(sectionArea.y + SEPARATION)
+                .toBe(buttonArea.y,
+                      `${sectionArea.y} + ${SEPARATION} =/= ${buttonArea.y}`);
+
+            expect(sectionArea.x + SEPARATION)
+                .toBe(buttonArea.x,
+                      `${sectionArea.x} + ${SEPARATION} =/= ${buttonArea.x}`);
+
+            expect(buttonArea.y + buttonArea.height + SEPARATION)
+                .toBe(sectionArea.y + sectionArea.height,
+                      `${buttonArea.y} + ${buttonArea.height} + ${SEPARATION} =/= ${sectionArea.y} + ${sectionArea.height}`);
+        };
+
+        // Check once
+        check();
+
+        // Re-position to check for stability
+        doesNotChangePositionsOnReposition(workspace, blocks);
+
+        // Check again
+        check();
+    });
+
+    // ----------------------------
+    // Link area tests
+    // ----------------------------
+    it('Link Areas should have a stable position', async () => {
+        const fixture = TestBed.createComponent(FlowEditorComponent);
+
+        const app: FlowEditorComponent = fixture.debugElement.componentInstance;
+        expect(app).toBeInstanceOf(FlowEditorComponent);
+        await app.ngOnInit();
+
+        const workspace = app.workspace;
+        expect(workspace).toBeInstanceOf(FlowWorkspace);
+
+        const [graph, blocks, page] = pageGraph([
+            {
+                type: "link_area",
+                x: 10, y: 10,
+                contents: [
+                    {
+                        type: 'horizontal_ui_section',
+                        x: 10, y: 10,
+                        contents: [
+                            {
+                                type: 'simple_button',
+                                x: 10, y: 10,
+                            },
+                        ],
+                    },
+                ],
+            },
+        ]);
+
+        const [ link, section, button ] = blocks;
+
+        workspace.load(graph);
+        workspace.repositionAll();
+        workspace.center();
+
+        const result = workspace.getGraph();
+
+        expect(Object.keys(result.nodes).length).toBe(blocks.length + 1);
+        /**
+         * Layout:
+         *    +--------------+
+         *    |+------------+|
+         *    || +--------+ ||
+         *    || | Button | ||
+         *    || +--------+ ||
+         *    || Horizontal ||
+         *    ||    Section ||
+         *    |+------------+|
+         *    |   LinkArea   |
+         *    +--------------+
+         *
+         **/
+
+
+        const check = () => {
+            const linkArea = workspace.getBlock(link).getBodyArea();
+            const sectionArea = workspace.getBlock(section).getBodyArea();
+            const buttonArea = workspace.getBlock(button).getBodyArea();
+            const pageArea = workspace.getBlock(page).getBodyArea();
+
+            // Link area has to has to take all width (minus separation)
+            expect(linkArea.x)
+                .toBe(pageArea.x + SEPARATION,
+                      `${linkArea.x} =/= ${pageArea.x} + ${SEPARATION}`);
+            expect(linkArea.width + SEPARATION * 2)
+                .toBe(pageArea.width,
+                      `${linkArea.width} + ${SEPARATION} * 2 =/= ${pageArea.width}`);
+
+            // Section has to take all width on link, and all height minus separation
+            expect(sectionArea.x).toEqual(linkArea.x);
+            expect(sectionArea.width).toEqual(linkArea.width);
+
+            expect(sectionArea.y)
+                .toBe(linkArea.y + SEPARATION,
+                      `${sectionArea.y} =/= ${linkArea.y} + ${SEPARATION}`);
+            expect(sectionArea.height + SEPARATION * 2)
+                .toBe(linkArea.height,
+                      `${sectionArea.height} + ${SEPARATION} * 2 =/= ${linkArea.height}`);
+
+            // Button must be SEPARATION to the left & top of the section
+            expect(sectionArea.y + SEPARATION)
+                .toBe(buttonArea.y,
+                      `${sectionArea.y} + ${SEPARATION} =/= ${buttonArea.y}`);
+
+            expect(sectionArea.x + SEPARATION)
+                .toBe(buttonArea.x,
+                      `${sectionArea.x} + ${SEPARATION} =/= ${buttonArea.x}`);
+
+            expect(buttonArea.y + buttonArea.height + SEPARATION)
+                .toBe(sectionArea.y + sectionArea.height,
+                      `${buttonArea.y} + ${buttonArea.height} + ${SEPARATION} =/= ${sectionArea.y} + ${sectionArea.height}`);
+        };
+
+        // Check once
+        check();
+
+        // Re-position to check for stability
+        doesNotChangePositionsOnReposition(workspace, blocks);
+
+        // Check again
+        check();
+    });
+
+    it('Link Areas should have a stable position even out of Pages', async () => {
+        const fixture = TestBed.createComponent(FlowEditorComponent);
+
+        const app: FlowEditorComponent = fixture.debugElement.componentInstance;
+        expect(app).toBeInstanceOf(FlowEditorComponent);
+        await app.ngOnInit();
+
+        const workspace = app.workspace;
+        expect(workspace).toBeInstanceOf(FlowWorkspace);
+
+        const [graph, blocks, _page] = pageGraph([
+            {
+                type: "link_area",
+                x: 10, y: 10,
+                contents: [
+                    {
+                        type: 'horizontal_ui_section',
+                        x: 10, y: 10,
+                        contents: [
+                            {
+                                type: 'simple_button',
+                                x: 10, y: 10,
+                            },
+                        ],
+                    },
+                ],
+            },
+        ], { noPage: true });
+
+        const [ link, section, button ] = blocks;
+
+        workspace.load(graph);
+        workspace.repositionAll();
+        workspace.center();
+
+        const result = workspace.getGraph();
+
+        expect(Object.keys(result.nodes).length).toBe(blocks.length);
+        /**
+         * Layout:
+         *    +--------------+
+         *    |+------------+|
+         *    || +--------+ ||
+         *    || | Button | ||
+         *    || +--------+ ||
+         *    || Horizontal ||
+         *    ||    Section ||
+         *    |+------------+|
+         *    |   LinkArea   |
+         *    +--------------+
+         *
+         **/
+
+        const check = () => {
+            const linkArea = workspace.getBlock(link).getBodyArea();
+            const sectionArea = workspace.getBlock(section).getBodyArea();
+            const buttonArea = workspace.getBlock(button).getBodyArea();
+
+            // Section has to take all width on link, and all height minus separation
+            expect(sectionArea.x).toEqual(linkArea.x);
+            expect(sectionArea.width).toEqual(linkArea.width);
+
+            expect(sectionArea.y)
+                .toBe(linkArea.y + SEPARATION,
+                      `${sectionArea.y} =/= ${linkArea.y} + ${SEPARATION}`);
+            expect(sectionArea.height + SEPARATION * 2)
+                .toBe(linkArea.height,
+                      `${sectionArea.height} + ${SEPARATION} * 2 =/= ${linkArea.height}`);
 
             // Button must be SEPARATION to the left & top of the section
             expect(sectionArea.y + SEPARATION)
