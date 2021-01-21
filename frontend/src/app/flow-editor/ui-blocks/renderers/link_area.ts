@@ -200,6 +200,10 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Autoresi
         return false;
     }
 
+    doesTakeAllVertical() {
+        return false;
+    }
+
     onGetFocus() {
         if (!this.handle) {
             throw new Error("Cannot show manipulators as workspace has not been received.");
@@ -254,15 +258,21 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Autoresi
     }
 
     repositionContents(): void {
-        if (this._contents.length === 0) {
-            return;
-        }
-
         const allContents = this.block.recursiveGetAllContents();
         const { tree: cutTree, toCenter: toCenter} = PositionResponsiveContents(this, this._contents, allContents, this.getBodyArea());
 
         if (!cutTree) {
             // No contents
+            const minArea = this.getMinSize();
+            const off = this.block.getOffset();
+
+            this.resize({
+                x: off.x,
+                y: off.y,
+                width: minArea.width,
+                height: minArea.height,
+            });
+
             return;
         }
 

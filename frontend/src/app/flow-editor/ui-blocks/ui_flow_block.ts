@@ -47,6 +47,7 @@ export interface Autoresizable extends Resizeable {
     isAutoresizable: () => this is Autoresizable;
     getMinSize(): { width: number, height: number  },
     doesTakeAllHorizontal: () => boolean,
+    doesTakeAllVertical: () => boolean,
 };
 
 export interface TextReadable {
@@ -678,7 +679,13 @@ export class UiFlowBlock implements FlowBlock {
         return this.handler.doesTakeAllHorizontal();
     }
 
+    doesTakeAllVertical(): boolean {
+        if (!this.handler.isAutoresizable || !this.handler.isAutoresizable()) {
+            throw Error("Not autoresizable")
+        }
 
+        return this.handler.doesTakeAllVertical();
+    }
 
     // Container-related
     updateContainer(container: FlowBlock) {
