@@ -84,29 +84,36 @@ type TestGraphElement = {
     extra?: UiFlowBlockExtraData,
 };
 
-export function pageGraph(elements: TestGraphElement[]): [FlowGraph, string[], string] {
+export function pageGraph(elements: TestGraphElement[], options?: { noPage: boolean }): [FlowGraph, string[], string] {
     const graph: FlowGraph = { edges: [], nodes: {} };
 
-    const pageId = uuidv4();
-    graph.nodes[pageId] = {
-        data: {
-		    value: {
-			    "options": {
-				    "type": "ui_flow_block",
-				    "subtype": "container_flow_block",
-				    "outputs": [],
-				    "isPage": true,
-				    "inputs": [],
-				    "id": "responsive_page_holder",
-			    },
-                extra: {}
-		    },
-		    type: "ui_flow_block",
-		    subtype: "container_flow_block"
-	    },
-        container_id: null,
-        position: { x: 0, y: 0 },
-    };
+    if (!options) {
+        options = { noPage: false };
+    }
+
+    const pageId = options.noPage ? null : uuidv4();
+
+    if (pageId) {
+        graph.nodes[pageId] = {
+            data: {
+		        value: {
+			        "options": {
+				        "type": "ui_flow_block",
+				        "subtype": "container_flow_block",
+				        "outputs": [],
+				        "isPage": true,
+				        "inputs": [],
+				        "id": "responsive_page_holder",
+			        },
+                    extra: {}
+		        },
+		        type: "ui_flow_block",
+		        subtype: "container_flow_block"
+	        },
+            container_id: null,
+            position: { x: 0, y: 0 },
+        };
+    }
 
     const ids = [];
     const todo: (TestGraphElement & { container?: string })[] = elements.concat();
