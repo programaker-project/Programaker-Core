@@ -186,7 +186,11 @@ export function PositionHorizontalContents(handler: UiFlowBlockHandler, blocks: 
                     const min = b.getMinSize();
                     area.width = min.width;
                     area.height = min.height;
-                    minArea = area;
+                    minArea = Object.assign({}, area);
+
+                    if (!b.doesTakeAllVertical()) {
+                        area.height += SEPARATION * 2;
+                    }
                 }
                 else {
                     minArea = Object.assign({}, area);
@@ -212,7 +216,7 @@ export function PositionHorizontalContents(handler: UiFlowBlockHandler, blocks: 
     let xpos = separation;
     for (const [block, blockArea, minArea] of blockAreas) {
         const x = xpos;
-        const y = block.isAutoresizable() ? 0 : (height - minArea.height) / 2;
+        const y = block.isAutoresizable() && block.doesTakeAllVertical() ? 0 : (height - minArea.height) / 2;
 
         const absX = area.x + x;
         const absY = area.y + y;
@@ -246,7 +250,11 @@ export function PositionVerticalContents(handler: UiFlowBlockHandler, blocks: Fl
                     const min = b.getMinSize();
                     area.width = min.width;
                     area.height = min.height;
-                    minArea = area;
+                    minArea = Object.assign({}, area);
+
+                    if (!b.doesTakeAllHorizontal()) {
+                        area.width += SEPARATION * 2;
+                    }
                 }
                 else {
                     minArea = Object.assign({}, area);

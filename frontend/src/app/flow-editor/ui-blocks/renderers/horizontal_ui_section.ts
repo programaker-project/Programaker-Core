@@ -113,6 +113,10 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         return !this.nestedHorizontal;
     }
 
+    doesTakeAllVertical() {
+        return this.nestedHorizontal;
+    }
+
     isAutoresizable(): this is Autoresizable {
         return true;
     }

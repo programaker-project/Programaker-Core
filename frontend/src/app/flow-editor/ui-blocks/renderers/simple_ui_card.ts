@@ -203,6 +203,10 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Auto
         return false;
     }
 
+    doesTakeAllVertical() {
+        return false;
+    }
+
     getMinSize() {
         if (this._contents.length === 0) {
             return { width: MIN_WIDTH, height: MIN_HEIGHT };
@@ -267,15 +271,21 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Auto
     }
 
     repositionContents(): void {
-        if (this._contents.length === 0) {
-            return;
-        }
-
         const allContents = this.block.recursiveGetAllContents();
         const { tree: cutTree, toCenter: toCenter} = PositionResponsiveContents(this, this._contents, allContents, this.getBodyArea());
 
         if (!cutTree) {
             // No contents
+            const minArea = this.getMinSize();
+            const off = this.block.getOffset();
+
+            this.resize({
+                x: off.x,
+                y: off.y,
+                width: minArea.width,
+                height: minArea.height,
+            });
+
             return;
         }
 
