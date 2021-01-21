@@ -13,6 +13,7 @@
 -include("../../automate_storage/src/records.hrl").
 
 -define(UTILS, automate_rest_api_utils).
+-define(MAX_AGE_IMMUTABLE_SECONDS, 31536000). %% Seconds in a year
 
 -record(state, { owner_id :: owner_id() | undefined
                , asset_id :: binary()
@@ -54,13 +55,12 @@ allowed_methods(Req, State) ->
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State=#state{owner_id=_OwnerId}) ->
-    Req1 = automate_rest_api_cors:set_headers(Req),
-    case cowboy_req:method(Req1) of
+    case cowboy_req:method(Req) of
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
-            { true, Req1, State };
+            { true, Req, State };
         <<"GET">> ->
-            { true, Req1, State }
+            { true, Req, State }
     end.
 
 
@@ -86,5 +86,6 @@ retrieve_file(Req, State=#state{ asset_id=AssetId
                   end,
 
     Res = cowboy_req:reply(200, #{ <<"content-type">> => ContentType
+                                 , <<"cache-control">> => list_to_binary(io_lib:fwrite("public, max-age=~p, immutable", [?MAX_AGE_IMMUTABLE_SECONDS]))
                                  }, {sendfile, 0, FileSize, Path}, Req),
     {stop, Res, State}.
