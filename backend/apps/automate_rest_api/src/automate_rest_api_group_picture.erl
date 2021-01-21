@@ -10,6 +10,7 @@
         , is_authorized/2
         , content_types_accepted/2
         , resource_exists/2
+        , last_modified/2
         ]).
 -export([ accept_file/2
         , retrieve_file/2
@@ -19,6 +20,7 @@
 -define(UTILS, automate_rest_api_utils).
 
 -record(state, { group_id :: binary()
+               , last_modification_time :: undefined | calendar:datetime()
                }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
@@ -26,11 +28,20 @@ init(Req, _Opts) ->
     GroupId = cowboy_req:binding(group_id, Req),
     {cowboy_rest, Req
     , #state{ group_id=GroupId
+            , last_modification_time=undefined
             }}.
 
 
 resource_exists(Req, State=#state{group_id=GroupId}) ->
-    {?UTILS:group_has_picture(GroupId), Req, State}.
+    case ?UTILS:group_picture_modification_time(GroupId) of
+        {error, not_found} ->
+            {false, Req, State};
+        { ok, ModTime }->
+            {true, Req, State#state{ last_modification_time=ModTime }}
+    end.
+
+last_modified(Req, State=#state{last_modification_time=ModTime}) ->
+    {ModTime, Req, State}.
 
 %% CORS
 options(Req, State) ->

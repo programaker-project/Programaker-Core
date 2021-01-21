@@ -10,6 +10,7 @@
         , is_authorized/2
         , content_types_accepted/2
         , resource_exists/2
+        , last_modified/2
         ]).
 -export([ accept_file/2
         , retrieve_file/2
@@ -18,17 +19,28 @@
 -include("./records.hrl").
 -define(UTILS, automate_rest_api_utils).
 
--record(state, { user_id :: binary() }).
+-record(state, { user_id :: binary()
+               , last_modification_time :: undefined | calendar:datetime()
+               }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     UserId = cowboy_req:binding(user_id, Req),
     {cowboy_rest, Req
-    , #state{ user_id=UserId }}.
-
+    , #state{ user_id=UserId
+            , last_modification_time=undefined
+            }}.
 
 resource_exists(Req, State=#state{user_id=UserId}) ->
-    {?UTILS:user_has_picture(UserId), Req, State}.
+    case ?UTILS:user_picture_modification_time(UserId) of
+        {error, not_found} ->
+            {false, Req, State};
+        { ok, ModTime }->
+            {true, Req, State#state{ last_modification_time=ModTime }}
+    end.
+
+last_modified(Req, State=#state{last_modification_time=ModTime}) ->
+    {ModTime, Req, State}.
 
 %% CORS
 options(Req, State) ->
