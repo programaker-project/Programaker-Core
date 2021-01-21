@@ -169,7 +169,7 @@ render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
 
 
 render_element(E=#{ <<"widget_type">> := <<"fixed_image">>
-                  , <<"id">> := WidgetId
+                  , <<"id">> := _WidgetId
                   }, ProgramId, _Values, Req) ->
     ImgUrl = get_image_url(E, ProgramId, Req),
     [ <<"<div class=widget-container>">>
@@ -359,7 +359,15 @@ get_image_url(#{ <<"settings">> := #{ <<"body">> := #{ <<"image">> := #{ <<"id">
                 , "/assets/by-id/"
                 , ImgId
                 ],
-    cowboy_req:uri(Req, #{path => ImagePath, qs => undefined});
+    BaseChanges = #{path => ImagePath, qs => undefined },
+    Changes = case automate_configuration:get_backend_api_info() of
+                  undefined ->
+                      BaseChanges;
+                  BackendInfo ->
+                      maps:merge(BackendInfo, BaseChanges)
+    end,
+    Base = cowboy_req:uri(Req, Changes);
+
 get_image_url(_, _, _) ->
     []. %% TODO: Add a default image?
 

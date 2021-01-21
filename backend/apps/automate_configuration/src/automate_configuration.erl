@@ -8,6 +8,7 @@
 -export([ get_table_wait_time/0
         , get_program_logs_watermarks/0
         , get_frontend_root_url/0
+        , get_backend_api_info/0
         , get_sync_peers/0
         , get_sync_primary/0
         , is_node_primary/1
@@ -44,6 +45,10 @@ get_program_logs_watermarks() ->
 -spec get_frontend_root_url() -> binary().
 get_frontend_root_url() ->
     application:get_env(?APPLICATION, frontend_root_url, <<"/">>).
+
+-spec get_backend_api_info() -> #{ scheme => binary(), host => binary(), port => pos_integer() } | undefined.
+get_backend_api_info() ->
+    application:get_env(?APPLICATION, backend_api_info, undefined).
 
 -spec get_sync_peers() -> [node()].
 get_sync_peers() ->
