@@ -1,6 +1,6 @@
 import { UiSignalService } from '../../services/ui-signal.service';
 import { BlockManager } from '../block_manager';
-import { Area2D, ContainerBlock, FlowBlock, FlowBlockData, FlowBlockOptions, Movement2D, Resizeable } from '../flow_block';
+import { Area2D, ContainerBlock, FlowBlock, FlowBlockData, FlowBlockOptions, Movement2D, Resizeable, Position2D } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
 import { CutTree, UiElementWidgetType } from './renderers/ui_tree_repr';
@@ -165,7 +165,12 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     public moveBy(distance: {x: number, y: number}) {
 
         const dragged = super.moveBy(distance);
-        let result = dragged.concat(this.contents);
+
+        return dragged.concat(this.moveContents(distance));
+    }
+
+    public moveContents(distance: Position2D) {
+        let result = this.contents.concat([]);
         for (const block of this.contents) {
             const dragged = block.moveBy(distance);
             if (dragged.length > 0) {
@@ -175,11 +180,6 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
 
         return result;
     }
-
-    public moveWithoutCarrying(distance: {x: number, y: number}) {
-        return super.moveBy(distance);
-    }
-
 
     public endMove(): FlowBlock[] {
         const movement = this.handler.dropOnEndMove();

@@ -159,22 +159,22 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Auto
         const wasPos = this.block.getOffset();
 
         const mov = {
-            x: (inflexibleArea.x - SEPARATION) - wasPos.x,
-            y: (inflexibleArea.y - SEPARATION) - wasPos.y,
+            x: wasPos.x - (inflexibleArea.x - SEPARATION),
+            y: wasPos.y - (inflexibleArea.y - SEPARATION),
         };
 
-        (this.block as ContainerFlowBlock).moveWithoutCarrying(mov);
+        (this.block as ContainerFlowBlock).moveContents(mov);
 
         const pos = this.block.getOffset();
 
         const minWidth = Math.max(
             MIN_WIDTH,
-            inflexibleArea.width === 0 ? 0 : inflexibleArea.x - pos.x + inflexibleArea.width + SEPARATION,
+            inflexibleArea.width === 0 ? 0 : inflexibleArea.width + SEPARATION * 2,
         );
 
         const minHeight = Math.max(
             MIN_HEIGHT,
-            inflexibleArea.height === 0 ? 0 : inflexibleArea.y - pos.y + inflexibleArea.height + SEPARATION,
+            inflexibleArea.height === 0 ? 0 : inflexibleArea.height + SEPARATION * 2,
         );
 
         this.width = Math.max(minWidth, dim.width);

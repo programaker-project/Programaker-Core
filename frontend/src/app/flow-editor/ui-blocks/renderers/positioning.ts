@@ -1,7 +1,7 @@
 import { Area2D, FlowBlock, Position2D } from "../../flow_block";
 import { UiFlowBlock, UiFlowBlockHandler } from "../ui_flow_block";
 import { cleanestTree, getElementsInGroup, getRect, getShallowElementsInGroup, safeReduceTree } from "./responsive_page";
-import { CutNode, CutTree, ContainerElementRepr, CutType } from "./ui_tree_repr";
+import { CutNode, CutTree, ContainerElementRepr, CutType, DEFAULT_CUT_TYPE } from "./ui_tree_repr";
 import { manipulableAreaToArea2D } from "./utils";
 import { ContainerFlowBlock } from "../container_flow_block";
 
@@ -45,7 +45,14 @@ export function PositionResponsiveContents(handler: UiFlowBlockHandler,
         blockMap[block.id] = block;
     }
 
-    const toCenter = PositionTreeContentsFromTree(tree, blockMap, offset);
+    let positioningTree = tree;
+
+    // Force to at least center vertically
+    if (!(positioningTree as CutNode).cut_type) {
+        positioningTree = { cut_type: DEFAULT_CUT_TYPE, groups: [ positioningTree ] };
+    }
+
+    const toCenter = PositionTreeContentsFromTree(positioningTree, blockMap, offset);
 
     return { tree, toCenter };
 }
