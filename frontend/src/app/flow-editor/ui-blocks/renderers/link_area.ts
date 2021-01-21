@@ -142,11 +142,11 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Autoresi
         const wasPos = this.block.getOffset();
 
         const mov = {
-            x: (inflexibleArea.x - SEPARATION) - wasPos.x,
-            y: (inflexibleArea.y - SEPARATION) - wasPos.y,
+            x: wasPos.x - (inflexibleArea.x - SEPARATION),
+            y: wasPos.y - (inflexibleArea.y - SEPARATION),
         };
 
-        (this.block as ContainerFlowBlock).moveWithoutCarrying(mov);
+        (this.block as ContainerFlowBlock).moveContents(mov);
 
         const minWidth = Math.max(
             MIN_WIDTH,
