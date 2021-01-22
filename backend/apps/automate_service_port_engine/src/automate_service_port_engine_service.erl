@@ -181,4 +181,8 @@ get_block_resource_aux([ _ | TArg], Values, SaveToIndex, CurrentIndex, Acc) when
 get_block_resource_aux([ #service_port_block_collection_argument{ name=Name } | TArg ], [ Value | TValue ], SaveToIndex, CurrentIndex, Acc) ->
     get_block_resource_aux(TArg, TValue, SaveToIndex, CurrentIndex + 1, [{Name, Value} | Acc]);
 get_block_resource_aux([ _ | TArg ], [ _ | TValue ], SaveToIndex, CurrentIndex, Acc) ->
-    get_block_resource_aux(TArg, TValue, SaveToIndex, CurrentIndex + 1, Acc).
+    get_block_resource_aux(TArg, TValue, SaveToIndex, CurrentIndex + 1, Acc);
+get_block_resource_aux(_, _, _, _, Acc)->
+    %% TArgs and TValues don't have the same length.
+    %% One of them has stopped, so return the collected result.
+    Acc.
