@@ -16,7 +16,6 @@
         , lists_monitors_from_username/1
         , create_program/3
         , get_program/1
-        , get_program/2
         , get_program_logs/1
         , lists_programs_from_username/1
         , update_program/3
@@ -174,14 +173,6 @@ create_program(Username, ProgramName, ProgramType) ->
                   , generate_url_for_program_name(Username, ProgramName)
                   , ProgramType
                   } }
-    end.
-
-get_program(Username, ProgramName) ->
-    case automate_storage:get_program(Username, ProgramName) of
-        {ok, ProgramData} ->
-            {ok, program_entry_to_program(ProgramData)};
-        X ->
-            X
     end.
 
 get_program(ProgramId) ->
