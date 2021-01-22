@@ -35,7 +35,7 @@ get_how_to_enable({Module, Params}, UserInfo) ->
 get_how_to_enable(Module, UserInfo) ->
     Module:get_how_to_enable(UserInfo).
 
--spec call(module() | {module(), any()}, binary(), any(), #program_thread{}, owner_id()) -> {ok, #program_thread{}, any()}.
+-spec call(module() | {module(), any()}, binary(), any(), #program_thread{}, owner_id()) -> {ok, #program_thread{}, any()} | {error, no_connection} | {error, {error_getting_resource}}.
 call({Module, Params}, Action, Values, Thread, Owner) ->
     Module:call(Action, Values, Thread, Owner, Params);
 

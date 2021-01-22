@@ -40,12 +40,17 @@
 -record(memory_not_set, { block_id :: any()
                         }).
 
+-record(disconnected_bridge, { bridge_id :: binary()
+                             , action :: binary()
+                             }).
+
 -record(unknown_operation, { }).
 
 -type program_error_type() :: #index_not_in_list{} | #invalid_list_index_type{}
                             | #list_not_set{} | #variable_not_set{}
                             | #memory_not_set{}
-                            | #unknown_operation{} .
+                            | #unknown_operation{}
+                            | #disconnected_bridge{}.
 
 -record(program_error, { error :: program_error_type()
                        , block_id :: binary() | undefined

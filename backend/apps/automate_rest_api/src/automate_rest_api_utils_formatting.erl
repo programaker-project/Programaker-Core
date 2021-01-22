@@ -111,6 +111,14 @@ serialize_error_subtype(#invalid_list_index_type{ list_name=ListName
      , index => Index
      };
 
+serialize_error_subtype(#disconnected_bridge{ bridge_id=BridgeId
+                                            , action=Action
+                                            }) ->
+    #{ type => disconnected_bridge
+     , bridge_id => BridgeId
+     , action => Action
+     };
+
 serialize_error_subtype(#unknown_operation{}) ->
     #{ type => unknown_operation
      }.

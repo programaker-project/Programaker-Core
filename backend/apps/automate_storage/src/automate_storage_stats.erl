@@ -143,11 +143,18 @@ get_program_metrics() ->
                                                                              { badmatch, {error, no_connection} } ->
                                                                                  no_connection;
 
+                                                                             { program_error, {disconnected_bridge, _, _}, _ } ->
+                                                                                 no_connection;
+
                                                                              %% Program errors
                                                                              { program_error, {variable_not_set, _}, _ } ->
                                                                                  variable_not_set;
                                                                              { program_error, {list_not_set, _}, _ } ->
                                                                                  list_not_set;
+                                                                             { program_error, {index_not_in_list, _, _, _}, _ } ->
+                                                                                 index_not_in_list;
+                                                                             { program_error, {memory_not_set, _}, _ } ->
+                                                                                 memory_not_set;
 
                                                                              %% Version errors
                                                                              bad_operation ->
