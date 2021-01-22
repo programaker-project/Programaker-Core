@@ -717,6 +717,34 @@ get_versioning(Nodes) ->
                         end
                 }
 
+                %% Add visibility to user programs
+              , #database_version_transformation
+                { id=23
+                , apply=fun() ->
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_PROGRAMS_TABLE,
+                                                 fun({ user_program_entry
+                                                     , Id, UserId, ProgramName, ProgramType
+                                                     , ProgramParsed, ProgramOrig, Enabled, ProgramChannel
+                                                     , CreationTime, LastUploadTime, LastSuccessfulCalltime
+                                                     , LastFailedCallTime
+                                                     }) ->
+                                                         { user_program_entry
+                                                         , Id, UserId, ProgramName, ProgramType
+                                                         , ProgramParsed, ProgramOrig, Enabled, ProgramChannel
+                                                         , CreationTime, LastUploadTime, LastSuccessfulCalltime
+                                                         , LastFailedCallTime
+                                                         , false %% Default to non-public
+                                                         }
+                                                 end,
+                                                 [ id, owner, program_name, program_type, program_parsed, program_orig, enabled, program_channel
+                                                 , creation_time, last_upload_time, last_successful_call_time, last_failed_call_time
+                                                 , is_public
+                                                 ],
+                                                 user_program_entry
+                                                )
+                        end
+                }
               ]
         }.
 

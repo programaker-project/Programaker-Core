@@ -296,6 +296,10 @@ mat-card.bridge.connected-false {
     width: 80vw;
 }
 
+body .mat-dialog-container {
+    max-height: 100vh;
+}
+
 /* Logs panel */
 #logs_panel_container > .log-entry > button {
     float: right;

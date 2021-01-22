@@ -16,7 +16,6 @@
         , lists_monitors_from_username/1
         , create_program/3
         , get_program/1
-        , get_program/2
         , get_program_logs/1
         , lists_programs_from_username/1
         , update_program/3
@@ -176,14 +175,6 @@ create_program(Username, ProgramName, ProgramType) ->
                   } }
     end.
 
-get_program(Username, ProgramName) ->
-    case automate_storage:get_program(Username, ProgramName) of
-        {ok, ProgramData} ->
-            {ok, program_entry_to_program(ProgramData)};
-        X ->
-            X
-    end.
-
 get_program(ProgramId) ->
     case automate_storage:get_program_from_id(ProgramId) of
         {ok, ProgramData} ->
@@ -252,21 +243,19 @@ update_program_by_id(ProgramId,
             {error, Reason}
     end.
 
-update_program_metadata(Username, ProgramName,
-                        Metadata=#editable_user_program_metadata{program_name=NewProgramName}) ->
-
+update_program_metadata(Username, ProgramName, Metadata) ->
     case automate_storage:update_program_metadata(Username,
                                                   ProgramName,
                                                   Metadata) of
-        { ok, _ProgramId } ->
+        { ok, ProgramId } ->
+            {ok, #user_program_entry{ program_name=NewProgramName} } = automate_storage:get_program_from_id(ProgramId),
             {ok, #{ <<"link">> => generate_url_for_program_name(Username, NewProgramName) }};
         { error, Reason } ->
             {error, Reason}
     end.
 
--spec update_program_metadata(binary(), #editable_user_program_metadata{}) -> ok | {error, binary()}.
-update_program_metadata(ProgramId, Metadata=#editable_user_program_metadata{}) ->
-
+-spec update_program_metadata(binary(), map()) -> ok | {error, binary()}.
+update_program_metadata(ProgramId, Metadata) ->
     case automate_storage:update_program_metadata(ProgramId, Metadata) of
         { ok, _ProgramId } ->
             ok;
@@ -477,6 +466,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                                             , program_orig=ProgramOrig
                                             , enabled=Enabled
                                             , last_upload_time=LastUploadTime
+                                            , is_public=IsPublic
                                             }) ->
     {OwnerType, OwnerId} = Owner,
     #user_program{ id=Id
@@ -487,6 +477,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , program_orig=ProgramOrig
                  , enabled=Enabled
                  , last_upload_time=LastUploadTime
+                 , is_public=IsPublic
                  }.
 
 -spec get_platform_service_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found} | {error, no_connection} | {error, _}.

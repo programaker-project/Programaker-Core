@@ -60,6 +60,7 @@
                             , last_upload_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             , last_successful_call_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             , last_failed_call_time :: time_in_seconds() | ?MNESIA_SELECTOR
+                            , is_public :: boolean() | ?MNESIA_SELECTOR
                             }).
 
 -type log_severity() :: debug | info | warning | error.

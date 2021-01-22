@@ -81,6 +81,7 @@
     background-color: inherit;
 }
 
+button#program-visibility-state,
 button#program-rename-button,
 button#program-start-button,
 button#program-delete-button,
@@ -89,7 +90,12 @@ button#program-logs-button,
 button#advanced-program-controls-button {
     vertical-align: top;
     padding: 1ex;
-    margin-top: 2px;
+    margin-left: 0.5ex;
+
+    &.annotated-icon {
+        padding: 0.25ex;
+        margin-bottom: 1px;
+    }
 }
 
 button#program-delete-button{

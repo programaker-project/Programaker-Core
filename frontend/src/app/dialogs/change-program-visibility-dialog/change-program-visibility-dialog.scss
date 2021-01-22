@@ -1,0 +1,17 @@
+.program-name {
+    border-bottom: 2px solid #009688;
+    font-weight: bold;
+}
+
+.mat-dialog-actions > button.cancellation {
+    margin-left: auto;
+}
+
+mat-radio-button {
+    display: block;
+    margin-left: 2rem;
+}
+
+button {
+    right: 0;
+}

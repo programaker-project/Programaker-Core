@@ -58,6 +58,7 @@
     background-color: inherit;
 }
 
+button#program-visibility-state,
 button#program-rename-button,
 button#program-start-button,
 button#program-delete-button,
@@ -73,6 +74,7 @@ button#addResponsiveGridControls {
 
     &.annotated-icon {
         padding: 0.25ex;
+        margin-bottom: 1px;
     }
 }
 
@@ -95,7 +97,7 @@ button#program-start-button .action-icon {
 
 .program-name {
     display: inline;
-    padding-right: 1ex;
+    padding-right: 0.25rem;
 }
 
 .program-name > a {
@@ -105,7 +107,7 @@ button#program-start-button .action-icon {
 .program-name > .program-title {
     display: inline-block;
     width: 15ex;
-    max-width: 50vw;
+    max-width: 40vw;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;

@@ -66,6 +66,7 @@ export class Toolbox {
         private connectionService: ConnectionService,
         private sessionService: SessionService,
         private environmentService: EnvironmentService,
+        private readOnly: boolean,
         toolboxController?: ToolboxController,
     ) {
         this.controller = toolboxController || new ToolboxController();
@@ -74,37 +75,46 @@ export class Toolbox {
     }
 
     async inject(): Promise<[HTMLElement, ToolboxRegistration[], ToolboxController]> {
-        let availableConnectionsQuery = this.connectionService.getAvailableBridgesForNewConnectionOnProgram(this.program.id);
+        let registrations: ToolboxRegistration[] = [];
+        let toolboxXML: HTMLElement;
 
-        const [monitors, custom_blocks, services, connections] = await Promise.all([
-            this.monitorService.getMonitorsOnProgram(this.program.id),
-            this.customBlockService.getCustomBlocksOnProgram(this.program.id, false),
-            this.serviceService.getAvailableServicesOnProgram(this.program.id),
-            this.connectionService.getConnectionsOnProgram(this.program.id),
-        ]) as [MonitorMetadata[], ResolvedCustomBlock[], AvailableService[], BridgeConnection[]];
+        if (!this.readOnly) {
+            const availableConnectionsQuery = this.connectionService.getAvailableBridgesForNewConnectionOnProgram(this.program.id);
 
-        this.controller.addCustomBlocks(custom_blocks);
-        const categorized_blocks = this.categorize_blocks(custom_blocks,services);
+            const [monitors, custom_blocks, services, connections] = await Promise.all([
+                this.monitorService.getMonitorsOnProgram(this.program.id),
+                this.customBlockService.getCustomBlocksOnProgram(this.program.id, false),
+                this.serviceService.getAvailableServicesOnProgram(this.program.id),
+                this.connectionService.getConnectionsOnProgram(this.program.id),
+            ]) as [MonitorMetadata[], ResolvedCustomBlock[], AvailableService[], BridgeConnection[]];
 
-        let availableConnections: BridgeIndexData[];
-        try {
-            availableConnections = await availableConnectionsQuery;
-        }
-        catch (error) {
-            if ((error.name === 'HttpErrorResponse') && (error.status === 401)) {
-                // User cannot add connections, so skip adding them
-                availableConnections = [];
+            this.controller.addCustomBlocks(custom_blocks);
+            const categorized_blocks = this.categorize_blocks(custom_blocks,services);
+
+            let availableConnections: BridgeIndexData[];
+            try {
+                availableConnections = await availableConnectionsQuery;
             }
-            else {
-                throw error;
+            catch (error) {
+                if ((error.name === 'HttpErrorResponse') && (error.status === 401)) {
+                    // User cannot add connections, so skip adding them
+                    availableConnections = [];
+                }
+                else {
+                    throw error;
+                }
             }
+
+
+            registrations = registrations.concat(this.injectBlocks(monitors, categorized_blocks, services, connections));
+            toolboxXML = await this.injectToolbox(monitors, categorized_blocks);
+
+            registrations = registrations.concat(this.addAvailableConnections(availableConnections, toolboxXML));
+        }
+        else {
+            toolboxXML = await this.injectToolbox([], []);
         }
 
-
-        let registrations = this.injectBlocks(monitors, categorized_blocks, services, connections);
-        const toolboxXML = await this.injectToolbox(monitors, categorized_blocks);
-
-        registrations = registrations.concat(this.addAvailableConnections(availableConnections, toolboxXML));
         this.controller.setToolbox(toolboxXML);
 
         return [toolboxXML, registrations, this.controller];

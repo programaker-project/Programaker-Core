@@ -76,6 +76,7 @@ import { CustomSignalService } from './custom_signals/custom_signal.service';
 import { MonitorService } from './monitor.service';
 import { ServiceService } from './service.service';
 import { TemplateService } from './templates/template.service';
+import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 
 
 
@@ -127,6 +128,7 @@ import { TemplateService } from './templates/template.service';
         ConfigureBlockDialogComponent,
         ConfigureLinkDialogComponent,
         ConfigureFontColorDialogComponent,
+        ChangeProgramVisilibityDialog,
 
         // Independent components
         GroupCollaboratorEditorComponent,

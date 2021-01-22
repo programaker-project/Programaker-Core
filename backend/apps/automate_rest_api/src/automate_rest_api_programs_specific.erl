@@ -21,16 +21,23 @@
 -define(UTILS, automate_rest_api_utils).
 -define(FORMATTING, automate_rest_api_utils_formatting).
 
--record(get_program_seq, { username :: binary(), program_name :: binary() }).
+-record(get_program_seq, { username :: binary()
+                         , program_name :: binary()
+                         , program_id :: binary()
+                         , user_id :: undefined | binary()
+                         }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
-    UserId = cowboy_req:binding(user_id, Req),
+    UserName = cowboy_req:binding(user_id, Req),
     ProgramName = cowboy_req:binding(program_id, Req),
     Req1 = automate_rest_api_cors:set_headers(Req),
+    {ok, #user_program_entry{ id=ProgramId }} = automate_storage:get_program(UserName, ProgramName),
     {cowboy_rest, Req1
-    , #get_program_seq{ username=UserId
+    , #get_program_seq{ username=UserName
                       , program_name=ProgramName
+                      , program_id=ProgramId
+                      , user_id=undefined
                       }}.
 
 %% CORS
@@ -42,22 +49,36 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State=#get_program_seq{username=Username}) ->
+is_authorized(Req, State=#get_program_seq{username=Username, program_id=ProgramId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
+
+        Method ->
+            {ok, #user_program_entry{ is_public=IsPublic }} = automate_storage:get_program_from_id(ProgramId),
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
-                    { {false, <<"Authorization header not found">>} , Req1, State };
+                    case {Method, IsPublic} of
+                        {<<"GET">>, true} ->
+                            { true, Req1, State };
+                        _ ->
+                            { {false, <<"Authorization header not found">>} , Req1, State }
+                    end;
                 X ->
                     case automate_rest_api_backend:is_valid_token(X) of
                         {true, Username} ->
-                            { true, Req1, State };
-                        {true, _} -> %% Non matching username
-                            { { false, <<"Unauthorized to create a program here">>}, Req1, State };
+                            {ok, {user, UserId}} = automate_storage:get_userid_from_username(Username),
+                            { true, Req1, State#get_program_seq{ user_id=UserId } };
+                        {true, AuthUser} -> %% Non matching username
+                            case {Method, IsPublic} of
+                                {<<"GET">>, true} ->
+                                    {ok, {user, UserId}} = automate_storage:get_userid_from_username(AuthUser),
+                                    {true, Req1, State#get_program_seq{ user_id=UserId }};
+                                _ ->
+                                    { { false, <<"Unauthorized to create a program here">>}, Req1, State }
+                            end;
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
@@ -71,10 +92,16 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #get_program_seq{})
              -> { stop | binary() ,cowboy_req:req(), #get_program_seq{}}.
-to_json(Req, State) ->
-    #get_program_seq{username=Username, program_name=ProgramName} = State,
+to_json(Req, State=#get_program_seq{program_id=ProgramId, user_id=UserId}) ->
+    Qs = cowboy_req:parse_qs(Req),
+    IncludePages = case proplists:get_value(<<"retrieve_pages">>, Qs) of
+                       <<"yes">> ->
+                           true;
+                       _ ->
+                           false
+                   end,
 
-    case automate_rest_api_backend:get_program(Username, ProgramName) of
+    case automate_rest_api_backend:get_program(ProgramId) of
         { ok, Program=#user_program{ id=ProgramId, last_upload_time=ProgramTime } } ->
             Checkpoint = case automate_storage:get_last_checkpoint_content(ProgramId) of
                              {ok, #user_program_checkpoint{event_time=CheckpointTime, content=Content} } ->
@@ -87,12 +114,27 @@ to_json(Req, State) ->
                              {error, not_found} ->
                                  null
                          end,
-            Output = ?FORMATTING:program_data_to_json(Program, Checkpoint),
+            Json = ?FORMATTING:program_data_to_json(Program, Checkpoint),
+
+            {ok, CanEdit} = automate_storage:is_user_allowed({user, UserId}, ProgramId, edit_program),
+            {ok, CanAdmin } = automate_storage:is_user_allowed({user, UserId}, ProgramId, admin_program),
+
+            Json2 = Json#{ readonly => not CanEdit, can_admin => CanAdmin },
+            Json3 = case IncludePages of
+                        false -> Json2;
+                        true ->
+                            {ok, Pages} = automate_storage:get_program_pages(ProgramId),
+                            Json#{ pages => maps:from_list(lists:map(fun (#program_pages_entry{ page_id={_, Path}
+                                                                                              , contents=Contents}) ->
+                                                                             {Path, Contents}
+                                                                     end, Pages))
+                                 }
+                    end,
 
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 
-            { jiffy:encode(Output), Res2, State };
+            { jiffy:encode(Json3), Res2, State };
         {error, Reason} ->
             Code = 500,
             Output = jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }),
@@ -135,9 +177,8 @@ update_program_metadata(Req, State) ->
     #get_program_seq{program_name=ProgramName, username=Username} = State,
 
     {ok, Body, Req1} = ?UTILS:read_body(Req),
-    Parsed = [jiffy:decode(Body, [return_maps])],
-    Metadata = decode_program_metadata(Parsed),
-    case automate_rest_api_backend:update_program_metadata(Username, ProgramName, Metadata) of
+    Parsed = jiffy:decode(Body, [return_maps]),
+    case automate_rest_api_backend:update_program_metadata(Username, ProgramName, Parsed) of
         {ok, #{ <<"link">> := Link } } ->
             Req2 = send_json_output(jiffy:encode(#{ <<"success">> => true, <<"link">> => Link}), Req),
             { true, Req2, State };
@@ -160,12 +201,6 @@ delete_resource(Req, State) ->
 
 
 %% Converters
-decode_program_metadata([#{ <<"name">> := ProgramName
-                          }]) ->
-    #editable_user_program_metadata { program_name=ProgramName
-                                    }.
-
-
 decode_program(P=#{ <<"type">> := ProgramType
                   , <<"orig">> := ProgramOrig
                   , <<"parsed">> := ProgramParsed

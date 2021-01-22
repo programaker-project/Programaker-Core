@@ -541,6 +541,7 @@ create_program(Owner, ProgramName, ProgramType) ->
                                      , last_upload_time=0
                                      , last_successful_call_time=0
                                      , last_failed_call_time=0
+                                     , is_public=false
                                      },
     case store_new_program(UserProgram) of
         ok ->
@@ -603,11 +604,13 @@ update_program_status(ProgramId, Status)->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec is_user_allowed(owner_id(), binary(), read_program|edit_program|delete_program) -> {ok, boolean()} | {error, any()}.
+-spec is_user_allowed(owner_id(), binary(), read_program|edit_program|delete_program|admin_program) -> {ok, boolean()} | {error, any()}.
 is_user_allowed(Owner, ProgramId, Action) ->
     Check = case Action of
                 read_program -> fun can_user_view_as/2;
-                _ -> fun can_user_edit_as/2
+                edit_program -> fun can_user_edit_as/2;
+                delete_program -> fun can_user_edit_as/2;
+                admin_program -> fun can_user_admin_as/2
             end,
     Transaction = fun() ->
                           case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
@@ -694,34 +697,35 @@ fix_program_channel(ProgramId) ->
 update_program_by_id(ProgramId, Content)->
     store_new_program_content(ProgramId, Content).
 
--spec update_program_metadata(binary(), binary(), #editable_user_program_metadata{}) -> { 'ok', binary() } | { 'error', any() }.
-update_program_metadata(Username, ProgramName, #editable_user_program_metadata{program_name=NewProgramName})->
+-spec update_program_metadata(binary(), binary(), map()) -> { 'ok', binary() } | { 'error', any() }.
+update_program_metadata(Username, ProgramName, MetadataChanges)->
     case retrieve_program(Username, ProgramName) of
-        {ok, ProgramEntry=#user_program_entry{id=ProgramId}} ->
-            Transaction = fun() ->
-                                  ok = mnesia:write(?USER_PROGRAMS_TABLE,
-                                                    ProgramEntry#user_program_entry{program_name=NewProgramName}, write),
-                                  {ok, ProgramId}
-                          end,
-            case mnesia:transaction(Transaction) of
-                { atomic, Result } ->
-                    io:format("Register result: ~p~n", [Result]),
-                    Result;
-                { aborted, Reason } ->
-                    io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
-                    {error, mnesia:error_description(Reason)}
-            end;
+        {ok, #user_program_entry{id=ProgramId}} ->
+            update_program_metadata(ProgramId, MetadataChanges);
         X ->
             X
     end.
 
--spec update_program_metadata(binary(), #editable_user_program_metadata{}) -> { 'ok', binary() } | { 'error', any() }.
-update_program_metadata(ProgramId, #editable_user_program_metadata{program_name=NewProgramName})->
+-spec update_program_metadata(binary(), map()) -> { 'ok', binary() } | { 'error', any() }.
+update_program_metadata(ProgramId, MetadataChanges)->
     Transaction = fun() ->
                           case get_program_from_id(ProgramId) of
                               {ok, ProgramEntry=#user_program_entry{id=ProgramId}} ->
-                                  ok = mnesia:write(?USER_PROGRAMS_TABLE,
-                                                    ProgramEntry#user_program_entry{program_name=NewProgramName}, write),
+                                  C1 = case MetadataChanges of
+                                           #{ <<"name">> := NewProgramName } ->
+                                               ProgramEntry#user_program_entry{program_name=NewProgramName};
+                                           _ ->
+                                               ProgramEntry
+                                       end,
+                                  C2 = case MetadataChanges of
+                                           #{ <<"is_public">> := IsPublic } ->
+                                               C1#user_program_entry{ is_public=IsPublic };
+                                           _ ->
+                                               C1
+                                       end,
+                                  ok = mnesia:write(?USER_PROGRAMS_TABLE
+                                                   , C2
+                                                   , write),
                                   {ok, ProgramId};
                               X ->
                                   X
@@ -1950,6 +1954,7 @@ retrieve_program(Username, ProgramName) ->
                                                                         , last_upload_time='_'
                                                                         , last_successful_call_time='_'
                                                                         , last_failed_call_time='_'
+                                                                        , is_public='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -2012,6 +2017,7 @@ retrieve_program_list_from_username(Username) ->
                                                                         , last_upload_time='_'
                                                                         , last_successful_call_time='_'
                                                                         , last_failed_call_time='_'
+                                                                        , is_public='_'
                                                                         },
                                   ProgramGuard = {'==', '$2', UserId},
                                   ProgramResultsColumn = '$1',
@@ -2046,6 +2052,7 @@ retrieve_program_list_from_userid(UserId) ->
                                                                 , last_upload_time='_'
                                                                 , last_successful_call_time='_'
                                                                 , last_failed_call_time='_'
+                                                                , is_public='_'
                                                                 },
                           ProgramGuard = {'==', '$2', UserId},
                           ProgramResultsColumn = '$1',
@@ -2108,6 +2115,7 @@ store_new_program_content(Username, ProgramName,
                                                                         , last_upload_time='_'
                                                                         , last_successful_call_time='_'
                                                                         , last_failed_call_time='_'
+                                                                        , is_public='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}

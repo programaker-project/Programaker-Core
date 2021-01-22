@@ -10,11 +10,30 @@
             <mat-icon class="hint-icon " aria-label="Scrollable section" aria-hidden="true">expand_more</mat-icon>
             <span class="hint-text">Scroll to find more buttons</span>
         </span>
+
+        <!-- Program state -->
+        <button id="program-visibility-state" color="secondary"
+            class="annotated-icon"
+            [disabled]="!can_admin"
+            (click)="changeVisibility()"
+            mat-button mat-raised-button>
+
+            <mat-icon *ngIf="is_public">public</mat-icon>
+            <label *ngIf="is_public" class="label">
+                Public
+            </label>
+
+            <mat-icon *ngIf="!is_public">lock</mat-icon>
+            <label *ngIf="!is_public" class="label">
+                Private
+            </label>
+        </button>
+
         <!-- Basic functions -->
         <button mat-button mat-raised-button
             class="annotated-icon"
             id="program-start-button" color="primary"
-            *ngIf="!read_only && program !== undefined"
+            [disabled]="read_only"
             (click)="sendProgram()">
 
             <span class="load-bg"></span>
@@ -23,18 +42,20 @@
                 Upload
             </label>
         </button>
+
         <button id="program-rename-button" color="secondary"
             class="annotated-icon"
-            *ngIf="!read_only && program !== undefined"
+            [disabled]="read_only"
             (click)="renameProgram()" mat-button mat-raised-button>
             <mat-icon>edit</mat-icon>
             <label class="label">
                 Rename
             </label>
         </button>
+
         <button id="program-logs-button" color="secondary"
             class="annotated-icon"
-            *ngIf="!read_only && program !== undefined"
+            [disabled]="read_only"
             (click)="toggleLogsPanel()" mat-button mat-raised-button>
             <mat-icon>error_outline</mat-icon>
             <label class="label">
@@ -58,7 +79,8 @@
 
         <button id="addResponsiveGridControls" color="secondary"
             class="annotated-icon"
-            *ngIf="!read_only && workspace && !workspace.hasPages"
+            *ngIf="workspace && !workspace.hasPages"
+            [disabled]="read_only"
             (click)="addResponsivePage()"
             mat-button mat-raised-button>
             <mat-icon>grid_on</mat-icon>
@@ -70,7 +92,7 @@
         <!-- Advanced functions, on a menu -->
         <button id="program-stop-button" color="warn"
             class="annotated-icon"
-            *ngIf="!read_only && program !== undefined"
+            [disabled]="read_only"
             (click)="stopThreadsProgram()" mat-button mat-raised-button>
             <mat-icon>stop</mat-icon>
             <label class="label">
@@ -80,7 +102,8 @@
 
         <button id="advancedProgramControls" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
-            *ngIf="!read_only && program !== undefined" mat-button>
+            [disabled]="read_only"
+            mat-button mat-raised-button>
             <mat-icon>more_vert</mat-icon> Advanced
         </button>
         <mat-menu #advancedProgramControls="matMenu">
@@ -93,7 +116,7 @@
 
         <!-- Dangerous stuff, on its own -->
         <button id="program-delete-button" color="warn"
-            *ngIf="!read_only && program !== undefined"
+            [disabled]="read_only"
             (click)="deleteProgram()" mat-button mat-raised-button>
             <mat-icon>delete_forever</mat-icon> Delete program
         </button>
