@@ -42,6 +42,7 @@
                 Upload
             </label>
         </button>
+
         <button id="program-rename-button" color="secondary"
             class="annotated-icon"
             [disabled]="read_only"
@@ -51,6 +52,7 @@
                 Rename
             </label>
         </button>
+
         <button id="program-logs-button" color="secondary"
             class="annotated-icon"
             [disabled]="read_only"
@@ -101,7 +103,7 @@
         <button id="advancedProgramControls" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
             [disabled]="read_only"
-            mat-button>
+            mat-button mat-raised-button>
             <mat-icon>more_vert</mat-icon> Advanced
         </button>
         <mat-menu #advancedProgramControls="matMenu">

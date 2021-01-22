@@ -139,7 +139,6 @@ export class FlowEditorComponent implements OnInit {
                             this.program = program;
                             this.read_only = program.readonly;
                             this.is_public = program.is_public;
-
                             this.can_admin = program.can_admin;
 
                             this.prepareWorkspace().then(() => {
@@ -427,8 +426,6 @@ export class FlowEditorComponent implements OnInit {
                 console.log("Cancelled");
                 return;
             }
-
-            console.log("TODO: Change program visibility.", result);
 
             const vis = result.visibility;
             let isPublic = undefined;

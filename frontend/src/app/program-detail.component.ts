@@ -36,6 +36,7 @@ import { BrowserService } from './browser.service';
 import { EditorController } from './program-editors/editor-controller';
 import { Unsubscribable } from 'rxjs';
 import { EnvironmentService } from './environment.service';
+import { VisibilityEnum, ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -48,7 +49,7 @@ type NonReadyReason = 'loading' | 'disconnected';
         TemplateService
     ],
     styleUrls: [
-        'program-detail.component.css',
+        'program-detail.component.scss',
         'libs/css/material-icons.css',
         'libs/css/bootstrap.min.css',
     ],
@@ -73,12 +74,15 @@ export class ProgramDetailComponent implements OnInit {
     connectionLost: boolean;
     private workspaceElement: HTMLElement;
 
-    canEdit: boolean;
     private cursorDiv: HTMLElement;
     private cursorInfo: {};
     nonReadyReason: NonReadyReason;
     logCount = 0;
     streamingLogs = false;
+
+    read_only: boolean = true;
+    can_admin: boolean = false;
+    is_public: boolean = false;
 
     // HACK: Prevent the MatMenu import for being removed
     private _pinRequiredMatMenuLibrary: MatMenu;
@@ -134,14 +138,9 @@ export class ProgramDetailComponent implements OnInit {
         }
         this.smallScreen = this.browser.window.innerWidth < 750;
 
-        progbar.track(new Promise(async (resolve) => {
+        progbar.track(new Promise(async (resolve, reject) => {
 
             const session = await this.sessionService.getSession();
-            if (!session.active) {
-                this.router.navigate(['/login'], {replaceUrl:true});
-                resolve();
-                return;
-            }
 
             this.route.params.pipe(
                 switchMap((params: Params) => {
@@ -150,23 +149,40 @@ export class ProgramDetailComponent implements OnInit {
                         const programName = params['program_id'];
 
                         return this.programService.getProgram(user, programName).catch(err => {
-                            console.error("Error:", err);
-                            this.goBack();
-                            throw Error("Error loading");
+                            if (!session.active) {
+                                this.router.navigate(['/login'], {replaceUrl:true});
+                                reject();
+                                throw Error("Error loading");
+                            }
+                            else {
+                                console.error("Error:", err);
+                                this.goBack();
+                                throw Error("Error loading");
+                            }
                         });
                     }
                     else {
                         const programId = params['program_id'];
                         return this.programService.getProgramById(programId).catch(err => {
-                            console.error("Error:", err);
-                            this.goBack();
-                            throw Error("Error loading");
+                            if (!session.active) {
+                                this.router.navigate(['/login'], {replaceUrl:true});
+                                reject();
+                                throw Error("Error loading");
+                            }
+                            else {
+                                console.error("Error:", err);
+                                this.goBack();
+                                throw Error("Error loading");
+                            }
                         })
                     }
                 }))
                 .subscribe(program => {
                     this.programId = program.id;
-                    this.canEdit = !program['readonly'];
+                    this.read_only = program.readonly;
+                    this.is_public = program.is_public;
+                    this.can_admin = program.can_admin;
+
                     this.prepareWorkspace(program).then((controller: ToolboxController) => {
                         this.program = program;
                         this.load_program(controller, program);
@@ -279,6 +295,12 @@ export class ProgramDetailComponent implements OnInit {
     initializeEventSynchronization() {
         // Initialize editor event listeners
         // This is used for collaborative editing.
+
+        if (this.read_only) {
+            this.becomeReady(); // We won't have to wait for the last state to get loaded
+            return;
+        }
+
         this.eventStream = this.programService.getEventStream(this.program.id);
         this.blockSynchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
 
@@ -369,11 +391,9 @@ export class ProgramDetailComponent implements OnInit {
             this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
         });
 
-        if (this.canEdit) {
-            this.workspace.addChangeListener(mirrorEvent);
-            this.workspaceElement.onmousemove = onMouseEvent;
-            this.workspaceElement.onmouseup = onMouseEvent;
-        }
+        this.workspace.addChangeListener(mirrorEvent);
+        this.workspaceElement.onmousemove = onMouseEvent;
+        this.workspaceElement.onmouseup = onMouseEvent;
     }
 
     /* Collaborator pointer management */
@@ -549,6 +569,7 @@ export class ProgramDetailComponent implements OnInit {
             this.connectionService,
             this.sessionService,
             this.environmentService,
+            this.read_only,
             this.toolboxController,
         );
 
@@ -575,6 +596,7 @@ export class ProgramDetailComponent implements OnInit {
             this.connectionService,
             this.sessionService,
             this.environmentService,
+            this.read_only,
         )
             .inject()
             .then(([toolbox, registrations, controller]) => {
@@ -614,7 +636,7 @@ export class ProgramDetailComponent implements OnInit {
             disable: false,
             collapse: true,
             media: '../assets/scratch-media/',
-            readOnly: !this.canEdit,
+            readOnly: this.read_only,
             trashcan: true,
             rtl: rtl,
             scrollbars: true,
@@ -640,7 +662,7 @@ export class ProgramDetailComponent implements OnInit {
         this.toolboxController = controller;
         controller.setWorkspace(this.workspace);
 
-        if (this.canEdit) {
+        if (!this.read_only) {
             controller.update(); // Setting the toolbox when it can't be shown would generate an error
         }
 
@@ -930,6 +952,47 @@ export class ProgramDetailComponent implements OnInit {
                     console.log("Changing name to", this.program);
                 }));
             progbar.track(rename);
+        });
+    }
+
+    changeVisibility() {
+        const visibility: VisibilityEnum = this.is_public ? 'public' : 'private';
+
+        const data = {
+            name: this.program.name,
+            visibility
+        };
+
+        const dialogRef = this.dialog.open(ChangeProgramVisilibityDialog, {
+            data: data
+        });
+
+
+        dialogRef.afterClosed().subscribe((result: { visibility: VisibilityEnum } | null) => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            const vis = result.visibility;
+            let isPublic = undefined;
+            switch(vis) {
+                case 'public':
+                    isPublic = true;
+                    break;
+
+                case 'private':
+                    isPublic = false;
+                    break;
+
+                default:
+                    throw Error(`Unknown visibility value: ${vis}`);
+            }
+
+            this.programService.updateProgramVisibility( this.program.id, { is_public: isPublic } ).then(() => {
+                this.is_public = isPublic;
+            });
+
         });
     }
 
