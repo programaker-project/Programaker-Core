@@ -36,7 +36,7 @@ listen_service(Owner, {Key, SubKey}, [ServicePortId]) ->
             {error, no_valid_connection}
     end.
 
--spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()}.
+-spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()} | {error, no_connection} | {error, {failed, _}} | {error, timeout} | {error, {error_getting_resource, _}}.
 call(FunctionId, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->
     LastMonitorValue = case automate_bot_engine_variables:get_last_bridge_value(Thread, ServicePortId) of
                            {ok, Value} -> Value;
@@ -69,6 +69,15 @@ call(FunctionId, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [S
         {ok, #{ <<"result">> := Result }} ->
             ok = automate_storage:mark_successful_call_to_bridge(ProgramId, ServicePortId),
             {ok, Thread, Result};
+        {ok, #{ <<"success">> := false, <<"error">> := Reason }} ->
+            ok = automate_storage:mark_failed_call_to_bridge(ProgramId, ServicePortId),
+            {error, {failed, Reason}};
+        {ok, #{ <<"success">> := false }} ->
+            ok = automate_storage:mark_failed_call_to_bridge(ProgramId, ServicePortId),
+            {error, {failed, undefined}};
+        {error, no_response} ->
+            ok = automate_storage:mark_failed_call_to_bridge(ProgramId, ServicePortId),
+            {error, timeout};
         {error, Reason} ->
             ok = automate_storage:mark_failed_call_to_bridge(ProgramId, ServicePortId),
             {error, Reason}
@@ -181,4 +190,8 @@ get_block_resource_aux([ _ | TArg], Values, SaveToIndex, CurrentIndex, Acc) when
 get_block_resource_aux([ #service_port_block_collection_argument{ name=Name } | TArg ], [ Value | TValue ], SaveToIndex, CurrentIndex, Acc) ->
     get_block_resource_aux(TArg, TValue, SaveToIndex, CurrentIndex + 1, [{Name, Value} | Acc]);
 get_block_resource_aux([ _ | TArg ], [ _ | TValue ], SaveToIndex, CurrentIndex, Acc) ->
-    get_block_resource_aux(TArg, TValue, SaveToIndex, CurrentIndex + 1, Acc).
+    get_block_resource_aux(TArg, TValue, SaveToIndex, CurrentIndex + 1, Acc);
+get_block_resource_aux(_, _, _, _, Acc)->
+    %% TArgs and TValues don't have the same length.
+    %% One of them has stopped, so return the collected result.
+    Acc.

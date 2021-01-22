@@ -104,7 +104,7 @@ get_expected_action_from_operation(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                   MonKey;
               _ ->
                   undefined
-    end,
+          end,
     automate_service_registry_query:listen_service(ServiceId, Owner, {Key, undefined}),
     ?TRIGGERED_BY_MONITOR;
 
@@ -150,8 +150,8 @@ resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
 
 -spec run_thread(#program_thread{}, {atom(), any()}, binary())
                 -> {stopped, thread_finished} | {did_not_run, waiting}
-                       | {did_not_run, {new_state, #program_thread{}}}
-                       | {ran_this_tick, #program_thread{}}.
+              | {did_not_run, {new_state, #program_thread{}}}
+              | {ran_this_tick, #program_thread{}}.
 run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
     case get_instruction(Thread) of
         {ok, Instruction} ->
@@ -235,6 +235,60 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                 , BlockId
                                 };
 
+                            #program_error{error=#disconnected_bridge{ bridge_id=BridgeId
+                                                                     , action=Action
+                                                                     }
+                                          , block_id=BlockId
+                                          } ->
+                                { Error
+                                , list_to_binary(io_lib:format("Cannot run action '~s' on disconnected bridge '~s'.",
+                                                               [Action, BridgeId]))
+                                , BlockId
+                                };
+
+                            #program_error{error=#bridge_call_timeout{ bridge_id=BridgeId
+                                                                     , action=Action
+                                                                     }
+                                          , block_id=BlockId
+                                          } ->
+                                { Error
+                                , list_to_binary(io_lib:format("Timeout: Call to action '~s' on bridge '~s' took too long.",
+                                                               [Action, BridgeId]))
+                                , BlockId
+                                };
+
+                            #program_error{error=#bridge_call_failed{ reason=FailReason
+                                                                    , bridge_id=BridgeId
+                                                                    , action=Action
+                                                                    }
+                                          , block_id=BlockId
+                                          } ->
+                                case FailReason of
+                                    R when is_binary(R) ->
+                                        { Error
+                                        , list_to_binary(io_lib:format("Bridge reported error on action '~s' (bridge id='~s'). Reason: ~s",
+                                                                       [Action, BridgeId, R]))
+                                        , BlockId
+                                        };
+                                    _ ->
+                                        { Error
+                                        , list_to_binary(io_lib:format("Bridge reported error on action '~s' (bridge id='~s').",
+                                                                       [Action, BridgeId]))
+                                        , BlockId
+                                        }
+                                end;
+
+                            #program_error{error=#bridge_call_error_getting_resource{ bridge_id=BridgeId
+                                                                                    , action=Action
+                                                                                    }
+                                          , block_id=BlockId
+                                          } ->
+                                { Error
+                                , list_to_binary(io_lib:format("Error preparing resourcesn to run action '~s' on bridge '~s'. Report this to the administrator to solve it.",
+                                                               [Action, BridgeId]))
+                                , BlockId
+                                };
+
                             #program_error{error=#unknown_operation{}
                                           , block_id=BlockId
                                           } ->
@@ -304,13 +358,13 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
                     }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {Times, Value, Thread3} = case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
-                         {ok, {WasTimes, WasValue}} ->
-                             {WasTimes, WasValue, Thread};
-                         {error, not_found} ->
-                             {ok, TimesStr, Thread2} = automate_bot_engine_variables:resolve_argument(Argument, Thread, Op),
-                             LoopTimes = to_int(TimesStr),
-                             {LoopTimes, 0, Thread2}
-                     end,
+                                  {ok, {WasTimes, WasValue}} ->
+                                      {WasTimes, WasValue, Thread};
+                                  {error, not_found} ->
+                                      {ok, TimesStr, Thread2} = automate_bot_engine_variables:resolve_argument(Argument, Thread, Op),
+                                      LoopTimes = to_int(TimesStr),
+                                      {LoopTimes, 0, Thread2}
+                              end,
     case Value < Times of
         true ->
             Thread4 = automate_bot_engine_variables:set_instruction_memory( Thread3
@@ -366,7 +420,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_IF_ELSE
             {ran_this_tick, increment_position(Thread2)};
         {error, not_found} ->
             Thread2 = automate_bot_engine_variables:set_instruction_memory(
-                              Thread, {already_run, true}),
+                        Thread, {already_run, true}),
             {ok, Value, Thread3} = automate_bot_engine_variables:resolve_argument(Argument, Thread2, Op),
             case Value of
                 false -> %% Not matching, going for else
@@ -401,11 +455,11 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT
                 end,
 
     MsToWait = case Value of
-                     B when is_binary(B) ->
-                         binary_to_integer(B) * 1000;
-                     N when is_number(N) ->
-                         N * 1000
-                 end,
+                   B when is_binary(B) ->
+                       binary_to_integer(B) * 1000;
+                   N when is_number(N) ->
+                       N * 1000
+               end,
 
     WaitFinished = StartTime + MsToWait < erlang:monotonic_time(millisecond),
     case WaitFinished of
@@ -545,12 +599,16 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
     {Values, Thread2} = eval_args(Arguments, Thread, Op),
 
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
-    Thread4 = case ?UTILS:get_block_id(Op) of
-                  none -> Thread3;
-                  BlockId -> automate_bot_engine_variables:set_instruction_memory(Thread3, Value, BlockId)
-              end,
-    {ran_this_tick, increment_position(Thread4)};
+    case automate_service_registry_query:call(Module, Action, Values, Thread2, UserId) of
+        {ok, Thread3, Value} ->
+            Thread4 = case ?UTILS:get_block_id(Op) of
+                          none -> Thread3;
+                          BlockId -> automate_bot_engine_variables:set_instruction_memory(Thread3, Value, BlockId)
+                      end,
+            {ran_this_tick, increment_position(Thread4)};
+        {error, Reason} ->
+            throw_bridge_call_error(Reason, ServiceId, Op, Action)
+    end;
 
 run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
                            , ?ARGUMENTS := Arguments
@@ -581,21 +639,25 @@ run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
 
     [ServiceId, Action] = binary:split(ServiceCall, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
+    case automate_service_registry_query:call(Module, Action, Values, Thread2, UserId) of
+        {ok, Thread3, Value} ->
+            {ok, Thread4} = case SaveTo of
+                                { index, Index } ->
+                                    #{ <<"value">> := VariableName
+                                     } = lists:nth(Index, Arguments),
+                                    automate_bot_engine_variables:set_program_variable(
+                                      Thread3,
+                                      %% Note that erlang is 1-indexed, protocol is 0-indexed
+                                      VariableName,
+                                      Value);
+                                _ ->
+                                    {ok, Thread3}
+                            end,
+            {ran_this_tick, increment_position(Thread4)};
+        {error, Reason} ->
+            throw_bridge_call_error(Reason, ServiceId, Operation, Action)
+    end;
 
-    {ok, Thread4} = case SaveTo of
-                            { index, Index } ->
-                                #{ <<"value">> := VariableName
-                                 } = lists:nth(Index, Arguments),
-                                automate_bot_engine_variables:set_program_variable(
-                                  Thread3,
-                                  %% Note that erlang is 1-indexed, protocol is 0-indexed
-                                  VariableName,
-                                  Value);
-                            _ ->
-                                {ok, Thread3}
-                        end,
-    {ran_this_tick, increment_position(Thread4)};
 
 run_instruction(Op=#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
                     , ?ARGUMENTS := [#{ ?TYPE := ?TEMPLATE_NAME_TYPE
@@ -648,10 +710,10 @@ run_instruction(Op=#{ ?TYPE := ?CONTEXT_SELECT_CONNECTION
             {ran_this_tick, increment_position(Thread4)};
         {error, not_found} ->
             Thread4 = automate_bot_engine_variables:set_instruction_memory(
-                              Thread3, [ {already_run, true}
-                                       , { context_group
-                                         , bridge_connection
-                                         , {BridgeId, ConnectionId} }]),
+                        Thread3, [ {already_run, true}
+                                 , { context_group
+                                   , bridge_connection
+                                   , {BridgeId, ConnectionId} }]),
             {ran_this_tick, Thread4#program_thread{ position=Position ++ [1] }}
     end;
 
@@ -712,11 +774,11 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
                                end,
 
             ChildrenIds = lists:map(fun(Index) ->
-                                         {ok, NewThreadId } = automate_bot_engine_thread_launcher:launch_thread(
-                                                             ProgramId,
-                                                             Thread3#program_thread{position=Position ++ [Index, 1]}),
+                                            {ok, NewThreadId } = automate_bot_engine_thread_launcher:launch_thread(
+                                                                   ProgramId,
+                                                                   Thread3#program_thread{position=Position ++ [Index, 1]}),
                                             NewThreadId
-                                 end, lists:seq(1, length(Flows))),
+                                    end, lists:seq(1, length(Flows))),
 
             Thread4 = automate_bot_engine_variables:set_instruction_memory(
                         Thread3, #{ already_run => true
@@ -729,10 +791,10 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
         %% Parent keeps executing and periodically checks if children did finish
         {ok, #{ children := Children, already_run := true, continuation_type := ContinuationType } } ->
             {RemainingChildren, CompletedChildren} = lists:partition(
-                                                        fun(ChildId) ->
-                                                                {ok, Value} = automate_storage:dirty_is_thread_alive(ChildId),
-                                                                Value
-                                                        end, Children),
+                                                       fun(ChildId) ->
+                                                               {ok, Value} = automate_storage:dirty_is_thread_alive(ChildId),
+                                                               Value
+                                                       end, Children),
             ForkDone = (((ContinuationType =:= continue_when_all_done) and (length(RemainingChildren) =:= 0))
                         or ((ContinuationType =:= continue_on_first_done) and (length(CompletedChildren) > 0))),
             case ForkDone of
@@ -759,11 +821,11 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                     ]
                     }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
     CurrentValue = case automate_bot_engine_variables:get_program_variable(Thread, VarName) of
-                {ok, Val} ->
-                    Val;
-                {error, not_found} ->
-                    not_found
-            end,
+                       {ok, Val} ->
+                           Val;
+                       {error, not_found} ->
+                           not_found
+                   end,
     case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
         {error, not_found} ->
             %% Initial run, save current value and wait
@@ -1226,7 +1288,7 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_ITEMNUM_OF_LIST
                     {ok, Index, Thread2};
                 {error, not_found} ->
                     {error, not_found}
-                end;
+            end;
         {error, not_found} ->
             throw(#program_error{ error=#list_not_set{ list_name=ListName }
                                 , block_id=?UTILS:get_block_id(Op)
@@ -1281,8 +1343,13 @@ get_block_result(Op=#{ ?TYPE := <<"services.", ServiceCall/binary>>
 
     [ServiceId, Action] = binary:split(ServiceCall, <<".">>),
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, UserId),
-    {ok, Value, Thread3};
+    case automate_service_registry_query:call(Module, Action, Values, Thread2, UserId) of
+        {ok, Thread3, Value} ->
+            {ok, Value, Thread3};
+        {error, Reason} ->
+            throw_bridge_call_error(Reason, ServiceId, Op, Action)
+    end;
+
 
 get_block_result(Op=#{ ?TYPE := <<"services.", _ServiceCall/binary>> }, Thread) ->
     get_block_result(Op#{ ?ARGUMENTS => [] }, Thread);
@@ -1306,8 +1373,13 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
     {Values, Thread2} = eval_args(Arguments, Thread, Op),
 
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
-    {ok, Thread3, Value} = automate_service_registry_query:call(Module, Action, Values, Thread2, Owner),
-    {ok, Value, Thread3};
+    case automate_service_registry_query:call(Module, Action, Values, Thread2, Owner) of
+        {ok, Thread3, Value} ->
+            {ok, Value, Thread3};
+        {error, Reason} ->
+            throw_bridge_call_error(Reason, ServiceId, Op, Action)
+    end;
+
 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_LIST_GET_CONTENTS
                      , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
@@ -1398,3 +1470,21 @@ notify_variable_update(VariableName, #program_thread{ program_id=ProgramId }) ->
         {error, Reason} ->
             {error, Reason}
     end.
+
+%% Error construction
+throw_bridge_call_error(no_connection, ServiceId, Op, Action) ->
+    throw(#program_error{ error=#disconnected_bridge{bridge_id=ServiceId, action=Action}
+                    , block_id=?UTILS:get_block_id(Op)
+                        });
+throw_bridge_call_error(timeout, ServiceId, Op, Action) ->
+    throw(#program_error{ error=#bridge_call_timeout{bridge_id=ServiceId, action=Action}
+                        , block_id=?UTILS:get_block_id(Op)
+                        });
+throw_bridge_call_error({failed, Reason}, ServiceId, Op, Action) ->
+    throw(#program_error{ error=#bridge_call_failed{reason=Reason, bridge_id=ServiceId, action=Action}
+                        , block_id=?UTILS:get_block_id(Op)
+                        });
+throw_bridge_call_error({error_getting_resource, _ST}, ServiceId, Op, Action) ->
+    throw(#program_error{ error=#bridge_call_error_getting_resource{bridge_id=ServiceId, action=Action}
+                        , block_id=?UTILS:get_block_id(Op)
+                        }).

@@ -143,11 +143,24 @@ get_program_metrics() ->
                                                                              { badmatch, {error, no_connection} } ->
                                                                                  no_connection;
 
+                                                                             { program_error, {disconnected_bridge, _, _}, _ } ->
+                                                                                 no_connection;
+                                                                             { program_error, {bridge_call_timeout, _, _}, _ } ->
+                                                                                 bridge_call_timeout;
+                                                                             { program_error, {bridge_call_failed, _, _, _}, _ } ->
+                                                                                 bridge_call_failed;
+                                                                             { program_error, {bridge_call_error_getting_resource, _, _}, _ } ->
+                                                                                 bridge_call_error_getting_resource;
+
                                                                              %% Program errors
                                                                              { program_error, {variable_not_set, _}, _ } ->
                                                                                  variable_not_set;
                                                                              { program_error, {list_not_set, _}, _ } ->
                                                                                  list_not_set;
+                                                                             { program_error, {index_not_in_list, _, _, _}, _ } ->
+                                                                                 index_not_in_list;
+                                                                             { program_error, {memory_not_set, _}, _ } ->
+                                                                                 memory_not_set;
 
                                                                              %% Version errors
                                                                              bad_operation ->
