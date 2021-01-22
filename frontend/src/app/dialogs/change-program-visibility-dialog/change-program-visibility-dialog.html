@@ -1,0 +1,26 @@
+<h2 mat-dialog-title>Update visibility of program <span class="program-name">{{ this.data.name }}</span>?</h2>
+
+<mat-dialog-content>
+    <label id="program-visibility-dialog-label">Set the program to:</label>
+    <mat-radio-group
+        aria-labelledby="program-visibility-dialog-label"
+        [(ngModel)]="visibility"
+    >
+        <mat-radio-button value="public">
+            <mat-icon>public</mat-icon> Public
+        </mat-radio-button>
+        <mat-radio-button value="private">
+            <mat-icon>lock</mat-icon> Private
+        </mat-radio-button>
+    </mat-radio-group>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
+    <button class="confirmation"
+            type="submit"
+            color="primary"
+            mat-button
+            [disabled]="visibility === data.visibility"
+            (click)="onConfirm()"
+            mat-raised-button>Update</button>
+</mat-dialog-actions>

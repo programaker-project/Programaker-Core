@@ -36,6 +36,7 @@ import { UiSignalService } from 'app/services/ui-signal.service';
 import { ContainerFlowBlock } from './ui-blocks/container_flow_block';
 import { UI_ICON } from './definitions';
 import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/renderers/responsive_page';
+import { ChangeProgramVisilibityDialog, VisibilityEnum } from '../dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -63,7 +64,9 @@ export class FlowEditorComponent implements OnInit {
     smallScreen: boolean;
     pages: { name: string; url: string; }[];
     workspaceElement: HTMLElement;
-    read_only: boolean;
+    read_only: boolean = true;
+    can_admin: boolean = false;
+    is_public: boolean = false;
 
     constructor(
         private browser: BrowserService,
@@ -103,11 +106,6 @@ export class FlowEditorComponent implements OnInit {
             this.sessionService.getSession()
                 .then((session) => {
                     this.session = session;
-                    if (!session.active) {
-                        this.router.navigate(['/login'], {replaceUrl:true});
-                        resolve();
-                        return;
-                    }
 
                     this.route.params.pipe(
                         switchMap((params: Params) => {
@@ -120,15 +118,30 @@ export class FlowEditorComponent implements OnInit {
                             this.uiSignalService.setProgramId(this.programId);
 
                             return this.programService.getProgramById(params['program_id']).catch(err => {
-                                console.error("Error:", err);
-                                this.goBack();
-                                reject();
-                                throw Error("Error loading");
+                                if (!session.active) {
+                                    // Trying to read a program without a session, login
+                                    this.router.navigate(['/login'], {replaceUrl: true});
+                                    reject();
+                                    throw Error("Error loading");
+                                }
+                                else {
+                                    // Just go back
+                                    // TODO: Show an appropriate error
+
+                                    console.error("Error:", err);
+                                    this.goBack();
+                                    reject();
+                                    throw Error("Error loading");
+                                }
                             });
                         }))
                         .subscribe(program => {
                             this.program = program;
                             this.read_only = program.readonly;
+                            this.is_public = program.is_public;
+
+                            this.can_admin = program.can_admin;
+
                             this.prepareWorkspace().then(() => {
                                 this.load_program(program);
                                 resolve();
@@ -393,6 +406,49 @@ export class FlowEditorComponent implements OnInit {
                     });
                 }));
             progbar.track(rename);
+        });
+    }
+
+    changeVisibility() {
+        const visibility: VisibilityEnum = this.is_public ? 'public' : 'private';
+
+        const data = {
+            name: this.program.name,
+            visibility
+        };
+
+        const dialogRef = this.dialog.open(ChangeProgramVisilibityDialog, {
+            data: data
+        });
+
+
+        dialogRef.afterClosed().subscribe((result: { visibility: VisibilityEnum } | null) => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            console.log("TODO: Change program visibility.", result);
+
+            const vis = result.visibility;
+            let isPublic = undefined;
+            switch(vis) {
+                case 'public':
+                    isPublic = true;
+                    break;
+
+                case 'private':
+                    isPublic = false;
+                    break;
+
+                default:
+                    throw Error(`Unknown visibility value: ${vis}`);
+            }
+
+            this.programService.updateProgramVisibility( this.program.id, { is_public: isPublic } ).then(() => {
+                this.is_public = isPublic;
+            });
+
         });
     }
 

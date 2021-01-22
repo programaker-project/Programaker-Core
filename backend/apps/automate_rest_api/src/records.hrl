@@ -25,6 +25,7 @@
                       , program_orig :: any()
                       , enabled :: boolean()
                       , last_upload_time :: integer()
+                      , is_public :: boolean()
                       }).
 
 -record(program_metadata, { id

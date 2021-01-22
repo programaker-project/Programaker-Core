@@ -259,6 +259,17 @@ export class ProgramService {
                 .toPromise()));
     }
 
+    updateProgramVisibility(programId: string, options: { is_public: boolean }){
+        return this.getUpdateProgramUrl(programId).then(
+            url => (this.http
+                .patch(url,
+                       JSON.stringify({is_public: options.is_public}),
+                       {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                    ContentType.Json)})
+                .pipe(map(_ => true))
+                .toPromise()));
+    }
+
     deleteProgram(program: ProgramContent): Promise<boolean> {
         return this.getUpdateProgramUrl(program.id).then(
             url => (this.http

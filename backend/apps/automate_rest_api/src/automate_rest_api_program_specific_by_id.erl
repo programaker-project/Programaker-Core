@@ -47,15 +47,23 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
-            Action = case cowboy_req:method(Req1) of
+
+        %% Reading a public program
+        Method ->
+            {ok, #user_program_entry{ is_public=IsPublic }} = automate_storage:get_program_from_id(ProgramId),
+            Action = case Method of
                          <<"GET">> -> read_program;
                          <<"DELETE">> -> delete_program;
                          _ -> edit_program
                      end,
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
-                    { {false, <<"Authorization header not found">>} , Req1, State };
+                    case {Method, IsPublic} of
+                        {<<"GET">>, true} ->
+                            { true, Req1, State };
+                        _ ->
+                            { {false, <<"Authorization header not found">>} , Req1, State }
+                    end;
                 X ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UId} ->
@@ -63,7 +71,12 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                                 {ok, true} ->
                                     { true, Req1, State#state{user_id=UId} };
                                 {ok, false} ->
-                                    { { false, <<"Action not authorized">>}, Req1, State };
+                                    case {Method, IsPublic} of
+                                        {<<"GET">>, true} ->
+                                            {true, Req1, State#state{user_id=UId}};
+                                        _ ->
+                                            { { false, <<"Action not authorized">>}, Req1, State }
+                                    end;
                                 {error, Reason} ->
                                     automate_logging:log_api(warning, ?MODULE, {authorization_error, Reason}),
                                     { { false, <<"Error on authorization">>}, Req1, State }
@@ -107,7 +120,9 @@ to_json(Req, State=#state{program_id=ProgramId, user_id=UserId}) ->
             Json = ?FORMATTING:program_data_to_json(Program, Checkpoint),
 
             {ok, CanEdit} = automate_storage:is_user_allowed({user, UserId}, ProgramId, edit_program),
-            Json2 = Json#{ readonly => not CanEdit },
+            {ok, CanAdmin } = automate_storage:is_user_allowed({user, UserId}, ProgramId, admin_program),
+
+            Json2 = Json#{ readonly => not CanEdit, can_admin => CanAdmin },
             Json3 = case IncludePages of
                         false -> Json2;
                         true ->
@@ -153,9 +168,8 @@ update_program(Req, State=#state{program_id=ProgramId}) ->
 %% PATCH handler
 update_program_metadata(Req, State=#state{program_id=ProgramId}) ->
     {ok, Body, Req1} = ?UTILS:read_body(Req),
-    Parsed = [jiffy:decode(Body, [return_maps])],
-    Metadata = decode_program_metadata(Parsed),
-    case automate_rest_api_backend:update_program_metadata(ProgramId, Metadata) of
+    Parsed = jiffy:decode(Body, [return_maps]),
+    case automate_rest_api_backend:update_program_metadata(ProgramId, Parsed) of
         ok ->
             Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req),
             { true, Req2, State };
@@ -177,12 +191,6 @@ delete_resource(Req, State=#state{program_id=ProgramId}) ->
 
 
 %% Converters
-decode_program_metadata([#{ <<"name">> := ProgramName
-                          }]) ->
-    #editable_user_program_metadata { program_name=ProgramName
-                                    }.
-
-
 decode_program(P=#{ <<"type">> := ProgramType
                   , <<"orig">> := ProgramOrig
                   , <<"parsed">> := ProgramParsed

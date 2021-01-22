@@ -194,6 +194,7 @@ program_data_to_json(#user_program{ id=Id
                                   , program_parsed=ProgramParsed
                                   , program_orig=ProgramOrig
                                   , enabled=Enabled
+                                  , is_public=IsPublic
                                   },
                      Checkpoint) ->
     #{ <<"id">> => Id
@@ -205,6 +206,7 @@ program_data_to_json(#user_program{ id=Id
      , <<"orig">> => ProgramOrig
      , <<"enabled">> => Enabled
      , <<"checkpoint">> => Checkpoint
+     , <<"is_public">> => IsPublic
      }.
 
 
