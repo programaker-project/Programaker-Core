@@ -145,6 +145,12 @@ get_program_metrics() ->
 
                                                                              { program_error, {disconnected_bridge, _, _}, _ } ->
                                                                                  no_connection;
+                                                                             { program_error, {bridge_call_timeout, _, _}, _ } ->
+                                                                                 bridge_call_timeout;
+                                                                             { program_error, {bridge_call_failed, _, _, _}, _ } ->
+                                                                                 bridge_call_failed;
+                                                                             { program_error, {bridge_call_error_getting_resource, _, _}, _ } ->
+                                                                                 bridge_call_error_getting_resource;
 
                                                                              %% Program errors
                                                                              { program_error, {variable_not_set, _}, _ } ->

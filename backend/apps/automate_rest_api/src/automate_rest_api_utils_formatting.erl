@@ -78,6 +78,7 @@ serialize_event_error(#program_error{ error=Error
 serialize_event_error(_) ->
     unknown_error.
 
+-spec serialize_error_subtype(program_error_type()) -> map().
 serialize_error_subtype(#variable_not_set{variable_name=VariableName}) ->
     #{ type => variable_not_set
      , variable_name => VariableName
@@ -115,6 +116,32 @@ serialize_error_subtype(#disconnected_bridge{ bridge_id=BridgeId
                                             , action=Action
                                             }) ->
     #{ type => disconnected_bridge
+     , bridge_id => BridgeId
+     , action => Action
+     };
+
+serialize_error_subtype(#bridge_call_timeout{ bridge_id=BridgeId
+                                            , action=Action
+                                            }) ->
+    #{ type => bridge_call_timeout
+     , bridge_id => BridgeId
+     , action => Action
+     };
+
+serialize_error_subtype(#bridge_call_failed{ bridge_id=BridgeId
+                                           , action=Action
+                                           , reason=Reason
+                                           }) ->
+    #{ type => bridge_call_failed
+     , bridge_id => BridgeId
+     , action => Action
+     , reason => serialize_maybe_undefined(Reason)
+     };
+
+serialize_error_subtype(#bridge_call_error_getting_resource{ bridge_id=BridgeId
+                                                           , action=Action
+                                                           }) ->
+    #{ type => bridge_call_error_getting_resource
      , bridge_id => BridgeId
      , action => Action
      };

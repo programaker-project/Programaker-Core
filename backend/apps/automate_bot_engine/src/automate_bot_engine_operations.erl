@@ -246,6 +246,49 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                 , BlockId
                                 };
 
+                            #program_error{error=#bridge_call_timeout{ bridge_id=BridgeId
+                                                                     , action=Action
+                                                                     }
+                                          , block_id=BlockId
+                                          } ->
+                                { Error
+                                , list_to_binary(io_lib:format("Timeout: Call to action '~s' on bridge '~s' took too long.",
+                                                               [Action, BridgeId]))
+                                , BlockId
+                                };
+
+                            #program_error{error=#bridge_call_failed{ reason=FailReason
+                                                                    , bridge_id=BridgeId
+                                                                    , action=Action
+                                                                    }
+                                          , block_id=BlockId
+                                          } ->
+                                case FailReason of
+                                    R when is_binary(R) ->
+                                        { Error
+                                        , list_to_binary(io_lib:format("Bridge reported error on action '~s' (bridge id='~s'). Reason: ~s",
+                                                                       [Action, BridgeId, R]))
+                                        , BlockId
+                                        };
+                                    _ ->
+                                        { Error
+                                        , list_to_binary(io_lib:format("Bridge reported error on action '~s' (bridge id='~s').",
+                                                                       [Action, BridgeId]))
+                                        , BlockId
+                                        }
+                                end;
+
+                            #program_error{error=#bridge_call_error_getting_resource{ bridge_id=BridgeId
+                                                                                    , action=Action
+                                                                                    }
+                                          , block_id=BlockId
+                                          } ->
+                                { Error
+                                , list_to_binary(io_lib:format("Error preparing resourcesn to run action '~s' on bridge '~s'. Report this to the administrator to solve it.",
+                                                               [Action, BridgeId]))
+                                , BlockId
+                                };
+
                             #program_error{error=#unknown_operation{}
                                           , block_id=BlockId
                                           } ->
@@ -563,10 +606,8 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
                           BlockId -> automate_bot_engine_variables:set_instruction_memory(Thread3, Value, BlockId)
                       end,
             {ran_this_tick, increment_position(Thread4)};
-        {error, no_connection} ->
-            throw(#program_error{ error=#disconnected_bridge{bridge_id=ServiceId, action=Action}
-                                , block_id=?UTILS:get_block_id(Op)
-                                })
+        {error, Reason} ->
+            throw_bridge_call_error(Reason, ServiceId, Op, Action)
     end;
 
 run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
@@ -613,10 +654,8 @@ run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
                                     {ok, Thread3}
                             end,
             {ran_this_tick, increment_position(Thread4)};
-        {error, no_connection} ->
-            throw(#program_error{ error=#disconnected_bridge{bridge_id=ServiceId, action=Action}
-                                , block_id=?UTILS:get_block_id(Operation)
-                                })
+        {error, Reason} ->
+            throw_bridge_call_error(Reason, ServiceId, Operation, Action)
     end;
 
 
@@ -1307,10 +1346,8 @@ get_block_result(Op=#{ ?TYPE := <<"services.", ServiceCall/binary>>
     case automate_service_registry_query:call(Module, Action, Values, Thread2, UserId) of
         {ok, Thread3, Value} ->
             {ok, Value, Thread3};
-        {error, no_connection} ->
-            throw(#program_error{ error=#disconnected_bridge{bridge_id=ServiceId, action=Action}
-                                , block_id=?UTILS:get_block_id(Op)
-                                })
+        {error, Reason} ->
+            throw_bridge_call_error(Reason, ServiceId, Op, Action)
     end;
 
 
@@ -1339,10 +1376,8 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
     case automate_service_registry_query:call(Module, Action, Values, Thread2, Owner) of
         {ok, Thread3, Value} ->
             {ok, Value, Thread3};
-        {error, no_connection} ->
-            throw(#program_error{ error=#disconnected_bridge{bridge_id=ServiceId, action=Action}
-                                , block_id=?UTILS:get_block_id(Op)
-                                })
+        {error, Reason} ->
+            throw_bridge_call_error(Reason, ServiceId, Op, Action)
     end;
 
 
@@ -1435,3 +1470,21 @@ notify_variable_update(VariableName, #program_thread{ program_id=ProgramId }) ->
         {error, Reason} ->
             {error, Reason}
     end.
+
+%% Error construction
+throw_bridge_call_error(no_connection, ServiceId, Op, Action) ->
+    throw(#program_error{ error=#disconnected_bridge{bridge_id=ServiceId, action=Action}
+                    , block_id=?UTILS:get_block_id(Op)
+                        });
+throw_bridge_call_error(timeout, ServiceId, Op, Action) ->
+    throw(#program_error{ error=#bridge_call_timeout{bridge_id=ServiceId, action=Action}
+                        , block_id=?UTILS:get_block_id(Op)
+                        });
+throw_bridge_call_error({failed, Reason}, ServiceId, Op, Action) ->
+    throw(#program_error{ error=#bridge_call_failed{reason=Reason, bridge_id=ServiceId, action=Action}
+                        , block_id=?UTILS:get_block_id(Op)
+                        });
+throw_bridge_call_error({error_getting_resource, _ST}, ServiceId, Op, Action) ->
+    throw(#program_error{ error=#bridge_call_error_getting_resource{bridge_id=ServiceId, action=Action}
+                        , block_id=?UTILS:get_block_id(Op)
+                        }).
