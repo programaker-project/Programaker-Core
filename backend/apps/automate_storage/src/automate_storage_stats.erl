@@ -145,6 +145,9 @@ get_program_metrics() ->
 
                                                                              { program_error, {disconnected_bridge, _, _}, _ } ->
                                                                                  no_connection;
+                                                                             { program_error, {bridge_call_connection_not_found, _, _}, _ } ->
+                                                                                 bridge_call_connection_not_found;
+
                                                                              { program_error, {bridge_call_timeout, _, _}, _ } ->
                                                                                  bridge_call_timeout;
                                                                              { program_error, {bridge_call_failed, _, _, _}, _ } ->

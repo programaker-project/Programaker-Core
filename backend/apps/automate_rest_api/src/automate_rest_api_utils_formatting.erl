@@ -120,6 +120,14 @@ serialize_error_subtype(#disconnected_bridge{ bridge_id=BridgeId
      , action => Action
      };
 
+serialize_error_subtype(#bridge_call_connection_not_found{ bridge_id=BridgeId
+                                                         , action=Action
+                                                         }) ->
+    #{ type => bridge_call_connection_not_found
+     , bridge_id => BridgeId
+     , action => Action
+     };
+
 serialize_error_subtype(#bridge_call_timeout{ bridge_id=BridgeId
                                             , action=Action
                                             }) ->
