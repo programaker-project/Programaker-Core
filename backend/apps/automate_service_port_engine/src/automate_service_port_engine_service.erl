@@ -36,7 +36,7 @@ listen_service(Owner, {Key, SubKey}, [ServicePortId]) ->
             {error, no_valid_connection}
     end.
 
--spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()} | {error, no_connection} | {error, {failed, _}} | {error, timeout} | {error, {error_getting_resource, _}}.
+-spec call(binary(), any(), #program_thread{}, owner_id(), _) -> {ok, #program_thread{}, any()} | {error, no_connection | {failed, _} | timeout | no_valid_connection | {error_getting_resource, _}}.
 call(FunctionId, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [ServicePortId]) ->
     LastMonitorValue = case automate_bot_engine_variables:get_last_bridge_value(Thread, ServicePortId) of
                            {ok, Value} -> Value;
@@ -52,7 +52,9 @@ call(FunctionId, Values, Thread=#program_thread{program_id=ProgramId}, Owner, [S
                                Resources ->
                                    case get_connection(Owner, ServicePortId, Resources) of
                                        {ok, AvailableConnection} ->
-                                           AvailableConnection
+                                           AvailableConnection;
+                                       {error, not_found} ->
+                                           {error, no_valid_connection}
                                    end
                            catch ErrorNS:Error:StackTrace ->
                                    automate_logging:log_platform(error, ErrorNS, Error, StackTrace),

@@ -246,6 +246,17 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                 , BlockId
                                 };
 
+                            #program_error{error=#bridge_call_connection_not_found{ bridge_id=BridgeId
+                                                                                  , action=Action
+                                                                                  }
+                                          , block_id=BlockId
+                                          } ->
+                                { Error
+                                , list_to_binary(io_lib:format("Cannot run action '~s' on bridge '~s'. No connection found. Report this to the administrator to solve it.",
+                                                               [Action, BridgeId]))
+                                , BlockId
+                                };
+
                             #program_error{error=#bridge_call_timeout{ bridge_id=BridgeId
                                                                      , action=Action
                                                                      }
@@ -1474,7 +1485,11 @@ notify_variable_update(VariableName, #program_thread{ program_id=ProgramId }) ->
 %% Error construction
 throw_bridge_call_error(no_connection, ServiceId, Op, Action) ->
     throw(#program_error{ error=#disconnected_bridge{bridge_id=ServiceId, action=Action}
-                    , block_id=?UTILS:get_block_id(Op)
+                        , block_id=?UTILS:get_block_id(Op)
+                        });
+throw_bridge_call_error(no_valid_connection, ServiceId, Op, Action) ->
+    throw(#program_error{ error=#bridge_call_connection_not_found{bridge_id=ServiceId, action=Action}
+                        , block_id=?UTILS:get_block_id(Op)
                         });
 throw_bridge_call_error(timeout, ServiceId, Op, Action) ->
     throw(#program_error{ error=#bridge_call_timeout{bridge_id=ServiceId, action=Action}

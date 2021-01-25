@@ -46,6 +46,9 @@
 -record(disconnected_bridge, { bridge_id :: binary()
                              , action :: binary()
                              }).
+-record(bridge_call_connection_not_found, { bridge_id :: binary()
+                                          , action :: binary()
+                                          }).
 -record(bridge_call_timeout, { bridge_id :: binary()
                              , action :: binary()
                              }).
@@ -62,7 +65,7 @@
                             | #list_not_set{} | #variable_not_set{}
                             | #memory_not_set{}
                             | #unknown_operation{}
-                            | #disconnected_bridge{} | #bridge_call_timeout{} | #bridge_call_failed{}
+                            | #disconnected_bridge{} | #bridge_call_connection_not_found{} | #bridge_call_timeout{} | #bridge_call_failed{}
                             | #bridge_call_error_getting_resource{}.
 
 -record(program_error, { error :: program_error_type()
