@@ -37,6 +37,7 @@ import { ContainerFlowBlock } from './ui-blocks/container_flow_block';
 import { UI_ICON } from './definitions';
 import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/renderers/responsive_page';
 import { ChangeProgramVisilibityDialog, VisibilityEnum } from '../dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
+import { CloneProgramDialogComponentData, CloneProgramDialogComponent } from '../dialogs/clone-program-dialog/clone-program-dialog.component';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -377,6 +378,26 @@ export class FlowEditorComponent implements OnInit {
         }
 
         return result;
+    }
+
+    cloneProgram() {
+        const programData: CloneProgramDialogComponentData = {
+            name: this.program.name,
+            program: this.program,
+        };
+
+        const dialogRef = this.dialog.open(CloneProgramDialogComponent, {
+            data: programData
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            console.log("TODO: CLONING");
+        });
     }
 
     renameProgram() {

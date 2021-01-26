@@ -1,0 +1,52 @@
+mat-dialog-content {
+    min-width: 50vw;
+}
+
+.stepper-buttons {
+    padding: 2rem;
+}
+
+.program-name {
+    border-bottom: 2px solid #009688;
+    font-weight: bold;
+}
+
+button {
+    right: 0;
+}
+
+/* Account selection */
+label.explanation {
+    display: block;
+    margin-bottom: 2rem;
+}
+
+mat-card {
+    display: inline-block;
+    vertical-align: bottom;
+    margin-left: 1ex;
+    margin-top: 1ex;
+    min-width: 3em;
+    text-align: center;
+    height: 4rem;
+    padding: 0 1rem 0 0;
+}
+
+mat-card.selected {
+    border: 1px solid #808;
+    box-shadow: 0px 2px 1px -1px rgba(200, 0, 200, 0.2), 0px 1px 1px 0px rgba(200, 0, 200, 0.14), 0px 1px 3px 0px rgba(200, 0, 200, 0.12);
+}
+
+.account-icon {
+    max-width: 10rem;
+    height: 4rem;
+    border-radius: 4px 0 0 4px;
+}
+
+.loading-spinner {
+    margin: 1rem auto;
+}
+
+ul.link-list mat-icon {
+    vertical-align: middle;
+}

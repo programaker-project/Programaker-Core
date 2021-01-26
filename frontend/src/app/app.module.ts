@@ -21,7 +21,9 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTooltipModule } from '@angular/material/tooltip'
+import { MatStepperModule } from '@angular/material/stepper';
+
 import { BrowserModule } from '@angular/platform-browser';
 import { AlertModule } from 'ngx-bootstrap/alert';
 import { AppRoutingModule } from './app-routing.module';
@@ -77,14 +79,7 @@ import { MonitorService } from './monitor.service';
 import { ServiceService } from './service.service';
 import { TemplateService } from './templates/template.service';
 import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
-
-
-
-
-
-
-
-
+import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 
 
 
@@ -129,6 +124,7 @@ import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibili
         ConfigureLinkDialogComponent,
         ConfigureFontColorDialogComponent,
         ChangeProgramVisilibityDialog,
+        CloneProgramDialogComponent,
 
         // Independent components
         GroupCollaboratorEditorComponent,
@@ -160,6 +156,7 @@ import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibili
         MatBadgeModule,
         MatTooltipModule,
         MatSelectModule,
+        MatStepperModule,
 
         FormsModule,
         ReactiveFormsModule,

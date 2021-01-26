@@ -29,6 +29,18 @@
             </label>
         </button>
 
+        <button id="program-visibility-state" color="secondary"
+            class="annotated-icon"
+            [disabled]="!program"
+            (click)="cloneProgram()"
+            mat-button mat-raised-button>
+
+            <img class="icon" src="/assets/icons/clone.svg" />
+            <label *ngIf="!is_public" class="label">
+                Clone
+            </label>
+        </button>
+
         <!-- Basic functions -->
         <button mat-button mat-raised-button
             class="annotated-icon"

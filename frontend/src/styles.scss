@@ -366,6 +366,18 @@ button.completed > span > .load-bg {
     width: 100%;
 }
 
+.annotated-icon .icon {
+    grid-row: 1;
+    grid-column: 1;
+    margin: 0 auto;
+    height: 1.5rem;
+    pointer-events: none;
+}
+
+.annotated-icon:disabled .icon {
+    filter: contrast(1%);
+}
+
 .annotated-icon .label {
     grid-row: 2;
     grid-column: 1;
