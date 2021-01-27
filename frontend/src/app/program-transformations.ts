@@ -3,6 +3,33 @@ import { ProgramContent } from './program';
 
 export class NoTranslationFoundError extends Error {}
 
+export function getRequiredAssets(programData: ProgramContent): string[] {
+    if (programData.type !== 'flow_program') {
+        return [];
+    }
+
+    const assets: {[key: string]: boolean} = {};
+
+    // Transform graph
+    const graph: FlowGraph = programData.orig;
+    for (const node_id of Object.keys(graph.nodes)) {
+        const node = graph.nodes[node_id];
+
+        // Only simple_flow_blocks have to be transformed
+        if (node.data.type !== 'ui_flow_block') {
+            continue;
+        }
+
+        const ids = getFlowBlockIds(node);
+
+        for (const id of ids) {
+            assets[id] = true;
+        }
+    }
+
+    return Object.keys(assets);
+}
+
 function getBlockRequiredBridges(blocks: any[], required: {[key: string]: boolean}) {
     for (const block of blocks) {
         if (block.contents && block.contents.length > 0) {
@@ -112,7 +139,6 @@ function transformBlocks(blocks: any[], translations: {[key: string]: string}) {
         if (block.contents && block.contents.length > 0) {
             transformBlocks(block.contents, translations);
         }
-
 
         let args = [];
 

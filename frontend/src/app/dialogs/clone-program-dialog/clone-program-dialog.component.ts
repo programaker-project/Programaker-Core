@@ -8,12 +8,13 @@ import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
 import { getGroupPictureUrl, getUserPictureUrl } from 'app/utils';
 import { ProgramContent, ProgramMetadata } from '../../program';
-import { getRequiredBridges, transformProgram } from 'app/program-transformations';
+import { getRequiredBridges, transformProgram, getRequiredAssets } from 'app/program-transformations';
 import { ProgramService } from 'app/program.service';
 import { BridgeService } from 'app/bridges/bridge.service';
 import { ConnectionService } from 'app/connection.service';
 import { BridgeConnection } from 'app/connection';
 import { BridgeIndexData } from 'app/bridges/bridge';
+import { AssetService } from 'app/asset.service';
 
 export type CloneProgramDialogComponentData = {
     name: string,
@@ -45,6 +46,7 @@ export class CloneProgramDialogComponent {
     readonly _getGroupPicture: (groupId: string) => string;
 
     // Information
+    readonly sourceProgramId: string;
     session: Session;
     user_groups: UserGroupInfo[];
     programBridges: string[];
@@ -55,17 +57,20 @@ export class CloneProgramDialogComponent {
     cloningDone: boolean = false;
     createdProgramId: string;
 
-    constructor(public dialogRef: MatDialogRef<CloneProgramDialogComponent>,
-                private environmentService: EnvironmentService,
-                public sessionService: SessionService,
-                private groupService: GroupService,
+    constructor(private dialogRef: MatDialogRef<CloneProgramDialogComponent>,
+                environmentService: EnvironmentService,
+                sessionService: SessionService,
+                groupService: GroupService,
                 private formBuilder: FormBuilder,
                 private programService: ProgramService,
                 private bridgeService: BridgeService,
-                private connectionService: ConnectionService,
+                connectionService: ConnectionService,
+                private assetService: AssetService,
 
                 @Inject(MAT_DIALOG_DATA)
                 public data: CloneProgramDialogComponentData) {
+
+        this.sourceProgramId = data.program.id;
 
         this._getUserPicture = getUserPictureUrl.bind(this, environmentService);
         this._getGroupPicture = getGroupPictureUrl.bind(this, environmentService);
@@ -154,8 +159,12 @@ export class CloneProgramDialogComponent {
     async doClone() {
         this.cloningInProcess = true;
 
+        const assets = getRequiredAssets(this.data.program);
+
+        // Change program to fit the new user
         transformProgram(this.data.program, this.links);
 
+        // Create the program
         let createdProgram: ProgramMetadata;
         if (this.destinationAccount === '__user') {
             createdProgram = await this.programService.createProgram(this.data.program.type, this.programNameToSubmit);
@@ -164,12 +173,20 @@ export class CloneProgramDialogComponent {
             createdProgram = await this.programService.createProgramOnGroup(this.data.program.type, this.programNameToSubmit, this.destinationAccount);
         }
 
+        // Upload the program itself
         const program = this.data.program;
         program.id = createdProgram.id;
 
         this.createdProgramId = program.id;
 
         await this.programService.updateProgramById(program);
+
+        // Upload the required assets
+        const copies = assets.map(assetId =>
+            this.assetService.copyAssetToProgram(this.sourceProgramId, assetId, this.createdProgramId)
+        );
+
+        await Promise.all(copies);
 
         this.cloningDone = true;
         this.cloningInProcess = false;

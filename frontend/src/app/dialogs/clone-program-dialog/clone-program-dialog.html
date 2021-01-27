@@ -40,6 +40,10 @@
             </div>
 
             <div *ngIf="!loadingBridges">
+                <span *ngIf="usedBridges && usedBridges.length === 0">
+                    This program doesn't use any bridge. You can go to the next step.
+                </span>
+
                 <ul class="link-list">
                     <li *ngFor="let conn of usedBridges">
                         {{ conn.bridge_name }} <mat-icon>keyboard_arrow_right</mat-icon>
@@ -117,6 +121,9 @@
                 </li>
 
                 <li><span class="summary-item-name">Linking bridges:</span>
+                    <span *ngIf="usedBridges && usedBridges.length === 0">
+                        No linking needed.
+                    </span>
                     <span class="summary-item-value">
                         <ul class="link-list">
                             <li *ngFor="let link of usedLinks">

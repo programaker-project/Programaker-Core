@@ -80,6 +80,7 @@ import { ServiceService } from './service.service';
 import { TemplateService } from './templates/template.service';
 import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clone-program-dialog.component';
+import { AssetService } from './asset.service';
 
 
 
@@ -168,7 +169,7 @@ import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clon
     ],
     exports: [AppComponent],
     providers: [
-        BridgeService, ConnectionService, CustomBlockService, CustomSignalService,
+        AssetService, BridgeService, ConnectionService, CustomBlockService, CustomSignalService,
         MonitorService, ProgramService, ServiceService, SessionService, TemplateService,
         UiSignalService,
     ],
