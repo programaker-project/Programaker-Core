@@ -64,9 +64,9 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
                             {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(ProgramId),
-                            case automate_storage:can_user_view_as({user, UserId}, Owner) of
-                                true -> { true, Req1, State#state{ owner=Owner } };
-                                false ->
+                            case automate_storage:is_user_allowed({user, UserId}, ProgramId, read_program) of
+                                {ok, true} -> { true, Req1, State#state{ owner=Owner } };
+                                {ok, false} ->
                                     { { false, <<"Operation not allowed">>}, Req1, State }
                             end;
                         false ->
@@ -83,6 +83,7 @@ content_types_provided(Req, State) ->
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
 to_json(Req, State=#state{owner=Owner}) ->
+    %% TODO: Filter connections not used on program
     case automate_service_port_engine:list_established_connections(Owner) of
         { ok, Connections } ->
 

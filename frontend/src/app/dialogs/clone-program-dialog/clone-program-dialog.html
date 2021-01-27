@@ -1,0 +1,154 @@
+<h2 mat-dialog-title>Cloning <span class="program-name">{{ data.name }}</span>...</h2>
+
+<mat-dialog-content>
+    <mat-horizontal-stepper [linear]="true" #stepper>
+        <ng-template matStepperIcon="edit">
+		    <mat-icon>check</mat-icon>
+	    </ng-template>
+
+        <mat-step [stepControl]="cloneToFormGroup">
+            <ng-template matStepLabel>Where to clone to?</ng-template>
+
+            <mat-card
+                *ngIf="session"
+                role="button"
+                [class]="destinationAccount == '__user' ? 'selected' : ''"
+                (click)="updateDestinationAccount('__user')"
+            >
+                <img class="account-icon" onerror="this.src='/assets/profile-not-set.png'"
+                    [src]="_getUserPicture(session.user_id)" /> My user
+            </mat-card>
+            <mat-card *ngFor="let group of user_groups"
+                role="button"
+                [class]="destinationAccount == group.id ? 'selected' : ''"
+                (click)="updateDestinationAccount(group.id)">
+                <img class="account-icon" onerror="this.src='/assets/no-group-picture.svg'"
+                    [src]="_getGroupPicture(group.id)" /> Group: {{ group.name }}
+            </mat-card>
+            <div class="stepper-buttons">
+                <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
+                <button mat-button mat-raised-button
+                    [disabled]="!destinationAccount"
+                    (click)="prepareBridges()"
+                    color="primary"
+                    matStepperNext>Next</button>
+            </div>
+        </mat-step>
+        <mat-step [stepControl]="bridgeConnectionFormGroup">
+            <ng-template matStepLabel>Connect to necessary bridges</ng-template>
+            <div class="loading-spinner" *ngIf="loadingBridges">
+                <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+            </div>
+
+            <div *ngIf="!loadingBridges">
+                <span *ngIf="usedBridges && usedBridges.length === 0">
+                    This program doesn't use any bridge. You can go to the next step.
+                </span>
+
+                <ul class="link-list">
+                    <li *ngFor="let conn of usedBridges">
+                        {{ conn.bridge_name }} <mat-icon>keyboard_arrow_right</mat-icon>
+                        <mat-form-field>
+                            <mat-label>Bridge to link to</mat-label>
+                            <mat-select (selectionChange)="onLinksUpdate()" [(value)]="links[conn.bridge_id]" required>
+                                <mat-option [value]="to_bridge.id" *ngFor="let to_bridge of existingBridges">
+                                    {{ to_bridge.name }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </li>
+                </ul>
+
+            </div>
+
+            <div class="stepper-buttons">
+                <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
+                <button mat-button matStepperPrevious>Back</button>
+                <button mat-button mat-raised-button
+                    color="primary"
+                    [disabled]="!bridgesConnected"
+                    matStepperNext>Next</button>
+            </div>
+        </mat-step>
+        <mat-step [formGroup]="programNameFormGroup">
+            <ng-template matStepLabel>Name your new program</ng-template>
+
+            <mat-form-field class="token-name">
+                <input matInput
+                    id="programName"
+                    formControlName="programName"
+                    placeholder="Program name"
+                    required
+                    name="programName"
+                />
+            </mat-form-field>
+            <div class="stepper-buttons">
+                <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
+                <button mat-button matStepperPrevious>Back</button>
+                <button mat-button mat-raised-button
+                    (click)="prepareSummary()"
+                    color="primary"
+                    matStepperNext>Next</button>
+            </div>
+        </mat-step>
+        <mat-step>
+            <ng-template matStepLabel>Summary and confirmation</ng-template>
+
+            <ul class="summary-list">
+                <li class="card-summary-item"><span class="summary-item-name">Cloning to:</span>
+                    <span class="summary-item-value">
+                        <mat-card
+                            *ngIf="destinationAccount == '__user'">
+                            <img class="account-icon" onerror="this.src='/assets/profile-not-set.png'"
+                                [src]="_getUserPicture(session.user_id)" /> My user
+                        </mat-card>
+                        <mat-card *ngIf="selectedGroup">
+                            <img class="account-icon" onerror="this.src='/assets/no-group-picture.svg'"
+                                [src]="_getGroupPicture(selectedGroup.id)" /> Group: {{ selectedGroup.name }}
+                        </mat-card>
+                    </span>
+                </li>
+
+                <li><span class="summary-item-name">Name:</span>
+                    <span class="summary-item-value">
+                        <mat-form-field class="token-name">
+                            <input matInput
+                                id="programName"
+                                placeholder="Program name"
+                                readonly
+                                name="programName"
+                                value="{{ programNameToSubmit }}"
+                            />
+                        </mat-form-field>
+                    </span>
+                </li>
+
+                <li><span class="summary-item-name">Linking bridges:</span>
+                    <span *ngIf="usedBridges && usedBridges.length === 0">
+                        No linking needed.
+                    </span>
+                    <span class="summary-item-value">
+                        <ul class="link-list">
+                            <li *ngFor="let link of usedLinks">
+                                {{ link.from.bridge_name }}
+                                <mat-icon>keyboard_arrow_right</mat-icon>
+                                {{ link.to.name }}
+                            </li>
+                        </ul>
+                    </span>
+                </li>
+            </ul>
+
+            <div class="stepper-buttons">
+                <button class="cancellation" mat-button [disabled]="cloningInProcess || cloningDone" [mat-dialog-close]="false">Cancel</button>
+                <button mat-button [disabled]="cloningInProcess || cloningDone" matStepperPrevious>Back</button>
+                <button mat-button mat-raised-button [disabled]="cloningInProcess || cloningDone"
+                    (click)="doClone()"
+                    color="primary">Clone</button>
+                <button mat-button mat-raised-button *ngIf="cloningDone"
+                    color="primary" (click)="onConfirm()"
+                >Go to cloned program</button>
+            </div>
+        </mat-step>
+    </mat-horizontal-stepper>
+</mat-dialog-content>

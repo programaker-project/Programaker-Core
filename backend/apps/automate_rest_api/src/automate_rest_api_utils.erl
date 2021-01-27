@@ -4,6 +4,7 @@
         , send_json_format/1
         , stream_body_to_file/3
         , stream_body_to_file_hashname/3
+        , copy_asset/3
         , user_picture_path/1
         , user_has_picture/1
         , user_picture_modification_time/1
@@ -74,6 +75,17 @@ stream_body_to_file_hashname(Req, Path, FileKey) ->
                 ok
         end
     end.
+
+copy_asset(FromOwner, ToOwner, AssetId) ->
+    FromDir = get_owner_asset_directory(FromOwner),
+    FromPath = list_to_binary([FromDir, "/", AssetId]),
+    ToDir = get_owner_asset_directory(ToOwner),
+    ToPath = list_to_binary([ToDir, "/", AssetId]),
+
+    ok = filelib:ensure_dir(ToPath),
+
+    {ok, _BytesCopied} = file:copy(FromPath, ToPath),
+    ok.
 
 user_has_picture(UserId) ->
     filelib:is_file(user_picture_path(UserId)).

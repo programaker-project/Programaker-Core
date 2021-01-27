@@ -613,10 +613,12 @@ is_user_allowed(Owner, ProgramId, Action) ->
                 admin_program -> fun can_user_admin_as/2
             end,
     Transaction = fun() ->
-                          case mnesia:read(?USER_PROGRAMS_TABLE, ProgramId) of
-                              [#user_program_entry{owner=RealOwner}] ->
+                          case {mnesia:read(?USER_PROGRAMS_TABLE, ProgramId), Action} of
+                              {[#user_program_entry{is_public=true}], read_program} ->
+                                  {ok, true};
+                              {[#user_program_entry{owner=RealOwner}], _} ->
                                   {ok, Check(Owner, RealOwner)};
-                              [] ->
+                              {[], _} ->
                                   {error, not_found}
                           end
                   end,
