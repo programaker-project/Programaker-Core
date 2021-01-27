@@ -6,14 +6,14 @@
 		    <mat-icon>check</mat-icon>
 	    </ng-template>
 
-        <mat-step name="destination-account">
+        <mat-step [stepControl]="cloneToFormGroup">
             <ng-template matStepLabel>Where to clone to?</ng-template>
 
             <mat-card
                 *ngIf="session"
                 role="button"
                 [class]="destinationAccount == '__user' ? 'selected' : ''"
-                (click)="destinationAccount = '__user'"
+                (click)="updateDestinationAccount('__user')"
             >
                 <img class="account-icon" onerror="this.src='/assets/profile-not-set.png'"
                     [src]="_getUserPicture(session.user_id)" /> My user
@@ -21,7 +21,7 @@
             <mat-card *ngFor="let group of user_groups"
                 role="button"
                 [class]="destinationAccount == group.id ? 'selected' : ''"
-                (click)="destinationAccount = group.id">
+                (click)="updateDestinationAccount(group.id)">
                 <img class="account-icon" onerror="this.src='/assets/no-group-picture.svg'"
                     [src]="_getGroupPicture(group.id)" /> Group: {{ group.name }}
             </mat-card>
@@ -34,7 +34,8 @@
                     matStepperNext>Next</button>
             </div>
         </mat-step>
-        <mat-step label="Connect to necessary bridges">
+        <mat-step [stepControl]="bridgeConnectionFormGroup">
+            <ng-template matStepLabel>Connect to necessary bridges</ng-template>
             <div class="loading-spinner" *ngIf="loadingBridges">
                 <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
             </div>
@@ -90,7 +91,9 @@
                     matStepperNext>Next</button>
             </div>
         </mat-step>
-        <mat-step label="Summary and confirmation">
+        <mat-step>
+            <ng-template matStepLabel>Summary and confirmation</ng-template>
+
             <ul class="summary-list">
                 <li class="card-summary-item"><span class="summary-item-name">Cloning to:</span>
                     <span class="summary-item-value">

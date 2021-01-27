@@ -1,5 +1,5 @@
-import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, Inject, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { EnvironmentService } from 'app/environment.service';
 import { UserGroupInfo } from 'app/group';
@@ -15,6 +15,7 @@ import { ConnectionService } from 'app/connection.service';
 import { BridgeConnection } from 'app/connection';
 import { BridgeIndexData } from 'app/bridges/bridge';
 import { AssetService } from 'app/asset.service';
+import { MatStepper } from '@angular/material/stepper';
 
 export type CloneProgramDialogComponentData = {
     name: string,
@@ -34,6 +35,8 @@ export class CloneProgramDialogComponent {
     // Models
     destinationAccount: '__user' | string | null;
     programNameFormGroup: FormGroup;
+    cloneToFormGroup: FormGroup;
+    bridgeConnectionFormGroup: FormGroup;
     bridgesConnected = false;
     loadingBridges = true;
     links: {[key: string]: string} = {};
@@ -57,6 +60,9 @@ export class CloneProgramDialogComponent {
     cloningDone: boolean = false;
     createdProgramId: string;
 
+    // Views
+    @ViewChild('stepper') stepper: MatStepper;
+
     constructor(private dialogRef: MatDialogRef<CloneProgramDialogComponent>,
                 environmentService: EnvironmentService,
                 sessionService: SessionService,
@@ -75,6 +81,27 @@ export class CloneProgramDialogComponent {
         this._getUserPicture = getUserPictureUrl.bind(this, environmentService);
         this._getGroupPicture = getGroupPictureUrl.bind(this, environmentService);
 
+        this.cloneToFormGroup = this.formBuilder.group({
+            cloneTo: new FormControl('', (control) => {
+                if (this.destinationAccount) {
+                    return null;
+                }
+                else {
+                    return { error: 'Not destination account selected' };
+                }
+            }),
+        });
+        this.bridgeConnectionFormGroup = this.formBuilder.group({
+            bridgeConnections: new FormControl('', (control) => {
+                if (this.bridgesConnected) {
+                    return null;
+                }
+                else {
+                    return { error: 'Not all bridges are connected' };
+                }
+            }),
+        });
+
         this.programNameFormGroup = this.formBuilder.group({
             programName: [data.name, [Validators.required, Validators.minLength(4)]],
         });
@@ -87,6 +114,11 @@ export class CloneProgramDialogComponent {
 
         this.programBridges = getRequiredBridges(data.program);
         this.connectionQuery = connectionService.getConnectionsOnProgram(data.program.id);
+    }
+
+    updateDestinationAccount(value: string) {
+        this.destinationAccount = value;
+        this.cloneToFormGroup.get('cloneTo').updateValueAndValidity();
     }
 
     async getUsedBridges(): Promise<BridgeConnection[]> {
@@ -150,6 +182,8 @@ export class CloneProgramDialogComponent {
             }
             this.usedLinks = usedLinks;
         }
+
+        this.bridgeConnectionFormGroup.get('bridgeConnections').updateValueAndValidity();
     }
 
     prepareSummary() {
@@ -157,6 +191,10 @@ export class CloneProgramDialogComponent {
     }
 
     async doClone() {
+        // Lock other steps
+        this.stepper.steps.forEach(step => step.editable = false);
+
+        // Start cloning
         this.cloningInProcess = true;
 
         const assets = getRequiredAssets(this.data.program);
