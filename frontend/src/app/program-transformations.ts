@@ -99,7 +99,23 @@ export function getRequiredBridges(programData: ProgramContent): string[] {
         }
     }
     else if (programData.type === 'scratch_program') {
-        throw new Error('Translation of Scratch programs not yet supported');
+        const parser = new DOMParser();
+        const serializer = new XMLSerializer();
+
+        const xml = parser.parseFromString(programData.orig, 'text/xml');
+        const blocks = xml.getElementsByTagName("block");
+        for (const block of Array.from(blocks)) {
+            const fun = block.getAttribute("type");
+
+            if ((!fun) || (!fun.startsWith('services.')) || (fun.startsWith('services.ui.'))) {
+                continue;
+            }
+
+            const chunks = fun.split('.');
+
+            const origBridge = chunks[1];
+            required[origBridge] = true;
+        }
     }
     else {
         throw new Error(`Translation of program type not supported: ${programData.type}`)
@@ -224,7 +240,30 @@ export function transformProgram(programData: ProgramContent, translations: { [k
         }
     }
     else if (programData.type === 'scratch_program') {
-        throw new Error('Translation of Scratch programs not yet supported');
+        const parser = new DOMParser();
+        const serializer = new XMLSerializer();
+
+        const xml = parser.parseFromString(programData.orig, 'text/xml');
+        const blocks = xml.getElementsByTagName("block");
+        for (const block of Array.from(blocks)) {
+            const fun = block.getAttribute("type");
+
+            if ((!fun) || (!fun.startsWith('services.')) || (fun.startsWith('services.ui.'))) {
+                continue;
+            }
+
+            const chunks = fun.split('.');
+
+            const origBridge = chunks[1];
+            const translated = translations[origBridge];
+            if (!translated) {
+                throw new Error(`Cannot find translation for bridge id=${origBridge}.`)
+            }
+
+            chunks[1] = translated;
+            block.setAttribute('type', chunks.join('.'));
+        }
+        programData.orig = serializer.serializeToString(xml);
     }
     else {
         throw new Error(`Translation of program type not supported: ${programData.type}`)

@@ -29,14 +29,14 @@
             </label>
         </button>
 
-        <button id="program-visibility-state" color="secondary"
+        <button id="program-clone-button" color="secondary"
             class="annotated-icon"
             [disabled]="!program"
             (click)="cloneProgram()"
             mat-button mat-raised-button>
 
             <img class="icon" src="/assets/icons/clone.svg" />
-            <label *ngIf="!is_public" class="label">
+            <label class="label">
                 Clone
             </label>
         </button>

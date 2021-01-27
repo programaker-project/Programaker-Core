@@ -37,6 +37,8 @@ import { EditorController } from './program-editors/editor-controller';
 import { Unsubscribable } from 'rxjs';
 import { EnvironmentService } from './environment.service';
 import { VisibilityEnum, ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
+import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clone-program-dialog.component';
+import { CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -921,6 +923,28 @@ export class ProgramDetailComponent implements OnInit {
         }
 
         return result;
+    }
+
+    cloneProgram() {
+        const programData: CloneProgramDialogComponentData = {
+            name: this.program.name,
+            program: JSON.parse(JSON.stringify(this.program)),
+        };
+
+        const dialogRef = this.dialog.open(CloneProgramDialogComponent, {
+            data: programData
+        });
+
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
+
+            const program_id = result.program_id;
+            this.dispose();
+            this.router.navigate([`/programs/${program_id}/scratch`], { replaceUrl: false });
+        });
     }
 
     renameProgram() {
