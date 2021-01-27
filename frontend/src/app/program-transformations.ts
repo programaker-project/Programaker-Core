@@ -26,14 +26,20 @@ function getBlockRequiredBridges(blocks: any[], required: {[key: string]: boolea
 
         const fun = block.type;
 
-        if ((!fun) || (!fun.startsWith('services.')) || (fun.startsWith('services.ui.'))) {
+
+        if (fun === 'command_call_service') {
+            const origBridge = block.args.service_id;
+            required[origBridge] = true;
+        }
+        else if ((!fun) || (!fun.startsWith('services.')) || (fun.startsWith('services.ui.'))) {
             continue;
         }
+        else {
+            const chunks = fun.split('.');
 
-        const chunks = fun.split('.');
-
-        const origBridge = chunks[1];
-        required[origBridge] = true;
+            const origBridge = chunks[1];
+            required[origBridge] = true;
+        }
    }
 }
 
@@ -101,31 +107,117 @@ function getFlowBlockIds(node: FlowGraphNode): string[] {
     return ids;
 }
 
-export function getRequiredAssets(programData: any): string[] {
-    console.log(programData.metadata.type);
+function transformBlocks(blocks: any[], translations: {[key: string]: string}) {
+    for (const block of blocks) {
+        if (block.contents && block.contents.length > 0) {
+            transformBlocks(block.contents, translations);
+        }
 
-    if (programData.metadata.type !== 'flow_program') {
-        return [];
-    }
 
-    const assets: {[key: string]: boolean} = {};
+        let args = [];
 
-    // Transform graph
-    const graph: FlowGraph = programData.orig;
-    for (const node_id of Object.keys(graph.nodes)) {
-        const node = graph.nodes[node_id];
+        if (block.args instanceof Array) {
+            args = block.args;
+        }
+        else if (block.args['service_call_values']) {
+            args = block.args['service_call_values'];
+        }
 
-        // Only simple_flow_blocks have to be transformed
-        if (node.data.type !== 'ui_flow_block') {
+        for (const arg of args || []) {
+            if (arg.type === 'block') {
+                transformBlocks(arg.value, translations);
+            }
+        }
+
+        const fun = block.type;
+
+        if (fun === 'command_call_service') {
+            const origBridge = block.args.service_id;
+            const translated = translations[origBridge];
+            if (!translated) {
+                throw new NoTranslationFoundError(origBridge)
+            }
+
+            console.debug(`[Program] On ${fun}: [${origBridge} -> ${translated}]`);
+            block.args.service_id = translated;
+        }
+        else if ((!fun) || (!fun.startsWith('services.')) || (fun.startsWith('services.ui.'))) {
             continue;
         }
+        else {
+            const chunks = fun.split('.');
 
-        const ids = getFlowBlockIds(node);
+            const origBridge = chunks[1];
+            const translated = translations[origBridge];
+            if (!translated) {
+                throw new NoTranslationFoundError(origBridge)
+            }
 
-        for (const id of ids) {
-            assets[id] = true;
+            console.debug(`[Program] On ${fun}: [${origBridge} -> ${translated}]`);
+            chunks[1] = translated;
+
+            block.type = chunks.join('.');
+        }
+   }
+}
+
+// Destructively transform the program so it can be applied to the target user
+export function transformProgram(programData: ProgramContent, translations: { [key: string]: string }) {
+
+    // Transform editor representation
+    if (programData.type === 'flow_program') {
+        // Transform graph
+        const graph: FlowGraph = programData.orig;
+        for (const node_id of Object.keys(graph.nodes)) {
+            const node = graph.nodes[node_id];
+
+            // Only simple_flow_blocks have to be transformed
+            if (node.data.type !== 'simple_flow_block') {
+                continue;
+            }
+            const fun = node.data.value.options.block_function;
+
+            if ((!fun) || (!fun.startsWith('services.')) || (fun.startsWith('services.ui.'))) {
+                continue;
+            }
+
+            const chunks = fun.split('.');
+
+            const origBridge = chunks[1];
+            const translated = translations[origBridge];
+            if (!translated) {
+                throw new Error(`Cannot find translation for bridge id=${origBridge}.`)
+            }
+
+            console.debug(`[Flow] On ${fun}: [${origBridge} -> ${translated}]`);
+            chunks[1] = translated;
+            node.data.value.options.block_function = chunks.join('.');
+            if (node.data.value.icon) {
+                node.data.value.icon.replace(origBridge, translated);
+            }
         }
     }
+    else if (programData.type === 'scratch_program') {
+        throw new Error('Translation of Scratch programs not yet supported');
+    }
+    else {
+        throw new Error(`Translation of program type not supported: ${programData.type}`)
+    }
 
-    return Object.keys(assets);
+
+    // Transform parsed structure
+    // Maybe just recompiling the graph would be more robust
+    try {
+        for (const col of programData.parsed.blocks) {
+            transformBlocks(col, translations);
+        }
+    }
+    catch (err) {
+        if (err instanceof NoTranslationFoundError) {
+            const origBridge = err.message;
+            throw new Error(`Cannot find translation for bridge id=${origBridge}.`);
+        }
+        throw err;
+    }
+
 }

@@ -4,6 +4,10 @@ mat-dialog-content {
 
 .stepper-buttons {
     padding: 2rem;
+
+    button {
+        margin: 0.5rem;
+    }
 }
 
 .program-name {
@@ -49,4 +53,21 @@ mat-card.selected {
 
 ul.link-list mat-icon {
     vertical-align: middle;
+}
+
+.summary-list {
+    .card-summary-item .summary-item-name {
+        height: 4rem;
+        display: inline-block;
+        vertical-align: initial;
+        line-height: 4rem;
+    }
+
+    li {
+        margin-bottom: 1rem;
+    }
+
+    .summary-item-name {
+        margin-right: 1rem;
+    }
 }

@@ -344,6 +344,10 @@ export class FlowEditorComponent implements OnInit {
     }
 
     dispose() {
+        if (this.workspace) {
+            this.workspace.dispose();
+        }
+        this.workspace = null;
     }
 
     async sendProgram(): Promise<boolean> {
@@ -383,7 +387,7 @@ export class FlowEditorComponent implements OnInit {
     cloneProgram() {
         const programData: CloneProgramDialogComponentData = {
             name: this.program.name,
-            program: this.program,
+            program: JSON.parse(JSON.stringify(this.program)),
         };
 
         const dialogRef = this.dialog.open(CloneProgramDialogComponent, {
@@ -396,7 +400,9 @@ export class FlowEditorComponent implements OnInit {
                 return;
             }
 
-            console.log("TODO: CLONING");
+            const program_id = result.program_id;
+            this.dispose();
+            this.router.navigate([`/programs/${program_id}/flow`], { replaceUrl: false });
         });
     }
 

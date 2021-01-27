@@ -7,8 +7,8 @@ import { GroupService } from 'app/group.service';
 import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
 import { getGroupPictureUrl, getUserPictureUrl } from 'app/utils';
-import { ProgramContent } from '../../program';
-import { getRequiredBridges } from 'app/program-transformations';
+import { ProgramContent, ProgramMetadata } from '../../program';
+import { getRequiredBridges, transformProgram } from 'app/program-transformations';
 import { ProgramService } from 'app/program.service';
 import { BridgeService } from 'app/bridges/bridge.service';
 import { ConnectionService } from 'app/connection.service';
@@ -35,7 +35,10 @@ export class CloneProgramDialogComponent {
     programNameFormGroup: FormGroup;
     bridgesConnected = false;
     loadingBridges = true;
-    links: {[key: string]: BridgeIndexData[]} = {};
+    links: {[key: string]: string} = {};
+    selectedGroup: UserGroupInfo | null;
+    programNameToSubmit: string;
+    usedLinks: { from: BridgeConnection, to: BridgeIndexData }[] = [];
 
     // Utils used on template
     readonly _getUserPicture: (userId: string) => string;
@@ -48,6 +51,9 @@ export class CloneProgramDialogComponent {
     connectionQuery: Promise<BridgeConnection[]>;
     usedBridges: BridgeConnection[];
     existingBridges: BridgeIndexData[];
+    cloningInProcess: boolean = false;
+    cloningDone: boolean = false;
+    createdProgramId: string;
 
     constructor(public dialogRef: MatDialogRef<CloneProgramDialogComponent>,
                 private environmentService: EnvironmentService,
@@ -97,23 +103,25 @@ export class CloneProgramDialogComponent {
 
         if (this.destinationAccount === '__user') {
             this.existingBridges = (await this.bridgeService.listUserBridges()).bridges;
+            this.selectedGroup = null;
         }
         else {
             this.existingBridges = await this.bridgeService.listGroupBridges(this.destinationAccount);
+            this.selectedGroup = this.user_groups.find(g => g.id === this.destinationAccount);
         }
 
         this.usedBridges = await this.getUsedBridges();
 
         for (const conn of this.usedBridges) {
-            let linkedTo = null;
+            let linkedTo: string | null = null;
 
             const idIdx = this.existingBridges.findIndex((b) => b.id == conn.bridge_id );
 
             if (idIdx >= 0) {
-                linkedTo = this.existingBridges[idIdx];
+                linkedTo = this.existingBridges[idIdx].id;
             }
 
-            this.links[conn.bridge_id] = linkedTo.id;
+            this.links[conn.bridge_id] = linkedTo;
         }
 
         this.loadingBridges = false;
@@ -124,6 +132,47 @@ export class CloneProgramDialogComponent {
 
     onLinksUpdate() {
         this.bridgesConnected = !Object.keys(this.links).some(id => !this.links[id]);
+
+        if (this.bridgesConnected) {
+            const usedLinks = [];
+            for (const srcBridge of this.usedBridges) {
+                const toBridge = this.links[srcBridge.bridge_id];
+
+                usedLinks.push({
+                    from: srcBridge,
+                    to: this.existingBridges.find(b => b.id === toBridge)
+                })
+            }
+            this.usedLinks = usedLinks;
+        }
+    }
+
+    prepareSummary() {
+        this.programNameToSubmit = this.programNameFormGroup.get('programName').value;
+    }
+
+    async doClone() {
+        this.cloningInProcess = true;
+
+        transformProgram(this.data.program, this.links);
+
+        let createdProgram: ProgramMetadata;
+        if (this.destinationAccount === '__user') {
+            createdProgram = await this.programService.createProgram(this.data.program.type, this.programNameToSubmit);
+        }
+        else {
+            createdProgram = await this.programService.createProgramOnGroup(this.data.program.type, this.programNameToSubmit, this.destinationAccount);
+        }
+
+        const program = this.data.program;
+        program.id = createdProgram.id;
+
+        this.createdProgramId = program.id;
+
+        await this.programService.updateProgramById(program);
+
+        this.cloningDone = true;
+        this.cloningInProcess = false;
     }
 
     onNoClick(): void {
@@ -131,5 +180,6 @@ export class CloneProgramDialogComponent {
     }
 
     onConfirm(): void {
+        this.dialogRef.close({ success: true, program_id: this.createdProgramId });
     }
 }

@@ -1,7 +1,7 @@
 <h2 mat-dialog-title>Cloning <span class="program-name">{{ data.name }}</span>...</h2>
 
 <mat-dialog-content>
-    <mat-vertical-stepper [linear]="true" #stepper>
+    <mat-horizontal-stepper [linear]="true" #stepper>
         <ng-template matStepperIcon="edit">
 		    <mat-icon>check</mat-icon>
 	    </ng-template>
@@ -65,7 +65,7 @@
                     matStepperNext>Next</button>
             </div>
         </mat-step>
-        <mat-step [formGroup]="programNameFormGroup" name="proram-name">
+        <mat-step [formGroup]="programNameFormGroup">
             <ng-template matStepLabel>Name your new program</ng-template>
 
             <mat-form-field class="token-name">
@@ -81,28 +81,64 @@
                 <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
                 <button mat-button matStepperPrevious>Back</button>
                 <button mat-button mat-raised-button
+                    (click)="prepareSummary()"
                     color="primary"
                     matStepperNext>Next</button>
             </div>
         </mat-step>
         <mat-step label="Summary and confirmation">
+            <ul class="summary-list">
+                <li class="card-summary-item"><span class="summary-item-name">Cloning to:</span>
+                    <span class="summary-item-value">
+                        <mat-card
+                            *ngIf="destinationAccount == '__user'">
+                            <img class="account-icon" onerror="this.src='/assets/profile-not-set.png'"
+                                [src]="_getUserPicture(session.user_id)" /> My user
+                        </mat-card>
+                        <mat-card *ngIf="selectedGroup">
+                            <img class="account-icon" onerror="this.src='/assets/no-group-picture.svg'"
+                                [src]="_getGroupPicture(selectedGroup.id)" /> Group: {{ selectedGroup.name }}
+                        </mat-card>
+                    </span>
+                </li>
+
+                <li><span class="summary-item-name">Name:</span>
+                    <span class="summary-item-value">
+                        <mat-form-field class="token-name">
+                            <input matInput
+                                id="programName"
+                                placeholder="Program name"
+                                readonly
+                                name="programName"
+                                value="{{ programNameToSubmit }}"
+                            />
+                        </mat-form-field>
+                    </span>
+                </li>
+
+                <li><span class="summary-item-name">Linking bridges:</span>
+                    <span class="summary-item-value">
+                        <ul class="link-list">
+                            <li *ngFor="let link of usedLinks">
+                                {{ link.from.bridge_name }}
+                                <mat-icon>keyboard_arrow_right</mat-icon>
+                                {{ link.to.name }}
+                            </li>
+                        </ul>
+                    </span>
+                </li>
+            </ul>
+
             <div class="stepper-buttons">
-                <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
-                <button mat-button matStepperPrevious>Back</button>
-                <button mat-button mat-raised-button
-                    color="primary"
-                    matStepperNext>Clone</button>
+                <button class="cancellation" mat-button [disabled]="cloningInProcess || cloningDone" [mat-dialog-close]="false">Cancel</button>
+                <button mat-button [disabled]="cloningInProcess || cloningDone" matStepperPrevious>Back</button>
+                <button mat-button mat-raised-button [disabled]="cloningInProcess || cloningDone"
+                    (click)="doClone()"
+                    color="primary">Clone</button>
+                <button mat-button mat-raised-button *ngIf="cloningDone"
+                    color="primary" (click)="onConfirm()"
+                >Go to cloned program</button>
             </div>
         </mat-step>
-    </mat-vertical-stepper>
+    </mat-horizontal-stepper>
 </mat-dialog-content>
-<!-- <mat-dialog-actions>
-     <button class="cancellation" mat-button [mat-dialog-close]="false">Cancel</button>
-     <button class="confirmation"
-     type="submit"
-     color="primary"
-     mat-button
-     [disabled]="!destinationAccount"
-     (click)="onConfirm()"
-     mat-raised-button>Update</button>
-     </mat-dialog-actions> -->
