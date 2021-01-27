@@ -39,6 +39,7 @@ import { EnvironmentService } from './environment.service';
 import { VisibilityEnum, ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
+import { Session } from './session';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -61,6 +62,7 @@ export class ProgramDetailComponent implements OnInit {
     workspace: Blockly.WorkspaceSvg;
     programId: string;
     environment: { [key: string]: any };
+    session: Session;
 
     @ViewChild('logs_drawer') logs_drawer: MatDrawer;
 
@@ -142,7 +144,7 @@ export class ProgramDetailComponent implements OnInit {
 
         progbar.track(new Promise(async (resolve, reject) => {
 
-            const session = await this.sessionService.getSession();
+            this.session = await this.sessionService.getSession();
 
             this.route.params.pipe(
                 switchMap((params: Params) => {
@@ -151,7 +153,7 @@ export class ProgramDetailComponent implements OnInit {
                         const programName = params['program_id'];
 
                         return this.programService.getProgram(user, programName).catch(err => {
-                            if (!session.active) {
+                            if (!this.session.active) {
                                 this.router.navigate(['/login'], {replaceUrl:true});
                                 reject();
                                 throw Error("Error loading");
@@ -166,7 +168,7 @@ export class ProgramDetailComponent implements OnInit {
                     else {
                         const programId = params['program_id'];
                         return this.programService.getProgramById(programId).catch(err => {
-                            if (!session.active) {
+                            if (!this.session.active) {
                                 this.router.navigate(['/login'], {replaceUrl:true});
                                 reject();
                                 throw Error("Error loading");

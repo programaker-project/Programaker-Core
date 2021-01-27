@@ -82,6 +82,8 @@ copy_asset(FromOwner, ToOwner, AssetId) ->
     ToDir = get_owner_asset_directory(ToOwner),
     ToPath = list_to_binary([ToDir, "/", AssetId]),
 
+    ok = filelib:ensure_dir(ToPath),
+
     {ok, _BytesCopied} = file:copy(FromPath, ToPath),
     ok.
 

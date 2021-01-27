@@ -31,7 +31,7 @@
 
         <button id="program-clone-button" color="secondary"
             class="annotated-icon"
-            [disabled]="!program"
+            [disabled]="!program || !session.active"
             (click)="cloneProgram()"
             mat-button mat-raised-button>
 
