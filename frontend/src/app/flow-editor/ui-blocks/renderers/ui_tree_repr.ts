@@ -7,6 +7,7 @@ export type BackgroundPropertyConfiguration = { type: 'transparent' } | { type: 
 export type UiElementWidgetType
     = 'simple_button'
     | 'fixed_text'
+    | 'text_box'
     | 'dynamic_text'
     | 'fixed_image'
     | 'responsive_page_holder'
@@ -69,6 +70,7 @@ export function isAtomicUiElementType(uiElement: UiElementWidgetType): uiElement
         case 'dynamic_text':
         case 'fixed_image':
         case 'horizontal_separator':
+        case 'text_box':
             return true;
 
         default:

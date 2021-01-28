@@ -55,7 +55,7 @@ raw_to_html(X) ->
 
 html_escape(Str) ->
     Lines = binary:split(Str, <<"\n">>, [global]),
-    EscapedLines = lists:map(fun mochiweb_html:escape/1, Lines),
+    EscapedLines = lists:map(fun mochiweb_html:escape_attr/1, Lines),
     lists:join("<br/>", EscapedLines).
 
 %%====================================================================
@@ -151,6 +151,20 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
     , <<">">>
     , get_fixed_text_content(E)
     , <<"</div></div>">>
+    ];
+
+render_element(E=#{ <<"widget_type">> := Type= <<"text_box">>
+                  , <<"id">> := WidgetId
+                  }, _ProgramId, Values, _Req) ->
+    Contents = raw_to_html(maps:get(<<"text">>, E,
+                                    maps:get(<<Type/binary, ".", WidgetId/binary>>, Values,
+                                             <<"">>))),
+    ElementStyle = get_text_element_style(E),
+    [ <<"<div class=widget-container><input type='text' class='widget text text_box' id='elem-">>, WidgetId, <<"'">>
+    , " style='", ElementStyle, "'"
+    , <<" value=\"">>
+    , Contents
+    , <<"\" /></div>">>
     ];
 
 render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
@@ -271,6 +285,10 @@ wire_components(#{ <<"cut_type">> := CutType
                  , <<"groups">> := Groups
                  }) ->
     lists:map(fun wire_components/1, Groups);
+
+wire_components(#{ <<"widget_type">> := <<"text_box">>
+                 }) ->
+    []; %% TODO: This will probably be wired
 
 wire_components(#{ <<"widget_type">> := <<"simple_button">>
                  , <<"id">> := WidgetId
