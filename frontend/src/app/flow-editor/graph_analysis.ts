@@ -1272,7 +1272,7 @@ function compile_block(graph: FlowGraph,
                         from_service: TIME_MONITOR_ID,
                     },
                     key: key,
-                    expected_value: 'any_value',
+                    monitor_expected_value: 'any_value',
                 };
             }
             else {
@@ -1661,8 +1661,9 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
                         from_service: TIME_MONITOR_ID,
                     },
                     key: key,
-                    expected_value: 'any_value',
+                    monitor_expected_value: 'any_value',
                 },
+                id: source.block.block_id,
             }
         }
         else {

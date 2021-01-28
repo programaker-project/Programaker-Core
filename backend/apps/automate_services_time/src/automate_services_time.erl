@@ -158,6 +158,7 @@ timekeeping_loop(ChannelId, {{LYear, LMonth, LDay}, {LHour, LMin, LSec}}) ->
                                                                       , <<"minute">> => Min
                                                                       , <<"second">> => Sec
                                                                       }
+                                                     , <<"as_list">> => [ Hour, Min, Sec]
                                                      , <<"key">> => <<"utc_time">>
                                                      , <<"service_id">> => get_uuid()
                                                      });
@@ -177,6 +178,7 @@ timekeeping_loop(ChannelId, {{LYear, LMonth, LDay}, {LHour, LMin, LSec}}) ->
                                                                       , <<"minute">> => Min
                                                                       , <<"second">> => Sec
                                                                       }
+                                                     , <<"as_list">> => [ Year, Month, Day, calendar:day_of_the_week(Year, Month, Day)]
                                                      , <<"key">> => <<"utc_date">>
                                                      , <<"service_id">> => get_uuid()
                                                      });
