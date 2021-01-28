@@ -933,6 +933,23 @@ export class ProgramDetailComponent implements OnInit {
             program: JSON.parse(JSON.stringify(this.program)),
         };
 
+        // Get workspace
+        const xml = Blockly.Xml.workspaceToDom(this.workspace);
+
+        // Remove comments
+        for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
+            comment.parentNode.removeChild(comment);
+        }
+
+        // Serialize result
+        const serializer = new ScratchProgramSerializer(this.toolboxController);
+        const serialized = serializer.ToJson(xml);
+
+        programData.program.orig = serialized.orig;
+        if (((!programData.program.parsed) || (programData.program.parsed === 'undefined'))) {
+            programData.program.parsed = { blocks: [], variables: [] };
+        }
+
         const dialogRef = this.dialog.open(CloneProgramDialogComponent, {
             data: programData
         });

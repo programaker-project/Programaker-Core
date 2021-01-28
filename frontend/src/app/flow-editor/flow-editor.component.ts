@@ -390,6 +390,11 @@ export class FlowEditorComponent implements OnInit {
             program: JSON.parse(JSON.stringify(this.program)),
         };
 
+        programData.program.orig = this.workspace.getGraph();
+        if (((!programData.program.parsed) || (programData.program.parsed === 'undefined'))) {
+            programData.program.parsed = { blocks: [], variables: [] };
+        }
+
         const dialogRef = this.dialog.open(CloneProgramDialogComponent, {
             data: programData
         });
