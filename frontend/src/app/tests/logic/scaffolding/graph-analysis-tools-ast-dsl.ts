@@ -93,8 +93,8 @@ function transform_call(args: any[]): any[] {
             args[1].monitor_id = { from_service: args[1].from_service };
             delete args[1].from_service;
         }
-        if (!args[1].expected_value) {
-            args[1].expected_value = 'any_value';
+        if (!args[1].monitor_expected_value) {
+            args[1].monitor_expected_value = 'any_value';
         }
     }
 

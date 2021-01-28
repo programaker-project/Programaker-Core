@@ -214,7 +214,7 @@ describe('Flow-01: Simple flow.', () => {
         it('Should match tool compilation', async () => {
             are_equivalent_ast(compile(_01_simple_flow as FlowGraph), [
                 gen_compiled([
-                    ['wait_for_monitor', { monitor_id: { from_service: TIME_MONITOR_ID }, key: 'utc_time', expected_value: 'any_value' }],
+                    ['wait_for_monitor', { monitor_id: { from_service: TIME_MONITOR_ID }, key: 'utc_time', monitor_expected_value: 'any_value' }],
                     ['control_if_else',
                      ['operator_and', ['operator_equals',
                                        ['flow_last_value', 'ad97e5d1-c725-4cc6-826f-30057f239635', 0],

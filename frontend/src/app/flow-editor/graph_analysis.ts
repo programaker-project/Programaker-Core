@@ -29,6 +29,7 @@ const BASE_TOOLBOX_BLOCKS = index_toolbox_description(BaseToolboxDescription);
 const JUMP_TO_POSITION_OPERATION = 'jump_to_position';
 const JUMP_TO_BLOCK_OPERATION = 'jump_to_block';
 const FORK_OPERATION = 'op_fork_execution';
+const TIME_TRIGGERS = ['flow_utc_date', 'flow_utc_time'];
 
 function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
     if (isAtomicFlowBlockData(block.data)){
@@ -1035,7 +1036,7 @@ function already_used_in_past(graph: FlowGraph, arg_id: string,
     return false;
 }
 
-function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, orig: string): CompiledBlockArg {
+function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, orig: string, arg_index: number, before: CompiledBlock | null): CompiledBlockArg {
     const block = graph.nodes[arg.tree.block_id];
 
     if (isAtomicFlowBlockData(block.data)){
@@ -1093,8 +1094,8 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
             return {
                 type: 'block',
                 value: [ compile_block(graph, arg.tree.block_id, arg.tree.arguments, [],
-                                       { inside_args: true, orig_tree: null },
-                                       { before: null, exec_orig: orig },
+                                       { inside_args: true, orig_tree: null, arg_index: arg_index },
+                                       { before: before, exec_orig: orig },
                                       ) ]
             }
         }
@@ -1152,7 +1153,7 @@ function compile_block(graph: FlowGraph,
                        block_id: string,
                        args: BlockTreeArgument[],
                        contents: SteppedBlockTree[][] | SteppedBlockTree[],
-                       flags: { inside_args: boolean, orig_tree: SteppedBlockTree },
+                       flags: { inside_args: boolean, orig_tree: SteppedBlockTree, arg_index?: number },
                        relatives: { before: CompiledBlock, exec_orig?: string }): CompiledBlock {
 
     if (flags.orig_tree && (flags.orig_tree as VirtualSteppedBlock).type) {
@@ -1214,7 +1215,9 @@ function compile_block(graph: FlowGraph,
         let block_type = null;
         let compiled_args: CompiledBlockArgs = args.map(v => compile_arg(graph, v,
                                                                          block_id,
-                                                                         relatives.exec_orig ? relatives.exec_orig : block_id));
+                                                                         relatives.exec_orig ? relatives.exec_orig : block_id,
+                                                                         v.output_index,
+                                                                         relatives.before));
         const block_fun = data.value.options.block_function;
         const slot_args = [];
 
@@ -1231,25 +1234,63 @@ function compile_block(graph: FlowGraph,
             return (a.name).localeCompare(b.name);
         }).concat(compiled_args);
 
-        if (block_fun === 'flow_utc_time') {
-            block_type = "wait_for_monitor";
-            compiled_args = {
-                monitor_id: {
-                    from_service: TIME_MONITOR_ID,
-                },
-                key: "utc_time",
-                expected_value: 'any_value',
-            };
-        }
-        else if (block_fun === 'flow_utc_date') {
-            block_type = "wait_for_monitor";
-            compiled_args = {
-                monitor_id: {
-                    from_service: TIME_MONITOR_ID,
-                },
-                key: "utc_date",
-                expected_value: 'any_value',
-            };
+        // Only wait for time monitors if the same block has not been used before on the same flow
+        if (TIME_TRIGGERS.indexOf(block_fun) >= 0) {
+            const key = block_fun === 'flow_utc_time' ? 'utc_time' : 'utc_date';
+
+            let alreadyRun: boolean | null = null;
+            if (flags.inside_args) {
+                if (relatives.before && relatives.before.id === block_id) {
+                    alreadyRun = true;
+                }
+                else if (relatives.before) {
+
+                    // TODO: Don't re-index every time this function is called
+                    const rev_conn_index = reverse_index_connections(graph);
+
+                    const foundBefore = scan_upstream(graph, relatives.before.id, rev_conn_index,
+                                                      (node_id: string, _node: FlowGraphNode) => {
+                                                          if (node_id === block_id) {
+                                                              return 'capture';
+                                                          }
+                                                          else {
+                                                              return 'continue';
+                                                          }
+                                                      });
+
+                    if (foundBefore) {
+                        alreadyRun = true;
+                    }
+                }
+            }
+
+            // Is not an arg (so, it's a signal) or it's a new block
+            if ((!flags.inside_args) || (!alreadyRun)) {
+                block_type = "wait_for_monitor";
+                compiled_args = {
+                    monitor_id: {
+                        from_service: TIME_MONITOR_ID,
+                    },
+                    key: key,
+                    monitor_expected_value: 'any_value',
+                };
+            }
+            else {
+                return {
+                    type: "flow_last_value",
+                    args: [
+                        {
+                            type: 'constant',
+                            value: block_id,
+                        },
+                        {
+                            type: 'constant',
+                            value: flags.arg_index,
+                        }
+                    ],
+                    contents: [],
+                };
+            }
         }
         else if (block_fun.startsWith('services.')) {
             if (data.value.options.type === 'trigger') {
@@ -1266,7 +1307,7 @@ function compile_block(graph: FlowGraph,
                             },
                             {
                                 type: 'constant',
-                                value: 1, // TODO: Not hardcode this
+                                value: flags.arg_index,
                             }
                         ],
                         contents: [],
@@ -1427,8 +1468,10 @@ function compile_block(graph: FlowGraph,
     else if (isUiFlowBlockData(block.data)) {
 
         const compiled_args: CompiledBlockArgs = args.map(v => compile_arg(graph, v,
-                                                                         block_id,
-                                                                         relatives.exec_orig ? relatives.exec_orig : block_id));
+                                                                           block_id,
+                                                                           relatives.exec_orig ? relatives.exec_orig : block_id,
+                                                                           v.output_index,
+                                                                           relatives.before));
 
         return {
             id: block_id,
@@ -1571,8 +1614,11 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
         }
         else if (desc.block_function === 'op_on_block_run') {
             const compiled_args: CompiledBlockArgs = source.block.arguments.map(v => compile_arg(graph, v,
-                                                                                        source.block.block_id,
-                                                                                        source.block.block_id));
+                                                                                                 source.block.block_id,
+                                                                                                 source.block.block_id,
+                                                                                                 v.output_index,
+                                                                                                 null, // Signal, so nothing before
+                                                                                                ));
 
             return {
                 id: source.block.block_id,
@@ -1585,7 +1631,10 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
             // Rewrite service calls to custom triggers
             const compiled_args: CompiledBlockArgs = source.block.arguments.map(v => compile_arg(graph, v,
                                                                                                  source.block.block_id,
-                                                                                                 source.block.block_id));
+                                                                                                 source.block.block_id,
+                                                                                                 v.output_index,
+                                                                                                 null, // Signal, so nothing before
+                                                                                                ));
 
             const listenerArgs: {key: string, subkey?: any} = {
                 key: desc.block_function.split('.').reverse()[0],
@@ -1603,6 +1652,20 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
                 contents: [],
             }
         }
+        else if (TIME_TRIGGERS.indexOf(desc.block_function) >= 0) {
+            const key = desc.block_function === 'flow_utc_time' ? 'utc_time' : 'utc_date';
+            return {
+                type: "wait_for_monitor",
+                args: {
+                    monitor_id: {
+                        from_service: TIME_MONITOR_ID,
+                    },
+                    key: key,
+                    monitor_expected_value: 'any_value',
+                },
+                id: source.block.block_id,
+            }
+        }
         else {
             throw new Error(`Unexpected flow source node: (fun: ${desc.block_function}, type: ${source_node.data.type}, id: ${source.block.block_id})`);
         }
@@ -1610,7 +1673,10 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
     else if (isUiFlowBlockData(source_node.data)) {
         const compiled_args: CompiledBlockArgs = source.block.arguments.map(v => compile_arg(graph, v,
                                                                                              source.block.block_id,
-                                                                                             source.block.block_id));
+                                                                                             source.block.block_id,
+                                                                                             v.output_index,
+                                                                                             null, // Signal, so nothing before
+                                                                                            ));
 
         return {
             id: source.block.block_id,
@@ -1626,19 +1692,22 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
 
 function build_stream_for_source(graph: FlowGraph,
                                  source: BlockTreeOutputValue,
-                                 sink: BlockTree): CompiledBlock[] {
+                                 sink: BlockTree,
+                                 before: CompiledBlock
+                                ): CompiledBlock[] {
     const signal = build_signal_from_source(graph, source);
 
     return [
         signal,
         compile_block(graph, sink.block_id, sink.arguments, [],
                       { inside_args: false, orig_tree: null },
-                      { before: null }),
+                      { before: before }),
     ];
 }
 
 function build_streaming_flow_to(graph: FlowGraph,
                                  sink: BlockTree,
+                                 before: CompiledBlock,
                                 ) : CompiledBlock[][] {
 
     if (sink.arguments.length != 1) {
@@ -1646,7 +1715,7 @@ function build_streaming_flow_to(graph: FlowGraph,
     }
 
     const sources = get_argument_sources(graph, sink, null);
-    const programs = sources.map((source: BlockTreeOutputValue) => build_stream_for_source(graph, source, sink));
+    const programs = sources.map((source: BlockTreeOutputValue) => build_stream_for_source(graph, source, sink, before));
 
     return programs;
 }
@@ -1676,7 +1745,7 @@ export function assemble_flow(graph: FlowGraph,
         }
         else if (isUiFlowBlockData(filter_node.data)) {
             if (!has_pulse_output(filter_node)) {
-                const flows = build_streaming_flow_to(graph, filter);
+                const flows = build_streaming_flow_to(graph, filter, signal_ast);
                 return flows.map(flow => _link_graph(flow));
             }
         }

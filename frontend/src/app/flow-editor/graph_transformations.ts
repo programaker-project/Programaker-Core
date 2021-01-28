@@ -104,6 +104,7 @@ export function find_downstream(graph: FlowGraph, source_id: string,
     return Object.keys(results);
 }
 
+// Look for blocks upstream of a given one. Return all the ones that the 'controller' function 'capture's.
 export function find_upstream(graph: FlowGraph, source_id: string,
                               rev_conn_index: EdgeIndex,
                               controller: (node_id: string, node: FlowGraphNode) => FindCommand): string[] {
@@ -141,9 +142,11 @@ export function find_upstream(graph: FlowGraph, source_id: string,
     return Object.keys(results);
 }
 
+// Look for blocks upstream of a given one. At the first 'capture' return the
+// values of the path taken to reach the target.
 export function scan_upstream(graph: FlowGraph, source_id: string,
                               rev_conn_index: EdgeIndex,
-                              controller: (node_id: string, node: FlowGraphNode, path: string[]) => ScanCommand): [string] {
+                              controller: (node_id: string, node: FlowGraphNode, path: string[]) => ScanCommand): string[] {
     const reached = {};
     reached[source_id] = true;
 
@@ -626,7 +629,7 @@ function is_streaming_node(conn_index: EdgeIndex, rev_conn_index: EdgeIndex, gra
         const nodeHasPulseInputs = (rev_conn_index[nodeId] || []).some( (edge: IndexedFlowGraphEdge) => is_pulse_output( graph.nodes[edge.from.id], edge.from.output_index ) );
 
         return !nodeHasPulseInputs;
-    }     
+    }
     else if (isDirectValueBlockData(node.data) || isEnumDirectValueBlockData(node.data)) {
         return true;
     }
@@ -703,7 +706,7 @@ export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
             }
         }, position: null };
 
-        graph.edges.push({  
+        graph.edges.push({
             from: {
                 id: blockRunIdValue,
                 output_index: 0,
@@ -711,7 +714,7 @@ export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
             to: {
                 id: onBlockRunRef,
                 input_index: 0,
-            } 
+            }
         });
 
         // Add direct value for the output port
@@ -725,7 +728,7 @@ export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
             }
         }, position: null };
 
-        graph.edges.push({  
+        graph.edges.push({
             from: {
                 id: blockRunPortIdxValue,
                 output_index: 0,
@@ -733,10 +736,9 @@ export function split_streaming_after_stepped(graph: FlowGraph): FlowGraph {
             to: {
                 id: onBlockRunRef,
                 input_index: 1,
-            } 
+            }
         });
     }
 
     return graph;
 }
-

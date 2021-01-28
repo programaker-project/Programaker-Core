@@ -1412,13 +1412,19 @@ get_block_result(Op=#{ ?TYPE := ?FLOW_LAST_VALUE
                                         , ?VALUE := BlockId
                                         }
                                      , #{ ?TYPE := ?VARIABLE_CONSTANT
-                                        , ?VALUE := _Index
+                                        , ?VALUE := Index
                                         }
                                      ]
                      }, Thread) ->
     case automate_bot_engine_variables:retrieve_instruction_memory(Thread, BlockId) of
         {ok, Value} ->
-            {ok, Value, Thread};
+            Result = case Value of
+                         #{ <<"as_list">> := AsArray} ->
+                             lists:nth(Index + 1, AsArray);
+                         _ ->
+                             Value
+                     end,
+            {ok, Result, Thread};
         {error, not_found} ->
             throw(#program_error{ error=#memory_not_set{ block_id=BlockId }
                                 , block_id=?UTILS:get_block_id(Op)

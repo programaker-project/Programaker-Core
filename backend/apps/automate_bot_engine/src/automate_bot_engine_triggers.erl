@@ -145,40 +145,60 @@ get_expected_action_from_trigger(Trigger, _Permissions, ProgramId) ->
 %%% Monitors
 %% If any value is OK
 -spec trigger_thread(#program_trigger{}, {atom(), any()}, #program_state{}) -> 'false' | {'true', #program_thread{}}.
-trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
-                                            , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId }
-                                                                         , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
-                                                                         }
-                                            }
-                               , subprogram=Program
-                               },
+trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                                    , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId }
+                                                                                 , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
+                                                                                 , ?MONITOR_KEY := MonitorKey
+                                                                                 }
+                                                    }
+                                       , subprogram=Program
+                                       },
+               { ?TRIGGERED_BY_MONITOR, {_MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent
+                                                                  , <<"service_id">> := ServiceId
+                                                                  , ?MONITOR_KEY := MsgKey
+                                                                  }} },
+               #program_state{program_id=ProgramId}) ->
+    case MonitorKey == MsgKey of
+        true ->
+            trigger_thread_with_matching_message(Program, ProgramId, {service, ServiceId}, MonitorArgs, MessageContent, FullMessage, Trigger);
+        false ->
+            false
+    end;
+
+trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                                    , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId }
+                                                                                 , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
+                                                                                 }
+                                                    }
+                                       , subprogram=Program
+                                       },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent, <<"service_id">> := ServiceId }} },
                #program_state{program_id=ProgramId}) ->
-    trigger_thread_with_matching_message(Program, ProgramId, MonitorId, MonitorArgs, MessageContent, FullMessage);
+    trigger_thread_with_matching_message(Program, ProgramId, {service, ServiceId}, MonitorArgs, MessageContent, FullMessage, Trigger);
 
 
-trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
-                                            , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
-                                                                         , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
-                                                                         }
-                                            }
-                               , subprogram=Program
-                               },
+trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                                    , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
+                                                                                 , ?MONITOR_EXPECTED_VALUE := ?MONITOR_ANY_VALUE
+                                                                                 }
+                                                    }
+                                       , subprogram=Program
+                                       },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }} },
                #program_state{program_id=ProgramId}) ->
-    trigger_thread_with_matching_message(Program, ProgramId, MonitorId, MonitorArgs, MessageContent, FullMessage);
+    trigger_thread_with_matching_message(Program, ProgramId, {channel, MonitorId}, MonitorArgs, MessageContent, FullMessage, Trigger);
 
 %% With matching value
-trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
-                                                , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId }
-                                                                             , ?MONITOR_EXPECTED_VALUE := Argument
-                                                                             }
-                                                }
-                               , subprogram=Program
-                               },
+trigger_thread(Trigger=#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                                        , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId }
+                                                                                     , ?MONITOR_EXPECTED_VALUE := Argument
+                                                                                     }
+                                                        }
+                                       , subprogram=Program
+                                       },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent, <<"service_id">> := ServiceId }} },
                #program_state{program_id=ProgramId}) ->
-    {true, Thread} = trigger_thread_with_matching_message(Program, ProgramId, MonitorId, MonitorArgs, MessageContent, FullMessage),
+    {true, Thread} = trigger_thread_with_matching_message(Program, ProgramId, {service, ServiceId}, MonitorArgs, MessageContent, FullMessage, Trigger),
     case automate_bot_engine_variables:resolve_argument(Argument, Thread, Op) of
         {ok, MessageContent, UpdatedThread} ->
             {true, Thread};
@@ -187,16 +207,16 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COM
             false
     end;
 
-trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
-                                                , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
-                                                                             , ?MONITOR_EXPECTED_VALUE := Argument
-                                                                             }
-                                                }
-                               , subprogram=Program
-                               },
+trigger_thread(Trigger=#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                                        , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := MonitorId
+                                                                                     , ?MONITOR_EXPECTED_VALUE := Argument
+                                                                                     }
+                                                        }
+                                       , subprogram=Program
+                                       },
                { ?TRIGGERED_BY_MONITOR, {MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent }} },
                #program_state{program_id=ProgramId}) when is_binary(MonitorId) ->
-    {true, Thread} = trigger_thread_with_matching_message(Program, ProgramId, MonitorId, MonitorArgs, MessageContent, FullMessage),
+    {true, Thread} = trigger_thread_with_matching_message(Program, ProgramId, {channel, MonitorId}, MonitorArgs, MessageContent, FullMessage, Trigger),
     case automate_bot_engine_variables:resolve_argument(Argument, Thread, Op) of
         {ok, MessageContent, UpdatedThread} ->
             {true, Thread};
@@ -406,7 +426,8 @@ trigger_thread(Trigger, Message, ProgramState) ->
 %%%===================================================================
 %%% Aux functions
 %%%===================================================================
-trigger_thread_with_matching_message(Program, ProgramId, ChannelId, MonitorArgs, MessageContent, FullMessage) ->
+trigger_thread_with_matching_message(Program, ProgramId, Channel, MonitorArgs, MessageContent, FullMessage,
+                                     #program_trigger{condition=Condition}) ->
     Thread = #program_thread{ position=[1]
                             , program=Program
                             , global_memory=#{}
@@ -421,15 +442,29 @@ trigger_thread_with_matching_message(Program, ProgramId, ChannelId, MonitorArgs,
                                      _ ->
                                          {ok, Thread}
                                  end,
-
-    NewThread = case automate_service_port_engine:get_channel_origin_bridge(ChannelId) of
-                    {ok, ServiceId} ->
-                        {ok, Thread1} = automate_bot_engine_variables:set_last_bridge_value(
-                                          ThreadWithSavedValue, ServiceId, FullMessage),
-                        Thread1;
-                    {error, not_found} ->
-                        Thread
+    Thread2 = case Channel of
+                  {channel, ChannelId} ->
+                      case automate_service_port_engine:get_channel_origin_bridge(ChannelId) of
+                          {ok, ServiceId} ->
+                              {ok, Thread1} = automate_bot_engine_variables:set_last_bridge_value(
+                                                ThreadWithSavedValue, ServiceId, FullMessage),
+                              Thread1;
+                          {error, not_found} ->
+                              Thread
+                      end;
+                  {service, ServiceId} ->
+                      {ok, Thread1} = automate_bot_engine_variables:set_last_bridge_value(
+                                        ThreadWithSavedValue, ServiceId, FullMessage),
+                      Thread1
+              end,
+    NewThread = case Condition of
+                    #{ ?BLOCK_ID := BlockId } ->
+                        automate_bot_engine_variables:set_instruction_memory(
+                          Thread2, FullMessage, BlockId);
+                    _ ->
+                        Thread2
                 end,
+
     {true, NewThread}.
 
 save_value(Thread, #{ ?TYPE := ?VARIABLE_VARIABLE
