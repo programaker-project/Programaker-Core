@@ -20,7 +20,7 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
     const cond = builder.add_stream('operator_equals', {args: [[source, 0], 11]});
     const trigger = builder.add_trigger('trigger_when_all_true', {id: 'trigger', args: [[cond, 0]]})
 
-    const waited = builder.add_stream('flow_utc_time', {message: 'UTC time'});
+    const waited = builder.add_stream('flow_utc_time', {id: 'intermediate', message: 'UTC time'});
 
     const operation = builder.add_op('control_wait_for_next_value', { args: [[ waited, 1]]
                                                                     });
