@@ -1435,6 +1435,21 @@ get_block_result(#{ ?TYPE := ?COMMAND_GET_THREAD_ID
                   }, Thread=#program_thread{ thread_id=ThreadId }) ->
     {ok, ThreadId, Thread};
 
+get_block_result(Op=#{ ?TYPE := ?COMMAND_UI_BLOCK_VALUE
+                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
+                                        , ?VALUE := UiElement
+                                        }
+                                     ]
+                     }, Thread=#program_thread{}) ->
+    case automate_bot_engine_variables:retrieve_thread_value(Thread, ?UI_TRIGGER_VALUES) of
+        {ok, #{ ?UI_TRIGGER_DATA := #{ UiElement := Value } }} ->
+            {ok, Value, Thread};
+        _ ->
+            throw(#program_error{ error=#memory_not_set{ block_id=UiElement }
+                                , block_id=?UTILS:get_block_id(Op)
+                                })
+    end;
+
 %% Fail
 get_block_result(Block, _Thread) ->
     automate_logging:log_platform(error, io_lib:format("Don't know how to get result from: ~p~n",

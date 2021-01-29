@@ -231,14 +231,16 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.ui.", UiMonit
                                , subprogram=Program
                                },
                { ?TRIGGERED_BY_MONITOR, { _MonitorId
-                                        , FullMessage=#{ <<"key">> := ui_events, <<"subkey">> := UiMonitorPath }
+                                        , #{ <<"key">> := ui_events, <<"subkey">> := UiMonitorPath, <<"value">> := Value }
                                         } },
                #program_state{ program_id=ProgramId
                              , permissions=#program_permissions{owner_user_id=_UserId}}) ->
 
+    #{ <<"connection">> := Source, <<"ui_data">> := UiData } = Value,
+
     Thread = #program_thread{ position=[1]
                             , program=Program
-                            , global_memory=#{}
+                            , global_memory=#{ ?UI_TRIGGER_VALUES => #{ ?UI_TRIGGER_CONNECTION => Source, ?UI_TRIGGER_DATA => UiData } }
                             , instruction_memory=#{}
                             , program_id=ProgramId
                             , thread_id=undefined

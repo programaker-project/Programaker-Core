@@ -50,6 +50,9 @@
 -define(SERVICE_ACTION, <<"service_action">>).
 
 -define(LAST_BRIDGE_VALUES, <<"__last_bridge_values__">>).
+-define(UI_TRIGGER_VALUES, <<"__ui_trigger_values">>).
+-define(UI_TRIGGER_CONNECTION, <<"connection">>).
+-define(UI_TRIGGER_DATA, <<"ui_data">>).
 
 %%%% Special data
 -define(LIST_FILL, null).

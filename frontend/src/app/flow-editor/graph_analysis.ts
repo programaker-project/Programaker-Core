@@ -1114,8 +1114,17 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
     }
     else if (isUiFlowBlockData(block.data)) {
         return {
-            type: 'constant',
-            value: block.data.value.extra.textContent,
+            type: 'block',
+            value: [
+                {
+                    type: 'data_ui_block_value',
+                    args: [ {
+                        type: 'constant',
+                        value: arg.tree.block_id
+                    } ],
+                    contents: [],
+                }
+            ],
         };
     }
     else {

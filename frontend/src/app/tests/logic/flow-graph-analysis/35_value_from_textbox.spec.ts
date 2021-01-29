@@ -34,7 +34,7 @@ describe('Flow-35 Value from textbox.', () => {
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (services.ui.simple_button.trigger)
                 ;; The second part of the (log) instruction is not clear
-                (log (flow-last-value services.ui.text_box.textbox))
+                (log (data_ui_block_value textbox))
                 `))
         ]);
     });

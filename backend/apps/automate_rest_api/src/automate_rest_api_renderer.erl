@@ -264,7 +264,6 @@ render_scripts(ProgramId, Contents) ->
     , <<"\n</script>">>
     ].
 
-
 wire_components(null) ->
     [];
 wire_components(#{ <<"widget_type">> := <<"fixed_text">>
@@ -281,25 +280,28 @@ wire_components(#{ <<"container_type">> := _
                  }) ->
     wire_components(Content);
 
-wire_components(#{ <<"cut_type">> := CutType
+wire_components(#{ <<"cut_type">> := _CutType
                  , <<"groups">> := Groups
                  }) ->
     lists:map(fun wire_components/1, Groups);
 
 wire_components(#{ <<"widget_type">> := <<"text_box">>
+                 , <<"id">> := WidgetId
                  }) ->
-    []; %% TODO: This will probably be wired
+    [ "addCollectable('", WidgetId, "', function() {  return document.getElementById('elem-", WidgetId, "').value });" ];
 
 wire_components(#{ <<"widget_type">> := <<"simple_button">>
                  , <<"id">> := WidgetId
                  }) ->
-    [ "document.getElementById('elem-", WidgetId ,"').onclick = (function() {\n"
+    [ "addCollectable('", WidgetId, "', function() {  return document.getElementById('elem-", WidgetId, "').innerText });"
+    , "document.getElementById('elem-", WidgetId ,"').onclick = (function() {\n"
     , "websocket.send(JSON.stringify({\n"
     , "    type: 'ui-event',\n"
     , "    value: {\n"
     , "    action: 'activated',\n"
     , "    block_type: 'simple_button',\n"
-    , "    block_id: '", WidgetId, "'\n"
+    , "    block_id: '", WidgetId, "',\n"
+    , "    data: collectData(),\n"
     , "}}));\n"
     , "});\n"
     ];
@@ -330,6 +332,10 @@ render_connection_block_start(ProgramId) ->
     , "websocket.onopen = (function() { console.log('Connection opened'); \n"
     , "  websocket.send(JSON.stringify({ type: 'AUTHENTICATION', value: { token: 'ANONYMOUS' }}));\n"
     , "});\n"
+    , "var collectables = [];\n"
+    , "var addCollectable = (function(id, item) { collectables.push([id, item]) });\n"
+    , "var collectData = (function() { var result = {}; for (var coll of collectables) { result[coll[0]] = coll[1](); }; return result; } );\n"
+    %% , "console.debug(\"Collect with\", collectData);\n"
     ].
 
 render_connection_block_end() ->

@@ -46,6 +46,7 @@
 -define(COMMAND_CHANGE_VARIABLE, <<"data_changevariableby">>).
 -define(COMMAND_DATA_VARIABLE, <<"data_variable">>).
 -define(COMMAND_DATA_VARIABLE_ON_CHANGE, <<"on_data_variable_update">>).
+-define(COMMAND_UI_BLOCK_VALUE, <<"data_ui_block_value">>).
 
 %% List control
 -define(COMMAND_ADD_TO_LIST, <<"data_addtolist">>).

@@ -82,7 +82,7 @@ resolve_argument(Op=#{ ?TYPE := ?VARIABLE_LIST
                                 })
     end.
 
--spec retrieve_thread_value(#program_thread{}, atom()) -> {ok, any()} | {error, any()}.
+-spec retrieve_thread_value(#program_thread{}, atom() | binary()) -> {ok, any()} | {error, any()}.
 retrieve_thread_value(#program_thread{ global_memory=Global }, Key) ->
     case maps:find(Key, Global) of
         Response = {ok, _} ->
@@ -91,7 +91,7 @@ retrieve_thread_value(#program_thread{ global_memory=Global }, Key) ->
             {error, not_found}
     end.
 
--spec retrieve_thread_values(#program_thread{}, [atom()]) -> {ok, [any()]} | {error, any()}.
+-spec retrieve_thread_values(#program_thread{}, [atom() | binary()]) -> {ok, [any()]} | {error, any()}.
 retrieve_thread_values(Thread, Keys) ->
     retrieve_thread_values(Thread, Keys, []).
 
