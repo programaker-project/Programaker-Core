@@ -115,6 +115,29 @@ export const BaseToolboxDescription: ToolboxDescription = [
             },
             {
                 icon: PLATFORM_ICON,
+                message: 'Wait for pulse %i1 before passing signal %i2',
+                block_function: 'control_signal_wait_for_pulse',
+                type: 'getter',
+                inputs: [
+                    {
+                        required: true,
+                        name: "pulse",
+                        type: "pulse",
+                    },
+                    {
+                        required: true,
+                        name: "signal",
+                        type: "any",
+                    },
+                ],
+                outputs: [
+                    {
+                        type: "any",
+                    }
+                ]
+            },
+            {
+                icon: PLATFORM_ICON,
                 message: 'Wait for next value',
                 block_function: 'control_wait_for_next_value',
                 type: 'operation',

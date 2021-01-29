@@ -621,6 +621,19 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
             throw_bridge_call_error(Reason, ServiceId, Op, Action)
     end;
 
+run_instruction(Op=#{ ?TYPE := ?COMMAND_SIGNAL_WAIT_FOR_PULSE
+                    , ?ARGUMENTS := Arguments
+                    }, Thread=#program_thread{ program_id=_ProgramId },
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+    %% This doesn't do much, but is used to activate flows starting with FLOW_ON_BLOCK_RUN.
+    {[Value], Thread2} = eval_args(Arguments, Thread, Op),
+    Thread3 = case ?UTILS:get_block_id(Op) of
+                  none -> Thread2;
+                  BlockId -> automate_bot_engine_variables:set_instruction_memory(Thread2, Value, BlockId)
+              end,
+    {ran_this_tick, increment_position(Thread3)};
+
+
 run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
                            , ?ARGUMENTS := Arguments
                            }, Thread=#program_thread{ program_id=ProgramId },

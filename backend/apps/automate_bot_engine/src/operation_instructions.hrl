@@ -14,6 +14,7 @@
 -define(COMMAND_FORK_EXECUTION, <<"op_fork_execution">>).
 -define(OP_FORK_CONTINUE_ON_FIRST, <<"exit-when-first-completed">> ).
 -define(COMMAND_WAIT_FOR_NEXT_VALUE, <<"control_wait_for_next_value">> ).
+-define(COMMAND_SIGNAL_WAIT_FOR_PULSE, <<"control_signal_wait_for_pulse">> ).
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
