@@ -294,9 +294,16 @@ trigger_thread(#program_trigger{condition=#{ ?TYPE := ?FLOW_ON_BLOCK_RUN
                #program_state{ program_id=ProgramId
                              , permissions=#program_permissions{owner_user_id=_UserId}}) ->
 
+    Memory = case FullMessage of
+                 #{ <<"memory">> := RunMemory } ->
+                     RunMemory;
+                 _ ->
+                     #{}
+             end,
+
     Thread = #program_thread{ position=[1]
                             , program=Program
-                            , global_memory=#{}
+                            , global_memory=Memory
                             , instruction_memory=#{}
                             , program_id=ProgramId
                             , thread_id=undefined

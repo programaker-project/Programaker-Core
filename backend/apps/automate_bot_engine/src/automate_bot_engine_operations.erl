@@ -172,10 +172,13 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                         {ok, BlockMem} -> BlockMem
                                     end,
 
+                            #program_thread{ global_memory=Memory } = Thread2,
+
                             %% Trigger element update
                             ok = automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => block_run_events
                                                                                      , <<"subkey">> => BlockId
                                                                                      , <<"value">> => Value
+                                                                                     , <<"memory">> => Memory
                                                                                      } );
                         _ -> ok
                     end,
@@ -642,11 +645,19 @@ run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
     {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
     ok = automate_storage:set_widget_value(ProgramId, UiElement, Values),
 
+    CommandData = #{ <<"key">> => ui_events_show
+                   , <<"subkey">> => UiElement
+                   , <<"values">> => Values
+                   },
+
     %% Trigger element update
-    ok = automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => ui_events_show
-                                                             , <<"subkey">> => UiElement
-                                                             , <<"values">> => Values
-                                                             } ),
+    case automate_bot_engine_variables:retrieve_thread_value(Thread, ?UI_TRIGGER_VALUES) of
+        {ok, #{ ?UI_TRIGGER_CONNECTION := Source }} ->
+            ok = automate_channel_engine:send_to_process(Source,  CommandData);
+        _ ->
+            ok = automate_channel_engine:send_to_channel(ChannelId,  CommandData)
+    end,
+
     {ran_this_tick, increment_position(Thread2)};
 
 
