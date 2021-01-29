@@ -162,7 +162,7 @@ render_element(E=#{ <<"widget_type">> := Type= <<"text_box">>
     ElementStyle = get_text_element_style(E),
     [ <<"<div class=widget-container><input type='text' class='widget text text_box' id='elem-">>, WidgetId, <<"'">>
     , " style='", ElementStyle, "'"
-    , <<" value=\"">>
+    , <<" placeholder=\"">>
     , Contents
     , <<"\" /></div>">>
     ];

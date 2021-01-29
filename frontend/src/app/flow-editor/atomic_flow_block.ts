@@ -1,5 +1,6 @@
 import { BlockManager } from './block_manager';
 import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts, BlockContextAction } from './flow_block';
+import { is_pulse } from './graph_transformations';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -246,7 +247,7 @@ export class AtomicFlowBlock implements FlowBlock {
         if (options.type !== 'getter') {
             let has_pulse_output = false;
             for (const output of options.outputs || []) {
-                if (output.type === 'pulse') {
+                if (is_pulse(output)) {
                     has_pulse_output = true;
                     break;
                 }
@@ -270,7 +271,7 @@ export class AtomicFlowBlock implements FlowBlock {
                     throw new Error(`Empty input on ${options.inputs}`);
                 }
 
-                if (input.type === 'pulse') {
+                if (is_pulse(input)) {
                     has_pulse_input = true;
                     break;
                 }

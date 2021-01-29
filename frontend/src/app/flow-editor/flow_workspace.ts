@@ -367,6 +367,12 @@ export class FlowWorkspace implements BlockManager {
   <feGaussianBlur result="blurOut" in="inverted" stdDeviation="2"></feGaussianBlur>
   <feBlend in="SourceGraphic" in2="blurOut" mode="normal"></feBlend>
 </filter>
+<linearGradient id="user-pulse-pattern" x1="0" x2="30%" gradientTransform="rotate(90)" spreadMethod="repeat">
+  <stop offset="0%"   stop-color="var(--user-pulse-1)" />
+  <stop offset="49%"  stop-color="var(--user-pulse-1)" />
+  <stop offset="50%"  stop-color="var(--user-pulse-2)" />
+  <stop offset="100%" stop-color="var(--user-pulse-2)" />
+</linearGradient>
 `;
 
         this.connection_group.appendChild(definitions);
@@ -1826,6 +1832,7 @@ export class FlowWorkspace implements BlockManager {
             case 'string':
             case 'any':
             case 'pulse':
+            case 'user-pulse':
                 return 'text';
 
             case 'float':
@@ -2195,7 +2202,7 @@ export class FlowWorkspace implements BlockManager {
 
         const path = document.createElementNS(SvgNS, 'path');
         path.setAttributeNS(null, 'class', 'established connection ' + type_class);
-        if (source_output_type == 'pulse') {
+        if ((source_output_type == 'pulse') || (source_output_type == 'user-pulse')) {
             path.setAttributeNS(null, 'marker-end', 'url(#pulse_head)');
             path.onmouseenter = () => {
                 path.setAttributeNS(null, 'marker-end', 'url(#pulse_head_selected)');
@@ -2204,6 +2211,7 @@ export class FlowWorkspace implements BlockManager {
                 path.setAttributeNS(null, 'marker-end', 'url(#pulse_head)');
             };
         }
+
         path.onclick = () => {
             if (this.read_only) { return }
 

@@ -18,7 +18,7 @@ const OUTPUT_PORT_SIZE = 25;
 export type OnRequestEdit = (block: DirectValue, type: MessageType, update: (value: string) => void) => void;
 
 interface DirectValueOptions {
-    type?: MessageType,
+    type: MessageType,
     value: string,
     on_io_selected?: OnIOSelected,
     on_request_edit?: OnRequestEdit,
@@ -66,7 +66,8 @@ export class DirectValue implements FlowBlock {
                 return 'sample value';
 
             case 'pulse':
-                console.warn('TODO: Implement pulse sender');
+            case 'user-pulse':
+                console.warn('TODO: Implement pulse sender'); // Is this a button?
             case 'any':
                 return 'sample value';
         }

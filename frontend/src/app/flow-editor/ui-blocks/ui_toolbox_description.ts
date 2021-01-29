@@ -23,7 +23,7 @@ export const UiToolboxDescription: ToolboxDescription = [
                 builder: SimpleButtonBuilder,
                 outputs: [
                     {
-                        type: "pulse",
+                        type: "user-pulse",
                     },
                     {
                         name: "button text",
@@ -39,7 +39,7 @@ export const UiToolboxDescription: ToolboxDescription = [
                 outputs: [
                     {
                         name: "On change",
-                        type: "pulse",
+                        type: "user-pulse",
                     },
                     {
                         name: "Contents",

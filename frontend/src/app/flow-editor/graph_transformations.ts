@@ -6,6 +6,11 @@ import { EnumDirectValue, isEnumDirectValueBlockData } from './enum_direct_value
 import { uuidv4 } from './utils';
 import { OP_ON_BLOCK_RUN, OP_PRELOAD_BLOCK } from './base_toolbox_description';
 import { isUiFlowBlockData, UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
+import { MessageType } from './flow_block';
+
+export function is_pulse(x: { type: MessageType | 'enum'}): boolean {
+    return [ 'pulse', 'user-pulse' ].indexOf(x.type) >= 0;
+}
 
 function graph_scan_nodes(graph: FlowGraph, check: (node_id: string, node: FlowGraphNode) => boolean): string[] {
     const results = [];
@@ -237,12 +242,12 @@ export function is_pulse_output(block: FlowGraphNode, index: number): boolean {
         }
 
         // If it has no pulse inputs its a source block
-        return outputs[index].type === 'pulse';
+        return is_pulse(outputs[index]);
     }
     else if (block.data.type === DirectValue.GetBlockType()){
         const data = block.data as DirectValueFlowBlockData;
 
-        return data.value.type === 'pulse';
+        return is_pulse(data.value);
     }
     else if (block.data.type === EnumDirectValue.GetBlockType()){
         return false;
@@ -260,7 +265,7 @@ export function is_pulse_output(block: FlowGraphNode, index: number): boolean {
         }
 
         // If it has no pulse inputs its a source block
-        return outputs[index].type === 'pulse';
+        return is_pulse(outputs[index]);
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
