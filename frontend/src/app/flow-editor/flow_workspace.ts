@@ -367,7 +367,13 @@ export class FlowWorkspace implements BlockManager {
   <feGaussianBlur result="blurOut" in="inverted" stdDeviation="2"></feGaussianBlur>
   <feBlend in="SourceGraphic" in2="blurOut" mode="normal"></feBlend>
 </filter>
-<linearGradient id="user-pulse-pattern" x1="0" x2="30%" gradientTransform="rotate(90)" spreadMethod="repeat">
+<linearGradient id="user-pulse-pattern" x1="0" x2="30%" gradientTransform="rotate(45)" spreadMethod="repeat">
+  <stop offset="0%"   stop-color="var(--user-pulse-1)" />
+  <stop offset="49%"  stop-color="var(--user-pulse-1)" />
+  <stop offset="50%"  stop-color="var(--user-pulse-2)" />
+  <stop offset="100%" stop-color="var(--user-pulse-2)" />
+</linearGradient>
+<linearGradient id="user-pulse-wire-pattern" x1="0" x2="30%" gradientTransform="rotate(90)" spreadMethod="repeat">
   <stop offset="0%"   stop-color="var(--user-pulse-1)" />
   <stop offset="49%"  stop-color="var(--user-pulse-1)" />
   <stop offset="50%"  stop-color="var(--user-pulse-2)" />

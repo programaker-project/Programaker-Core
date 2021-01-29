@@ -133,7 +133,7 @@ svg.block_renderer path.pulse_wire {
 }
 
 svg.block_renderer path.user-pulse_wire {
-    stroke: url(#user-pulse-pattern) $user-pulse-color-1;
+    stroke: url(#user-pulse-wire-pattern) $user-pulse-color-1;
     stroke-width: 7px;
 }
 
@@ -171,7 +171,7 @@ svg.block_renderer:not(.drawing):not(.dragging) {
         }
 
         &.user-pulse_wire {
-            stroke: url(#user-pulse-pattern) $user-pulse-color-1;
+            stroke: url(#user-pulse-wire-pattern) $user-pulse-color-1;
         }
 
         &.unknown_wire {
