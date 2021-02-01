@@ -16,6 +16,8 @@
 -define(COMMAND_WAIT_FOR_NEXT_VALUE, <<"control_wait_for_next_value">>).
 -define(COMMAND_SIGNAL_WAIT_FOR_PULSE, <<"control_signal_wait_for_pulse">>).
 -define(COMMAND_BROADCAST_TO_ALL_USERS, <<"control_broadcast_to_all_users">>).
+-define(COMMAND_TRIGGER_ON_BRIDGE_CONNECTED, <<"trigger_on_bridge_connected">>).
+-define(COMMAND_TRIGGER_ON_BRIDGE_DISCONNECTED, <<"trigger_on_bridge_disconnected">>).
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).

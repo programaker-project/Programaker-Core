@@ -540,6 +540,42 @@ export class Toolbox {
             full_connection_dropdown.push([conn.name || 'default', conn.connection_id]);
         }
 
+        Blockly.Blocks['trigger_on_bridge_connected'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'trigger_on_bridge_connected',
+                    'message0': 'When bridge %1 connects',
+                    'args0': [
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'BRIDGE1',
+                            options: bridge_dropdown,
+                        },
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_advanced_operation', 'shape_hat']
+                });
+            }
+        };
+
+        Blockly.Blocks['trigger_on_bridge_disconnected'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'trigger_on_bridge_disconnected',
+                    'message0': 'When bridge %1 connection STOPS',
+                    'args0': [
+                        {
+                            'type': 'field_dropdown',
+                            'name': 'BRIDGE1',
+                            options: bridge_dropdown,
+                        },
+                    ],
+                    'category': Blockly.Categories.event,
+                    'extensions': ['colours_advanced_operation', 'shape_hat']
+                });
+            }
+        };
+
         Blockly.Blocks['operator_select_connection'] = {
             init: function () {
 
@@ -682,6 +718,18 @@ export class Toolbox {
             secondaryColour: "#007668",
             id: "operation",
         });
+
+        category.appendChild(createDom('block',
+                                       {
+            type: "trigger_on_bridge_disconnected",
+            id: "trigger_on_bridge_disconnected",
+        }));
+
+        category.appendChild(createDom('block',
+                                       {
+            type: "trigger_on_bridge_connected",
+            id: "trigger_on_bridge_connected",
+        }));
 
         category.appendChild(createDom('block',
                                        {
