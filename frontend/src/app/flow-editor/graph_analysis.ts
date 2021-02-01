@@ -3,7 +3,7 @@ import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_descr
 import { DirectValue, DirectValueFlowBlockData, isDirectValueBlockData } from './direct_value';
 import { EnumDirectValue, EnumDirectValueFlowBlockData, isEnumDirectValueBlockData } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
-import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream, split_streaming_after_stepped } from './graph_transformations';
+import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream, split_streaming_after_stepped, is_pulse } from './graph_transformations';
 import { index_connections, reverse_index_connections, EdgeIndex } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
@@ -44,13 +44,13 @@ function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
         if (!input) {
             const extras = data.value.options.extra_inputs;
             if (extras) {
-                return extras.type === 'pulse';
+                return is_pulse(extras);
             }
 
             throw new Error(`No input #${conn.to.input_index} on ${JSON.stringify(data.value.options.inputs)} [conn: ${JSON.stringify(conn)}]`);
         }
 
-        return input.type === 'pulse';
+        return is_pulse(input);
     }
     else if (isDirectValueBlockData(block.data)){
         throw new Error('Connection from reached block to value (backwards?)');
@@ -114,7 +114,7 @@ function is_trigger_node(graph: FlowGraph, block_id: string, conn_index: EdgeInd
         const inputs = data.value.options.inputs || [];
 
         // If it has any pulse input, it's not a source block
-        if (inputs.filter(v => v.type === 'pulse').length > 0) {
+        if (inputs.filter(v => is_pulse(v)).length > 0) {
             return false;
         }
 
@@ -149,8 +149,8 @@ function is_trigger_node(graph: FlowGraph, block_id: string, conn_index: EdgeInd
                     }
                 }
                 else if (isUiFlowBlockData(node.data)) {
-                    const hasSignalInput = !!((node.data.value.options.inputs || []).find(inp => inp.type === 'pulse'));
-                    const hasSignalOutput = !!((node.data.value.options.outputs || []).find(outp => outp.type === 'pulse'));
+                    const hasSignalInput = !!((node.data.value.options.inputs || []).find(inp => is_pulse(inp)));
+                    const hasSignalOutput = !!((node.data.value.options.outputs || []).find(outp => is_pulse(outp)));
 
                     if (!hasSignalInput && hasSignalOutput) {
                         // Trigger block, like a button
@@ -263,12 +263,12 @@ function has_pulse_output(block: FlowGraphNode): boolean {
     if (isAtomicFlowBlockData(block.data)){
         const outputs = block.data.value.options.outputs || [];
 
-        return outputs.filter(v => v.type === 'pulse').length > 0;
+        return outputs.filter(v => is_pulse(v)).length > 0;
     }
     else if (isDirectValueBlockData(block.data)){
         const data = block.data as DirectValueFlowBlockData;
 
-        return data.value.type === 'pulse';
+        return is_pulse(data.value);
     }
     else if (isEnumDirectValueBlockData(block.data)){
         return false;
@@ -276,7 +276,7 @@ function has_pulse_output(block: FlowGraphNode): boolean {
     else if (isUiFlowBlockData(block.data)){
         const outputs = block.data.value.options.outputs || [];
 
-        return outputs.filter(v => v.type === 'pulse').length > 0;
+        return outputs.filter(v => is_pulse(v)).length > 0;
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
@@ -289,7 +289,7 @@ function has_pulse_input(block: FlowGraphNode): boolean {
 
         const inputs = data.value.options.inputs || [];
 
-        return inputs.filter(v => v.type === 'pulse').length > 0;
+        return inputs.filter(v => is_pulse(v)).length > 0;
     }
     else if (isDirectValueBlockData(block.data)){
         return false;
@@ -300,7 +300,7 @@ function has_pulse_input(block: FlowGraphNode): boolean {
     else if (isUiFlowBlockData(block.data)){
         const inputs = block.data.value.options.inputs || [];
 
-        return inputs.filter(v => v.type === 'pulse').length > 0;
+        return inputs.filter(v => is_pulse(v)).length > 0;
     }
     else {
         throw new Error("Unknown block type: " + block.data.type)
@@ -1114,8 +1114,17 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
     }
     else if (isUiFlowBlockData(block.data)) {
         return {
-            type: 'constant',
-            value: block.data.value.extra.textContent,
+            type: 'block',
+            value: [
+                {
+                    type: 'data_ui_block_value',
+                    args: [ {
+                        type: 'constant',
+                        value: arg.tree.block_id
+                    } ],
+                    contents: [],
+                }
+            ],
         };
     }
     else {

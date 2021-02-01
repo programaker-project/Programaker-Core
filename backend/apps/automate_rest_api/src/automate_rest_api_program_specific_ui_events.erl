@@ -112,11 +112,14 @@ handle_message(Msg, State=#state{ channel_id=ChannelId }) ->
          , <<"value">> := #{ <<"action">> := Action
                            , <<"block_type">> := BlockType
                            , <<"block_id">> := BlockId
+                           , <<"data">> := UiData
                            }
          } ->
             ok = automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => ui_events
                                                                      , <<"subkey">> => <<BlockType/binary, ".", BlockId/binary>>
                                                                      , <<"value">> => #{ <<"action">> => Action
+                                                                                       , <<"connection">> => self()
+                                                                                       , <<"ui_data">> => UiData
                                                                                        }
                                                                      })
     end,

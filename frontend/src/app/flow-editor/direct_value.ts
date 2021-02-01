@@ -18,7 +18,7 @@ const OUTPUT_PORT_SIZE = 25;
 export type OnRequestEdit = (block: DirectValue, type: MessageType, update: (value: string) => void) => void;
 
 interface DirectValueOptions {
-    type?: MessageType,
+    type: MessageType,
     value: string,
     on_io_selected?: OnIOSelected,
     on_request_edit?: OnRequestEdit,
@@ -66,7 +66,8 @@ export class DirectValue implements FlowBlock {
                 return 'sample value';
 
             case 'pulse':
-                console.warn('TODO: Implement pulse sender');
+            case 'user-pulse':
+                console.warn('TODO: Implement pulse sender'); // Would this be implemented by a button?
             case 'any':
                 return 'sample value';
         }
@@ -162,24 +163,28 @@ export class DirectValue implements FlowBlock {
     public onGetFocus() {}
     public onLoseFocus() {}
 
-    public addConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {
+    public addConnection(direction: 'in' | 'out', _index: number, block: FlowBlock): boolean {
         if (direction === 'in') {
             console.warn("Should NOT be possible to add a connection to a DirectValue block");
-            return;
+            return false;
         }
 
         this.sinks.push(block);
+
+        return false;
     }
 
-    public removeConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {
+    public removeConnection(direction: 'in' | 'out', _index: number, block: FlowBlock): boolean {
         if (direction === 'in') {
             console.warn("Should NOT be possible to have input connections on a DirectValue block");
-            return;
+            return false;
         }
 
         const index = this.sinks.findIndex(x => x === block);
 
         this.sinks.splice(index, 1);
+
+        return false;
     }
 
     public getBlockContextActions(): BlockContextAction[] {

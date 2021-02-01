@@ -55,7 +55,7 @@ raw_to_html(X) ->
 
 html_escape(Str) ->
     Lines = binary:split(Str, <<"\n">>, [global]),
-    EscapedLines = lists:map(fun mochiweb_html:escape/1, Lines),
+    EscapedLines = lists:map(fun mochiweb_html:escape_attr/1, Lines),
     lists:join("<br/>", EscapedLines).
 
 %%====================================================================
@@ -151,6 +151,20 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
     , <<">">>
     , get_fixed_text_content(E)
     , <<"</div></div>">>
+    ];
+
+render_element(E=#{ <<"widget_type">> := Type= <<"text_box">>
+                  , <<"id">> := WidgetId
+                  }, _ProgramId, Values, _Req) ->
+    Contents = raw_to_html(maps:get(<<"text">>, E,
+                                    maps:get(<<Type/binary, ".", WidgetId/binary>>, Values,
+                                             <<"">>))),
+    ElementStyle = get_text_element_style(E),
+    [ <<"<div class=widget-container><input type='text' class='widget text text_box' id='elem-">>, WidgetId, <<"'">>
+    , " style='", ElementStyle, "'"
+    , <<" placeholder=\"">>
+    , Contents
+    , <<"\" /></div>">>
     ];
 
 render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
@@ -250,7 +264,6 @@ render_scripts(ProgramId, Contents) ->
     , <<"\n</script>">>
     ].
 
-
 wire_components(null) ->
     [];
 wire_components(#{ <<"widget_type">> := <<"fixed_text">>
@@ -267,21 +280,40 @@ wire_components(#{ <<"container_type">> := _
                  }) ->
     wire_components(Content);
 
-wire_components(#{ <<"cut_type">> := CutType
+wire_components(#{ <<"cut_type">> := _CutType
                  , <<"groups">> := Groups
                  }) ->
     lists:map(fun wire_components/1, Groups);
 
+wire_components(#{ <<"widget_type">> := <<"text_box">>
+                 , <<"id">> := WidgetId
+                 }) ->
+    [ "addCollectable('", WidgetId, "', function() {  return document.getElementById('elem-", WidgetId, "').value });"
+    , "document.getElementById('elem-", WidgetId ,"').onkeyup = (function() {\n"
+    , "websocket.send(JSON.stringify({\n"
+    , "    type: 'ui-event',\n"
+    , "    value: {\n"
+    , "    action: 'changed',\n"
+    , "    block_type: 'text_box',\n"
+    , "    block_id: '", WidgetId, "',\n"
+    , "    data: collectData(),\n"
+    , "}}));\n"
+    , "});\n"
+    ];
+
+
 wire_components(#{ <<"widget_type">> := <<"simple_button">>
                  , <<"id">> := WidgetId
                  }) ->
-    [ "document.getElementById('elem-", WidgetId ,"').onclick = (function() {\n"
+    [ "addCollectable('", WidgetId, "', function() {  return document.getElementById('elem-", WidgetId, "').innerText });"
+    , "document.getElementById('elem-", WidgetId ,"').onclick = (function() {\n"
     , "websocket.send(JSON.stringify({\n"
     , "    type: 'ui-event',\n"
     , "    value: {\n"
     , "    action: 'activated',\n"
     , "    block_type: 'simple_button',\n"
-    , "    block_id: '", WidgetId, "'\n"
+    , "    block_id: '", WidgetId, "',\n"
+    , "    data: collectData(),\n"
     , "}}));\n"
     , "});\n"
     ];
@@ -312,6 +344,9 @@ render_connection_block_start(ProgramId) ->
     , "websocket.onopen = (function() { console.log('Connection opened'); \n"
     , "  websocket.send(JSON.stringify({ type: 'AUTHENTICATION', value: { token: 'ANONYMOUS' }}));\n"
     , "});\n"
+    , "var collectables = [];\n"
+    , "var addCollectable = (function(id, item) { collectables.push([id, item]) });\n"
+    , "var collectData = (function() { var result = {}; for (var coll of collectables) { result[coll[0]] = coll[1](); }; return result; } );\n"
     ].
 
 render_connection_block_end() ->

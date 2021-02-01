@@ -11,6 +11,7 @@
         , listen_channel/1
         , listen_channel/2
         , send_to_channel/2
+        , send_to_process/2
         , monitor_listeners/3
         , get_listeners_on_channel/1
         ]).
@@ -81,6 +82,20 @@ send_to_channel(ChannelId, Message) ->
         X ->
             X
     end.
+
+-spec send_to_process(pid(), any()) -> ok.
+send_to_process(Pid, Message) ->
+    spawn(fun () ->
+                  automate_stats:log_observation(counter,
+                                                 automate_channel_engine_messages_in,
+                                                 [<<"direct">>]),
+                  automate_stats:log_observation(counter,
+                                                 automate_channel_engine_messages_out,
+                                                 [<<"direct">>])
+    end),
+
+    Pid ! {channel_engine, direct, Message},
+    ok.
 
 -spec monitor_listeners(binary(), pid(), node()) -> ok | {error, channel_not_found}.
 monitor_listeners(ChannelId, Pid, Node) ->

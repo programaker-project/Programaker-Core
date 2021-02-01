@@ -12,8 +12,10 @@
 -define(COMMAND_IF, <<"control_if">>).
 -define(COMMAND_IF_ELSE, <<"control_if_else">>).
 -define(COMMAND_FORK_EXECUTION, <<"op_fork_execution">>).
--define(OP_FORK_CONTINUE_ON_FIRST, <<"exit-when-first-completed">> ).
--define(COMMAND_WAIT_FOR_NEXT_VALUE, <<"control_wait_for_next_value">> ).
+-define(OP_FORK_CONTINUE_ON_FIRST, <<"exit-when-first-completed">>).
+-define(COMMAND_WAIT_FOR_NEXT_VALUE, <<"control_wait_for_next_value">>).
+-define(COMMAND_SIGNAL_WAIT_FOR_PULSE, <<"control_signal_wait_for_pulse">>).
+-define(COMMAND_BROADCAST_TO_ALL_USERS, <<"control_broadcast_to_all_users">>).
 
 %% String operations
 -define(COMMAND_JOIN, <<"operator_join">>).
@@ -46,6 +48,7 @@
 -define(COMMAND_CHANGE_VARIABLE, <<"data_changevariableby">>).
 -define(COMMAND_DATA_VARIABLE, <<"data_variable">>).
 -define(COMMAND_DATA_VARIABLE_ON_CHANGE, <<"on_data_variable_update">>).
+-define(COMMAND_UI_BLOCK_VALUE, <<"data_ui_block_value">>).
 
 %% List control
 -define(COMMAND_ADD_TO_LIST, <<"data_addtolist">>).

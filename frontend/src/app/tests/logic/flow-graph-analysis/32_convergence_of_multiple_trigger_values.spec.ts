@@ -44,12 +44,12 @@ describe('Flow-32: Convergence of multiple trigger values.', () => {
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (services.ui.simple_button.trigger1)
-                (log "1")
+                (log (data_ui_block_value "trigger1"))
                 `)),
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (services.ui.simple_button.trigger2)
-                (log "2")
+                (log (data_ui_block_value "trigger2"))
                 `
             ))
 

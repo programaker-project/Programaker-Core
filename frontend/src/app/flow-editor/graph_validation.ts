@@ -2,7 +2,7 @@ import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
 import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { get_unreachable } from './graph_analysis';
 import { index_connections, reverse_index_connections, EdgeIndex } from './graph_utils';
-import { find_downstream, is_pulse_output } from './graph_transformations';
+import { find_downstream, is_pulse_output, is_pulse } from './graph_transformations';
 
 const LOOP_FOUND = '__loop_found__';
 
@@ -27,8 +27,8 @@ function get_streaming_section(graph: FlowGraph): FlowGraph {
             const outputs = data.value.options.outputs || [];
 
             // If it has no pulse inputs or outputs its a streaming block
-            if ((inputs.filter(v => v.type === 'pulse').length === 0)
-                && (outputs.filter(v => v.type === 'pulse').length === 0)) {
+            if ((inputs.filter(v => is_pulse(v)).length === 0)
+                && (outputs.filter(v => is_pulse(v)).length === 0)) {
                 nodes[block_id] = block;
             }
         }
@@ -55,8 +55,8 @@ function get_stepped_section(graph: FlowGraph): FlowGraph {
             const outputs = data.value.options.outputs || [];
 
             // If it has no pulse inputs or outputs its a streaming block
-            if ((inputs.filter(v => v.type === 'pulse').length > 0)
-                || (outputs.filter(v => v.type === 'pulse').length > 0)) {
+            if ((inputs.filter(v => is_pulse(v)).length > 0)
+                || (outputs.filter(v => is_pulse(v)).length > 0)) {
                 nodes[block_id] = block;
             }
         }

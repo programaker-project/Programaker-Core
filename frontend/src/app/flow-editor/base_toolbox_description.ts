@@ -66,6 +66,24 @@ export const BaseToolboxDescription: ToolboxDescription = [
             },
             {
                 icon: PLATFORM_ICON,
+                message: 'Broadcast to all users',
+                block_function: 'control_broadcast_to_all_users',
+                type: 'operation',
+                fixed_pulses: true,
+                inputs: [
+                    {
+                        required: true,
+                        type: "user-pulse",
+                    },
+                ],
+                outputs: [
+                    {
+                        type: "pulse",
+                    },
+                ]
+            },
+            {
+                icon: PLATFORM_ICON,
                 message: 'Check',
                 block_function: 'control_if_else',
                 type: 'operation',
@@ -111,6 +129,29 @@ export const BaseToolboxDescription: ToolboxDescription = [
                         name: "signal",
                         type: "any",
                     },
+                ]
+            },
+            {
+                icon: PLATFORM_ICON,
+                message: 'Wait for pulse %i1 before passing signal %i2',
+                block_function: 'control_signal_wait_for_pulse',
+                type: 'getter',
+                inputs: [
+                    {
+                        required: true,
+                        name: "pulse",
+                        type: "pulse",
+                    },
+                    {
+                        required: true,
+                        name: "signal",
+                        type: "any",
+                    },
+                ],
+                outputs: [
+                    {
+                        type: "any",
+                    }
                 ]
             },
             {

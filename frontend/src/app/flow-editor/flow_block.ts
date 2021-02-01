@@ -1,6 +1,6 @@
 import { FlowWorkspace } from "./flow_workspace";
 
-export type MessageType = 'integer' | 'float' | 'boolean' | 'string' | 'any' | 'pulse';
+export type MessageType = 'integer' | 'float' | 'boolean' | 'string' | 'any' | 'pulse' | 'user-pulse';
 
 export interface Position2D { x: number; y: number };
 export interface Area2D { x: number, y: number, width: number, height: number  };
@@ -9,12 +9,12 @@ export interface ManipulableArea2D { left: number, top: number, right: number, b
 export interface Movement2D { x: number; y: number };
 
 export interface OutputPortDefinition {
-    type?: MessageType;
+    type: MessageType;
     name?: string;
 };
 
 export interface PrimitiveTypeInputPortDefinition {
-    type?: MessageType;
+    type: MessageType;
     name?: string;
     required?: boolean;
 };
@@ -93,8 +93,8 @@ export interface FlowBlock {
     onGetFocus(): void;
     onLoseFocus(): void;
 
-    addConnection(direction: 'in' | 'out', input: number, block: FlowBlock): void;
-    removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): void;
+    addConnection(direction: 'in' | 'out', input: number, block: FlowBlock, sourceType: string): boolean;
+    removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): boolean;
     getBlockContextActions(): BlockContextAction[];
 
     getSlots(): {[key: string]: string};

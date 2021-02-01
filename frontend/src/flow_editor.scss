@@ -1,5 +1,7 @@
 // Colors
 $pulse-color:   #f0c000;
+$user-pulse-color-1:   #fa0;
+$user-pulse-color-2:   #404;
 $string-color:  #44dd44;
 $integer-color: #4444ff;
 $float-color:   #44dddd;
@@ -22,6 +24,9 @@ $unknown-color: #7f7f7f;
         linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
     background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
     background-position: -2px -2px, -2px -2px, -1px -1px, -1px -1px;
+
+    \-\-user-pulse-1: $user-pulse-color-1;
+    \-\-user-pulse-2: $user-pulse-color-2;
 }
 
 svg.block_renderer.dragging {
@@ -127,6 +132,11 @@ svg.block_renderer path.pulse_wire {
     stroke-width: 7px;
 }
 
+svg.block_renderer path.user-pulse_wire {
+    stroke: url(#user-pulse-wire-pattern) $user-pulse-color-1;
+    stroke-width: 7px;
+}
+
 svg.block_renderer path.unknown_wire {
     stroke: $unknown-color;
 }
@@ -158,6 +168,10 @@ svg.block_renderer:not(.drawing):not(.dragging) {
 
         &.pulse_wire {
             stroke: #b80;
+        }
+
+        &.user-pulse_wire {
+            stroke: url(#user-pulse-wire-pattern) $user-pulse-color-1;
         }
 
         &.unknown_wire {
@@ -242,6 +256,10 @@ svg.block_renderer g.flow_node circle.external_port.boolean_port {
 
 svg.block_renderer g.flow_node circle.external_port.pulse_port {
     fill: $pulse-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.user-pulse_port {
+    fill: url(#user-pulse-pattern) $user-pulse-color-1;
 }
 
 svg.block_renderer g.flow_node circle.external_port.enum_port {
@@ -856,6 +874,12 @@ svg.block_renderer g.flow_node.action_area .node_body {
 
 svg.block_renderer g.flow_node.text_node .node_body {
     fill: rgba(255,255,255,0.5);
+}
+
+svg.block_renderer g.flow_node.text_box .node_body {
+    fill: #fff;
+    stroke-width: 2;
+    stroke: #444;
 }
 
 // Don't use transparency on showcase

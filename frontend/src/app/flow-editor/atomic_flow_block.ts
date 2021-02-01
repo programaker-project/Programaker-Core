@@ -1,5 +1,7 @@
 import { BlockManager } from './block_manager';
 import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts, BlockContextAction } from './flow_block';
+import { is_pulse } from './graph_transformations';
+import { FlowConnection } from './flow_connection';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -20,6 +22,7 @@ export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     block_function: string,
     message: string;
     subkey?: { "type": "argument", "index": number };
+    fixed_pulses?: boolean;
 }
 
 export interface AtomicFlowBlockData extends FlowBlockData {
@@ -164,6 +167,9 @@ function parse_chunks(message: string): MessageChunk[] {
 
 export class AtomicFlowBlock implements FlowBlock {
     options: AtomicFlowBlockOptions;
+    overridenInputTypes: ('user-pulse' | 'pulse')[] = [];
+    overridenOutputTypes: ('user-pulse' | 'pulse')[] = [];
+
     synthetic_input_count = 0;
     synthetic_output_count = 0;
     namedChunkTextBoxes: {[key: string]: SVGTextElement } = {};
@@ -246,7 +252,7 @@ export class AtomicFlowBlock implements FlowBlock {
         if (options.type !== 'getter') {
             let has_pulse_output = false;
             for (const output of options.outputs || []) {
-                if (output.type === 'pulse') {
+                if (is_pulse(output)) {
                     has_pulse_output = true;
                     break;
                 }
@@ -270,7 +276,7 @@ export class AtomicFlowBlock implements FlowBlock {
                     throw new Error(`Empty input on ${options.inputs}`);
                 }
 
-                if (input.type === 'pulse') {
+                if (is_pulse(input)) {
                     has_pulse_input = true;
                     break;
                 }
@@ -417,8 +423,8 @@ export class AtomicFlowBlock implements FlowBlock {
         return position;
     }
 
-    public addConnection(direction: 'in' | 'out', input_index: number) {
-        if (direction === 'out') { return; }
+    public addConnection(direction: 'in' | 'out', input_index: number, _block: FlowBlock, sourceType: string): boolean {
+        if (direction === 'out') { return false; }
 
         if (!this.input_count[input_index]) {
             this.input_count[input_index] = 0;
@@ -426,47 +432,120 @@ export class AtomicFlowBlock implements FlowBlock {
         this.input_count[input_index]++;
 
         const extra_opts = this.options.extra_inputs;
-        if (!extra_opts) {
-            return;
-        }
+        if (extra_opts) {
+            // Consider need for extra inputs
+            let has_available_inputs = false;
+            for (let i = 0; i < this.options.inputs.length; i++) {
+                if (!this.input_count[i]) {
+                    has_available_inputs = true;
+                    break;
+                }
+            }
 
-        // Consider need for extra inputs
-        let has_available_inputs = false;
-        for (let i = 0; i < this.options.inputs.length; i++) {
-            if (!this.input_count[i]) {
-                has_available_inputs = true;
-                break;
+            if (!has_available_inputs) {
+                // No available inputs, *might* need to create some more
+
+                if ((extra_opts.quantity === 'any')
+                    || (extra_opts.quantity.max < this.input_groups.length)) {
+
+                    // Create new input
+                    let input_index = this.input_groups.length;
+
+                    const input = { type: extra_opts.type };
+
+                    this.addInput(input, input_index);
+                    this.options.inputs.push(input);
+                    this.updateBody();
+                    if (this.options.on_inputs_changed) {
+                        this.options.on_inputs_changed(this, input_index);
+                    }
+                }
             }
         }
 
-        if (has_available_inputs) {
-            // Available inputs, nothing to do
-            return;
-        }
+        // Consider updating the output pulse type
+        const changedOutput = this.refreshInputConnection(input_index, sourceType);
 
-        if ((extra_opts.quantity === 'any')
-            || (extra_opts.quantity.max < this.input_groups.length)) {
-
-            // Create new input
-            let input_index = this.input_groups.length;
-
-            const input = { type: extra_opts.type };
-
-            this.addInput(input, input_index);
-            this.options.inputs.push(input);
-            this.updateBody();
-            if (this.options.on_inputs_changed) {
-                this.options.on_inputs_changed(this, input_index);
-            }
-        }
+        return changedOutput;
     }
 
-    public removeConnection(direction: 'in' | 'out', index: number) {
+    public removeConnection(direction: 'in' | 'out', index: number): boolean {
         if (direction === 'out') { return; }
 
         if (this.input_count[index]) {
             this.input_count[index]--;
         }
+
+
+        // Consider updating the output pulse type
+        const origType = this.options.inputs[index].type as ('pulse' | 'user-pulse');
+        const changedOutput = this.refreshInputConnection(index, origType);
+
+        return changedOutput;
+    }
+
+    public refreshConnectionTypes(linksFrom: FlowConnection[],
+                                  linksTo:   FlowConnection[],
+                                 ) {
+        for (const link of linksTo) {
+            const index = link.getSink().input_index;
+
+            const linkType = link.getType();
+            this.refreshInputConnection(index, linkType);
+        }
+
+        for (const link of linksFrom) {
+            const idx = link.getSource().output_index;
+
+            if (this.overridenOutputTypes[idx]) {
+                link.setType(this.overridenOutputTypes[idx]);
+            }
+        }
+    }
+
+    private refreshInputConnection(index: number, linkType: string) : boolean {
+        let changedOutput = false;
+
+        if ((!this.options.fixed_pulses)
+            && is_pulse(this.options.inputs[index])
+            && ((linkType === 'pulse') || (linkType === 'user-pulse'))
+           ) {
+            this.setInPulseType(index, linkType);
+
+            for (let outIndex = 0;
+                 (this.options.outputs
+                     && outIndex < this.options.outputs.length);
+                 outIndex++) {
+
+                if (is_pulse(this.options.outputs[outIndex])) {
+                    this.setOutPulseType(outIndex, linkType);
+
+                    changedOutput = true;
+                }
+            }
+
+        }
+        return changedOutput;
+    }
+
+    private setInPulseType(inputIndex: number, sourceType: 'pulse' | 'user-pulse') {
+        const inClass = this.input_groups[inputIndex].getElementsByClassName('external_port')[0].classList;
+        inClass.remove('pulse_port');
+        inClass.remove('user-pulse_port');
+
+        inClass.add(sourceType + '_port');
+
+        this.overridenInputTypes[inputIndex] = sourceType;
+    }
+
+    private setOutPulseType(outputIndex: number, sourceType: 'pulse' | 'user-pulse') {
+        const outClass = this.output_groups[outputIndex].getElementsByClassName('external_port')[0].classList;
+        outClass.remove('pulse_port');
+        outClass.remove('user-pulse_port');
+
+        outClass.add(sourceType + '_port');
+
+        this.overridenOutputTypes[outputIndex] = sourceType;
     }
 
     private addInput(input: InputPortDefinition, index: number) {
@@ -702,6 +781,10 @@ export class AtomicFlowBlock implements FlowBlock {
     }
 
     public getOutputType(index: number): string {
+        if (this.overridenOutputTypes[index]) {
+            return this.overridenOutputTypes[index];
+        }
+
         return this.options.outputs[index].type;
     }
 

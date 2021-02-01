@@ -162,13 +162,16 @@ export class EnumDirectValue implements FlowBlock {
     public onGetFocus() {}
     public onLoseFocus() {}
 
-    public addConnection(direction: 'in' | 'out', _index: number) {
+    public addConnection(direction: 'in' | 'out', _index: number): boolean {
         if (direction === 'in') {
             console.warn("Should NOT be possible to add a connection to a EnumDirectValue block");
         }
+
+        return false;
     }
 
-    public removeConnection(_direction: 'in' | 'out', _index: number) {
+    public removeConnection(_direction: 'in' | 'out', _index: number) : boolean {
+        return false;
     }
 
     public getBlockContextActions(): BlockContextAction[] {

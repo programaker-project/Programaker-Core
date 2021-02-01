@@ -497,8 +497,8 @@ export class UiFlowBlock implements FlowBlock {
         }
     }
 
-    addConnection(direction: "in" | "out", input_index: number, block: FlowBlock): void {
-        if (direction === 'out') { return; }
+    addConnection(direction: "in" | "out", input_index: number, block: FlowBlock): boolean {
+        if (direction === 'out') { return false; }
 
         this.input_blocks.push([block, input_index]);
         this.handler.onInputUpdated(block, input_index);
@@ -533,10 +533,12 @@ export class UiFlowBlock implements FlowBlock {
 
             throw new Error("Generation of extra inputs not implemented.");
         }
+
+        return false;
     }
 
-    removeConnection(direction: "in" | "out", portIndex: number, block: FlowBlock): void {
-        if (direction === 'out') { return; }
+    removeConnection(direction: "in" | "out", portIndex: number, block: FlowBlock): boolean {
+        if (direction === 'out') { return false; }
 
         if (this.input_count[portIndex]) {
             this.input_count[portIndex]--;
@@ -546,6 +548,8 @@ export class UiFlowBlock implements FlowBlock {
 
         this.input_blocks.splice(index, 1);
         this.handler.onConnectionLost(portIndex);
+
+        return false;
     }
 
     updateConnectionValue(block: FlowBlock, value: string) {

@@ -79,6 +79,9 @@ export type CompiledBlockType = "wait_for_monitor"
     | "op_preload_getter"
     | "data_lengthoflist" | "data_deleteoflist" | "data_addtolist"
 
+// Ui-related
+    | "data_ui_block_value"
+
 // Signal-only
     | "on_data_variable_update"
     | "op_on_block_run"

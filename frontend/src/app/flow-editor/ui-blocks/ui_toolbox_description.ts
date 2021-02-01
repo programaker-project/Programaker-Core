@@ -9,6 +9,7 @@ import { FixedImageBuilder } from './renderers/fixed_image';
 import { HorizontalSeparatorBuilder } from './renderers/horizontal_separator';
 import { SimpleUiCardBuilder, SimpleUiCardGenerateTree } from './renderers/simple_ui_card';
 import { LinkAreaBuilder, LinkAreaGenerateTree } from './renderers/link_area';
+import { TextBoxBuilder } from './renderers/text_box';
 
 export const UiToolboxDescription: ToolboxDescription = [
     {
@@ -22,10 +23,26 @@ export const UiToolboxDescription: ToolboxDescription = [
                 builder: SimpleButtonBuilder,
                 outputs: [
                     {
-                        type: "pulse",
+                        type: "user-pulse",
                     },
                     {
                         name: "button text",
+                        type: "string",
+                    }
+                ]
+            },
+            {
+                icon: UI_ICON,
+                type: 'ui_flow_block',
+                id: 'text_box',
+                builder: TextBoxBuilder,
+                outputs: [
+                    {
+                        name: "On change",
+                        type: "user-pulse",
+                    },
+                    {
+                        name: "Contents",
                         type: "string",
                     }
                 ]
