@@ -70,7 +70,7 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
 
 
     onClick() {
-        return this.service.sendBlockSignal(this.block.options.id, this.block.id);
+        // return this.service.sendBlockSignal(this.block.options.id, this.block.id);
     }
 
     isTextEditable(): this is TextEditable {
