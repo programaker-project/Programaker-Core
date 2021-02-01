@@ -426,8 +426,6 @@ export class AtomicFlowBlock implements FlowBlock {
     public addConnection(direction: 'in' | 'out', input_index: number, _block: FlowBlock, sourceType: string): boolean {
         if (direction === 'out') { return false; }
 
-        let outputsChanged = false;
-
         if (!this.input_count[input_index]) {
             this.input_count[input_index] = 0;
         }
@@ -466,23 +464,9 @@ export class AtomicFlowBlock implements FlowBlock {
         }
 
         // Consider updating the output pulse type
-        if ((!this.options.fixed_pulses)
-            && (input_index == 0)
-            && is_pulse(this.options.inputs[input_index])
-            && ((sourceType === 'pulse') || (sourceType === 'user-pulse'))
-           ) {
-            this.setInPulseType(input_index,  sourceType);
+        const changedOutput = this.refreshInputConnection(input_index, sourceType);
 
-            if ((this.options.outputs)
-                && (this.options.outputs.length > 0)
-                && is_pulse(this.options.outputs[0])
-               ) {
-                this.setOutPulseType(0, sourceType);
-                outputsChanged = true;
-            }
-        }
-
-        return outputsChanged;
+        return changedOutput;
     }
 
     public removeConnection(direction: 'in' | 'out', index: number): boolean {
@@ -494,26 +478,10 @@ export class AtomicFlowBlock implements FlowBlock {
 
 
         // Consider updating the output pulse type
-        let outputsChanged = false;
         const origType = this.options.inputs[index].type as ('pulse' | 'user-pulse');
-        if ((!this.options.fixed_pulses)
-            && (index == 0)
-            && is_pulse(this.options.inputs[index])
-            && ((origType === 'pulse') || (origType === 'user-pulse'))
-           ) {
+        const changedOutput = this.refreshInputConnection(index, origType);
 
-            this.setInPulseType(index,  origType);
-
-            if ((this.options.outputs)
-                && (this.options.outputs.length > 0)
-                && is_pulse(this.options.outputs[0])
-               ) {
-                this.setOutPulseType(0, origType);
-                outputsChanged = true;
-            }
-        }
-
-        return outputsChanged;
+        return changedOutput;
     }
 
     public refreshConnectionTypes(linksFrom: FlowConnection[],
@@ -523,21 +491,7 @@ export class AtomicFlowBlock implements FlowBlock {
             const index = link.getSink().input_index;
 
             const linkType = link.getType();
-
-            if ((!this.options.fixed_pulses)
-                && (index == 0)
-                && is_pulse(this.options.inputs[index])
-                && ((linkType === 'pulse') || (linkType === 'user-pulse'))
-               ) {
-                this.setInPulseType(index, linkType);
-
-                if ((this.options.outputs)
-                    && (this.options.outputs.length > 0)
-                    && is_pulse(this.options.outputs[0])
-                   ) {
-                    this.setOutPulseType(0, linkType);
-                }
-            }
+            this.refreshInputConnection(index, linkType);
         }
 
         for (const link of linksFrom) {
@@ -547,6 +501,31 @@ export class AtomicFlowBlock implements FlowBlock {
                 link.setType(this.overridenOutputTypes[idx]);
             }
         }
+    }
+
+    private refreshInputConnection(index: number, linkType: string) : boolean {
+        let changedOutput = false;
+
+        if ((!this.options.fixed_pulses)
+            && is_pulse(this.options.inputs[index])
+            && ((linkType === 'pulse') || (linkType === 'user-pulse'))
+           ) {
+            this.setInPulseType(index, linkType);
+
+            for (let outIndex = 0;
+                 (this.options.outputs
+                     && outIndex < this.options.outputs.length);
+                 outIndex++) {
+
+                if (is_pulse(this.options.outputs[outIndex])) {
+                    this.setOutPulseType(outIndex, linkType);
+
+                    changedOutput = true;
+                }
+            }
+
+        }
+        return changedOutput;
     }
 
     private setInPulseType(inputIndex: number, sourceType: 'pulse' | 'user-pulse') {
