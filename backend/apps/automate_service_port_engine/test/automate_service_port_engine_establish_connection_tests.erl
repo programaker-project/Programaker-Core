@@ -68,9 +68,9 @@ establish_connection_with_owner_user() ->
                      , <<"blocks">> => []
                      },
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     ok = establish_connection(ServicePortId, OwnerUserId),
 
@@ -86,9 +86,9 @@ establish_connection_with_owner_group() ->
                      , <<"blocks">> => []
                      },
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }) ,
 
     ok = establish_connection(ServicePortId, OwnerUserId),
 
@@ -106,20 +106,20 @@ establish_connection(ServicePortId, Owner) ->
                            receive
                                {automate_service_port_engine_router, _Pid, {data, MessageId, #{ <<"type">> := <<"GET_HOW_TO_SERVICE_REGISTRATION">> }}} ->
                                    Anwser = ?APPLICATION:from_service_port(ServicePortId, Owner,
-                                                                           jiffy:encode(#{ message_id => MessageId
-                                                                                         , success => true
-                                                                                         , result => #{ type => message
-                                                                                                      , value => #{ form => []}}
-                                                                                         })),
+                                                                           #{ <<"message_id">> => MessageId
+                                                                            , <<"success">> => true
+                                                                            , <<"result">> => #{ <<"type">> => <<"message">>
+                                                                                               , <<"value">> => #{ <<"form">> => []}}
+                                                                            }),
                                    io:fwrite("\033[41;37;1m Answer: ~p \033[0m~n", [Anwser])
                            end,
                            receive {connect, ConnectionId} ->
                                    ?APPLICATION:from_service_port(ServicePortId, Owner,
-                                                                  jiffy:encode(#{ type => <<"ESTABLISH_CONNECTION">>
-                                                                                , value => #{ connection_id => ConnectionId
-                                                                                            , name => ?MODULE
-                                                                                            }
-                                                                                }))
+                                                                  #{ <<"type">> => <<"ESTABLISH_CONNECTION">>
+                                                                   , <<"value">> => #{ <<"connection_id">> => ConnectionId
+                                                                                     , <<"name">> => ?MODULE
+                                                                                     }
+                                                                   })
                            end,
                            Orig ! done
                    end),
