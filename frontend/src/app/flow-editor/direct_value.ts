@@ -163,24 +163,28 @@ export class DirectValue implements FlowBlock {
     public onGetFocus() {}
     public onLoseFocus() {}
 
-    public addConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {
+    public addConnection(direction: 'in' | 'out', _index: number, block: FlowBlock): boolean {
         if (direction === 'in') {
             console.warn("Should NOT be possible to add a connection to a DirectValue block");
-            return;
+            return false;
         }
 
         this.sinks.push(block);
+
+        return false;
     }
 
-    public removeConnection(direction: 'in' | 'out', _index: number, block: FlowBlock) {
+    public removeConnection(direction: 'in' | 'out', _index: number, block: FlowBlock): boolean {
         if (direction === 'in') {
             console.warn("Should NOT be possible to have input connections on a DirectValue block");
-            return;
+            return false;
         }
 
         const index = this.sinks.findIndex(x => x === block);
 
         this.sinks.splice(index, 1);
+
+        return false;
     }
 
     public getBlockContextActions(): BlockContextAction[] {

@@ -69,6 +69,7 @@ export const BaseToolboxDescription: ToolboxDescription = [
                 message: 'Broadcast to all users',
                 block_function: 'control_broadcast_to_all_users',
                 type: 'operation',
+                fixed_pulses: true,
                 inputs: [
                     {
                         required: true,

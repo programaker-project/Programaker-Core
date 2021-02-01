@@ -3,7 +3,7 @@ import { BlockManager } from './block_manager';
 import { DirectValue } from './direct_value';
 import { EnumDirectValue, EnumGetter, EnumValue } from './enum_direct_value';
 import { Area2D, BridgeEnumInputPortDefinition, ContainerBlock, Direction2D, FlowBlock, FlowBlockData, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, Resizeable } from './flow_block';
-import { FlowConnection } from './flow_connection';
+import { FlowConnection, SourceDefinition, SinkDefinition } from './flow_connection';
 import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { Toolbox } from './toolbox';
 import { ContainerFlowBlock, ContainerFlowBlockData, isContainerFlowBlockData } from './ui-blocks/container_flow_block';
@@ -96,7 +96,7 @@ export class FlowWorkspace implements BlockManager {
         const connections: FlowGraphEdge[] = [];
 
         for (const conn_id of Object.keys(this.connections)) {
-            const connection = this.connections[conn_id].connection;
+            const connection = this.connections[conn_id];
 
             const source = connection.getSource();
             const sink = connection.getSink();
@@ -272,10 +272,7 @@ export class FlowWorkspace implements BlockManager {
     }};
     private _selectedBlocks: string[] = [];
 
-    private connections: {[key: string]: {
-        connection: FlowConnection,
-        element: SVGElement,
-    }};
+    private connections: {[key: string]: FlowConnection};
 
     public getDialog(): MatDialog {
         return this.dialog;
@@ -1157,7 +1154,7 @@ export class FlowWorkspace implements BlockManager {
 
         // Replicate connections among the selected blocks
         for (const connectionId of Object.keys(this.connections)) {
-            const connection = this.connections[connectionId].connection;
+            const connection = this.connections[connectionId];
 
             // Look for matching sink
             const sink = connection.getSink();
@@ -1812,9 +1809,8 @@ export class FlowWorkspace implements BlockManager {
         });
 
         const enum_input_id = this.draw(enum_input, options.position);
-        this.addConnection(new FlowConnection({ block_id: enum_input_id, output_index: 0 },
-                                              { block_id: block_id, input_index: input_index },
-                                             ));
+        this.addConnection({ block_id: enum_input_id, output_index: 0 },
+                           { block_id: block_id, input_index: input_index });
     }
 
     private createDirectValue(type: MessageType, block_id: string, input_index: number,
@@ -1826,9 +1822,8 @@ export class FlowWorkspace implements BlockManager {
                                              });
 
         const direct_input_id = this.draw(direct_input, options.position);
-        this.addConnection(new FlowConnection({ block_id: direct_input_id, output_index: 0 },
-                                              { block_id: block_id, input_index: input_index },
-                                             ));
+        this.addConnection({ block_id: direct_input_id, output_index: 0 },
+                           { block_id: block_id, input_index: input_index });
     }
 
     private static MessageTypeToInputType(type: MessageType): string {
@@ -1943,8 +1938,8 @@ export class FlowWorkspace implements BlockManager {
         for (const conn_id of block.connections) {
             const conn = this.connections[conn_id];
 
-            if (conn.connection.getSink().block_id == block_id) {
-                inputs_in_use[conn.connection.getSink().input_index] = true;
+            if (conn.getSink().block_id == block_id) {
+                inputs_in_use[conn.getSink().input_index] = true;
             }
         }
 
@@ -2002,7 +1997,7 @@ export class FlowWorkspace implements BlockManager {
 
         // Make a copy of the array to avoid problems for modifying it during the loop
         for (const conn_id of info.connections.concat([])) {
-            this.removeConnection(this.connections[conn_id].connection);
+            this.removeConnection(this.connections[conn_id]);
         }
 
         this.input_helper_section.removeChild(info.input_group);
@@ -2185,29 +2180,17 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
-    addConnection(conn: FlowConnection): boolean {
-        const element = this.prepareConnection(conn);
-
-        if (!element) {
-            return false;
-        }
-
-        this.updateConnection(conn.getId());
-
-        return true;
-    }
-
-    prepareConnection(conn: FlowConnection): SVGElement {
-        const source = this.blocks[conn.getSource().block_id];
-        const source_output_type = source.block.getOutputType(conn.getSource().output_index);
-
-        let type_class = "unknown_wire";
-        if (source_output_type) {
-            type_class = source_output_type + '_wire';
-        }
+    addConnection(from_: SourceDefinition,
+                  to: SinkDefinition,
+                  ): boolean {
 
         const path = document.createElementNS(SvgNS, 'path');
-        path.setAttributeNS(null, 'class', 'established connection ' + type_class);
+
+        const source = this.blocks[from_.block_id];
+        const source_output_type = source.block.getOutputType(from_.output_index);
+
+        const conn = new FlowConnection(from_, to, path, source_output_type);
+
         if ((source_output_type == 'pulse') || (source_output_type == 'user-pulse')) {
             path.setAttributeNS(null, 'marker-end', 'url(#pulse_head)');
             path.onmouseenter = () => {
@@ -2226,16 +2209,22 @@ export class FlowWorkspace implements BlockManager {
         this.connection_group.appendChild(path);
 
         const sink = this.blocks[conn.getSink().block_id];
-        source.block.addConnection('out', conn.getSource().output_index, sink.block);
+        source.block.addConnection('out', conn.getSource().output_index, sink.block, source_output_type);
         source.connections.push(conn.id);
 
         sink.connections.push(conn.id);
-        sink.block.addConnection('in', conn.getSink().input_index, source.block);
+        const hasChanged = sink.block.addConnection('in', conn.getSink().input_index, source.block, source_output_type);
 
-        this.connections[conn.id] = { connection: conn, element: path };
+        this.connections[conn.id] = conn;
         this.updateBlockInputHelpersVisibility(conn.getSink().block_id);
 
-        return path;
+        if (hasChanged) {
+            this.propagateChangesFrom(conn.getSink().block_id);
+        }
+
+        this.updateConnection(conn.getId());
+
+        return true;
     }
 
     private removeConnection(conn: FlowConnection) {
@@ -2254,7 +2243,7 @@ export class FlowWorkspace implements BlockManager {
         this.updateBlockInputHelpersVisibility(conn.getSource().block_id);
 
         // Disconnect from sink
-        sink.block.removeConnection('in', conn.getSink().input_index, source.block);
+        const hasChanged = sink.block.removeConnection('in', conn.getSink().input_index, source.block);
         const sink_conn_index = sink.connections.indexOf(conn.id);
         if (sink_conn_index < 0) {
             console.error('Connection not found when going to remove. For block', sink);
@@ -2269,6 +2258,47 @@ export class FlowWorkspace implements BlockManager {
         this.connection_group.removeChild(info.element);
 
         delete this.connections[conn.id];
+
+        if (hasChanged) {
+            this.propagateChangesFrom(conn.getSink().block_id);
+        }
+    }
+
+    private propagateChangesFrom(originBlockId: string) {
+        const considered = { originBlockId: true };
+        const todo = [originBlockId];
+
+        while (todo.length > 0) {
+            const next = todo.pop();
+            const info = this.blocks[next];
+
+            const linksFrom: FlowConnection[] = [];
+            const linksTo: FlowConnection[] = [];
+
+            // Explore where does this block lead to
+            for (const connId of info.connections) {
+                const connection = this.connections[connId];
+                if (connection.source.block_id === next) {
+                    const sink = connection.sink.block_id;
+                    linksFrom.push(this.connections[connId]);
+
+                    if (!considered[sink]) {
+                        considered[sink] = true;
+                        todo.push(sink);
+                    }
+                }
+                else {
+                    linksTo.push(this.connections[connId]);
+                }
+            }
+
+            // Consider changes needed
+            // *Right now* only AtomicFlowBlocks need this
+            // TODO: Extend this to all blocks when type propagation is applied to more block types
+            if (info.block instanceof AtomicFlowBlock) {
+                info.block.refreshConnectionTypes(linksFrom, linksTo);
+            }
+        }
     }
 
     updateConnection(connection_id: string) {
@@ -2276,13 +2306,13 @@ export class FlowWorkspace implements BlockManager {
         const runway = 20;
 
         // Source
-        const source = conn.connection.getSource();
+        const source = conn.getSource();
         const source_block = this.blocks[source.block_id].block;
 
         const source_position = this.getBlockRel(source_block, source_block.getPositionOfOutput(source.output_index));
 
         // Sink
-        const sink = conn.connection.getSink();
+        const sink = conn.getSink();
         const sink_block = this.blocks[sink.block_id].block;
 
         const connector_with_marker = !!conn.element.getAttributeNS(null, 'marker-end');
@@ -2323,10 +2353,8 @@ export class FlowWorkspace implements BlockManager {
             sink = node2;
         }
 
-        const connection = new FlowConnection({block_id: this.getBlockId(source.block), output_index: source.index },
-                                              {block_id: this.getBlockId(sink.block), input_index: sink.index },
-                                             );
-        return this.addConnection(connection);
+        return this.addConnection({block_id: this.getBlockId(source.block), output_index: source.index },
+                                  {block_id: this.getBlockId(sink.block), input_index: sink.index });
     }
 
     private disconnectIOSelected() {

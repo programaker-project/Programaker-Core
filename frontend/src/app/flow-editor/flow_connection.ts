@@ -1,11 +1,11 @@
 import { uuidv4 } from './utils';
 
-interface SourceDefinition {
+export interface SourceDefinition {
     block_id: string;
     output_index: number;
 }
 
-interface SinkDefinition {
+export interface SinkDefinition {
     block_id: string;
     input_index: number;
 }
@@ -14,9 +14,12 @@ export class FlowConnection {
     source: SourceDefinition;
     sink: SinkDefinition;
     id: string;
+    connType: string | null;
 
     constructor(from: SourceDefinition,
                 to: SinkDefinition,
+                public readonly element: SVGElement,
+                connType: string,
                 id?: string) {
 
         this.source = { block_id: from.block_id, output_index: from.output_index };
@@ -27,6 +30,8 @@ export class FlowConnection {
         else {
             this.id = uuidv4();
         }
+
+        this.setType(connType);
     }
 
     public getSource(): SourceDefinition {
@@ -39,5 +44,20 @@ export class FlowConnection {
 
     public getId(): string {
         return this.id;
+    }
+
+    public setType(connType: string) {
+        this.connType = connType;
+
+        let type_class = "unknown_wire";
+        if (connType) {
+            type_class = connType + '_wire';
+        }
+
+        this.element.setAttributeNS(null, 'class', 'established connection ' + type_class);
+    }
+
+    public getType(): string {
+        return this.connType;
     }
 }

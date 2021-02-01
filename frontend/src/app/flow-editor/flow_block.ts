@@ -93,8 +93,8 @@ export interface FlowBlock {
     onGetFocus(): void;
     onLoseFocus(): void;
 
-    addConnection(direction: 'in' | 'out', input: number, block: FlowBlock): void;
-    removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): void;
+    addConnection(direction: 'in' | 'out', input: number, block: FlowBlock, sourceType: string): boolean;
+    removeConnection(direction: 'in' | 'out', index: number, block: FlowBlock): boolean;
     getBlockContextActions(): BlockContextAction[];
 
     getSlots(): {[key: string]: string};
