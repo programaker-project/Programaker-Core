@@ -293,7 +293,7 @@ wire_components(#{ <<"widget_type">> := <<"text_box">>
     , "websocket.send(JSON.stringify({\n"
     , "    type: 'ui-event',\n"
     , "    value: {\n"
-    , "    action: 'activated',\n"
+    , "    action: 'changed',\n"
     , "    block_type: 'text_box',\n"
     , "    block_id: '", WidgetId, "',\n"
     , "    data: collectData(),\n"
