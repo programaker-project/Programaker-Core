@@ -120,9 +120,8 @@ listen_bridge(BridgeId, Owner, Selector) when is_tuple(Owner) ->
             automate_service_port_engine_service:listen_service(Owner, {Key, SubKey}, [BridgeId])
     end.
 
--spec from_service_port(binary(), owner_id(), binary()) -> ok.
-from_service_port(ServicePortId, Owner, Msg) when is_tuple(Owner) ->
-    Unpacked = jiffy:decode(Msg, [return_maps]),
+-spec from_service_port(binary(), owner_id(), map()) -> ok.
+from_service_port(ServicePortId, Owner, Unpacked) when is_tuple(Owner) ->
     automate_stats:log_observation(counter,
                                    automate_bridge_engine_messages_from_bridge,
                                    [ServicePortId]),

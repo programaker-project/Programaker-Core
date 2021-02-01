@@ -11,6 +11,7 @@
 -include("program_records.hrl").
 -include("instructions.hrl").
 -include("../../automate_channel_engine/src/records.hrl").
+-include("../../automate_common_types/src/protocol.hrl").
 
 %%%===================================================================
 %%% API
@@ -79,6 +80,28 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?COMMAND
     automate_channel_engine:listen_channel(ChannelId, { variable_events, Variable }),
     ?TRIGGERED_BY_MONITOR;
 
+get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?COMMAND_TRIGGER_ON_BRIDGE_CONNECTED
+                                                             , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
+                                                                                , ?VALUE := BridgeId
+                                                                                }
+                                                                             ]
+                                                             }},
+                                 #program_permissions{owner_user_id=UserId}, _ProgramId) ->
+
+    ok = automate_service_registry_query:listen_service(BridgeId, UserId, { ?PROTO_ON_BRIDGE_CONNECTED, BridgeId }),
+    ?TRIGGERED_BY_MONITOR;
+
+get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?COMMAND_TRIGGER_ON_BRIDGE_DISCONNECTED
+                                                             , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
+                                                                                , ?VALUE := BridgeId
+                                                                                }
+                                                                             ]
+                                                             }},
+                                 #program_permissions{owner_user_id=UserId}, _ProgramId) ->
+
+    ok = automate_service_registry_query:listen_service(BridgeId, UserId, { ?PROTO_ON_BRIDGE_DISCONNECTED, BridgeId }),
+    ?TRIGGERED_BY_MONITOR;
+
 get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?FLOW_ON_BLOCK_RUN
                                                              , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
                                                                                 , ?VALUE := BlockId
@@ -86,7 +109,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := ?FLOW_ON
                                                                              ,  _ChangeIndex
                                                                              ]
                                                              }},
-                                 #program_permissions{owner_user_id=UserId}, ProgramId) ->
+                                 #program_permissions{}, ProgramId) ->
 
     {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
     automate_channel_engine:listen_channel(ChannelId, { block_run_events, BlockId }),
@@ -98,7 +121,7 @@ get_expected_action_from_trigger(#program_trigger{condition=#{ ?TYPE := <<"servi
                                  #program_permissions{owner_user_id=UserId}, ProgramId) ->
     [ServiceId, _MonitorKey] = binary:split(MonitorPath, <<".">>),
     case automate_service_registry:get_service_by_id(ServiceId) of
-        {ok, #{ module := Module }} ->
+        {ok, #{ module := _Module }} ->
             case ?UTILS:get_block_key_subkey(Arguments) of
                 { key_and_subkey, Key, SubKey } ->
                     ok = automate_service_registry_query:listen_service(ServiceId, UserId, { Key, SubKey });
@@ -247,7 +270,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.ui.", UiMonit
                             },
     {true, Thread};
 
-
+%% Monitoring changes
 trigger_thread(#program_trigger{condition=#{ ?TYPE := ?COMMAND_DATA_VARIABLE_ON_CHANGE
                                            , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_VARIABLE
                                                               , ?VALUE := OperationVariable
@@ -315,6 +338,52 @@ trigger_thread(#program_trigger{condition=#{ ?TYPE := ?FLOW_ON_BLOCK_RUN
                   _ -> Thread
               end,
     {true, Thread2};
+
+trigger_thread(#program_trigger{condition=#{ ?TYPE := ?COMMAND_TRIGGER_ON_BRIDGE_CONNECTED
+                                           , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
+                                                              , ?VALUE := BridgeId
+                                                              }
+                                                           ]
+                                           }
+                               , subprogram=Program
+                               },
+               { ?TRIGGERED_BY_MONITOR, { _MonitorId
+                                        , #{ <<"key">> := ?PROTO_ON_BRIDGE_CONNECTED, <<"subkey">> := BridgeId }
+                                        } },
+               #program_state{ program_id=ProgramId
+                             , permissions=#program_permissions{owner_user_id=_UserId}}) ->
+
+    Thread = #program_thread{ position=[1]
+                            , program=Program
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+    {true, Thread};
+
+trigger_thread(#program_trigger{condition=#{ ?TYPE := ?COMMAND_TRIGGER_ON_BRIDGE_DISCONNECTED
+                                           , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
+                                                              , ?VALUE := BridgeId
+                                                              }
+                                                           ]
+                                           }
+                               , subprogram=Program
+                               },
+               { ?TRIGGERED_BY_MONITOR, { _MonitorId
+                                        , #{ <<"key">> := ?PROTO_ON_BRIDGE_DISCONNECTED, <<"subkey">> := BridgeId }
+                                        } },
+               #program_state{ program_id=ProgramId
+                             , permissions=#program_permissions{owner_user_id=_UserId}}) ->
+
+    Thread = #program_thread{ position=[1]
+                            , program=Program
+                            , global_memory=#{}
+                            , instruction_memory=#{}
+                            , program_id=ProgramId
+                            , thread_id=undefined
+                            },
+    {true, Thread};
 
 %% Bridge channel
 trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", MonitorPath/binary>>

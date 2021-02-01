@@ -78,9 +78,9 @@ simple_wait_for_signal() ->
                      , <<"blocks">> => [ ]
                      },
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                                      , <<"value">> => Configuration
-                                                                      })),
+                                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                                         , <<"value">> => Configuration
+                                                         }),
     {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
@@ -115,12 +115,12 @@ simple_wait_for_signal() ->
 
     %% Send signal
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                                      , <<"key">> => <<"on_new_message">>
-                                                                      , <<"to_user">> => null
-                                                                      , <<"value">> => <<"sample value">>
-                                                                      , <<"content">> => <<"sample content">>
-                                                                      })),
+                                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                                         , <<"key">> => <<"on_new_message">>
+                                                         , <<"to_user">> => null
+                                                         , <<"value">> => <<"sample value">>
+                                                         , <<"content">> => <<"sample content">>
+                                                         }),
 
     %% Check logs after sending signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
@@ -143,9 +143,9 @@ wait_for_signal_check_key() ->
                      , <<"blocks">> => [ ]
                      },
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                                      , <<"value">> => Configuration
-                                                                      })),
+                                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                                         , <<"value">> => Configuration
+                                                         }),
     {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
@@ -180,12 +180,12 @@ wait_for_signal_check_key() ->
 
     %% Send different signal
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                                      , <<"key">> => <<"another key">>
-                                                                      , <<"to_user">> => null
-                                                                      , <<"value">> => <<"sample value">>
-                                                                      , <<"content">> => <<"sample content">>
-                                                                      })),
+                                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                                         , <<"key">> => <<"another key">>
+                                                         , <<"to_user">> => null
+                                                         , <<"value">> => <<"sample value">>
+                                                         , <<"content">> => <<"sample content">>
+                                                         }),
 
     %% Check logs after different signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
@@ -197,12 +197,12 @@ wait_for_signal_check_key() ->
 
     %% Send correct signal
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                                      , <<"key">> => <<"on_new_message">>
-                                                                      , <<"to_user">> => null
-                                                                      , <<"value">> => <<"sample value">>
-                                                                      , <<"content">> => <<"sample content">>
-                                                                      })),
+                                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                                         , <<"key">> => <<"on_new_message">>
+                                                         , <<"to_user">> => null
+                                                         , <<"value">> => <<"sample value">>
+                                                         , <<"content">> => <<"sample content">>
+                                                         }),
 
     %% Check logs after sending signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
@@ -225,9 +225,9 @@ wait_for_signal_check_subkey() ->
                      , <<"blocks">> => [ ]
                      },
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                                      , <<"value">> => Configuration
-                                                                      })),
+                                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                                         , <<"value">> => Configuration
+                                                         }),
     {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
@@ -267,13 +267,13 @@ wait_for_signal_check_subkey() ->
 
     %% Send different signal
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                                      , <<"key">> => <<"on_new_message">>
-                                                                      , <<"subkey">> => <<"different">>
-                                                                      , <<"to_user">> => null
-                                                                      , <<"value">> => <<"sample value">>
-                                                                      , <<"content">> => <<"sample content">>
-                                                                      })),
+                                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                                         , <<"key">> => <<"on_new_message">>
+                                                         , <<"subkey">> => <<"different">>
+                                                         , <<"to_user">> => null
+                                                         , <<"value">> => <<"sample value">>
+                                                         , <<"content">> => <<"sample content">>
+                                                         }),
 
     %% Check logs after different signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
@@ -285,13 +285,13 @@ wait_for_signal_check_subkey() ->
 
     %% Send correct signal
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                                      , <<"key">> => <<"on_new_message">>
-                                                                      , <<"subkey">> => <<"correct">>
-                                                                      , <<"to_user">> => null
-                                                                      , <<"value">> => <<"sample value">>
-                                                                      , <<"content">> => <<"sample content">>
-                                                                      })),
+                                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                                         , <<"key">> => <<"on_new_message">>
+                                                         , <<"subkey">> => <<"correct">>
+                                                         , <<"to_user">> => null
+                                                         , <<"value">> => <<"sample value">>
+                                                         , <<"content">> => <<"sample content">>
+                                                         }),
 
     %% Check logs after sending signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
@@ -357,9 +357,9 @@ wait_for_monitor_signal() ->
                      },
 
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                                      , <<"value">> => Configuration
-                                                                      })),
+                                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                                         , <<"value">> => Configuration
+                                                         }),
     {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
@@ -392,12 +392,12 @@ wait_for_monitor_signal() ->
 
     %% Send signal
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                                      , <<"key">> => <<"on_new_message">>
-                                                                      , <<"to_user">> => null
-                                                                      , <<"value">> => <<"sample value">>
-                                                                      , <<"content">> => <<"sample content">>
-                                                                      })),
+                                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                                         , <<"key">> => <<"on_new_message">>
+                                                         , <<"to_user">> => null
+                                                         , <<"value">> => <<"sample value">>
+                                                         , <<"content">> => <<"sample content">>
+                                                         }),
 
     %% Check logs after sending signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
@@ -421,9 +421,9 @@ wait_for_monitor_signal_check_key() ->
                      },
 
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                                      , <<"value">> => Configuration
-                                                                      })),
+                                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                                         , <<"value">> => Configuration
+                                                         }),
     {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
@@ -458,12 +458,12 @@ wait_for_monitor_signal_check_key() ->
 
     %% Send different signal
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                                      , <<"key">> => <<"another key">>
-                                                                      , <<"to_user">> => null
-                                                                      , <<"value">> => <<"sample value">>
-                                                                      , <<"content">> => <<"sample content">>
-                                                                      })),
+                                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                                         , <<"key">> => <<"another key">>
+                                                         , <<"to_user">> => null
+                                                         , <<"value">> => <<"sample value">>
+                                                         , <<"content">> => <<"sample content">>
+                                                         }),
 
     %% Check logs after different signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
@@ -475,12 +475,12 @@ wait_for_monitor_signal_check_key() ->
 
     %% Send correct signal
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                                      , <<"key">> => <<"on_new_message">>
-                                                                      , <<"to_user">> => null
-                                                                      , <<"value">> => <<"sample value">>
-                                                                      , <<"content">> => <<"sample content">>
-                                                                      })),
+                                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                                         , <<"key">> => <<"on_new_message">>
+                                                         , <<"to_user">> => null
+                                                         , <<"value">> => <<"sample value">>
+                                                         , <<"content">> => <<"sample content">>
+                                                         }),
 
     %% Check logs after sending signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),

@@ -390,6 +390,8 @@ export class EnumDirectValue implements FlowBlock {
             console.error("Error loading enum values:", err);
         }
 
+        this.updateSize();
+
         return this.group;
     }
 

@@ -75,9 +75,9 @@ save_to_test() ->
                      , <<"blocks">> => [ ]
                      },
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                                      , <<"value">> => Configuration
-                                                                      })),
+                                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                                         , <<"value">> => Configuration
+                                                         }),
     {ok, _} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     %% Program creation
@@ -128,13 +128,13 @@ save_to_test() ->
 
     %% Send signal
     ok = automate_service_port_engine:from_service_port(ServicePortId, OwnerUserId,
-                                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                                      , <<"key">> => <<"on_new_message">>
-                                                                      , <<"subkey">> => <<"correct">>
-                                                                      , <<"to_user">> => null
-                                                                      , <<"value">> => <<"sample value">>
-                                                                      , <<"content">> => <<"sample content">>
-                                                                      })),
+                                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                                         , <<"key">> => <<"on_new_message">>
+                                                         , <<"subkey">> => <<"correct">>
+                                                         , <<"to_user">> => null
+                                                         , <<"value">> => <<"sample value">>
+                                                         , <<"content">> => <<"sample content">>
+                                                         }),
 
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
 

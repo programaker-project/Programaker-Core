@@ -28,7 +28,7 @@ render_page_header(Page, page) ->
     , render_styles(page)
     , <<"</head>\n<body>\n">>
     ];
-render_page_header(Page, element) ->
+render_page_header(_Page, element) ->
     [ "<div class='programaker-element'>"
     , render_styles(element)
     ].
@@ -83,7 +83,7 @@ render_element(E=#{ <<"cut_type">> := CutType
     , "style='", ElementBackground, "' "
     ,  ">"
     , "<div class='inner-box'>"
-    , lists:map(fun(E) -> render_element(E, ProgramId, Values, Req) end, Groups)
+    , lists:map(fun(El) -> render_element(El, ProgramId, Values, Req) end, Groups)
     , <<"</div></div>">>
     ];
 
@@ -401,7 +401,7 @@ get_image_url(#{ <<"settings">> := #{ <<"body">> := #{ <<"image">> := #{ <<"id">
                   BackendInfo ->
                       maps:merge(BackendInfo, BaseChanges)
     end,
-    Base = cowboy_req:uri(Req, Changes);
+    cowboy_req:uri(Req, Changes);
 
 get_image_url(_, _, _) ->
     []. %% TODO: Add a default image?

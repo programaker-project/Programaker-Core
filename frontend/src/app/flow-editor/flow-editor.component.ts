@@ -290,13 +290,30 @@ export class FlowEditorComponent implements OnInit {
     }
 
     async getEnumValues(enum_namespace: string, enum_name: string): Promise<EnumValue[]> {
-        const values = await this.customBlockService.getCallbackOptions(this.program.id, enum_namespace, enum_name);
+        if (enum_namespace === 'programaker') {
+            if (enum_name === 'bridges') {
+                const connections = await this.connectionService.getConnectionsOnProgram(this.programId);
 
-        return values.map(v => {
-            return {
-                id: v[1], name: v[0],
+                const knownBridges = {};
+                const dropdown = [];
+                for (const conn of connections) {
+                    if (!knownBridges[conn.bridge_id]) {
+                        knownBridges[conn.bridge_id] = true;
+                        dropdown.push({ id: conn.bridge_id, name: conn.bridge_name } );
+                    }
+                }
+                return dropdown;
             }
-        });
+        }
+        else {
+            const values = await this.customBlockService.getCallbackOptions(this.program.id, enum_namespace, enum_name);
+
+            return values.map(v => {
+                return {
+                    id: v[1], name: v[0],
+                }
+            });
+        }
     }
 
     calculate_size(workspace: HTMLElement) {

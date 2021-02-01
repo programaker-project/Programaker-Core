@@ -7,8 +7,10 @@
 -export([websocket_init/1]).
 -export([websocket_handle/2]).
 -export([websocket_info/2]).
+-export([terminate/3]).
 
 -include("../../automate_common_types/src/types.hrl").
+-include("../../automate_common_types/src/protocol.hrl").
 
 -record(state, { owner           :: owner_id()
                , service_port_id :: binary()
@@ -25,8 +27,7 @@ init(Req, _Opts) ->
                                   , authenticated=false
                                   }}.
 
-websocket_init(State=#state{ service_port_id=ServicePortId
-                           }) ->
+websocket_init(State=#state{}) ->
     {ok, State}.
 
 websocket_handle({text, Msg}, State) ->
@@ -122,6 +123,7 @@ add_to_user_channels(Owner, ChannelData, State=#state{user_channels=UserChannels
 
 handle_bridge_message(Msg, State=#state{ service_port_id=BridgeId
                                        , authenticated=false
+                                       , owner=Owner
                                        }) ->
     Data = jiffy:decode(Msg, [return_maps]),
     Passed = case Data of
@@ -144,9 +146,11 @@ handle_bridge_message(Msg, State=#state{ service_port_id=BridgeId
     case Passed of
         true ->
             ok = automate_service_port_engine:register_service_port(BridgeId),
+            ok = send_connection_signal(BridgeId, Owner),
             {ok, State#state{ authenticated=true }};
         skip ->
             ok = automate_service_port_engine:register_service_port(BridgeId),
+            ok = send_connection_signal(BridgeId, Owner),
             handle_bridge_message(Msg, State#state{ authenticated=true });
         {false, Reason} ->
             automate_logging:log_api(warning, ?MODULE,
@@ -166,7 +170,7 @@ handle_bridge_message(Msg, State=#state{ service_port_id=BridgeId
 handle_bridge_message(Msg, State=#state{ service_port_id=ServicePortId
                                        , owner=Owner
                                        }) ->
-    try automate_service_port_engine:from_service_port(ServicePortId, Owner, Msg) of
+    try automate_service_port_engine:from_service_port(ServicePortId, Owner, jiffy:decode(Msg, [return_maps])) of
         _ ->
             {ok, State}
     catch ErrorNs:Error:StackTrace ->
@@ -179,3 +183,28 @@ handle_bridge_message(Msg, State=#state{ service_port_id=ServicePortId
             , State
             }
     end.
+
+terminate(Reason, _PartialReq, #state{ service_port_id=BridgeId
+                                          , owner=Owner
+                                     }) ->
+    automate_logging:log_api(warning, ?MODULE, list_to_binary(io_lib:format("Bridge (id=~0tp) disconnected with reason: '~0tp'", [BridgeId, Reason]))),
+    Msg = #{ <<"type">> => <<"NOTIFICATION">>
+           , <<"key">> => ?PROTO_ON_BRIDGE_DISCONNECTED
+           , <<"subkey">> => BridgeId
+           , <<"to_user">> => null
+           , <<"value">> => <<"disconnected">>
+           , <<"content">> => <<"disconnected">>
+           },
+    ok = automate_service_port_engine:from_service_port(BridgeId, Owner, Msg),
+
+    ok.
+
+send_connection_signal(BridgeId, Owner) ->
+    Msg = #{ <<"type">> => <<"NOTIFICATION">>
+           , <<"key">> => ?PROTO_ON_BRIDGE_CONNECTED
+           , <<"subkey">> => BridgeId
+           , <<"to_user">> => null
+           , <<"value">> => <<"connected">>
+           , <<"content">> => <<"connected">>
+           },
+    ok = automate_service_port_engine:from_service_port(BridgeId, Owner, Msg).

@@ -124,9 +124,9 @@ blocks_with_shared_resources_appear() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
@@ -163,9 +163,9 @@ blocks_with_shared_resources_appear_multiple_resources() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName1}, {resource, ResourceName2}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
@@ -209,9 +209,9 @@ non_shared_resources_negate_custom_blocks() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceNameNotShared}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
@@ -251,10 +251,9 @@ non_shared_resources_negate_custom_blocks_multiple_resources() ->
                                        ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })
-),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
@@ -296,9 +295,9 @@ shared_block_with_no_resources_dont_appear() ->
                      , <<"blocks">> => [ get_test_block([]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     ok = automate_service_port_engine:set_shared_resource(ConnectionId
@@ -332,9 +331,9 @@ allow_to_make_calls_on_shared_resource_values() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
 
@@ -387,9 +386,9 @@ disallow_calls_on_non_shared_resource_values() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
 
@@ -448,9 +447,9 @@ allow_to_make_calls_on_shared_resource_values_multiple_resources() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName1}, {resource, ResourceName2}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
 
@@ -519,9 +518,9 @@ disallow_calls_on_non_shared_resource_values_multiple_resources() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName1}, {resource, ResourceName2}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     Bridge = test_bridge(BridgeId),
@@ -614,9 +613,9 @@ allow_to_listen_on_shared_resource_values() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     Bridge = test_bridge(BridgeId),
@@ -632,13 +631,13 @@ allow_to_listen_on_shared_resource_values() ->
 
     ok = automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, SharedValue }),
     ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
-                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                      , <<"key">> => ResourceName
-                                                      , <<"to_user">> => ConnectionId
-                                                      , <<"value">> => test
-                                                      , <<"content">> => test
-                                                      , <<"subkey">> => SharedValue
-                                                      })),
+                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                         , <<"key">> => ResourceName
+                                         , <<"to_user">> => ConnectionId
+                                         , <<"value">> => test
+                                         , <<"content">> => test
+                                         , <<"subkey">> => SharedValue
+                                         }),
     receive {channel_engine, _ChannelId, Msg} ->
             ?assertMatch(#{ <<"subkey">> := SharedValue }, Msg)
     after ?RECEIVE_TIMEOUT ->
@@ -666,9 +665,9 @@ disallow_to_listen_on_non_shared_resources() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     Bridge = test_bridge(BridgeId),
@@ -705,9 +704,9 @@ disallow_to_listen_on_shared_resource_different_subkey() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     Bridge = test_bridge(BridgeId),
@@ -744,9 +743,9 @@ listening_on_shared_does_not_receive_different_subkeys() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     Bridge = test_bridge(BridgeId),
@@ -763,22 +762,22 @@ listening_on_shared_does_not_receive_different_subkeys() ->
     ok = automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, SharedValue }),
 
     ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
-                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                      , <<"key">> => ResourceName
-                                                      , <<"to_user">> => ConnectionId
-                                                      , <<"value">> => test
-                                                      , <<"content">> => test
-                                                      , <<"subkey">> => NonSharedValue
-                                                      })),
+                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                         , <<"key">> => ResourceName
+                                         , <<"to_user">> => ConnectionId
+                                         , <<"value">> => <<"test">>
+                                         , <<"content">> => <<"test">>
+                                         , <<"subkey">> => NonSharedValue
+                                         }),
 
     ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
-                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                      , <<"key">> => ResourceName
-                                                      , <<"to_user">> => ConnectionId
-                                                      , <<"value">> => test
-                                                      , <<"content">> => test
-                                                      , <<"subkey">> => SharedValue
-                                                      })),
+                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                         , <<"key">> => ResourceName
+                                         , <<"to_user">> => ConnectionId
+                                         , <<"value">> => <<"test">>
+                                         , <<"content">> => <<"test">>
+                                         , <<"subkey">> => SharedValue
+                                         }),
     receive {channel_engine, _, Msg1} ->
             ?assertMatch(#{ <<"subkey">> := SharedValue }, Msg1)
     after ?RECEIVE_TIMEOUT ->
@@ -811,9 +810,9 @@ listening_on_shared_does_not_receive_null_subkeys() ->
                      , <<"blocks">> => [ get_test_block([{resource, ResourceName}]) ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUser,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, ConnectionId} = ?UTILS:establish_connection(BridgeId, OwnerUser),
     Bridge = test_bridge(BridgeId),
@@ -830,22 +829,22 @@ listening_on_shared_does_not_receive_null_subkeys() ->
     ok = automate_service_registry_query:listen_service(BridgeId, {group, GroupId}, { ResourceName, SharedValue }),
 
     ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
-                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                      , <<"key">> => ResourceName
-                                                      , <<"to_user">> => ConnectionId
-                                                      , <<"value">> => test
-                                                      , <<"content">> => test
-                                                      , <<"subkey">> => null
-                                                      })),
+                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                         , <<"key">> => ResourceName
+                                         , <<"to_user">> => ConnectionId
+                                         , <<"value">> => <<"test">>
+                                         , <<"content">> => <<"test">>
+                                         , <<"subkey">> => null
+                                         }),
 
     ok = ?APPLICATION:from_service_port(BridgeId, {group, GroupId},
-                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                      , <<"key">> => ResourceName
-                                                      , <<"to_user">> => ConnectionId
-                                                      , <<"value">> => test
-                                                      , <<"content">> => test
-                                                      , <<"subkey">> => SharedValue
-                                                      })),
+                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                         , <<"key">> => ResourceName
+                                         , <<"to_user">> => ConnectionId
+                                         , <<"value">> => <<"test">>
+                                         , <<"content">> => <<"test">>
+                                         , <<"subkey">> => SharedValue
+                                         }),
     receive {channel_engine, _, Msg1} ->
             ?assertMatch(#{ <<"subkey">> := SharedValue }, Msg1)
     after ?RECEIVE_TIMEOUT ->
@@ -875,12 +874,12 @@ build_arguments(Args) ->
     lists:map(fun(Arg) ->
                       case Arg of
                           {resource, Name} ->
-                              #{ type => string
-                               , values => #{ collection => Name }
+                              #{ <<"type">> => <<"string">>
+                               , <<"values">> => #{ <<"collection">> => Name }
                                };
                           Num when is_number(Num) ->
-                              #{ type => integer
-                               , default => integer_to_binary(Num)
+                              #{ <<"type">> => <<"integer">>
+                               , <<"default">> => integer_to_binary(Num)
                                }
                       end
               end, Args).

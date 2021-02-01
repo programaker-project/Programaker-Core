@@ -841,6 +841,40 @@ export const BaseToolboxDescription: ToolboxDescription = [
                     },
                 ],
             },
+            {
+                icon: PLATFORM_ICON,
+                message: 'When bridge %i1 connects',
+                block_function: 'trigger_on_bridge_connected',
+                type: 'trigger',
+                inputs: [
+                    {
+                        required: true,
+                        name: "bridge",
+
+                        enum_name: "bridges",
+                        enum_namespace:	"programaker",
+                        type: "enum",
+                    },
+                ],
+                outputs: [],
+            },
+            {
+                icon: PLATFORM_ICON,
+                message: 'When bridge %i1 connection STOPS',
+                block_function: 'trigger_on_bridge_disconnected',
+                type: 'trigger',
+                inputs: [
+                    {
+                        required: true,
+                        name: "bridge",
+
+                        enum_name: "bridges",
+                        enum_namespace:	"programaker",
+                        type: "enum",
+                    },
+                ],
+                outputs: [],
+            },
         ]
     },
     {

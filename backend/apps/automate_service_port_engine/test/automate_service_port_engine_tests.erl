@@ -104,9 +104,9 @@ owned_private_blocks_appear() ->
                      , <<"blocks">> => [ get_test_block() ]
                      },
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, _} = ?UTILS:establish_connection(ServicePortId, OwnerUserId),
 
@@ -126,9 +126,9 @@ non_owned_private_blocks_dont_appear() ->
                      , <<"blocks">> => [ get_test_block() ]
                      },
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     case ?BACKEND:gen_pending_connection(ServicePortId, RequesterUserId) of
         {ok, ConnectionId} ->
@@ -152,9 +152,9 @@ owned_public_blocks_appear() ->
                      , <<"blocks">> => [ get_test_block() ]
                      },
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, _} = ?UTILS:establish_connection(ServicePortId, OwnerUserId),
 
@@ -173,9 +173,9 @@ non_owned_public_blocks_appear() ->
                      , <<"blocks">> => [ get_test_block() ]
                      },
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, _} = ?UTILS:establish_connection(ServicePortId, RequesterUserId),
 
@@ -193,9 +193,9 @@ owned_delete_bridge_blocks() ->
                      , <<"blocks">> => [ get_test_block() ]
                      },
     ok = ?APPLICATION:from_service_port(BridgeId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     {ok, _} = ?UTILS:establish_connection(BridgeId, OwnerUserId),
 
@@ -277,9 +277,9 @@ route_notification_targeted_to_owner() ->
                      },
 
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     %% Listen on the service port
     {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
@@ -310,9 +310,9 @@ route_notification_targeted_to_owner_on_public() ->
                      },
 
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     %% Listen on the service port
     {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
@@ -342,9 +342,9 @@ route_notification_targeted_to_non_owner_on_public() ->
                      },
 
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     %% Listen on the service port
     {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
@@ -374,9 +374,9 @@ route_notification_targeted_to_all_users_on_public() ->
                      },
 
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
 
     %% Listen on the service port for non-owner
     {ok, _} = ?UTILS:establish_connection(ServicePortId, TargetUserId),
@@ -418,19 +418,19 @@ set_public_bridge_to_private_owner() ->
                      },
 
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)),
 
     %% Set to private
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => #{ <<"is_public">> => false
-                                                                        , <<"service_name">> => ServicePortName
-                                                                        , <<"blocks">> => [ ]
-                                                                        }
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => #{ <<"is_public">> => false
+                                                           , <<"service_name">> => ServicePortName
+                                                           , <<"blocks">> => [ ]
+                                                           }
+                                         }),
     %% Still found
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)).
 
@@ -448,19 +448,19 @@ set_public_bridge_to_private_user() ->
                      },
 
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)),
 
     %% Set to private
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => #{ <<"is_public">> => false
-                                                                        , <<"service_name">> => ServicePortName
-                                                                        , <<"blocks">> => [ ]
-                                                                        }
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => #{ <<"is_public">> => false
+                                                           , <<"service_name">> => ServicePortName
+                                                           , <<"blocks">> => [ ]
+                                                           }
+                                         }),
 
     %% No longer found
     ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)).
@@ -477,19 +477,19 @@ set_private_bridge_to_public_owner() ->
                      },
 
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)),
 
     %% Set to public
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => #{ <<"is_public">> => true
-                                                                        , <<"service_name">> => ServicePortName
-                                                                        , <<"blocks">> => [ ]
-                                                                        }
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => #{ <<"is_public">> => true
+                                                           , <<"service_name">> => ServicePortName
+                                                           , <<"blocks">> => [ ]
+                                                           }
+                                         }),
     %% Still found
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)).
 
@@ -506,19 +506,19 @@ set_private_bridge_to_public_user() ->
                      },
 
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => Configuration
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
     ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)),
 
     %% Set to public
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"CONFIGURATION">>
-                                                      , <<"value">> => #{ <<"is_public">> => true
-                                                                        , <<"service_name">> => ServicePortName
-                                                                        , <<"blocks">> => [ ]
-                                                                        }
-                                                      })),
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => #{ <<"is_public">> => true
+                                                           , <<"service_name">> => ServicePortName
+                                                           , <<"blocks">> => [ ]
+                                                           }
+                                         }),
 
     %% Found now
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)).
@@ -539,12 +539,12 @@ emit_notification(ServicePortId, OwnerUserId, TargetUserId, Content) ->
                        ConnectionId
                end,
     ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        jiffy:encode(#{ <<"type">> => <<"NOTIFICATION">>
-                                                      , <<"key">> => Key
-                                                      , <<"to_user">> => ToUserId
-                                                      , <<"value">> => Value
-                                                      , <<"content">> => Content
-                                                      })),
+                                        #{ <<"type">> => <<"NOTIFICATION">>
+                                         , <<"key">> => Key
+                                         , <<"to_user">> => ToUserId
+                                         , <<"value">> => Value
+                                         , <<"content">> => Content
+                                         }),
     {ok, #{ <<"content">> => Content
           , <<"key">> => Key
           , <<"value">> => Value
