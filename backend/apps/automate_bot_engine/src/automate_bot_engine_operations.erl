@@ -636,6 +636,20 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_SIGNAL_WAIT_FOR_PULSE
               end,
     {ran_this_tick, increment_position(Thread3)};
 
+run_instruction(#{ ?TYPE := ?COMMAND_BROADCAST_TO_ALL_USERS
+                 }, Thread=#program_thread{ program_id=_ProgramId },
+                {?SIGNAL_PROGRAM_TICK, _}) ->
+
+
+    Thread2 = case automate_bot_engine_variables:retrieve_thread_value(Thread, ?UI_TRIGGER_VALUES) of
+                  {ok, Val=#{ ?UI_TRIGGER_CONNECTION := _Source }} ->
+                      {ok, T} = automate_bot_engine_variables:set_thread_value(Thread, ?UI_TRIGGER_VALUES, maps:remove(?UI_TRIGGER_CONNECTION, Val)),
+                      T;
+                  _ ->
+                      Thread
+              end,
+    {ran_this_tick, increment_position(Thread2)};
+
 
 run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
                            , ?ARGUMENTS := Arguments

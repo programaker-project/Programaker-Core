@@ -66,6 +66,23 @@ export const BaseToolboxDescription: ToolboxDescription = [
             },
             {
                 icon: PLATFORM_ICON,
+                message: 'Broadcast to all users',
+                block_function: 'control_broadcast_to_all_users',
+                type: 'operation',
+                inputs: [
+                    {
+                        required: true,
+                        type: "user-pulse",
+                    },
+                ],
+                outputs: [
+                    {
+                        type: "pulse",
+                    },
+                ]
+            },
+            {
+                icon: PLATFORM_ICON,
                 message: 'Check',
                 block_function: 'control_if_else',
                 type: 'operation',
