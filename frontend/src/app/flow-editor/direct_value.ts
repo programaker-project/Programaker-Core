@@ -67,7 +67,7 @@ export class DirectValue implements FlowBlock {
 
             case 'pulse':
             case 'user-pulse':
-                console.warn('TODO: Implement pulse sender'); // Is this a button?
+                console.warn('TODO: Implement pulse sender'); // Would this be implemented by a button?
             case 'any':
                 return 'sample value';
         }

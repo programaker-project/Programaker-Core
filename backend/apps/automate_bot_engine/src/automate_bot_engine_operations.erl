@@ -665,6 +665,9 @@ run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
     %% Trigger element update
     case automate_bot_engine_variables:retrieve_thread_value(Thread, ?UI_TRIGGER_VALUES) of
         {ok, #{ ?UI_TRIGGER_CONNECTION := Source }} ->
+            %% If we're in a specific user's flow
+            %%  - Don't persist the widget value
+            %%  - Send it directly to the user's session process
             ok = automate_channel_engine:send_to_process(Source,  CommandData);
         _ ->
             {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),

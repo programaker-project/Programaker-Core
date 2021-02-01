@@ -347,7 +347,6 @@ render_connection_block_start(ProgramId) ->
     , "var collectables = [];\n"
     , "var addCollectable = (function(id, item) { collectables.push([id, item]) });\n"
     , "var collectData = (function() { var result = {}; for (var coll of collectables) { result[coll[0]] = coll[1](); }; return result; } );\n"
-    %% , "console.debug(\"Collect with\", collectData);\n"
     ].
 
 render_connection_block_end() ->

@@ -33,7 +33,6 @@ describe('Flow-35 Value from textbox.', () => {
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (services.ui.simple_button.trigger)
-                ;; The second part of the (log) instruction is not clear
                 (log (data_ui_block_value textbox))
                 `))
         ]);
