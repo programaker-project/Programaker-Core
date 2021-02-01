@@ -92,7 +92,9 @@ export class DashboardComponent {
 
         this.route.data
             .subscribe((data: { programs: ProgramMetadata[] }) => {
-                this.programs = data.programs;
+                this.programs = data.programs.sort((a, b) => {
+                    return a.name.localeCompare(b.name, undefined, { ignorePunctuation: true, sensitivity: 'base' });
+                });
             });
     }
 
@@ -232,13 +234,7 @@ export class DashboardComponent {
             this.bridges = (await this.bridgeService.listUserBridges()).bridges;
         }
         this.bridges.sort((a, b) => {
-            if (a.name < b.name) {
-                return -1;
-            }
-            if (a.name > b.name) {
-                return 1;
-            }
-            return 0;
+            return a.name.localeCompare(b.name, undefined, { ignorePunctuation: true, sensitivity: 'base' });
         });
 
         for (const bridge of this.bridges) {
@@ -299,18 +295,7 @@ export class DashboardComponent {
             }
 
             // Else, sort alphabetically by username
-            const nameA = a.username.toUpperCase();
-            const nameB = b.username.toUpperCase();
-
-            if (nameA < nameB) {
-                return -1;
-            }
-            if (nameB < nameA) {
-                return 1;
-            }
-
-            // Equal name and role
-            return 0;
+            return a.username.localeCompare(b.username, undefined, { ignorePunctuation: true, sensitivity: 'base' });
         });
         this.collaborators = collaborators;
 
