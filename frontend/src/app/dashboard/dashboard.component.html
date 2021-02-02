@@ -196,7 +196,7 @@
                 </div>
             </section>
         </mat-tab>
-        <mat-tab label="{{ (profile && _toCapitalCase(profile.type)) || 'Loading...' }}">
+        <mat-tab label="{{ !profile ? 'Loading...' : profile.type === 'user' ? 'Groups' : 'Collaborators' }}">
             <div *ngIf="profile" class="profile ">
                 <div class="avatar" *ngIf="profile.picture">
                     <img role="avatar" src="{{ profile.picture  }}"
