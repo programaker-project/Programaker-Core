@@ -32,6 +32,7 @@
         , get_program/2
         , lists_programs_from_username/1
         , list_programs_from_userid/1
+        , list_public_programs_from_userid/1
         , list_programs/1
         , update_program/3
         , fix_program_channel/1
@@ -575,6 +576,21 @@ list_programs_from_userid(Userid) ->
         {ok, Programs} ->
             { ok
             , [{Id, Name, Enabled} || [#user_program_entry{id=Id, program_name=Name, enabled=Enabled}] <- Programs]};
+        X ->
+            X
+    end.
+
+list_public_programs_from_userid(Userid) ->
+    case retrieve_program_list_from_userid(Userid) of
+        {ok, Programs} ->
+            { ok
+            , lists:filtermap(fun([Program=#user_program_entry{ is_public=IsPublic }]) ->
+                                      case IsPublic of
+                                          false -> false;
+                                          true -> { true, Program }
+                                      end
+                           end, Programs)
+            };
         X ->
             X
     end.

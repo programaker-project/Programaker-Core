@@ -22,9 +22,11 @@ import { ProgramListResolver } from './resolvers/program-list.resolver';
 import { RenderedAboutResolver } from './resolvers/rendered-about.resolver';
 import { SessionResolver } from './resolvers/session.resolver';
 import { SessionService } from './session.service';
+import { UserProfileResolver } from './resolvers/user-profile.resolver';
 import { AdminSettingsComponent } from './settings/admin-settings/admin-settings.component';
 import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
 import { SettingsComponent } from './settings/user-settings/settings.component';
+import { UserProfileComponent } from './profiles/user-profile.component';
 
 
 const routes: Routes = [
@@ -42,6 +44,9 @@ const routes: Routes = [
     { path: 'dashboard', component: DashboardComponent, resolve: { programs: ProgramListResolver } },
     { path: 'groups/:group_name', component: DashboardComponent, resolve: { programs: ProgramListResolver } },
     { path: 'groups/:group_name/settings', component: GroupSettingsComponent, resolve: { groupInfo: GroupInfoWithCollaboratorsResolver, session: SessionResolver } },
+
+    // Profile pages
+    { path: 'users/:user_name', component: UserProfileComponent, resolve: { user_profile: UserProfileResolver, programs: ProgramListResolver } },
 
     // Programs
     { path: 'users/:user_id/programs/:program_id', component: ProgramDetailComponent },
@@ -73,6 +78,7 @@ const routes: Routes = [
         AdminStatsResolver,
         AdminUserListResolver,
         RenderedAboutResolver,
+        UserProfileResolver,
 
         AdminService,
         SessionService,

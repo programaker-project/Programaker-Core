@@ -6,6 +6,7 @@ import { GroupInfo, UserGroupInfo } from './group';
 import { SessionService } from './session.service';
 import { SharedResource } from './bridges/bridge';
 import { EnvironmentService } from './environment.service';
+import { ground } from './utils';
 
 export interface UserAutocompleteInfo {
     id: string,
@@ -64,14 +65,6 @@ export class GroupService {
         return `${root}/groups`;
     }
 
-    private _ground(obj: any, field: string){
-        if (obj[field] && obj[field].startsWith('/')) {
-            obj[field] = this.environmentService.getApiRoot() + obj[field];
-        }
-
-        return obj;
-    }
-
     async autocompleteUsers(query: string): Promise<UserAutocompleteInfo[]> {
         const url = this.getUserAutocompleteUrl();
 
@@ -107,7 +100,7 @@ export class GroupService {
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
             .toPromise();
 
-        return result['groups'].map((group: GroupInfo) => this._ground(group, 'picture'));
+        return result['groups'].map((group: GroupInfo) => ground(this.environmentService, group, 'picture'));
     }
 
     async getGroupWithName(groupName: any): Promise<GroupInfo> {
@@ -124,7 +117,7 @@ export class GroupService {
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
             .toPromise();
 
-        return result['collaborators'].map(collaborator => this._ground(collaborator, 'picture'));
+        return result['collaborators'].map(collaborator => ground(this.environmentService, collaborator, 'picture'));
     }
 
     async inviteUsers(groupId: string, userIds: { id: string, role: CollaboratorRole }[]): Promise<void> {

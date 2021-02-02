@@ -19,6 +19,10 @@
             </span>
 
             <mat-menu class="link-menu" #userDropDownMenu="matMenu">
+                <a mat-menu-item routerLink="/users/{{ session.username }}">
+                    <mat-icon>account_circle</mat-icon>
+                    User profile
+                </a>
                 <a mat-menu-item routerLink="/dashboard">
                     <mat-icon>dashboard</mat-icon>
                     Dashboard

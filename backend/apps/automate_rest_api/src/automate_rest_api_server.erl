@@ -51,6 +51,8 @@ start_link() ->
                         , {"/api/v0/users/id/:user_id/templates/", automate_rest_api_templates_root, []}
                         , {"/api/v0/users/id/:user_id/templates/id/:template_id", automate_rest_api_templates_specific, []}
                         , {"/api/v0/users/:user_id/custom-blocks/", automate_rest_api_custom_blocks_root, []}
+                        , {"/api/v0/users/by-name/:user_name/profile", automate_rest_api_user_profile_by_name, [] }
+
 
                           %% Settings
                         , {"/api/v0/users/id/:user_id/settings", automate_rest_api_user_settings, []}

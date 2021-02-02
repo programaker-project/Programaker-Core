@@ -70,6 +70,14 @@ function addTokenQueryString(url: string, token: string): string {
     }
 }
 
+function ground(environmentService: EnvironmentService, obj: any, field: string){
+    if (obj[field] && obj[field].startsWith('/')) {
+        obj[field] = environmentService.getApiRoot() + obj[field];
+    }
+
+    return obj;
+}
+
 
 export {
     toWebsocketUrl,
@@ -78,4 +86,5 @@ export {
     iconDataToUrl,
     unixMsToStr,
     addTokenQueryString,
+    ground,
 };
