@@ -5,7 +5,7 @@
         <span class="floating-elements">
             <span class="login-indicator">
                 <a class="action-link account-menu"
-                    routerLink="/settings"
+                    [matMenuTriggerFor]="userDropDownMenu"
                     *ngIf="session.active">
                     <img class="account-picture"
                         src="{{ _getUserPicture(session.user_id) }}"
@@ -17,6 +17,22 @@
                     <a class="action-link" routerLink="/login">Login</a>
                 </div>
             </span>
+
+            <mat-menu class="link-menu" #userDropDownMenu="matMenu">
+                <a mat-menu-item routerLink="/dashboard">
+                    <mat-icon>dashboard</mat-icon>
+                    Dashboard
+                </a>
+                <a mat-menu-item routerLink="/settings">
+                    <mat-icon>settings</mat-icon>
+                    Settings
+                </a>
+                <hr/>
+                <a mat-menu-item (click)="logout()">
+                    <mat-icon>logout</mat-icon>
+                    Logout
+                </a>
+            </mat-menu>
         </span>
     </mat-toolbar>
     <mat-sidenav-container>
