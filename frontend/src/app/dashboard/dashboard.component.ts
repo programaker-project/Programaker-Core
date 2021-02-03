@@ -62,6 +62,7 @@ export class DashboardComponent {
     @ViewChild('navTabGroup') navTabGroup: MatTabGroup;
 
     tabFragName = [
+        'profile',
         'programs',
         'archived-programs',
         'bridges',
@@ -77,6 +78,8 @@ export class DashboardComponent {
     readonly _getUserPicture: (userId: string) => string;
     readonly _iconDataToUrl: (icon: IconReference, bridge_id: string) => string;
     isOwnUser: boolean;
+    private _isReadyForLoadingTabs: boolean = true;
+    private _moveToTab: () => void;
 
     constructor(
         private browser: BrowserService,
@@ -127,15 +130,18 @@ export class DashboardComponent {
                         this.groupInfo = groupInfo;
                         this.profile.picture = getGroupPictureUrl(this.environmentService, this.groupInfo.id);
 
-                        this.updateCollaborators();
                         this.updateSharedResources();
+                        return this.updateCollaborators();
                     })
+                        .catch(err => console.error(err))
+                        .then(() => this._tabReady())
                 }
                 else {
                     if (!session.active) {
                         this.router.navigate(['/login'], {replaceUrl:true});
                     } else {
                         this.isOwnUser = true;
+                        this._tabReady();
 
                         this.profile = {
                             name: session.username,
@@ -158,6 +164,18 @@ export class DashboardComponent {
             });
     }
 
+    _tabReady() {
+        // This activates `_moveToTab` when all the data necessary to know which
+        // tabs are to be shown is available. In case `_moveToTab` is not
+        // available yet, it records that the necessary state has been reached
+        // so the function that defines `_moveToTab` can call it directly.
+
+        this._isReadyForLoadingTabs = true;
+        if (this._moveToTab) {
+            this._moveToTab();
+        }
+    }
+
     ngAfterViewInit() {
         let unsubscribe = false;
         let subscription = null;
@@ -165,18 +183,23 @@ export class DashboardComponent {
         // seems to have problems (with race conditions?).
         subscription = this.route.fragment.subscribe({
             next: (fragment => {
-                const idx = this.tabFragName.indexOf(fragment);
-                if (idx >= 0) {
-                    this.navTabGroup.selectedIndex = idx;
-                }
+                this._moveToTab = (() => {
+                    const idx = this.tabFragName.indexOf(fragment) + (this._isProfileTabPresent() ? 0 : - 1);
+                    if (idx >= 0) {
+                        this.navTabGroup.selectedIndex = idx;
+                    }
 
-                if (subscription !== null) {
-                    subscription.unsubscribe();
-                }
-                else {
-                    // In case the subscription assignation has not happened yet, take not of it to
-                    // unsubscribe as soon as possible.
-                    unsubscribe = true;
+                    if (subscription !== null) {
+                        subscription.unsubscribe();
+                    }
+                    else {
+                        // In case the subscription assignation has not happened yet, take note of it to
+                        // unsubscribe as soon as possible.
+                        unsubscribe = true;
+                    }
+                });
+                if (this._isReadyForLoadingTabs) {
+                    this._moveToTab();
                 }
             })
         });
@@ -190,10 +213,18 @@ export class DashboardComponent {
             next: (idx: number) => {
                 const currState = history.state;
 
-                history.replaceState(currState, '', this.updateAnchor(this.browser.window.location.href, this.tabFragName[idx]));
+                history.replaceState(currState, '', this.updateAnchor(this.browser.window.location.href, this.getTabFragName(idx)));
                 this.programSettingsOpened = {};
             }
         });
+    }
+
+    private getTabFragName(idx: number) {
+        return this.tabFragName[this._isProfileTabPresent() ? idx : idx + 1];
+    }
+
+    _isProfileTabPresent() {
+        return this.profile && this.profile.type === 'group' && this.groupProfile && (this.groupProfile.programs.length > 0 || (!this.isOwnUser && !this.userRole));
     }
 
     private updateAnchor(href: string, anchor: string): string {
