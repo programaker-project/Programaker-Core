@@ -144,6 +144,7 @@ start_link() ->
                           %% Groups
                         , {"/api/v0/groups", automate_rest_api_groups_root, [] }
                         , {"/api/v0/groups/by-name/:group_name", automate_rest_api_group_by_name, [] }
+                        , {"/api/v0/groups/by-name/:group_name/profile", automate_rest_api_group_profile_by_name, [] }
                         , {"/api/v0/groups/by-id/:group_id", automate_rest_api_group_specific, [] }
                         , {"/api/v0/groups/by-id/:group_id/programs", automate_rest_api_group_programs, [] }
                         , {"/api/v0/groups/by-id/:group_id/collaborators", automate_rest_api_group_collaborators, [] }

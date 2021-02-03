@@ -5,7 +5,7 @@ import { GroupInfo } from 'app/group';
 import { EnvironmentService } from '../environment.service';
 import { ProgramMetadata } from '../program';
 import { SessionService } from '../session.service';
-import { getUserPictureUrl, ground } from 'app/utils';
+import { getUserPictureUrl, ground, getGroupPictureUrl } from 'app/utils';
 
 
 export type UserProfileInfo = {
@@ -13,6 +13,15 @@ export type UserProfileInfo = {
     pictureUrl: string,
     programs: ProgramMetadata[],
     groups: GroupInfo[],
+    bridges: BridgeIndexData[],
+    id: string,
+};
+
+export type GroupProfileInfo = {
+    name: string,
+    pictureUrl: string,
+    programs: ProgramMetadata[],
+    collaborators: { name: string, id: string, picture?: string }[],
     bridges: BridgeIndexData[],
     id: string,
 };
@@ -37,5 +46,18 @@ export class ProfileService {
         data.groups = data.groups.map((group: GroupInfo) => ground(this.environmentService, group, 'picture'));
 
         return data as UserProfileInfo;
+    }
+
+    public async getProfileFromGroupname(groupname: string): Promise<GroupProfileInfo> {
+        const url = `${this.environmentService.getApiRoot()}/groups/by-name/${groupname}/profile`;
+
+        const data : any = await this.http.get(url, { }).toPromise();
+
+        data.pictureUrl = getGroupPictureUrl(this.environmentService, data.id);
+        data.collaborators.forEach((collaborator: { name: string, picture: string; id: string; }) => {
+            collaborator.picture = getUserPictureUrl(this.environmentService, collaborator.id)
+        });
+
+        return data as GroupProfileInfo;
     }
 }

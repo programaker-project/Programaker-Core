@@ -12,6 +12,7 @@
         , program_listing_to_json/2
         , program_data_to_json/2
         , collaborator_to_json/1
+        , user_to_json/1
         , bridge_to_json/1
         , connection_to_json/1
         , asset_list_to_json/1
@@ -258,11 +259,9 @@ program_data_to_json(#user_program{ id=Id
      }.
 
 
-collaborator_to_json({ #registered_user_entry{ id=Id
-                                             , username=Username
-                                             }
-                     , Role
-                     }) ->
+user_to_json(#registered_user_entry{ id=Id
+                                   , username=Username
+                                   }) ->
     Picture = case ?UTILS:user_has_picture(Id) of
                   false -> null;
                   true ->
@@ -270,9 +269,13 @@ collaborator_to_json({ #registered_user_entry{ id=Id
               end,
     #{ id => Id
      , username => Username
-     , role => Role
      , picture => Picture
      }.
+
+collaborator_to_json({ User , Role
+                     }) ->
+    UserDict = user_to_json(User),
+    UserDict#{ role => Role }.
 
 
 bridge_to_json(#service_port_entry_extra{ id=Id

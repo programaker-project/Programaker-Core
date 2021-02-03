@@ -22,6 +22,7 @@ import { getGroupPictureUrl, getUserPictureUrl, iconDataToUrl } from '../utils';
 import { ConnectionService } from 'app/connection.service';
 import { BridgeConnectionWithIconUrl, IconReference } from 'app/connection';
 import { EnvironmentService } from 'app/environment.service';
+import { ProfileService, GroupProfileInfo } from 'app/profiles/profile.service';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -68,11 +69,14 @@ export class DashboardComponent {
     ];
     groupInfo: GroupInfo;
     userRole: CollaboratorRole | null;
+    groupProfile: GroupProfileInfo;
+
     canWriteToGroup: boolean;
     bridgesQuery: Promise<void>;
 
     readonly _getUserPicture: (userId: string) => string;
     readonly _iconDataToUrl: (icon: IconReference, bridge_id: string) => string;
+    isOwnUser: boolean;
 
     constructor(
         private browser: BrowserService,
@@ -83,6 +87,7 @@ export class DashboardComponent {
         private router: Router,
         private route: ActivatedRoute,
         private environmentService: EnvironmentService,
+        private profileService: ProfileService,
 
         private dialog: MatDialog,
         private bridgeService: BridgeService,
@@ -92,7 +97,7 @@ export class DashboardComponent {
 
         this.route.data
             .subscribe((data: { programs: ProgramMetadata[] }) => {
-                this.programs = data.programs.sort((a, b) => {
+                this.programs = data.programs?.sort((a, b) => {
                     return a.name.localeCompare(b.name, undefined, { ignorePunctuation: true, sensitivity: 'base' });
                 });
             });
@@ -102,28 +107,36 @@ export class DashboardComponent {
         this.sessionService.getSession()
             .then(async (session) => {
                 this.session = session;
-                if (!session.active) {
-                    this.router.navigate(['/login'], {replaceUrl:true});
-                } else {
-                    const params = this.route.params['value'];
-                    if (params.group_name !== undefined) {
-                        // Group Dashboard
-                        const groupName = params.group_name;
+                const params = this.route.params['value'];
+                if (params.group_name !== undefined) {
+                    this.isOwnUser = false;
 
-                        this.profile = {
-                            name: groupName,
-                            'type': 'group',
-                            groups: null,
-                            picture: null,
-                        };
+                    // Group Dashboard
+                    const groupName = params.group_name;
 
-                        this.groupInfo = await this.groupService.getGroupWithName(groupName);
+                    this.profile = {
+                        name: groupName,
+                        'type': 'group',
+                        groups: null,
+                        picture: null,
+                    };
+
+                    this.groupProfile = await this.profileService.getProfileFromGroupname(groupName);
+
+                    this.groupService.getGroupWithName(groupName).then(groupInfo => {
+                        this.groupInfo = groupInfo;
                         this.profile.picture = getGroupPictureUrl(this.environmentService, this.groupInfo.id);
 
                         this.updateCollaborators();
                         this.updateSharedResources();
-                    }
-                    else {
+                    })
+                }
+                else {
+                    if (!session.active) {
+                        this.router.navigate(['/login'], {replaceUrl:true});
+                    } else {
+                        this.isOwnUser = true;
+
                         this.profile = {
                             name: session.username,
                             'type': 'user',
@@ -133,7 +146,6 @@ export class DashboardComponent {
 
                         this.groupService.getUserGroups()
                             .then(groups => this.profile.groups = groups);
-
                     }
 
                     this.bridgesQuery = this.updateBridges();

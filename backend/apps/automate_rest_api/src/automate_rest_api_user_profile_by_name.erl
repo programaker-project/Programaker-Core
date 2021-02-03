@@ -46,7 +46,7 @@ to_json(Req, State=#state{user_name=UserName}) ->
     %% Get public profile
     {ok, {user, UserId}} = automate_storage:get_userid_from_username(UserName),
 
-    {ok, Programs } = automate_storage:list_public_programs_from_userid(UserId),
+    {ok, Programs } = automate_storage:list_programs({user, UserId}),
     {ok, Groups} = automate_storage:get_user_groups({user, UserId}),
     {ListedGroups} = case automate_storage:get_owner_public_listings({user, UserId}) of
                          {ok, #user_profile_listings_entry{ groups=LGroups }} ->

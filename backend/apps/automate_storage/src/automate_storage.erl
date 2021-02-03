@@ -17,6 +17,7 @@
         , update_user_settings/3
         , set_owner_public_listings/2
         , get_owner_public_listings/1
+        , list_public_collaborators/1
         , promote_user_to_admin/1
         , admin_list_users/0
         , set_user_in_preview/2
@@ -33,8 +34,6 @@
         , create_program/3
         , get_program/2
         , lists_programs_from_username/1
-        , list_programs_from_userid/1
-        , list_public_programs_from_userid/1
         , list_programs/1
         , update_program/3
         , fix_program_channel/1
@@ -96,7 +95,7 @@
         , delete_group/1
         , update_group_metadata/2
         , get_user_groups/1
-        , get_group_by_name/2
+        , get_group_by_name/1
         , is_allowed_to_read_in_group/2
         , is_allowed_to_write_in_group/2
         , is_allowed_to_admin_in_group/2
@@ -569,29 +568,6 @@ lists_programs_from_username(Username) ->
             X
     end.
 
-list_programs_from_userid(Userid) ->
-    case retrieve_program_list_from_userid(Userid) of
-        {ok, Programs} ->
-            { ok
-            , [{Id, Name, Enabled} || [#user_program_entry{id=Id, program_name=Name, enabled=Enabled}] <- Programs]};
-        X ->
-            X
-    end.
-
-list_public_programs_from_userid(Userid) ->
-    case retrieve_program_list_from_userid(Userid) of
-        {ok, Programs} ->
-            { ok
-            , lists:filtermap(fun([Program=#user_program_entry{ visibility=Visibility }]) ->
-                                      case Visibility of
-                                          public -> { true, Program };
-                                          _ -> false
-                                      end
-                              end, Programs)
-            };
-        X ->
-            X
-    end.
 
 -spec list_programs(owner_id()) -> {ok, [#user_program_entry{}, ...]} | {error, any()}.
 list_programs(Owner) ->
@@ -1385,8 +1361,25 @@ get_owner_public_listings(Owner) ->
                               [Result] ->
                                   {ok, Result};
                               [] ->
-                                  {error, not_found}
+                                  {ok, #user_profile_listings_entry{ id=Owner, groups=[] } }
                           end
+                  end,
+    wrap_transaction(mnesia:ets(Transaction)).
+
+-spec list_public_collaborators(binary()) -> {ok, [#registered_user_entry{}]} | {error, _}.
+list_public_collaborators(GroupId) ->
+    Transaction = fun() ->
+                          Results = lists:filtermap(
+                                      fun(#user_group_permissions_entry{user_id={user, UserId}}) ->
+                                              {ok, #user_profile_listings_entry{ groups=ListedGroups }} = get_owner_public_listings({user, UserId}),
+                                              case lists:any(fun(InList) -> InList == GroupId end, ListedGroups) of
+                                                  false -> false;
+                                                  true ->
+                                                      [User] = mnesia:read(?REGISTERED_USERS_TABLE, UserId),
+                                                      {true, User}
+                                              end
+                                      end, mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId)),
+                          {ok, Results}
                   end,
     wrap_transaction(mnesia:ets(Transaction)).
 
@@ -1497,19 +1490,17 @@ get_user_groups(UserId) ->
                   end,
     wrap_transaction(mnesia:activity(ets, Transaction)).
 
--spec get_group_by_name(binary(), owner_id()) -> {ok, #user_group_entry{}} | {error, any()}.
-get_group_by_name(GroupName, AccessorId) ->
+-spec get_group_by_name(binary()) -> {ok, #user_group_entry{}} | {error, any()}.
+get_group_by_name(GroupName) ->
     CanonicalizedName = automate_storage_utils:canonicalize(GroupName),
     Transaction = fun() ->
-                          [Group=#user_group_entry{id=GroupId}] = mnesia:index_read(?USER_GROUPS_TABLE
-                                                                                   , CanonicalizedName
-                                                                                   , #user_group_entry.canonical_name),
-
-                          case is_allowed_to_read_in_group(AccessorId, GroupId) of
-                              true ->
+                          case mnesia:index_read(?USER_GROUPS_TABLE
+                                                , CanonicalizedName
+                                                , #user_group_entry.canonical_name) of
+                              [Group] ->
                                   {ok, Group};
-                              false ->
-                                  {error, not_authorized}
+                              [] ->
+                                  {error, not_found}
                           end
                   end,
     wrap_transaction(mnesia:activity(ets, Transaction)).
@@ -2067,40 +2058,6 @@ retrieve_program_list_from_username(Username) ->
                                   Results = mnesia:select(?USER_PROGRAMS_TABLE, ProgramMatcher),
                                   [mnesia:read(?USER_PROGRAMS_TABLE, ResultId) || ResultId <- Results]
                           end
-                  end,
-    case mnesia:transaction(Transaction) of
-        { atomic, { error, Reason }} ->
-            {error, Reason };
-        { atomic, Result } ->
-            {ok, Result};
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
-    end.
-
-retrieve_program_list_from_userid(UserId) ->
-    io:fwrite("\033[7m[retrieve_program_list_from_userid] To be deprecated\033[0m~n"),
-    Transaction = fun() ->
-                          %% Find program with userId and name
-                          ProgramMatchHead = #user_program_entry{ id='$1'
-                                                                , owner={user, '$2'}
-                                                                , program_name='$3'
-                                                                , program_type='_'
-                                                                , program_parsed='_'
-                                                                , program_orig='_'
-                                                                , enabled='_'
-                                                                , program_channel='_'
-                                                                , creation_time='_'
-                                                                , last_upload_time='_'
-                                                                , last_successful_call_time='_'
-                                                                , last_failed_call_time='_'
-                                                                , visibility='_'
-                                                                },
-                          ProgramGuard = {'==', '$2', UserId},
-                          ProgramResultsColumn = '$1',
-                          ProgramMatcher = [{ProgramMatchHead, [ProgramGuard], [ProgramResultsColumn]}],
-
-                          Results = mnesia:select(?USER_PROGRAMS_TABLE, ProgramMatcher),
-                          [mnesia:read(?USER_PROGRAMS_TABLE, ResultId) || ResultId <- Results]
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, { error, Reason }} ->

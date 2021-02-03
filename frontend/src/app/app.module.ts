@@ -83,6 +83,7 @@ import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clon
 import { AssetService } from './asset.service';
 import { UserProfileComponent } from './profiles/user-profile.component';
 import { ProfileService } from './profiles/profile.service';
+import { GroupProfileComponent } from './profiles/group-profile.component';
 
 
 
@@ -103,6 +104,7 @@ import { ProfileService } from './profiles/profile.service';
         WaitForMailVerificationComponent,
         VerifyCodeComponent,
         UserProfileComponent,
+        GroupProfileComponent,
 
         // Info pages
         HomeRedirectComponent,

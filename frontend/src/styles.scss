@@ -405,3 +405,7 @@ button.completed > span > .load-bg {
 div.mat-tab-body-content {
     overflow: hidden;
 }
+
+.profile-section.profile-only > mat-tab-group > mat-tab-header {
+    display: none;
+}

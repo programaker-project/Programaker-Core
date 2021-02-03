@@ -1,0 +1,65 @@
+<div class="profile-section">
+    <div class="profile row">
+        <div class="user col-sm-4">
+            <div class="avatar" *ngIf="profile && profile.pictureUrl">
+                <img role="avatar" src="{{ profile.pictureUrl }}"
+                    onError="this.src='/assets/profile-not-set.png'"
+                />
+                <div *ngIf="profile" class="profile-name">{{ profile.name }}</div>
+            </div>
+            <section *ngIf="profile && profile.collaborators && profile.collaborators.length > 0" class="collaborators">
+                <div class="section-title">Collaborators</div>
+                <div class="section-objects">
+                    <a *ngFor="let collaborator of profile.collaborators">
+                        <mat-card class="collaborator" >
+                            <img role="avatar" class="icon" *ngIf="collaborator.picture" src="{{ collaborator.picture }}" alt="{{ collaborator.name }}"
+                                matTooltip="{{ collaborator.name }}">
+
+                            <span *ngIf="!collaborator.picture" class="collaborator-name">
+                                {{ collaborator.name }}
+                            </span>
+                        </mat-card>
+                    </a>
+                </div>
+            </section>
+        </div>
+
+        <section *ngIf="profile && profile.programs && profile.programs.length > 0" class="programs col-sm-8">
+            <div class="section-title">Public Programs</div>
+            <div class="row program-list">
+                <ng-container *ngFor="let program of profile.programs">
+                    <div class="col-sm-6 item">
+                        <mat-card
+                            [ngClass]="{
+                            'module': true,
+                            'program': true
+                            }"
+                            role="button">
+
+                            <div class="program-data" (click)="openProgram(program)">
+                                <div class="program-type">
+                                    <img *ngIf="program.type === 'scratch_program'"
+                                        src="/assets/blocks-icon.svg"
+                                        data-toggle="tooltip" data-placement="top" title="Block style program" />
+                                    <img *ngIf="program.type === 'flow_program'"
+                                        src="/assets/flow-icon.svg"
+                                        data-toggle="tooltip" data-placement="top" title="Flow style program"/>
+                                </div>
+                                <div class="card-title">{{program.name}}</div>
+                                <div class="connection-icon-list">
+                                    <span *ngFor="let bridgeId of program.bridges_in_use">
+                                        <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ bridgeInfo[bridgeId].icon }}"
+                                            data-toggle="tooltip" title="{{bridgeInfo[bridgeId].name}} bridge"/>
+                                        <span class="nametag" *ngIf="bridgeInfo[bridgeId] && (!bridgeInfo[bridgeId].icon) && bridgeInfo[bridgeId].name">
+                                            {{ bridgeInfo[bridgeId].name }}
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                        </mat-card>
+                    </div>
+                </ng-container>
+            </div>
+        </section>
+    </div>
+</div>
