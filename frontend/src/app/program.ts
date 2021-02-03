@@ -1,8 +1,8 @@
 export class ProgramMetadata {
     id: string;
     name: string;
-    link: string;
     enabled: boolean;
+    is_public: boolean;
     type: string;
     bridges_in_use: string[];
 }
@@ -17,7 +17,6 @@ export class ProgramContent extends ProgramMetadata {
     owner: string;
     owner_full: { type: OwnerType, id: string};
     checkpoint?: any;
-    is_public?: boolean;
 
     "readonly"?: boolean;
     can_admin?: boolean;
@@ -26,7 +25,6 @@ export class ProgramContent extends ProgramMetadata {
       super();
 
       this.id = metadata.id;
-      this.link = metadata.link;
       this.name = metadata.name;
 
       this.parsed = parsed;

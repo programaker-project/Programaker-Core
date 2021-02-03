@@ -15,7 +15,7 @@ export type SessionInfoUpdate = { session: Session };
 @Injectable()
 export class SessionService {
 
-    private readonly INACTIVE_SESSION = {
+    private readonly INACTIVE_SESSION: Session = {
         username: null,
         user_id: null,
         active: false,
@@ -23,6 +23,7 @@ export class SessionService {
             is_admin: false,
             is_advanced: false,
             is_in_preview: false,
+            is_public_profile: false,
         }
     };
 
@@ -151,12 +152,22 @@ export class SessionService {
         return token;
     }
 
-    async updateUserSettings(user_settings_update : { is_advanced?: boolean }): Promise<boolean> {
+    async updateUserSettings(user_settings_update : { is_advanced: boolean, is_public_profile: boolean }): Promise<boolean> {
         const url = (await this.getApiRootForUserId()) + '/settings';
         const response = await (this.http
                                 .post(url, JSON.stringify(user_settings_update),
                                       { headers: this.addJsonContentType(this.getAuthHeader()) })
                                 .toPromise());
+
+        return (response as { success: boolean }).success;
+    }
+
+    async updateUserProfileSettings(userProfile: { programs: string[], groups: string[] }) {
+        const url = `${await this.getApiRootForUserId()}/profile`;
+        const response = await (this.http
+            .post(url, JSON.stringify(userProfile),
+                  { headers: this.addJsonContentType(this.getAuthHeader()) })
+            .toPromise());
 
         return (response as { success: boolean }).success;
     }
@@ -216,6 +227,7 @@ export class SessionService {
                     is_admin: false,
                     is_advanced: false,
                     is_in_preview: false,
+                    is_public_profile: false,
                 }
             });
         }
@@ -248,6 +260,7 @@ export class SessionService {
                         is_admin: false,
                         is_advanced: false,
                         is_in_preview: false,
+                        is_public_profile: false,
                     }
                 });
             });

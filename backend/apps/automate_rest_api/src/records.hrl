@@ -28,11 +28,11 @@
                       , is_public :: boolean()
                       }).
 
--record(program_metadata, { id
-                          , name
-                          , link
-                          , enabled
-                          , type
+-record(program_metadata, { id :: binary()
+                          , name :: binary()
+                          , enabled :: boolean()
+                          , type :: boolean()
+                          , is_public :: boolean()
                           }).
 
 -record(program_content, { type

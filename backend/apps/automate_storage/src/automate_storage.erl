@@ -15,6 +15,8 @@
         , list_monitors/1
         , get_userid_from_username/1
         , update_user_settings/3
+        , set_owner_public_listings/3
+        , get_owner_public_listings/1
         , promote_user_to_admin/1
         , admin_list_users/0
         , set_user_in_preview/2
@@ -146,6 +148,7 @@ create_user(Username, Password, Email, Status) ->
                                                , is_admin=false
                                                , is_advanced=false
                                                , is_in_preview=false
+                                               , is_public_profile=false
                                                },
     case save_unique_user(RegisteredUserData) of
         ok ->
@@ -459,6 +462,7 @@ get_user_from_mail_address(Email) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
+                                      , is_public_profile='_'
                                       },
     Guard = {'==', '$1', Email},
     ResultColumn = '$_',
@@ -555,18 +559,14 @@ get_program(Username, ProgramName) ->
     retrieve_program(Username, ProgramName).
 
 
--spec lists_programs_from_username(binary()) -> {'ok', [ { binary(), binary(), boolean() } ] }.
+-spec lists_programs_from_username(binary()) -> {'ok', [ #user_program_entry{} ] }.
 lists_programs_from_username(Username) ->
     io:fwrite("\033[7m[lists_programs_from_username] To be deprecated\033[0m~n"),
     case retrieve_program_list_from_username(Username) of
         {ok, Programs} ->
             { ok
-            , [{Id, Name, Enable, Type}
-               || [#user_program_entry{ id=Id
-                                      , program_name=Name
-                                      , program_type=Type
-                                      , enabled=Enable
-                                      }] <- Programs]};
+            , lists:map(fun ([E]) -> E end, Programs)
+            };
         X ->
             X
     end.
@@ -589,7 +589,7 @@ list_public_programs_from_userid(Userid) ->
                                           false -> false;
                                           true -> { true, Program }
                                       end
-                           end, Programs)
+                              end, Programs)
             };
         X ->
             X
@@ -1214,7 +1214,7 @@ log_program_error(LogEntry=#user_program_log_entry{ program_id=ProgramId }) ->
                                   lists:foreach(fun(Element) ->
                                                         ok = mnesia:write(?USER_PROGRAM_LOGS_TABLE, Element, write)
                                                 end, Kept)
-                              end
+                          end
                   end,
     case mnesia:transaction(Transaction) of
         { atomic, Result } ->
@@ -1327,6 +1327,7 @@ get_userid_from_username(Username) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
+                                      , is_public_profile='_'
                                       },
     %% Check that neither the id, username or email matches another
     Guard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
@@ -1366,6 +1367,30 @@ update_user_settings(UserId, Settings, Permissions) ->
         { aborted, Reason } ->
             {error, Reason}
     end.
+
+-spec set_owner_public_listings(owner_id(), Programs :: [binary()], Groups :: [binary()]) -> ok | {error, _}.
+set_owner_public_listings(Owner, Programs, Groups) ->
+    Entry = #user_profile_listings_entry{ id=Owner
+                                        , programs=Programs
+                                        , groups=Groups
+                                        },
+    Transaction = fun() ->
+                          ok = mnesia:write(?USER_PROFILE_LISTINGS_TABLE, Entry, write)
+                  end,
+    wrap_transaction(mnesia:transaction(Transaction)).
+
+
+-spec get_owner_public_listings(owner_id()) -> {ok, #user_profile_listings_entry{}} | {error, _}.
+get_owner_public_listings(Owner) ->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_PROFILE_LISTINGS_TABLE, Owner) of
+                              [Result] ->
+                                  {ok, Result};
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    wrap_transaction(mnesia:ets(Transaction)).
 
 
 %% Custom signals
@@ -1734,6 +1759,7 @@ get_user_from_username(Username) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
+                                      , is_public_profile='_'
                                       },
     Guard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
     ResultColumn = '$1',
@@ -1767,6 +1793,7 @@ get_user_from_email(Email) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
+                                      , is_public_profile='_'
                                       },
     Guard = {'==', '$2', Email},
     ResultColumn = '$1',
@@ -1805,6 +1832,11 @@ apply_user_settings(User, Settings, [ user_permissions | T ], ErrorAcc) ->
 apply_user_permissions(User, Settings) ->
     Errors = [],
     {User1, Errors1} = case Settings of
+                           #{ <<"is_public_profile">> := IsPublicProfile } when is_boolean(IsPublicProfile) ->
+                               { User#registered_user_entry{ is_public_profile=IsPublicProfile}, Errors };
+                           #{ <<"is_public_profile">> := _IsPublicProfile } ->
+                               %% IsPublicProfile found, but it's not boolean
+                               { User, [ { bad_type, is_public_profile } | Errors ] };
                            #{ <<"is_advanced">> := IsAdvanced } when is_boolean(IsAdvanced) ->
                                { User#registered_user_entry{ is_advanced=IsAdvanced}, Errors };
                            #{ <<"is_advanced">> := _IsAdvanced } ->
@@ -1883,6 +1915,7 @@ retrieve_monitors_list_from_username(Username) ->
                                                                 , is_admin='_'
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
+                                                                , is_public_profile='_'
                                                                 },
                           UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
@@ -1949,6 +1982,7 @@ retrieve_program(Username, ProgramName) ->
                                                                 , is_admin='_'
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
+                                                                , is_public_profile='_'
                                                                 },
                           UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
@@ -2012,6 +2046,7 @@ retrieve_program_list_from_username(Username) ->
                                                                 , is_admin='_'
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
+                                                                , is_public_profile='_'
                                                                 },
                           UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
@@ -2110,6 +2145,7 @@ store_new_program_content(Username, ProgramName,
                                                                 , is_admin='_'
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
+                                                                , is_public_profile='_'
                                                                 },
                           UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
@@ -2167,13 +2203,13 @@ store_new_program_content(Username, ProgramName,
 
                                           %% Add new pages
                                           ok = lists:foreach(fun({Path, Page}) ->
-                                                                        ok = mnesia:write(?PROGRAM_PAGES_TABLE
-                                                                                         , #program_pages_entry{ page_id={ ProgramId, Path }
-                                                                                                               , program_id=ProgramId
-                                                                                                               , contents=Page
-                                                                                                               }
-                                                                                         , write)
-                                                                end, maps:to_list(Pages)),
+                                                                     ok = mnesia:write(?PROGRAM_PAGES_TABLE
+                                                                                      , #program_pages_entry{ page_id={ ProgramId, Path }
+                                                                                                            , program_id=ProgramId
+                                                                                                            , contents=Page
+                                                                                                            }
+                                                                                      , write)
+                                                             end, maps:to_list(Pages)),
 
                                           { ok, ProgramId }
                                   end
@@ -2216,8 +2252,8 @@ store_new_program_content(ProgramId,
                                   PagesInDb = mnesia:index_read(?PROGRAM_PAGES_TABLE, ProgramId, program_id),
                                   ok = lists:foreach(fun (PageInDb) ->
                                                              ok = mnesia:delete_object(?PROGRAM_PAGES_TABLE, PageInDb, write)
-                                                    end,
-                                               PagesInDb),
+                                                     end,
+                                                     PagesInDb),
 
                                   %% Add new pages
                                   ok = lists:foreach(fun({Path, Contents}) ->
@@ -2232,14 +2268,14 @@ store_new_program_content(ProgramId,
                                   { ok, ProgramId }
                           end
                   end,
-case mnesia:transaction(Transaction) of
-    { atomic, {ok, Result} } ->
-        {ok, Result};
-    { atomic, [] } ->
-        {error, not_found};
-    { aborted, Reason } ->
-        {error, mnesia:error_description(Reason)}
-end.
+    case mnesia:transaction(Transaction) of
+        { atomic, {ok, Result} } ->
+            {ok, Result};
+        { atomic, [] } ->
+            {error, not_found};
+        { aborted, Reason } ->
+            {error, mnesia:error_description(Reason)}
+    end.
 
 
 save_unique_user(UserData) ->
@@ -2258,6 +2294,7 @@ save_unique_user(UserData) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
+                                      , is_public_profile='_'
                                       },
 
     %% Check that neither the id, username or email matches another

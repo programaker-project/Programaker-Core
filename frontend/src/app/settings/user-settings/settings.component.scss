@@ -1,0 +1,340 @@
+.settings-section {
+    width: 100%;
+    padding-bottom: 2em;
+}
+
+.save-button {
+    padding: 1ex;
+    border-radius: 5px;
+
+    /* Right align */
+    margin: 1ex 0 auto auto;
+    display: block;
+}
+
+.settings-group {
+    background-color: #fff;
+    border-radius: 4px;
+    padding: 1ex;
+    margin-top: 1ex;
+    overflow: auto;
+    box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3);
+
+    & > .title {
+        font-size: 1.5rem;
+        margin-bottom: 1ex;
+        border-bottom: 1px solid #aaa;
+    }
+
+    .settings-group {
+        box-shadow: none;
+
+        & > .title::before {
+            content: '› ';
+        }
+    }
+}
+
+
+.toggle-setting .value {
+    float: left;
+    margin-left: 1em;
+}
+
+.value.code {
+    margin-left: 1ex;
+    word-break: keep-all;
+}
+
+.code {
+    display: inline-block;
+    padding: 1ex;
+    border-radius: 3px;
+    border: 1px solid #222;
+}
+
+.toggle-setting {
+    margin-bottom: 5ex;
+}
+
+.row {
+    margin: 0 !important;
+}
+
+.annotated-icon.sample-button {
+    padding: 0.25ex;
+}
+.user-profile {
+    .section-title {
+        font-size: 150%;
+        margin: 1rem;
+    }
+
+    .groups .group {
+        text-align: center;
+        margin: 0.2rem;
+        height: 4rem;
+        line-height: calc(4rem - 1rem);
+        padding: 0.5rem;
+        user-select: none;
+    }
+
+    .groups .group .group-name {
+    }
+    .groups .group img {
+        max-width: 4rem;
+        max-height: 3rem;
+    }
+    .groups .group.unlisted {
+        background: repeating-linear-gradient( 45deg,
+                                               #fff,      #fff 10px,
+                                               #eee 10px, #eee 20px );
+    }
+    .groups .group.listed {
+        border: 1px solid rgba(175,0,175,0.5);
+    }
+    .groups .group.unlisted img {
+        filter: grayscale(100%);
+    }
+
+    .programs .program.unlisted {
+        background: repeating-linear-gradient( 45deg,
+                                               #fff,      #fff 10px,
+                                               #eee 10px, #eee 20px );
+    }
+    .programs .program.listed {
+        border: 1px solid rgba(175,0,175,0.5);
+    }
+    .programs .program.unlisted img {
+        filter: grayscale(100%);
+    }
+}
+
+/* Avatar */
+div.avatar {
+    padding: 0;
+    height: 10em;
+    width: 10em;
+    display: block;
+    margin: 1em auto;
+    box-sizing: content-box;
+    border: 1px dashed transparent;
+}
+
+.edited div.avatar {
+    border: 1px dashed rgba(0,0,0,0.3);
+}
+
+.avatar > img {
+    height: 10em;
+    width: 10em;
+    border-radius: 4px;
+}
+
+.avatar-edit-section {
+    text-align: center;
+}
+
+.avatar-edit-section > mat-icon {
+    vertical-align: bottom;
+}
+
+.picture-upload-button {
+    padding: 1ex;
+    border-radius: 5px;
+}
+
+.avatar-edit-section .save-button {
+    display: inline-block;
+    margin-left: 1em;
+}
+
+
+/* Program styling */
+.row.program-list {
+    margin-right: 1ex;
+    margin-left: 1ex;
+}
+
+.row.program-list > .item {
+    padding: 0;
+}
+
+mat-card.program {
+    padding: 0;
+    margin: 1ex;
+}
+
+.program-data {
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: max-content 1fr;
+}
+
+.program-data > .program-type {
+    grid-row: 1;
+    grid-column: 1;
+    width: max-content;
+}
+
+.program-data > .program-type > img {
+    padding: 1ex;
+    max-width: 8ex;
+    max-height: 8ex;
+}
+
+mat-card.program > .program-data > .connection-icon-list {
+    background-color: rgba(0, 48, 150,0.05);
+    border-top: 1px solid rgba(0, 48, 150,0.25);
+
+    text-align: left;
+    padding: 1ex;
+
+    grid-row: 2;
+
+    grid-column-start: 1;
+    grid-column-end: 3;
+}
+
+mat-card.program > .program-data > .card-title {
+    grid-row: 1;
+    grid-column: 2;
+    word-break: break-word;
+
+    padding: 1ex;
+    font-weight: 600;
+}
+
+mat-card.call-to-action > .program-data > .card-title {
+    color: #fff;
+    padding: 2em 1em 2em 1em;
+
+    grid-row: 1;
+    grid-column: 2;
+}
+
+mat-card.program > .program-operation {
+    float: right;
+    margin-top: -2.5ex;
+    margin-bottom: 1ex;
+    margin-right:  0ex;
+}
+
+mat-card.program > .program-operation > .fab-action {
+    border-radius: 999ex; /* Inifinity, round shape */
+    color: white;
+    z-index: 1;
+}
+
+mat-card.program .program-settings {
+    position: absolute;
+    top: 0;
+    background: #27212e;
+    height: 100%;
+    width: 100%;
+    border-radius: 4px;
+    width: 0;
+}
+
+mat-card.program .program-settings .contents {
+    opacity: 0;
+    height: 100%;
+    width: 100%;
+    border-radius: 4px;
+    cursor: auto;
+}
+
+@keyframes hide-program-settings {
+    from { width: 100%; }
+    25% { width: 100%; }
+    to { width: 0%; }
+}
+mat-card.program .program-settings.hidden-true {
+    width: 0%;
+    animation-name: hide-program-settings;
+    animation-duration: var(--long-animation-time);
+}
+
+@keyframes hide-program-settings-data {
+    from { opacity: 1; }
+    25% { opacity: 0; }
+}
+mat-card.program .program-settings.hidden-true .contents {
+    opacity: 0;
+    animation-name: hide-program-settings-data;
+    animation-duration: var(--long-animation-time);
+}
+
+@keyframes show-program-settings {
+    from { left: 100%; width: 0%; }
+    75% { left: 0%; width: 100%; }
+}
+mat-card.program .program-settings.hidden-false {
+    width: 100%;
+    animation-name: show-program-settings;
+    animation-duration: var(--long-animation-time);
+}
+
+@keyframes show-program-settings-data {
+    from { opacity: 0; }
+    80% { opacity: 0; }
+    to { opacity: 1; }
+}
+mat-card.program .program-settings.hidden-false .contents {
+    opacity: 1;
+    animation-name: show-program-settings-data;
+    animation-duration: var(--long-animation-time);
+}
+
+mat-card.program .program-settings .contents .title {
+    color: white;
+    font-weight: bold;
+    margin-top: 0.5ex;
+}
+
+mat-card.program .program-settings .contents .explanation {
+    color: white;
+    margin-bottom: 1ex;
+}
+
+mat-card.program .program-settings .contents .title .program-name {
+    color: #ffab40;
+}
+
+mat-card.program .program-settings .contents button.archive-program {
+    background-color: #009688;
+    color: white;
+    padding: 1ex;
+    border-radius: 4px;
+}
+
+.connection-icon-list {
+    border-radius: 0 0 4px 4px;
+    background-color: rgba(255,255,255,0.95);
+    text-align: left;
+    padding: 1ex;
+    min-height: 5ex;
+}
+
+.connection-icon-list > img {
+    height: 3ex;
+    max-width: 10ex;
+    margin-left: 1ex;
+}
+
+.connection-icon-list > span > img {
+    height: 3ex;
+    max-width: 10ex;
+    margin-left: 1ex;
+}
+
+
+.connection-icon-list > span > .nametag {
+    margin-left: 1ex;
+    padding: 0 1ex 0 1ex;
+    display: inline-block;
+    background-color: #fff;
+    box-shadow: 0px 1px 1px 0px rgba(0,0,0,0.3);
+    border-radius: 3px;
+    min-height: 3ex;
+}

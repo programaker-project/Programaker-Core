@@ -17,7 +17,13 @@
                                , is_admin :: boolean() | ?MNESIA_SELECTOR % Platform administration
                                , is_advanced :: boolean() | ?MNESIA_SELECTOR % Advanced features
                                , is_in_preview :: boolean() | ?MNESIA_SELECTOR % Features in beta/preview
+                               , is_public_profile :: boolean() | ?MNESIA_SELECTOR
                                }).
+
+-record(user_profile_listings_entry, { id :: owner_id() %% UserId
+                                     , programs :: [binary()]
+                                     , groups :: [binary()]
+                                     }).
 
 -type user_in_group_role() :: admin | editor | viewer.
 -type group_metadata_edition() :: #{ public => boolean() }.

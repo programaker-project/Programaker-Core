@@ -14,6 +14,7 @@ export class FakeSessionService /* implements SessionService */ {
                 is_admin: false,
                 is_advanced: false,
                 is_in_preview: false,
+                is_public_profile: false,
             }
         });
     }

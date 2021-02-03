@@ -27,6 +27,8 @@ import { AdminSettingsComponent } from './settings/admin-settings/admin-settings
 import { GroupSettingsComponent } from './settings/group-settings/group-settings.component';
 import { SettingsComponent } from './settings/user-settings/settings.component';
 import { UserProfileComponent } from './profiles/user-profile.component';
+import { UserGroupsResolver } from './resolvers/user-groups.resolver';
+import { UserBridgesResolver } from './resolvers/user-bridges.resolver';
 
 
 const routes: Routes = [
@@ -46,7 +48,7 @@ const routes: Routes = [
     { path: 'groups/:group_name/settings', component: GroupSettingsComponent, resolve: { groupInfo: GroupInfoWithCollaboratorsResolver, session: SessionResolver } },
 
     // Profile pages
-    { path: 'users/:user_name', component: UserProfileComponent, resolve: { user_profile: UserProfileResolver, programs: ProgramListResolver } },
+    { path: 'users/:user_name', component: UserProfileComponent, resolve: { user_profile: UserProfileResolver } },
 
     // Programs
     { path: 'users/:user_id/programs/:program_id', component: ProgramDetailComponent },
@@ -57,7 +59,10 @@ const routes: Routes = [
     { path: 'bridges', redirectTo: '/dashboard#bridges' },
 
     // Settings
-    { path: 'settings', component: SettingsComponent, resolve: { session: SessionResolver } },
+    { path: 'settings', component: SettingsComponent, resolve: { session: SessionResolver,
+                                                                 programs: ProgramListResolver, groups: UserGroupsResolver, bridges: UserBridgesResolver,
+                                                                 user_profile: UserProfileResolver,
+                                                               } },
     { path: 'settings/admin', component: AdminSettingsComponent, resolve: { session: SessionResolver,
                                                                             adminStats: AdminStatsResolver, userList: AdminUserListResolver } },
 
@@ -78,6 +83,8 @@ const routes: Routes = [
         AdminStatsResolver,
         AdminUserListResolver,
         RenderedAboutResolver,
+        UserBridgesResolver,
+        UserGroupsResolver,
         UserProfileResolver,
 
         AdminService,

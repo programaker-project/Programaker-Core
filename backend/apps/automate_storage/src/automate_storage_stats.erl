@@ -38,6 +38,7 @@ get_user_metrics() ->
                                           , is_admin='_'
                                           , is_advanced='_'
                                           , is_in_preview='_'
+                                          , is_public_profile='_'
                                           },
     UserResultColumn = '$1',
 

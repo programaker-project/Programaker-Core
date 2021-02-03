@@ -187,7 +187,7 @@ get_versioning(Nodes) ->
                                 mnesia:transform_table(
                                   ?REGISTERED_USERS_TABLE,
                                   fun({registered_user_entry, Id, Username, Password, Email, Status }) ->
-                                          %% Replicate the entry. Set status to ready.
+                                          %% Replicate the entry. Set registration time to unknown.
                                           {registered_user_entry, Id, Username, Password, Email,
                                            Status, 0 }
                                   end,
@@ -207,7 +207,7 @@ get_versioning(Nodes) ->
                                 {atomic, ok} = mnesia:transform_table(
                                                  ?USER_SESSIONS_TABLE,
                                                  fun({user_session_entry, SessionId, UserId, SessionStartTime }) ->
-                                                         %% Replicate the entry. Set status to ready.
+                                                         %% Replicate the entry. Set session_last_used_time to unknown.
                                                          {user_session_entry, SessionId, UserId, SessionStartTime,
                                                           0 }
                                                  end,
@@ -357,7 +357,7 @@ get_versioning(Nodes) ->
                                 {atomic, ok} = mnesia:transform_table(
                                                  ?REGISTERED_USERS_TABLE,
                                                  fun({registered_user_entry, Id, Username, Password, Email, Status, RegistrationTime }) ->
-                                                         %% Replicate the entry. Set status to ready.
+                                                         %% Replicate the entry. Set is_admin/advanced/in_preview to false.
                                                          { registered_user_entry, Id, Username, Password, Email, Status, RegistrationTime
                                                          , false, false, false
                                                          }
@@ -384,7 +384,7 @@ get_versioning(Nodes) ->
                                                      }) ->
                                                          CanonicalUsername = automate_storage_utils:canonicalize(Username),
 
-                                                         %% Replicate the entry. Set status to ready.
+                                                         %% Replicate the entry. Set canonicalized username.
                                                          { registered_user_entry, Id, Username, CanonicalUsername, Password
                                                          , Email, Status, RegistrationTime
                                                          , IsAdmin, IsAdvanced, IsInPreview
@@ -744,6 +744,42 @@ get_versioning(Nodes) ->
                                                  user_program_entry
                                                 )
                         end
+                }
+
+                %% Add profile configuration
+              , #database_version_transformation
+                { id=24
+                , apply=fun() ->
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?REGISTERED_USERS_TABLE,
+                                                 fun({registered_user_entry, Id, Username, CanonicalUsername, Password
+                                                     , Email, Status, RegistrationTime
+                                                     , IsAdmin, IsAdvanced, IsInPreview
+                                                     }) ->
+                                                         %% Replicate the entry. Set is_public_profile to false.
+                                                         { registered_user_entry, Id, Username, CanonicalUsername, Password
+                                                         , Email, Status, RegistrationTime
+                                                         , IsAdmin, IsAdvanced, IsInPreview, false
+                                                         }
+                                                 end,
+                                                 [ id, username, canonical_username, password, email, status, registration_time
+                                                 , is_admin, is_advanced, is_in_preview, is_public_profile
+                                                 ],
+                                                 registered_user_entry
+                                                ),
+
+                                    {atomic, ok} = mnesia:create_table(?USER_PROFILE_LISTINGS_TABLE,
+                                                                       [ { attributes, [ id, programs, groups ] }
+                                                                       , { disc_copies, Nodes }
+                                                                       , { record_name, user_profile_listings_entry }
+                                                                       , { type, set }
+                                                                       , { index, [ ] }
+                                                                       ]),
+
+                                ok = mnesia:wait_for_tables([ ?USER_PROFILE_LISTINGS_TABLE
+                                                            ],
+                                                            automate_configuration:get_table_wait_time())
+                       end
                 }
               ]
         }.

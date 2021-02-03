@@ -38,6 +38,16 @@
             <a routerLink="/settings/admin">Click here to open the panel</a>
         </div>
 
+        <div class="debug-info settings-group"
+            *ngIf="session && session.tags.is_advanced">
+            <div class="title">Debug info</div>
+
+            <div class="user-id setting-view">
+                <label for="user-id">User ID: </label>
+                <span name="user-id" class="code value">{{session.user_id}}</span>
+            </div>
+        </div>
+
         <div class="user-settings settings-group">
             <div class="title">User settings</div>
 
@@ -53,6 +63,102 @@
                 </mat-slide-toggle>
             </div>
 
+            <div class="user-profile toggle-setting">
+                <label for="advanced-user-toggle">Public profile</label>
+
+                <mat-slide-toggle
+                    class="value"
+                    color="accent"
+                    [checked]=is_public_profile
+                    (change)="onChangePublicProfileSettings($event)">
+                    <span>{{ is_public_profile ? 'Enabled' : 'Disabled' }}</span>
+                </mat-slide-toggle>
+            </div>
+
+            <div class="user-profile settings-group"
+                *ngIf="session && is_public_profile">
+                <div class="title">Profile info</div>
+
+                <section *ngIf="publicPrograms" class="programs">
+                    <div class="section-title">Programs listed</div>
+
+                    <div class="row" *ngIf="publicPrograms.length > 0">
+                        <div *ngFor="let program of publicPrograms" class="col-sm-6 item">
+                            <mat-card
+                                (click)="listedPrograms[program.id] = !listedPrograms[program.id]"
+                                [ngClass]="{
+                                'program': true,
+                                'listed': listedPrograms[program.id],
+                                'unlisted': !listedPrograms[program.id]
+                                }"
+                                role="button">
+
+                                <div class="program-data">
+                                    <div class="program-type">
+                                        <img *ngIf="program.type === 'scratch_program'"
+                                            src="/assets/blocks-icon.svg"
+                                            data-toggle="tooltip" data-placement="top" title="Block style program" />
+                                        <img *ngIf="program.type === 'flow_program'"
+                                            src="/assets/flow-icon.svg"
+                                            data-toggle="tooltip" data-placement="top" title="Flow style program"/>
+                                    </div>
+                                    <div class="card-title">{{program.name}}</div>
+                                    <div class="connection-icon-list">
+                                        <span *ngFor="let bridgeId of program.bridges_in_use">
+                                            <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ bridgeInfo[bridgeId].icon }}"
+                                                data-toggle="tooltip" title="{{bridgeInfo[bridgeId].name}} bridge"/>
+                                            <span class="nametag" *ngIf="bridgeInfo[bridgeId] && (!bridgeInfo[bridgeId].icon) && bridgeInfo[bridgeId].name">
+                                                {{ bridgeInfo[bridgeId].name }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </mat-card>
+                        </div>
+                    </div>
+                    <div *ngIf="publicPrograms.length === 0">
+                        No public programs to show. Open a program and click on
+                        <button color="secondary"
+                            class="annotated-icon sample-button"
+                            mat-button mat-raised-button>
+
+                            <mat-icon *ngIf="!is_public">lock</mat-icon>
+                            <label *ngIf="!is_public" class="label">
+                                Private
+                            </label>
+                        </button>
+                        to make it public.
+                    </div>
+                </section>
+
+                <section *ngIf="groups" class="groups">
+                    <div class="section-title">Groups listed</div>
+
+                    <div class="row" *ngIf="groups.length > 0">
+                        <mat-card *ngFor="let group of groups"
+                            (click)="listedGroups[group.id] = !listedGroups[group.id]"
+                            role="button"
+                            [ngClass]="{
+                            'group': true,
+                            'col-sm-2': true,
+                            'listed': listedGroups[group.id],
+                            'unlisted': !listedGroups[group.id]
+                            }"
+                        >
+                            <img role="avatar" class="icon" *ngIf="group.picture" src="{{ group.picture }}" alt="{{ group.name }}"
+                                matTooltip="{{ group.name }}">
+
+                            <span class="group-name">
+                                {{ group.name }}
+                            </span>
+                        </mat-card>
+                    </div>
+                    <div *ngIf="groups.length === 0">
+                        You have not joined any group yet.
+                    </div>
+                </section>
+            </div>
+
             <div class="save-section">
                 <button mat-button mat-raised-button
                     id="user-settings-save-button"
@@ -63,16 +169,6 @@
                     <mat-icon class="action-icon">cloud_upload</mat-icon>
                     Save
                 </button>
-            </div>
-        </div>
-
-        <div class="debug-info settings-group"
-            *ngIf="session && session.tags.is_advanced">
-            <div class="title">Debug info</div>
-
-            <div class="user-id setting-view">
-                <label for="user-id">User ID: </label>
-                <span name="user-id" class="code value">{{session.user_id}}</span>
             </div>
         </div>
     </div>

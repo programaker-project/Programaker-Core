@@ -76,6 +76,7 @@ encode_user(#registered_user_entry{ id=UserId
                                   , is_admin=IsAdmin
                                   , is_advanced=IsAdvanced
                                   , is_in_preview=IsInPreview
+                                  , is_public_profile=IsPublicProfile
                                   }) ->
     jiffy:encode(#{ success => true
                   , username => Username
@@ -83,5 +84,6 @@ encode_user(#registered_user_entry{ id=UserId
                   , tags => #{ is_admin => IsAdmin
                              , is_advanced => IsAdvanced
                              , is_in_preview => IsInPreview
+                             , is_public_profile => IsPublicProfile
                              }
                   }).

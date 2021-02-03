@@ -195,12 +195,17 @@ get_program_logs(ProgramId) ->
 lists_programs_from_username(Username) ->
     case automate_storage:lists_programs_from_username(Username) of
         {ok, Programs} ->
-            {ok, lists:map(fun({ProgramId, ProgramName, Enabled, ProgramType}) ->
-                                   #program_metadata{ id=ProgramId
-                                                    , name=ProgramName
-                                                    , link=generate_url_for_program_name(Username, ProgramName)
+            {ok, lists:map(fun(#user_program_entry{ id=Id
+                                                  , program_name=Name
+                                                  , program_type=Type
+                                                  , enabled=Enabled
+                                                  , is_public=IsPublic
+                                                  }) ->
+                                   #program_metadata{ id=Id
+                                                    , name=Name
                                                     , enabled=Enabled
-                                                    , type=ProgramType
+                                                    , type=Type
+                                                    , is_public=IsPublic
                                                     }
                            end, Programs)}
     end.

@@ -22,6 +22,7 @@
 
 -define(USER_VERIFICATION_TABLE, automate_user_verification_table).
 -define(USER_ASSET_TABLE, automate_user_asset_table).
+-define(USER_PROFILE_LISTINGS_TABLE, automate_user_profile_listings_table).
 
 %% Groups
 -define(USER_GROUPS_TABLE, automate_user_groups).

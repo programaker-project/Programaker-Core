@@ -206,23 +206,25 @@ program_listing_to_json(#user_program_entry{ id=Id
                                            , program_name=Name
                                            , enabled=Enabled
                                            , program_type=Type
+                                           , is_public=IsPublic
                                            }) ->
     #{ id => Id
      , name => Name
      , enabled => Enabled
      , type => Type
+     , is_public => IsPublic
      };
 program_listing_to_json(#program_metadata{ id=Id
                                          , name=Name
-                                         , link=Link
                                          , enabled=Enabled
                                          , type=Type
+                                         , is_public=IsPublic
                                          }) ->
     #{ id => Id
      , name => Name
-     , link =>  Link
      , enabled => Enabled
      , type => Type
+     , is_public => IsPublic
      }.
 
 program_listing_to_json(Program, Bridges) ->

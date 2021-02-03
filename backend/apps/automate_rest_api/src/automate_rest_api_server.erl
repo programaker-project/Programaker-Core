@@ -56,6 +56,7 @@ start_link() ->
 
                           %% Settings
                         , {"/api/v0/users/id/:user_id/settings", automate_rest_api_user_settings, []}
+                        , {"/api/v0/users/id/:user_id/profile", automate_rest_api_user_by_id_profile, []}
 
                           %% Programs
                         , {"/api/v0/programs/id/:program_id", automate_rest_api_program_specific_by_id, []} %% DUP with /by-id/ form
