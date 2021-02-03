@@ -7,7 +7,6 @@
 -export([ allowed_methods/2
         , content_types_provided/2
         , options/2
-        , is_authorized/2
         ]).
 
 -export([ to_json/2
@@ -27,50 +26,10 @@
 init(Req, _Opts) ->
     GroupName = cowboy_req:binding(group_name, Req),
     {ok, GroupInfo} = automate_storage:get_group_by_name(GroupName),
-    {cowboy_rest, Req, #state{ group_name=GroupName
+    Req1 = automate_rest_api_cors:set_headers(Req),
+    {cowboy_rest, Req1, #state{ group_name=GroupName
                              , group_info=GroupInfo
                              }}.
-
--spec is_authorized(cowboy_req:req(),_) -> {'true' | {'false', binary()}, cowboy_req:req(),_}.
-is_authorized(Req, State=#state{ group_info=#user_group_entry{ id=GroupId, public=IsPublic } }) ->
-    Req1 = automate_rest_api_cors:set_headers(Req),
-    case cowboy_req:method(Req1) of
-        %% Don't do authentication if it's just asking for options
-        <<"OPTIONS">> ->
-            { true, Req1, State };
-        _ ->
-            case cowboy_req:header(<<"authorization">>, Req, undefined) of
-                undefined ->
-                    case IsPublic of
-                        true ->
-                            { true, Req1, State };
-                        false ->
-                            { {false, <<"Authorization header not found">>} , Req1, State }
-                    end;
-                X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
-                        {true, UserId} ->
-                            case automate_storage:can_user_view_as({user, UserId}, { group, GroupId }) of
-                                true ->
-                                    { true, Req1, State };
-                                false ->
-                                    case IsPublic of
-                                        true ->
-                                            { true, Req1, State };
-                                        false ->
-                                            { { false, <<"User cannot view this group">>}, Req1, State }
-                                    end
-                            end;
-                        false ->
-                            case IsPublic of
-                                true ->
-                                    { true, Req1, State};
-                                false ->
-                                    { { false, <<"Authorization not correct">>}, Req1, State }
-                            end
-                    end
-            end
-    end.
 
 %% CORS
 options(Req, State) ->

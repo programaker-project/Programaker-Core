@@ -39,7 +39,6 @@ export class GroupSettingsComponent {
     groupInfo: GroupInfo;
 
     loadedImage: File = null;
-    setToPublicGroup = null;
 
     @ViewChild('imgPreview') imgPreview: ElementRef<HTMLImageElement>;
     @ViewChild('imgFileInput') imgFileInput: ElementRef<HTMLInputElement>;
@@ -73,7 +72,6 @@ export class GroupSettingsComponent {
                 else {
                     this.is_advanced = this.session.tags.is_advanced;
                     this.groupInfo = data.groupInfo.info;
-                    this.setToPublicGroup = this.groupInfo.public;
 
                     this.collaborators = data.groupInfo.collaborators;
                 }
@@ -117,24 +115,6 @@ export class GroupSettingsComponent {
 
         await this.groupService.updateGroupAvatar(this.groupInfo.id, this.loadedImage);
         this.loadedImage = null;
-
-        buttonClass.remove('started');
-        buttonClass.add('completed');
-    }
-
-    async saveAdminSettings() {
-        const buttonClass = this.saveAdminButton._elementRef.nativeElement.classList;
-        buttonClass.add('started');
-        buttonClass.remove('completed');
-
-        const tasks: Promise<any>[] = [];
-        if (this.groupInfo.public !== this.setToPublicGroup) {
-            tasks.push(this.groupService.setPublicStatus(this.groupInfo.id, this.setToPublicGroup).then(() => {
-                this.groupInfo.public = this.setToPublicGroup;
-            }));
-        }
-
-        await Promise.all(tasks);
 
         buttonClass.remove('started');
         buttonClass.add('completed');
