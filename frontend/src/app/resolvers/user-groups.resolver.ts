@@ -13,6 +13,9 @@ export class UserGroupsResolver implements Resolve<GroupInfo[]> {
         _route: ActivatedRouteSnapshot,
         _state: RouterStateSnapshot
     ): Promise<GroupInfo[]> {
-        return this.groupService.getUserGroups();
+        return this.groupService.getUserGroups().catch(err => {
+            console.error(err);
+            return null;
+        });
     }
 }

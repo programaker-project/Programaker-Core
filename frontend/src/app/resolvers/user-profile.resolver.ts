@@ -18,6 +18,13 @@ export class UserProfileResolver implements Resolve<UserProfileInfo> {
 
         const userName = params.user_name ? params.user_name : (await this.sessionService.getSession()).username;
 
-        return this.profileService.getProfileFromUsername(userName)
+        if (!userName) {
+            return Promise.resolve(null);
+        }
+
+        return this.profileService.getProfileFromUsername(userName).catch(err => {
+            console.error(err);
+            return null;
+        });
     }
 }

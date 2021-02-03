@@ -13,6 +13,12 @@ export class UserBridgesResolver implements Resolve<BridgeIndexData[]> {
         _route: ActivatedRouteSnapshot,
         _state: RouterStateSnapshot
     ): Promise<BridgeIndexData[]> {
-        return (await this.bridgeService.listUserBridges()).bridges;
+        try {
+            return (await this.bridgeService.listUserBridges()).bridges;
+        }
+        catch (err) {
+            console.error(err);
+            return null;
+        }
     }
 }
