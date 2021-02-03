@@ -22,6 +22,7 @@ import { getGroupPictureUrl, getUserPictureUrl, iconDataToUrl } from '../utils';
 import { ConnectionService } from 'app/connection.service';
 import { BridgeConnectionWithIconUrl, IconReference } from 'app/connection';
 import { EnvironmentService } from 'app/environment.service';
+import { ProfileService, GroupProfileInfo } from 'app/profiles/profile.service';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -61,6 +62,7 @@ export class DashboardComponent {
     @ViewChild('navTabGroup') navTabGroup: MatTabGroup;
 
     tabFragName = [
+        'profile',
         'programs',
         'archived-programs',
         'bridges',
@@ -68,11 +70,16 @@ export class DashboardComponent {
     ];
     groupInfo: GroupInfo;
     userRole: CollaboratorRole | null;
+    groupProfile: GroupProfileInfo;
+
     canWriteToGroup: boolean;
     bridgesQuery: Promise<void>;
 
     readonly _getUserPicture: (userId: string) => string;
     readonly _iconDataToUrl: (icon: IconReference, bridge_id: string) => string;
+    isOwnUser: boolean;
+    private _isReadyForLoadingTabs: boolean = true;
+    private _moveToTab: () => void;
 
     constructor(
         private browser: BrowserService,
@@ -83,6 +90,7 @@ export class DashboardComponent {
         private router: Router,
         private route: ActivatedRoute,
         private environmentService: EnvironmentService,
+        private profileService: ProfileService,
 
         private dialog: MatDialog,
         private bridgeService: BridgeService,
@@ -92,7 +100,7 @@ export class DashboardComponent {
 
         this.route.data
             .subscribe((data: { programs: ProgramMetadata[] }) => {
-                this.programs = data.programs.sort((a, b) => {
+                this.programs = data.programs?.sort((a, b) => {
                     return a.name.localeCompare(b.name, undefined, { ignorePunctuation: true, sensitivity: 'base' });
                 });
             });
@@ -102,28 +110,39 @@ export class DashboardComponent {
         this.sessionService.getSession()
             .then(async (session) => {
                 this.session = session;
-                if (!session.active) {
-                    this.router.navigate(['/login'], {replaceUrl:true});
-                } else {
-                    const params = this.route.params['value'];
-                    if (params.group_name !== undefined) {
-                        // Group Dashboard
-                        const groupName = params.group_name;
+                const params = this.route.params['value'];
+                if (params.group_name !== undefined) {
+                    this.isOwnUser = false;
 
-                        this.profile = {
-                            name: groupName,
-                            'type': 'group',
-                            groups: null,
-                            picture: null,
-                        };
+                    // Group Dashboard
+                    const groupName = params.group_name;
 
-                        this.groupInfo = await this.groupService.getGroupWithName(groupName);
+                    this.profile = {
+                        name: groupName,
+                        'type': 'group',
+                        groups: null,
+                        picture: null,
+                    };
+
+                    this.groupProfile = await this.profileService.getProfileFromGroupname(groupName);
+
+                    this.groupService.getGroupWithName(groupName).then(groupInfo => {
+                        this.groupInfo = groupInfo;
                         this.profile.picture = getGroupPictureUrl(this.environmentService, this.groupInfo.id);
 
-                        this.updateCollaborators();
                         this.updateSharedResources();
-                    }
-                    else {
+                        return this.updateCollaborators();
+                    })
+                        .catch(err => console.error(err))
+                        .then(() => this._tabReady())
+                }
+                else {
+                    if (!session.active) {
+                        this.router.navigate(['/login'], {replaceUrl:true});
+                    } else {
+                        this.isOwnUser = true;
+                        this._tabReady();
+
                         this.profile = {
                             name: session.username,
                             'type': 'user',
@@ -133,7 +152,6 @@ export class DashboardComponent {
 
                         this.groupService.getUserGroups()
                             .then(groups => this.profile.groups = groups);
-
                     }
 
                     this.bridgesQuery = this.updateBridges();
@@ -146,6 +164,18 @@ export class DashboardComponent {
             });
     }
 
+    _tabReady() {
+        // This activates `_moveToTab` when all the data necessary to know which
+        // tabs are to be shown is available. In case `_moveToTab` is not
+        // available yet, it records that the necessary state has been reached
+        // so the function that defines `_moveToTab` can call it directly.
+
+        this._isReadyForLoadingTabs = true;
+        if (this._moveToTab) {
+            this._moveToTab();
+        }
+    }
+
     ngAfterViewInit() {
         let unsubscribe = false;
         let subscription = null;
@@ -153,18 +183,23 @@ export class DashboardComponent {
         // seems to have problems (with race conditions?).
         subscription = this.route.fragment.subscribe({
             next: (fragment => {
-                const idx = this.tabFragName.indexOf(fragment);
-                if (idx >= 0) {
-                    this.navTabGroup.selectedIndex = idx;
-                }
+                this._moveToTab = (() => {
+                    const idx = this.tabFragName.indexOf(fragment) + (this._isProfileTabPresent() ? 0 : - 1);
+                    if (idx >= 0) {
+                        this.navTabGroup.selectedIndex = idx;
+                    }
 
-                if (subscription !== null) {
-                    subscription.unsubscribe();
-                }
-                else {
-                    // In case the subscription assignation has not happened yet, take not of it to
-                    // unsubscribe as soon as possible.
-                    unsubscribe = true;
+                    if (subscription !== null) {
+                        subscription.unsubscribe();
+                    }
+                    else {
+                        // In case the subscription assignation has not happened yet, take note of it to
+                        // unsubscribe as soon as possible.
+                        unsubscribe = true;
+                    }
+                });
+                if (this._isReadyForLoadingTabs) {
+                    this._moveToTab();
                 }
             })
         });
@@ -178,10 +213,18 @@ export class DashboardComponent {
             next: (idx: number) => {
                 const currState = history.state;
 
-                history.replaceState(currState, '', this.updateAnchor(this.browser.window.location.href, this.tabFragName[idx]));
+                history.replaceState(currState, '', this.updateAnchor(this.browser.window.location.href, this.getTabFragName(idx)));
                 this.programSettingsOpened = {};
             }
         });
+    }
+
+    private getTabFragName(idx: number) {
+        return this.tabFragName[this._isProfileTabPresent() ? idx : idx + 1];
+    }
+
+    _isProfileTabPresent() {
+        return this.profile && this.profile.type === 'group' && this.groupProfile;
     }
 
     private updateAnchor(href: string, anchor: string): string {

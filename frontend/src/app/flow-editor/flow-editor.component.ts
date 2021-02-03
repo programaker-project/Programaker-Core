@@ -2,7 +2,7 @@ import { Location, isPlatformServer } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild, Inject, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, ProgramLogEntry, ProgramInfoUpdate, ProgramType } from '../program';
+import { ProgramContent, ProgramLogEntry, ProgramInfoUpdate, ProgramType, VisibilityEnum } from '../program';
 import { ProgramService } from '../program.service';
 
 import * as progbar from '../ui/progbar';
@@ -36,7 +36,7 @@ import { UiSignalService } from 'app/services/ui-signal.service';
 import { ContainerFlowBlock } from './ui-blocks/container_flow_block';
 import { UI_ICON } from './definitions';
 import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/renderers/responsive_page';
-import { ChangeProgramVisilibityDialog, VisibilityEnum } from '../dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
+import { ChangeProgramVisilibityDialog } from '../dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 import { CloneProgramDialogComponentData, CloneProgramDialogComponent } from '../dialogs/clone-program-dialog/clone-program-dialog.component';
 
 @Component({
@@ -67,7 +67,7 @@ export class FlowEditorComponent implements OnInit {
     workspaceElement: HTMLElement;
     read_only: boolean = true;
     can_admin: boolean = false;
-    is_public: boolean = false;
+    visibility: VisibilityEnum;
 
     constructor(
         private browser: BrowserService,
@@ -139,7 +139,7 @@ export class FlowEditorComponent implements OnInit {
                         .subscribe(program => {
                             this.program = program;
                             this.read_only = program.readonly;
-                            this.is_public = program.is_public;
+                            this.visibility = program.visibility;
                             this.can_admin = program.can_admin;
 
                             this.prepareWorkspace().then(() => {
@@ -458,11 +458,9 @@ export class FlowEditorComponent implements OnInit {
     }
 
     changeVisibility() {
-        const visibility: VisibilityEnum = this.is_public ? 'public' : 'private';
-
         const data = {
             name: this.program.name,
-            visibility
+            visibility: this.visibility
         };
 
         const dialogRef = this.dialog.open(ChangeProgramVisilibityDialog, {
@@ -477,22 +475,8 @@ export class FlowEditorComponent implements OnInit {
             }
 
             const vis = result.visibility;
-            let isPublic = undefined;
-            switch(vis) {
-                case 'public':
-                    isPublic = true;
-                    break;
-
-                case 'private':
-                    isPublic = false;
-                    break;
-
-                default:
-                    throw Error(`Unknown visibility value: ${vis}`);
-            }
-
-            this.programService.updateProgramVisibility( this.program.id, { is_public: isPublic } ).then(() => {
-                this.is_public = isPublic;
+            this.programService.updateProgramVisibility( this.program.id, { visibility: vis } ).then(() => {
+                this.visibility = vis;
             });
 
         });

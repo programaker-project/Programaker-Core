@@ -195,12 +195,17 @@ get_program_logs(ProgramId) ->
 lists_programs_from_username(Username) ->
     case automate_storage:lists_programs_from_username(Username) of
         {ok, Programs} ->
-            {ok, lists:map(fun({ProgramId, ProgramName, Enabled, ProgramType}) ->
-                                   #program_metadata{ id=ProgramId
-                                                    , name=ProgramName
-                                                    , link=generate_url_for_program_name(Username, ProgramName)
+            {ok, lists:map(fun(#user_program_entry{ id=Id
+                                                  , program_name=Name
+                                                  , program_type=Type
+                                                  , enabled=Enabled
+                                                  , visibility=Visibility
+                                                  }) ->
+                                   #program_metadata{ id=Id
+                                                    , name=Name
                                                     , enabled=Enabled
-                                                    , type=ProgramType
+                                                    , type=Type
+                                                    , visibility=Visibility
                                                     }
                            end, Programs)}
     end.
@@ -466,7 +471,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                                             , program_orig=ProgramOrig
                                             , enabled=Enabled
                                             , last_upload_time=LastUploadTime
-                                            , is_public=IsPublic
+                                            , visibility=Visibility
                                             }) ->
     {OwnerType, OwnerId} = Owner,
     #user_program{ id=Id
@@ -477,7 +482,7 @@ program_entry_to_program(#user_program_entry{ id=Id
                  , program_orig=ProgramOrig
                  , enabled=Enabled
                  , last_upload_time=LastUploadTime
-                 , is_public=IsPublic
+                 , visibility=Visibility
                  }.
 
 -spec get_platform_service_how_to(binary(), binary()) -> {ok, map() | none} | {error, not_found} | {error, no_connection} | {error, _}.

@@ -19,16 +19,26 @@
     margin-top: 1ex;
     overflow: auto;
     box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3);
+
+    & > .title {
+        font-size: 1.5rem;
+        margin-bottom: 1ex;
+        border-bottom: 1px solid #aaa;
+    }
+
+    .settings-group {
+        box-shadow: none;
+
+        & > .title::before {
+            content: '› ';
+        }
+    }
 }
 
-.settings-group > .title {
-    font-size: 1.5rem;
-    margin-bottom: 1ex;
-    border-bottom: 1px solid #aaa;
-}
 
-.value:not(.code) {
-    float: right;
+.toggle-setting .value {
+    float: left;
+    margin-left: 1em;
 }
 
 .value.code {
@@ -49,6 +59,43 @@
 
 .row {
     margin: 0 !important;
+}
+
+.annotated-icon.sample-button {
+    padding: 0.25ex;
+}
+.user-profile {
+    .section-title {
+        font-size: 150%;
+        margin: 1rem;
+    }
+
+    .groups .group {
+        text-align: center;
+        margin: 0.2rem;
+        height: 4rem;
+        line-height: calc(4rem - 1rem);
+        padding: 0.5rem;
+        user-select: none;
+    }
+
+    .groups .group .group-name {
+    }
+    .groups .group img {
+        max-width: 4rem;
+        max-height: 3rem;
+    }
+    .groups .group.unlisted {
+        background: repeating-linear-gradient( 45deg,
+                                               #fff,      #fff 10px,
+                                               #eee 10px, #eee 20px );
+    }
+    .groups .group.listed {
+        border: 1px solid rgba(175,0,175,0.5);
+    }
+    .groups .group.unlisted img {
+        filter: grayscale(100%);
+    }
 }
 
 /* Avatar */

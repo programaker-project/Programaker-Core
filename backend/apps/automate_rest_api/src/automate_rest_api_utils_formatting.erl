@@ -12,6 +12,7 @@
         , program_listing_to_json/2
         , program_data_to_json/2
         , collaborator_to_json/1
+        , user_to_json/1
         , bridge_to_json/1
         , connection_to_json/1
         , asset_list_to_json/1
@@ -206,23 +207,27 @@ program_listing_to_json(#user_program_entry{ id=Id
                                            , program_name=Name
                                            , enabled=Enabled
                                            , program_type=Type
+                                           , visibility=Visibility
                                            }) ->
     #{ id => Id
      , name => Name
      , enabled => Enabled
      , type => Type
+     , is_public => ?UTILS:is_public(Visibility)
+     , visibility => Visibility
      };
 program_listing_to_json(#program_metadata{ id=Id
                                          , name=Name
-                                         , link=Link
                                          , enabled=Enabled
                                          , type=Type
+                                         , visibility=Visibility
                                          }) ->
     #{ id => Id
      , name => Name
-     , link =>  Link
      , enabled => Enabled
      , type => Type
+     , is_public => ?UTILS:is_public(Visibility)
+     , visibility => Visibility
      }.
 
 program_listing_to_json(Program, Bridges) ->
@@ -237,7 +242,7 @@ program_data_to_json(#user_program{ id=Id
                                   , program_parsed=ProgramParsed
                                   , program_orig=ProgramOrig
                                   , enabled=Enabled
-                                  , is_public=IsPublic
+                                  , visibility=Visibility
                                   },
                      Checkpoint) ->
     #{ <<"id">> => Id
@@ -249,15 +254,14 @@ program_data_to_json(#user_program{ id=Id
      , <<"orig">> => ProgramOrig
      , <<"enabled">> => Enabled
      , <<"checkpoint">> => Checkpoint
-     , <<"is_public">> => IsPublic
+     , <<"is_public">> => ?UTILS:is_public(Visibility)
+     , <<"visibility">> => Visibility
      }.
 
 
-collaborator_to_json({ #registered_user_entry{ id=Id
-                                             , username=Username
-                                             }
-                     , Role
-                     }) ->
+user_to_json(#registered_user_entry{ id=Id
+                                   , username=Username
+                                   }) ->
     Picture = case ?UTILS:user_has_picture(Id) of
                   false -> null;
                   true ->
@@ -265,9 +269,13 @@ collaborator_to_json({ #registered_user_entry{ id=Id
               end,
     #{ id => Id
      , username => Username
-     , role => Role
      , picture => Picture
      }.
+
+collaborator_to_json({ User , Role
+                     }) ->
+    UserDict = user_to_json(User),
+    UserDict#{ role => Role }.
 
 
 bridge_to_json(#service_port_entry_extra{ id=Id

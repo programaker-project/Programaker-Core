@@ -18,15 +18,19 @@
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
 
--record(state, { user_id :: binary() | undefined, group_name :: binary()}).
+-record(state, { user_id :: binary() | undefined
+               , group_name :: binary()
+               , group_info :: #user_group_entry{}
+               }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     GroupName = cowboy_req:binding(group_name, Req),
-    {cowboy_rest, Req, #state{ user_id=undefined, group_name=GroupName }}.
+    {ok, GroupInfo} = automate_storage:get_group_by_name(GroupName),
+    {cowboy_rest, Req, #state{ user_id=undefined, group_name=GroupName, group_info=GroupInfo }}.
 
 -spec is_authorized(cowboy_req:req(),_) -> {'true' | {'false', binary()}, cowboy_req:req(),_}.
-is_authorized(Req, State) ->
+is_authorized(Req, State=#state{ group_info=#user_group_entry{ id=GroupId } }) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -39,7 +43,12 @@ is_authorized(Req, State) ->
                 X ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            { true, Req1, State#state{ user_id=UserId } };
+                            case automate_storage:can_user_view_as({user, UserId}, { group, GroupId }) of
+                                true ->
+                                    { true, Req1, State#state{ user_id=UserId } };
+                                false ->
+                                    { { false, <<"User cannot view this group">>}, Req1, State }
+                            end;
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
@@ -63,11 +72,8 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State=#state{user_id=UserId, group_name=GroupName}) ->
-    case automate_storage:get_group_by_name(GroupName, {user, UserId}) of
-        { ok, Group } ->
-            Output = jiffy:encode(#{ success => true, group => ?FORMATTING:group_to_json(Group)}),
-            Res = ?UTILS:send_json_format(Req),
+to_json(Req, State=#state{ group_info=GroupInfo }) ->
+    Output = jiffy:encode(#{ success => true, group => ?FORMATTING:group_to_json(GroupInfo)}),
+    Res = ?UTILS:send_json_format(Req),
 
-            { Output, Res, State }
-    end.
+    { Output, Res, State }.

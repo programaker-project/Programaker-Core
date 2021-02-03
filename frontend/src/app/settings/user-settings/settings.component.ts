@@ -16,8 +16,12 @@ import { MonitorService } from 'app/monitor.service';
 import { ConnectionService } from 'app/connection.service';
 import { BridgeService } from 'app/bridges/bridge.service';
 import { MatButton } from '@angular/material/button';
-import { getUserPictureUrl } from 'app/utils';
+import { getUserPictureUrl, iconDataToUrl } from 'app/utils';
 import { EnvironmentService } from 'app/environment.service';
+import { ProgramMetadata } from 'app/program';
+import { GroupInfo } from 'app/group';
+import { BridgeIndexData } from 'app/bridges/bridge';
+import { UserProfileInfo } from 'app/profiles/profile.service';
 
 @Component({
     // moduleId: module.id,
@@ -25,7 +29,7 @@ import { EnvironmentService } from 'app/environment.service';
     templateUrl: './settings.component.html',
     providers: [BridgeService, ConnectionService, MonitorService, ProgramService, SessionService, ServiceService],
     styleUrls: [
-        'settings.component.css',
+        'settings.component.scss',
         '../../libs/css/material-icons.css',
         '../../libs/css/bootstrap.min.css',
     ],
@@ -42,6 +46,11 @@ export class SettingsComponent {
 
     readonly _getUserPicture: (userId: string) => string;
 
+    groups: GroupInfo[];
+    listedGroups: {[key: string]: boolean} = {};
+
+    bridges: BridgeIndexData[];
+
     constructor(
         public sessionService: SessionService,
         public router: Router,
@@ -52,6 +61,14 @@ export class SettingsComponent {
     ) {
         this._getUserPicture = getUserPictureUrl.bind(this, environmentService);
 
+        this.route.data
+            .subscribe((data: { groups: GroupInfo[], user_profile: UserProfileInfo }) => {
+                this.groups = data.groups;
+
+                for (const group of data.user_profile.groups) {
+                    this.listedGroups[group.id] = true;
+                }
+            });
     }
 
     // tslint:disable-next-line:use-life-cycle-interface
@@ -85,6 +102,15 @@ export class SettingsComponent {
             button.classList.add('started');
             button.classList.remove('completed');
         }
+
+        const publicGroups = [];
+        for (const group of Object.keys(this.listedGroups)) {
+            if (this.listedGroups[group]) {
+                publicGroups.push(group);
+            }
+        }
+
+        await this.sessionService.updateUserProfileSettings({ groups: publicGroups });
 
         const success = await this.sessionService.updateUserSettings({
             is_advanced: this.is_advanced,

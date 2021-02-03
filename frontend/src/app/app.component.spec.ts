@@ -4,6 +4,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { CookiesService } from '@ngx-utils/cookies';
 import { BrowserCookiesModule, BrowserCookiesService } from '@ngx-utils/cookies/browser';
 import { AppComponent } from './app.component';
+import { MatMenuModule } from '@angular/material/menu';
 
 
 describe('AppComponent', () => {
@@ -13,6 +14,7 @@ describe('AppComponent', () => {
                 BrowserCookiesModule.forRoot(),
                 RouterTestingModule,
                 HttpClientTestingModule,
+                MatMenuModule,
             ],
             declarations: [
                 AppComponent

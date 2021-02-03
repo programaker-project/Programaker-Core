@@ -84,3 +84,7 @@ a.sidenav-link:hover {
     color: inherit;
     text-decoration: none;
 }
+
+a[mat-menu-item] {
+    color: #272727;
+}

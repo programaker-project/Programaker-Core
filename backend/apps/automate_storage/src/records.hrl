@@ -19,6 +19,10 @@
                                , is_in_preview :: boolean() | ?MNESIA_SELECTOR % Features in beta/preview
                                }).
 
+-record(user_profile_listings_entry, { id :: owner_id()
+                                     , groups :: [binary()]
+                                     }).
+
 -type user_in_group_role() :: admin | editor | viewer.
 -type group_metadata_edition() :: #{ public => boolean() }.
 -record(user_group_entry, { id :: binary() | ?MNESIA_SELECTOR
@@ -60,7 +64,7 @@
                             , last_upload_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             , last_successful_call_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             , last_failed_call_time :: time_in_seconds() | ?MNESIA_SELECTOR
-                            , is_public :: boolean() | ?MNESIA_SELECTOR
+                            , visibility :: user_program_visibility() | ?MNESIA_SELECTOR
                             }).
 
 -type log_severity() :: debug | info | warning | error.

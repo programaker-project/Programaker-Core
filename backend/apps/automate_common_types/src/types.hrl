@@ -7,6 +7,7 @@
 %% Defining user_id() and group_id() led to error before.
 %% Better to just use owner_id().
 -type owner_id() :: { user, binary() } | { group, binary() }.
+-type user_program_visibility() :: public | private | shareable.
 
 -define(COMMON_TYPES, defined).
 

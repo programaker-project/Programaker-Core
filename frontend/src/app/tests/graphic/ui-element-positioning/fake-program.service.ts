@@ -8,8 +8,8 @@ const EMPTY_PROGRAM_GETTER: ((programId: string) => Promise<ProgramContent>)
         id: programId,
         name: 'empty program',
         enabled: true,
-        link: null,
         bridges_in_use: [],
+        visibility: 'private',
 
         type: 'flow_program',
         parsed: null,

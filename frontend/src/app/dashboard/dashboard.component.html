@@ -1,6 +1,12 @@
-<div class="profile-section">
+<div [ngClass]="{
+    'profile-section': true,
+    'profile-only': !isOwnUser && !userRole
+    }">
     <mat-tab-group #navTabGroup mat-align-tabs="center" animationDuration="0ms">
-        <mat-tab>
+        <mat-tab *ngIf="_isProfileTabPresent()" label="Group">
+            <app-my-group-profile [profile]="groupProfile"></app-my-group-profile>
+        </mat-tab>
+        <mat-tab *ngIf="isOwnUser || userRole">
             <ng-template matTabLabel>
                 <span [matBadge]="programs && getEnabled(programs).length" matBadgeOverlap="false">Programs</span>
             </ng-template>
@@ -73,7 +79,7 @@
                 </ng-container>
             </div>
         </mat-tab>
-        <mat-tab>
+        <mat-tab *ngIf="isOwnUser || userRole">
             <ng-template matTabLabel>
                 <span [matBadge]="programs && getArchived(programs).length" matBadgeOverlap="false">Archived programs</span>
             </ng-template>
@@ -124,8 +130,8 @@
                     </div>
                 </ng-container>
             </div>
-       </mat-tab>
-        <mat-tab>
+        </mat-tab>
+        <mat-tab *ngIf="isOwnUser || userRole">
             <ng-template matTabLabel>
                 <span matBadgeOverlap="false"
                     [matBadge]="bridges && bridges.length + (connectionsNotInBridges && connectionsNotInBridges.length || 0)"
@@ -196,7 +202,7 @@
                 </div>
             </section>
         </mat-tab>
-        <mat-tab label="{{ (profile && _toCapitalCase(profile.type)) || 'Loading...' }}">
+        <mat-tab *ngIf="isOwnUser || userRole" label="{{ !profile ? 'Loading...' : profile.type === 'user' ? 'Groups' : 'Collaborators' }}">
             <div *ngIf="profile" class="profile ">
                 <div class="avatar" *ngIf="profile.picture">
                     <img role="avatar" src="{{ profile.picture  }}"

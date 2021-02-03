@@ -50,7 +50,8 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
 
         %% Reading a public program
         Method ->
-            {ok, #user_program_entry{ is_public=IsPublic }} = automate_storage:get_program_from_id(ProgramId),
+            {ok, #user_program_entry{ visibility=Visibility }} = automate_storage:get_program_from_id(ProgramId),
+            IsPublic = ?UTILS:is_public(Visibility),
             Action = case Method of
                          <<"GET">> -> read_program;
                          <<"DELETE">> -> delete_program;

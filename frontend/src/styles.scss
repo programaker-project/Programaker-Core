@@ -405,3 +405,8 @@ button.completed > span > .load-bg {
 div.mat-tab-body-content {
     overflow: hidden;
 }
+
+// Don't show tab-bar when only a group's profile is shown (and no other tab)
+.profile-section.profile-only > mat-tab-group > mat-tab-header {
+    display: none;
+}

@@ -18,13 +18,18 @@
             (click)="changeVisibility()"
             mat-button mat-raised-button>
 
-            <mat-icon *ngIf="is_public">public</mat-icon>
-            <label *ngIf="is_public" class="label">
+            <mat-icon *ngIf="visibility==='public'">public</mat-icon>
+            <label *ngIf="visibility==='public'" class="label">
                 Public
             </label>
 
-            <mat-icon *ngIf="!is_public">lock</mat-icon>
-            <label *ngIf="!is_public" class="label">
+            <mat-icon *ngIf="visibility==='shareable'">link</mat-icon>
+            <label *ngIf="visibility==='shareable'" class="label">
+                Shareable
+            </label>
+
+            <mat-icon *ngIf="visibility==='private'">lock</mat-icon>
+            <label *ngIf="visibility==='private'" class="label">
                 Private
             </label>
         </button>

@@ -54,32 +54,6 @@
 
         <div class="admin-settings settings-group">
             <div class="title">Administration</div>
-
-            <div class="config-option">
-                <mat-slide-toggle
-                    name="isPublicGroup"
-                    checked="groupInfo.public"
-                    [disabled]="(!groupInfo.public) && (!this.is_advanced)"
-                    [(ngModel)]="setToPublicGroup">
-                    <span class="explanation" *ngIf="setToPublicGroup">Public group (<span class="key-point">non-members</span> can see the group)</span>
-                    <span class="explanation" *ngIf="!setToPublicGroup">Private group (<span class="key-point">only members</span> can see the group)</span>
-                </mat-slide-toggle>
-
-                <button mat-button mat-raised-button
-                    class="save-button"
-                    color="primary"
-                    #saveAdminButton
-                    (click)="saveAdminSettings()">
-                    <span class="load-bg"></span>
-                    <mat-icon class="action-icon">cloud_upload</mat-icon>
-                    Save
-                </button>
-
-                <button color="warn"
-                    *ngIf="this.canEdit && program !== undefined"
-                    (click)="deleteProgram()" mat-button>
-                </button>
-            </div>
             <div class="config-option">
                 <button mat-button mat-raised-button color="warn"
                     class="delete-group-button"

@@ -25,14 +25,14 @@
                       , program_orig :: any()
                       , enabled :: boolean()
                       , last_upload_time :: integer()
-                      , is_public :: boolean()
+                      , visibility :: user_program_visibility()
                       }).
 
--record(program_metadata, { id
-                          , name
-                          , link
-                          , enabled
-                          , type
+-record(program_metadata, { id :: binary()
+                          , name :: binary()
+                          , enabled :: boolean()
+                          , type :: boolean()
+                          , visibility :: user_program_visibility()
                           }).
 
 -record(program_content, { type

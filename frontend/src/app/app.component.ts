@@ -43,7 +43,7 @@ export class AppComponent {
             if (data.session !== null) {
                 this.session = data.session;
             }
-            data.monitor.subscribe({
+            data.monitor?.subscribe({
                 next: (update: SessionInfoUpdate) => {
                     this.session = update.session;
                 },
@@ -75,7 +75,6 @@ export class AppComponent {
 
     logout(): void {
         this.sessionService.logout();
-        this.session = { active: false } as any;
         this.resetSidenavState();
         this.router.navigate(['/login']);
     }

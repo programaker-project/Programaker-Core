@@ -51,9 +51,12 @@ start_link() ->
                         , {"/api/v0/users/id/:user_id/templates/", automate_rest_api_templates_root, []}
                         , {"/api/v0/users/id/:user_id/templates/id/:template_id", automate_rest_api_templates_specific, []}
                         , {"/api/v0/users/:user_id/custom-blocks/", automate_rest_api_custom_blocks_root, []}
+                        , {"/api/v0/users/by-name/:user_name/profile", automate_rest_api_user_profile_by_name, [] }
+
 
                           %% Settings
                         , {"/api/v0/users/id/:user_id/settings", automate_rest_api_user_settings, []}
+                        , {"/api/v0/users/id/:user_id/profile", automate_rest_api_user_by_id_profile, []}
 
                           %% Programs
                         , {"/api/v0/programs/id/:program_id", automate_rest_api_program_specific_by_id, []} %% DUP with /by-id/ form
@@ -141,6 +144,7 @@ start_link() ->
                           %% Groups
                         , {"/api/v0/groups", automate_rest_api_groups_root, [] }
                         , {"/api/v0/groups/by-name/:group_name", automate_rest_api_group_by_name, [] }
+                        , {"/api/v0/groups/by-name/:group_name/profile", automate_rest_api_group_profile_by_name, [] }
                         , {"/api/v0/groups/by-id/:group_id", automate_rest_api_group_specific, [] }
                         , {"/api/v0/groups/by-id/:group_id/programs", automate_rest_api_group_programs, [] }
                         , {"/api/v0/groups/by-id/:group_id/collaborators", automate_rest_api_group_collaborators, [] }

@@ -1,37 +1,55 @@
-import { Observable, Observer } from 'rxjs';
-import { Injectable } from '@angular/core';
+import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Session } from './session';
-
-import * as progbar from './ui/progbar';
-import { ContentType } from './content-type';
-import { BrowserService } from './browser.service';
+import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { CookiesService } from '@ngx-utils/cookies';
+import { Observable, Observer } from 'rxjs';
+import { BrowserService } from './browser.service';
+import { ContentType } from './content-type';
 import { EnvironmentService } from './environment.service';
+import { Session } from './session';
+import * as progbar from './ui/progbar';
+
 
 export type SessionInfoUpdate = { session: Session };
 
 @Injectable()
 export class SessionService {
 
+    private readonly INACTIVE_SESSION: Session = {
+        username: null,
+        user_id: null,
+        active: false,
+        tags: {
+            is_admin: false,
+            is_advanced: false,
+            is_in_preview: false,
+        }
+    };
+
     private readonly COOKIE_TOKEN_KEY = 'programaker-auth';
 
+    // Keep track of the sessions and promises associated with each token. This
+    // is necessary when multiple users share the same SessionService, as might
+    // happen when doing ServerSideRender.
+    private readonly EstablishedSessions:   {[key: string]: Session} = {};
+    private readonly EstablishmentPromises: {[key: string]: Promise<Session>} = {};
 
     // These static values help create a Singleton-like class.
     // While not strtictly following the Singleton pattern, as class instances
     //   are obtained through Dependency Injection, it allows for every instance
     //   of the class to share the relevant state.
-    // The shared state is the established session, it's Observable and Observer.
-    private  EstablishedSessions:    {[key: string]: Session} = {};
-    private  sessionInfoObservables: {[key: string]: Observable<SessionInfoUpdate>} = {};
-    private  _sessionInfoObservers:  {[key: string]: Observer<SessionInfoUpdate>} = {};
-    private  EstablishmentPromises:  {[key: string]: Promise<Session>} = {};
+    //
+    // The shared state are the Observable and Observer, and they are only
+    // available when runnin on browser to avoid session confusion.
+    private static sessionInfoObservable: Observable<SessionInfoUpdate> = null;
+    private static _sessionInfoObserver:  Observer<SessionInfoUpdate> = null;
 
     constructor(
         private http: HttpClient,
         private browser: BrowserService,
         private cookies: CookiesService,
         private environmentService: EnvironmentService,
+        @Inject(PLATFORM_ID) private platformId: Object,
     ) {
         this.http = http;
     }
@@ -133,12 +151,22 @@ export class SessionService {
         return token;
     }
 
-    async updateUserSettings(user_settings_update : { is_advanced?: boolean }): Promise<boolean> {
+    async updateUserSettings(user_settings_update : { is_advanced: boolean }): Promise<boolean> {
         const url = (await this.getApiRootForUserId()) + '/settings';
         const response = await (this.http
                                 .post(url, JSON.stringify(user_settings_update),
                                       { headers: this.addJsonContentType(this.getAuthHeader()) })
                                 .toPromise());
+
+        return (response as { success: boolean }).success;
+    }
+
+    async updateUserProfileSettings(userProfile: { groups: string[] }) {
+        const url = `${await this.getApiRootForUserId()}/profile`;
+        const response = await (this.http
+            .post(url, JSON.stringify(userProfile),
+                  { headers: this.addJsonContentType(this.getAuthHeader()) })
+            .toPromise());
 
         return (response as { success: boolean }).success;
     }
@@ -162,20 +190,27 @@ export class SessionService {
         return headers.append('content-type', contentType);
     }
 
-    async getSessionMonitor(): Promise<{session: Session, monitor: Observable<SessionInfoUpdate>}> {
-        const token = this.getToken();
-        if (!token) {
-            throw new Error("Cannot monitor session with no token");
+    async getSessionMonitor(): Promise<{session: Session, monitor: Observable<SessionInfoUpdate> | null}> {
+        if (isPlatformServer(this.platformId)) {
+            // This operation is used to change between sessions on browser.
+            // Trying to do that also on the server could (in theory) be
+            // done by tracking the token.
+            //
+            // As this is most interesting accross login operations, the token
+            // cannot be used (and should not happen during SSR, either), so the capability is removed on the server.
+            return {
+                session: await this.getSession(),
+                monitor: null,
+            };
         }
 
-
-        if (!this.sessionInfoObservables[token]) {
+        if (!SessionService.sessionInfoObservable) {
             this._monitorSession();
         }
 
         return {
             session: await this.getSession(),
-            monitor: this.sessionInfoObservables[token],
+            monitor: SessionService.sessionInfoObservable,
         };
     }
 
@@ -211,7 +246,7 @@ export class SessionService {
                 // "Un-cache" the failed session
                 if (this.EstablishmentPromises[token] === thisPromise) {
                     this.EstablishmentPromises[token] = null;
-                    this._updateSession(null);
+                    this._updateSession(this.INACTIVE_SESSION);
                 }
 
                 // Return unactive session
@@ -250,7 +285,7 @@ export class SessionService {
     }
 
     logout() {
-        this._updateSession(null);
+        this._updateSession(this.INACTIVE_SESSION);
         this.removeToken();
     }
 
@@ -362,13 +397,8 @@ export class SessionService {
     }
 
     private _monitorSession() {
-        const token = this.getToken();
-        if (!token) {
-            throw new Error("Cannot monitor session with no token");
-        }
-
-        this.sessionInfoObservables[token] = new Observable((observer) => {
-            this._sessionInfoObservers[token] = observer;
+        SessionService.sessionInfoObservable = new Observable((observer) => {
+            SessionService._sessionInfoObserver = observer;
             // This will be operated from `_updateSession`
         });
     }
@@ -385,8 +415,8 @@ export class SessionService {
         }
 
         this.EstablishedSessions[token] = session;
-        if (this._sessionInfoObservers[token]) {
-            this._sessionInfoObservers[token].next({ session: session });
+        if (isPlatformBrowser(this.platformId) && SessionService._sessionInfoObserver) {
+            SessionService._sessionInfoObserver.next({ session: session });
         }
     }
 

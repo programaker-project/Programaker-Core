@@ -81,6 +81,9 @@ import { TemplateService } from './templates/template.service';
 import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { AssetService } from './asset.service';
+import { UserProfileComponent } from './profiles/user-profile.component';
+import { ProfileService } from './profiles/profile.service';
+import { GroupProfileComponent } from './profiles/group-profile.component';
 
 
 
@@ -100,6 +103,8 @@ import { AssetService } from './asset.service';
         RegisterFormComponent,
         WaitForMailVerificationComponent,
         VerifyCodeComponent,
+        UserProfileComponent,
+        GroupProfileComponent,
 
         // Info pages
         HomeRedirectComponent,
@@ -170,7 +175,7 @@ import { AssetService } from './asset.service';
     exports: [AppComponent],
     providers: [
         AssetService, BridgeService, ConnectionService, CustomBlockService, CustomSignalService,
-        MonitorService, ProgramService, ServiceService, SessionService, TemplateService,
+        MonitorService, ProfileService, ProgramService, ServiceService, SessionService, TemplateService,
         UiSignalService,
     ],
     bootstrap: [],
