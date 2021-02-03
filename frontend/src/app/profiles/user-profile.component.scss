@@ -327,9 +327,15 @@ button.cardlike {
 
     &.programs {
         padding: 1rem 0.25rem 2rem 0.25rem;
-        .program-list {
+
+        .program-list, .empty-section-explanation {
             background-color: #eee;
             border-radius: 4px;
+        }
+
+        .empty-section-explanation {
+            padding: 1rem;
+            font-weight: bold;
         }
     }
 }

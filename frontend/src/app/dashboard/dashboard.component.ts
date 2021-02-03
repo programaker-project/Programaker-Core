@@ -224,7 +224,7 @@ export class DashboardComponent {
     }
 
     _isProfileTabPresent() {
-        return this.profile && this.profile.type === 'group' && this.groupProfile && (this.groupProfile.programs.length > 0 || (!this.isOwnUser && !this.userRole));
+        return this.profile && this.profile.type === 'group' && this.groupProfile;
     }
 
     private updateAnchor(href: string, anchor: string): string {

@@ -24,6 +24,11 @@
             </section>
         </div>
 
+        <section *ngIf="profile && profile.programs && profile.programs.length === 0" class="programs col-sm-8">
+            <div class="empty-section-explanation">
+                No public programs.
+            </div>
+        </section>
         <section *ngIf="profile && profile.programs && profile.programs.length > 0" class="programs col-sm-8">
             <div class="section-title">Public Programs</div>
             <div class="row program-list">
