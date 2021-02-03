@@ -3,7 +3,7 @@
     'profile-only': !isOwnUser && !userRole
     }">
     <mat-tab-group #navTabGroup mat-align-tabs="center" animationDuration="0ms">
-        <mat-tab *ngIf="profile && profile.type === 'group'" label="Group">
+        <mat-tab *ngIf="profile && profile.type === 'group' && groupProfile && (groupProfile.programs.length > 0 || (!isOwnuser && !userRole))" label="Group">
             <app-my-group-profile [profile]="groupProfile"></app-my-group-profile>
         </mat-tab>
         <mat-tab *ngIf="isOwnUser || userRole">

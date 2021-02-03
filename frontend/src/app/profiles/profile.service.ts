@@ -51,7 +51,7 @@ export class ProfileService {
     public async getProfileFromGroupname(groupname: string): Promise<GroupProfileInfo> {
         const url = `${this.environmentService.getApiRoot()}/groups/by-name/${groupname}/profile`;
 
-        const data : any = await this.http.get(url, { }).toPromise();
+        const data : any = await this.http.get(url, {headers: this.sessionService.getAuthHeader()}).toPromise();
 
         data.pictureUrl = getGroupPictureUrl(this.environmentService, data.id);
         data.collaborators.forEach((collaborator: { name: string, picture: string; id: string; }) => {
