@@ -19,7 +19,7 @@
                                , is_in_preview :: boolean() | ?MNESIA_SELECTOR % Features in beta/preview
                                }).
 
--record(user_profile_listings_entry, { id :: owner_id() %% UserId
+-record(user_profile_listings_entry, { id :: owner_id()
                                      , groups :: [binary()]
                                      }).
 

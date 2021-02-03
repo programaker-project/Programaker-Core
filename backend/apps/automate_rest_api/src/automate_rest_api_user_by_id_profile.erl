@@ -72,8 +72,7 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 -spec accept_json(cowboy_req:req(), #state{}) -> {'true',cowboy_req:req(), #state{}}.
-accept_json(Req, State) ->
-    #state{user_id=UserId} = State,
+accept_json(Req, State=#state{user_id=UserId}) ->
     {ok, Body, Req1} = ?UTILS:read_body(Req),
     #{ <<"groups">> := Groups } = jiffy:decode(Body, [return_maps]),
     case automate_storage:set_owner_public_listings({user, UserId}, Groups) of

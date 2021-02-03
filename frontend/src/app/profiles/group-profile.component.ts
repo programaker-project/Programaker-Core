@@ -54,27 +54,7 @@ export class GroupProfileComponent {
         private dialog: MatDialog,
         private bridgeService: BridgeService,
     ) {
-        console.log("this", this);
         this._iconDataToUrl = iconDataToUrl.bind(this, environmentService);
-
-        // this.profile.programs.sort((a, b) => {
-        //     return a.name.localeCompare(b.name, undefined, { ignorePunctuation: true, sensitivity: 'base' });
-        // });
-
-        // this.profile.groups.sort((a, b) => {
-        //     return a.name.localeCompare(b.name, undefined, { ignorePunctuation: true, sensitivity: 'base' });
-        // });
-
-        // this.profile.bridges.sort((a, b) => {
-        //     return a.name.localeCompare(b.name, undefined, { ignorePunctuation: true, sensitivity: 'base' });
-        // });
-
-        // for (const bridge of this.profile.bridges) {
-        //     this.bridgeInfo[bridge.id] = {
-        //         name: bridge.name,
-        //         icon: iconDataToUrl(this.environmentService, bridge.icon, bridge.id)
-        //     };
-        // }
     }
 
     ngOnInit(): void {

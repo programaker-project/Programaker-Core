@@ -67,7 +67,7 @@ export class FlowEditorComponent implements OnInit {
     workspaceElement: HTMLElement;
     read_only: boolean = true;
     can_admin: boolean = false;
-    visibility: string;
+    visibility: VisibilityEnum;
 
     constructor(
         private browser: BrowserService,

@@ -1,5 +1,5 @@
 %%% @doc
-%%% REST endpoint to manage groups.
+%%% REST endpoint to retrieve a user's profile.
 %%% @end
 
 -module(automate_rest_api_user_profile_by_name).
