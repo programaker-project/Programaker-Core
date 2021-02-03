@@ -218,7 +218,7 @@ mat-card.program .program-settings .contents button.archive-program {
 
 .profile .avatar img {
     height: 10em;
-    width: 10em;
+    max-width: 10em;
     border-radius: 4px;
 }
 
@@ -293,12 +293,45 @@ button.cardlike {
 }
 
 
+.profile.row {
+    margin-left: 0;
+    margin-right: 0;
+
+    .user {
+        padding: 0;
+    }
+}
 .profile section {
-    margin: 1em auto;
-    padding-top: 1ex;
-    width: max-content;
-    max-width: 100%;
-    border-top: 1px solid #aaa;
+    width: 100%;
+
+    &.groups {
+        width: max-content;
+        max-width: 100%;
+        min-width: 15ex;
+
+
+        .section-title {
+            padding: 0.25rem;
+        }
+
+        .section-objects {
+            text-align: center;
+        }
+    }
+
+    & > hr {
+        width: 12rem;
+        max-width: 100%;
+        background-color: #888;
+    }
+
+    &.programs {
+        padding: 1rem 0.25rem 2rem 0.25rem;
+        .program-list {
+            background-color: #eee;
+            border-radius: 4px;
+        }
+    }
 }
 
 section.bridges .not-joined-explanation {
