@@ -1,6 +1,6 @@
 import { map, share} from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType, ProgramEditorEvent, ProgramEditorEventValue } from './program';
+import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType, ProgramEditorEvent, ProgramEditorEventValue, VisibilityEnum } from './program';
 
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
@@ -259,11 +259,11 @@ export class ProgramService {
                 .toPromise()));
     }
 
-    updateProgramVisibility(programId: string, options: { is_public: boolean }){
+    updateProgramVisibility(programId: string, options: { visibility: VisibilityEnum }){
         return this.getUpdateProgramUrl(programId).then(
             url => (this.http
                 .patch(url,
-                       JSON.stringify({is_public: options.is_public}),
+                       JSON.stringify({visibility: options.visibility}),
                        {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
                                                                     ContentType.Json)})
                 .pipe(map(_ => true))

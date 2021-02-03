@@ -15,7 +15,7 @@
         , list_monitors/1
         , get_userid_from_username/1
         , update_user_settings/3
-        , set_owner_public_listings/3
+        , set_owner_public_listings/2
         , get_owner_public_listings/1
         , promote_user_to_admin/1
         , admin_list_users/0
@@ -148,7 +148,6 @@ create_user(Username, Password, Email, Status) ->
                                                , is_admin=false
                                                , is_advanced=false
                                                , is_in_preview=false
-                                               , is_public_profile=false
                                                },
     case save_unique_user(RegisteredUserData) of
         ok ->
@@ -462,7 +461,6 @@ get_user_from_mail_address(Email) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
-                                      , is_public_profile='_'
                                       },
     Guard = {'==', '$1', Email},
     ResultColumn = '$_',
@@ -546,7 +544,7 @@ create_program(Owner, ProgramName, ProgramType) ->
                                      , last_upload_time=0
                                      , last_successful_call_time=0
                                      , last_failed_call_time=0
-                                     , is_public=false
+                                     , visibility=private
                                      },
     case store_new_program(UserProgram) of
         ok ->
@@ -584,10 +582,10 @@ list_public_programs_from_userid(Userid) ->
     case retrieve_program_list_from_userid(Userid) of
         {ok, Programs} ->
             { ok
-            , lists:filtermap(fun([Program=#user_program_entry{ is_public=IsPublic }]) ->
-                                      case IsPublic of
-                                          false -> false;
-                                          true -> { true, Program }
+            , lists:filtermap(fun([Program=#user_program_entry{ visibility=Visibility }]) ->
+                                      case Visibility of
+                                          public -> { true, Program };
+                                          _ -> false
                                       end
                               end, Programs)
             };
@@ -630,7 +628,9 @@ is_user_allowed(Owner, ProgramId, Action) ->
             end,
     Transaction = fun() ->
                           case {mnesia:read(?USER_PROGRAMS_TABLE, ProgramId), Action} of
-                              {[#user_program_entry{is_public=true}], read_program} ->
+                              {[#user_program_entry{visibility=public}], read_program} ->
+                                  {ok, true};
+                              {[#user_program_entry{visibility=shareable}], read_program} ->
                                   {ok, true};
                               {[#user_program_entry{owner=RealOwner}], _} ->
                                   {ok, Check(Owner, RealOwner)};
@@ -736,8 +736,8 @@ update_program_metadata(ProgramId, MetadataChanges)->
                                                ProgramEntry
                                        end,
                                   C2 = case MetadataChanges of
-                                           #{ <<"is_public">> := IsPublic } ->
-                                               C1#user_program_entry{ is_public=IsPublic };
+                                           #{ <<"visibility">> := Visibility } ->
+                                               C1#user_program_entry{ visibility=parse_visibility(Visibility) };
                                            _ ->
                                                C1
                                        end,
@@ -1327,7 +1327,6 @@ get_userid_from_username(Username) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
-                                      , is_public_profile='_'
                                       },
     %% Check that neither the id, username or email matches another
     Guard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
@@ -1368,10 +1367,9 @@ update_user_settings(UserId, Settings, Permissions) ->
             {error, Reason}
     end.
 
--spec set_owner_public_listings(owner_id(), Programs :: [binary()], Groups :: [binary()]) -> ok | {error, _}.
-set_owner_public_listings(Owner, Programs, Groups) ->
+-spec set_owner_public_listings(owner_id(), Groups :: [binary()]) -> ok | {error, _}.
+set_owner_public_listings(Owner, Groups) ->
     Entry = #user_profile_listings_entry{ id=Owner
-                                        , programs=Programs
                                         , groups=Groups
                                         },
     Transaction = fun() ->
@@ -1759,7 +1757,6 @@ get_user_from_username(Username) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
-                                      , is_public_profile='_'
                                       },
     Guard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
     ResultColumn = '$1',
@@ -1793,7 +1790,6 @@ get_user_from_email(Email) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
-                                      , is_public_profile='_'
                                       },
     Guard = {'==', '$2', Email},
     ResultColumn = '$1',
@@ -1832,11 +1828,6 @@ apply_user_settings(User, Settings, [ user_permissions | T ], ErrorAcc) ->
 apply_user_permissions(User, Settings) ->
     Errors = [],
     {User1, Errors1} = case Settings of
-                           #{ <<"is_public_profile">> := IsPublicProfile } when is_boolean(IsPublicProfile) ->
-                               { User#registered_user_entry{ is_public_profile=IsPublicProfile}, Errors };
-                           #{ <<"is_public_profile">> := _IsPublicProfile } ->
-                               %% IsPublicProfile found, but it's not boolean
-                               { User, [ { bad_type, is_public_profile } | Errors ] };
                            #{ <<"is_advanced">> := IsAdvanced } when is_boolean(IsAdvanced) ->
                                { User#registered_user_entry{ is_advanced=IsAdvanced}, Errors };
                            #{ <<"is_advanced">> := _IsAdvanced } ->
@@ -1915,7 +1906,6 @@ retrieve_monitors_list_from_username(Username) ->
                                                                 , is_admin='_'
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
-                                                                , is_public_profile='_'
                                                                 },
                           UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
@@ -1982,7 +1972,6 @@ retrieve_program(Username, ProgramName) ->
                                                                 , is_admin='_'
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
-                                                                , is_public_profile='_'
                                                                 },
                           UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
@@ -2006,7 +1995,7 @@ retrieve_program(Username, ProgramName) ->
                                                                         , last_upload_time='_'
                                                                         , last_successful_call_time='_'
                                                                         , last_failed_call_time='_'
-                                                                        , is_public='_'
+                                                                        , visibility='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -2046,7 +2035,6 @@ retrieve_program_list_from_username(Username) ->
                                                                 , is_admin='_'
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
-                                                                , is_public_profile='_'
                                                                 },
                           UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
@@ -2070,7 +2058,7 @@ retrieve_program_list_from_username(Username) ->
                                                                         , last_upload_time='_'
                                                                         , last_successful_call_time='_'
                                                                         , last_failed_call_time='_'
-                                                                        , is_public='_'
+                                                                        , visibility='_'
                                                                         },
                                   ProgramGuard = {'==', '$2', UserId},
                                   ProgramResultsColumn = '$1',
@@ -2105,7 +2093,7 @@ retrieve_program_list_from_userid(UserId) ->
                                                                 , last_upload_time='_'
                                                                 , last_successful_call_time='_'
                                                                 , last_failed_call_time='_'
-                                                                , is_public='_'
+                                                                , visibility='_'
                                                                 },
                           ProgramGuard = {'==', '$2', UserId},
                           ProgramResultsColumn = '$1',
@@ -2145,7 +2133,6 @@ store_new_program_content(Username, ProgramName,
                                                                 , is_admin='_'
                                                                 , is_advanced='_'
                                                                 , is_in_preview='_'
-                                                                , is_public_profile='_'
                                                                 },
                           UserGuard = {'==', '$2', automate_storage_utils:canonicalize(Username)},
                           UserResultColumn = '$1',
@@ -2169,7 +2156,7 @@ store_new_program_content(Username, ProgramName,
                                                                         , last_upload_time='_'
                                                                         , last_successful_call_time='_'
                                                                         , last_failed_call_time='_'
-                                                                        , is_public='_'
+                                                                        , visibility='_'
                                                                         },
                                   ProgramGuard = {'andthen'
                                                  , {'==', '$2', UserId}
@@ -2294,7 +2281,6 @@ save_unique_user(UserData) ->
                                       , is_admin='_'
                                       , is_advanced='_'
                                       , is_in_preview='_'
-                                      , is_public_profile='_'
                                       },
 
     %% Check that neither the id, username or email matches another
@@ -2386,6 +2372,11 @@ apply_group_metadata_public_changes(Group=#user_group_entry{}, #{ public := IsPu
 apply_group_metadata_public_changes(Group, _) ->
     Group.
 
+-spec parse_visibility(binary()) -> user_program_visibility().
+parse_visibility(<<"public">>) -> public;
+parse_visibility(<<"private">>) -> private;
+parse_visibility(<<"shareable">>) -> shareable;
+parse_visibility(X) when is_atom(X) -> X.
 
 %%====================================================================
 %% Startup functions

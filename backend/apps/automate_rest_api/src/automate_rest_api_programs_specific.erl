@@ -57,7 +57,8 @@ is_authorized(Req, State=#get_program_seq{username=Username, program_id=ProgramI
             { true, Req1, State };
 
         Method ->
-            {ok, #user_program_entry{ is_public=IsPublic }} = automate_storage:get_program_from_id(ProgramId),
+            {ok, #user_program_entry{ visibility=Visibility }} = automate_storage:get_program_from_id(ProgramId),
+            IsPublic = ?UTILS:is_public(Visibility),
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     case {Method, IsPublic} of

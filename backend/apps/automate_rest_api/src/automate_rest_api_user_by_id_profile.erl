@@ -75,8 +75,8 @@ content_types_accepted(Req, State) ->
 accept_json(Req, State) ->
     #state{user_id=UserId} = State,
     {ok, Body, Req1} = ?UTILS:read_body(Req),
-    #{ <<"programs">> := Programs, <<"groups">> := Groups } = jiffy:decode(Body, [return_maps]),
-    case automate_storage:set_owner_public_listings({user, UserId}, Programs, Groups) of
+    #{ <<"groups">> := Groups } = jiffy:decode(Body, [return_maps]),
+    case automate_storage:set_owner_public_listings({user, UserId}, Groups) of
         ok ->
             { true, ?UTILS:send_json_output(jiffy:encode(#{ success => true }), Req1), State };
         {error, Reason} ->

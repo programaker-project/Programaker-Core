@@ -13,6 +13,6 @@ export class Session implements User {
         this.active = active;
         this.username = username;
         this.user_id = user_id;
-        this.tags = tags || { is_admin : false, is_advanced: false, is_in_preview: false, is_public_profile: false };
+        this.tags = tags || { is_admin : false, is_advanced: false, is_in_preview: false };
     }
 }

@@ -60,7 +60,8 @@ const routes: Routes = [
 
     // Settings
     { path: 'settings', component: SettingsComponent, resolve: { session: SessionResolver,
-                                                                 programs: ProgramListResolver, groups: UserGroupsResolver, bridges: UserBridgesResolver,
+                                                                 groups: UserGroupsResolver,
+
                                                                  user_profile: UserProfileResolver,
                                                                } },
     { path: 'settings/admin', component: AdminSettingsComponent, resolve: { session: SessionResolver,

@@ -206,25 +206,27 @@ program_listing_to_json(#user_program_entry{ id=Id
                                            , program_name=Name
                                            , enabled=Enabled
                                            , program_type=Type
-                                           , is_public=IsPublic
+                                           , visibility=Visibility
                                            }) ->
     #{ id => Id
      , name => Name
      , enabled => Enabled
      , type => Type
-     , is_public => IsPublic
+     , is_public => ?UTILS:is_public(Visibility)
+     , visibility => Visibility
      };
 program_listing_to_json(#program_metadata{ id=Id
                                          , name=Name
                                          , enabled=Enabled
                                          , type=Type
-                                         , is_public=IsPublic
+                                         , visibility=Visibility
                                          }) ->
     #{ id => Id
      , name => Name
      , enabled => Enabled
      , type => Type
-     , is_public => IsPublic
+     , is_public => ?UTILS:is_public(Visibility)
+     , visibility => Visibility
      }.
 
 program_listing_to_json(Program, Bridges) ->
@@ -239,7 +241,7 @@ program_data_to_json(#user_program{ id=Id
                                   , program_parsed=ProgramParsed
                                   , program_orig=ProgramOrig
                                   , enabled=Enabled
-                                  , is_public=IsPublic
+                                  , visibility=Visibility
                                   },
                      Checkpoint) ->
     #{ <<"id">> => Id
@@ -251,7 +253,8 @@ program_data_to_json(#user_program{ id=Id
      , <<"orig">> => ProgramOrig
      , <<"enabled">> => Enabled
      , <<"checkpoint">> => Checkpoint
-     , <<"is_public">> => IsPublic
+     , <<"is_public">> => ?UTILS:is_public(Visibility)
+     , <<"visibility">> => Visibility
      }.
 
 

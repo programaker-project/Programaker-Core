@@ -1,7 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-
-export type VisibilityEnum = 'public' | 'private';
+import { VisibilityEnum } from 'app/program';
 
 @Component({
     selector: 'app-change-program-visibility-dialog',

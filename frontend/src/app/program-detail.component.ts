@@ -2,7 +2,7 @@ import { Location, isPlatformServer } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
 import { Component, Input, OnInit, ViewChild, Inject, NgZone, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue } from './program';
+import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue, VisibilityEnum } from './program';
 import { ProgramService } from './program.service';
 
 import { Toolbox, ToolboxRegistration } from './blocks/Toolbox';
@@ -36,7 +36,7 @@ import { BrowserService } from './browser.service';
 import { EditorController } from './program-editors/editor-controller';
 import { Unsubscribable } from 'rxjs';
 import { EnvironmentService } from './environment.service';
-import { VisibilityEnum, ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
+import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { Session } from './session';
@@ -86,13 +86,13 @@ export class ProgramDetailComponent implements OnInit {
 
     read_only: boolean = true;
     can_admin: boolean = false;
-    is_public: boolean = false;
 
     // HACK: Prevent the MatMenu import for being removed
     private _pinRequiredMatMenuLibrary: MatMenu;
     eventSubscription: Unsubscribable | null;
     logSubscription: Unsubscribable | null;
     blockSynchronizer: BlockSynchronizer;
+    visibility: VisibilityEnum;
 
     constructor(
         private browser: BrowserService,
@@ -184,7 +184,7 @@ export class ProgramDetailComponent implements OnInit {
                 .subscribe(program => {
                     this.programId = program.id;
                     this.read_only = program.readonly;
-                    this.is_public = program.is_public;
+                    this.visibility = program.visibility;
                     this.can_admin = program.can_admin;
 
                     this.prepareWorkspace(program).then((controller: ToolboxController) => {
@@ -998,12 +998,11 @@ export class ProgramDetailComponent implements OnInit {
         });
     }
 
-    changeVisibility() {
-        const visibility: VisibilityEnum = this.is_public ? 'public' : 'private';
 
+    changeVisibility() {
         const data = {
             name: this.program.name,
-            visibility
+            visibility: this.visibility
         };
 
         const dialogRef = this.dialog.open(ChangeProgramVisilibityDialog, {
@@ -1018,22 +1017,8 @@ export class ProgramDetailComponent implements OnInit {
             }
 
             const vis = result.visibility;
-            let isPublic = undefined;
-            switch(vis) {
-                case 'public':
-                    isPublic = true;
-                    break;
-
-                case 'private':
-                    isPublic = false;
-                    break;
-
-                default:
-                    throw Error(`Unknown visibility value: ${vis}`);
-            }
-
-            this.programService.updateProgramVisibility( this.program.id, { is_public: isPublic } ).then(() => {
-                this.is_public = isPublic;
+            this.programService.updateProgramVisibility( this.program.id, { visibility: vis } ).then(() => {
+                this.visibility = vis;
             });
 
         });

@@ -13,6 +13,7 @@
         , group_picture_modification_time/1
         , get_bridges_on_program_id/1
         , get_owner_asset_directory/1
+        , is_public/1
         ]).
 
 -include("../../automate_common_types/src/types.hrl").
@@ -130,6 +131,14 @@ get_owner_asset_directory({OwnerType, OwnerId}) ->
                                  , OwnerId
                                  ])).
 
+
+-spec is_public(user_program_visibility()) -> boolean().
+is_public(Visibility) ->
+    case Visibility of
+        public -> true;
+        shareable -> true;
+        private -> false
+    end.
 %% Auxiliary
 movefile(Source, Target) ->
     case file:rename(Source, Target) of

@@ -751,25 +751,36 @@ get_versioning(Nodes) ->
                 { id=24
                 , apply=fun() ->
                                 {atomic, ok} = mnesia:transform_table(
-                                                 ?REGISTERED_USERS_TABLE,
-                                                 fun({registered_user_entry, Id, Username, CanonicalUsername, Password
-                                                     , Email, Status, RegistrationTime
-                                                     , IsAdmin, IsAdvanced, IsInPreview
+                                                 ?USER_PROGRAMS_TABLE,
+                                                 fun({ user_program_entry
+                                                     , Id, UserId, ProgramName, ProgramType
+                                                     , ProgramParsed, ProgramOrig, Enabled, ProgramChannel
+                                                     , CreationTime, LastUploadTime, LastSuccessfulCalltime
+                                                     , LastFailedCallTime, IsPublic
                                                      }) ->
-                                                         %% Replicate the entry. Set is_public_profile to false.
-                                                         { registered_user_entry, Id, Username, CanonicalUsername, Password
-                                                         , Email, Status, RegistrationTime
-                                                         , IsAdmin, IsAdvanced, IsInPreview, false
+                                                         %% Translate `public` to `visibility`
+                                                         Visibility = case IsPublic of
+                                                                          true -> public;
+                                                                          false -> private
+                                                                      end,
+
+                                                         { user_program_entry
+                                                         , Id, UserId, ProgramName, ProgramType
+                                                         , ProgramParsed, ProgramOrig, Enabled, ProgramChannel
+                                                         , CreationTime, LastUploadTime, LastSuccessfulCalltime
+                                                         , LastFailedCallTime
+                                                         , Visibility
                                                          }
                                                  end,
-                                                 [ id, username, canonical_username, password, email, status, registration_time
-                                                 , is_admin, is_advanced, is_in_preview, is_public_profile
+                                                 [ id, owner, program_name, program_type, program_parsed, program_orig, enabled, program_channel
+                                                 , creation_time, last_upload_time, last_successful_call_time, last_failed_call_time
+                                                 , visibility
                                                  ],
-                                                 registered_user_entry
+                                                 user_program_entry
                                                 ),
 
                                     {atomic, ok} = mnesia:create_table(?USER_PROFILE_LISTINGS_TABLE,
-                                                                       [ { attributes, [ id, programs, groups ] }
+                                                                       [ { attributes, [ id, groups ] }
                                                                        , { disc_copies, Nodes }
                                                                        , { record_name, user_profile_listings_entry }
                                                                        , { type, set }

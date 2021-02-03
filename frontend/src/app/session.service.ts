@@ -23,7 +23,6 @@ export class SessionService {
             is_admin: false,
             is_advanced: false,
             is_in_preview: false,
-            is_public_profile: false,
         }
     };
 
@@ -152,7 +151,7 @@ export class SessionService {
         return token;
     }
 
-    async updateUserSettings(user_settings_update : { is_advanced: boolean, is_public_profile: boolean }): Promise<boolean> {
+    async updateUserSettings(user_settings_update : { is_advanced: boolean }): Promise<boolean> {
         const url = (await this.getApiRootForUserId()) + '/settings';
         const response = await (this.http
                                 .post(url, JSON.stringify(user_settings_update),
@@ -162,7 +161,7 @@ export class SessionService {
         return (response as { success: boolean }).success;
     }
 
-    async updateUserProfileSettings(userProfile: { programs: string[], groups: string[] }) {
+    async updateUserProfileSettings(userProfile: { groups: string[] }) {
         const url = `${await this.getApiRootForUserId()}/profile`;
         const response = await (this.http
             .post(url, JSON.stringify(userProfile),
@@ -227,7 +226,6 @@ export class SessionService {
                     is_admin: false,
                     is_advanced: false,
                     is_in_preview: false,
-                    is_public_profile: false,
                 }
             });
         }
@@ -260,7 +258,6 @@ export class SessionService {
                         is_admin: false,
                         is_advanced: false,
                         is_in_preview: false,
-                        is_public_profile: false,
                     }
                 });
             });

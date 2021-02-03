@@ -1,8 +1,10 @@
+export type VisibilityEnum = 'public' | 'shareable' | 'private';
+
 export class ProgramMetadata {
     id: string;
     name: string;
     enabled: boolean;
-    is_public: boolean;
+    visibility: VisibilityEnum;
     type: string;
     bridges_in_use: string[];
 }

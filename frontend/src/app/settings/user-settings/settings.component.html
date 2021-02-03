@@ -63,73 +63,8 @@
                 </mat-slide-toggle>
             </div>
 
-            <div class="user-profile toggle-setting">
-                <label for="advanced-user-toggle">Public profile</label>
-
-                <mat-slide-toggle
-                    class="value"
-                    color="accent"
-                    [checked]=is_public_profile
-                    (change)="onChangePublicProfileSettings($event)">
-                    <span>{{ is_public_profile ? 'Enabled' : 'Disabled' }}</span>
-                </mat-slide-toggle>
-            </div>
-
-            <div class="user-profile settings-group"
-                *ngIf="session && is_public_profile">
+            <div class="user-profile settings-group">
                 <div class="title">Profile info</div>
-
-                <section *ngIf="publicPrograms" class="programs">
-                    <div class="section-title">Programs listed</div>
-
-                    <div class="row" *ngIf="publicPrograms.length > 0">
-                        <div *ngFor="let program of publicPrograms" class="col-sm-6 item">
-                            <mat-card
-                                (click)="listedPrograms[program.id] = !listedPrograms[program.id]"
-                                [ngClass]="{
-                                'program': true,
-                                'listed': listedPrograms[program.id],
-                                'unlisted': !listedPrograms[program.id]
-                                }"
-                                role="button">
-
-                                <div class="program-data">
-                                    <div class="program-type">
-                                        <img *ngIf="program.type === 'scratch_program'"
-                                            src="/assets/blocks-icon.svg"
-                                            data-toggle="tooltip" data-placement="top" title="Block style program" />
-                                        <img *ngIf="program.type === 'flow_program'"
-                                            src="/assets/flow-icon.svg"
-                                            data-toggle="tooltip" data-placement="top" title="Flow style program"/>
-                                    </div>
-                                    <div class="card-title">{{program.name}}</div>
-                                    <div class="connection-icon-list">
-                                        <span *ngFor="let bridgeId of program.bridges_in_use">
-                                            <img role="avatar" class="icon" *ngIf="bridgeInfo[bridgeId] && bridgeInfo[bridgeId].icon" src="{{ bridgeInfo[bridgeId].icon }}"
-                                                data-toggle="tooltip" title="{{bridgeInfo[bridgeId].name}} bridge"/>
-                                            <span class="nametag" *ngIf="bridgeInfo[bridgeId] && (!bridgeInfo[bridgeId].icon) && bridgeInfo[bridgeId].name">
-                                                {{ bridgeInfo[bridgeId].name }}
-                                            </span>
-                                        </span>
-                                    </div>
-                                </div>
-                            </mat-card>
-                        </div>
-                    </div>
-                    <div *ngIf="publicPrograms.length === 0">
-                        No public programs to show. Open a program and click on
-                        <button color="secondary"
-                            class="annotated-icon sample-button"
-                            mat-button mat-raised-button>
-
-                            <mat-icon *ngIf="!is_public">lock</mat-icon>
-                            <label *ngIf="!is_public" class="label">
-                                Private
-                            </label>
-                        </button>
-                        to make it public.
-                    </div>
-                </section>
 
                 <section *ngIf="groups" class="groups">
                     <div class="section-title">Groups listed</div>

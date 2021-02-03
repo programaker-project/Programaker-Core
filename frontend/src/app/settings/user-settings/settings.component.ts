@@ -37,7 +37,6 @@ import { UserProfileInfo } from 'app/profiles/profile.service';
 export class SettingsComponent {
     session: Session;
     is_advanced: boolean;
-    is_public_profile: boolean = true;
 
     loadedImage: File = null;
 
@@ -46,10 +45,6 @@ export class SettingsComponent {
     @ViewChild('saveAvatarButton') saveAvatarButton: MatButton;
 
     readonly _getUserPicture: (userId: string) => string;
-    programs: ProgramMetadata[];
-    publicPrograms: ProgramMetadata[];
-    listedPrograms: {[key: string]: boolean} = {};
-    bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
 
     groups: GroupInfo[];
     listedGroups: {[key: string]: boolean} = {};
@@ -67,28 +62,11 @@ export class SettingsComponent {
         this._getUserPicture = getUserPictureUrl.bind(this, environmentService);
 
         this.route.data
-            .subscribe((data: { programs: ProgramMetadata[], groups: GroupInfo[], bridges: BridgeIndexData[], user_profile: UserProfileInfo }) => {
-                this.programs = data.programs.sort((a, b) => {
-                    return a.name.localeCompare(b.name, undefined, { ignorePunctuation: true, sensitivity: 'base' });
-                });
-                this.publicPrograms = this.programs.filter(p => p.enabled && p.is_public);
-
+            .subscribe((data: { groups: GroupInfo[], user_profile: UserProfileInfo }) => {
                 this.groups = data.groups;
-
-                this.bridges = data.bridges;
-                for (const bridge of this.bridges) {
-                    this.bridgeInfo[bridge.id] = {
-                        name: bridge.name,
-                        icon: iconDataToUrl(this.environmentService, bridge.icon, bridge.id)
-                    };
-                }
 
                 for (const group of data.user_profile.groups) {
                     this.listedGroups[group.id] = true;
-                }
-
-                for (const program of data.user_profile.programs) {
-                    this.listedPrograms[program.id] = true;
                 }
             });
     }
@@ -104,7 +82,6 @@ export class SettingsComponent {
                     }
                     else {
                         this.is_advanced = this.session.tags.is_advanced;
-                        this.is_public_profile = this.session.tags.is_public_profile;
                     }
                 },
                 error: err => {
@@ -118,10 +95,6 @@ export class SettingsComponent {
         this.is_advanced = event.checked;
     }
 
-    onChangePublicProfileSettings(event: MatSlideToggleChange) {
-        this.is_public_profile = event.checked;
-    }
-
     async saveUserSettings() {
         // Send update
         const button = document.getElementById('user-settings-save-button');
@@ -130,27 +103,17 @@ export class SettingsComponent {
             button.classList.remove('completed');
         }
 
-        if (this.is_public_profile) {
-            const publicPrograms = [];
-            for (const prog of Object.keys(this.listedPrograms)) {
-                if (this.listedPrograms[prog]) {
-                    publicPrograms.push(prog);
-                }
+        const publicGroups = [];
+        for (const group of Object.keys(this.listedGroups)) {
+            if (this.listedGroups[group]) {
+                publicGroups.push(group);
             }
-
-            const publicGroups = [];
-            for (const group of Object.keys(this.listedGroups)) {
-                if (this.listedGroups[group]) {
-                    publicGroups.push(group);
-                }
-            }
-
-            await this.sessionService.updateUserProfileSettings({ programs: publicPrograms, groups: publicGroups });
         }
+
+        await this.sessionService.updateUserProfileSettings({ groups: publicGroups });
 
         const success = await this.sessionService.updateUserSettings({
             is_advanced: this.is_advanced,
-            is_public_profile: this.is_public_profile,
         });
 
         if (success) {
