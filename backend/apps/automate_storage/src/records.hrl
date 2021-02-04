@@ -135,6 +135,7 @@
                                       , instruction_memory :: map() | ?MNESIA_SELECTOR
                                       , position :: [pos_integer()] | ?MNESIA_SELECTOR
                                       , stats :: any() | ?MNESIA_SELECTOR
+                                      , direction :: thread_direction() | ?MNESIA_SELECTOR
                                       }).
 
 -record(registered_service_entry, { registration_id :: binary() | ?MNESIA_SELECTOR

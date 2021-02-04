@@ -69,6 +69,7 @@
 -define(FLOW_LAST_VALUE, <<"flow_last_value">>).
 -define(COMMAND_PRELOAD_GETTER, <<"op_preload_getter">>).
 -define(FLOW_ON_BLOCK_RUN, <<"op_on_block_run">>).
+-define(FLOW_JUMP_TO_POSITION, <<"jump_to_position">>).
 
 %% Debugging
 -define(COMMAND_LOG_VALUE, <<"logging_add_log">>).

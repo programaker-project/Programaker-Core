@@ -146,7 +146,11 @@ resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | _]) wh
     {error, element_not_found};
 
 resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
-    resolve_subblock_with_position(lists:nth(Position, Contents), T).
+    case (Position > 0) and (Position =< length(Contents)) of
+        true -> resolve_subblock_with_position(lists:nth(Position, Contents), T);
+        false ->
+            {error, element_not_found}
+    end.
 
 -spec run_thread(#program_thread{}, {atom(), any()}, binary())
                 -> {stopped, thread_finished} | {did_not_run, waiting}
@@ -384,7 +388,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
             Thread4 = automate_bot_engine_variables:set_instruction_memory( Thread3
                                                                           , {Times, Value + 1}
                                                                           ),
-            {ran_this_tick, Thread4#program_thread{ position=Position ++ [1] }};
+            {ran_this_tick, Thread4#program_thread{ position=Position ++ [1], direction=forward }};
         false ->
             Thread4 = automate_bot_engine_variables:unset_instruction_memory(Thread3),
             {ran_this_tick, increment_position(Thread4)}
@@ -397,50 +401,55 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
     {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(Argument, Thread, Op),
     case Value of
         false ->
-            {ran_this_tick, Thread2#program_thread{ position=Position ++ [1] }};
+            %% Condition not macthed, going in
+            {ran_this_tick, Thread2#program_thread{ position=Position ++ [1], direction=forward }};
         _ ->
+            %% Condition Matched, NOT going into the loop
             {ran_this_tick, increment_position(Thread2)}
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_IF
                     , ?ARGUMENTS := [Argument]
-                    }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
+                    }, Thread=#program_thread{ position=Position, direction=Direction }, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
-        {ok, _} ->
-            Thread2 = automate_bot_engine_variables:unset_instruction_memory(Thread),
-            {ran_this_tick, increment_position(Thread2)};
-        {error, not_found} ->
+    case Direction of
+        up ->
+            %% Coming back from condition
+            {ran_this_tick, increment_position(Thread)};
+        forward ->
+            %% Getting into the IF
             {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(
                                      Argument, Thread, Op),
 
             case Value of
-                false -> %% Not matching, skipping
+                false ->
+                    %% Not matching, skipping
                     {ran_this_tick, increment_position(Thread2)};
-                _ -> %% Matching, going in
+                _ ->
+                    %% Matching, going in
                     Thread3 = automate_bot_engine_variables:set_instruction_memory(
                                 Thread2, {already_run, true}),
-                    {ran_this_tick, Thread3#program_thread{ position=Position ++ [1] }}
+                    {ran_this_tick, Thread3#program_thread{ position=Position ++ [1], direction=forward }}
             end
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_IF_ELSE
                     , ?ARGUMENTS := [Argument]
-                    }, Thread=#program_thread{ position=Position }, {?SIGNAL_PROGRAM_TICK, _}) ->
+                    }, Thread=#program_thread{ position=Position, direction=Direction }, {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    case automate_bot_engine_variables:retrieve_instruction_memory(Thread) of
-        {ok, _} ->
-            Thread2 = automate_bot_engine_variables:unset_instruction_memory(Thread),
-            {ran_this_tick, increment_position(Thread2)};
-        {error, not_found} ->
-            Thread2 = automate_bot_engine_variables:set_instruction_memory(
-                        Thread, {already_run, true}),
-            {ok, Value, Thread3} = automate_bot_engine_variables:resolve_argument(Argument, Thread2, Op),
+    case Direction of
+        up ->
+            %% Coming back from condition
+            {ran_this_tick, increment_position(Thread)};
+        forward ->
+            {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(Argument, Thread, Op),
             case Value of
-                false -> %% Not matching, going for else
-                    {ran_this_tick, Thread3#program_thread{ position=Position ++ [2, 1] }};
-                _ -> %% Matching, going for if
-                    {ran_this_tick, Thread3#program_thread{ position=Position ++ [1, 1] }}
+                false ->
+                    %% Not matching, going for else
+                    {ran_this_tick, Thread2#program_thread{ position=Position ++ [2, 1], direction=forward }};
+                _ ->
+                    %% Matching, going for if
+                    {ran_this_tick, Thread2#program_thread{ position=Position ++ [1, 1], direction=forward }}
             end
     end;
 
@@ -749,24 +758,23 @@ run_instruction(Op=#{ ?TYPE := ?CONTEXT_SELECT_CONNECTION
                     , ?ARGUMENTS := [ BridgeIdVal
                                     , ConnectionIdVal
                                     ]
-                    }, Thread=#program_thread{ position=Position },
+                    }, Thread=#program_thread{ position=Position, direction=Direction },
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, BridgeId, Thread2 } = automate_bot_engine_variables:resolve_argument(BridgeIdVal, Thread, Op),
     {ok, ConnectionId, Thread3 } = automate_bot_engine_variables:resolve_argument(ConnectionIdVal, Thread2, Op),
 
-    case automate_bot_engine_variables:retrieve_instruction_memory(Thread3) of
-        {ok, _} ->
+    case Direction of
+        up ->
             %% Already here, exit the context
             Thread4 = automate_bot_engine_variables:unset_instruction_memory(Thread3),
             {ran_this_tick, increment_position(Thread4)};
-        {error, not_found} ->
+        forward ->
             Thread4 = automate_bot_engine_variables:set_instruction_memory(
-                        Thread3, [ {already_run, true}
-                                 , { context_group
+                        Thread3, [ { context_group
                                    , bridge_connection
                                    , {BridgeId, ConnectionId} }]),
-            {ran_this_tick, Thread4#program_thread{ position=Position ++ [1] }}
+            {ran_this_tick, Thread4#program_thread{ position=Position ++ [1], direction=forward }}
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_PRELOAD_GETTER
@@ -807,7 +815,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_LOG_VALUE
 run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
                     , ?ARGUMENTS := Arguments
                     , ?CONTENTS := Flows
-                    }, Thread=#program_thread{ program_id=ProgramId, position=Position },
+                    }, Thread=#program_thread{ program_id=ProgramId, position=Position, direction=Direction },
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
     %% TODO: Consider actively signaling the parent when children end
@@ -828,7 +836,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
             ChildrenIds = lists:map(fun(Index) ->
                                             {ok, NewThreadId } = automate_bot_engine_thread_launcher:launch_thread(
                                                                    ProgramId,
-                                                                   Thread3#program_thread{position=Position ++ [Index, 1]}),
+                                                                   Thread3#program_thread{position=Position ++ [Index, 1], direction=forward}),
                                             NewThreadId
                                     end, lists:seq(1, length(Flows))),
 
@@ -863,7 +871,19 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
             end;
         %% Children thread, just finish thread
         {ok, #{ already_run := true }} ->
-            {stopped, thread_finished}
+            case Direction of
+                up ->
+                    %% Normal execution
+                    {stopped, thread_finished};
+                forward ->
+                    %% Trying to fork after a JUMP back
+                    %% Log an error and stop it.
+                    %% TODO: Think for a reasonable scenario that would require supporting this.
+                    automate_logging:log_platform(warning, io_lib:format("[~p:~p] FORK from child after JMP at on (programId=~p)",
+                                                                         [?MODULE, ?LINE, ProgramId])),
+
+                    {stopped, thread_finished}
+            end
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
@@ -1020,6 +1040,18 @@ run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
 
     {did_not_run, waiting};
 
+run_instruction(#{ ?TYPE := ?FLOW_JUMP_TO_POSITION
+                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_CONSTANT
+                                    , ?VALUE := [ PosHead | PosTail ]
+                                    }
+                                 ]
+                 }, Thread, _Message) ->
+
+    %% The position head is not incremented, as the trigger is not present on
+    %% the "Thread" structure anyway, so this gap is naturally skipped.
+    ToInternalPosition = [ PosHead | lists:map(fun(SubPos) -> SubPos + 1 end, PosTail)],
+    {ran_this_tick, Thread#program_thread{position=ToInternalPosition, direction=forward}};
+
 run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
     automate_logging:log_platform(
       warning,
@@ -1032,13 +1064,13 @@ run_instruction(#{ <<"contents">> := _Content }, Thread, _Message) ->
 
 increment_position(Thread = #program_thread{position=Position}) ->
     IncrementedInnermost = increment_innermost(Position),
-    FollowInSameLevelState = Thread#program_thread{position=IncrementedInnermost},
+    FollowInSameLevelState = Thread#program_thread{position=IncrementedInnermost, direction=forward},
     case get_instruction(FollowInSameLevelState) of
         {ok, _} ->
             FollowInSameLevelState;
         {error, element_not_found} ->
             BackToParent = back_to_parent(Position),
-            Thread#program_thread{position=BackToParent}
+            Thread#program_thread{position=BackToParent, direction=up}
     end.
 
 
@@ -1049,7 +1081,7 @@ to_int(Value) when is_binary(Value) ->
     IntValue.
 
 finish_thread(Thread = #program_thread{}) ->
-    Thread#program_thread{position=[]}.
+    Thread#program_thread{position=[]}. %% Direction is irrelevant
 
 back_to_parent([]) ->
     [1];
