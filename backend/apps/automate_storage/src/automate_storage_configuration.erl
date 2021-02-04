@@ -758,9 +758,9 @@ get_versioning(Nodes) ->
                                                      , CreationTime, LastUploadTime, LastSuccessfulCalltime
                                                      , LastFailedCallTime, IsPublic
                                                      }) ->
-                                                         %% Translate `public` to `visibility`
+                                                         %% Translate `is_public` to `visibility`
                                                          Visibility = case IsPublic of
-                                                                          true -> public;
+                                                                          true -> shareable;
                                                                           false -> private
                                                                       end,
 
