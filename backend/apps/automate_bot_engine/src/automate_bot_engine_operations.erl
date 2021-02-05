@@ -400,6 +400,8 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
                                                                           ),
             {ran_this_tick, Thread5#program_thread{ position=Position ++ [1], direction=forward }};
         false ->
+            %% Note that the value of the block (by id) is NOT removed, so it
+            %% can be used by subsequent blocks.
             Thread5 = automate_bot_engine_variables:unset_instruction_memory(Thread4),
             {ran_this_tick, increment_position(Thread5)}
     end;

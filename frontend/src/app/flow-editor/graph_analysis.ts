@@ -574,6 +574,7 @@ function cut_on_block_id(ast: SteppedBlockTree[], block_id: string): [SteppedBlo
         }
     }
 
+    // If the block is not found, the merge point is not in scope
     return [
         ast,
         [],
