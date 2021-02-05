@@ -204,6 +204,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "flow_get_thread_id":
         case "data_deleteoflist":
         case "data_addtolist":
+        case "data_ui_block_value":
         case "op_preload_getter":
         case "op_on_block_run":
             if (op.args) {

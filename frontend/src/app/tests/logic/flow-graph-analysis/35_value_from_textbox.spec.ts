@@ -22,7 +22,7 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
     return graph;
 }
 
-describe('Flow-35 Value from textbox.', () => {
+describe('Flow-35: Value from textbox.', () => {
     it('Validation should pass', async () => {
         expect(validate(gen_flow()))
             .toBeTruthy()

@@ -573,7 +573,10 @@ function cut_on_block_id(ast: SteppedBlockTree[], block_id: string): [SteppedBlo
         }
     }
 
-    throw new Error(`Block (id: ${block_id}) not found`);
+    return [
+        ast,
+        [],
+    ];
 }
 
 function find_common_merge(asts: SteppedBlockTree[][], options: { prune_not_finishing: boolean }): { asts: SteppedBlockTree[][], common_suffix: SteppedBlockTree[] } {
