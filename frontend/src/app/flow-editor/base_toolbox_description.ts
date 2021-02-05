@@ -187,10 +187,6 @@ export const BaseToolboxDescription: ToolboxDescription = [
                         name: "repetition times",
                         type: "integer",
                     },
-                    {
-                        name: "back to loop",
-                        type: "pulse",
-                    },
                 ],
                 outputs: [
                     {

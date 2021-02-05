@@ -792,6 +792,33 @@ get_versioning(Nodes) ->
                                                             automate_configuration:get_table_wait_time())
                        end
                 }
+
+                %% Add direction to program threads
+              , #database_version_transformation
+                { id=25
+                , apply=fun() ->
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?RUNNING_THREADS_TABLE,
+                                                 fun({ running_program_thread_entry
+                                                     , ThreadId, RunnerPid, ParentProgramId
+                                                     , Instructions, Memory, InstructionMemory
+                                                     , Position, Stats
+                                                     }) ->
+                                                         { running_program_thread_entry
+                                                         , ThreadId, RunnerPid, ParentProgramId
+                                                         , Instructions, Memory, InstructionMemory
+                                                         , Position, Stats
+                                                         , forward
+                                                         }
+                                                 end,
+                                                 [ thread_id, runner_pid, parent_program_id
+                                                 , instructions, memory, instruction_memory
+                                                 , position, stats, direction
+                                                 ],
+                                                 running_program_thread_entry
+                                                )
+                       end
+                }
               ]
         }.
 

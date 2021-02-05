@@ -7,6 +7,8 @@ import { FlowGraph, FlowGraphEdge, FlowGraphNode } from '../../../flow-editor/fl
 import { uuidv4 } from '../../../flow-editor/utils';
 import { UiToolboxDescription } from '../../../flow-editor/ui-blocks/ui_toolbox_description';
 import { UiFlowBlockOptions, isUiFlowBlockOptions, BLOCK_TYPE as FLOW_BLOCK_TYPE, UiFlowBlockData } from '../../../flow-editor/ui-blocks/ui_flow_block';
+import { is_pulse } from '../../../flow-editor/graph_transformations';
+
 
 
 type NodeDescription = AtomicFlowBlockData | EnumDirectValueFlowBlockData | DirectValueFlowBlockData | UiFlowBlockData;
@@ -352,8 +354,10 @@ export class GraphBuilder {
             block_options.slots = Object.assign(block_options.slots || {}, options.slots)
         }
 
+        const pulse_inputs = block_options.inputs?.filter(p => is_pulse(p)).length || 0;
+
         const synth_in = this.add_node(block_options, ref);
-        this.resolve_args(ref, options, synth_in);
+        this.resolve_args(ref, options, synth_in + pulse_inputs);
 
         return new OpNodeBuilderRef(this, ref);
     }

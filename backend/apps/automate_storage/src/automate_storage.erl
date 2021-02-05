@@ -864,6 +864,7 @@ get_user_from_pid(Pid) ->
                                                    , instruction_memory = '_'
                                                    , position = '_'
                                                    , stats = '_'
+                                                   , direction = '_'
                                                    },
     ThreadGuard = {'==', '$2', Pid},
     ThreadResultColumn = '$1',
@@ -1023,6 +1024,7 @@ get_program_events(ProgramId) ->
 
 -spec create_thread(binary(), #program_thread{}) -> {ok, thread_id()}.
 create_thread(ParentProgramId, #program_thread{ program=Instructions
+                                              , direction=Direction
                                               , global_memory=Memory
                                               , instruction_memory=InstructionMemory
                                               , position=Position
@@ -1035,6 +1037,7 @@ create_thread(ParentProgramId, #program_thread{ program=Instructions
                                               , memory=Memory
                                               , instruction_memory=InstructionMemory
                                               , position=Position
+                                              , direction=Direction
                                               , stats=#{}
                                               },
 
@@ -1087,6 +1090,7 @@ get_threads_from_program(ParentProgramId) ->
                                              , instruction_memory = '_'
                                              , position = '_'
                                              , stats = '_'
+                                             , direction = '_'
                                              },
     Guard = {'==', '$2', ParentProgramId},
     ResultColumn = '$1',

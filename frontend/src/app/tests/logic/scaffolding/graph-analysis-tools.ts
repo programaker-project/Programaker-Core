@@ -10,13 +10,14 @@ type _CallServiceOp = ['command_call_service',
 type _WaitForMonitorOp = ['wait_for_monitor', { monitor_id: { from_service: string }, key: "utc_time" | "utc_date", monitor_expected_value: any }];
 type _LastValueOp = ['flow_last_value', string, number | string];
 type _IfElseOp = ['control_if_else', SimpleArrayAstArgument, SimpleArrayAstOperation[]];
+type _RepeatOp = ['control_repeat', SimpleArrayAstArgument, SimpleArrayAstOperation[]];
 type _ForkExecOp = ['op_fork_execution', SimpleArrayAstArgument[], SimpleArrayAstOperation[]]
 
 export type SimpleArrayAstArgument = SimpleArrayAstOperation | string | number
 export type SimpleArrayAstArgs = _AndOp | _EqualsOp
     | _CallServiceOp
     | _WaitForMonitorOp | _LastValueOp
-    | _IfElseOp
+    | _IfElseOp | _RepeatOp
     | _ForkExecOp
 ;
 
@@ -96,6 +97,16 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
             type: op[0],
             args: [ convert_argument(op[1]) ],
             contents: contents,
+        }
+    }
+
+    if (op[0] === 'control_repeat') {
+        const contents = op.slice(2) as SimpleArrayAstOperation[];
+
+        return {
+            type: op[0],
+            args: [ convert_argument(op[1]) ],
+            contents: convert_ast(contents),
         }
     }
 
@@ -192,6 +203,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "control_wait":
         case "control_wait_for_next_value":
         case "control_if_else":
+        case "control_repeat":
         case "operator_modulo":
         case "operator_add":
         case "logging_add_log":
@@ -204,6 +216,7 @@ function canonicalize_op(op: CompiledBlock): CompiledBlock {
         case "flow_get_thread_id":
         case "data_deleteoflist":
         case "data_addtolist":
+        case "data_ui_block_value":
         case "op_preload_getter":
         case "op_on_block_run":
             if (op.args) {

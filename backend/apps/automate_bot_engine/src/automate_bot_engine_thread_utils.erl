@@ -14,6 +14,7 @@
 %%%===================================================================
 
 parse_program_thread(#running_program_thread_entry{ position=Position
+                                                  , direction=Direction
                                                   , instructions=Instructions
                                                   , memory=Memory
                                                   , instruction_memory=InstructionMemory
@@ -21,6 +22,7 @@ parse_program_thread(#running_program_thread_entry{ position=Position
                                                   , thread_id=ThreadId
                                                   }) ->
     #program_thread{ position=Position
+                   , direction=Direction
                    , program=Instructions
                    , global_memory=Memory
                    , instruction_memory=InstructionMemory
@@ -30,12 +32,14 @@ parse_program_thread(#running_program_thread_entry{ position=Position
 
 -spec merge_thread_structures(#running_program_thread_entry{}, #program_thread{}) -> #running_program_thread_entry{}.
 merge_thread_structures(Thread, #program_thread{ position=Position
+                                               , direction=Direction
                                                , program=Instructions
                                                , global_memory=Memory
                                                , instruction_memory=InstructionMemory
                                                , program_id=ParentProgramId
                                                }) ->
     Thread#running_program_thread_entry{ position=Position
+                                       , direction=Direction
                                        , instructions=Instructions
                                        , memory=Memory
                                        , instruction_memory=InstructionMemory

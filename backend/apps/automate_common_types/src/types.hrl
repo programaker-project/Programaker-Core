@@ -8,6 +8,7 @@
 %% Better to just use owner_id().
 -type owner_id() :: { user, binary() } | { group, binary() }.
 -type user_program_visibility() :: public | private | shareable.
+-type thread_direction() :: forward | up.
 
 -define(COMMON_TYPES, defined).
 

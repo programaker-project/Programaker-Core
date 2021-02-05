@@ -29,6 +29,7 @@ const BASE_TOOLBOX_BLOCKS = index_toolbox_description(BaseToolboxDescription);
 const JUMP_TO_POSITION_OPERATION = 'jump_to_position';
 const JUMP_TO_BLOCK_OPERATION = 'jump_to_block';
 const FORK_OPERATION = 'op_fork_execution';
+const REPEAT_OPERATION = 'control_repeat';
 const TIME_TRIGGERS = ['flow_utc_date', 'flow_utc_time'];
 
 function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
@@ -573,7 +574,11 @@ function cut_on_block_id(ast: SteppedBlockTree[], block_id: string): [SteppedBlo
         }
     }
 
-    throw new Error(`Block (id: ${block_id}) not found`);
+    // If the block is not found, the merge point is not in scope
+    return [
+        ast,
+        [],
+    ];
 }
 
 function find_common_merge(asts: SteppedBlockTree[][], options: { prune_not_finishing: boolean }): { asts: SteppedBlockTree[][], common_suffix: SteppedBlockTree[] } {
@@ -848,7 +853,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
     const rev_conn_index = reverse_index_connections(graph);
 
     if (continuations.length > 1) {
-        let contents = [];
+        let contents /*: (SteppedBlockTree | SteppedBlockTree[])[]*/ = [];
 
         for (const cont of continuations) {
             const subast = [];
@@ -876,7 +881,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
             prune_not_finishing = functions_requiring_prune.indexOf(fun) >= 0;
         }
 
-        let common_suffix = [];
+        let common_suffix: SteppedBlockTree[] = [];
         const source_node = graph.nodes[source_id];
         if (source_node.data.type === AtomicFlowBlock.GetBlockType() &&
             (source_node.data as AtomicFlowBlockData).value.options.block_function === FORK_OPERATION) {
@@ -900,6 +905,14 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
                 }
             }
         }
+        else if (source_node.data.type === AtomicFlowBlock.GetBlockType() &&
+            (source_node.data as AtomicFlowBlockData).value.options.block_function === REPEAT_OPERATION) {
+            // Set everything in place for REPEAT <times> blocks
+
+            common_suffix = contents[2];
+            // contents[1] is ignored as it's not a pulse output
+            contents = contents[0];
+        }
         else {
             const re_merge_data = find_common_merge(contents, { prune_not_finishing });
             if (re_merge_data) {
@@ -907,7 +920,6 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
                 common_suffix = re_merge_data.common_suffix;
             }
         }
-
 
 
         ast[ast.length - 1].contents = contents; // Update parent block contents

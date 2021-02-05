@@ -262,6 +262,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := <<"services.ui.", UiMonit
     #{ <<"connection">> := Source, <<"ui_data">> := UiData } = Value,
 
     Thread = #program_thread{ position=[1]
+                            , direction=forward
                             , program=Program
                             , global_memory=#{ ?UI_TRIGGER_VALUES => #{ ?UI_TRIGGER_CONNECTION => Source, ?UI_TRIGGER_DATA => UiData } }
                             , instruction_memory=#{}
@@ -290,6 +291,7 @@ trigger_thread(#program_trigger{condition=#{ ?TYPE := ?COMMAND_DATA_VARIABLE_ON_
         ReceivedVariable ->
             %% Match!
             Thread = #program_thread{ position=[1]
+                                    , direction=forward
                                     , program=Program
                                     , global_memory=#{}
                                     , instruction_memory=#{}
@@ -325,6 +327,7 @@ trigger_thread(#program_trigger{condition=#{ ?TYPE := ?FLOW_ON_BLOCK_RUN
              end,
 
     Thread = #program_thread{ position=[1]
+                            , direction=forward
                             , program=Program
                             , global_memory=Memory
                             , instruction_memory=#{}
@@ -354,6 +357,7 @@ trigger_thread(#program_trigger{condition=#{ ?TYPE := ?COMMAND_TRIGGER_ON_BRIDGE
                              , permissions=#program_permissions{owner_user_id=_UserId}}) ->
 
     Thread = #program_thread{ position=[1]
+                            , direction=forward
                             , program=Program
                             , global_memory=#{}
                             , instruction_memory=#{}
@@ -377,6 +381,7 @@ trigger_thread(#program_trigger{condition=#{ ?TYPE := ?COMMAND_TRIGGER_ON_BRIDGE
                              , permissions=#program_permissions{owner_user_id=_UserId}}) ->
 
     Thread = #program_thread{ position=[1]
+                            , direction=forward
                             , program=Program
                             , global_memory=#{}
                             , instruction_memory=#{}
@@ -398,6 +403,7 @@ trigger_thread(#program_trigger{ condition= Op=#{ ?TYPE := <<"services.", Monito
                              , permissions=#program_permissions{owner_user_id=_UserId}}) ->
 
     Thread = #program_thread{ position=[1]
+                            , direction=forward
                             , program=Program
                             , global_memory=#{}
                             , instruction_memory=#{}
@@ -481,6 +487,7 @@ trigger_thread(#program_trigger{ condition=#{ ?TYPE := ?SIGNAL_PROGRAM_CUSTOM
                #program_state{ program_id=ProgramId }) ->
 
     Thread = #program_thread{ position=[1]
+                            , direction=forward
                             , program=Program
                             , global_memory=#{}
                             , instruction_memory=#{}
@@ -507,6 +514,7 @@ trigger_thread(Trigger, Message, ProgramState) ->
 trigger_thread_with_matching_message(Program, ProgramId, Channel, MonitorArgs, MessageContent, FullMessage,
                                      #program_trigger{condition=Condition}) ->
     Thread = #program_thread{ position=[1]
+                            , direction=forward
                             , program=Program
                             , global_memory=#{}
                             , instruction_memory=#{}

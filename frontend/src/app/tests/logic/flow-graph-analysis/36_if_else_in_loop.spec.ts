@@ -13,16 +13,25 @@ export function gen_flow(options?: { source_id?: string }): FlowGraph {
 
     // Trigger
     const trigger = builder.add_trigger('simple_button', {id: 'trigger', args: []});
-    const textbox = builder.add_trigger('text_box', {id: 'textbox', args: []});
 
-    // Simple operation
-    trigger.then(b => b.add_op('logging_add_log', { id: 'log1', args: [[textbox, 1]] }));
+    // Condition & Check
+    const cond = builder.add_stream('operator_equals', { id: 'equals', args: [1, 2, 11]});
+    const check = builder.add_op('control_if_else', { id: 'check', args: [ [cond, 0] ] });
+
+    //   /----------------\
+    //   ↓                |
+    // Trigger → wait 1 -/
+    //      |
+    //      \--→ wait 2 (finish)
+    //
+    trigger.then(check).then(f => f.add_op('control_wait', { id: 'true-branch', args: [ 1 ]})).then(check);
+    check.then(f => f.add_op('control_wait', { id: 'false-branch', args: [ 2 ] }), 1);
 
     const graph = builder.build();
     return graph;
 }
 
-describe('Flow-35: Value from textbox.', () => {
+describe('Flow-36: If-else in loop.', () => {
     it('Validation should pass', async () => {
         expect(validate(gen_flow()))
             .toBeTruthy()
@@ -33,7 +42,12 @@ describe('Flow-35: Value from textbox.', () => {
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (services.ui.simple_button.trigger)
-                (log (data_ui_block_value textbox))
+                (jump-point "check")
+                (if (= 1 2 11)
+                    ((wait-seconds 1)
+                     (jump-to "check")
+                     )
+                  ((wait-seconds 2)))
                 `))
         ]);
     });
