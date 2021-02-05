@@ -12,6 +12,7 @@ export const OP_TRANSLATIONS = {
     'jump-to': 'jump_to_block',
     'jump-point': 'jump_point',
     'fork': 'op_fork_execution',
+    'repeat': 'control_repeat',
 
     // Operations
     'log': 'logging_add_log',

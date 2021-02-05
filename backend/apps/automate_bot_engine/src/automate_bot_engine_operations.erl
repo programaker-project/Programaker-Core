@@ -383,15 +383,25 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
                                       LoopTimes = to_int(TimesStr),
                                       {LoopTimes, 0, Thread2}
                               end,
+
+    Thread4 = case Op of
+                  #{ ?BLOCK_ID := BlockId } ->
+                      automate_bot_engine_variables:set_instruction_memory( Thread3
+                                                                          , #{ <<"as_list">> => [null, Value + 1] }
+                                                                          , BlockId
+                                                                          );
+                  _ ->
+                      Thread3
+              end,
     case Value < Times of
         true ->
-            Thread4 = automate_bot_engine_variables:set_instruction_memory( Thread3
+            Thread5 = automate_bot_engine_variables:set_instruction_memory( Thread4
                                                                           , {Times, Value + 1}
                                                                           ),
-            {ran_this_tick, Thread4#program_thread{ position=Position ++ [1], direction=forward }};
+            {ran_this_tick, Thread5#program_thread{ position=Position ++ [1], direction=forward }};
         false ->
-            Thread4 = automate_bot_engine_variables:unset_instruction_memory(Thread3),
-            {ran_this_tick, increment_position(Thread4)}
+            Thread5 = automate_bot_engine_variables:unset_instruction_memory(Thread4),
+            {ran_this_tick, increment_position(Thread5)}
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
