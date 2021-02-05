@@ -3,7 +3,7 @@
     'profile-only': !isOwnUser && !userRole
     }">
     <mat-tab-group #navTabGroup mat-align-tabs="center" animationDuration="0ms">
-        <mat-tab *ngIf="_isProfileTabPresent()" label="Group">
+        <mat-tab *ngIf="_isProfileTabPresent()" label="Public profile">
             <app-my-group-profile [profile]="groupProfile"></app-my-group-profile>
         </mat-tab>
         <mat-tab *ngIf="isOwnUser || userRole">
@@ -202,7 +202,7 @@
                 </div>
             </section>
         </mat-tab>
-        <mat-tab *ngIf="isOwnUser || userRole" label="{{ !profile ? 'Loading...' : profile.type === 'user' ? 'Groups' : 'Collaborators' }}">
+        <mat-tab *ngIf="isOwnUser || userRole" label="{{ !profile ? 'Loading...' : profile.type === 'user' ? 'Groups' : 'Collaborators & Settings' }}">
             <div *ngIf="profile" class="profile ">
                 <div class="avatar" *ngIf="profile.picture">
                     <img role="avatar" src="{{ profile.picture  }}"
