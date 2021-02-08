@@ -35,11 +35,13 @@ export function isDirectValueBlockData(opt: FlowBlockData): opt is DirectValueFl
 
 export class DirectValue implements FlowBlock {
     options: DirectValueOptions;
+    readonly id: string;
     value: string;
     sinks: FlowBlock[] = [];
 
-    constructor(options: DirectValueOptions) {
+    constructor(options: DirectValueOptions, blockId: string) {
         this.options = options;
+        this.id = blockId;
 
         this.value = options.value;
         if (!this.value) {
@@ -101,7 +103,7 @@ export class DirectValue implements FlowBlock {
         }
     }
 
-    static Deserialize(data: FlowBlockData, manager: BlockManager): FlowBlock {
+    static Deserialize(data: FlowBlockData, blockId: string, manager: BlockManager): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -110,7 +112,7 @@ export class DirectValue implements FlowBlock {
         options.on_io_selected = manager.onIoSelected.bind(manager);
         options.on_request_edit = manager.onRequestEdit.bind(manager);
 
-        return new DirectValue(options);
+        return new DirectValue(options, blockId);
     }
 
     public getBodyElement(): SVGElement {

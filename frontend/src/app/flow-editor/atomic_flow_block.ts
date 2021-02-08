@@ -1,7 +1,7 @@
 import { BlockManager } from './block_manager';
 import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts, BlockContextAction } from './flow_block';
 import { is_pulse } from './graph_transformations';
-import { FlowConnection } from './flow_connection';
+import { FlowConnectionData, setConnectionType } from './flow_connection';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -166,6 +166,8 @@ function parse_chunks(message: string): MessageChunk[] {
 }
 
 export class AtomicFlowBlock implements FlowBlock {
+    readonly id: string;
+
     options: AtomicFlowBlockOptions;
     overridenInputTypes: ('user-pulse' | 'pulse')[] = [];
     overridenOutputTypes: ('user-pulse' | 'pulse')[] = [];
@@ -174,7 +176,8 @@ export class AtomicFlowBlock implements FlowBlock {
     synthetic_output_count = 0;
     namedChunkTextBoxes: {[key: string]: SVGTextElement } = {};
 
-    constructor(options: AtomicFlowBlockOptions, synthetic_input_count?: number, synthetic_output_count?: number) {
+    constructor(options: AtomicFlowBlockOptions, blockId: string, synthetic_input_count?: number, synthetic_output_count?: number) {
+        this.id = blockId;
         if (!(options.message)) {
             throw new Error("'message' property is required to create a block");
         }
@@ -330,7 +333,7 @@ export class AtomicFlowBlock implements FlowBlock {
         }
     }
 
-    public static Deserialize(data: AtomicFlowBlockData, manager: BlockManager): FlowBlock {
+    public static Deserialize(data: AtomicFlowBlockData, blockId: string, manager: BlockManager): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -341,8 +344,9 @@ export class AtomicFlowBlock implements FlowBlock {
         options.on_io_selected = manager.onIoSelected.bind(manager);
 
         const block = new AtomicFlowBlock(options,
+                                          blockId,
                                           data.value.synthetic_input_count,
-                                          data.value.synthetic_output_count
+                                          data.value.synthetic_output_count,
                                          );
 
         for (const slot of Object.keys(data.value.slots || {})) {
@@ -484,21 +488,21 @@ export class AtomicFlowBlock implements FlowBlock {
         return changedOutput;
     }
 
-    public refreshConnectionTypes(linksFrom: FlowConnection[],
-                                  linksTo:   FlowConnection[],
+    public refreshConnectionTypes(linksFrom: [FlowConnectionData, SVGElement][],
+                                  linksTo:   [FlowConnectionData, SVGElement][],
                                  ) {
-        for (const link of linksTo) {
-            const index = link.getSink().input_index;
+        for (const [link, _element] of linksTo) {
+            const index = link.sink.input_index;
 
-            const linkType = link.getType();
+            const linkType = link.type;
             this.refreshInputConnection(index, linkType);
         }
 
-        for (const link of linksFrom) {
-            const idx = link.getSource().output_index;
+        for (const [link, element] of linksFrom) {
+            const idx = link.source.output_index;
 
             if (this.overridenOutputTypes[idx]) {
-                link.setType(this.overridenOutputTypes[idx]);
+                setConnectionType(this.overridenOutputTypes[idx], link, element);
             }
         }
     }
@@ -765,7 +769,7 @@ export class AtomicFlowBlock implements FlowBlock {
     }
 
     public getSlots(): {[key: string]: string} {
-        const slots = {};
+        const slots: {[key: string]: string} = {};
         for (const chunk of this.chunks) {
             if (chunk.type === 'named_var') {
                 slots[chunk.name] = chunk.val;

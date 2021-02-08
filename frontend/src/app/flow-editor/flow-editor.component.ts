@@ -38,6 +38,7 @@ import { UI_ICON } from './definitions';
 import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/renderers/responsive_page';
 import { ChangeProgramVisilibityDialog } from '../dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 import { CloneProgramDialogComponentData, CloneProgramDialogComponent } from '../dialogs/clone-program-dialog/clone-program-dialog.component';
+import { uuidv4 } from './utils';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -148,7 +149,7 @@ export class FlowEditorComponent implements OnInit {
                             }).catch(err => {
                                 console.error(err);
                                 resolve();
-                                this.goBack();
+                                // this.goBack();
                             });
                         });
                 })
@@ -192,7 +193,7 @@ export class FlowEditorComponent implements OnInit {
             builder: ResponsivePageBuilder,
             gen_tree: ResponsivePageGenerateTree,
             isPage: true,
-        }, this.uiSignalService);
+        }, uuidv4(), this.uiSignalService);
 
         const blockId = this.workspace.draw(block);
 
@@ -294,7 +295,7 @@ export class FlowEditorComponent implements OnInit {
             if (enum_name === 'bridges') {
                 const connections = await this.connectionService.getConnectionsOnProgram(this.programId);
 
-                const knownBridges = {};
+                const knownBridges: {[key: string]: boolean} = {};
                 const dropdown = [];
                 for (const conn of connections) {
                     if (!knownBridges[conn.bridge_id]) {
@@ -385,7 +386,7 @@ export class FlowEditorComponent implements OnInit {
 
         const program = {
             type: 'flow_program' as ProgramType,
-            parsed: { blocks: compiled_program, variables: [] },
+            parsed: { blocks: compiled_program, variables: [] as [] },
             pages: pages,
             orig: graph,
             id: this.programId,
@@ -486,7 +487,7 @@ export class FlowEditorComponent implements OnInit {
         const data = {
             program: this.program,
             user_id: this.program.owner,
-            tags: [], // Initially empty, to be updated by dialog
+            tags: [] as string[], // Initially empty, to be updated by dialog
         };
 
         const dialogRef = this.dialog.open(SetProgramTagsDialogComponent, {

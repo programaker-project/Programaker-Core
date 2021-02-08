@@ -70,7 +70,7 @@ export class AppComponent {
         const higherPart = document.getElementById('main-toolbar') as HTMLElement;
         const lowerPart = document.getElementsByClassName('mat-drawer-container')[0] as HTMLElement;
 
-        lowerPart.style['min-height'] = (height - higherPart.clientHeight) + 'px';
+        lowerPart.style.minHeight = (height - higherPart.clientHeight) + 'px';
     }
 
     logout(): void {

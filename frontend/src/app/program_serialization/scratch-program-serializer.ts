@@ -1,5 +1,7 @@
 import { ToolboxController } from "../blocks/ToolboxController";
 
+type CompiledScratchBlock = { id: string, type: string, args: any[] | {[key: string]: any}, contents: any[], save_to?: { index: number } };
+
 export default class ScratchProgramSerializer {
     // ====================================================
     // External API
@@ -48,7 +50,7 @@ export default class ScratchProgramSerializer {
             chain = [];
         }
 
-        let cleanedElement = {
+        let cleanedElement: CompiledScratchBlock = {
             id: block.id,
             type: ScratchProgramSerializer.cleanTypeName(block.getAttribute('type')),
             args: Array.from(block.childNodes)
@@ -89,8 +91,8 @@ export default class ScratchProgramSerializer {
         return chain;
     }
 
-    private fixArgOrder(cleanedElement: { args: any[] }) {
-        const order = cleanedElement.args.map((value) => {
+    private fixArgOrder(cleanedElement: CompiledScratchBlock) {
+        const order = (cleanedElement.args as any[]).map((value) => {
             if (!value.name) {
                 return null;
             }
@@ -126,10 +128,9 @@ export default class ScratchProgramSerializer {
         return parseInt(match[0]);
     }
 
-    private rewriteCustomBlock(element) {
+    private rewriteCustomBlock(element: CompiledScratchBlock) {
         const blockInfo = this.toolboxController.getBlockInfo(element.type);
         if (!blockInfo) {
-
             return element;
         }
 
@@ -144,12 +145,12 @@ export default class ScratchProgramSerializer {
         return element;
     }
 
-    private rewriteCustomTrigger(element, blockInfo) {
+    private rewriteCustomTrigger(element: CompiledScratchBlock, blockInfo: any) {
         const args: any = {};
         if (blockInfo.save_to) {
             let save_to = null;
             if (blockInfo.save_to.type === 'argument') {
-                save_to = { 'type': 'variable', 'value': element.args[blockInfo.save_to.index].value };
+                save_to = { 'type': 'variable', 'value': (element.args as any[])[blockInfo.save_to.index].value };
             }
 
             args.monitor_save_value_to = save_to;
@@ -158,7 +159,7 @@ export default class ScratchProgramSerializer {
         if (blockInfo.expected_value) {
             let expected_value = null;
             if (blockInfo.expected_value.type === 'argument') {
-                expected_value = element.args[blockInfo.expected_value.index];
+                expected_value = (element.args as any[])[blockInfo.expected_value.index];
             }
 
             args.monitor_expected_value = expected_value;
@@ -171,7 +172,7 @@ export default class ScratchProgramSerializer {
             if (blockInfo.subkey.type === 'argument') {
                 args.subkey = {
                     'type': 'constant',
-                    'value': element.args[blockInfo.subkey.index].value,
+                    'value': (element.args as any[])[blockInfo.subkey.index].value,
                 };
             }
             else {
@@ -184,11 +185,11 @@ export default class ScratchProgramSerializer {
         return element;
     }
 
-    private replaceServices(element) {
+    private replaceServices(element: CompiledScratchBlock) {
 
     }
 
-    private replaceMonitors(element) {
+    private replaceMonitors(element: CompiledScratchBlock) {
         switch (element.type) {
             case "time_trigger_at":
                 // This implies a call to a monitor
@@ -198,9 +199,9 @@ export default class ScratchProgramSerializer {
                         "monitor_id": { "from_service": "0093325b-373f-4f1c-bace-4532cce79df4" }, // Timekeeping monitor ID
                         "monitor_expected_value": {
                             "type": "constant",
-                            "value": (element.args[0].value.replace(/^0*(\d)$/, "$1") + ':'
-                                + element.args[1].value.replace(/^0*(\d)$/, "$1") + ':'
-                                + element.args[2].value.replace(/^0*(\d)$/, "$1")
+                            "value": ((element.args as any[])[0].value.replace(/^0*(\d)$/, "$1") + ':'
+                                + (element.args as any[])[1].value.replace(/^0*(\d)$/, "$1") + ':'
+                                + (element.args as any[])[2].value.replace(/^0*(\d)$/, "$1")
                             )
                         }
                     }
@@ -215,12 +216,12 @@ export default class ScratchProgramSerializer {
                         "monitor_id": { "from_service": "0093325b-373f-4f1c-bace-4532cce79df4" }, // Timekeeping monitor ID
                         "monitor_expected_value": {
                             "type": "constant",
-                            "value": (element.args[0].value.replace(/^0*(\d)$/, "$1") + ':'
-                                + element.args[1].value.replace(/^0*(\d)$/, "$1") + ':'
-                                + element.args[2].value.replace(/^0*(\d)$/, "$1")
+                            "value": ((element.args as any[])[0].value.replace(/^0*(\d)$/, "$1") + ':'
+                                + (element.args as any[])[1].value.replace(/^0*(\d)$/, "$1") + ':'
+                                + (element.args as any[])[2].value.replace(/^0*(\d)$/, "$1")
                                      )
                         },
-                        "timezone": element.args[3].value,
+                        "timezone": (element.args as any[])[3].value,
                     }
                     break;
                 }

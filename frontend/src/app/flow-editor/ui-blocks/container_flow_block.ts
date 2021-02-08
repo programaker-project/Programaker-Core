@@ -68,9 +68,10 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     handler: ContainerFlowBlockHandler;
 
     constructor(options: ContainerFlowBlockOptions,
+                blockId: string,
                 uiSignalService: UiSignalService,
                ) {
-        super(options, uiSignalService);
+        super(options, blockId, uiSignalService);
     }
 
     addContentBlock(block: FlowBlock): void {
@@ -128,7 +129,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         return this.options.gen_tree(this.handler, this.contents.concat([]));
     }
 
-    public static Deserialize(data: ContainerFlowBlockData, manager: BlockManager, toolbox: Toolbox): FlowBlock {
+    public static Deserialize(data: ContainerFlowBlockData, blockId: string, manager: BlockManager, toolbox: Toolbox): FlowBlock {
         if (data.subtype !== BLOCK_TYPE){
             throw new Error(`Block subtype mismatch, expected ${BLOCK_TYPE} found: ${data.subtype}`);
         }
@@ -142,7 +143,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
         options.builder = templateOptions.builder;
         options.gen_tree = templateOptions.gen_tree;
 
-        const block = new ContainerFlowBlock(options, toolbox.uiSignalService);
+        const block = new ContainerFlowBlock(options, blockId, toolbox.uiSignalService);
         block.blockData = Object.assign({}, data.value.extra);
 
         return block;
@@ -200,7 +201,7 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     }
 
     recursiveGetAllContents(): FlowBlock[] {
-        let acc = [];
+        let acc: FlowBlock[] = [];
 
         for (const content of this.contents) {
             if (content instanceof ContainerFlowBlock) {

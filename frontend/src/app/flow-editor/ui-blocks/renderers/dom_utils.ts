@@ -83,7 +83,7 @@ export function colorToHex(rgb: string): string {
     if (!match) {
         return null;
     }
-    function hex(x) {
+    function hex(x: string) {
         return ("0" + parseInt(x).toString(16)).slice(-2);
     }
     return "#" + hex(match[1]) + hex(match[2]) + hex(match[3]);

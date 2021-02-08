@@ -43,10 +43,10 @@ function get_paths_between(_graph: FlowGraph,
                            upper_id: string,
                            lower_id: string,
                            conn_index: {[key: string]: IndexedFlowGraphEdge[]}): [number, number][] {
-    const results = [];
+    const results: [number, number][] = [];
 
     for (const top_conn of conn_index[upper_id] || []) {
-        const reached = {};
+        const reached: {[key: string]: boolean} = {};
         reached[upper_id] = true;
 
         const aux = (descending_id: string, followed_conn_id: number, reached: {[key:string]: boolean}) => {
@@ -75,8 +75,8 @@ function get_paths_between(_graph: FlowGraph,
 export function find_downstream(graph: FlowGraph, source_id: string,
                                 conn_index: EdgeIndex,
                                 controller: (node_id: string, node: FlowGraphNode) => FindCommand): string[] {
-    const reached = {};
-    const results = {};
+    const reached: {[key: string]: boolean} = {};
+    const results: {[key: string]: boolean} = {};
     reached[source_id] = true;
 
     const aux = (source_id: string) => {
@@ -113,8 +113,8 @@ export function find_downstream(graph: FlowGraph, source_id: string,
 export function find_upstream(graph: FlowGraph, source_id: string,
                               rev_conn_index: EdgeIndex,
                               controller: (node_id: string, node: FlowGraphNode) => FindCommand): string[] {
-    const reached = {};
-    const results = {};
+    const reached: {[key: string]: boolean} = {};
+    const results: {[key: string]: boolean} = {};
     reached[source_id] = true;
 
     const aux = (source_id: string) => {
@@ -152,10 +152,10 @@ export function find_upstream(graph: FlowGraph, source_id: string,
 export function scan_upstream(graph: FlowGraph, source_id: string,
                               rev_conn_index: EdgeIndex,
                               controller: (node_id: string, node: FlowGraphNode, path: string[]) => ScanCommand): string[] {
-    const reached = {};
+    const reached: {[key: string]: boolean} = {};
     reached[source_id] = true;
 
-    const aux = (source_id: string, path: string[]) => {
+    const aux: ((source_id: string, path: string[]) => string[]) = (source_id: string, path: string[]) => {
         for (const conn of rev_conn_index[source_id] || []) {
             const next_id = conn.from.id;
             if (reached[next_id]) {
@@ -192,7 +192,7 @@ export function scan_upstream(graph: FlowGraph, source_id: string,
 export function scan_downstream(graph: FlowGraph, source_id: string,
                               conn_index: EdgeIndex,
                               controller: (node_id: string, node: FlowGraphNode, path: string[]) => ScanCommand): string[] {
-    const reached = {};
+    const reached: {[key: string]: boolean} = {};
     reached[source_id] = true;
 
     const aux = (source_id: string, path: string[]): string[] => {
@@ -274,11 +274,11 @@ export function is_pulse_output(block: FlowGraphNode, index: number): boolean {
 
 export function scan_pulse_upstream(graph: FlowGraph, source_id: string,
                                     rev_conn_index: EdgeIndex,
-                                    controller: (node_id: string, node: FlowGraphNode, path: string[]) => ScanCommand): [string] {
-    const reached = {};
+                                    controller: (node_id: string, node: FlowGraphNode, path: string[]) => ScanCommand): string[] {
+    const reached: {[key: string]: boolean} = {};
     reached[source_id] = true;
 
-    const aux = (source_id: string, path: string[]) => {
+    const aux: ((source_id: string, path: string[]) => string[]) = (source_id: string, path: string[]) => {
         for (const conn of rev_conn_index[source_id] || []) {
             const next_id = conn.from.id;
             if (reached[next_id] || (!is_pulse_output(graph.nodes[next_id], conn.from.output_index))) {
@@ -395,7 +395,7 @@ function get_first_user_per_ast(graph: FlowGraph, getter: string, conn_index: Ed
                                          });
 
     // Build candidate index
-    const candidates = {};
+    const candidates: {[key: string]: boolean} = {};
     for (const user of users) {
         candidates[user] = true;
     }
@@ -522,7 +522,7 @@ export function extract_internally_reused_arguments(graph: FlowGraph): FlowGraph
                 const conn_to_top = {
                     from: { id: ref, output_index: 0 },
                     to: { id: top, input_index: 0 },
-                    index: null,
+                    index: null as (number | null),
                 };
 
                 graph.edges.push(conn_to_top);
@@ -535,7 +535,7 @@ export function extract_internally_reused_arguments(graph: FlowGraph): FlowGraph
                 const conn_to_arg = {
                     from: { id: getter, output_index: 0 },
                     to: { id: ref, input_index: 1 },
-                    index: null,
+                    index: null as (number | null),
                 };
 
                 graph.edges.push(conn_to_arg);

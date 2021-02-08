@@ -1,8 +1,8 @@
-import { CompiledBlock, CompiledBlockArg, CompiledBlockArgCallServiceDict, CompiledBlockArgMonitorDict, CompiledBlockArgs, CompiledFlowGraph, ContentBlock } from '../../../flow-editor/flow_graph';
+import { CompiledBlock, CompiledBlockArg, CompiledBlockArgCallServiceDict, CompiledBlockArgMonitorDict, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, CompiledBlockType } from '../../../flow-editor/flow_graph';
 
 import { OP_TRANSLATIONS } from './graph-analysis-tools-ast-dsl';
 
-const OP_REVERSE_TRANSLATIONS = {};
+const OP_REVERSE_TRANSLATIONS: {[key: string]: string} = {};
 for (const op of Object.keys(OP_TRANSLATIONS)) {
     OP_REVERSE_TRANSLATIONS[OP_TRANSLATIONS[op]] = op;
 }
@@ -77,7 +77,7 @@ function gen_tree(block: CompiledBlock, depth: number): string {
     const args = repr_args(block.args, depth);
     let type = block.type;
     if (OP_REVERSE_TRANSLATIONS[type]) {
-        type = OP_REVERSE_TRANSLATIONS[type];
+        type = OP_REVERSE_TRANSLATIONS[type] as CompiledBlockType;
     }
 
     const depth_increase = 1 + type.length + 2; // '(' operation ' ' * 2

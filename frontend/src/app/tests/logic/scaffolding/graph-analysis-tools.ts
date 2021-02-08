@@ -139,8 +139,11 @@ function convert_operation(op: SimpleArrayAstOperation): CompiledBlock {
 
     const compiled_args = (op.slice(1) as SimpleArrayAstArgument[]).map(v => convert_argument(v));
 
-    if (SLOT_OPS[op[0]]) {
-        compiled_args[0].type = SLOT_OPS[op[0]];
+    if (op[0] in SLOT_OPS) {
+        // This IF is actually covered in the previous one, it's just here to make TypeScript happy.
+        if (op[0] !== 'operator_and' && op[0] !== 'operator_equals' && op[0] !== 'flow_last_value') {
+            compiled_args[0].type = SLOT_OPS[op[0]];
+        }
     }
 
     return {
@@ -165,7 +168,7 @@ function canonicalize_arg(arg: CompiledBlockArg): CompiledBlockArg {
     else {
         return {
             type: arg.type,
-            value: arg.value.map(b => canonicalize_op(b)),
+            value: arg.value.map((b: CompiledBlock) => canonicalize_op(b)),
         }
     }
 }

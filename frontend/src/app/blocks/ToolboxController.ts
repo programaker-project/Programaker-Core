@@ -54,10 +54,10 @@ export class ToolboxController {
     getStringVariables(): string[] {
         return this.workspace
             .getAllVariables()
-            .filter((v, _i, _a) => {
+            .filter((v: { type: 'list' | 'variable', name: string }) => {
                 return v.type !== "list";
             })
-            .map((v, _i, _a) => {
+            .map((v: { type: 'list' | 'variable', name: string }) => {
                 return v.name;
             });
     }

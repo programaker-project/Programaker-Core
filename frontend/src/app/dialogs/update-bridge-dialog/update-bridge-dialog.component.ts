@@ -2,7 +2,7 @@ import { Component, Inject, ViewChild } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BridgeIndexData, BridgeResource, BridgeResourceEntry, BridgeSignal, BridgeTokenInfo, FullBridgeTokenInfo } from 'app/bridges/bridge';
+import { BridgeIndexData, BridgeResource, BridgeResourceEntry, BridgeSignal, BridgeTokenInfo, FullBridgeTokenInfo, FullOwnerId } from 'app/bridges/bridge';
 import { BridgeService } from 'app/bridges/bridge.service';
 import { UserGroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
@@ -32,7 +32,7 @@ export class UpdateBridgeDialogComponent {
     session: Session;
     resources: BridgeResource[];
     adminGroups: UserGroupInfo[];
-    groupsById: {[key: string]: UserGroupInfo[]};
+    groupsById: {[key: string]: UserGroupInfo};
     groups: UserGroupInfo[];
     expandedResources: {[key:string]: {[key: string]: boolean}} = {};
     dirtyShares = false;
@@ -102,7 +102,7 @@ export class UpdateBridgeDialogComponent {
                     }
                 }
 
-                const groupsById = {};
+                const groupsById: {[key: string]: UserGroupInfo} = {};
                 for (const group of groups) {
                     groupsById[group.id] = group;
                 }
@@ -199,7 +199,7 @@ export class UpdateBridgeDialogComponent {
 
         const operations : Promise<void>[] = [];
         for (const resource of this.resources) {
-            const connections = {};
+            const connections: {[key: string]: {[key: string]: { name: string, shared_with: FullOwnerId[] }}} = {};
             for(const value of resource.values) {
                 if (!connections[value.connection_id]) {
                     connections[value.connection_id] = {};

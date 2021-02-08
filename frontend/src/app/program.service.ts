@@ -9,7 +9,6 @@ import { ContentType } from './content-type';
 import { toWebsocketUrl, addTokenQueryString } from './utils';
 import { Synchronizer } from './syncronizer';
 import { EnvironmentService } from './environment.service';
-import { ImageAssetConfiguration } from './flow-editor/dialogs/configure-block-dialog/configure-block-dialog.component';
 
 @Injectable()
 export class ProgramService {
@@ -103,7 +102,7 @@ export class ProgramService {
 
         const result = await this.http.get(url, {headers: this.sessionService.getAuthHeader()}).toPromise();
 
-        return result['programs'];
+        return (result as any)['programs'];
     }
 
     async getProgram(userName: string, programName: string): Promise<ProgramContent> {
@@ -319,7 +318,7 @@ export class ProgramService {
 
             this.getProgramStreamingLogsUrl(programId).then(streamingUrl => {
 
-                let buffer = [];
+                let buffer: any[] = [];
                 let state : 'none_ready' | 'ws_ready' | 'all_ready' = 'none_ready';
 
                 websocket = new WebSocket(streamingUrl);
@@ -377,7 +376,7 @@ export class ProgramService {
 
     getEventStream(programId: string): Synchronizer<ProgramEditorEventValue> {
         let websocket: WebSocket | null = null;
-        let sendBuffer = [];
+        let sendBuffer: {type: string, value: ProgramEditorEventValue}[] = [];
         let state : 'none_ready' | 'ws_ready' | 'all_ready' | 'closed' = 'none_ready';
 
         const obs = new Observable<ProgramEditorEventValue>((observer) => {

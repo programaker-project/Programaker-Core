@@ -78,7 +78,7 @@ export interface BridgeData {
     bridge_id: string;
 }
 
-function to_scratch_type(type) {
+function to_scratch_type(type: string) {
     switch (type) {
         case 'string':
             return "text";
@@ -94,7 +94,7 @@ function to_scratch_type(type) {
     }
 }
 
-function to_field_name(type) {
+function to_field_name(type: string) {
     switch (type) {
         case 'string':
             return "TEXT";

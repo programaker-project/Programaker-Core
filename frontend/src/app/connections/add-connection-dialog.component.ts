@@ -21,7 +21,7 @@ import { BridgeIndexData } from '../bridges/bridge';
 })
 export class AddConnectionDialogComponent {
     howToEnable: ServiceEnableHowTo;
-    form = {};
+    form: {[key: string]: string} = {};
 
     errorType: null | 'bridge_not_ready';
     error: any;

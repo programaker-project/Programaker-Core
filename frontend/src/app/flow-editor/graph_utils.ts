@@ -7,7 +7,7 @@ export interface IndexedFlowGraphEdge extends FlowGraphEdge {
 export type EdgeIndex = {[key: string]:IndexedFlowGraphEdge[]};
 
 export function index_connections(graph: FlowGraph): EdgeIndex {
-    const index = {};
+    const index: {[key: string]: IndexedFlowGraphEdge[]} = {};
 
     let idx = -1;
     for (const conn of graph.edges) {
@@ -23,7 +23,8 @@ export function index_connections(graph: FlowGraph): EdgeIndex {
 }
 
 export function reverse_index_connections(graph: FlowGraph): EdgeIndex {
-    const index = {};
+    const index: {[key: string]: IndexedFlowGraphEdge[]} = {};
+
     let idx = -1;
     for (const conn of graph.edges) {
         idx++;

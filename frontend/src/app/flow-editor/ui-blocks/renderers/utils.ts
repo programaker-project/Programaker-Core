@@ -144,7 +144,7 @@ export function domToFormattedTextTree(node: Node) : FormattedTextTree {
     }
     else if (node instanceof HTMLElement) {
         const formatType = getFormatTypeOfElement(node);
-        let  subTrees = [];
+        let  subTrees: FormattedTextTree = [];
 
         for (const n of Array.from(node.childNodes)){
             subTrees = subTrees.concat(domToFormattedTextTree(n));
@@ -183,7 +183,7 @@ export function domToFormattedTextTree(node: Node) : FormattedTextTree {
 
 function unwrapSpan(node: Node): Node[] {
     if (node instanceof HTMLSpanElement) {
-        let elements = [];
+        let elements: Node[] = [];
         for (const e of Array.from(node.childNodes)) {
             const unwrapped = unwrapSpan(e);
             if (unwrapped.length === 0) {
@@ -535,7 +535,7 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
 }
 
 export function listToDict<T>(list: T[], getKey: (elem: T) => string): {[key: string]: T} {
-    const result = {};
+    const result: {[key: string]: T} = {};
 
     for (const elem of list) {
         const key = getKey(elem);

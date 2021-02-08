@@ -6,7 +6,8 @@ import { alreadyRegisteredException, createDom } from './utils';
 import { ToolboxController } from './ToolboxController';
 import { CustomSignalService } from '../custom_signals/custom_signal.service';
 import { CustomSignal } from '../custom_signals/custom_signal';
-declare const Blockly;
+import { ToolboxRegistrationHook } from './TemplateController';
+declare const Blockly : any;
 
 export class CustomSignalController {
     toolboxController: ToolboxController;
@@ -114,7 +115,7 @@ export class CustomSignalController {
         this.toolboxController.update();
     }
 
-    injectBlocks(): Function[] {
+    injectBlocks(): ToolboxRegistrationHook[] {
         try {
             Blockly.Extensions.register('colours_custom_signals',
                 function () {
@@ -129,8 +130,8 @@ export class CustomSignalController {
         }
 
         return [
-            (workspace) => {
-                workspace.registerButtonCallback('AUTOMATE_CREATE_CUSTOM_SIGNAL', (x, y, z) => {
+            (workspace: Blockly.WorkspaceSvg) => {
+                workspace.registerButtonCallback('AUTOMATE_CREATE_CUSTOM_SIGNAL', (b: Blockly.FlyoutButton) => {
                     this.create_custom_signal().then((custom_signal_name) => {
 
                         this.customSignalService.saveCustomSignal(custom_signal_name)

@@ -73,7 +73,7 @@ export class GroupService {
             params: { q: query },
         }).toPromise();
 
-        return result['users'];
+        return (result as any)['users'];
     }
 
     async createGroup(name: string, options: { 'public': boolean, collaborators: { id: string, role: CollaboratorRole }[] } ): Promise<GroupInfo> {
@@ -91,7 +91,7 @@ export class GroupService {
                                                     ContentType.Json)
                                             }).toPromise();
 
-        return result['group'];
+        return (result as any)['group'];
     }
 
     async getUserGroups(): Promise<UserGroupInfo[]> {
@@ -100,7 +100,7 @@ export class GroupService {
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
             .toPromise();
 
-        return result['groups'].map((group: GroupInfo) => ground(this.environmentService, group, 'picture'));
+        return (result as any)['groups'].map((group: GroupInfo) => ground(this.environmentService, group, 'picture'));
     }
 
     async getGroupWithName(groupName: any): Promise<GroupInfo> {
@@ -108,7 +108,7 @@ export class GroupService {
 
         const result = await (this.http.get(url, { headers: this.sessionService.getAuthHeader()}).toPromise());
 
-        return result['group'];
+        return (result as any)['group'];
     }
 
     async getCollaboratorsOnGroup(groupId: string): Promise<Collaborator[]> {
@@ -117,7 +117,7 @@ export class GroupService {
         const result = await this.http.get(url, { headers: this.sessionService.getAuthHeader()})
             .toPromise();
 
-        return result['collaborators'].map(collaborator => ground(this.environmentService, collaborator, 'picture'));
+        return (result as any)['collaborators'].map((collaborator: Collaborator) => ground(this.environmentService, collaborator, 'picture'));
     }
 
     async inviteUsers(groupId: string, userIds: { id: string, role: CollaboratorRole }[]): Promise<void> {
@@ -203,6 +203,6 @@ export class GroupService {
                  {headers: this.sessionService.getAuthHeader()})
             .toPromise());
 
-        return response['resources'] as SharedResource[];
+        return (response as any)['resources'] as SharedResource[];
     }
 }

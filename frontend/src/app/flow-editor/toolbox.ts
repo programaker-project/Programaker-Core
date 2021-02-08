@@ -1,12 +1,12 @@
-import { BlockExhibitor } from './block_exhibitor';
+import { BlockExhibitor, BlockGenerator } from './block_exhibitor';
 import { BlockManager } from './block_manager';
 import { FlowBlock, Position2D, FlowBlockOptions, FlowActuator } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
 import { UiSignalService } from 'app/services/ui-signal.service';
 import { Session } from 'app/session';
 import { ADVANCED_CATEGORY, INTERNAL_CATEGORY } from './base_toolbox_description';
+import { uuidv4 } from './utils';
 
-export type BlockGenerator = (manager: BlockManager) => FlowBlock;
 export type ActuatorGenerator = () => FlowActuator;
 
 export class Toolbox {
@@ -155,7 +155,7 @@ export class Toolbox {
                     return;
                 }
 
-                const block = generator(this.workspace);
+                const block = generator(this.workspace, uuidv4());
                 element.classList.add('hidden');
                 this.toolboxDiv.classList.add('subsumed');
 

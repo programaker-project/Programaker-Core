@@ -100,12 +100,12 @@ export function isUiFlowBlockData(opt: FlowBlockData): opt is UiFlowBlockData {
 export class UiFlowBlock implements FlowBlock {
     private canvas: SVGElement;
     options: UiFlowBlockOptions;
+    readonly id: string;
 
     private group: SVGElement;
     protected position: {x: number, y: number};
     private output_groups: SVGGElement[];
     private input_groups: SVGGElement[];
-    private blockId: string;
     private input_count: number[] = [];
     protected handler: UiFlowBlockHandler;
     private input_blocks: [FlowBlock, number][] = [];
@@ -115,8 +115,10 @@ export class UiFlowBlock implements FlowBlock {
     blockData: UiFlowBlockExtraData = {};
 
     constructor(options: UiFlowBlockOptions,
+                blockId: string,
                 private uiSignalService: UiSignalService,
                ) {
+        this.id = blockId;
         this.options = options;
         if (!this.options.outputs) {
             this.options.outputs = [];
@@ -134,10 +136,6 @@ export class UiFlowBlock implements FlowBlock {
         this.handler.dispose();
     }
 
-    public get id() {
-        return this.blockId;
-    }
-
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group } // Avoid double initialization
         this._workspace = initOpts.workspace;
@@ -153,13 +151,6 @@ export class UiFlowBlock implements FlowBlock {
             else {
                 this.position = {x: 0, y: 0};
             }
-        }
-
-        if (initOpts.block_id) {
-            this.blockId = initOpts.block_id;
-        }
-        else {
-            this.blockId = uuidv4();
         }
 
         const group = document.createElementNS(SvgNS, 'g');
@@ -180,7 +171,7 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     public renderAsUiElement(): CutTree {
-        const data: UiElementRepr = { id: this.blockId, widget_type: widgetAsAtomicUiElement(this.options.id) };
+        const data: UiElementRepr = { id: this.id, widget_type: widgetAsAtomicUiElement(this.options.id) };
 
         if (this.handler.isTextReadable()) {
             if (this.handler.isStaticText) {
@@ -404,7 +395,7 @@ export class UiFlowBlock implements FlowBlock {
         }
     }
 
-    public static Deserialize(data: UiFlowBlockData, manager: BlockManager, toolbox: Toolbox): FlowBlock {
+    public static Deserialize(data: UiFlowBlockData, blockId: string, manager: BlockManager, toolbox: Toolbox): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -417,7 +408,7 @@ export class UiFlowBlock implements FlowBlock {
         const templateOptions = this._findTemplateOptions(options.id, toolbox);
         options.builder = templateOptions.builder;
 
-        const block = new UiFlowBlock(options, toolbox.uiSignalService);
+        const block = new UiFlowBlock(options, blockId, toolbox.uiSignalService);
 
         if (data.value.extra) {
             block.blockData = JSON.parse(JSON.stringify(data.value.extra));
@@ -701,7 +692,7 @@ export class UiFlowBlock implements FlowBlock {
     }
 
 
-    hasAncestor(block: FlowBlock) {
+    hasAncestor(block: FlowBlock): boolean {
         if (!this._container) {
             return false;
         }

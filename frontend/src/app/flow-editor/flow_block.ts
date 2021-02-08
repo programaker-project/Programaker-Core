@@ -79,6 +79,7 @@ export interface BlockContextAction {
 };
 
 export interface FlowBlock {
+    readonly id: string;
     dispose(): void;
     render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement;
     serialize(): FlowBlockData;

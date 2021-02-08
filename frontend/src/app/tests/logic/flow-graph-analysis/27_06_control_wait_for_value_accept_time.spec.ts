@@ -1,9 +1,8 @@
 import { FlowGraph } from '../../../flow-editor/flow_graph';
-import { compile, get_conversions_to_stepped, get_stepped_ast, get_tree_with_ends, get_unreachable } from '../../../flow-editor/graph_analysis';
+import { compile } from '../../../flow-editor/graph_analysis';
 import { validate } from '../../../flow-editor/graph_validation';
 import { TIME_MONITOR_ID } from '../../../flow-editor/platform_facilities';
-import * as _01_simple_flow from '../samples/01_simple_flow.js';
-import { gen_compiled, SimpleArrayAstOperation } from '../scaffolding/graph-analysis-tools';
+import { gen_compiled } from '../scaffolding/graph-analysis-tools';
 import { dsl_to_ast } from '../scaffolding/graph-analysis-tools-ast-dsl';
 import { GraphBuilder } from '../scaffolding/graph-analysis-tools-graph-builder';
 import { are_equivalent_ast } from './utils.spec';

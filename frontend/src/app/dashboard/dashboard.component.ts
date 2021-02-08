@@ -23,6 +23,7 @@ import { ConnectionService } from 'app/connection.service';
 import { BridgeConnectionWithIconUrl, IconReference } from 'app/connection';
 import { EnvironmentService } from 'app/environment.service';
 import { ProfileService, GroupProfileInfo } from 'app/profiles/profile.service';
+import { Subscription } from 'rxjs';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -110,7 +111,7 @@ export class DashboardComponent {
         this.sessionService.getSession()
             .then(async (session) => {
                 this.session = session;
-                const params = this.route.params['value'];
+                const params = (this.route.params as any)['value'];
                 if (params.group_name !== undefined) {
                     this.isOwnUser = false;
 
@@ -178,7 +179,7 @@ export class DashboardComponent {
 
     ngAfterViewInit() {
         let unsubscribe = false;
-        let subscription = null;
+        let subscription: Subscription = null;
         // The same behavior might be achieved with .toPromise(), but it
         // seems to have problems (with race conditions?).
         subscription = this.route.fragment.subscribe({

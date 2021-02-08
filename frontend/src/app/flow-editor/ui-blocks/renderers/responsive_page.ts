@@ -361,7 +361,7 @@ function performCuts(tree: CutTree, contents: UiFlowBlock[], width: number, heig
     const acc: GridCut[] = [];
     let todo = [{ tree: tree, area: { x: 0, y: 0, width, height } }];
 
-    const blocks = {};
+    const blocks: {[key: string]: UiFlowBlock} = {};
     for (const block of contents) {
         blocks[block.id] = block;
         if (block instanceof ContainerFlowBlock) {
@@ -578,7 +578,7 @@ function _reduceTree(tree: CutTree, safe: boolean): CutTree {
 }
 
 function _reduceGroups(cNode: CutNode, safe: boolean): CutTree[] {
-    let acc = [];
+    let acc: CutTree[] = [];
     const cType = cNode.cut_type;
 
     const aux = (tree: CutTree) => {
@@ -619,7 +619,7 @@ function _reduceGroups(cNode: CutNode, safe: boolean): CutTree[] {
 
 // Recursively perform cleanestCut, until all elements are partitioned.
 export function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTree {
-    const topLevel = [];
+    const topLevel: CutTree[] = [];
 
     const todo = [ { container: topLevel, elems: elems } ]
 
@@ -651,7 +651,7 @@ export function cleanestTree(elems: CutElement[], blocks: UiFlowBlock[]): CutTre
         else {
             const cut = cleanestCut(next.elems);
 
-            const resultGroups = [];
+            const resultGroups: CutTree[] = [];
             result = { cut_type: cut.cutType, groups: resultGroups };
             for (const g of cut.groups){
                 if (g.length > 0) {
@@ -693,7 +693,7 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
     vert.sort((a, b) => a.a.y - b.a.y );
 
     // Measure horizontal spaces
-    const horizSpaces = [];
+    const horizSpaces: [number, number, CutElement][] = [];
     let endX = null;
     for (let idx = 0; idx < horiz.length; idx++) {
         const e = horiz[idx];
@@ -723,7 +723,7 @@ function cleanestCut(elems: CutElement[]): { cutType: CutType, groups: CutElemen
     })
 
     // Measure vertical spaces
-    const vertSpaces = [];
+    const vertSpaces: [number, number, CutElement][] = [];
     let endY = null;
     for (let idx = 0; idx < vert.length; idx++) {
         const e = vert[idx];

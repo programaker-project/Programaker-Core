@@ -54,13 +54,16 @@ export function isEnumDirectValueBlockData(opt: FlowBlockData): opt is EnumDirec
 
 export class EnumDirectValue implements FlowBlock {
     options: EnumDirectValueOptions;
+    readonly id: string;
+
     value_id: string = undefined;
 
     values: EnumValue[];
     value_dict: {[key:string]: EnumValue};
 
-    constructor(options: EnumDirectValueOptions) {
+    constructor(options: EnumDirectValueOptions, blockId: string) {
         this.options = options;
+        this.id = blockId;
     }
 
     public dispose() {
@@ -94,7 +97,7 @@ export class EnumDirectValue implements FlowBlock {
         }
     }
 
-    static Deserialize(data: FlowBlockData, manager: BlockManager, enumGetter: EnumGetter): FlowBlock {
+    static Deserialize(data: FlowBlockData, blockId: string, manager: BlockManager, enumGetter: EnumGetter): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -104,7 +107,7 @@ export class EnumDirectValue implements FlowBlock {
         options.on_select_requested = manager.onSelectRequested.bind(manager);
         options.get_values = enumGetter;
 
-        const block = new EnumDirectValue(options);
+        const block = new EnumDirectValue(options, blockId);
 
         block.value_id = data.value.value_id;
         block._defaultText = data.value.value_text;

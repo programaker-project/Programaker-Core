@@ -1,10 +1,10 @@
 import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions, isAtomicFlowBlockOptions, isAtomicFlowBlockData } from './atomic_flow_block';
 import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_description';
-import { DirectValue, DirectValueFlowBlockData, isDirectValueBlockData } from './direct_value';
-import { EnumDirectValue, EnumDirectValueFlowBlockData, isEnumDirectValueBlockData } from './enum_direct_value';
-import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
+import { DirectValueFlowBlockData, isDirectValueBlockData } from './direct_value';
+import { EnumDirectValueFlowBlockData, isEnumDirectValueBlockData } from './enum_direct_value';
+import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode, CompiledBlockArgList, CompiledBlockType } from './flow_graph';
 import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream, split_streaming_after_stepped, is_pulse } from './graph_transformations';
-import { index_connections, reverse_index_connections, EdgeIndex } from './graph_utils';
+import { index_connections, reverse_index_connections, EdgeIndex, IndexedFlowGraphEdge } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
 import { uuidv4 } from './utils';
 import { isUiFlowBlockData } from './ui-blocks/ui_flow_block';
@@ -65,7 +65,8 @@ function makes_reachable(conn: FlowGraphEdge, block: FlowGraphNode): boolean {
 }
 
 function build_index(arr: string[]): { [key:string]: boolean} {
-    const index = {};
+    const index: {[key: string]: boolean} = {};
+
     for (const element of arr) {
         index[element] = true;
     }
@@ -75,12 +76,15 @@ function build_index(arr: string[]): { [key:string]: boolean} {
 
 function set_difference(whole: any[], subset: {[key: string]: boolean}|string[]): any[] {
     const result = [];
+
     if (subset.map) { // Is an array
         subset = build_index(subset as string[]);
     }
 
+    const subsetMap = subset as {[key: string]: boolean};
+
     for (const element of whole) {
-        if (!subset[element]) {
+        if (!subsetMap[element]) {
             result.push(element);
         }
     }
@@ -321,7 +325,7 @@ function is_node_conversor_streaming_to_step(node: FlowGraphNode): boolean {
 }
 
 export function get_conversions_to_stepped(graph: FlowGraph, source_block_id: string): string[] {
-    const results = {};
+    const results: {[key: string]: boolean} = {};
     const reached = build_index([source_block_id]);
 
     let remaining_connections: FlowGraphEdge[] = [].concat(graph.edges);
@@ -475,9 +479,9 @@ export function get_stepped_block_arguments(graph: FlowGraph, block_id: string,
     const args: BlockTreeArgument[] = [];
 
     let pulse_offset = 0;
-    let pulse_ports = {};
+    let pulse_ports: {[key: string]: boolean} = {};
 
-    const arg_conns = [];
+    const arg_conns: IndexedFlowGraphEdge[][] = [];
 
     for (const conn of rev_conn_index[block_id] || []) {
         if (is_pulse_output(graph.nodes[conn.from.id], conn.from.output_index)) {
@@ -688,7 +692,7 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][],
             continue;
         }
 
-        const found_blocks = {};
+        const found_blocks: {[key: string]: boolean} = {};
 
         for (let op_idx = 0; op_idx < ast.length; op_idx++) {
             const op = ast[op_idx];
@@ -748,7 +752,7 @@ function find_common_merge_groups_ast(asts: SteppedBlockTree[][],
         const inserts = [];
         const deletes = [] ;
         let ast_idx = -1;
-        const inserted_asts = {};
+        const inserted_asts: {[key: string]: boolean} = {};
         for (const column of groups[group_idx]) {
             ast_idx++;
 
@@ -853,10 +857,10 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
     const rev_conn_index = reverse_index_connections(graph);
 
     if (continuations.length > 1) {
-        let contents /*: (SteppedBlockTree | SteppedBlockTree[])[]*/ = [];
+        let contents: any /*: (SteppedBlockTree | SteppedBlockTree[])[]*/ = [];
 
         for (const cont of continuations) {
-            const subast = [];
+            const subast: SteppedBlockTree[] = [];
 
             if (!cont || cont.length === 0) {
                 contents.push([]);
@@ -941,7 +945,7 @@ function get_stepped_ast_branch(graph: FlowGraph, source_id: string, ast: Steppe
 
             if (is_atomic_block && func_name === 'control_if_else') {
                 // IF statement with only one output
-                const contents = [];
+                const contents: SteppedBlockTree[] = [];
                 get_stepped_ast_continuation(graph, continuations[0][0], source_id, conn_index, rev_conn_index, contents, reached);
 
                 ast[ast.length - 1].contents = [contents, []]; // Update parent block contents
@@ -1145,7 +1149,7 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
 }
 
 function get_latest_blocks_on_each_ast_level(block: CompiledBlock): CompiledBlock[] {
-    const results = [];
+    const results: CompiledBlock[] = [];
     const levels = [block.contents];
 
     while (levels.length > 0) {
@@ -1157,7 +1161,7 @@ function get_latest_blocks_on_each_ast_level(block: CompiledBlock): CompiledBloc
         if ((next[0] as CompiledBlock).type) {
             // Are compiled blocks, so take the last and add to level
             const latest = next[next.length - 1];
-            results.push(latest);
+            results.push(latest as CompiledBlock);
             levels.push(latest.contents)
         }
         else {
@@ -1213,7 +1217,7 @@ function compile_block(graph: FlowGraph,
     if (isAtomicFlowBlockData(block.data)){
         const data = block.data;
 
-        let compiled_contents = [];
+        let compiled_contents: (CompiledBlock | ContentBlock)[] = [];
         if (contents && contents.length) {
             if (flags.inside_args) {
                 throw new Error("Found block with contents inside args");
@@ -1240,20 +1244,18 @@ function compile_block(graph: FlowGraph,
                                                                          v.output_index,
                                                                          relatives.before));
         const block_fun = data.value.options.block_function;
-        const slot_args = [];
+        const slot_args: CompiledBlockArgList = [];
 
         const slots = data.value.slots;
 
         if (slots) {
             for (const slot of Object.keys(slots)){
-                slot_args.push({ type: slot, value: slots[slot]})
+                slot_args.push({ type: slot as any, value: slots[slot]})
             }
         }
 
         // Prepend slots (sorted) to args
-        compiled_args = slot_args.sort((a, b) => {
-            return (a.name).localeCompare(b.name);
-        }).concat(compiled_args);
+        compiled_args = slot_args.concat(compiled_args);
 
         // Only wait for time monitors if the same block has not been used before on the same flow
         if (TIME_TRIGGERS.indexOf(block_fun) >= 0) {
@@ -1452,7 +1454,7 @@ function compile_block(graph: FlowGraph,
 
         return {
             id: block_id,
-            type: block_type,
+            type: block_type as CompiledBlockType,
             args: compiled_args,
             contents: compiled_contents,
             report_state: block.data.value.report_state,
@@ -1518,7 +1520,7 @@ function process_jump_index_on_contents(contents: (CompiledBlock | ContentBlock)
 
         if ((op as CompiledBlock).type === 'jump_point') {
             const block = (op as CompiledBlock);
-            index[block.args[0].value] = prefix.concat([idx])
+            index[(block.args as CompiledBlockArgList)[0].value] = prefix.concat([idx])
 
             // Remove this operation
             contents.splice(idx, 1);
@@ -1551,13 +1553,13 @@ function link_jumps(contents: (CompiledBlock | ContentBlock)[], positions: Block
         if ((op as CompiledBlock).type === JUMP_TO_BLOCK_OPERATION) {
             const block = (op as CompiledBlock);
 
-            const link = (op as CompiledBlock).args[0].value as string;
+            const link = (block.args as CompiledBlockArgList)[0].value as string;
             block.type = JUMP_TO_POSITION_OPERATION;
             if (!positions[link]) {
                 throw new Error(`Cannot link to "${link}"`)
             }
 
-            block.args[0].value = positions[link];
+            (block.args as CompiledBlockArgList)[0].value = positions[link];
         }
 
         link_jumps(op.contents || [], positions);
@@ -1594,7 +1596,7 @@ function get_argument_sources(graph: FlowGraph, block: BlockTree, output_index: 
     // This could be done with a flatMap, but that is fairly recent, so if we
     // can increase the compatibility with a little boilerplate, it's not a bad
     // tradeoff
-    let results = [];
+    let results: BlockTreeOutputValue[] = [];
     for (const arg of blockArgs) {
         results = results.concat(get_argument_sources(graph, arg.tree, arg.output_index));
     }

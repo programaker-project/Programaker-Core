@@ -14,7 +14,7 @@ export class SelectFromJSON implements PipeTransform {
         this.sanitizer = sanitizer;
     }
 
-    set_object_class(html, jtype) {
+    set_object_class(html: HTMLElement, jtype: JSONType) {
         switch (jtype) {
         case JSONType.Null:
             html.setAttribute('class', 'tagged-json-type-null');
@@ -44,7 +44,7 @@ export class SelectFromJSON implements PipeTransform {
     }
 
 
-    indent(element, depth) {
+    indent(element: HTMLElement, depth: number) {
         for (let i = 0; i < depth; i++) {
             const indent = document.createElement('span');
             indent.setAttribute('class', 'tagged-json-indentation');
@@ -54,7 +54,7 @@ export class SelectFromJSON implements PipeTransform {
     }
 
 
-    tag(element, depth) {
+    tag(element: any, depth: number) {
         const jtype = GetTypeOfJson(element);
         const outer_object = document.createElement('span');
         const json_object = document.createElement('span');
@@ -141,7 +141,7 @@ export class SelectFromJSON implements PipeTransform {
     }
 
 
-    transform(item): SafeHtml {
+    transform(item: any): SafeHtml {
         const tagged = this.tag(item, 1);
         tagged.setAttribute('key', '');
         return this.sanitizer.bypassSecurityTrustHtml(tagged.outerHTML);

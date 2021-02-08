@@ -5,9 +5,6 @@ import { FormControl } from '@angular/forms';
 import { MatChipInputEvent } from '@angular/material/chips';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
-import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
-
 import { ProgramMetadata } from '../program';
 import { ProgramService } from '../program.service';
 import { SessionService } from '../session.service';
@@ -83,7 +80,7 @@ export class SetProgramTagsDialogComponent {
 
     // Remove duplicated tags
     deduplicateTags(): void {
-        const past = {};
+        const past: {[key: string]: boolean} = {};
         for (let index = 0; index < this.tags.length;) {
             const tag = this.tags[index];
             if (past[tag]) {

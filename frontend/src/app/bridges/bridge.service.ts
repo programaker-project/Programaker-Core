@@ -116,7 +116,7 @@ export class BridgeService {
         return (response as { success: boolean }).success;
     }
 
-    async setShares(connectionId: string, resourceName: string, shares: BridgeResourceEntry[], options?: { asGroup?: string; }) {
+    async setShares(connectionId: string, resourceName: string, shares: {[key: string]: {name: string, shared_with: FullOwnerId[]}}, options?: { asGroup?: string; }) {
         let url = this.updateConnectionResourceUrl(connectionId, resourceName);
         if (options && options.asGroup) {
             url += '?as_group=' + options.asGroup;
@@ -164,7 +164,7 @@ export class BridgeService {
                                               { headers: this.sessionService.getAuthHeader() })
             .toPromise());
 
-        return (response['tokens'] as BridgeTokenInfo[]) || [];
+        return ((response as any)['tokens'] as BridgeTokenInfo[]) || [];
     }
 
     public async createBridgeToken(bridgeId: string, tokenName: string, asGroup: string): Promise<FullBridgeTokenInfo> {
@@ -190,7 +190,7 @@ export class BridgeService {
         const response = (await this.http.get(url,{ headers: this.sessionService.getAuthHeader()}
                                               ).toPromise());
 
-        return response['data'];
+        return (response as any)['data'];
     }
 
     public async revokeToken(bridgeId: string, tokenName: string, asGroup?: string): Promise<void> {

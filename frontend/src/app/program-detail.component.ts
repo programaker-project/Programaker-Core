@@ -79,7 +79,7 @@ export class ProgramDetailComponent implements OnInit {
     private workspaceElement: HTMLElement;
 
     private cursorDiv: HTMLElement;
-    private cursorInfo: {};
+    private cursorInfo: {[key: string]: HTMLElement};
     nonReadyReason: NonReadyReason;
     logCount = 0;
     streamingLogs = false;
@@ -203,7 +203,7 @@ export class ProgramDetailComponent implements OnInit {
     /**
      * Check if an DOM element is a Scratch block object.
      */
-    is_block(blockCandidate: Element) {
+    is_block(blockCandidate: Element): boolean {
         if (blockCandidate.tagName === undefined) {
             return false;
         }
@@ -227,7 +227,7 @@ export class ProgramDetailComponent implements OnInit {
 
             // Clean the contents of the block
             const next = child.getElementsByTagName('next')[0];
-            let next_blocks = [];
+            let next_blocks: ChildNode[]  = [];
             if (next !== undefined) {
                 this.removeNonExistingBlocks(next, controller);
 
@@ -308,7 +308,7 @@ export class ProgramDetailComponent implements OnInit {
         this.eventStream = this.programService.getEventStream(this.program.id);
         this.blockSynchronizer = new BlockSynchronizer(this.eventStream, this.checkpointProgram.bind(this));
 
-        const onCreation = {};
+        const onCreation: {[key: string]: boolean} = {};
         const mirrorEvent = (event: BlocklyEvent) => {
             if (event instanceof Blockly.Events.Ui) {
                 return;  // Don't mirror UI events.
@@ -319,10 +319,10 @@ export class ProgramDetailComponent implements OnInit {
             }
 
             // Convert event to JSON.  This could then be transmitted across the net.
-            const json = event.toJson();
+            const json: any = event.toJson() as any;
 
             // Avoid passing messages about being created outside of this editor
-            if (onCreation[json['blockId']]) {
+            if (onCreation[json.blockId]) {
                 console.debug('Skipping sending message to block on creation');
                 return;
             }
@@ -492,7 +492,7 @@ export class ProgramDetailComponent implements OnInit {
             let x = 0, y = 0, scale = 1;
 
             for (let i = 0; i < transformations.numberOfItems; i++) {
-                const t = transformations[i];
+                const t = transformations.getItem(i);
 
                 if (t.type === SVG_TRANSFORM_TRANSLATE) {
                     x = t.matrix.e;
@@ -527,7 +527,7 @@ export class ProgramDetailComponent implements OnInit {
             const transformations : SVGTransformList = (canvas as any).transform.baseVal;
 
             for (let i = 0; i < transformations.numberOfItems; i++) {
-                const t = transformations[i];
+                const t = transformations.getItem(i);
 
                 if (t.type === SVG_TRANSFORM_SCALE) {
                     scale = t.matrix.a;
@@ -817,7 +817,7 @@ export class ProgramDetailComponent implements OnInit {
             (category as any).ontouchend = move_and_show;
         }
 
-        this.workspace.addChangeListener((event) => {
+        this.workspace.addChangeListener((event: Blockly.Events.Change__Class | Blockly.Events.Create__Class | Blockly.Events.Delete__Class | Blockly.Events.Move__Class) => {
             if (event.type === Blockly.Events.BLOCK_CREATE) {
                 component.hide_block_menu();
             }
@@ -1028,7 +1028,7 @@ export class ProgramDetailComponent implements OnInit {
         const data = {
             program: this.program,
             user_id: this.program.owner,
-            tags: [], // Initially empty, to be updated by dialog
+            tags: [] as string[], // Initially empty, to be updated by dialog
         };
 
         const dialogRef = this.dialog.open(SetProgramTagsDialogComponent, {

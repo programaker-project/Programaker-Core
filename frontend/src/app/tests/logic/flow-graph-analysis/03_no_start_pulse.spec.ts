@@ -1,8 +1,10 @@
 import { FlowGraph } from '../../../flow-editor/flow_graph';
 import { get_unreachable } from '../../../flow-editor/graph_analysis';
 import { validate } from '../../../flow-editor/graph_validation';
-import * as _03_no_start_pulse from '../samples/03_no_start_pulse.js';
 import { GraphBuilder } from '../scaffolding/graph-analysis-tools-graph-builder';
+
+// @ts-ignore
+import * as _03_no_start_pulse from '../samples/03_no_start_pulse.js';
 
 export function gen_flow(): FlowGraph {
     const builder = new GraphBuilder();

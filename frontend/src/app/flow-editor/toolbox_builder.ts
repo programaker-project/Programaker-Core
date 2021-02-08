@@ -9,7 +9,7 @@ import { Session } from 'app/session';
 import { ResolvedBlockArgument, ResolvedCustomBlock, ResolvedDynamicBlockArgument } from '../custom_block';
 import { CustomBlockService } from '../custom_block.service';
 import { iconDataToUrl } from '../utils';
-import { AtomicFlowBlock, isAtomicFlowBlockOptions } from './atomic_flow_block';
+import { AtomicFlowBlock, isAtomicFlowBlockOptions, AtomicFlowBlockOptions } from './atomic_flow_block';
 import { BaseToolboxDescription } from './base_toolbox_description';
 import { InputPortDefinition, MessageType, OutputPortDefinition } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
@@ -18,6 +18,7 @@ import { ToolboxFlowButton } from './toolbox-flow-button';
 import { ContainerFlowBlock, isContainerFlowBlockOptions } from './ui-blocks/container_flow_block';
 import { isUiFlowBlockOptions, UiFlowBlock } from './ui-blocks/ui_flow_block';
 import { UiToolboxDescription } from './ui-blocks/ui_toolbox_description';
+import { BlockManager } from './block_manager';
 
 
 export function buildBaseToolbox(baseElement: HTMLElement,
@@ -37,39 +38,30 @@ export function buildBaseToolbox(baseElement: HTMLElement,
                 continue; // Skip
             }
 
-            if (isAtomicFlowBlockOptions(block)) {
-                tb.addBlockGenerator((manager) => {
+            tb.addBlockGenerator((manager: BlockManager, blockId: string) => {
 
-                    const desc = Object.assign({
-                        on_io_selected: manager.onIoSelected.bind(manager),
-                        on_dropdown_extended: manager.onDropdownExtended.bind(manager),
-                        on_inputs_changed: manager.onInputsChanged.bind(manager),
-                    }, block);
+                const desc = Object.assign({
+                    on_io_selected: manager.onIoSelected.bind(manager),
+                    on_dropdown_extended: manager.onDropdownExtended.bind(manager),
+                    on_inputs_changed: manager.onInputsChanged.bind(manager),
+                }, block);
 
-                    return new AtomicFlowBlock(desc);
-                }, category.id);
-            }
-            else {
-                tb.addBlockGenerator((manager) => {
-                    const desc = Object.assign({
-                        on_io_selected: manager.onIoSelected.bind(manager),
-                        on_dropdown_extended: manager.onDropdownExtended.bind(manager),
-                        on_inputs_changed: manager.onInputsChanged.bind(manager),
-                    }, block);
+                if (isAtomicFlowBlockOptions(block)) {
+                    return new AtomicFlowBlock(desc as AtomicFlowBlockOptions, blockId);
+                }
 
-                    if (isContainerFlowBlockOptions(desc)) {
-                        return new ContainerFlowBlock(desc, uiSignalService);
-                    }
-                    // This is a more generic class. It has to be checked after
-                    // the more specific ones so they have a chance of matching.
-                    else if (isUiFlowBlockOptions(desc)) {
-                        return new UiFlowBlock(desc, uiSignalService);
-                    }
-                    else {
-                        throw new Error("Unknown block options: " + JSON.stringify(block))
-                    }
-                }, category.id);
-            }
+                if (isContainerFlowBlockOptions(desc)) {
+                    return new ContainerFlowBlock(desc, blockId, uiSignalService);
+                }
+                // This is a more generic class. It has to be checked after
+                // the more specific ones so they have a chance of matching.
+                else if (isUiFlowBlockOptions(desc)) {
+                    return new UiFlowBlock(desc, blockId, uiSignalService);
+                }
+                else {
+                    throw new Error("Unknown block options: " + JSON.stringify(block))
+                }
+            }, category.id);
         }
     }
 
@@ -115,7 +107,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
     const skip_resolve_argument_options = true; // Enum options will be filled when needed
     const blocks = await customBlockService.getCustomBlocksOnProgram(programId, skip_resolve_argument_options);
     for (const block of blocks) {
-        let icon = null;
+        let icon: string | null = null;
 
         const connection = connection_by_id[block.service_port_id];
         if (connection) {
@@ -128,7 +120,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
 
         const [message, translationTable] = get_block_message(block);
 
-        let subkey = undefined;
+        let subkey: null | { type: 'argument', index:  number } = null;
         if (block.subkey) {
             subkey = {
                 type: 'argument',
@@ -136,7 +128,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
             };
         }
 
-        base.addBlockGenerator((manager) => {
+        base.addBlockGenerator((manager: BlockManager, blockId: string) => {
             return new AtomicFlowBlock({
                 icon: icon,
                 message: message,
@@ -148,7 +140,7 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                 on_io_selected: manager.onIoSelected.bind(manager),
                 on_dropdown_extended: manager.onDropdownExtended.bind(manager),
                 on_inputs_changed: manager.onInputsChanged.bind(manager),
-            })
+            }, blockId);
         }, block.service_port_id);
     }
 
@@ -204,7 +196,7 @@ function get_output_indexes(block: ResolvedCustomBlock): number[] {
 function get_block_message(block: ResolvedCustomBlock): [string, number[]] {
     const output_indexes = get_output_indexes(block);
 
-    const translationTable = [];
+    const translationTable: number[] = [];
     let offset = 0;
 
     const message = block.message.replace(/%(\d+)/g, (_match, digits) => {

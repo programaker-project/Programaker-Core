@@ -1,4 +1,4 @@
-import { SimpleArrayAst, SimpleArrayAstArgument } from './graph-analysis-tools';
+import { SimpleArrayAst, SimpleArrayAstArgument, SimpleArrayAstOperation } from './graph-analysis-tools';
 
 const SYMBOL_CHARACTERS = (
     'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -6,7 +6,7 @@ const SYMBOL_CHARACTERS = (
         + '!$\'",_-./:;?+<=>#%&*@[\]{|}`^~'
 );
 
-export const OP_TRANSLATIONS = {
+export const OP_TRANSLATIONS: {[key: string]: string} = {
     // Flow control
     'if': 'control_if_else',
     'jump-to': 'jump_to_block',
@@ -55,7 +55,7 @@ function array_to_map(args: any[]): {[key: string]: any} {
         throw new Error("Odd number of arguments on function call, expected even.");
     }
 
-    const result = {};
+    const result: {[key: string]: any} = {};
 
     for (let idx=0; idx < args.length; idx+=2) {
         let key = args[idx];
@@ -280,7 +280,7 @@ function read(s: string, idx: number, linenum: number, colnum: number): [SimpleA
 }
 
 export function dsl_to_ast(s: string): SimpleArrayAst {
-    const ast = [];
+    const ast: SimpleArrayAstOperation[] = [];
 
     let linenum = 1;
     let colnum = 1;
@@ -289,7 +289,7 @@ export function dsl_to_ast(s: string): SimpleArrayAst {
         let token: SimpleArrayAstArgument;
         [token, idx, linenum, colnum] = read(s, idx, linenum, colnum);
         if (token !== null) {
-            ast.push(token);
+            ast.push(token as SimpleArrayAstOperation);
         }
     }
 
