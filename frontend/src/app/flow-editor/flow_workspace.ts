@@ -489,6 +489,12 @@ export class FlowWorkspace implements BlockManager {
                 }
             } else if (change.action === 'delete') {
                 console.log(`Property "${key}" was deleted. New value: undefined. Previous value: "${change.oldValue}".`)
+                const block = this.blockObjs[key].block;
+
+                if (block instanceof UiFlowBlock) {
+                    this._updateBlockContainerFromContainer(block, null, this.blockObjs[change.oldValue.container_id]?.block);
+                }
+
                 this.removeBlock(key, change.oldValue);
             }
         })
@@ -1570,11 +1576,13 @@ export class FlowWorkspace implements BlockManager {
                 }
             }
 
+            if (this.blocks.has(block_id)) {
                 const data = this.blocks.get(block_id);
                 if (data.container_id !== container_id) {
                     data.container_id = container_id;
                     this.blocks.set(block_id, data);
                 }
+            }
 
             if (block instanceof UiFlowBlock) {
                 block.updateContainer(container);
@@ -2240,7 +2248,9 @@ export class FlowWorkspace implements BlockManager {
             }
         }
 
-        this._updateBlockContainer(blockObj.block, null);
+        if (this.blocks.has(blockId)) {
+            this._updateBlockContainer(blockObj.block, null);
+        }
 
         // Make a copy of the array to avoid problems for modifying it during the loop
         for (const conn_id of info.connections.concat([])) {
