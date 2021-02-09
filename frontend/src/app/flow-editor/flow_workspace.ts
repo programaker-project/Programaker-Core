@@ -481,6 +481,7 @@ export class FlowWorkspace implements BlockManager {
                 // Note that moveTo() does not trigger `block.onMove()` callbacks.
                 const block = this.blockObjs[key].block;
                 block.moveTo(this.blocks.get(key).position);
+                this._afterBlocksMove([key]);
 
                 if (block instanceof UiFlowBlock) {
                     this._updateBlockContainerFromContainer(block,
@@ -1641,14 +1642,7 @@ export class FlowWorkspace implements BlockManager {
                     }
 
                     const draggedBlocks = this.blockObjs[blockId].block.moveBy(distance).map(block => block.id);
-
-                    for (const movedId of draggedBlocks.concat([blockId])) {
-                        for (const conn of this.blocks.get(movedId).connections) {
-                            this.updateConnection(conn);
-                        }
-
-                        this.updateBlockInputHelpersPosition(movedId);
-                    }
+                    this._afterBlocksMove(draggedBlocks.concat([block.id]));
                 }
 
                 if (this.isInTrashcan(pos)) {
@@ -1758,6 +1752,16 @@ export class FlowWorkspace implements BlockManager {
                 this.repositionAll();
             }
         });
+    }
+
+    private _afterBlocksMove(blockIds: string[]) {
+        for (const movedId of blockIds) {
+            for (const conn of this.blocks.get(movedId).connections) {
+                this.updateConnection(conn);
+            }
+
+            this.updateBlockInputHelpersPosition(movedId);
+        }
     }
 
     public invalidateBlock(blockId: string) {
