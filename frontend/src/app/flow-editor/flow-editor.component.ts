@@ -39,6 +39,7 @@ import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/r
 import { ChangeProgramVisilibityDialog } from '../dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 import { CloneProgramDialogComponentData, CloneProgramDialogComponent } from '../dialogs/clone-program-dialog/clone-program-dialog.component';
 import { uuidv4 } from './utils';
+import { WebsocketProvider } from 'y-websocket'
 
 @Component({
     selector: 'app-my-flow-editor',

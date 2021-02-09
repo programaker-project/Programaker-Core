@@ -14,6 +14,9 @@ import { ConfigureBlockDialogComponent, ConfigurableBlock, BlockConfigurationOpt
 import { ProgramService } from '../program.service';
 import { CannotSetAsContentsError } from './ui-blocks/cannot_set_as_contents_error';
 import * as Y from 'yjs';
+import { FlowSynchronizer } from './flow-synchronizer';
+import { ProgramEditorEventValue } from 'app/program';
+import { Synchronizer } from 'app/syncronizer';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -56,7 +59,18 @@ type SharedBlockData = {
     position: Position2D;
 };
 
+type NonReadyReason = 'loading' | 'disconnected';
+
 export class FlowWorkspace implements BlockManager {
+    private eventStream: Synchronizer<ProgramEditorEventValue>;
+    private synchronizer: FlowSynchronizer;
+    private isReady: boolean;
+    private nonReadyReason: NonReadyReason | null;
+    private eventSubscription: any;
+    private cursorDiv: HTMLElement;
+    private cursorInfo: {[key: string]: HTMLElement};
+
+    
     public static BuildOn(baseElement: HTMLElement,
                           getEnum: EnumGetter,
                           dialog: MatDialog,
@@ -211,12 +225,168 @@ export class FlowWorkspace implements BlockManager {
             }
         }
 
-        this.autoposition = true;
+        this._initializeReady();
     }
 
     public initializeEmpty() {
-        this.autoposition = true;
+        this._initializeReady();
     }
+
+    private _initializeReady() {
+        this.autoposition = true;
+
+        this._initializeEventSynchronization();
+    }
+
+    private _initializeEventSynchronization() {
+        // Initialize editor event listeners
+        // This is used for collaborative editing.
+
+        if (this.read_only) {
+            this.becomeReady(); // We won't have to wait for the last state to get loaded
+            return;
+        }
+
+        this.eventStream = this.programService.getEventStream(this.programId);
+        this.synchronizer = new FlowSynchronizer(this.eventStream, this.doc);
+
+        const onCreation: {[key: string]: boolean} = {};
+        this.eventSubscription = this.eventStream.subscribe(
+            {
+                next: (ev: ProgramEditorEventValue) => {
+                    if (ev.type === 'cursor_event') {
+                        this.drawPointer(ev.value);
+                    }
+                    else if (ev.type === 'add_editor') {
+                        this.newPointer(ev.value.id);
+                    }
+                    else if (ev.type === 'remove_editor') {
+                        this.deletePointer(ev.value.id);
+                    }
+                    else if (ev.type === 'ready') {
+                        this.becomeReady();
+                    }
+                },
+                error: (error: any) => {
+                    console.error("Error obtainig editor events:", error);
+                },
+                complete: () => {
+                    console.log("Disconnected");
+                    this.nonReadyReason = 'disconnected';
+                    this.isReady = false;
+                }
+            }
+        );
+
+        const onMouseEvent = ((ev: MouseEvent) => {
+            if (ev.buttons) {
+                return;
+            }
+
+            const disp = this.getEditorPosition();
+
+            const rect = this.baseElement.getBoundingClientRect();
+            const cursorInWorkspace = { x: ev.x - rect.left, y: ev.y - rect.top }
+
+            const posInCanvas = {
+                x: cursorInWorkspace.x / disp.scale - disp.x,
+                y: cursorInWorkspace.y / disp.scale - disp.y,
+            }
+
+            console.log("Pos:", posInCanvas);
+
+            this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
+        });
+
+        // this.workspace.addChangeListener(mirrorEvent);
+        this.baseElement.onmousemove = onMouseEvent;
+        this.baseElement.onmouseup = onMouseEvent;
+    }
+
+    /* Collaborator pointer management */
+    newPointer(id: string): HTMLElement {
+        const cursor = document.createElement('object');
+        cursor.type = 'image/svg+xml';
+        cursor.style.display = 'none';
+        cursor.style.position = 'fixed';
+        cursor.style.height = '2.5ex';
+        cursor.style.color
+        cursor.style.zIndex = '10';
+        cursor.style.pointerEvents = 'none';
+        cursor.data = '/assets/cursor.svg';
+        cursor.onload = () => {
+            // Give the cursor a random color
+            cursor.getSVGDocument().getElementById('cursor').style.fill = `hsl(${Math.random() * 255},50%,50%)`;
+        };
+
+        this.cursorDiv.appendChild(cursor);
+        this.cursorInfo[id] = cursor;
+
+        return cursor;
+    }
+
+    getPointer(id: string): HTMLElement {
+        if (this.cursorInfo[id]) {
+            return this.cursorInfo[id];
+        }
+
+        return this.newPointer(id);
+    }
+
+    deletePointer(id: string) {
+        const cursor = this.cursorInfo[id];
+        if (!cursor) {
+            return;
+        }
+        this.cursorDiv.removeChild(cursor);
+        delete this.cursorInfo[id];
+    }
+
+    drawPointer(pos:{id: string, x : number, y: number}) {
+        const rect = this.baseElement.getBoundingClientRect();
+        const disp = this.getEditorPosition();
+        const cursor = this.getPointer(pos.id);
+
+        const posInScreen = {
+            x: pos.x * disp.scale + disp.x + rect.left,
+            y: pos.y * disp.scale + disp.y + rect.top,
+        }
+        cursor.style.left = posInScreen.x + 'px';
+        cursor.style.top = posInScreen.y + 'px';
+
+        console.log("EV@", pos);
+
+
+        let inEditor = false;
+        if (rect.left <= posInScreen.x && rect.right >= posInScreen.x) {
+            if (rect.top <= posInScreen.y && rect.bottom >= posInScreen.y) {
+                inEditor = true;
+            }
+        }
+
+        if (inEditor) {
+            cursor.style.display = 'block';
+        }
+        else {
+            cursor.style.display = 'none';
+        }
+    }
+
+    becomeReady() {
+        this.isReady = true;
+    }
+
+
+    getEditorPosition(): {x:number, y: number, scale: number} | null {
+        return {
+            x: -this.top_left.x,
+            y: -this.top_left.y,
+            scale: 1/this.inv_zoom_level,
+        }
+    }
+
+
+
 
     private deserializeBlock(blockId: string, blockData: FlowBlockData) {
         switch (blockData.type) {
@@ -363,6 +533,7 @@ export class FlowWorkspace implements BlockManager {
         this.set_events();
         this.init_trashcan();
         this.init_buttons();
+        this.init_cursors();
 
         this.update_top_left();
     }
@@ -502,6 +673,11 @@ export class FlowWorkspace implements BlockManager {
             zoom_reset_button.appendChild(symbol);
             this.button_group.appendChild(zoom_reset_button);
         }
+    }
+
+    private init_cursors() {
+        this.cursorDiv = document.getElementById('program-cursors');
+        this.cursorInfo = {};
     }
 
     private set_events() {
