@@ -79,6 +79,8 @@ export interface BlockContextAction {
 };
 
 export interface FlowBlock {
+    moveTo(position: Position2D): void;
+    onMove(callback: (pos: Position2D) => void): void;
     readonly id: string;
     dispose(): void;
     render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement;

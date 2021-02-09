@@ -104,19 +104,21 @@ websocket_handle({Type, _}, State=#state{can_edit=false}) when (Type == text) or
     , State
     };
 websocket_handle({Type, Message}, State=#state{program_id=ProgramId, channel_id=ChannelId}) when (Type == text) orelse (Type == binary) ->
-    Decoded = jiffy:decode(Message, [return_maps]),
-    case Decoded of
-        #{ <<"type">> := <<"editor_event">> } ->
-            ok = automate_channel_engine:send_to_channel(ChannelId, Decoded#{ from_id => self() }),
-            ok = case Decoded of
-                     #{ <<"value">> := #{ <<"save">> := true } } ->
-                         automate_storage:store_program_event(ProgramId, Decoded);
-                     _ ->
-                         ok
-                 end;
-        _ ->
-            ok
-    end,
+    ok = automate_channel_engine:send_to_channel(ChannelId, #{ from_id => self(), data => Message }),
+
+    %% Decoded = jiffy:decode(Message, [return_maps]),
+    %% case Decoded of
+    %%     #{ <<"type">> := <<"editor_event">> } ->
+    %%         ok = automate_channel_engine:send_to_channel(ChannelId, Decoded#{ from_id => self() }),
+    %%         ok = case Decoded of
+    %%                  #{ <<"value">> := #{ <<"save">> := true } } ->
+    %%                      automate_storage:store_program_event(ProgramId, Decoded);
+    %%                  _ ->
+    %%                      ok
+    %%              end;
+    %%     _ ->
+    %%         ok
+    %% end,
     {ok, State};
 websocket_handle(_, State) ->
     {ok, State}.
@@ -158,13 +160,15 @@ websocket_info({channel_engine, _ChannelId, Message=#{ <<"type">> := <<"editor_e
             {ok, State};
         _ ->
             NewMessage = case Message of
-                             #{ from_id := NewPid, <<"value">> := Value=#{ <<"value">> := InnerValue }} ->
-                                 Clean = maps:remove(from_id, Message),
-                                 Clean#{ <<"value">> => Value#{ <<"value">> => InnerValue#{ <<"id">> => list_to_binary(pid_to_list(NewPid)) }}};
+                             #{ from_id := NewPid, message := Msg } ->
+                                 Msg;
+                             %% #{ from_id := NewPid, <<"value">> := Value=#{ <<"value">> := InnerValue }} ->
+                             %%     Clean = maps:remove(from_id, Message),
+                             %%     Clean#{ <<"value">> => Value#{ <<"value">> => InnerValue#{ <<"id">> => list_to_binary(pid_to_list(NewPid)) }}};
                              _ ->
                                  Message
                      end,
-            {reply, {text, jiffy:encode(NewMessage)}, State}
+            {reply, {text, NewMessage}, State}
     end;
 
 websocket_info(_Message, State) ->

@@ -101,6 +101,7 @@ export class UiFlowBlock implements FlowBlock {
     private canvas: SVGElement;
     options: UiFlowBlockOptions;
     readonly id: string;
+    readonly onMoveCallbacks: ((pos: Position2D) => void)[] = [];
 
     private group: SVGElement;
     protected position: {x: number, y: number};
@@ -455,6 +456,13 @@ export class UiFlowBlock implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
+    public moveTo(pos: Position2D) {
+        this.position.x = pos.x;
+        this.position.y = pos.y;
+
+        this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+    }
+
     public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
@@ -464,7 +472,15 @@ export class UiFlowBlock implements FlowBlock {
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
+        for (const callback of this.onMoveCallbacks) {
+            callback(this.position);
+        }
+
         return [];
+    }
+
+    public onMove(callback: (pos: Position2D) => void) {
+        this.onMoveCallbacks.push(callback);
     }
 
     public endMove(): FlowBlock[] {

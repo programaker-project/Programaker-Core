@@ -14,7 +14,7 @@ import { ConfigureBlockDialogComponent, ConfigurableBlock, BlockConfigurationOpt
 import { ProgramService } from '../program.service';
 import { CannotSetAsContentsError } from './ui-blocks/cannot_set_as_contents_error';
 import * as Y from 'yjs';
-import { FlowSynchronizer } from './flow-synchronizer';
+import { WebsocketProvider } from 'y-websocket'
 import { ProgramEditorEventValue } from 'app/program';
 import { Synchronizer } from 'app/syncronizer';
 
@@ -63,14 +63,14 @@ type NonReadyReason = 'loading' | 'disconnected';
 
 export class FlowWorkspace implements BlockManager {
     private eventStream: Synchronizer<ProgramEditorEventValue>;
-    private synchronizer: FlowSynchronizer;
     private isReady: boolean;
     private nonReadyReason: NonReadyReason | null;
     private eventSubscription: any;
     private cursorDiv: HTMLElement;
     private cursorInfo: {[key: string]: HTMLElement};
+    private wsSyncProvider: WebsocketProvider;
 
-    
+
     public static BuildOn(baseElement: HTMLElement,
                           getEnum: EnumGetter,
                           dialog: MatDialog,
@@ -248,7 +248,9 @@ export class FlowWorkspace implements BlockManager {
         }
 
         this.eventStream = this.programService.getEventStream(this.programId);
-        this.synchronizer = new FlowSynchronizer(this.eventStream, this.doc);
+
+        const [base, room, opts] = this.programService.getProgramStreamingEventsUrlParts(this.programId);
+        this.wsSyncProvider = new WebsocketProvider(base, room, this.doc, { params: opts });
 
         const onCreation: {[key: string]: boolean} = {};
         this.eventSubscription = this.eventStream.subscribe(
@@ -293,14 +295,12 @@ export class FlowWorkspace implements BlockManager {
                 y: cursorInWorkspace.y / disp.scale - disp.y,
             }
 
-            console.log("Pos:", posInCanvas);
-
             this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
         });
 
         // this.workspace.addChangeListener(mirrorEvent);
-        this.baseElement.onmousemove = onMouseEvent;
-        this.baseElement.onmouseup = onMouseEvent;
+        // this.baseElement.onmousemove = onMouseEvent;
+        // this.baseElement.onmouseup = onMouseEvent;
     }
 
     /* Collaborator pointer management */
@@ -354,9 +354,6 @@ export class FlowWorkspace implements BlockManager {
         cursor.style.left = posInScreen.x + 'px';
         cursor.style.top = posInScreen.y + 'px';
 
-        console.log("EV@", pos);
-
-
         let inEditor = false;
         if (rect.left <= posInScreen.x && rect.right >= posInScreen.x) {
             if (rect.top <= posInScreen.y && rect.bottom >= posInScreen.y) {
@@ -384,8 +381,6 @@ export class FlowWorkspace implements BlockManager {
             scale: 1/this.inv_zoom_level,
         }
     }
-
-
 
 
     private deserializeBlock(blockId: string, blockData: FlowBlockData) {
@@ -474,16 +469,48 @@ export class FlowWorkspace implements BlockManager {
         this.blocks = this.doc.getMap('blocks');
         this.connections = this.doc.getMap('connections');
 
-        this.blocks.observe(this._onBlockChange);
-        this.connections.observe(this._onConnectionChange);
+        this.blocks.observe(this._onBlockChange.bind(this));
+        this.connections.observe(this._onConnectionChange.bind(this));
     }
 
-    private _onBlockChange(event: Y.YMapEvent<SharedBlockData>, transaction: Y.Transaction) {
-        console.log("BlockChange:", event);
+    private _onBlockChange(event: Y.YMapEvent<SharedBlockData>, _transaction: Y.Transaction) {
+        event.changes.keys.forEach((change, key) => {
+            if (change.action === 'add') {
+                console.log(`[Block] Property "${key}" was added. Initial value: "${this.doc.get(key)}".`)
+            } else if (change.action === 'update') {
+                // Note that moveTo() does not trigger `block.onMove()` callbacks.
+                const block = this.blockObjs[key].block;
+                block.moveTo(this.blocks.get(key).position);
+
+                if (block instanceof UiFlowBlock) {
+                    this._updateBlockContainerFromContainer(block,
+                        this.blockObjs[this.blocks.get(key).container_id]?.block,
+                        this.blockObjs[change.oldValue.container_id]?.block);
+                }
+            } else if (change.action === 'delete') {
+                console.log(`Property "${key}" was deleted. New value: undefined. Previous value: "${change.oldValue}".`)
+                this.removeBlock(key, change.oldValue);
+            }
+        })
     }
 
-    private _onConnectionChange(event: Y.YMapEvent<FlowConnectionData>, transaction: Y.Transaction) {
-        console.log("ConnectionChange:", event);
+    private _onConnectionChange(event: Y.YMapEvent<FlowConnectionData>, _transaction: Y.Transaction) {
+        event.changes.keys.forEach((change, key) => {
+            if (change.action === 'add') {
+                const conn: FlowConnectionData = this.connections.get(key);
+                this.addConnection(conn.source, conn.sink);
+            } else if (change.action === 'update') {
+                console.log(`[Block] Property "${key}" was updated. New value: "${this.connections.get(key)}". Previous value: "${change.oldValue}.`)
+            } else if (change.action === 'delete') {
+                console.log(`RM ${key} - ${change.oldValue.id}`);
+                if (key in this.connectionElements) {
+                    this.removeConnection(change.oldValue);
+                }
+                else {
+                    console.debug(`Attempting to remove inexisting connection: ${key}.`);
+                }
+            }
+        })
     }
 
     private init() {
@@ -1217,6 +1244,12 @@ export class FlowWorkspace implements BlockManager {
 
         this.blockObjs[block.id] = { block: block, input_group: input_group };
         this.blocks.set(block.id, { connections: [], container_id: null, position: position })
+        block.onMove((pos: Position2D) => {
+            console.warn(block, 'moved to', pos);
+            const data = this.blocks.get(block.id);
+            data.position = pos;
+            this.blocks.set(block.id, data);
+        })
 
         return block.id;
     }
@@ -1512,6 +1545,11 @@ export class FlowWorkspace implements BlockManager {
     private _updateBlockContainer(block: FlowBlock, container?: FlowBlock) {
         const block_id = block.id;
         const wasInContainer = this._getContainerOfBlock(block_id);
+        this._updateBlockContainerFromContainer(block, container, wasInContainer);
+    }
+
+    private _updateBlockContainerFromContainer(block: FlowBlock, container?: FlowBlock, wasInContainer?: FlowBlock) {
+        const block_id = block.id;
 
         const container_id = container ? container.id : null;
 
@@ -1531,7 +1569,12 @@ export class FlowWorkspace implements BlockManager {
                     throw err;
                 }
             }
-            this.blocks.get(block_id).container_id = container_id;
+
+                const data = this.blocks.get(block_id);
+                if (data.container_id !== container_id) {
+                    data.container_id = container_id;
+                    this.blocks.set(block_id, data);
+                }
 
             if (block instanceof UiFlowBlock) {
                 block.updateContainer(container);
@@ -1677,7 +1720,7 @@ export class FlowWorkspace implements BlockManager {
                 if (this.isInTrashcan(pos)) {
                     removed = true;
                     for (const blockId of moved.concat([])) {
-                        this.removeBlock(blockId);
+                        this.removeBlock(blockId, this.blocks.get(blockId));
                     }
                 }
             }
@@ -2160,13 +2203,17 @@ export class FlowWorkspace implements BlockManager {
         return this.numPages > 0;
     }
 
-    public removeBlock(blockId: string) {
-        const info = this.blocks.get(blockId);
+    public removeBlock(blockId: string, info?: SharedBlockData) {
+        if (!info) {
+            info = this.blocks.get(blockId);
+        }
+
         const blockObj = this.blockObjs[blockId];
         console.debug("Removing block:", info);
 
-        if (!info) {
+        if (!blockObj) {
             console.debug("Already removed", blockId);
+
             return;
         }
 
@@ -2204,7 +2251,9 @@ export class FlowWorkspace implements BlockManager {
         blockObj.block.dispose();
 
         delete this.blockObjs[blockId];
-        this.blocks.delete(blockId);
+        if (this.blocks.has(blockId)) {
+            this.blocks.delete(blockId);
+        }
 
         const idx = this._selectedBlocks.indexOf(blockId);
         if (idx >= 0) {
@@ -2391,7 +2440,15 @@ export class FlowWorkspace implements BlockManager {
         const source = this.blocks.get(from_.block_id);
         const source_output_type = sourceObj.block.getOutputType(from_.output_index);
 
-        const conn : FlowConnectionData = { id: uuidv4(), source: from_, sink: to, type: source_output_type };
+        // The combination (output block&port) -> (input block&port) should be unique.
+        const id = `${from_.block_id}:${from_.output_index}--${to.block_id}:${to.input_index}`;
+
+        if (id in this.connectionElements) {
+            console.debug("Connection already exists");
+            return;
+        }
+
+        const conn : FlowConnectionData = { id: id, source: from_, sink: to, type: source_output_type };
 
         if ((source_output_type == 'pulse') || (source_output_type == 'user-pulse')) {
             path.setAttributeNS(null, 'marker-end', 'url(#pulse_head)');
@@ -2420,8 +2477,11 @@ export class FlowWorkspace implements BlockManager {
         sink.connections.push(conn.id);
         const hasChanged = sinkObj.block.addConnection('in', conn.sink.input_index, sourceObj.block, source_output_type);
 
-        this.connections.set(conn.id, conn);
         this.connectionElements[conn.id] = path;
+
+        if (!this.connections.has(conn.id)) {
+            this.connections.set(conn.id, conn);
+        }
         this.updateBlockInputHelpersVisibility(conn.sink.block_id);
 
         if (hasChanged) {
@@ -2465,8 +2525,10 @@ export class FlowWorkspace implements BlockManager {
         // Remove workspace information
         this.connection_group.removeChild(this.connectionElements[conn.id]);
 
-        this.connections.delete(conn.id);
         delete this.connectionElements[conn.id];
+        if (this.connections.has(conn.id)) {
+            this.connections.delete(conn.id);
+        }
 
         if (hasChanged) {
             this.propagateChangesFrom(conn.sink.block_id);

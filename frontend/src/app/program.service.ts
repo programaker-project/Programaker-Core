@@ -71,7 +71,16 @@ export class ProgramService {
                                  );
     }
 
-    private async getProgramStreamingEventsUrl(programId: string) {
+    getProgramStreamingEventsUrlParts(programId: string): [string, string, { token: string }] {
+        const token = this.sessionService.getToken();
+        return [toWebsocketUrl(this.environmentService,
+                `${this.environmentService.getApiRoot()}/programs/by-id/${programId}`),
+                'editor-events', 
+                { token: token },
+            ];
+    }
+
+    private getProgramStreamingEventsUrl(programId: string) {
         const token = this.sessionService.getToken();
         return addTokenQueryString(toWebsocketUrl(this.environmentService,
                                                   `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/editor-events`),
@@ -380,34 +389,33 @@ export class ProgramService {
         let state : 'none_ready' | 'ws_ready' | 'all_ready' | 'closed' = 'none_ready';
 
         const obs = new Observable<ProgramEditorEventValue>((observer) => {
-            this.getProgramStreamingEventsUrl(programId).then(streamingUrl => {
-                if (state === 'closed') {
-                    return; // Cancel the opening of websocket if the stream was closed before being established
+            const streamingUrl = this.getProgramStreamingEventsUrl(programId);
+            if (state === 'closed') {
+                return; // Cancel the opening of websocket if the stream was closed before being established
+            }
+
+            websocket = new WebSocket(streamingUrl)
+
+            websocket.onopen = (() => {
+                state = 'all_ready';
+                for (const ev of sendBuffer) {
+                    websocket.send(JSON.stringify(ev));
                 }
+                sendBuffer = null;
+            });
 
-                websocket = new WebSocket(streamingUrl)
+            websocket.onmessage = ((ev) => {
+                const parsed: ProgramEditorEvent = JSON.parse(ev.data);
+                observer.next(parsed.value);
+            });
 
-                websocket.onopen = (() => {
-                    state = 'all_ready';
-                    for (const ev of sendBuffer) {
-                        websocket.send(JSON.stringify(ev));
-                    }
-                    sendBuffer = null;
-                });
+            websocket.onclose = (() => {
+                observer.complete();
+            });
 
-                websocket.onmessage = ((ev) => {
-                    const parsed: ProgramEditorEvent = JSON.parse(ev.data);
-                    observer.next(parsed.value);
-                });
-
-                websocket.onclose = (() => {
-                    observer.complete();
-                });
-
-                websocket.onerror = ((ev) => {
-                    observer.error(ev);
-                    observer.complete();
-                });
+            websocket.onerror = ((ev) => {
+                observer.error(ev);
+                observer.complete();
             });
 
             return () => {

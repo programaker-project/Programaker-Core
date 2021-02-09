@@ -2,6 +2,7 @@ import { BlockManager } from './block_manager';
 import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, OutputPortDefinition, Position2D, FlowBlockData, FlowBlockInitOpts, BlockContextAction } from './flow_block';
 import { is_pulse } from './graph_transformations';
 import { FlowConnectionData, setConnectionType } from './flow_connection';
+import { EventEmitter } from 'events';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -167,6 +168,7 @@ function parse_chunks(message: string): MessageChunk[] {
 
 export class AtomicFlowBlock implements FlowBlock {
     readonly id: string;
+    readonly onMoveCallbacks: ((pos: Position2D) => void)[] = [];
 
     options: AtomicFlowBlockOptions;
     overridenInputTypes: ('user-pulse' | 'pulse')[] = [];
@@ -379,6 +381,13 @@ export class AtomicFlowBlock implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
+    public moveTo(pos: Position2D) {
+        this.position.x = pos.x;
+        this.position.y = pos.y;
+
+        this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+    }
+
     public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
@@ -388,7 +397,15 @@ export class AtomicFlowBlock implements FlowBlock {
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
+        for (const callback of this.onMoveCallbacks) {
+            callback(this.position);
+        }
+
         return [];
+    }
+
+    public onMove(callback: (pos: Position2D) => void) {
+        this.onMoveCallbacks.push(callback);
     }
 
     public endMove(): FlowBlock[] {
