@@ -68,7 +68,19 @@ websocket_init(State=#state{ program_id=ProgramId
                               {automate_channel_engine:listen_channel(NewChannelId), NewChannelId}
                       end,
 
-    {reply, [], State#state{ channel_id=ChannelId }};
+    Events = case automate_storage:get_program_events(ProgramId) of
+                 {ok, Evs} ->
+                     lists:map(fun(#user_program_editor_event{ event=Ev }) ->
+                                       {binary, Ev}
+                               end, Evs);
+                 _ ->
+                     []
+             end,
+
+    erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
+
+
+    {reply, Events, State#state{ channel_id=ChannelId }};
 
 websocket_init(State=#state{error=Error}) ->
     automate_logging:log_api(warning, ?MODULE,
@@ -84,10 +96,11 @@ websocket_handle({Type, _}, State=#state{can_edit=false}) when (Type == text) or
     , { close, <<"Not authorized to send events">> }
     , State
     };
-websocket_handle({binary, Message}, State=#state{program_id=_ProgramId, channel_id=ChannelId}) ->
+websocket_handle({binary, Message}, State=#state{program_id=ProgramId, channel_id=ChannelId}) ->
 
     {Type, Contents} = case Message of
                            <<0:8, C/binary>> ->
+                               automate_storage:store_program_event(ProgramId, Message),
                                {sync, C};
                            <<1:8, C/binary>> ->
                                {awareness, C}
