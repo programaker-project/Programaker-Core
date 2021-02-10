@@ -354,8 +354,8 @@ export class FlowWorkspace implements BlockManager {
         const cursor = this.getPointer(pos.id);
 
         const posInScreen = {
-            x: pos.x * disp.scale + disp.x + rect.left,
-            y: pos.y * disp.scale + disp.y + rect.top,
+            x: (pos.x + disp.x) * disp.scale + rect.left,
+            y: (pos.y + disp.y) * disp.scale + rect.top,
         }
         cursor.style.left = posInScreen.x + 'px';
         cursor.style.top = posInScreen.y + 'px';
@@ -913,7 +913,7 @@ export class FlowWorkspace implements BlockManager {
     private _getBlocksInArea(area: Area2D): string[] {
         const blocks = [];
 
-        for (const blockId of Array.from(this.blocks.keys())) {
+        for (const blockId of Object.keys(this.blockObjs)) {
             const blockArea = this.blockObjs[blockId].block.getBodyArea();
             if (isContainedIn(blockArea, area)) {
                 blocks.push(blockId);
