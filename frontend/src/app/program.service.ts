@@ -71,11 +71,10 @@ export class ProgramService {
                                  );
     }
 
-    getProgramStreamingEventsUrlParts(programId: string): [string, string, { token: string }] {
+    getProgramStreamingEventsUrlParts(programId: string): [string, { token: string }] {
         const token = this.sessionService.getToken();
         return [toWebsocketUrl(this.environmentService,
-                `${this.environmentService.getApiRoot()}/programs/by-id/${programId}`),
-                'editor-events', 
+                `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/editor-events`),
                 { token: token },
             ];
     }

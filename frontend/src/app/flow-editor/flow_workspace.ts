@@ -57,6 +57,7 @@ type SharedBlockData = {
     connections: string[];
     container_id: string | null;
     position: Position2D;
+    blockData: FlowBlockData,
 };
 
 type NonReadyReason = 'loading' | 'disconnected';
@@ -247,38 +248,38 @@ export class FlowWorkspace implements BlockManager {
             return;
         }
 
-        this.eventStream = this.programService.getEventStream(this.programId);
-
-        const [base, room, opts] = this.programService.getProgramStreamingEventsUrlParts(this.programId);
-        this.wsSyncProvider = new WebsocketProvider(base, room, this.doc, { params: opts });
+        const [base, opts] = this.programService.getProgramStreamingEventsUrlParts(this.programId);
+        const room = 'yjs';
+        this.wsSyncProvider = new WebsocketProvider('ws://127.0.0.1:1234', room, this.doc, { params: opts });
 
         const onCreation: {[key: string]: boolean} = {};
-        this.eventSubscription = this.eventStream.subscribe(
-            {
-                next: (ev: ProgramEditorEventValue) => {
-                    if (ev.type === 'cursor_event') {
-                        this.drawPointer(ev.value);
-                    }
-                    else if (ev.type === 'add_editor') {
-                        this.newPointer(ev.value.id);
-                    }
-                    else if (ev.type === 'remove_editor') {
-                        this.deletePointer(ev.value.id);
-                    }
-                    else if (ev.type === 'ready') {
-                        this.becomeReady();
-                    }
-                },
-                error: (error: any) => {
-                    console.error("Error obtainig editor events:", error);
-                },
-                complete: () => {
-                    console.log("Disconnected");
-                    this.nonReadyReason = 'disconnected';
-                    this.isReady = false;
-                }
-            }
-        );
+        // this.eventStream = this.programService.getEventStream(this.programId);
+        // this.eventSubscription = this.eventStream.subscribe(
+        //     {
+        //         next: (ev: ProgramEditorEventValue) => {
+        //             if (ev.type === 'cursor_event') {
+        //                 this.drawPointer(ev.value);
+        //             }
+        //             else if (ev.type === 'add_editor') {
+        //                 this.newPointer(ev.value.id);
+        //             }
+        //             else if (ev.type === 'remove_editor') {
+        //                 this.deletePointer(ev.value.id);
+        //             }
+        //             else if (ev.type === 'ready') {
+        //                 this.becomeReady();
+        //             }
+        //         },
+        //         error: (error: any) => {
+        //             console.error("Error obtainig editor events:", error);
+        //         },
+        //         complete: () => {
+        //             console.log("Disconnected");
+        //             this.nonReadyReason = 'disconnected';
+        //             this.isReady = false;
+        //         }
+        //     }
+        // );
 
         const onMouseEvent = ((ev: MouseEvent) => {
             if (ev.buttons) {
@@ -474,10 +475,28 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _onBlockChange(event: Y.YMapEvent<SharedBlockData>, _transaction: Y.Transaction) {
+        const moves = [] as string[];
         event.changes.keys.forEach((change, key) => {
             if (change.action === 'add') {
-                console.log(`[Block] Property "${key}" was added. Initial value: "${this.doc.get(key)}".`)
-            } else if (change.action === 'update') {
+                console.log(`BLOCK "${key}" was added. Initial value:`, this.blocks.get(key));
+
+                if (key in this.blockObjs) {
+                    console.log("Already contained");
+                    return;
+                }
+
+                const block = this.deserializeBlock(key, this.blocks.get(key).blockData);
+                this.draw(block, this.blocks.get(key).position);
+
+                moves.push(key);
+
+                if (block instanceof UiFlowBlock) {
+                    this._updateBlockContainerFromContainer(block,
+                                                            this.blockObjs[this.blocks.get(key).container_id]?.block,
+                                                            null);
+                }
+            }
+            else if (change.action === 'update') {
                 // Note that moveTo() does not trigger `block.onMove()` callbacks.
                 const block = this.blockObjs[key].block;
                 block.moveTo(this.blocks.get(key).position);
@@ -485,11 +504,18 @@ export class FlowWorkspace implements BlockManager {
 
                 if (block instanceof UiFlowBlock) {
                     this._updateBlockContainerFromContainer(block,
-                        this.blockObjs[this.blocks.get(key).container_id]?.block,
-                        this.blockObjs[change.oldValue.container_id]?.block);
+                                                            this.blockObjs[this.blocks.get(key).container_id]?.block,
+                                                            this.blockObjs[change.oldValue.container_id]?.block);
                 }
-            } else if (change.action === 'delete') {
+            }
+            else if (change.action === 'delete') {
                 console.log(`Property "${key}" was deleted. New value: undefined. Previous value: "${change.oldValue}".`)
+
+                if (!(key in this.blockObjs)) {
+                    console.log("Already deleted");
+                    return;
+                }
+
                 const block = this.blockObjs[key].block;
 
                 if (block instanceof UiFlowBlock) {
@@ -497,8 +523,10 @@ export class FlowWorkspace implements BlockManager {
                 }
 
                 this.removeBlock(key, change.oldValue);
+
             }
-        })
+        });
+        this._afterBlocksMove(moves)
     }
 
     private _onConnectionChange(event: Y.YMapEvent<FlowConnectionData>, _transaction: Y.Transaction) {
@@ -507,7 +535,8 @@ export class FlowWorkspace implements BlockManager {
                 const conn: FlowConnectionData = this.connections.get(key);
                 this.addConnection(conn.source, conn.sink);
             } else if (change.action === 'update') {
-                console.log(`[Block] Property "${key}" was updated. New value: "${this.connections.get(key)}". Previous value: "${change.oldValue}.`)
+                console.log(`[Conn] Property "${key}" was updated. New value: "${this.connections.get(key)}". Previous value:`, change.oldValue);
+                // TODO: In which case can this happen?
             } else if (change.action === 'delete') {
                 console.log(`RM ${key} - ${change.oldValue.id}`);
                 if (key in this.connectionElements) {
@@ -1250,9 +1279,12 @@ export class FlowWorkspace implements BlockManager {
         const input_group = this.drawBlockInputHelpers(block);
 
         this.blockObjs[block.id] = { block: block, input_group: input_group };
-        this.blocks.set(block.id, { connections: [], container_id: null, position: position })
+        this.blocks.set(block.id, { connections: [],
+                                    container_id: null,
+                                    position: position,
+                                    blockData: block.serialize(),
+                                 })
         block.onMove((pos: Position2D) => {
-            console.warn(block, 'moved to', pos);
             const data = this.blocks.get(block.id);
             data.position = pos;
             this.blocks.set(block.id, data);

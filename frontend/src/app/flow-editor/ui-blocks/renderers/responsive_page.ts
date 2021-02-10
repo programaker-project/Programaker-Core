@@ -308,8 +308,10 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
         return {x: 0, y: 0};
     }
 
-    updateContainer(_container: UiFlowBlock) {
-        throw new Error("A webpage cannot be put inside a container.");
+    updateContainer(container: UiFlowBlock) {
+        if (container !== null) {
+            throw new Error("A webpage cannot be put inside a container. Trying to put inside a " + container.options.block_id);
+        }
     }
 
     repositionContents(): void {
