@@ -263,7 +263,7 @@ export class FlowWorkspace implements BlockManager {
             }
         })
 
-        this.eventStream = this.programService.getEventStream(this.programId);
+        this.eventStream = this.programService.getEventStream(this.programId, { skip_previous: true });
         this.eventSubscription = this.eventStream.subscribe(
             {
                 next: (ev: ProgramEditorEventValue) => {

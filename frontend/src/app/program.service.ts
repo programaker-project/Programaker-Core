@@ -382,13 +382,17 @@ export class ProgramService {
         });
     }
 
-    getEventStream(programId: string): Synchronizer<ProgramEditorEventValue> {
+    getEventStream(programId: string, opts: { skip_previous?: boolean } = {}): Synchronizer<ProgramEditorEventValue> {
         let websocket: WebSocket | null = null;
         let sendBuffer: {type: string, value: ProgramEditorEventValue}[] = [];
         let state : 'none_ready' | 'ws_ready' | 'all_ready' | 'closed' = 'none_ready';
 
         const obs = new Observable<ProgramEditorEventValue>((observer) => {
-            const streamingUrl = this.getProgramStreamingEventsUrl(programId);
+            let streamingUrl = this.getProgramStreamingEventsUrl(programId);
+            if (opts.skip_previous) {
+                streamingUrl += '&skip_previous=true';
+            }
+
             if (state === 'closed') {
                 return; // Cancel the opening of websocket if the stream was closed before being established
             }

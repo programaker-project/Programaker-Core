@@ -19,6 +19,7 @@
                , error :: none | binary()
                , channel_id :: none | binary()
                , can_edit :: boolean()
+               , skip_previous :: boolean()
                }).
 
 
@@ -26,6 +27,13 @@ init(Req, _Opts) ->
     ProgramId = cowboy_req:binding(program_id, Req),
 
     Qs = cowboy_req:parse_qs(Req),
+    SkipPrevious = case proplists:get_value(<<"skip_previous">>, Qs, undefined) of
+                       <<"t">> -> true;
+                       <<"true">> -> true;
+                       <<"1">> -> true;
+                       _ -> false
+                   end,
+
     {Error, UserId, CanEdit} = case proplists:get_value(<<"token">>, Qs, undefined) of
         undefined ->
                      {<<"Authorization header not found">>, none, false};
@@ -49,10 +57,12 @@ init(Req, _Opts) ->
                                   , error=Error
                                   , channel_id=none
                                   , can_edit=CanEdit
+                                  , skip_previous=SkipPrevious
                                   }}.
 
 websocket_init(State=#state{ program_id=ProgramId
                            , error=none
+                           , skip_previous=SkipPrevious
                            }) ->
 
     {ok, #user_program_entry{ program_channel=ProgramChannelId }} = automate_storage:get_program_from_id(ProgramId),
@@ -69,13 +79,16 @@ websocket_init(State=#state{ program_id=ProgramId
                       end,
     ok = automate_channel_engine:monitor_listeners(ChannelId, self(), node()),
 
-    Events = case automate_storage:get_program_events(ProgramId) of
-                 {ok, Evs} ->
-                     lists:map(fun(#user_program_editor_event{ event=Ev }) ->
-                                       {text, jiffy:encode(Ev)}
-                               end, Evs);
-                 _ ->
-                     []
+    Events = case SkipPrevious of
+                 true -> [];
+                 false -> case automate_storage:get_program_events(ProgramId) of
+                              {ok, Evs} ->
+                                  lists:map(fun(#user_program_editor_event{ event=Ev }) ->
+                                                    {text, jiffy:encode(Ev)}
+                                            end, Evs);
+                              _ ->
+                                  []
+                          end
              end,
 
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
