@@ -1,8 +1,8 @@
 %%% @doc
-%%% WebSocket endpoint to listen to updates on a program.
+%%% WebSocket endpoint to listen to updates on a program using Yjs's protocol.
 %%% @end
 
--module(automate_rest_api_program_specific_editor_events).
+-module(automate_rest_api_program_specific_editor_events_yjs).
 -export([init/2]).
 -export([websocket_init/1]).
 -export([websocket_handle/2]).
@@ -67,26 +67,8 @@ websocket_init(State=#state{ program_id=ProgramId
                               {ok, #user_program_entry{ program_channel=NewChannelId }} = automate_storage:get_program_from_id(ProgramId),
                               {automate_channel_engine:listen_channel(NewChannelId), NewChannelId}
                       end,
-    ok = automate_channel_engine:monitor_listeners(ChannelId, self(), node()),
 
-    Events = case automate_storage:get_program_events(ProgramId) of
-                 {ok, Evs} ->
-                     lists:map(fun(#user_program_editor_event{ event=Ev }) ->
-                                       {text, jiffy:encode(Ev)}
-                               end, Evs);
-                 _ ->
-                     []
-             end,
-
-    erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
-
-    EndMarker = jiffy:encode(#{ <<"type">> => <<"editor_event">>
-                              , <<"value">> => #{ <<"type">> => <<"ready">>
-                                                , <<"value">> => #{}
-                                                }
-                              }),
-
-    {reply, Events ++ [{text, EndMarker}], State#state{ channel_id=ChannelId }};
+    {reply, [], State#state{ channel_id=ChannelId }};
 
 websocket_init(State=#state{error=Error}) ->
     automate_logging:log_api(warning, ?MODULE,
@@ -97,74 +79,45 @@ websocket_init(State=#state{error=Error}) ->
     , State
     }.
 
-
 websocket_handle({Type, _}, State=#state{can_edit=false}) when (Type == text) orelse (Type == binary) ->
     {reply
     , { close, <<"Not authorized to send events">> }
     , State
     };
-websocket_handle({Type, Message}, State=#state{program_id=ProgramId, channel_id=ChannelId}) when (Type == text) orelse (Type == binary) ->
-    Decoded = jiffy:decode(Message, [return_maps]),
-    case Decoded of
-        #{ <<"type">> := <<"editor_event">> } ->
-            ok = automate_channel_engine:send_to_channel(ChannelId, Decoded#{ from_id => self() }),
-            ok = case Decoded of
-                     #{ <<"value">> := #{ <<"save">> := true } } ->
-                         automate_storage:store_program_event(ProgramId, Decoded);
-                     _ ->
-                         ok
-                 end;
-        _ ->
-            ok
-    end,
+websocket_handle({binary, Message}, State=#state{program_id=_ProgramId, channel_id=ChannelId}) ->
+
+    {Type, Contents} = case Message of
+                           <<0:8, C/binary>> ->
+                               {sync, C};
+                           <<1:8, C/binary>> ->
+                               {awareness, C}
+                       end,
+    ok = automate_channel_engine:send_to_channel(ChannelId, #{ from_id => self(), type => yjs_event, data => {Type, Contents} }),
+
     {ok, State};
 websocket_handle(_, State) ->
     {ok, State}.
-
-websocket_info({ automate_channel_engine, add_listener, {Pid, _Key, _SubKey}}, State) ->
-    Self = self(),
-    case Pid of
-        Self ->
-            {ok, State};
-        _ ->
-            {reply, {text, jiffy:encode(#{ <<"type">> => <<"editor_event">>
-                                         , <<"value">> => #{ <<"type">> => <<"add_editor">>
-                                                           , <<"value">> => #{  <<"id">> => list_to_binary(pid_to_list(Pid)) }
-                                                           }
-                                         })}, State}
-    end;
-
-websocket_info({automate_channel_engine,remove_listener, {Pid, _Channel}}, State) ->
-    Self = self(),
-    case Pid of
-        Self ->
-            {ok, State};
-        _ ->
-            {reply, {text, jiffy:encode(#{ <<"type">> => <<"editor_event">>
-                                         , <<"value">> => #{ <<"type">> =>  <<"remove_editor">>
-                                                           , <<"value">> => #{  <<"id">> => list_to_binary(pid_to_list(Pid)) }
-                                                           }
-                                         })}, State}
-    end;
 
 websocket_info(ping_interval, State) ->
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
     {reply, ping, State};
 
-websocket_info({channel_engine, _ChannelId, Message=#{ <<"type">> := <<"editor_event">> }}, State) ->
+websocket_info({channel_engine, _ChannelId, Message=#{ type := yjs_event
+                                                     }}, State) ->
     Pid = self(),
     case Message of
         #{ from_id := Pid } ->  % Ignore if the message came from this websocket
             {ok, State};
         _ ->
-            NewMessage = case Message of
-                             #{ from_id := NewPid, <<"value">> := Value=#{ <<"value">> := InnerValue }} ->
-                                 Clean = maps:remove(from_id, Message),
-                                 Clean#{ <<"value">> => Value#{ <<"value">> => InnerValue#{ <<"id">> => list_to_binary(pid_to_list(NewPid)) }}};
-                             _ ->
-                                 Message
-                     end,
-            {reply, {text, jiffy:encode(NewMessage)}, State}
+            case Message of
+                #{ data := {sync, Msg} } ->
+                    {reply, {binary, <<0:8, Msg/binary>>}, State};
+                #{ data := {awareness, _Msg} } ->
+                    {ok, State};
+                _ ->
+                    io:fwrite("‽"),
+                    {ok, State}
+            end
     end;
 
 websocket_info(_Message, State) ->

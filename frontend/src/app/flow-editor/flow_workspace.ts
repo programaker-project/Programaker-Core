@@ -248,44 +248,50 @@ export class FlowWorkspace implements BlockManager {
             return;
         }
 
+        this.blocks.observe(this._onBlockChange.bind(this));
+        this.connections.observe(this._onConnectionChange.bind(this));
+
         const [base, opts] = this.programService.getProgramStreamingEventsUrlParts(this.programId);
         const room = 'yjs';
-        this.wsSyncProvider = new WebsocketProvider('ws://127.0.0.1:1234', room, this.doc, { params: opts });
+        this.wsSyncProvider = new WebsocketProvider(base, room, this.doc, { params: opts, resyncInterval: 100 });
+        this.wsSyncProvider.once('synced', () => {
 
-        const onCreation: {[key: string]: boolean} = {};
-        // this.eventStream = this.programService.getEventStream(this.programId);
-        // this.eventSubscription = this.eventStream.subscribe(
-        //     {
-        //         next: (ev: ProgramEditorEventValue) => {
-        //             if (ev.type === 'cursor_event') {
-        //                 this.drawPointer(ev.value);
-        //             }
-        //             else if (ev.type === 'add_editor') {
-        //                 this.newPointer(ev.value.id);
-        //             }
-        //             else if (ev.type === 'remove_editor') {
-        //                 this.deletePointer(ev.value.id);
-        //             }
-        //             else if (ev.type === 'ready') {
-        //                 this.becomeReady();
-        //             }
-        //         },
-        //         error: (error: any) => {
-        //             console.error("Error obtainig editor events:", error);
-        //         },
-        //         complete: () => {
-        //             console.log("Disconnected");
-        //             this.nonReadyReason = 'disconnected';
-        //             this.isReady = false;
-        //         }
-        //     }
-        // );
+            // HACK: Clear the sync interval after the first one has been performed
+            if (this.wsSyncProvider._resyncInterval) {
+                clearInterval(this.wsSyncProvider._resyncInterval);
+                this.wsSyncProvider._resyncInterval = 0;
+            }
+        })
+
+        this.eventStream = this.programService.getEventStream(this.programId);
+        this.eventSubscription = this.eventStream.subscribe(
+            {
+                next: (ev: ProgramEditorEventValue) => {
+                    if (ev.type === 'cursor_event') {
+                        this.drawPointer(ev.value);
+                    }
+                    else if (ev.type === 'add_editor') {
+                        this.newPointer(ev.value.id);
+                    }
+                    else if (ev.type === 'remove_editor') {
+                        this.deletePointer(ev.value.id);
+                    }
+                    else if (ev.type === 'ready') {
+                        this.becomeReady();
+                    }
+                },
+                error: (error: any) => {
+                    console.error("Error obtainig editor events:", error);
+                },
+                complete: () => {
+                    console.log("Disconnected");
+                    this.nonReadyReason = 'disconnected';
+                    this.isReady = false;
+                }
+            }
+        );
 
         const onMouseEvent = ((ev: MouseEvent) => {
-            if (ev.buttons) {
-                return;
-            }
-
             const disp = this.getEditorPosition();
 
             const rect = this.baseElement.getBoundingClientRect();
@@ -299,9 +305,8 @@ export class FlowWorkspace implements BlockManager {
             this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
         });
 
-        // this.workspace.addChangeListener(mirrorEvent);
-        // this.baseElement.onmousemove = onMouseEvent;
-        // this.baseElement.onmouseup = onMouseEvent;
+        this.baseElement.onmousemove = onMouseEvent;
+        this.baseElement.onmouseup = onMouseEvent;
     }
 
     /* Collaborator pointer management */
@@ -469,9 +474,6 @@ export class FlowWorkspace implements BlockManager {
 
         this.blocks = this.doc.getMap('blocks');
         this.connections = this.doc.getMap('connections');
-
-        this.blocks.observe(this._onBlockChange.bind(this));
-        this.connections.observe(this._onConnectionChange.bind(this));
     }
 
     private _onBlockChange(event: Y.YMapEvent<SharedBlockData>, _transaction: Y.Transaction) {
