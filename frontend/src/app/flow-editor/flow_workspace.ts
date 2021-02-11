@@ -108,12 +108,12 @@ export class FlowWorkspace implements BlockManager {
 
     public getGraph(): FlowGraph {
         const blocks: { [key: string]: FlowGraphNode } = {};
-        for (const block_id of this.blocks.keys()) {
+        for (const block_id of Object.keys(this.blockObjs)) {
             const blockObj = this.blockObjs[block_id].block;
             const serialized = blockObj.serialize();
             const position = blockObj.getOffset();
 
-            blocks[block_id] = { data: serialized, position: position, container_id: this.blocks.get(block_id).container_id };
+            blocks[block_id] = { data: serialized, position: position, container_id: this.blocks.get(block_id)?.container_id };
         }
 
         const connections: FlowGraphEdge[] = [];
@@ -499,16 +499,25 @@ export class FlowWorkspace implements BlockManager {
                 }
             }
             else if (change.action === 'update') {
+                console.log(`BLOCK "${key}" was updated.`);
+
                 // Note that moveTo() does not trigger `block.onMove()` callbacks.
                 const block = this.blockObjs[key].block;
-                block.moveTo(this.blocks.get(key).position);
+                const newData = this.blocks.get(key);
+                block.moveTo(newData.position);
                 this._afterBlocksMove([key]);
 
                 if (block instanceof UiFlowBlock) {
-                    this._updateBlockContainerFromContainer(block,
-                                                            this.blockObjs[this.blocks.get(key).container_id]?.block,
-                                                            this.blockObjs[change.oldValue.container_id]?.block);
+                    if (newData.container_id !== change.oldValue.container_id) {
+                        this._updateBlockContainerFromContainer(block,
+                                                                this.blockObjs[newData.container_id]?.block,
+                                                                this.blockObjs[change.oldValue.container_id]?.block);
+                    }
                 }
+
+                // Updated block data
+                const updatedOptions = JSON.stringify(newData.blockData) === JSON.stringify(change.oldValue.blockData);
+                block.updateOptions(newData.blockData);
             }
             else if (change.action === 'delete') {
                 console.log(`Property "${key}" was deleted. New value: undefined. Previous value: "${change.oldValue}".`)
@@ -549,6 +558,16 @@ export class FlowWorkspace implements BlockManager {
                 }
             }
         })
+    }
+
+    public onBlockOptionsChanged(block: FlowBlock) {
+        console.log("==>", block);
+        console.log("OPTIONS", block.serialize());
+
+        const serialized = block.serialize();
+        const saveData = this.blocks.get(block.id);
+        saveData.blockData = serialized;
+        this.blocks.set(block.id, saveData);
     }
 
     private init() {

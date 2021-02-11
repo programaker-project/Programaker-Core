@@ -3,7 +3,6 @@ import { BlockManager } from '../block_manager';
 import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, InputPortDefinition, Position2D, Movement2D, Resizeable } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
-import { uuidv4 } from '../utils';
 import { CutTree, UiElementWidgetType, UiElementRepr, widgetAsAtomicUiElement } from './renderers/ui_tree_repr';
 import { BlockConfigurationOptions } from '../dialogs/configure-block-dialog/configure-block-dialog.component';
 
@@ -604,7 +603,18 @@ export class UiFlowBlock implements FlowBlock {
             if (newValue.trim().length > 0) {
                 handler.text = newValue.trim();
             }
+
+            if (this._workspace) {
+                this._workspace.onBlockOptionsChanged(this);
+            }
         });
+    }
+
+
+    public updateOptions(blockData: FlowBlockData): void {
+        const data = blockData as UiFlowBlockData;
+        console.error("TODO: Update UI flow block", data);
+        throw new Error("Not implemented");
     }
 
     getSlots(): { [key: string]: string; } {

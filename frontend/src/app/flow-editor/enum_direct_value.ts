@@ -6,6 +6,7 @@ import {
     MessageType, OnIOSelected,
     Position2D
 } from './flow_block';
+import { FlowWorkspace } from './flow_workspace';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -56,6 +57,7 @@ export class EnumDirectValue implements FlowBlock {
     options: EnumDirectValueOptions;
     readonly id: string;
     readonly onMoveCallbacks: ((pos: Position2D) => void)[] = [];
+    private _workspace: FlowWorkspace;
 
     value_id: string = undefined;
 
@@ -225,7 +227,7 @@ export class EnumDirectValue implements FlowBlock {
         return this.value_id;
     }
 
-    private setValue(id: string) {
+    private setValue(id: string, sideChannel: boolean =false) {
         const selected = this.value_dict[id];
         this.value_id = id;
 
@@ -233,6 +235,15 @@ export class EnumDirectValue implements FlowBlock {
             this.textBox.textContent = selected.name || '-';
             this.updateSize();
         }
+
+        if (this._workspace && !sideChannel) {
+            this._workspace.onBlockOptionsChanged(this);
+        }
+    }
+
+    public updateOptions(blockData: FlowBlockData): void {
+        const data = blockData as EnumDirectValueFlowBlockData;
+        this.setValue(data.value.value_id, true);
     }
 
     private loadValues() {
@@ -295,6 +306,7 @@ export class EnumDirectValue implements FlowBlock {
 
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group }
+        this._workspace = initOpts.workspace;
 
         this.canvas = canvas;
         if (initOpts.position) {

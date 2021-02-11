@@ -388,6 +388,12 @@ export class AtomicFlowBlock implements FlowBlock {
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
     }
 
+    public updateOptions(blockData: FlowBlockData): void {
+        const data = blockData as AtomicFlowBlockData;
+        console.error("TODO: Update Atomic flow block", data);
+        throw new Error("Not implemented");
+    }
+
     public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");

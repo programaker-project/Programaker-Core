@@ -79,6 +79,7 @@ export interface BlockContextAction {
 };
 
 export interface FlowBlock {
+    updateOptions(blockData: FlowBlockData): void;
     moveTo(position: Position2D): void;
     onMove(callback: (pos: Position2D) => void): void;
     readonly id: string;
