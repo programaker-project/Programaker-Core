@@ -93,7 +93,8 @@ export class ContainerFlowBlock extends UiFlowBlock implements ContainerBlock {
     removeContentBlock(block: FlowBlock): void {
         const pos = this.contents.findIndex(b => b === block);
         if (pos < 0) {
-            throw new Error(`Block not found on container`);
+            console.error(`Block not found on container`);
+            return;
         }
 
         this.contents.splice(pos, 1);

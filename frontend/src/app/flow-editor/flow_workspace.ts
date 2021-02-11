@@ -480,27 +480,49 @@ export class FlowWorkspace implements BlockManager {
         this.connections = this.doc.getMap('connections');
     }
 
+    private _containerDependencies: {[ key: string ]:  [string, string][] } = {};
+
     private _onBlockChange(event: Y.YMapEvent<SharedBlockData>, _transaction: Y.Transaction) {
         const moves = [] as string[];
         event.changes.keys.forEach((change, key) => {
             if (change.action === 'add') {
-                console.log(`BLOCK "${key}" was added. Initial value:`, this.blocks.get(key));
+                const info = this.blocks.get(key);
+                console.log(`BLOCK "${key}" was added. Initial value:`, info);
 
                 if (key in this.blockObjs) {
                     console.log("Already contained");
                     return;
                 }
 
-                const block = this.deserializeBlock(key, this.blocks.get(key).blockData);
-                this.draw(block, this.blocks.get(key).position);
+                const block = this.deserializeBlock(key, info.blockData);
+                this.draw(block, info.position);
 
                 moves.push(key);
 
-                if (block instanceof UiFlowBlock) {
-                    this._updateBlockContainerFromContainer(block,
-                                                            this.blockObjs[this.blocks.get(key).container_id]?.block,
-                                                            null);
+                const containerId = info.container_id;
+                if ((block instanceof UiFlowBlock) && containerId) {
+
+                    if (!(containerId in this.blockObjs)) {
+                        // Not ready to put this on container
+                        if (!this._containerDependencies[containerId]) {
+                            this._containerDependencies[containerId] = [];
+                        }
+                        this._containerDependencies[containerId].push([key, null]);
+                    }
+                    else {
+                        this._updateBlockContainerFromContainer(block,
+                                                                this.blockObjs[containerId].block,
+                                                                null);
+                    }
                 }
+
+                for (const [dependent, old] of this._containerDependencies[key] || []) {
+                    const depBlock = this.blockObjs[dependent].block;
+
+                    this._updateBlockContainerFromContainer(depBlock, block, this.blockObjs[old]?.block);
+                }
+                this._raiseBlocks([key]);
+                delete this._containerDependencies[key];
             }
             else if (change.action === 'update') {
                 console.log(`BLOCK "${key}" was updated.`);
@@ -511,11 +533,22 @@ export class FlowWorkspace implements BlockManager {
                 block.moveTo(newData.position);
                 this._afterBlocksMove([key]);
 
+                const containerId = newData.container_id;
+
                 if (block instanceof UiFlowBlock) {
-                    if (newData.container_id !== change.oldValue.container_id) {
-                        this._updateBlockContainerFromContainer(block,
-                                                                this.blockObjs[newData.container_id]?.block,
-                                                                this.blockObjs[change.oldValue.container_id]?.block);
+                    if (containerId !== change.oldValue.container_id) {
+                        if (containerId && !(containerId in this.blockObjs)) {
+                            // Not ready to put this on container
+                            if (!this._containerDependencies[containerId]) {
+                                this._containerDependencies[containerId] = [];
+                            }
+                            this._containerDependencies[containerId].push([key, change.oldValue.container_id]);
+                        }
+                        else {
+                            this._updateBlockContainerFromContainer(block,
+                                                                    this.blockObjs[containerId].block,
+                                                                    this.blockObjs[change.oldValue.container_id]?.block);
+                        }
                     }
                 }
 
