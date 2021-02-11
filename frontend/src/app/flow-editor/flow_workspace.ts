@@ -561,7 +561,7 @@ export class FlowWorkspace implements BlockManager {
                         }
                         else {
                             this._updateBlockContainerFromContainer(block,
-                                                                    this.blockObjs[containerId].block,
+                                                                    this.blockObjs[containerId]?.block,
                                                                     this.blockObjs[change.oldValue.container_id]?.block);
                         }
                     }
@@ -1376,6 +1376,10 @@ export class FlowWorkspace implements BlockManager {
                                  })
         block.onMove((pos: Position2D) => {
             const data = this.blocks.get(block.id);
+            if (!data) {
+                console.warn("Calling block.onMove() after deleted.")
+                return;
+            }
             data.position = pos;
             this.blocks.set(block.id, data);
         })
