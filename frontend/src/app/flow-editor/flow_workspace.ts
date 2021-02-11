@@ -162,16 +162,22 @@ export class FlowWorkspace implements BlockManager {
         let to_go = Object.keys(graph.nodes);
 
         let processing = true;
+        let lastProcessing = true;
 
-        while ((to_go.length > 0) && processing) {
+        while ((to_go.length > 0) /* && processing */) {
             processing = false;
             const skipped = [];
 
             for (const block_id of to_go) {
                 const block = graph.nodes[block_id];
-                if (block.container_id && (!this.blockObjs[block.container_id])) {
-                    skipped.push(block_id);
-                    continue;
+                if (lastProcessing || processing) {
+                    if (block.container_id && (!this.blockObjs[block.container_id])) {
+                        skipped.push(block_id);
+                        continue;
+                    }
+                }
+                else {
+                    console.error("Doing an exception to jump over circular dependencies");
                 }
 
                 const created_block = this.deserializeBlock(block_id, block.data);
@@ -206,6 +212,7 @@ export class FlowWorkspace implements BlockManager {
             }
 
             to_go = skipped;
+            lastProcessing = processing;
         }
 
         if (to_go.length !== 0) {
