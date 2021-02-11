@@ -228,8 +228,11 @@ export class EnumDirectValue implements FlowBlock {
     }
 
     private setValue(id: string, sideChannel: boolean =false) {
-        const selected = this.value_dict[id];
         this.value_id = id;
+
+        if (!this.value_dict) { return; }
+
+        const selected = this.value_dict[id];
 
         if (this.group) {
             this.textBox.textContent = selected.name || '-';
@@ -244,6 +247,7 @@ export class EnumDirectValue implements FlowBlock {
     public updateOptions(blockData: FlowBlockData): void {
         const data = blockData as EnumDirectValueFlowBlockData;
         this.setValue(data.value.value_id, true);
+        this.textBox.textContent = data.value.value_text;
     }
 
     private loadValues() {

@@ -139,7 +139,7 @@ export class FlowWorkspace implements BlockManager {
 
     public getPages(): {[key: string]: any} {
         const pages: { [key: string]: any } = {};
-        for (const block_id of Array.from(this.blocks.keys())) {
+        for (const block_id of Object.keys(this.blockObjs)) {
             const block = this.blockObjs[block_id].block;
             if (block instanceof ContainerFlowBlock) {
                 if (block.isPage) {
@@ -253,58 +253,61 @@ export class FlowWorkspace implements BlockManager {
         this.blocks.observe(this._onBlockChange.bind(this));
         this.connections.observe(this._onConnectionChange.bind(this));
 
-        const [base, opts] = this.programService.getProgramStreamingEventsUrlParts(this.programId);
-        const room = 'yjs';
+        // HACK: Give some space to blocks and connections to sync before establishing connection
+        setTimeout(() => {
+            const [base, opts] = this.programService.getProgramStreamingEventsUrlParts(this.programId);
+            const room = 'yjs';
 
-        this.wsSyncProvider = new WebsocketProvider(this.environmentService.getYjsWsSyncServer(),
-                                                    this.programId,
-                                                    this.doc,
-                                                    { params: opts });
+            this.wsSyncProvider = new WebsocketProvider(this.environmentService.getYjsWsSyncServer(),
+                                                        this.programId,
+                                                        this.doc,
+                                                        { params: opts });
 
-        this.eventStream = this.programService.getEventStream(this.programId, { skip_previous: true });
-        this.eventSubscription = this.eventStream.subscribe(
-            {
-                next: (ev: ProgramEditorEventValue) => {
-                    if (ev.type === 'cursor_event') {
-                        this.drawPointer(ev.value);
+            this.eventStream = this.programService.getEventStream(this.programId, { skip_previous: true });
+            this.eventSubscription = this.eventStream.subscribe(
+                {
+                    next: (ev: ProgramEditorEventValue) => {
+                        if (ev.type === 'cursor_event') {
+                            this.drawPointer(ev.value);
+                        }
+                        else if (ev.type === 'add_editor') {
+                            this.newPointer(ev.value.id);
+                        }
+                        else if (ev.type === 'remove_editor') {
+                            this.deletePointer(ev.value.id);
+                        }
+                        else if (ev.type === 'ready') {
+                            this.becomeReady();
+                        }
+                    },
+                    error: (error: any) => {
+                        console.error("Error obtainig editor events:", error);
+                    },
+                    complete: () => {
+                        console.log("Disconnected");
+                        this.nonReadyReason = 'disconnected';
+                        this.isReady = false;
                     }
-                    else if (ev.type === 'add_editor') {
-                        this.newPointer(ev.value.id);
-                    }
-                    else if (ev.type === 'remove_editor') {
-                        this.deletePointer(ev.value.id);
-                    }
-                    else if (ev.type === 'ready') {
-                        this.becomeReady();
-                    }
-                },
-                error: (error: any) => {
-                    console.error("Error obtainig editor events:", error);
-                },
-                complete: () => {
-                    console.log("Disconnected");
-                    this.nonReadyReason = 'disconnected';
-                    this.isReady = false;
                 }
-            }
-        );
+            );
 
-        const onMouseEvent = ((ev: MouseEvent) => {
-            const disp = this.getEditorPosition();
+            const onMouseEvent = ((ev: MouseEvent) => {
+                const disp = this.getEditorPosition();
 
-            const rect = this.baseElement.getBoundingClientRect();
-            const cursorInWorkspace = { x: ev.x - rect.left, y: ev.y - rect.top }
+                const rect = this.baseElement.getBoundingClientRect();
+                const cursorInWorkspace = { x: ev.x - rect.left, y: ev.y - rect.top }
 
-            const posInCanvas = {
-                x: cursorInWorkspace.x / disp.scale - disp.x,
-                y: cursorInWorkspace.y / disp.scale - disp.y,
-            }
+                const posInCanvas = {
+                    x: cursorInWorkspace.x / disp.scale - disp.x,
+                    y: cursorInWorkspace.y / disp.scale - disp.y,
+                }
 
-            this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
-        });
+                this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
+            });
 
-        this.baseElement.onmousemove = onMouseEvent;
-        this.baseElement.onmouseup = onMouseEvent;
+            this.baseElement.onmousemove = onMouseEvent;
+            this.baseElement.onmouseup = onMouseEvent;
+        }, 0);
     }
 
     /* Collaborator pointer management */
@@ -1339,7 +1342,7 @@ export class FlowWorkspace implements BlockManager {
 
     public center() {
         // Find the center of all blocks, and center the view there
-        const blockIds = Array.from(this.blocks.keys());
+        const blockIds = Object.keys(this.blockObjs);
         if (blockIds.length === 0) {
             return this.centerOnPoint({ x: 0, y: 0 });
         }
@@ -1829,7 +1832,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public repositionAll() {
-        const blocks = Array.from(this.blocks.keys());
+        const blocks = Object.keys(this.blockObjs);
         this._reposition(blocks);
 
         for (const blockId of blocks) {
@@ -1856,7 +1859,7 @@ export class FlowWorkspace implements BlockManager {
         for (let i = 0; i < max_iterations; i++) {
             console.time("It " + (i + 1));
 
-            const prevPos: [string, Area2D][] = Array.from(this.blocks.keys()).map( id => [id, this.blockObjs[id].block.getBodyArea() ] )
+            const prevPos: [string, Area2D][] = Object.keys(this.blockObjs).map( id => [id, this.blockObjs[id].block.getBodyArea() ] )
             this.repositionAll();
 
             const diffs = prevPos.map(([id, prev]) => {
@@ -2281,6 +2284,14 @@ export class FlowWorkspace implements BlockManager {
             return;
         }
 
+        const slots = blockObj.block.getSlots();
+        if (slots.variable) {
+            if (this.variables_in_use[slots.variable]) {
+                this.variables_in_use[slots.variable]--;
+            }
+        }
+
+
         if (blockObj.block instanceof ContainerFlowBlock) {
             const parent_container_id = info.container_id;
             const parent_container = parent_container_id ? this.blockObjs[parent_container_id].block : null;
@@ -2460,7 +2471,7 @@ export class FlowWorkspace implements BlockManager {
             bottom = from;
         }
 
-        for (const block_id of Array.from(this.blocks.keys())) {
+        for (const block_id of Object.keys(this.blockObjs)) {
             const block = this.blockObjs[block_id].block;
             if (block instanceof ContainerFlowBlock) {
                 continue;
@@ -2500,9 +2511,20 @@ export class FlowWorkspace implements BlockManager {
                   to: SinkDefinition,
                   ): boolean {
 
-        const path = document.createElementNS(SvgNS, 'path');
+        if (!(from_.block_id in this.blockObjs) || !(to.block_id in this.blockObjs)) {
+            console.error("Trying to create connection from non-spawned blocks",
+                          {
+                from: from_,
+                to: to,
+                from_exists: (from_.block_id in this.blockObjs),
+                to_exists: to.block_id in this.blockObjs
+            });
+
+            return;
+        }
 
         const sourceObj = this.blockObjs[from_.block_id];
+
         const source = this.blocks.get(from_.block_id);
         const source_output_type = sourceObj.block.getOutputType(from_.output_index);
 
@@ -2513,6 +2535,8 @@ export class FlowWorkspace implements BlockManager {
             console.debug("Connection already exists");
             return;
         }
+
+        const path = document.createElementNS(SvgNS, 'path');
 
         const conn : FlowConnectionData = { id: id, source: from_, sink: to, type: source_output_type };
 
@@ -2567,26 +2591,31 @@ export class FlowWorkspace implements BlockManager {
         const sink = this.blocks.get(conn.sink.block_id);
 
         // Disconnect from source
-        sourceObj.block.removeConnection('out', conn.source.output_index, sinkObj.block);
-        const source_conn_index = source.connections.indexOf(conn.id);
-        if (source_conn_index < 0) {
-            console.error('Connection not found when going to remove. For block', source);
+        sourceObj?.block.removeConnection('out', conn.source.output_index, sinkObj.block);
+        if (source) {
+            const source_conn_index = source.connections.indexOf(conn.id);
+            if (source_conn_index < 0) {
+                console.error('Connection not found when going to remove. For block', source);
+            }
+            else {
+                source.connections.splice(source_conn_index, 1);
+            }
+
+            this.updateBlockInputHelpersVisibility(conn.source.block_id);
         }
-        else {
-            source.connections.splice(source_conn_index, 1);
-        }
-        this.updateBlockInputHelpersVisibility(conn.source.block_id);
 
         // Disconnect from sink
-        const hasChanged = sinkObj.block.removeConnection('in', conn.sink.input_index, sourceObj.block);
-        const sink_conn_index = sink.connections.indexOf(conn.id);
-        if (sink_conn_index < 0) {
-            console.error('Connection not found when going to remove. For block', sink);
+        const hasChanged = sinkObj?.block.removeConnection('in', conn.sink.input_index, sourceObj.block);
+        if (sink) {
+            const sink_conn_index = sink.connections.indexOf(conn.id);
+            if (sink_conn_index < 0) {
+                console.error('Connection not found when going to remove. For block', sink);
+            }
+            else {
+                sink.connections.splice(sink_conn_index, 1);
+            }
+            this.updateBlockInputHelpersVisibility(conn.sink.block_id);
         }
-        else {
-            sink.connections.splice(sink_conn_index, 1);
-        }
-        this.updateBlockInputHelpersVisibility(conn.sink.block_id);
 
         // Remove workspace information
         this.connection_group.removeChild(this.connectionElements[conn.id]);
@@ -2830,13 +2859,7 @@ export class FlowWorkspace implements BlockManager {
         };
         const select_value = (val: string) => {
             close();
-            if (this.variables_in_use[previous_value]) {
-                this.variables_in_use[previous_value]--;
-            }
-            if (!this.variables_in_use[val]) {
-                this.variables_in_use[val] = 0;
-            }
-            this.variables_in_use[val]++;
+            this._notifyChangedVariable(previous_value, val);
 
             update(val);
         };
@@ -3060,13 +3083,7 @@ export class FlowWorkspace implements BlockManager {
         };
         const select_value = (val: string) => {
             close();
-            if (this.variables_in_use[previous_value]) {
-                this.variables_in_use[previous_value]--;
-            }
-            if (!this.variables_in_use[val]) {
-                this.variables_in_use[val] = 0;
-            }
-            this.variables_in_use[val]++;
+            this._notifyChangedVariable(previous_value, val);
 
             update(val);
         };
@@ -3109,6 +3126,17 @@ export class FlowWorkspace implements BlockManager {
         }
 
         this.popupGroup.classList.remove('hidden');
+    }
+
+    _notifyChangedVariable(prevValue: string, newValue: string) {
+        if (this.variables_in_use[prevValue]) {
+            this.variables_in_use[prevValue]--;
+        }
+
+        if (!this.variables_in_use[newValue]) {
+            this.variables_in_use[newValue] = 0;
+        }
+        this.variables_in_use[newValue]++;
     }
 
     onRequestEdit(block: DirectValue, type: MessageType, update: (value: string) => void): void {

@@ -3,6 +3,7 @@ import { Area2D, Direction2D, FlowBlock, FlowBlockOptions, InputPortDefinition, 
 import { is_pulse } from './graph_transformations';
 import { FlowConnectionData, setConnectionType } from './flow_connection';
 import { EventEmitter } from 'events';
+import { FlowWorkspace } from './flow_workspace';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -43,8 +44,9 @@ export interface AtomicFlowBlockData extends FlowBlockData {
     },
 }
 
+type NamedVarMessageChunk = { type: 'named_var', val: string, name: string };
 type MessageChunk = ( { type: 'const', val: string }
-    | { type: 'named_var', val: string, name: string }
+    | NamedVarMessageChunk
     | { type: 'index_var', index: number, direction: 'in' | 'out' }
                     );
 
@@ -169,6 +171,7 @@ function parse_chunks(message: string): MessageChunk[] {
 export class AtomicFlowBlock implements FlowBlock {
     readonly id: string;
     readonly onMoveCallbacks: ((pos: Position2D) => void)[] = [];
+    private _workspace: FlowWorkspace;
 
     options: AtomicFlowBlockOptions;
     overridenInputTypes: ('user-pulse' | 'pulse')[] = [];
@@ -390,8 +393,28 @@ export class AtomicFlowBlock implements FlowBlock {
 
     public updateOptions(blockData: FlowBlockData): void {
         const data = blockData as AtomicFlowBlockData;
-        console.error("TODO: Update Atomic flow block", data);
-        throw new Error("Not implemented");
+        for (const var_name of Object.keys(data.value.slots)) {
+            const value = data.value.slots[var_name];
+            const chunk = this.chunks.find(p => p.type === 'named_var' && p.name == var_name);
+            if (!chunk) {
+                console.error(`Chunk not found for updating. Expected name: ${var_name}. New value: ${value}.`);
+                continue;
+            }
+
+            const prevValue = (chunk as NamedVarMessageChunk).val;
+
+            if (this._workspace) {
+                this._workspace._notifyChangedVariable(prevValue, value);
+            }
+
+            this.updateChunk(chunk, value);
+        }
+    }
+
+    private onOptionsUpdate() {
+        if (this._workspace) {
+            this._workspace.onBlockOptionsChanged(this);
+        }
     }
 
     public moveBy(distance: {x: number, y: number}): FlowBlock[] {
@@ -835,6 +858,8 @@ export class AtomicFlowBlock implements FlowBlock {
 
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         this.canvas = canvas;
+        this._workspace = initOpts.workspace;
+
         if (initOpts.position) {
             this.position = { x: initOpts.position.x, y: initOpts.position.y };
         }
@@ -1063,6 +1088,7 @@ export class AtomicFlowBlock implements FlowBlock {
                                                           plate.getBBox(),
                                                           (new_value: string) => {
                                                               this.updateChunk(chunk, new_value);
+                                                              this.onOptionsUpdate();
                                                           }
                                                          );
                     };
