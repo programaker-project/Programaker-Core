@@ -25,6 +25,7 @@ export type UiFlowBlockBuilder = (canvas: SVGElement,
                                   ops: UiFlowBlockBuilderInitOps) => UiFlowBlockHandler;
 
 export interface UiFlowBlockHandler {
+    updateOptions(): void;
     readonly isNotHorizontallyStackable?: boolean;
     onConnectionLost: (portIndex: number) => void;
     onConnectionValueUpdate : (input_index: number, value: string) => void;
@@ -471,8 +472,10 @@ export class UiFlowBlock implements FlowBlock {
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
-        for (const callback of this.onMoveCallbacks) {
-            callback(this.position);
+        if(!this._updating) {
+            for (const callback of this.onMoveCallbacks) {
+                callback(this.position);
+            }
         }
 
         return [];
@@ -604,17 +607,30 @@ export class UiFlowBlock implements FlowBlock {
                 handler.text = newValue.trim();
             }
 
-            if (this._workspace) {
-                this._workspace.onBlockOptionsChanged(this);
-            }
+            this.notifyOptionsChange();
         });
     }
 
 
+    private _updating: boolean = false;
     public updateOptions(blockData: FlowBlockData): void {
         const data = blockData as UiFlowBlockData;
-        console.error("TODO: Update UI flow block", data);
-        throw new Error("Not implemented");
+        this.blockData = data.value.extra;
+
+        const wasUpdating = this._updating;
+        this._updating = true;
+        try {
+            this.handler.updateOptions();
+        }
+        finally {
+            this._updating = wasUpdating;
+        }
+    }
+
+    notifyOptionsChange() {
+        if (this._workspace) {
+            this._workspace.onBlockOptionsChanged(this);
+        }
     }
 
     getSlots(): { [key: string]: string; } {

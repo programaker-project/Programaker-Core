@@ -354,6 +354,11 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
     update() {
         this.onContentUpdate(this.contents);
     }
+
+    updateOptions() {
+        this.textBox.textContent = this.title = this.block.blockData.textContent ||  Title;
+        this.updateSizes();
+    }
 }
 
 type GridCut = { from: Position2D, to: Position2D, type: 'vert' | 'horiz' };

@@ -163,12 +163,16 @@ class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, Configur
         return this.block;
     }
 
+    updateOptions() {
+        this._applyConfiguration(this.block.blockData.settings || {});
+    }
+
     // Configurable element
     startAdjustingSettings(): void {
         this.block.workspace.startBlockConfiguration(this);
     }
 
-    applyConfiguration(settings: BlockConfigurationOptions): void {
+    _applyConfiguration(settings: BlockConfigurationOptions): void {
         const settingsStorage = Object.assign({}, this.block.blockData.settings || {});
 
         if (!settingsStorage.body) {
@@ -188,6 +192,12 @@ class HorizontalSeparator implements UiFlowBlockHandler, Autoresizable, Configur
         if (this.handle) {
             this.handle.update();
         }
+    }
+
+    applyConfiguration(settings: BlockConfigurationOptions): void {
+        this._applyConfiguration(settings);
+
+        this.block.notifyOptionsChange();
     }
 
     getCurrentConfiguration(): BlockConfigurationOptions {
