@@ -481,13 +481,14 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _containerDependencies: {[ key: string ]:  [string, string][] } = {};
+    private _connectionDependencies: {[ key: string ]:  FlowConnectionData[] } = {};
 
     private _onBlockChange(event: Y.YMapEvent<SharedBlockData>, _transaction: Y.Transaction) {
         const moves = [] as string[];
         event.changes.keys.forEach((change, key) => {
             if (change.action === 'add') {
                 const info = this.blocks.get(key);
-                console.log(`BLOCK "${key}" was added. Initial value:`, info);
+                console.info(`BLOCK "${key}" was added. Initial value:`, info);
 
                 if (key in this.blockObjs) {
                     console.log("Already contained");
@@ -521,11 +522,25 @@ export class FlowWorkspace implements BlockManager {
 
                     this._updateBlockContainerFromContainer(depBlock, block, this.blockObjs[old]?.block);
                 }
+
+                for (const conn of this._connectionDependencies[key] || []) {
+                    if ((conn.source.block_id in this.blockObjs) && (conn.sink.block_id in this.blockObjs)) {
+                        console.log("Ready for", conn);
+
+                        this.addConnection(conn.source, conn.sink);
+                    }
+                    else {
+                        console.log("Waiting for other section for", conn);
+                    }
+                }
+
+
                 this._raiseBlocks([key]);
                 delete this._containerDependencies[key];
+                delete this._connectionDependencies[key];
             }
             else if (change.action === 'update') {
-                console.log(`BLOCK "${key}" was updated.`);
+                console.debug(`BLOCK "${key}" was updated.`);
 
                 // Note that moveTo() does not trigger `block.onMove()` callbacks.
                 const block = this.blockObjs[key].block;
@@ -557,7 +572,7 @@ export class FlowWorkspace implements BlockManager {
                 block.updateOptions(newData.blockData);
             }
             else if (change.action === 'delete') {
-                console.log(`Property "${key}" was deleted. New value: undefined. Previous value: "${change.oldValue}".`)
+                console.info(`Property "${key}" was deleted. New value: undefined. Previous value: "${change.oldValue}".`)
 
                 if (!(key in this.blockObjs)) {
                     console.log("Already deleted");
@@ -580,15 +595,33 @@ export class FlowWorkspace implements BlockManager {
     private _onConnectionChange(event: Y.YMapEvent<FlowConnectionData>, _transaction: Y.Transaction) {
         event.changes.keys.forEach((change, key) => {
             if (change.action === 'add') {
-                console.log(`CONNECTION "${key}" added. Initial value:`, this.connections.get(key));
+                console.info(`CONNECTION "${key}" added. Initial value:`, this.connections.get(key));
 
                 const conn: FlowConnectionData = this.connections.get(key);
-                this.addConnection(conn.source, conn.sink);
-            } else if (change.action === 'update') {
-                console.log(`CONNECTION "${key}" updated. New value: "${this.connections.get(key)}". Previous value:`, change.oldValue);
-                // TODO: In which case can this happen?
-            } else if (change.action === 'delete') {
-                console.log(`CONNECTION "${key}" removed.`);
+
+                if ((!(conn.source.block_id in this.blockObjs)) || (!(conn.sink.block_id in this.blockObjs))) {
+                    console.log("Reserving CONN to", conn.source.block_id, conn.sink.block_id);
+                    if (!(conn.source.block_id in this._connectionDependencies)) {
+                        this._connectionDependencies[conn.source.block_id] = [];
+                    }
+                    if (!(conn.sink.block_id in this._connectionDependencies)) {
+                        this._connectionDependencies[conn.sink.block_id] = [];
+                    }
+
+                    this._connectionDependencies[conn.source.block_id].push(conn);
+                    this._connectionDependencies[conn.sink.block_id].push(conn);
+                }
+                else {
+                    this.addConnection(conn.source, conn.sink);
+                }
+            }
+            else if (change.action === 'update') {
+                console.debug(`CONNECTION "${key}" updated. New value:`, this.connections.get(key),
+                              '. Previous value:', change.oldValue);
+                // As this mostly immutable, this signal isn't really useful
+            }
+            else if (change.action === 'delete') {
+                console.info(`CONNECTION "${key}" removed.`);
                 if (key in this.connectionElements) {
                     this.removeConnection(change.oldValue);
                 }
@@ -600,9 +633,6 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public onBlockOptionsChanged(block: FlowBlock) {
-        console.log("==>", block);
-        console.log("OPTIONS", block.serialize());
-
         const serialized = block.serialize();
         const saveData = this.blocks.get(block.id);
         saveData.blockData = serialized;
@@ -2722,7 +2752,7 @@ export class FlowWorkspace implements BlockManager {
         const conn = this.connections.get(connection_id);
 
         if (!conn) {
-            console.warn("Trying to update connection before it is available");
+            console.debug("Trying to update connection before it is available");
             return;
         }
 
