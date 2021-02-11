@@ -62,12 +62,8 @@ type SharedBlockData = {
     blockData: FlowBlockData,
 };
 
-type NonReadyReason = 'loading' | 'disconnected';
-
 export class FlowWorkspace implements BlockManager {
     private eventStream: Synchronizer<ProgramEditorEventValue>;
-    private isReady: boolean;
-    private nonReadyReason: NonReadyReason | null;
     private eventSubscription: any;
     private cursorDiv: HTMLElement;
     private cursorInfo: {[key: string]: HTMLElement};
@@ -257,7 +253,7 @@ export class FlowWorkspace implements BlockManager {
         // This is used for collaborative editing.
 
         if (this.read_only || !this.environmentService.hasYjsWsSyncServer()) {
-            this.becomeReady(); // We won't have to wait for the last state to get loaded
+            // We won't have to wait for the last state to get loaded
             return;
         }
 
@@ -285,7 +281,7 @@ export class FlowWorkspace implements BlockManager {
                             this.deletePointer(ev.value.id);
                         }
                         else if (ev.type === 'ready') {
-                            this.becomeReady();
+                            // Nothing to do in this editor.
                         }
                     },
                     error: (error: any) => {
@@ -293,8 +289,6 @@ export class FlowWorkspace implements BlockManager {
                     },
                     complete: () => {
                         console.log("Disconnected");
-                        this.nonReadyReason = 'disconnected';
-                        this.isReady = false;
                     }
                 }
             );
@@ -383,11 +377,6 @@ export class FlowWorkspace implements BlockManager {
             cursor.style.display = 'none';
         }
     }
-
-    becomeReady() {
-        this.isReady = true;
-    }
-
 
     getEditorPosition(): {x:number, y: number, scale: number} | null {
         return {
@@ -2035,7 +2024,7 @@ export class FlowWorkspace implements BlockManager {
 
             if (toGo.length > 0) {
                 console.error("Circular dependency found on", toGo);
-                console.error("Circular dependency found on", toGo.map(id => this.blocks.get(id)));
+                console.error("Circular dependency IDS:", toGo.map(id => this.blocks.get(id)));
             }
 
             // After all are processed, give then the option to "settle" on their new position
