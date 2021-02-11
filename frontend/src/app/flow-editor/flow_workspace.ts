@@ -547,13 +547,15 @@ export class FlowWorkspace implements BlockManager {
     private _onConnectionChange(event: Y.YMapEvent<FlowConnectionData>, _transaction: Y.Transaction) {
         event.changes.keys.forEach((change, key) => {
             if (change.action === 'add') {
+                console.log(`CONNECTION "${key}" added. Initial value:`, this.connections.get(key));
+
                 const conn: FlowConnectionData = this.connections.get(key);
                 this.addConnection(conn.source, conn.sink);
             } else if (change.action === 'update') {
-                console.log(`[Conn] Property "${key}" was updated. New value: "${this.connections.get(key)}". Previous value:`, change.oldValue);
+                console.log(`CONNECTION "${key}" updated. New value: "${this.connections.get(key)}". Previous value:`, change.oldValue);
                 // TODO: In which case can this happen?
             } else if (change.action === 'delete') {
-                console.log(`RM ${key} - ${change.oldValue.id}`);
+                console.log(`CONNECTION "${key}" removed.`);
                 if (key in this.connectionElements) {
                     this.removeConnection(change.oldValue);
                 }
@@ -1790,13 +1792,7 @@ export class FlowWorkspace implements BlockManager {
             // If autoposition is not activated, only move the connections present
             if (!removed && !this.autoposition) {
                 // Update moved block's connections
-                for (const movedId of moved) {
-                    for (const conn of this.blocks.get(movedId).connections) {
-                        this.updateConnection(conn);
-                    }
-
-                    this.updateBlockInputHelpersPosition(movedId);
-                }
+                this._afterBlocksMove(moved);
 
                 // Take into account the old container
                 if (oldContainer) {
@@ -2119,22 +2115,34 @@ export class FlowWorkspace implements BlockManager {
             on_io_selected: this.onIoSelected.bind(this),
         }, uuidv4());
 
-        const enum_input_id = this.draw(enum_input, options.position);
-        this.addConnection({ block_id: enum_input_id, output_index: 0 },
-                           { block_id: block_id, input_index: input_index });
+        // These two steps use dependent data, so they have to be performed
+        // inside the same transaction.
+        this.doc.transact((_t: Y.Transaction) => {
+            const enum_input_id = this.draw(enum_input, options.position);
+
+            this.addConnection({ block_id: enum_input_id, output_index: 0 },
+                               { block_id: block_id, input_index: input_index });
+        });
     }
 
     private createDirectValue(type: MessageType, block_id: string, input_index: number,
                               options: { position: Position2D, value?: string }) {
+
+        const direct_input_id = uuidv4();
         const direct_input = new DirectValue({ type: type,
                                                on_request_edit: this.onRequestEdit.bind(this),
                                                value: options.value,
                                                on_io_selected: this.onIoSelected.bind(this),
-                                             }, uuidv4());
+                                             }, direct_input_id);
 
-        const direct_input_id = this.draw(direct_input, options.position);
-        this.addConnection({ block_id: direct_input_id, output_index: 0 },
-                           { block_id: block_id, input_index: input_index });
+        // These two steps use dependent data, so they have to be performed
+        // inside the same transaction.
+        this.doc.transact((_t: Y.Transaction) => {
+            this.draw(direct_input, options.position);
+
+            this.addConnection({ block_id: direct_input_id, output_index: 0 },
+                               { block_id: block_id, input_index: input_index });
+        });
     }
 
     private static MessageTypeToInputType(type: MessageType): string {
@@ -2250,6 +2258,9 @@ export class FlowWorkspace implements BlockManager {
         const inputs_in_use: {[key: string]: boolean} = {};
         for (const conn_id of blockInfo.connections) {
             const conn = this.connections.get(conn_id);
+            if (!conn) {
+                continue;
+            }
 
             if (conn.sink.block_id == block_id) {
                 inputs_in_use[conn.sink.input_index] = true;
@@ -2676,16 +2687,33 @@ export class FlowWorkspace implements BlockManager {
 
     updateConnection(connection_id: string) {
         const conn = this.connections.get(connection_id);
+
+        if (!conn) {
+            console.warn("Trying to update connection before it is available");
+            return;
+        }
+
         const runway = 20;
 
         // Source
         const source = conn.source;
+        if (!(source) || !(source.block_id in this.blockObjs)) {
+            console.warn("Trying to update connection before SOURCE is available");
+            return;
+        }
+
         const source_block = this.blockObjs[source.block_id].block;
 
         const source_position = this.getBlockRel(source_block, source_block.getPositionOfOutput(source.output_index));
 
         // Sink
         const sink = conn.sink;
+
+        if (!(sink) || !(sink.block_id in this.blockObjs)) {
+            console.warn("Trying to update connection before SINK is available");
+            return;
+        }
+
         const sink_block = this.blockObjs[sink.block_id].block;
 
         const element = this.connectionElements[connection_id];
