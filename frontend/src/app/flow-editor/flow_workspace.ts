@@ -18,6 +18,7 @@ import { WebsocketProvider } from 'y-websocket'
 import { ProgramEditorEventValue } from 'app/program';
 import { Synchronizer } from 'app/syncronizer';
 import { EnvironmentService } from 'app/environment.service';
+import { SessionService } from 'app/session.service';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -79,11 +80,14 @@ export class FlowWorkspace implements BlockManager {
                           programId: string,
                           programService: ProgramService,
                           read_only: boolean,
+                          sessionService: SessionService,
                           environmentService: EnvironmentService,
                          ): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
-            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId, programService, read_only, environmentService);
+            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId,
+                                          programService, read_only,
+                                          sessionService, environmentService);
             workspace.init();
         }
         catch(err) {
@@ -255,13 +259,10 @@ export class FlowWorkspace implements BlockManager {
 
         // HACK: Give some space to blocks and connections to sync before establishing connection
         setTimeout(() => {
-            const [base, opts] = this.programService.getProgramStreamingEventsUrlParts(this.programId);
-            const room = 'yjs';
-
             this.wsSyncProvider = new WebsocketProvider(this.environmentService.getYjsWsSyncServer(),
                                                         this.programId,
                                                         this.doc,
-                                                        { params: opts });
+                                                        { params: {token: this.sessionService.getToken()} });
 
             this.eventStream = this.programService.getEventStream(this.programId, { skip_previous: true });
             this.eventSubscription = this.eventStream.subscribe(
@@ -467,6 +468,7 @@ export class FlowWorkspace implements BlockManager {
                         private programId: string,
                         private programService: ProgramService,
                         private read_only: boolean,
+                        private sessionService: SessionService,
                         private environmentService: EnvironmentService,
                        ) {
         this.baseElement = baseElement;

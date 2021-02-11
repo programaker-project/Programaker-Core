@@ -255,6 +255,7 @@ export class FlowEditorComponent implements OnInit {
                                                this.programId,
                                                this.programService,
                                                this.read_only,
+                                               this.sessionService,
                                                this.environmentService,
                                               );
         this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
