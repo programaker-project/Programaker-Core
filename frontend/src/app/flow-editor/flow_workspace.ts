@@ -3,7 +3,7 @@ import { BlockManager } from './block_manager';
 import { DirectValue } from './direct_value';
 import { EnumDirectValue, EnumGetter, EnumValue } from './enum_direct_value';
 import { Area2D, BridgeEnumInputPortDefinition, ContainerBlock, Direction2D, FlowBlock, FlowBlockData, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, Resizeable } from './flow_block';
-import { FlowConnection, SourceDefinition, SinkDefinition } from './flow_connection';
+import { FlowConnectionData, SourceDefinition, SinkDefinition, setConnectionType } from './flow_connection';
 import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { Toolbox } from './toolbox';
 import { ContainerFlowBlock, ContainerFlowBlockData, isContainerFlowBlockData } from './ui-blocks/container_flow_block';
@@ -13,6 +13,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { ConfigureBlockDialogComponent, ConfigurableBlock, BlockConfigurationOptions } from './dialogs/configure-block-dialog/configure-block-dialog.component';
 import { ProgramService } from '../program.service';
 import { CannotSetAsContentsError } from './ui-blocks/cannot_set_as_contents_error';
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket'
+import { ProgramEditorEventValue } from 'app/program';
+import { Synchronizer } from 'app/syncronizer';
+import { EnvironmentService } from 'app/environment.service';
+import { SessionService } from 'app/session.service';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -49,20 +55,39 @@ type State = 'waiting'     // Base state
     | 'selecting-workspace'
     ;
 
+type SharedBlockData = {
+    connections: string[];
+    container_id: string | null;
+    position: Position2D;
+    blockData: FlowBlockData,
+};
+
 export class FlowWorkspace implements BlockManager {
+    private eventStream: Synchronizer<ProgramEditorEventValue>;
+    private eventSubscription: any;
+    private cursorDiv: HTMLElement;
+    private cursorInfo: {[key: string]: HTMLElement};
+    private wsSyncProvider: WebsocketProvider;
+
+
     public static BuildOn(baseElement: HTMLElement,
                           getEnum: EnumGetter,
                           dialog: MatDialog,
                           programId: string,
                           programService: ProgramService,
                           read_only: boolean,
+                          sessionService: SessionService,
+                          environmentService: EnvironmentService,
                          ): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
-            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId, programService, read_only);
+            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId,
+                                          programService, read_only,
+                                          sessionService, environmentService);
             workspace.init();
         }
         catch(err) {
+            console.error(err);
             workspace.dispose();
 
             throw err;
@@ -85,21 +110,21 @@ export class FlowWorkspace implements BlockManager {
 
     public getGraph(): FlowGraph {
         const blocks: { [key: string]: FlowGraphNode } = {};
-        for (const block_id of Object.keys(this.blocks)) {
-            const block = this.blocks[block_id].block;
-            const serialized = block.serialize();
-            const position = block.getOffset();
+        for (const block_id of Object.keys(this.blockObjs)) {
+            const blockObj = this.blockObjs[block_id].block;
+            const serialized = blockObj.serialize();
+            const position = blockObj.getOffset();
 
-            blocks[block_id] = { data: serialized, position: position, container_id: this.blocks[block_id].container_id };
+            blocks[block_id] = { data: serialized, position: position, container_id: this.blocks.get(block_id)?.container_id };
         }
 
         const connections: FlowGraphEdge[] = [];
 
-        for (const conn_id of Object.keys(this.connections)) {
-            const connection = this.connections[conn_id];
+        for (const conn_id of Array.from(this.connections.keys())) {
+            const connection = this.connections.get(conn_id);
 
-            const source = connection.getSource();
-            const sink = connection.getSink();
+            const source = connection.source;
+            const sink = connection.sink;
             connections.push({
                 from: { id: source.block_id, output_index: source.output_index },
                 to: { id: sink.block_id, input_index: sink.input_index },
@@ -114,8 +139,8 @@ export class FlowWorkspace implements BlockManager {
 
     public getPages(): {[key: string]: any} {
         const pages: { [key: string]: any } = {};
-        for (const block_id of Object.keys(this.blocks)) {
-            const block = this.blocks[block_id].block;
+        for (const block_id of Object.keys(this.blockObjs)) {
+            const block = this.blockObjs[block_id].block;
             if (block instanceof ContainerFlowBlock) {
                 if (block.isPage) {
                     pages['/'] = { value: block.renderAsUiElement(), title: block.getPageTitle() };
@@ -133,19 +158,25 @@ export class FlowWorkspace implements BlockManager {
         let to_go = Object.keys(graph.nodes);
 
         let processing = true;
+        let lastProcessing = true;
 
-        while ((to_go.length > 0) && processing) {
+        while ((to_go.length > 0) /* && processing */) {
             processing = false;
             const skipped = [];
 
             for (const block_id of to_go) {
                 const block = graph.nodes[block_id];
-                if (block.container_id && (!this.blocks[block.container_id])) {
-                    skipped.push(block_id);
-                    continue;
+                if (lastProcessing || processing) {
+                    if (block.container_id && (!this.blockObjs[block.container_id])) {
+                        skipped.push(block_id);
+                        continue;
+                    }
+                }
+                else {
+                    console.error("Doing an exception to jump over circular dependencies");
                 }
 
-                const created_block = this.deserializeBlock(block.data);
+                const created_block = this.deserializeBlock(block_id, block.data);
 
                 if (!created_block) {
                     console.error("Error deserializing block:", block.data);
@@ -153,7 +184,7 @@ export class FlowWorkspace implements BlockManager {
                 }
 
                 try {
-                    this.draw(created_block, block.position, block_id);
+                    this.draw(created_block, block.position);
                 }
                 catch (err) {
                     console.error("Error drawing block", err);
@@ -162,7 +193,7 @@ export class FlowWorkspace implements BlockManager {
 
                 if (block.container_id) {
                     try {
-                        this._updateBlockContainer(created_block, this.blocks[block.container_id].block);
+                        this._updateBlockContainer(created_block, this.blockObjs[block.container_id].block);
                     }
                     catch (err) {
                         if (err instanceof CannotSetAsContentsError) {
@@ -177,6 +208,7 @@ export class FlowWorkspace implements BlockManager {
             }
 
             to_go = skipped;
+            lastProcessing = processing;
         }
 
         if (to_go.length !== 0) {
@@ -187,12 +219,12 @@ export class FlowWorkspace implements BlockManager {
             try {
                 this.establishConnection(
                     {
-                        block: this.blocks[conn.from.id].block,
+                        block: this.blockObjs[conn.from.id].block,
                         type: 'out',
                         index: conn.from.output_index,
                     },
                     {
-                        block: this.blocks[conn.to.id].block,
+                        block: this.blockObjs[conn.to.id].block,
                         type: 'in',
                         index: conn.to.input_index,
                     },
@@ -203,31 +235,176 @@ export class FlowWorkspace implements BlockManager {
             }
         }
 
-        this.autoposition = true;
+        this._initializeReady();
     }
 
     public initializeEmpty() {
-        this.autoposition = true;
+        this._initializeReady();
     }
 
-    private deserializeBlock(blockData: FlowBlockData) {
+    private _initializeReady() {
+        this.autoposition = true;
+
+        this._initializeEventSynchronization();
+    }
+
+    private _initializeEventSynchronization() {
+        // Initialize editor event listeners
+        // This is used for collaborative editing.
+
+        if (this.read_only || !this.environmentService.hasYjsWsSyncServer()) {
+            // We won't have to wait for the last state to get loaded
+            return;
+        }
+
+        this.blocks.observe(this._onBlockChange.bind(this));
+        this.connections.observe(this._onConnectionChange.bind(this));
+
+        // HACK: Give some space to blocks and connections to sync before establishing connection
+        setTimeout(() => {
+            this.wsSyncProvider = new WebsocketProvider(this.environmentService.getYjsWsSyncServer(),
+                                                        this.programId,
+                                                        this.doc,
+                                                        { params: {token: this.sessionService.getToken()} });
+
+            this.eventStream = this.programService.getEventStream(this.programId, { skip_previous: true });
+            this.eventSubscription = this.eventStream.subscribe(
+                {
+                    next: (ev: ProgramEditorEventValue) => {
+                        if (ev.type === 'cursor_event') {
+                            this.drawPointer(ev.value);
+                        }
+                        else if (ev.type === 'add_editor') {
+                            this.newPointer(ev.value.id);
+                        }
+                        else if (ev.type === 'remove_editor') {
+                            this.deletePointer(ev.value.id);
+                        }
+                        else if (ev.type === 'ready') {
+                            // Nothing to do in this editor.
+                        }
+                    },
+                    error: (error: any) => {
+                        console.error("Error obtainig editor events:", error);
+                    },
+                    complete: () => {
+                        console.log("Disconnected");
+                    }
+                }
+            );
+
+            const onMouseEvent = ((ev: MouseEvent) => {
+                const disp = this.getEditorPosition();
+
+                const rect = this.baseElement.getBoundingClientRect();
+                const cursorInWorkspace = { x: ev.x - rect.left, y: ev.y - rect.top }
+
+                const posInCanvas = {
+                    x: cursorInWorkspace.x / disp.scale - disp.x,
+                    y: cursorInWorkspace.y / disp.scale - disp.y,
+                }
+
+                this.eventStream.push({ type: 'cursor_event', value: posInCanvas })
+            });
+
+            this.baseElement.onmousemove = onMouseEvent;
+            this.baseElement.onmouseup = onMouseEvent;
+        }, 0);
+    }
+
+    /* Collaborator pointer management */
+    newPointer(id: string): HTMLElement {
+        const cursor = document.createElement('object');
+        cursor.type = 'image/svg+xml';
+        cursor.style.display = 'none';
+        cursor.style.position = 'fixed';
+        cursor.style.height = '2.5ex';
+        cursor.style.color
+        cursor.style.zIndex = '10';
+        cursor.style.pointerEvents = 'none';
+        cursor.data = '/assets/cursor.svg';
+        cursor.onload = () => {
+            // Give the cursor a random color
+            cursor.getSVGDocument().getElementById('cursor').style.fill = `hsl(${Math.random() * 255},50%,50%)`;
+        };
+
+        this.cursorDiv.appendChild(cursor);
+        this.cursorInfo[id] = cursor;
+
+        return cursor;
+    }
+
+    getPointer(id: string): HTMLElement {
+        if (this.cursorInfo[id]) {
+            return this.cursorInfo[id];
+        }
+
+        return this.newPointer(id);
+    }
+
+    deletePointer(id: string) {
+        const cursor = this.cursorInfo[id];
+        if (!cursor) {
+            return;
+        }
+        this.cursorDiv.removeChild(cursor);
+        delete this.cursorInfo[id];
+    }
+
+    drawPointer(pos:{id: string, x : number, y: number}) {
+        const rect = this.baseElement.getBoundingClientRect();
+        const disp = this.getEditorPosition();
+        const cursor = this.getPointer(pos.id);
+
+        const posInScreen = {
+            x: (pos.x + disp.x) * disp.scale + rect.left,
+            y: (pos.y + disp.y) * disp.scale + rect.top,
+        }
+        cursor.style.left = posInScreen.x + 'px';
+        cursor.style.top = posInScreen.y + 'px';
+
+        let inEditor = false;
+        if (rect.left <= posInScreen.x && rect.right >= posInScreen.x) {
+            if (rect.top <= posInScreen.y && rect.bottom >= posInScreen.y) {
+                inEditor = true;
+            }
+        }
+
+        if (inEditor) {
+            cursor.style.display = 'block';
+        }
+        else {
+            cursor.style.display = 'none';
+        }
+    }
+
+    getEditorPosition(): {x:number, y: number, scale: number} | null {
+        return {
+            x: -this.top_left.x,
+            y: -this.top_left.y,
+            scale: 1/this.inv_zoom_level,
+        }
+    }
+
+
+    private deserializeBlock(blockId: string, blockData: FlowBlockData) {
         switch (blockData.type) {
             case AtomicFlowBlock.GetBlockType():
-                return AtomicFlowBlock.Deserialize(blockData as AtomicFlowBlockData, this);
+                return AtomicFlowBlock.Deserialize(blockData as AtomicFlowBlockData, blockId, this);
 
             case UiFlowBlock.GetBlockType():
                 if (isContainerFlowBlockData(blockData)) {
-                    return ContainerFlowBlock.Deserialize(blockData as ContainerFlowBlockData, this, this.toolbox);
+                    return ContainerFlowBlock.Deserialize(blockData as ContainerFlowBlockData, blockId, this, this.toolbox);
                 }
                 else {
-                    return UiFlowBlock.Deserialize(blockData as UiFlowBlockData, this, this.toolbox);
+                    return UiFlowBlock.Deserialize(blockData as UiFlowBlockData, blockId, this, this.toolbox);
                 }
 
             case DirectValue.GetBlockType():
-                return DirectValue.Deserialize(blockData, this);
+                return DirectValue.Deserialize(blockData, blockId, this);
 
             case EnumDirectValue.GetBlockType():
-                return EnumDirectValue.Deserialize(blockData, this, this.getEnum);
+                return EnumDirectValue.Deserialize(blockData, blockId, this, this.getEnum);
 
             default:
                 console.error("Unknown block type:", blockData.type);
@@ -264,15 +441,18 @@ export class FlowWorkspace implements BlockManager {
         return this.inv_zoom_level;
     }
 
-    private blocks: {[key: string]: {
+    private doc: Y.Doc;
+    private blocks: Y.Map<SharedBlockData>;
+    private connections: Y.Map<FlowConnectionData>;
+
+    private connectionElements: {[key: string]: SVGElement} = {};
+    private blockObjs: {[key: string]: {
         block: FlowBlock,
-        connections: string[],
         input_group: SVGGElement,
-        container_id: string | null,
-    }};
+    }} = {};
+
     private _selectedBlocks: string[] = [];
 
-    private connections: {[key: string]: FlowConnection};
 
     public getDialog(): MatDialog {
         return this.dialog;
@@ -284,11 +464,175 @@ export class FlowWorkspace implements BlockManager {
                         private programId: string,
                         private programService: ProgramService,
                         private read_only: boolean,
+                        private sessionService: SessionService,
+                        private environmentService: EnvironmentService,
                        ) {
         this.baseElement = baseElement;
-        this.blocks = {};
-        this.connections = {};
         this.getEnum = getEnum;
+
+        this.doc = new Y.Doc();
+
+        this.blocks = this.doc.getMap('blocks');
+        this.connections = this.doc.getMap('connections');
+    }
+
+    private _containerDependencies: {[ key: string ]:  [string, string][] } = {};
+    private _connectionDependencies: {[ key: string ]:  FlowConnectionData[] } = {};
+
+    private _onBlockChange(event: Y.YMapEvent<SharedBlockData>, _transaction: Y.Transaction) {
+        const moves = [] as string[];
+        event.changes.keys.forEach((change, key) => {
+            if (change.action === 'add') {
+                const info = this.blocks.get(key);
+                console.info(`BLOCK "${key}" was added. Initial value:`, info);
+
+                if (key in this.blockObjs) {
+                    console.log("Already contained");
+                    return;
+                }
+
+                const block = this.deserializeBlock(key, info.blockData);
+                this.draw(block, info.position);
+
+                moves.push(key);
+
+                const containerId = info.container_id;
+                if ((block instanceof UiFlowBlock) && containerId) {
+
+                    if (!(containerId in this.blockObjs)) {
+                        // Not ready to put this on container
+                        if (!this._containerDependencies[containerId]) {
+                            this._containerDependencies[containerId] = [];
+                        }
+                        this._containerDependencies[containerId].push([key, null]);
+                    }
+                    else {
+                        this._updateBlockContainerFromContainer(block,
+                                                                this.blockObjs[containerId].block,
+                                                                null);
+                    }
+                }
+
+                for (const [dependent, old] of this._containerDependencies[key] || []) {
+                    const depBlock = this.blockObjs[dependent].block;
+
+                    this._updateBlockContainerFromContainer(depBlock, block, this.blockObjs[old]?.block);
+                }
+
+                for (const conn of this._connectionDependencies[key] || []) {
+                    if ((conn.source.block_id in this.blockObjs) && (conn.sink.block_id in this.blockObjs)) {
+                        console.log("Ready for", conn);
+
+                        this.addConnection(conn.source, conn.sink);
+                    }
+                    else {
+                        console.log("Waiting for other section for", conn);
+                    }
+                }
+
+
+                this._raiseBlocks([key]);
+                delete this._containerDependencies[key];
+                delete this._connectionDependencies[key];
+            }
+            else if (change.action === 'update') {
+                console.debug(`BLOCK "${key}" was updated.`);
+
+                // Note that moveTo() does not trigger `block.onMove()` callbacks.
+                const block = this.blockObjs[key].block;
+                const newData = this.blocks.get(key);
+                block.moveTo(newData.position);
+                this._afterBlocksMove([key]);
+
+                const containerId = newData.container_id;
+
+                if (block instanceof UiFlowBlock) {
+                    if (containerId !== change.oldValue.container_id) {
+                        if (containerId && !(containerId in this.blockObjs)) {
+                            // Not ready to put this on container
+                            if (!this._containerDependencies[containerId]) {
+                                this._containerDependencies[containerId] = [];
+                            }
+                            this._containerDependencies[containerId].push([key, change.oldValue.container_id]);
+                        }
+                        else {
+                            this._updateBlockContainerFromContainer(block,
+                                                                    this.blockObjs[containerId]?.block,
+                                                                    this.blockObjs[change.oldValue.container_id]?.block);
+                        }
+                    }
+                }
+
+                // Updated block data
+                const updatedOptions = JSON.stringify(newData.blockData) === JSON.stringify(change.oldValue.blockData);
+                block.updateOptions(newData.blockData);
+            }
+            else if (change.action === 'delete') {
+                console.info(`Property "${key}" was deleted. New value: undefined. Previous value: "${change.oldValue}".`)
+
+                if (!(key in this.blockObjs)) {
+                    console.log("Already deleted");
+                    return;
+                }
+
+                const block = this.blockObjs[key].block;
+
+                if (block instanceof UiFlowBlock) {
+                    this._updateBlockContainerFromContainer(block, null, this.blockObjs[change.oldValue.container_id]?.block);
+                }
+
+                this.removeBlock(key, change.oldValue);
+
+            }
+        });
+        this._afterBlocksMove(moves)
+    }
+
+    private _onConnectionChange(event: Y.YMapEvent<FlowConnectionData>, _transaction: Y.Transaction) {
+        event.changes.keys.forEach((change, key) => {
+            if (change.action === 'add') {
+                console.info(`CONNECTION "${key}" added. Initial value:`, this.connections.get(key));
+
+                const conn: FlowConnectionData = this.connections.get(key);
+
+                if ((!(conn.source.block_id in this.blockObjs)) || (!(conn.sink.block_id in this.blockObjs))) {
+                    console.log("Reserving CONN to", conn.source.block_id, conn.sink.block_id);
+                    if (!(conn.source.block_id in this._connectionDependencies)) {
+                        this._connectionDependencies[conn.source.block_id] = [];
+                    }
+                    if (!(conn.sink.block_id in this._connectionDependencies)) {
+                        this._connectionDependencies[conn.sink.block_id] = [];
+                    }
+
+                    this._connectionDependencies[conn.source.block_id].push(conn);
+                    this._connectionDependencies[conn.sink.block_id].push(conn);
+                }
+                else {
+                    this.addConnection(conn.source, conn.sink);
+                }
+            }
+            else if (change.action === 'update') {
+                console.debug(`CONNECTION "${key}" updated. New value:`, this.connections.get(key),
+                              '. Previous value:', change.oldValue);
+                // As this mostly immutable, this signal isn't really useful
+            }
+            else if (change.action === 'delete') {
+                console.info(`CONNECTION "${key}" removed.`);
+                if (key in this.connectionElements) {
+                    this.removeConnection(change.oldValue);
+                }
+                else {
+                    console.debug(`Attempting to remove inexisting connection: ${key}.`);
+                }
+            }
+        })
+    }
+
+    public onBlockOptionsChanged(block: FlowBlock) {
+        const serialized = block.serialize();
+        const saveData = this.blocks.get(block.id);
+        saveData.blockData = serialized;
+        this.blocks.set(block.id, saveData);
     }
 
     private init() {
@@ -338,6 +682,7 @@ export class FlowWorkspace implements BlockManager {
         this.set_events();
         this.init_trashcan();
         this.init_buttons();
+        this.init_cursors();
 
         this.update_top_left();
     }
@@ -479,8 +824,13 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    private init_cursors() {
+        this.cursorDiv = document.getElementById('program-cursors');
+        this.cursorInfo = {};
+    }
+
     private set_events() {
-        let lastMouseDownTime = null;
+        let lastMouseDownTime: null | Date = null;
         const startMove: (ev?: MouseEvent) => (() => void) = ((ev: MouseEvent | undefined)  => {
             let last = ev ?  { x: ev.x, y: ev.y } : null;
 
@@ -512,7 +862,7 @@ export class FlowWorkspace implements BlockManager {
             this.ensureContextMenuHidden();
 
             const time = new Date();
-            if (!this.read_only && lastMouseDownTime && (((time as any) - lastMouseDownTime) < 1000))  {
+            if (!this.read_only && lastMouseDownTime && (((time as any) - (lastMouseDownTime as any)) < 1000))  {
                 const start = this._getPositionFromEvent(ev);
                 this.state = 'selecting-workspace';
                 this.canvas.classList.add('selecting');
@@ -637,7 +987,7 @@ export class FlowWorkspace implements BlockManager {
 
         // Discard blocks that cannot be selected
         const selectableBlocks = blocks.filter(b => {
-            const block = this.blocks[b].block;
+            const block = this.blockObjs[b].block;
 
             return !((block instanceof ContainerFlowBlock) && (block.isPage));
         });
@@ -647,8 +997,8 @@ export class FlowWorkspace implements BlockManager {
     private _getBlocksInArea(area: Area2D): string[] {
         const blocks = [];
 
-        for (const blockId of Object.keys(this.blocks)) {
-            const blockArea = this.blocks[blockId].block.getBodyArea();
+        for (const blockId of Object.keys(this.blockObjs)) {
+            const blockArea = this.blockObjs[blockId].block.getBodyArea();
             if (isContainedIn(blockArea, area)) {
                 blocks.push(blockId);
             }
@@ -675,15 +1025,15 @@ export class FlowWorkspace implements BlockManager {
 
         // Update blocks style
         added.forEach(blockId => {
-            const block = this.blocks[blockId].block;
+            const block = this.blockObjs[blockId].block;
             block.getBodyElement().classList.add('selected');
             block.onGetFocus();
         })
         removed.forEach(blockId => {
-            const blockInfo = this.blocks[blockId];
-            if (blockInfo) {
-                blockInfo.block.onLoseFocus();
-                blockInfo.block.getBodyElement().classList.remove('selected');
+            const blockObj = this.blockObjs[blockId];
+            if (blockObj) {
+                blockObj.block.onLoseFocus();
+                blockObj.block.getBodyElement().classList.remove('selected');
             }
             else {
                 console.error(`Error unselecting block (id: ${blockId}). Block not found.`);
@@ -703,7 +1053,7 @@ export class FlowWorkspace implements BlockManager {
         const sortedBlocks = this._sortByDependencies(allBlocksUnder);
 
         for (const id of sortedBlocks) {
-            const block = this.blocks[id].block;
+            const block = this.blockObjs[id].block;
             const element = block.getBodyElement();
 
             element.parentNode.appendChild(element);
@@ -714,7 +1064,7 @@ export class FlowWorkspace implements BlockManager {
         // From a list of blocks, add to it all the blocks contained in its
         // Container blocks.
 
-        const allKnown = {}; // Avoid duplicated results
+        const allKnown: {[key: string]: boolean} = {}; // Avoid duplicated results
         for (const id of blockIds) {
             if (allKnown[id]) {
                 // Already explored branch
@@ -722,12 +1072,12 @@ export class FlowWorkspace implements BlockManager {
             }
 
             allKnown[id] = true;
-            const block = this.blocks[id];
+            const blockObj = this.blockObjs[id];
 
-            if (block.block instanceof ContainerFlowBlock) {
+            if (blockObj.block instanceof ContainerFlowBlock) {
 
-                for (const content of block.block.recursiveGetAllContents()) {
-                    const contentId = this.getBlockId(content);
+                for (const content of blockObj.block.recursiveGetAllContents()) {
+                    const contentId = content.id;
                     allKnown[contentId] = true;
                 }
             }
@@ -754,7 +1104,7 @@ export class FlowWorkspace implements BlockManager {
             const skipped = [];
 
             for (const blockId of to_go) {
-                const block = this.blocks[blockId];
+                const block = this.blocks.get(blockId);
 
                 if (block.container_id) {
                     // Note that we are not interested on dependencies not in
@@ -914,11 +1264,11 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public getBlock(blockId: string): FlowBlock {
-        if (!this.blocks[blockId]) {
+        if (!this.blockObjs[blockId]) {
             throw Error(`Block (id=${blockId}) not found`);
         }
 
-        return this.blocks[blockId].block;
+        return this.blockObjs[blockId].block;
     }
 
     public drawAbsolute(block: FlowBlock, abs_position: Position2D): string {
@@ -932,16 +1282,7 @@ export class FlowWorkspace implements BlockManager {
         return this.draw(block, rel_pos);
     }
 
-    public draw(block: FlowBlock, position?: Position2D, block_id?: string): string {
-        if (block_id) {
-            if (this.blocks[block_id]) {
-                throw new Error('Duplicated block id');
-            }
-        }
-        else {
-            block_id = uuidv4();
-        }
-
+    public draw(block: FlowBlock, position?: Position2D): string {
         const slots = block.getSlots();
         if (slots.variable) {
             if (!this.variables_in_use[slots.variable]) {
@@ -956,10 +1297,13 @@ export class FlowWorkspace implements BlockManager {
             group = this.container_group;
         }
 
+        if (!position) {
+            position = {x: 10, y: 10};
+        }
+
         this._withNoZoom(() => {
             block.render(group, {
-                block_id: block_id,
-                position: (position ? position : {x: 10, y: 10}),
+                position: position,
                 workspace: this,
             });
         });
@@ -1009,7 +1353,7 @@ export class FlowWorkspace implements BlockManager {
                 if ((ev as MouseEvent).button === 2) {
                     // On right click just make sure it is selected, the context
                     // menu will be handled by 'oncontextmenu'.
-                    this.ensureBlockSelected(block_id);
+                    this.ensureBlockSelected(block.id);
                     // TODO: How to perform this action on touch event? Long touch?
                 }
                 else {
@@ -1020,13 +1364,27 @@ export class FlowWorkspace implements BlockManager {
 
         const input_group = this.drawBlockInputHelpers(block);
 
-        this.blocks[block_id] = { block: block, connections: [], input_group: input_group, container_id: null };
+        this.blockObjs[block.id] = { block: block, input_group: input_group };
+        this.blocks.set(block.id, { connections: [],
+                                    container_id: null,
+                                    position: position,
+                                    blockData: block.serialize(),
+                                 })
+        block.onMove((pos: Position2D) => {
+            const data = this.blocks.get(block.id);
+            if (!data) {
+                console.warn("Calling block.onMove() after deleted.")
+                return;
+            }
+            data.position = pos;
+            this.blocks.set(block.id, data);
+        })
 
-        return block_id;
+        return block.id;
     }
 
     public centerOnBlock(blockId: string) {
-        const block = this.blocks[blockId].block;
+        const block = this.blockObjs[blockId].block;
         const area = block.getBodyArea();
         const centerX = area.x + area.width / 2;
         const centerY = area.y + area.height / 2;
@@ -1051,12 +1409,12 @@ export class FlowWorkspace implements BlockManager {
 
     public center() {
         // Find the center of all blocks, and center the view there
-        const blockIds = Object.keys(this.blocks);
+        const blockIds = Object.keys(this.blockObjs);
         if (blockIds.length === 0) {
             return this.centerOnPoint({ x: 0, y: 0 });
         }
 
-        const block1Area = this.blocks[blockIds[0]].block.getBodyArea();
+        const block1Area = this.blockObjs[blockIds[0]].block.getBodyArea();
         const rect = {
             left: block1Area.x,
             top: block1Area.y,
@@ -1065,7 +1423,7 @@ export class FlowWorkspace implements BlockManager {
         };
 
         for (let i = 1 ; i < blockIds.length; i++) {
-            const blockArea = this.blocks[blockIds[i]].block.getBodyArea();
+            const blockArea = this.blockObjs[blockIds[i]].block.getBodyArea();
 
             if (blockArea.x < rect.left) {
                 rect.left = blockArea.x;
@@ -1119,7 +1477,7 @@ export class FlowWorkspace implements BlockManager {
         // Single block options
         if (this._selectedBlocks.length === 1) {
             const blockId = this._selectedBlocks[0];
-            const block = this.blocks[blockId].block;
+            const block = this.blockObjs[blockId].block;
             const actions = block.getBlockContextActions();
 
             for (const action of actions) {
@@ -1141,30 +1499,30 @@ export class FlowWorkspace implements BlockManager {
 
         for (const blockId of blocks) {
 
-            const blockInfo = this.blocks[blockId];
-            const info = blockInfo.block.serialize();
+            const blockObj = this.blockObjs[blockId];
+            const data = blockObj.block.serialize();
 
-            const clone = this.deserializeBlock(info);
             const newId = uuidv4();
+            const clone = this.deserializeBlock(newId, data);
 
-            const prevPos = blockInfo.block.getBodyArea();
-            this.draw(clone, { x: prevPos.x + 20, y: prevPos.y - 20 }, newId);
+            const prevPos = blockObj.block.getBodyArea();
+            this.draw(clone, { x: prevPos.x + 20, y: prevPos.y - 20 });
             newIds.push(newId);
         }
 
         // Replicate connections among the selected blocks
-        for (const connectionId of Object.keys(this.connections)) {
-            const connection = this.connections[connectionId];
+        for (const connectionId of Array.from(this.connections.keys())) {
+            const connection = this.connections.get(connectionId);
 
             // Look for matching sink
-            const sink = connection.getSink();
+            const sink = connection.sink;
             const sinkIndex = blocks.indexOf(sink.block_id);
             if (sinkIndex < 0) {
                 continue;
             }
 
             // Look for matching source
-            const source = connection.getSource();
+            const source = connection.source;
             const sourceIndex = blocks.indexOf(source.block_id);
             if (sourceIndex < 0) {
                 continue;
@@ -1172,12 +1530,12 @@ export class FlowWorkspace implements BlockManager {
 
             this.establishConnection(
                 {
-                    block: this.blocks[newIds[sourceIndex]].block,
+                    block: this.blockObjs[newIds[sourceIndex]].block,
                     type: 'out',
                     index: connection.source.output_index,
                 },
                 {
-                    block: this.blocks[newIds[sinkIndex]].block,
+                    block: this.blockObjs[newIds[sinkIndex]].block,
                     type: 'in',
                     index: connection.sink.input_index,
                 },
@@ -1231,7 +1589,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _canCloneBlock(blockId: string): boolean {
-        const block = this.blocks[blockId].block;
+        const block = this.blockObjs[blockId].block;
 
         if (block instanceof ContainerFlowBlock) {
             if (block.isPage) {
@@ -1297,7 +1655,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _getContainerOfBlock(blockId: string): FlowBlock | null {
-        const blockInfo = this.blocks[blockId];
+        const blockInfo = this.blocks.get(blockId);
         if (!blockInfo) {
             throw new Error("Can't find block info of " + blockId);
         }
@@ -1307,17 +1665,22 @@ export class FlowWorkspace implements BlockManager {
                 throw new Error("Can't find container: " + blockInfo.container_id);
             }
 
-            return this.blocks[blockInfo.container_id].block;
+            return this.blockObjs[blockInfo.container_id].block;
         }
 
         return null;
     }
 
     private _updateBlockContainer(block: FlowBlock, container?: FlowBlock) {
-        const block_id = this.getBlockId(block);
+        const block_id = block.id;
         const wasInContainer = this._getContainerOfBlock(block_id);
+        this._updateBlockContainerFromContainer(block, container, wasInContainer);
+    }
 
-        const container_id = container ? this.getBlockId(container) : null;
+    private _updateBlockContainerFromContainer(block: FlowBlock, container?: FlowBlock, wasInContainer?: FlowBlock) {
+        const block_id = block.id;
+
+        const container_id = container ? container.id : null;
 
         if (wasInContainer !== container) {
             if (wasInContainer) {
@@ -1330,12 +1693,19 @@ export class FlowWorkspace implements BlockManager {
                 }
                 catch (err) {
                     if (err instanceof CannotSetAsContentsError) {
-                        this.blocks[block_id].container_id = null;
+                        this.blocks.get(block_id).container_id = null;
                     }
                     throw err;
                 }
             }
-            this.blocks[block_id].container_id = container_id;
+
+            if (this.blocks.has(block_id)) {
+                const data = this.blocks.get(block_id);
+                if (data.container_id !== container_id) {
+                    data.container_id = container_id;
+                    this.blocks.set(block_id, data);
+                }
+            }
 
             if (block instanceof UiFlowBlock) {
                 block.updateContainer(container);
@@ -1347,7 +1717,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _mouseDownOnBlock(pos: Position2D, block: FlowBlock, on_done?: (pos: Position2D) => void) {
-        const block_id = this.getBlockId(block);
+        const block_id = block.id;
         this.ensureBlockSelected(block_id);
 
         if (this.state !== 'waiting') {
@@ -1387,21 +1757,14 @@ export class FlowWorkspace implements BlockManager {
 
                 for (const blockId of this._selectedBlocks) {
                     const container = this._getContainerOfBlock(blockId);
-                    const isContainerSelected = container === null ? false : this._selectedBlocks.indexOf(this.getBlockId(container)) >= 0;
+                    const isContainerSelected = container === null ? false : this._selectedBlocks.indexOf(container.id) >= 0;
                     if (isContainerSelected) {
                         // Container of the block is also selected, avoid moving it twice
                         continue;
                     }
 
-                    const draggedBlocks = this.blocks[blockId].block.moveBy(distance).map(block => this.getBlockId(block));
-
-                    for (const movedId of draggedBlocks.concat([blockId])) {
-                        for (const conn of this.blocks[movedId].connections) {
-                            this.updateConnection(conn);
-                        }
-
-                        this.updateBlockInputHelpersPosition(movedId);
-                    }
+                    const draggedBlocks = this.blockObjs[blockId].block.moveBy(distance).map(block => block.id);
+                    this._afterBlocksMove(draggedBlocks.concat([block.id]));
                 }
 
                 if (this.isInTrashcan(pos)) {
@@ -1422,12 +1785,12 @@ export class FlowWorkspace implements BlockManager {
                 lastContainer.getBodyElement().classList.remove('highlighted');
             }
 
-            const oldContainer: string | null = this.blocks[block_id].container_id;
+            const oldContainer: string | null = this.blocks.get(block_id).container_id;
             const pos = this._getPositionFromEvent(ev);
             const container = this._findContainerInPos(pos, this._selectedBlocks);
-            const containerId = container === null ? null : this.getBlockId(container);
+            const containerId = container === null ? null : container.id;
 
-            let moved = [];
+            let moved: string[] = [];
 
             // Only update container if either:
             //  - The dragged block was in a container and now is not
@@ -1436,7 +1799,8 @@ export class FlowWorkspace implements BlockManager {
                 || (containerId && (this._selectedBlocks.indexOf(containerId) < 0))) {
 
                 for (const blockId of this._selectedBlocks.concat([])) {
-                    const blockInfo = this.blocks[blockId];
+                    const blockInfo = this.blocks.get(blockId);
+                    const blockObj = this.blockObjs[blockId];
 
                     try {
                         // Don't update container if it's on the selection
@@ -1444,12 +1808,12 @@ export class FlowWorkspace implements BlockManager {
                             continue;
                         }
 
-                        this._updateBlockContainer(blockInfo.block, container);
+                        this._updateBlockContainer(blockObj.block, container);
                     }
                     catch (err) {
                         if (err instanceof CannotSetAsContentsError) {
                             console.error("Cannot set as content", err.problematicContents); // TODO: Show as notification
-                            this._updateBlockContainer(blockInfo.block, null);
+                            this._updateBlockContainer(blockObj.block, null);
                         }
                     }
                 }
@@ -1457,7 +1821,7 @@ export class FlowWorkspace implements BlockManager {
 
             // Track the blocks dragged
             for (const blockId of this._selectedBlocks.concat([])) {
-                const draggedBlocks = this.blocks[blockId].block.endMove().map(block => this.getBlockId(block));
+                const draggedBlocks = this.blockObjs[blockId].block.endMove().map(block => block.id);
 
                 moved.push(blockId)
                 moved = moved.concat(draggedBlocks);
@@ -1480,7 +1844,7 @@ export class FlowWorkspace implements BlockManager {
                 if (this.isInTrashcan(pos)) {
                     removed = true;
                     for (const blockId of moved.concat([])) {
-                        this.removeBlock(blockId);
+                        this.removeBlock(blockId, this.blocks.get(blockId));
                     }
                 }
             }
@@ -1491,13 +1855,7 @@ export class FlowWorkspace implements BlockManager {
             // If autoposition is not activated, only move the connections present
             if (!removed && !this.autoposition) {
                 // Update moved block's connections
-                for (const movedId of moved) {
-                    for (const conn of this.blocks[movedId].connections) {
-                        this.updateConnection(conn);
-                    }
-
-                    this.updateBlockInputHelpersPosition(movedId);
-                }
+                this._afterBlocksMove(moved);
 
                 // Take into account the old container
                 if (oldContainer) {
@@ -1510,6 +1868,16 @@ export class FlowWorkspace implements BlockManager {
                 this.repositionAll();
             }
         });
+    }
+
+    private _afterBlocksMove(blockIds: string[]) {
+        for (const movedId of blockIds) {
+            for (const conn of this.blocks.get(movedId).connections) {
+                this.updateConnection(conn);
+            }
+
+            this.updateBlockInputHelpersPosition(movedId);
+        }
     }
 
     public invalidateBlock(blockId: string) {
@@ -1525,11 +1893,11 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public repositionAll() {
-        const blocks = Object.keys(this.blocks);
+        const blocks = Object.keys(this.blockObjs);
         this._reposition(blocks);
 
         for (const blockId of blocks) {
-            for (const conn of this.blocks[blockId].connections) {
+            for (const conn of this.blocks.get(blockId).connections) {
                 this.updateConnection(conn);
             }
 
@@ -1552,14 +1920,14 @@ export class FlowWorkspace implements BlockManager {
         for (let i = 0; i < max_iterations; i++) {
             console.time("It " + (i + 1));
 
-            const prevPos: [string, Area2D][] = Object.keys(this.blocks).map( id => [id, this.blocks[id].block.getBodyArea() ] )
+            const prevPos: [string, Area2D][] = Object.keys(this.blockObjs).map( id => [id, this.blockObjs[id].block.getBodyArea() ] )
             this.repositionAll();
 
             const diffs = prevPos.map(([id, prev]) => {
-                const after = this.blocks[id].block.getBodyArea();
+                const after = this.blockObjs[id].block.getBodyArea();
 
                 return {
-                    block: this.blocks[id].block,
+                    block: this.blockObjs[id].block,
                     x: Math.abs(after.x - prev.x),
                     y: Math.abs(after.y - prev.y),
                     width: Math.abs(after.width - prev.width),
@@ -1595,82 +1963,84 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _reposition(blockIds: string[]) {
-        // Build the list of dependencies (contents) for each block repositioned
-        const dependencies: {[key: string]: string[]} = {};
+        this.doc.transact((_transaction: Y.Transaction) => {
+            // Build the list of dependencies (contents) for each block repositioned
+            const dependencies: {[key: string]: string[]} = {};
 
-        const considered = {};
-        for (const id of blockIds) {
-            considered[id] = true;
-        }
-
-        const allAffected = [];
-        const toExplore = blockIds.concat([]);
-        while (toExplore.length > 0) {
-            const id = toExplore.shift();
-            allAffected.push(id);
-
-            const block = this.blocks[id];
-
-            if (block.container_id) {
-                const dep = block.container_id;
-                if (!considered[dep]) {
-                    toExplore.push(dep);
-                    considered[dep] = true;
-                }
-
-                if (!dependencies[dep]){
-                    dependencies[dep] = [];
-                }
-
-                dependencies[dep].push(id);
+            const considered: {[key: string]: boolean} = {};
+            for (const id of blockIds) {
+                considered[id] = true;
             }
-        }
 
-        const processed: string[] = [];
-        let toGo = allAffected.concat([]);
-        let processedThisTurn = true;
-        while (toGo.length > 0 && processedThisTurn) {
-            processedThisTurn = false;
-            const skipped = [];
+            const allAffected = [];
+            const toExplore = blockIds.concat([]);
+            while (toExplore.length > 0) {
+                const id = toExplore.shift();
+                allAffected.push(id);
 
-            for (const bId of toGo) {
-                const data = this.blocks[bId];
-                if ((dependencies[bId] || []).some(x => processed.indexOf(x) < 0)) {
-                    // Not all contents have been repositioned yet
-                    skipped.push(bId);
-                }
-                else {
-                    const block = data.block;
-                    if (block instanceof ContainerFlowBlock) {
-                        block.repositionContents();
+                const block = this.blocks.get(id);
+
+                if (block.container_id) {
+                    const dep = block.container_id;
+                    if (!considered[dep]) {
+                        toExplore.push(dep);
+                        considered[dep] = true;
                     }
 
-                    processedThisTurn = true;
-                    processed.push(bId);
+                    if (!dependencies[dep]){
+                        dependencies[dep] = [];
+                    }
+
+                    dependencies[dep].push(id);
                 }
             }
 
-            toGo = skipped;
-        }
+            const processed: string[] = [];
+            let toGo = allAffected.concat([]);
+            let processedThisTurn = true;
+            while (toGo.length > 0 && processedThisTurn) {
+                processedThisTurn = false;
+                const skipped = [];
 
-        if (toGo.length > 0) {
-            console.error("Circular dependency found on", toGo);
-            console.error("Circular dependency found on", toGo.map(id => this.blocks[id]));
-        }
+                for (const bId of toGo) {
+                    const blockObj = this.blockObjs[bId];
+                    if ((dependencies[bId] || []).some(x => processed.indexOf(x) < 0)) {
+                        // Not all contents have been repositioned yet
+                        skipped.push(bId);
+                    }
+                    else {
+                        const block = blockObj.block;
+                        if (block instanceof ContainerFlowBlock) {
+                            block.repositionContents();
+                        }
 
-        // After all are processed, give then the option to "settle" on their new position
-        for (const elementId of processed.reverse()) {
-            const block = this.blocks[elementId].block;
+                        processedThisTurn = true;
+                        processed.push(bId);
+                    }
+                }
 
-            // This have a reasonably-close semantic, but it might not be
-            // enough. A new function might be needed to cover this meaning.
-            block.endMove();
-        }
+                toGo = skipped;
+            }
+
+            if (toGo.length > 0) {
+                console.error("Circular dependency found on", toGo);
+                console.error("Circular dependency IDS:", toGo.map(id => this.blocks.get(id)));
+            }
+
+            // After all are processed, give then the option to "settle" on their new position
+            for (const elementId of processed.reverse()) {
+                const block = this.blockObjs[elementId].block;
+
+                // This have a reasonably-close semantic, but it might not be
+                // enough. A new function might be needed to cover this meaning.
+                block.endMove();
+            }
+        });
     }
 
     private _pullAllDependenciesInList(id: string, group: string[]): string[] {
-        let deps = [];
-        const block = this.blocks[id];
+        let deps: string[] = [];
+        const block = this.blocks.get(id);
 
         if (block.container_id && group.indexOf(block.container_id) >= 0) {
             deps.push(block.container_id);
@@ -1782,10 +2152,10 @@ export class FlowWorkspace implements BlockManager {
                     }
 
                     if (input.type === 'enum') {
-                        this.createEnumValue(input, this.getBlockId(block), element_index, { position })
+                        this.createEnumValue(input, block.id, element_index, { position })
                     }
                     else {
-                        this.createDirectValue(input.type, this.getBlockId(block), element_index, { position });
+                        this.createDirectValue(input.type, block.id, element_index, { position });
                     }
                 }
                 catch (err) {
@@ -1806,24 +2176,36 @@ export class FlowWorkspace implements BlockManager {
             get_values: this.getEnum,
             on_select_requested: this.onSelectRequested.bind(this),
             on_io_selected: this.onIoSelected.bind(this),
-        });
+        }, uuidv4());
 
-        const enum_input_id = this.draw(enum_input, options.position);
-        this.addConnection({ block_id: enum_input_id, output_index: 0 },
-                           { block_id: block_id, input_index: input_index });
+        // These two steps use dependent data, so they have to be performed
+        // inside the same transaction.
+        this.doc.transact((_t: Y.Transaction) => {
+            const enum_input_id = this.draw(enum_input, options.position);
+
+            this.addConnection({ block_id: enum_input_id, output_index: 0 },
+                               { block_id: block_id, input_index: input_index });
+        });
     }
 
     private createDirectValue(type: MessageType, block_id: string, input_index: number,
                               options: { position: Position2D, value?: string }) {
+
+        const direct_input_id = uuidv4();
         const direct_input = new DirectValue({ type: type,
                                                on_request_edit: this.onRequestEdit.bind(this),
                                                value: options.value,
                                                on_io_selected: this.onIoSelected.bind(this),
-                                             });
+                                             }, direct_input_id);
 
-        const direct_input_id = this.draw(direct_input, options.position);
-        this.addConnection({ block_id: direct_input_id, output_index: 0 },
-                           { block_id: block_id, input_index: input_index });
+        // These two steps use dependent data, so they have to be performed
+        // inside the same transaction.
+        this.doc.transact((_t: Y.Transaction) => {
+            this.draw(direct_input, options.position);
+
+            this.addConnection({ block_id: direct_input_id, output_index: 0 },
+                               { block_id: block_id, input_index: input_index });
+        });
     }
 
     private static MessageTypeToInputType(type: MessageType): string {
@@ -1846,7 +2228,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public editInline(area: Area2D, value: string, type: MessageType, update: (value: string) => void): void {
-        let editor = null;
+        let editor: HTMLInputElement | HTMLTextAreaElement = null;
         let hiddenEditor = null;
         if (type === 'boolean') {
             editor = this.inlineEditor;
@@ -1918,34 +2300,39 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private updateBlockInputHelpersPosition(block_id: string) {
-        const block = this.blocks[block_id];
+        const blockObj = this.blockObjs[block_id];
 
         // Deactivate helpers for all inputs in use
         let index = -1;
-        for (const input of Array.from(block.input_group.children)) {
+        for (const input of Array.from(blockObj.input_group.children)) {
             index++;
 
-            const input_position = this.getBlockRel(block.block, block.block.getPositionOfInput(index));
-            input.setAttributeNS(null, 'transform', `translate(${input_position.x - HELPER_BASE_SIZE / 2},`
-                                 + `${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+            const input_position = this.getBlockRel(blockObj.block, blockObj.block.getPositionOfInput(index));
+            input.setAttributeNS(null, 'transform',
+                                 `translate(${input_position.x - HELPER_BASE_SIZE / 2},`
+                + `${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
         }
     }
 
     private updateBlockInputHelpersVisibility(block_id: string) {
-        const block = this.blocks[block_id];
+        const blockInfo = this.blocks.get(block_id);
+        const blockObj = this.blockObjs[block_id];
 
-        const inputs_in_use = {};
-        for (const conn_id of block.connections) {
-            const conn = this.connections[conn_id];
+        const inputs_in_use: {[key: string]: boolean} = {};
+        for (const conn_id of blockInfo.connections) {
+            const conn = this.connections.get(conn_id);
+            if (!conn) {
+                continue;
+            }
 
-            if (conn.getSink().block_id == block_id) {
-                inputs_in_use[conn.getSink().input_index] = true;
+            if (conn.sink.block_id == block_id) {
+                inputs_in_use[conn.sink.input_index] = true;
             }
         }
 
         // Deactivate helpers for all inputs in use
         let index = -1;
-        for (const input of Array.from(block.input_group.children)) {
+        for (const input of Array.from(blockObj.input_group.children)) {
             index++;
 
             if (inputs_in_use[index]) {
@@ -1961,20 +2348,33 @@ export class FlowWorkspace implements BlockManager {
         return this.numPages > 0;
     }
 
-    public removeBlock(blockId: string) {
-        const info = this.blocks[blockId];
+    public removeBlock(blockId: string, info?: SharedBlockData) {
+        if (!info) {
+            info = this.blocks.get(blockId);
+        }
+
+        const blockObj = this.blockObjs[blockId];
         console.debug("Removing block:", info);
 
-        if (!info) {
+        if (!blockObj) {
             console.debug("Already removed", blockId);
+
             return;
         }
 
-        if (info.block instanceof ContainerFlowBlock) {
-            const parent_container_id = info.container_id;
-            const parent_container = parent_container_id ? this.blocks[parent_container_id].block : null;
+        const slots = blockObj.block.getSlots();
+        if (slots.variable) {
+            if (this.variables_in_use[slots.variable]) {
+                this.variables_in_use[slots.variable]--;
+            }
+        }
 
-            for (const content of info.block.contents.concat([])) {
+
+        if (blockObj.block instanceof ContainerFlowBlock) {
+            const parent_container_id = info.container_id;
+            const parent_container = parent_container_id ? this.blockObjs[parent_container_id].block : null;
+
+            for (const content of blockObj.block.contents.concat([])) {
                 try {
                     this._updateBlockContainer(content, parent_container);
                 }
@@ -1988,22 +2388,27 @@ export class FlowWorkspace implements BlockManager {
                 }
             }
 
-            if (info.block.isPage) {
+            if (blockObj.block.isPage) {
                 this.numPages--;
             }
         }
 
-        this._updateBlockContainer(info.block, null);
+        if (this.blocks.has(blockId)) {
+            this._updateBlockContainer(blockObj.block, null);
+        }
 
         // Make a copy of the array to avoid problems for modifying it during the loop
         for (const conn_id of info.connections.concat([])) {
-            this.removeConnection(this.connections[conn_id]);
+            this.removeConnection(this.connections.get(conn_id));
         }
 
-        this.input_helper_section.removeChild(info.input_group);
-        info.block.dispose();
+        this.input_helper_section.removeChild(blockObj.input_group);
+        blockObj.block.dispose();
 
-        delete this.blocks[blockId];
+        delete this.blockObjs[blockId];
+        if (this.blocks.has(blockId)) {
+            this.blocks.delete(blockId);
+        }
 
         const idx = this._selectedBlocks.indexOf(blockId);
         if (idx >= 0) {
@@ -2144,8 +2549,8 @@ export class FlowWorkspace implements BlockManager {
             bottom = from;
         }
 
-        for (const block_id of Object.keys(this.blocks)) {
-            const block = this.blocks[block_id].block;
+        for (const block_id of Object.keys(this.blockObjs)) {
+            const block = this.blockObjs[block_id].block;
             if (block instanceof ContainerFlowBlock) {
                 continue;
             }
@@ -2184,12 +2589,34 @@ export class FlowWorkspace implements BlockManager {
                   to: SinkDefinition,
                   ): boolean {
 
+        if (!(from_.block_id in this.blockObjs) || !(to.block_id in this.blockObjs)) {
+            console.error("Trying to create connection from non-spawned blocks",
+                          {
+                from: from_,
+                to: to,
+                from_exists: (from_.block_id in this.blockObjs),
+                to_exists: to.block_id in this.blockObjs
+            });
+
+            return;
+        }
+
+        const sourceObj = this.blockObjs[from_.block_id];
+
+        const source = this.blocks.get(from_.block_id);
+        const source_output_type = sourceObj.block.getOutputType(from_.output_index);
+
+        // The combination (output block&port) -> (input block&port) should be unique.
+        const id = `${from_.block_id}:${from_.output_index}--${to.block_id}:${to.input_index}`;
+
+        if (id in this.connectionElements) {
+            console.debug("Connection already exists");
+            return;
+        }
+
         const path = document.createElementNS(SvgNS, 'path');
 
-        const source = this.blocks[from_.block_id];
-        const source_output_type = source.block.getOutputType(from_.output_index);
-
-        const conn = new FlowConnection(from_, to, path, source_output_type);
+        const conn : FlowConnectionData = { id: id, source: from_, sink: to, type: source_output_type };
 
         if ((source_output_type == 'pulse') || (source_output_type == 'user-pulse')) {
             path.setAttributeNS(null, 'marker-end', 'url(#pulse_head)');
@@ -2201,6 +2628,7 @@ export class FlowWorkspace implements BlockManager {
             };
         }
 
+        setConnectionType(source_output_type, conn, path);
         path.onclick = () => {
             if (this.read_only) { return }
 
@@ -2208,79 +2636,98 @@ export class FlowWorkspace implements BlockManager {
         };
         this.connection_group.appendChild(path);
 
-        const sink = this.blocks[conn.getSink().block_id];
-        source.block.addConnection('out', conn.getSource().output_index, sink.block, source_output_type);
+        const sinkObj = this.blockObjs[conn.sink.block_id];
+        const sink = this.blocks.get(conn.sink.block_id);
+
+        sourceObj.block.addConnection('out', conn.source.output_index, sinkObj.block, source_output_type);
         source.connections.push(conn.id);
 
         sink.connections.push(conn.id);
-        const hasChanged = sink.block.addConnection('in', conn.getSink().input_index, source.block, source_output_type);
+        const hasChanged = sinkObj.block.addConnection('in', conn.sink.input_index, sourceObj.block, source_output_type);
 
-        this.connections[conn.id] = conn;
-        this.updateBlockInputHelpersVisibility(conn.getSink().block_id);
+        this.connectionElements[conn.id] = path;
+
+        if (!this.connections.has(conn.id)) {
+            this.connections.set(conn.id, conn);
+        }
+        this.updateBlockInputHelpersVisibility(conn.sink.block_id);
 
         if (hasChanged) {
-            this.propagateChangesFrom(conn.getSink().block_id);
+            this.propagateChangesFrom(conn.sink.block_id);
         }
 
-        this.updateConnection(conn.getId());
+        this.updateConnection(conn.id);
 
         return true;
     }
 
-    private removeConnection(conn: FlowConnection) {
-        const source = this.blocks[conn.getSource().block_id];
-        const sink = this.blocks[conn.getSink().block_id];
+    private removeConnection(conn: FlowConnectionData) {
+        const sourceObj = this.blockObjs[conn.source.block_id];
+        const sinkObj = this.blockObjs[conn.sink.block_id];
+
+        const source = this.blocks.get(conn.source.block_id);
+        const sink = this.blocks.get(conn.sink.block_id);
 
         // Disconnect from source
-        source.block.removeConnection('out', conn.getSource().output_index, sink.block);
-        const source_conn_index = source.connections.indexOf(conn.id);
-        if (source_conn_index < 0) {
-            console.error('Connection not found when going to remove. For block', source);
+        sourceObj?.block.removeConnection('out', conn.source.output_index, sinkObj.block);
+        if (source) {
+            const source_conn_index = source.connections.indexOf(conn.id);
+            if (source_conn_index < 0) {
+                console.error('Connection not found when going to remove. For block', source);
+            }
+            else {
+                source.connections.splice(source_conn_index, 1);
+            }
+
+            this.updateBlockInputHelpersVisibility(conn.source.block_id);
         }
-        else {
-            source.connections.splice(source_conn_index, 1);
-        }
-        this.updateBlockInputHelpersVisibility(conn.getSource().block_id);
 
         // Disconnect from sink
-        const hasChanged = sink.block.removeConnection('in', conn.getSink().input_index, source.block);
-        const sink_conn_index = sink.connections.indexOf(conn.id);
-        if (sink_conn_index < 0) {
-            console.error('Connection not found when going to remove. For block', sink);
+        const hasChanged = sinkObj?.block.removeConnection('in', conn.sink.input_index, sourceObj.block);
+        if (sink) {
+            const sink_conn_index = sink.connections.indexOf(conn.id);
+            if (sink_conn_index < 0) {
+                console.error('Connection not found when going to remove. For block', sink);
+            }
+            else {
+                sink.connections.splice(sink_conn_index, 1);
+            }
+            this.updateBlockInputHelpersVisibility(conn.sink.block_id);
         }
-        else {
-            sink.connections.splice(sink_conn_index, 1);
-        }
-        this.updateBlockInputHelpersVisibility(conn.getSink().block_id);
 
         // Remove workspace information
-        const info = this.connections[conn.id];
-        this.connection_group.removeChild(info.element);
+        this.connection_group.removeChild(this.connectionElements[conn.id]);
 
-        delete this.connections[conn.id];
+        delete this.connectionElements[conn.id];
+        if (this.connections.has(conn.id)) {
+            this.connections.delete(conn.id);
+        }
 
         if (hasChanged) {
-            this.propagateChangesFrom(conn.getSink().block_id);
+            this.propagateChangesFrom(conn.sink.block_id);
         }
     }
 
     private propagateChangesFrom(originBlockId: string) {
-        const considered = { originBlockId: true };
+        const considered: {[key: string]: boolean} = {};
+        considered[originBlockId] = true;
+
         const todo = [originBlockId];
 
         while (todo.length > 0) {
             const next = todo.pop();
-            const info = this.blocks[next];
+            const info = this.blocks.get(next);
+            const blockObj = this.blockObjs[next];
 
-            const linksFrom: FlowConnection[] = [];
-            const linksTo: FlowConnection[] = [];
+            const linksFrom: [FlowConnectionData, SVGElement][] = [];
+            const linksTo: [FlowConnectionData, SVGElement][] = [];
 
             // Explore where does this block lead to
             for (const connId of info.connections) {
-                const connection = this.connections[connId];
+                const connection = this.connections.get(connId);
                 if (connection.source.block_id === next) {
                     const sink = connection.sink.block_id;
-                    linksFrom.push(this.connections[connId]);
+                    linksFrom.push([this.connections.get(connId), this.connectionElements[connId]]);
 
                     if (!considered[sink]) {
                         considered[sink] = true;
@@ -2288,51 +2735,59 @@ export class FlowWorkspace implements BlockManager {
                     }
                 }
                 else {
-                    linksTo.push(this.connections[connId]);
+                    linksTo.push([this.connections.get(connId), this.connectionElements[connId]]);
                 }
             }
 
             // Consider changes needed
             // *Right now* only AtomicFlowBlocks need this
             // TODO: Extend this to all blocks when type propagation is applied to more block types
-            if (info.block instanceof AtomicFlowBlock) {
-                info.block.refreshConnectionTypes(linksFrom, linksTo);
+            if (blockObj.block instanceof AtomicFlowBlock) {
+                blockObj.block.refreshConnectionTypes(linksFrom, linksTo);
             }
         }
     }
 
     updateConnection(connection_id: string) {
-        const conn = this.connections[connection_id];
+        const conn = this.connections.get(connection_id);
+
+        if (!conn) {
+            console.debug("Trying to update connection before it is available");
+            return;
+        }
+
         const runway = 20;
 
         // Source
-        const source = conn.getSource();
-        const source_block = this.blocks[source.block_id].block;
+        const source = conn.source;
+        if (!(source) || !(source.block_id in this.blockObjs)) {
+            console.warn("Trying to update connection before SOURCE is available");
+            return;
+        }
+
+        const source_block = this.blockObjs[source.block_id].block;
 
         const source_position = this.getBlockRel(source_block, source_block.getPositionOfOutput(source.output_index));
 
         // Sink
-        const sink = conn.getSink();
-        const sink_block = this.blocks[sink.block_id].block;
+        const sink = conn.sink;
 
-        const connector_with_marker = !!conn.element.getAttributeNS(null, 'marker-end');
+        if (!(sink) || !(sink.block_id in this.blockObjs)) {
+            console.warn("Trying to update connection before SINK is available");
+            return;
+        }
+
+        const sink_block = this.blockObjs[sink.block_id].block;
+
+        const element = this.connectionElements[connection_id];
+        const connector_with_marker = !!element.getAttributeNS(null, 'marker-end');
         const y_sink_offset = connector_with_marker ? 2 : 0;
 
         const sink_position = this.getBlockRel(sink_block, sink_block.getPositionOfInput(sink.input_index, connector_with_marker));
         sink_position.y -= y_sink_offset;
 
         // Draw
-        this.drawPath(conn.element, source_position, sink_position, runway, source_block, sink_block);
-    }
-
-    getBlockId(block: FlowBlock): string {
-        for (const key of Object.keys(this.blocks)) {
-            if (this.blocks[key].block === block) {
-                return key;
-            }
-        }
-
-        return null;
+        this.drawPath(element, source_position, sink_position, runway, source_block, sink_block);
     }
 
     establishConnection(node1: ConnectableNode, node2: ConnectableNode): boolean {
@@ -2353,8 +2808,8 @@ export class FlowWorkspace implements BlockManager {
             sink = node2;
         }
 
-        return this.addConnection({block_id: this.getBlockId(source.block), output_index: source.index },
-                                  {block_id: this.getBlockId(sink.block), input_index: sink.index });
+        return this.addConnection({block_id: source.block.id, output_index: source.index },
+                                  {block_id: sink.block.id, input_index: sink.index });
     }
 
     private disconnectIOSelected() {
@@ -2372,8 +2827,8 @@ export class FlowWorkspace implements BlockManager {
                     _input_num: number,
                    ): void {
 
-        const block_id = this.getBlockId(block);
-        this.drawBlockInputHelpers(block, this.blocks[block_id].input_group);
+        const block_id = block.id;
+        this.drawBlockInputHelpers(block, this.blockObjs[block_id].input_group);
     }
 
     onIoSelected(block: FlowBlock,
@@ -2499,13 +2954,7 @@ export class FlowWorkspace implements BlockManager {
         };
         const select_value = (val: string) => {
             close();
-            if (this.variables_in_use[previous_value]) {
-                this.variables_in_use[previous_value]--;
-            }
-            if (!this.variables_in_use[val]) {
-                this.variables_in_use[val] = 0;
-            }
-            this.variables_in_use[val]++;
+            this._notifyChangedVariable(previous_value, val);
 
             update(val);
         };
@@ -2518,10 +2967,10 @@ export class FlowWorkspace implements BlockManager {
             block: 'nearest',
         };
 
-        let bounce_control = null;
-        let last_query = null;
+        let bounce_control: NodeJS.Timeout = null;
+        let last_query: string = null;
 
-        let selected_index = null;
+        let selected_index: number = null;
 
         // Keyup if controled instead of keypress
         // as ArrowRight and ArrowLeft are not triggered on keypress
@@ -2729,13 +3178,7 @@ export class FlowWorkspace implements BlockManager {
         };
         const select_value = (val: string) => {
             close();
-            if (this.variables_in_use[previous_value]) {
-                this.variables_in_use[previous_value]--;
-            }
-            if (!this.variables_in_use[val]) {
-                this.variables_in_use[val] = 0;
-            }
-            this.variables_in_use[val]++;
+            this._notifyChangedVariable(previous_value, val);
 
             update(val);
         };
@@ -2778,6 +3221,17 @@ export class FlowWorkspace implements BlockManager {
         }
 
         this.popupGroup.classList.remove('hidden');
+    }
+
+    _notifyChangedVariable(prevValue: string, newValue: string) {
+        if (this.variables_in_use[prevValue]) {
+            this.variables_in_use[prevValue]--;
+        }
+
+        if (!this.variables_in_use[newValue]) {
+            this.variables_in_use[newValue] = 0;
+        }
+        this.variables_in_use[newValue]++;
     }
 
     onRequestEdit(block: DirectValue, type: MessageType, update: (value: string) => void): void {

@@ -3,7 +3,6 @@ import { BlockManager } from '../block_manager';
 import { Area2D, BlockContextAction, Direction2D, FlowBlock, FlowBlockData, FlowBlockInitOpts, FlowBlockOptions, InputPortDefinition, Position2D, Movement2D, Resizeable } from '../flow_block';
 import { FlowWorkspace } from '../flow_workspace';
 import { Toolbox } from '../toolbox';
-import { uuidv4 } from '../utils';
 import { CutTree, UiElementWidgetType, UiElementRepr, widgetAsAtomicUiElement } from './renderers/ui_tree_repr';
 import { BlockConfigurationOptions } from '../dialogs/configure-block-dialog/configure-block-dialog.component';
 
@@ -26,6 +25,7 @@ export type UiFlowBlockBuilder = (canvas: SVGElement,
                                   ops: UiFlowBlockBuilderInitOps) => UiFlowBlockHandler;
 
 export interface UiFlowBlockHandler {
+    updateOptions(): void;
     readonly isNotHorizontallyStackable?: boolean;
     onConnectionLost: (portIndex: number) => void;
     onConnectionValueUpdate : (input_index: number, value: string) => void;
@@ -100,12 +100,13 @@ export function isUiFlowBlockData(opt: FlowBlockData): opt is UiFlowBlockData {
 export class UiFlowBlock implements FlowBlock {
     private canvas: SVGElement;
     options: UiFlowBlockOptions;
+    readonly id: string;
+    readonly onMoveCallbacks: ((pos: Position2D) => void)[] = [];
 
     private group: SVGElement;
     protected position: {x: number, y: number};
     private output_groups: SVGGElement[];
     private input_groups: SVGGElement[];
-    private blockId: string;
     private input_count: number[] = [];
     protected handler: UiFlowBlockHandler;
     private input_blocks: [FlowBlock, number][] = [];
@@ -115,8 +116,10 @@ export class UiFlowBlock implements FlowBlock {
     blockData: UiFlowBlockExtraData = {};
 
     constructor(options: UiFlowBlockOptions,
+                blockId: string,
                 private uiSignalService: UiSignalService,
                ) {
+        this.id = blockId;
         this.options = options;
         if (!this.options.outputs) {
             this.options.outputs = [];
@@ -134,10 +137,6 @@ export class UiFlowBlock implements FlowBlock {
         this.handler.dispose();
     }
 
-    public get id() {
-        return this.blockId;
-    }
-
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group } // Avoid double initialization
         this._workspace = initOpts.workspace;
@@ -153,13 +152,6 @@ export class UiFlowBlock implements FlowBlock {
             else {
                 this.position = {x: 0, y: 0};
             }
-        }
-
-        if (initOpts.block_id) {
-            this.blockId = initOpts.block_id;
-        }
-        else {
-            this.blockId = uuidv4();
         }
 
         const group = document.createElementNS(SvgNS, 'g');
@@ -180,7 +172,7 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     public renderAsUiElement(): CutTree {
-        const data: UiElementRepr = { id: this.blockId, widget_type: widgetAsAtomicUiElement(this.options.id) };
+        const data: UiElementRepr = { id: this.id, widget_type: widgetAsAtomicUiElement(this.options.id) };
 
         if (this.handler.isTextReadable()) {
             if (this.handler.isStaticText) {
@@ -404,7 +396,7 @@ export class UiFlowBlock implements FlowBlock {
         }
     }
 
-    public static Deserialize(data: UiFlowBlockData, manager: BlockManager, toolbox: Toolbox): FlowBlock {
+    public static Deserialize(data: UiFlowBlockData, blockId: string, manager: BlockManager, toolbox: Toolbox): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -417,7 +409,7 @@ export class UiFlowBlock implements FlowBlock {
         const templateOptions = this._findTemplateOptions(options.id, toolbox);
         options.builder = templateOptions.builder;
 
-        const block = new UiFlowBlock(options, toolbox.uiSignalService);
+        const block = new UiFlowBlock(options, blockId, toolbox.uiSignalService);
 
         if (data.value.extra) {
             block.blockData = JSON.parse(JSON.stringify(data.value.extra));
@@ -464,6 +456,17 @@ export class UiFlowBlock implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
+    public moveTo(pos: Position2D) {
+        this.position.x = pos.x;
+        this.position.y = pos.y;
+
+        this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+
+        if (this.handler.dropOnEndMove) {
+            const _movement = this.handler.dropOnEndMove();
+        }
+    }
+
     public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
@@ -473,7 +476,17 @@ export class UiFlowBlock implements FlowBlock {
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
+        if(!this._updating) {
+            for (const callback of this.onMoveCallbacks) {
+                callback(this.position);
+            }
+        }
+
         return [];
+    }
+
+    public onMove(callback: (pos: Position2D) => void) {
+        this.onMoveCallbacks.push(callback);
     }
 
     public endMove(): FlowBlock[] {
@@ -597,7 +610,31 @@ export class UiFlowBlock implements FlowBlock {
             if (newValue.trim().length > 0) {
                 handler.text = newValue.trim();
             }
+
+            this.notifyOptionsChange();
         });
+    }
+
+
+    private _updating: boolean = false;
+    public updateOptions(blockData: FlowBlockData): void {
+        const data = blockData as UiFlowBlockData;
+        this.blockData = data.value.extra;
+
+        const wasUpdating = this._updating;
+        this._updating = true;
+        try {
+            this.handler.updateOptions();
+        }
+        finally {
+            this._updating = wasUpdating;
+        }
+    }
+
+    notifyOptionsChange() {
+        if (this._workspace) {
+            this._workspace.onBlockOptionsChanged(this);
+        }
     }
 
     getSlots(): { [key: string]: string; } {
@@ -701,7 +738,7 @@ export class UiFlowBlock implements FlowBlock {
     }
 
 
-    hasAncestor(block: FlowBlock) {
+    hasAncestor(block: FlowBlock): boolean {
         if (!this._container) {
             return false;
         }

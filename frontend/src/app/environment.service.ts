@@ -1,17 +1,13 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { environment } from 'environments/environment';
 import { isPlatformServer } from '@angular/common';
+import { EnvironmentDefinition } from 'environments/environment-definition';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EnvironmentService {
-    environment: {
-        contact_mail?: string;
-        production: boolean;
-        ApiHost: string;
-        SSRApiHost?: string;
-    };
+    environment: EnvironmentDefinition;
 
     constructor(
         @Inject(PLATFORM_ID) private platformId: Object
@@ -37,5 +33,13 @@ export class EnvironmentService {
 
     getBrowserApiRoot(): string {
         return this.getBrowserApiHost() + '/api/v0';
+    }
+
+    hasYjsWsSyncServer(): boolean {
+        return !!this.environment.YjsWsSyncServer;
+    }
+
+    getYjsWsSyncServer(): string {
+        return this.environment.YjsWsSyncServer;
     }
 }

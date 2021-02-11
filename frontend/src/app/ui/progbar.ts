@@ -1,4 +1,4 @@
-declare const NProgress;
+declare const NProgress : any;
 
 export function track<T>(p: Promise<T>): Promise<T> {
     NProgress.configure({ showSpinner: false });

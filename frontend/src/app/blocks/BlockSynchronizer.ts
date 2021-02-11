@@ -142,7 +142,9 @@ export class BlockSynchronizer {
         return false;
     }
 
-    private classifyEvent(event: BlocklyEvent): [ CircularBuffer<any>, any, (x, y) => boolean ] | null {
+    private classifyEvent(event: BlocklyEvent): [ CircularBuffer<any>, any,
+                                                  (x: any, y: any) => boolean
+                                                ] | null {
         if (event instanceof Blockly.Events.BlockCreate) {
             return  [
                 this._recentCreatedBlocks,
@@ -161,7 +163,7 @@ export class BlockSynchronizer {
                     (event as any).name,
                     (event as any).newValue,
                 ],
-                ([a,b,c,d], [u,x,y,z]) => (
+                ([a,b,c,d]: [any, any, any, any], [u,x,y,z]: [any, any, any, any]) => (
                     (a === u)
                         && (b === x)
                         && (c === y)
@@ -187,7 +189,7 @@ export class BlockSynchronizer {
                     (event as any).newInputName,
                     (event as any).newCoordinate,
                 ],
-                ([a,b,c,d], [u,x,y,z]) => (
+                ([a,b,c,d]: [any, any, any, any], [u,x,y,z]: [any, any, any, any]) => (
                     (a === u)
                         && (b === x)
                         && (c === y)
@@ -220,7 +222,7 @@ export class BlockSynchronizer {
                     event.varId,
                     (event as any).newName,
                 ],
-                ([a, b], [x, y]) => (
+                ([a, b]: [string, string], [x, y]: [string, string]) => (
                     (a === x) && (b === y)
                 ),
             ];

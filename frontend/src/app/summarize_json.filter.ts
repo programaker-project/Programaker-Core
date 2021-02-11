@@ -1,12 +1,13 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { GetTypeOfJson, JSONType } from './json';
 
+type JsonItem = string | JsonItem[] | {[key: string]: JsonItem};
+
 @Pipe({
     name: 'SummarizeJSON',
 })
-
 export class SummarizeJSON implements PipeTransform {
-    transform(element) {
+    transform(element: any): JsonItem {
         const jtype = GetTypeOfJson(element);
         switch (jtype) {
         case JSONType.Null:
@@ -28,7 +29,7 @@ export class SummarizeJSON implements PipeTransform {
 
         case JSONType.Map:
             {
-                const transformed = {};
+                const transformed: {[key: string]: JsonItem} = {};
                 for (const key in element) {
                     if (!element.hasOwnProperty(key)) {
                         continue;

@@ -152,6 +152,7 @@ class FixedImage implements UiFlowBlockHandler, ConfigurableSettingsElement, Han
 
         this._updateSize();
         this.handle.update();
+        this.block.notifyOptionsChange();
     }
 
     // Handleable element
@@ -163,14 +164,23 @@ class FixedImage implements UiFlowBlockHandler, ConfigurableSettingsElement, Han
         return this.block;
     }
 
+    updateOptions() {
+        this._applyConfiguration(this.block.blockData.settings || {});
+
+        if (this.block.blockData.dimensions) {
+            this.height = this.block.blockData.dimensions.height;
+            this.width = this.block.blockData.dimensions.width;
+            this._updateSize();
+        }
+    }
+
     // Configurable element
     startAdjustingSettings(): void {
         this.block.workspace.startBlockConfiguration(this);
     }
 
-    applyConfiguration(settings: BlockConfigurationOptions): void {
+    _applyConfiguration(settings: BlockConfigurationOptions): void {
         const settingsStorage = Object.assign({}, this.block.blockData.settings || {});
-
 
         if (settings.body && settings.body.image) {
             const imageUrl = this.block.workspace.getAssetUrlOnProgram(settings.body.image.id);
@@ -183,6 +193,12 @@ class FixedImage implements UiFlowBlockHandler, ConfigurableSettingsElement, Han
         }
 
         this.block.blockData.settings = settingsStorage;
+    }
+
+    applyConfiguration(settings: BlockConfigurationOptions): void {
+        this._applyConfiguration(settings);
+
+        this.block.notifyOptionsChange();
     }
 
     getCurrentConfiguration(): BlockConfigurationOptions {

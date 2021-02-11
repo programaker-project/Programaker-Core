@@ -171,12 +171,24 @@ class TextBox implements UiFlowBlockHandler, TextEditable, ConfigurableSettingsE
         return this.block;
     }
 
+    updateOptions() {
+        if ((this.block.blockData.textContent) && !(this.block.blockData.content)) {
+            this.block.blockData.content = [{ type: 'text', value: this.block.blockData.textContent }];
+        }
+        this.textValue = this.block.blockData.content || [DefaultContent];
+
+        this._updateTextBox();
+        this._updateSize();
+
+        this._applyConfiguration(this.block.blockData.settings || {});
+    }
+
     // Configurable element
     startAdjustingSettings(): void {
         this.block.workspace.startBlockConfiguration(this);
     }
 
-    applyConfiguration(settings: BlockConfigurationOptions): void {
+    _applyConfiguration(settings: BlockConfigurationOptions): void {
         const settingsStorage = Object.assign({}, this.block.blockData.settings || {});
 
         if (settings.text) {
@@ -203,6 +215,12 @@ class TextBox implements UiFlowBlockHandler, TextEditable, ConfigurableSettingsE
         if (this.handle) {
             this.handle.update();
         }
+    }
+
+    applyConfiguration(settings: BlockConfigurationOptions): void {
+        this._applyConfiguration(settings);
+
+        this.block.notifyOptionsChange();
     }
 
     getCurrentConfiguration(): BlockConfigurationOptions {

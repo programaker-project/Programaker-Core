@@ -2,11 +2,10 @@ import { BlockManager } from './block_manager';
 import { EnumValue } from './enum_direct_value';
 import { Area2D, FlowBlock, InputPortDefinition, OutputPortDefinition, MessageType } from './flow_block';
 import { DirectValue } from './direct_value';
-
-
-export type BlockGenerator = (workspace: any) => FlowBlock;
+import { uuidv4 } from './utils';
 
 const SvgNS = "http://www.w3.org/2000/svg";
+export type BlockGenerator = (manager: BlockManager, blockId: string) => FlowBlock;
 
 export class BlockExhibitor implements BlockManager {
     private baseElement: HTMLElement;
@@ -67,7 +66,7 @@ export class BlockExhibitor implements BlockManager {
         this.element.setAttribute('class', 'block_renderer block_exhibitor');
         this.baseElement.appendChild(this.element);
 
-        this.block = generator(this);
+        this.block = generator(this, uuidv4());
         this.block.render(this.element, {});
 
         const area = this.block.getBodyArea();

@@ -58,7 +58,7 @@ export class CustomBlockService {
                                              customBlocksResponse: Observable<Object>,
                                              skip_resolve_argument_options: boolean): Promise<ResolvedCustomBlock[]> {
         const blocks = await customBlocksResponse.pipe(
-            map(response => {
+            map((response: { [key: string]: any[] }) => {
                 const blocks: CustomBlock[] = [];
                 for (const service_port_id of Object.keys(response)) {
                     for (const block of response[service_port_id]) {
@@ -266,7 +266,7 @@ export class CustomBlockService {
                         options.push([result[key].name || key, key]);
                     }
 
-                    return options;
+                    return options as [string, string][];
                 }
                 else {
                     // Data from callback as list
@@ -278,14 +278,14 @@ export class CustomBlockService {
                         options.push([item.name, item.id]);
                     }
 
-                    return options;
+                    return options as [string, string][];
                 }
             }));
 
         // Cache result
 
         query
-            .then(result => {
+            .then((result: [string, string][]) => {
                 this.cacheArgOptions(programId, bridgeId, callbackName, result);
             })
             .catch(err => {

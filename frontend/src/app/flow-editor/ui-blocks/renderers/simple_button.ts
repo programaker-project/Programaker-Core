@@ -98,6 +98,12 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
         this._updateSize();
     }
 
+    updateOptions() {
+        this.textValue = this.textBox.textContent = this.block.blockData.textContent || DefaultContent;
+        this.block.blockData.textContent = this.textValue;
+        this._updateSize();
+    }
+
     dispose() {}
 
     onInputUpdated(block: FlowBlock, inputIndex: number) {}

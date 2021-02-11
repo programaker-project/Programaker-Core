@@ -9,7 +9,6 @@ import { ContentType } from './content-type';
 import { toWebsocketUrl, addTokenQueryString } from './utils';
 import { Synchronizer } from './syncronizer';
 import { EnvironmentService } from './environment.service';
-import { ImageAssetConfiguration } from './flow-editor/dialogs/configure-block-dialog/configure-block-dialog.component';
 
 @Injectable()
 export class ProgramService {
@@ -72,7 +71,7 @@ export class ProgramService {
                                  );
     }
 
-    private async getProgramStreamingEventsUrl(programId: string) {
+    private getProgramStreamingEventsUrl(programId: string) {
         const token = this.sessionService.getToken();
         return addTokenQueryString(toWebsocketUrl(this.environmentService,
                                                   `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/editor-events`),
@@ -103,7 +102,7 @@ export class ProgramService {
 
         const result = await this.http.get(url, {headers: this.sessionService.getAuthHeader()}).toPromise();
 
-        return result['programs'];
+        return (result as any)['programs'];
     }
 
     async getProgram(userName: string, programName: string): Promise<ProgramContent> {
@@ -319,7 +318,7 @@ export class ProgramService {
 
             this.getProgramStreamingLogsUrl(programId).then(streamingUrl => {
 
-                let buffer = [];
+                let buffer: any[] = [];
                 let state : 'none_ready' | 'ws_ready' | 'all_ready' = 'none_ready';
 
                 websocket = new WebSocket(streamingUrl);
@@ -375,40 +374,43 @@ export class ProgramService {
         });
     }
 
-    getEventStream(programId: string): Synchronizer<ProgramEditorEventValue> {
+    getEventStream(programId: string, opts: { skip_previous?: boolean } = {}): Synchronizer<ProgramEditorEventValue> {
         let websocket: WebSocket | null = null;
-        let sendBuffer = [];
+        let sendBuffer: {type: string, value: ProgramEditorEventValue}[] = [];
         let state : 'none_ready' | 'ws_ready' | 'all_ready' | 'closed' = 'none_ready';
 
         const obs = new Observable<ProgramEditorEventValue>((observer) => {
-            this.getProgramStreamingEventsUrl(programId).then(streamingUrl => {
-                if (state === 'closed') {
-                    return; // Cancel the opening of websocket if the stream was closed before being established
+            let streamingUrl = this.getProgramStreamingEventsUrl(programId);
+            if (opts.skip_previous) {
+                streamingUrl += '&skip_previous=true';
+            }
+
+            if (state === 'closed') {
+                return; // Cancel the opening of websocket if the stream was closed before being established
+            }
+
+            websocket = new WebSocket(streamingUrl)
+
+            websocket.onopen = (() => {
+                state = 'all_ready';
+                for (const ev of sendBuffer) {
+                    websocket.send(JSON.stringify(ev));
                 }
+                sendBuffer = null;
+            });
 
-                websocket = new WebSocket(streamingUrl)
+            websocket.onmessage = ((ev) => {
+                const parsed: ProgramEditorEvent = JSON.parse(ev.data);
+                observer.next(parsed.value);
+            });
 
-                websocket.onopen = (() => {
-                    state = 'all_ready';
-                    for (const ev of sendBuffer) {
-                        websocket.send(JSON.stringify(ev));
-                    }
-                    sendBuffer = null;
-                });
+            websocket.onclose = (() => {
+                observer.complete();
+            });
 
-                websocket.onmessage = ((ev) => {
-                    const parsed: ProgramEditorEvent = JSON.parse(ev.data);
-                    observer.next(parsed.value);
-                });
-
-                websocket.onclose = (() => {
-                    observer.complete();
-                });
-
-                websocket.onerror = ((ev) => {
-                    observer.error(ev);
-                    observer.complete();
-                });
+            websocket.onerror = ((ev) => {
+                observer.error(ev);
+                observer.complete();
             });
 
             return () => {

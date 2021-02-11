@@ -6,6 +6,7 @@ import { Template } from './template';
 
 type VariableType = 'input' | 'ouput';
 type PromiseHandler = { resolve: (value: [string, any[]]) => void, reject: Function };
+type TemplateChunk = { type: 'text' | 'line' | 'variable', content: string | TemplateChunk[], class?: string };
 
 @Component({
     selector: 'template-create-dialog-component',
@@ -20,7 +21,7 @@ export class TemplateCreateDialogComponent {
     promise: PromiseHandler;
     selectedVar: HTMLElement;
     variables: string[];
-    usedOutputs: {};
+    usedOutputs: {[key: string]: boolean};
     allOutputsUsed: boolean;
 
     constructor(
@@ -224,7 +225,7 @@ export class TemplateCreateDialogComponent {
         return element;
     }
 
-    setOutputUsage(name, value) {
+    setOutputUsage(name: string, value: boolean) {
         this.usedOutputs[name] = value;
 
         this.checkAllOutputsUsed();
@@ -262,8 +263,8 @@ export class TemplateCreateDialogComponent {
         this.splitChildren(editor as HTMLElement, marker);
     }
 
-    extractTemplate(element: HTMLElement) {
-        const children = [];
+    extractTemplate(element: HTMLElement): TemplateChunk[] {
+        const children: TemplateChunk[] = [];
         for (let i = 0; i < element.childNodes.length; i++) {
             const node = element.childNodes[i];
 

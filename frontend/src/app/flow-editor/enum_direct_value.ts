@@ -6,6 +6,7 @@ import {
     MessageType, OnIOSelected,
     Position2D
 } from './flow_block';
+import { FlowWorkspace } from './flow_workspace';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -54,13 +55,18 @@ export function isEnumDirectValueBlockData(opt: FlowBlockData): opt is EnumDirec
 
 export class EnumDirectValue implements FlowBlock {
     options: EnumDirectValueOptions;
+    readonly id: string;
+    readonly onMoveCallbacks: ((pos: Position2D) => void)[] = [];
+    private _workspace: FlowWorkspace;
+
     value_id: string = undefined;
 
     values: EnumValue[];
     value_dict: {[key:string]: EnumValue};
 
-    constructor(options: EnumDirectValueOptions) {
+    constructor(options: EnumDirectValueOptions, blockId: string) {
         this.options = options;
+        this.id = blockId;
     }
 
     public dispose() {
@@ -94,7 +100,7 @@ export class EnumDirectValue implements FlowBlock {
         }
     }
 
-    static Deserialize(data: FlowBlockData, manager: BlockManager, enumGetter: EnumGetter): FlowBlock {
+    static Deserialize(data: FlowBlockData, blockId: string, manager: BlockManager, enumGetter: EnumGetter): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -104,7 +110,7 @@ export class EnumDirectValue implements FlowBlock {
         options.on_select_requested = manager.onSelectRequested.bind(manager);
         options.get_values = enumGetter;
 
-        const block = new EnumDirectValue(options);
+        const block = new EnumDirectValue(options, blockId);
 
         block.value_id = data.value.value_id;
         block._defaultText = data.value.value_text;
@@ -143,6 +149,13 @@ export class EnumDirectValue implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
+    public moveTo(pos: Position2D) {
+        this.position.x = pos.x;
+        this.position.y = pos.y;
+
+        this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+    }
+
     public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
@@ -152,7 +165,15 @@ export class EnumDirectValue implements FlowBlock {
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
+        for (const callback of this.onMoveCallbacks) {
+            callback(this.position);
+        }
+
         return [];
+    }
+
+    public onMove(callback: (pos: Position2D) => void) {
+        this.onMoveCallbacks.push(callback);
     }
 
     public endMove(): FlowBlock[] {
@@ -206,14 +227,27 @@ export class EnumDirectValue implements FlowBlock {
         return this.value_id;
     }
 
-    private setValue(id: string) {
-        const selected = this.value_dict[id];
+    private setValue(id: string, sideChannel: boolean =false) {
         this.value_id = id;
+
+        if (!this.value_dict) { return; }
+
+        const selected = this.value_dict[id];
 
         if (this.group) {
             this.textBox.textContent = selected.name || '-';
             this.updateSize();
         }
+
+        if (this._workspace && !sideChannel) {
+            this._workspace.onBlockOptionsChanged(this);
+        }
+    }
+
+    public updateOptions(blockData: FlowBlockData): void {
+        const data = blockData as EnumDirectValueFlowBlockData;
+        this.setValue(data.value.value_id, true);
+        this.textBox.textContent = data.value.value_text;
     }
 
     private loadValues() {
@@ -276,6 +310,7 @@ export class EnumDirectValue implements FlowBlock {
 
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group }
+        this._workspace = initOpts.workspace;
 
         this.canvas = canvas;
         if (initOpts.position) {

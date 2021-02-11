@@ -14,9 +14,6 @@ export interface BridgeIndexData {
     icon: IconReference;
 }
 
-export type BridgeResourceMap = {[key: string]: {[key: string]: string}[]};
-
-
 export interface FullOwnerId {
     type: 'group' | 'user',
     id: string,
@@ -37,6 +34,9 @@ export interface BridgeResourceEntry{
     connection_id: string,
     shared_with?: FullOwnerId[],
 };
+
+export type BridgeResourceMap = {[key: string]: {[key: string]: BridgeResourceEntry}};
+
 export type BridgeResource = { name: string, values: BridgeResourceEntry[] };
 
 export type BridgeSignal = any;

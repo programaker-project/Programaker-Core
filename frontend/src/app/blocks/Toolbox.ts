@@ -12,7 +12,7 @@ import { block_to_xml, get_block_category, get_block_toolbox_arguments,
 
 import { ToolboxController } from './ToolboxController';
 
-import { TemplateController } from './TemplateController';
+import { TemplateController, ToolboxRegistrationHook } from './TemplateController';
 import { TemplateService } from '../templates/template.service';
 import { ServiceService } from '../service.service';
 import { AvailableService } from '../service';
@@ -33,7 +33,7 @@ import { EditorController } from 'app/program-editors/editor-controller';
 import { NgZone } from '@angular/core';
 import { EnvironmentService } from 'app/environment.service';
 
-declare const Blockly;
+declare const Blockly: any;
 
 const MonitorPrimaryColor = '#CC55CC';
 const MonitorSecondaryColor = '#773377';
@@ -120,8 +120,8 @@ export class Toolbox {
         return [toolboxXML, registrations, this.controller];
     }
 
-    addAvailableConnections(availableBridges: BridgeIndexData[], toolboxXML: HTMLElement): ((workspace: any) => void)[]  {
-        const hooks = [];
+    addAvailableConnections(availableBridges: BridgeIndexData[], toolboxXML: HTMLElement): ToolboxRegistrationHook[] {
+        const hooks: ToolboxRegistrationHook[] = [];
         for (const bridge of availableBridges) {
             const category = createDom('category', {
                 name: bridge.name,
@@ -196,7 +196,7 @@ export class Toolbox {
                  services: AvailableService[],
                  connections: BridgeConnection[],
                 ): ToolboxRegistration[] {
-        let registrations = [];
+        let registrations: ToolboxRegistrationHook[] = [];
 
         this.injectMonitorBlocks(monitors);
         this.injectTimeBlocks();
@@ -579,7 +579,7 @@ export class Toolbox {
         Blockly.Blocks['operator_select_connection'] = {
             init: function () {
 
-                let currentBridgeSelected = null;
+                let currentBridgeSelected: string = null;
                 let connectionDropDown = bridge_dropdown;
                 if (connectionDropDown.length == 0) {
                     connectionDropDown = [[ 'No bridges found', '__not_found_error__' ]];
@@ -645,8 +645,8 @@ export class Toolbox {
 
                 const inputs = this.inputList[0].fieldRow;
 
-                let bridgeDropdown = null;
-                let connectionDropdown = null;
+                let bridgeDropdown: { onHide: () => void; value_: string; } = null;
+                let connectionDropdown: { value_: any; getOptions: () => any; setValue: (arg0: any) => void; } = null;
 
                 for (const input of inputs) {
                     if (input.name === 'BRIDGE1') {

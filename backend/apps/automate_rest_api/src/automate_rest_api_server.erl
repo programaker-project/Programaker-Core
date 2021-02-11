@@ -20,6 +20,9 @@ start_link() ->
                           {"/metrics", automate_rest_api_metrics, []}
                         , {"/api/v0/ping", automate_rest_api_ping, []}
 
+                          %% Internal
+                        , {"/internal/validate_connection_token/program/by-id/:program_id", automate_rest_api_validate_connection_token_by_program_id, []}
+
                           %% Administration
                         , {"/api/v0/admin/stats", automate_rest_api_admin_stats_root, []}
 

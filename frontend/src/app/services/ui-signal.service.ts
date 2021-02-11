@@ -120,7 +120,7 @@ export class UiSignalService {
         return this.websocketEstablishment;
     }
 
-    _onWebsocketError(ev) {
+    _onWebsocketError(ev: any) {
         console.error("Websocket error", ev);
         this._onWebscoketClose();
     }
@@ -155,7 +155,7 @@ export class UiSignalService {
 
         const observer = new Observable(observer => {
             this.messageEmitter.subscribe({
-                next: (ev) => {
+                next: (ev: any) => {
                     if (ev.subkey === selector) {
                         this._lastMessages[selector] = ev;
                         observer.next(ev);

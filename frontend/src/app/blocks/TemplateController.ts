@@ -4,7 +4,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { ToolboxController } from './ToolboxController';
 import { TemplateService } from '../templates/template.service';
 import { Template } from '../templates/template';
-declare const Blockly;
+import { EditorController } from '../program-editors/editor-controller';
+import { NgZone } from '@angular/core';
+
+export type ToolboxRegistrationHook = (workspace: any, editorController: EditorController, ngZone: NgZone) => void;
+declare const Blockly: any;
 
 export class TemplateController {
     toolboxController: ToolboxController;
@@ -99,7 +103,7 @@ export class TemplateController {
         this.toolboxController.update();
     }
 
-    injectBlocks(): Function[] {
+    injectBlocks(): ToolboxRegistrationHook[] {
         try {
             Blockly.Extensions.register('colours_templates',
                 function () {
@@ -115,7 +119,7 @@ export class TemplateController {
 
         return [
             (workspace) => {
-                workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (x, y, z) => {
+                workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (b: Blockly.FlyoutButton) => {
                     this.create_template().then(([template_name, template_content]) => {
 
                         this.templateService.saveTemplate(template_name, template_content)

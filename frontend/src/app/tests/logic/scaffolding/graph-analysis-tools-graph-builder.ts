@@ -2,7 +2,7 @@ import { AtomicFlowBlockData, AtomicFlowBlockOptions, BLOCK_TYPE as ATOMIC_BLOCK
 import { BaseToolboxDescription, ToolboxDescription } from '../../../flow-editor/base_toolbox_description';
 import { BLOCK_TYPE as VALUE_BLOCK_TYPE, DirectValueFlowBlockData } from '../../../flow-editor/direct_value';
 import { BLOCK_TYPE as ENUM_BLOCK_TYPE, EnumDirectValueFlowBlockData, EnumDirectValueOptions } from '../../../flow-editor/enum_direct_value';
-import { MessageType } from '../../../flow-editor/flow_block';
+import { MessageType, InputPortDefinition } from '../../../flow-editor/flow_block';
 import { FlowGraph, FlowGraphEdge, FlowGraphNode } from '../../../flow-editor/flow_graph';
 import { uuidv4 } from '../../../flow-editor/utils';
 import { UiToolboxDescription } from '../../../flow-editor/ui-blocks/ui_toolbox_description';
@@ -61,7 +61,7 @@ function infer_block_options(block_type: string,
         message: block_type,
         block_function: `services.${options.namespace}.${block_type}`,
         type: params.type,
-        inputs: inputs,
+        inputs: inputs as InputPortDefinition[],
         outputs: [
             {
                 type: 'any',
@@ -254,25 +254,25 @@ export class GraphBuilder {
                     this.establish_connection([ vblock.id, 0 ], [node, idx]);
                 }
                 // Direct node reference
-                else if (typeof (arg[0]) === 'string') {
+                else if (typeof ((arg as any)[0]) === 'string') {
                     this.establish_connection(arg as [string, number], [node, idx]);
                 }
                 // Node reference
-                else if ((arg[0] as StreamNodeBuilderRef).id) {
-                    let out_index = arg[1] as number;
-                    if (arg[1] === 'pulse'){
+                else if (((arg as any)[0] as StreamNodeBuilderRef).id) {
+                    let out_index = (arg as any)[1] as number;
+                    if ((arg as any)[1] === 'pulse'){
                         out_index = 0;
                     }
-                    this.establish_connection([(arg[0] as StreamNodeBuilderRef).id, out_index], [node, idx]);
+                    this.establish_connection([((arg as any)[0] as StreamNodeBuilderRef).id, out_index], [node, idx]);
                 }
                 // Generator
                 else {
-                    let out_index = arg[1] as number;
-                    if (arg[1] === 'pulse'){
+                    let out_index = (arg as any)[1] as number;
+                    if ((arg as any)[1] === 'pulse'){
                         out_index = 0;
                     }
 
-                    const gen = arg[0] as StreamGenerator;
+                    const gen = (arg as any)[0] as StreamGenerator;
 
                     this.establish_connection([gen(this).id, out_index], [node, idx]);
                 }

@@ -73,7 +73,7 @@ function validate_streaming_no_loop_around(_graph: FlowGraph,
                                            block_id: string): {[key:string]: boolean} {
 
     function aux(block_id:string, top: {[key:string]: boolean}): {[key:string]: boolean} {
-        const reached = {};
+        const reached: {[key: string]: boolean} = {};
         reached[block_id] = true ;
 
         for (const conn of connections_index[block_id] || []) {
@@ -81,7 +81,7 @@ function validate_streaming_no_loop_around(_graph: FlowGraph,
                 throw new Error(`ValidationError: Loop in streaming section around block (id=${conn.to.id})`)
             }
 
-            const col_top = {}
+            const col_top: {[key: string]: boolean} = {}
             col_top[conn.to.id] = true;
             Object.assign(col_top, top);
 
@@ -92,7 +92,7 @@ function validate_streaming_no_loop_around(_graph: FlowGraph,
         return reached;
     }
 
-    const top = {};
+    const top: {[key: string]: boolean} = {};
     top[block_id] = true ;
     const reached = aux(block_id, top);
 
@@ -183,13 +183,13 @@ function validate_that_all_paths_have_fork(graph: FlowGraph,
         return null;
     }
 
-    const known_if_blocks = {};
+    const known_if_blocks: {[key: string]: boolean} = {};
 
     for (const conn of conn_index[join_bottom_id] ) {
-        const reached = {};
+        const reached: {[key: string]: boolean} = {};
         reached[conn.to.id] = true;
 
-        const acc = { control_if: [] };
+        const acc = { control_if: [] as string[] };
         const source = try_find_upwards_without_fork(conn.from.id, 1, reached, acc);
         if (source) {
             throw new Error(`ValidationError: Block (id:${source}) can get to Join (id:${join_bottom_id}) with no fork.`

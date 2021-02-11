@@ -318,6 +318,10 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Auto
         this.onContentUpdate(this._contents);
     }
 
+    updateOptions() {
+        this._applyConfiguration(this.block.blockData.settings || {});
+    }
+
     // Configurable
     startAdjustingSettings(): void {
         this.block.workspace.startBlockConfiguration(this);
@@ -331,12 +335,18 @@ class SimpleUiCard implements ContainerFlowBlockHandler, HandleableElement, Auto
         return Object.assign({}, this.block.blockData.settings || {});
     }
 
-    applyConfiguration(settings: BlockConfigurationOptions): void {
+    _applyConfiguration(settings: BlockConfigurationOptions): void {
         if (settings.bg) {
             this.block.blockData.settings = Object.assign(this.block.blockData.settings || {}, {bg: settings.bg});
 
             this.updateStyle();
         }
+    }
+
+    applyConfiguration(settings: BlockConfigurationOptions): void {
+        this._applyConfiguration(settings);
+
+        this.block.notifyOptionsChange();
     }
 
     // Style management

@@ -7,7 +7,7 @@ enum JSONType {
     Map,
 }
 
-const GetTypeOfJson = (function(element): JSONType {
+const GetTypeOfJson = (function(element: any): JSONType {
     if (element === null) {
         return JSONType.Null;
     } else if (typeof element === 'boolean') {

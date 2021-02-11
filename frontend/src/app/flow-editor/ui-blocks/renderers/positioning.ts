@@ -75,7 +75,7 @@ function PositionTreeContentsFromTree(tree: CutTree, blocks: {[key: string]: UiF
         return [];
     }
 
-    let positions = [];
+    let positions: ResponsivePositionToCenter[] = [];
 
     const cTree = tree as CutNode;
     const toCenter: UiFlowBlock[] = [];

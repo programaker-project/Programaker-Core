@@ -5,6 +5,7 @@ import {
 } from './flow_block';
 import { BlockManager } from './block_manager';
 import { UiFlowBlock } from './ui-blocks/ui_flow_block';
+import { FlowWorkspace } from './flow_workspace';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -35,11 +36,16 @@ export function isDirectValueBlockData(opt: FlowBlockData): opt is DirectValueFl
 
 export class DirectValue implements FlowBlock {
     options: DirectValueOptions;
+    readonly id: string;
+    readonly onMoveCallbacks: ((pos: Position2D) => void)[] = [];
+    private _workspace: FlowWorkspace;
+
     value: string;
     sinks: FlowBlock[] = [];
 
-    constructor(options: DirectValueOptions) {
+    constructor(options: DirectValueOptions, blockId: string) {
         this.options = options;
+        this.id = blockId;
 
         this.value = options.value;
         if (!this.value) {
@@ -101,7 +107,7 @@ export class DirectValue implements FlowBlock {
         }
     }
 
-    static Deserialize(data: FlowBlockData, manager: BlockManager): FlowBlock {
+    static Deserialize(data: FlowBlockData, blockId: string, manager: BlockManager): FlowBlock {
         if (data.type !== BLOCK_TYPE){
             throw new Error(`Block type mismatch, expected ${BLOCK_TYPE} found: ${data.type}`);
         }
@@ -110,7 +116,7 @@ export class DirectValue implements FlowBlock {
         options.on_io_selected = manager.onIoSelected.bind(manager);
         options.on_request_edit = manager.onRequestEdit.bind(manager);
 
-        return new DirectValue(options);
+        return new DirectValue(options, blockId);
     }
 
     public getBodyElement(): SVGElement {
@@ -144,6 +150,13 @@ export class DirectValue implements FlowBlock {
         return {x: this.position.x, y: this.position.y};
     }
 
+    public moveTo(pos: Position2D) {
+        this.position.x = pos.x;
+        this.position.y = pos.y;
+
+        this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
+    }
+
     public moveBy(distance: {x: number, y: number}): FlowBlock[] {
         if (!this.group) {
             throw Error("Not rendered");
@@ -153,7 +166,15 @@ export class DirectValue implements FlowBlock {
         this.position.y += distance.y;
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
 
+        for (const callback of this.onMoveCallbacks) {
+            callback(this.position);
+        }
+
         return [];
+    }
+
+    public onMove(callback: (pos: Position2D) => void) {
+        this.onMoveCallbacks.push(callback);
     }
 
     public endMove(): FlowBlock[] {
@@ -219,7 +240,7 @@ export class DirectValue implements FlowBlock {
         return this.value;
     }
 
-    private setValue(new_value: string) {
+    private setValue(new_value: string, sideChannel: boolean = false) {
         this.value = new_value;
 
         if (this.group) {
@@ -227,11 +248,20 @@ export class DirectValue implements FlowBlock {
             this.updateSize();
         }
 
+        if (this._workspace && !sideChannel) {
+            this._workspace.onBlockOptionsChanged(this);
+        }
+
         for (const block of this.sinks) {
             if (block instanceof UiFlowBlock) {
                 block.updateConnectionValue(this, new_value);
             }
         }
+    }
+
+    public updateOptions(blockData: FlowBlockData): void {
+        const data = blockData as DirectValueFlowBlockData;
+        this.setValue(data.value.value, true);
     }
 
     private updateText() {
@@ -294,6 +324,7 @@ export class DirectValue implements FlowBlock {
 
     public render(canvas: SVGElement, initOpts: FlowBlockInitOpts): SVGElement {
         if (this.group) { return this.group }
+        this._workspace = initOpts.workspace;
 
         this.canvas = canvas;
         if (initOpts.position) {
