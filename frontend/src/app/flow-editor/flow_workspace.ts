@@ -17,6 +17,7 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket'
 import { ProgramEditorEventValue } from 'app/program';
 import { Synchronizer } from 'app/syncronizer';
+import { EnvironmentService } from 'app/environment.service';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -78,10 +79,11 @@ export class FlowWorkspace implements BlockManager {
                           programId: string,
                           programService: ProgramService,
                           read_only: boolean,
+                          environmentService: EnvironmentService,
                          ): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
-            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId, programService, read_only);
+            workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId, programService, read_only, environmentService);
             workspace.init();
         }
         catch(err) {
@@ -243,7 +245,7 @@ export class FlowWorkspace implements BlockManager {
         // Initialize editor event listeners
         // This is used for collaborative editing.
 
-        if (this.read_only) {
+        if (this.read_only || !this.environmentService.hasYjsWsSyncServer()) {
             this.becomeReady(); // We won't have to wait for the last state to get loaded
             return;
         }
@@ -253,15 +255,11 @@ export class FlowWorkspace implements BlockManager {
 
         const [base, opts] = this.programService.getProgramStreamingEventsUrlParts(this.programId);
         const room = 'yjs';
-        this.wsSyncProvider = new WebsocketProvider(base, room, this.doc, { params: opts, resyncInterval: 100 });
-        this.wsSyncProvider.once('synced', () => {
 
-            // HACK: Clear the sync interval after the first one has been performed
-            if (this.wsSyncProvider._resyncInterval) {
-                clearInterval(this.wsSyncProvider._resyncInterval);
-                this.wsSyncProvider._resyncInterval = 0;
-            }
-        })
+        this.wsSyncProvider = new WebsocketProvider(this.environmentService.getYjsWsSyncServer(),
+                                                    this.programId,
+                                                    this.doc,
+                                                    { params: opts });
 
         this.eventStream = this.programService.getEventStream(this.programId, { skip_previous: true });
         this.eventSubscription = this.eventStream.subscribe(
@@ -466,6 +464,7 @@ export class FlowWorkspace implements BlockManager {
                         private programId: string,
                         private programService: ProgramService,
                         private read_only: boolean,
+                        private environmentService: EnvironmentService,
                        ) {
         this.baseElement = baseElement;
         this.getEnum = getEnum;

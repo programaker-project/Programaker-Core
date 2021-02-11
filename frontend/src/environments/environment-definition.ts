@@ -5,4 +5,5 @@ export type EnvironmentDefinition = {
     aboutPageRender?: string | null,
     SSRApiHost?: string | null,
     SSRAboutPageRender?: string | null,
+    YjsWsSyncServer?: string | null,
 };

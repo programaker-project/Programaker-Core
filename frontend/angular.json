@@ -141,6 +141,12 @@
               "src/assets",
               "src/favicon.ico",
               "src/favicon.png"
+            ],
+            "fileReplacements": [
+              {
+                "replace": "src/environments/environment.ts",
+                "with": "src/environments/environment.tests.ts"
+              }
             ]
           }
         },

@@ -24,7 +24,6 @@ import { SetProgramTagsDialogComponent } from '../program_tags/SetProgramTagsDia
 import { ServiceService } from '../service.service';
 import { ConnectionService } from '../connection.service';
 import { SessionService } from '../session.service';
-import { environment } from '../../environments/environment';
 import { unixMsToStr } from '../utils';
 import { Session } from '../session';
 import { FlowGraph } from './flow_graph';
@@ -39,7 +38,8 @@ import { ResponsivePageBuilder, ResponsivePageGenerateTree } from './ui-blocks/r
 import { ChangeProgramVisilibityDialog } from '../dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 import { CloneProgramDialogComponentData, CloneProgramDialogComponent } from '../dialogs/clone-program-dialog/clone-program-dialog.component';
 import { uuidv4 } from './utils';
-import { WebsocketProvider } from 'y-websocket'
+import { EnvironmentDefinition } from 'environments/environment-definition';
+import { environment } from 'environments/environment';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -56,7 +56,7 @@ export class FlowEditorComponent implements OnInit {
 
     session: Session;
     programId: string;
-    environment: { [key: string]: any };
+    environment: EnvironmentDefinition;
     workspace: FlowWorkspace;
     toolbox: Toolbox;
 
@@ -255,6 +255,7 @@ export class FlowEditorComponent implements OnInit {
                                                this.programId,
                                                this.programService,
                                                this.read_only,
+                                               this.environmentService,
                                               );
         this.toolbox = await fromCustomBlockService(this.workspaceElement, this.workspace,
                                                     this.customBlockService,
