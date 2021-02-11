@@ -1902,77 +1902,79 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private _reposition(blockIds: string[]) {
-        // Build the list of dependencies (contents) for each block repositioned
-        const dependencies: {[key: string]: string[]} = {};
+        this.doc.transact((_transaction: Y.Transaction) => {
+            // Build the list of dependencies (contents) for each block repositioned
+            const dependencies: {[key: string]: string[]} = {};
 
-        const considered: {[key: string]: boolean} = {};
-        for (const id of blockIds) {
-            considered[id] = true;
-        }
-
-        const allAffected = [];
-        const toExplore = blockIds.concat([]);
-        while (toExplore.length > 0) {
-            const id = toExplore.shift();
-            allAffected.push(id);
-
-            const block = this.blocks.get(id);
-
-            if (block.container_id) {
-                const dep = block.container_id;
-                if (!considered[dep]) {
-                    toExplore.push(dep);
-                    considered[dep] = true;
-                }
-
-                if (!dependencies[dep]){
-                    dependencies[dep] = [];
-                }
-
-                dependencies[dep].push(id);
+            const considered: {[key: string]: boolean} = {};
+            for (const id of blockIds) {
+                considered[id] = true;
             }
-        }
 
-        const processed: string[] = [];
-        let toGo = allAffected.concat([]);
-        let processedThisTurn = true;
-        while (toGo.length > 0 && processedThisTurn) {
-            processedThisTurn = false;
-            const skipped = [];
+            const allAffected = [];
+            const toExplore = blockIds.concat([]);
+            while (toExplore.length > 0) {
+                const id = toExplore.shift();
+                allAffected.push(id);
 
-            for (const bId of toGo) {
-                const blockObj = this.blockObjs[bId];
-                if ((dependencies[bId] || []).some(x => processed.indexOf(x) < 0)) {
-                    // Not all contents have been repositioned yet
-                    skipped.push(bId);
-                }
-                else {
-                    const block = blockObj.block;
-                    if (block instanceof ContainerFlowBlock) {
-                        block.repositionContents();
+                const block = this.blocks.get(id);
+
+                if (block.container_id) {
+                    const dep = block.container_id;
+                    if (!considered[dep]) {
+                        toExplore.push(dep);
+                        considered[dep] = true;
                     }
 
-                    processedThisTurn = true;
-                    processed.push(bId);
+                    if (!dependencies[dep]){
+                        dependencies[dep] = [];
+                    }
+
+                    dependencies[dep].push(id);
                 }
             }
 
-            toGo = skipped;
-        }
+            const processed: string[] = [];
+            let toGo = allAffected.concat([]);
+            let processedThisTurn = true;
+            while (toGo.length > 0 && processedThisTurn) {
+                processedThisTurn = false;
+                const skipped = [];
 
-        if (toGo.length > 0) {
-            console.error("Circular dependency found on", toGo);
-            console.error("Circular dependency found on", toGo.map(id => this.blocks.get(id)));
-        }
+                for (const bId of toGo) {
+                    const blockObj = this.blockObjs[bId];
+                    if ((dependencies[bId] || []).some(x => processed.indexOf(x) < 0)) {
+                        // Not all contents have been repositioned yet
+                        skipped.push(bId);
+                    }
+                    else {
+                        const block = blockObj.block;
+                        if (block instanceof ContainerFlowBlock) {
+                            block.repositionContents();
+                        }
 
-        // After all are processed, give then the option to "settle" on their new position
-        for (const elementId of processed.reverse()) {
-            const block = this.blockObjs[elementId].block;
+                        processedThisTurn = true;
+                        processed.push(bId);
+                    }
+                }
 
-            // This have a reasonably-close semantic, but it might not be
-            // enough. A new function might be needed to cover this meaning.
-            block.endMove();
-        }
+                toGo = skipped;
+            }
+
+            if (toGo.length > 0) {
+                console.error("Circular dependency found on", toGo);
+                console.error("Circular dependency found on", toGo.map(id => this.blocks.get(id)));
+            }
+
+            // After all are processed, give then the option to "settle" on their new position
+            for (const elementId of processed.reverse()) {
+                const block = this.blockObjs[elementId].block;
+
+                // This have a reasonably-close semantic, but it might not be
+                // enough. A new function might be needed to cover this meaning.
+                block.endMove();
+            }
+        });
     }
 
     private _pullAllDependenciesInList(id: string, group: string[]): string[] {
