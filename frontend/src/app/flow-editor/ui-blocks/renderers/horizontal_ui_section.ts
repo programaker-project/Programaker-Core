@@ -376,6 +376,12 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
 
     updateOptions() {
         this._applyConfiguration(this.block.blockData.settings || {});
+
+        if (this.block.blockData.dimensions) {
+            this.height = this.block.blockData.dimensions.height;
+            this.width = this.block.blockData.dimensions.width;
+            this._updateInternalElementSizes();
+        }
     }
 
     // Configurable
