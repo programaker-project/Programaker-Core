@@ -461,10 +461,6 @@ export class UiFlowBlock implements FlowBlock {
         this.position.y = pos.y;
 
         this.group.setAttribute('transform', `translate(${this.position.x}, ${this.position.y})`)
-
-        if (this.handler.dropOnEndMove) {
-            const _movement = this.handler.dropOnEndMove();
-        }
     }
 
     public moveBy(distance: {x: number, y: number}): FlowBlock[] {
