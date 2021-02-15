@@ -5,6 +5,7 @@
 -module(automate_service_port_engine_tests).
 -include_lib("eunit/include/eunit.hrl").
 -include("../src/records.hrl").
+-include("../../automate_storage/src/records.hrl").
 
 %% Test data
 -define(APPLICATION, automate_service_port_engine).
@@ -64,6 +65,9 @@ tests(_SetupResult) ->
       }
     , { "[Service Port - Custom blocks] Deleting a bridge deletes its custom blocks"
       , fun owned_delete_bridge_blocks/0
+      }
+    , { "[Service Port - Custom blocks] Connect to private block from group"
+      , fun non_owned_public_blocks_from_group/0
       }
       %% Notification routing
     , { "[Service port - Notifications] Route notifications targeted to owner"
@@ -246,6 +250,33 @@ owned_delete_bridge_blocks() ->
 
     {ok, Services} = automate_service_registry:get_all_services_for_user(OwnerUserId),
     ?assertEqual(error, maps:find(ServiceId, Services)).
+
+
+non_owned_public_blocks_from_group() ->
+    ServicePortName = <<?TEST_ID_PREFIX, "-test-4-3-service-port">>,
+    GroupName = <<?TEST_ID_PREFIX, "-test-4-3-group">>,
+
+    {_, OwnerId={user, OwnerUserId}} = ?UTILS:create_random_user(),
+    {ok, #user_group_entry{ id=GroupId }} = automate_storage:create_group(GroupName, OwnerUserId, false),
+    ok = automate_storage:update_group_metadata(GroupId, #{ min_level_for_private_bridge_usage => admin }),
+
+    {ok, ServicePortId} = ?APPLICATION:create_service_port({group, GroupId}, ServicePortName),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ get_test_block() ]
+                     },
+    ok = ?APPLICATION:from_service_port(ServicePortId, {group, GroupId},
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
+
+    {ok, _} = ?UTILS:establish_connection(ServicePortId, OwnerId),
+
+    {ok, #{ ServicePortId := [CustomBlock] }} = ?APPLICATION:list_custom_blocks(OwnerId),
+
+    check_test_block(CustomBlock).
+
 
 %%====================================================================
 %% Custom block tests - Internal functions

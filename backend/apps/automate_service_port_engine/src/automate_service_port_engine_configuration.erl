@@ -277,6 +277,7 @@ get_versioning(Nodes) ->
                                                     )
                             end
                     }
+
                   , #database_version_transformation
                     %% Set log setting on bridge connections
                     { id=7
@@ -298,8 +299,8 @@ get_versioning(Nodes) ->
                                                                      , false
                                                                      };
                                                                  { user_to_bridge_connection_entry
-                                                                 , Id, BridgeId, Owner, ChannelId, Name, CreationTime
-                                                                 , SaveSignals} ->
+                                                                 , _Id, _BridgeId, _Owner, _ChannelId, _Name, _CreationTime
+                                                                 , _SaveSignals} ->
                                                                      Entry
                                                              end
                                                      end,
@@ -310,6 +311,19 @@ get_versioning(Nodes) ->
                                     {atomic, ok} = mnesia:delete_table(automate_service_port_channel_table)
                             end
                     }
+
+                  , #database_version_transformation
+                    %% Index connection by owner_id
+                    { id=8
+                    , apply=fun() ->
+
+                                    ok = mnesia:wait_for_tables([ ?USER_TO_BRIDGE_CONNECTION_TABLE
+                                                                ], automate_configuration:get_table_wait_time()),
+
+                                    {atomic, ok} = mnesia:add_table_index(?USER_TO_BRIDGE_CONNECTION_TABLE, owner)
+                            end
+                    }
+
                   ]
         }.
 

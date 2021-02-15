@@ -104,6 +104,7 @@ get_group_metrics() ->
                                       , canonical_name='_'
                                       , public='_'
                                       , creation_time='$2'
+                                      , min_level_for_private_bridge_usage='_'
                                       },
     GroupResultColumn = '$1',
 

@@ -1,4 +1,6 @@
 -include("../../automate_common_types/src/types.hrl").
+-ifndef(AUTOMATE_STORAGE_RECORDS).
+-define(AUTOMATE_STORAGE_RECORDS, true).
 
 -type user_status() :: ready | mail_not_verified.
 -type time_in_seconds() :: integer().
@@ -24,12 +26,14 @@
                                      }).
 
 -type user_in_group_role() :: admin | editor | viewer.
--type group_metadata_edition() :: #{ public => boolean() }.
+-type group_metadata_edition() :: #{ public => boolean(), min_level_for_private_bridge_usage => user_in_group_role() | not_allowed }.
+
 -record(user_group_entry, { id :: binary() | ?MNESIA_SELECTOR
                           , name :: binary() | ?MNESIA_SELECTOR
                           , canonical_name :: binary() | ?MNESIA_SELECTOR
                           , public :: boolean() | ?MNESIA_SELECTOR
                           , creation_time :: time_in_seconds() | ?MNESIA_SELECTOR
+                          , min_level_for_private_bridge_usage :: user_in_group_role() | not_allowed | ?MNESIA_SELECTOR
                           }).
 
 -record(user_group_permissions_entry, { group_id :: binary() | ?MNESIA_SELECTOR
@@ -174,3 +178,5 @@
                           , owner_id :: owner_id() %% For listing
                           , mime_type :: mime_type()
                           }).
+
+-endif.

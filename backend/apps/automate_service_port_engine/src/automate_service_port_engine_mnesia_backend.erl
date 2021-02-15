@@ -404,20 +404,26 @@ get_signal_listeners(_Content, BridgeId) ->
 -spec list_custom_blocks(owner_id()) -> {ok, map()}.
 list_custom_blocks(Owner) ->
     Transaction = fun() ->
-                          Services = list_userid_ports(Owner) ++ list_public_ports() ++ list_shared_ports(Owner),
+                          Connections = mnesia:index_read(?USER_TO_BRIDGE_CONNECTION_TABLE, Owner, #user_to_bridge_connection_entry.owner),
+                          OwnBridgeIds = sets:to_list(sets:from_list(lists:map(
+                                                                    fun (#user_to_bridge_connection_entry{ bridge_id=BridgeId }) ->
+                                                                            BridgeId
+                                                                    end, Connections))),
 
-                          {ok
+                          BridgeIds = OwnBridgeIds ++ list_shared_ports(Owner),
+
+                          { ok
                           , maps:from_list(
                               lists:filter(fun (X) -> X =/= none end,
-                                           lists:map(fun (PortId) ->
-                                                             case is_user_connected_to_bridge(Owner, PortId) of
+                                           lists:map(fun (BridgeId) ->
+                                                             case is_user_connected_to_bridge(Owner, BridgeId) of
                                                                  {ok, false} ->
                                                                      none;
                                                                  {ok, true, SharedResources } ->
-                                                                     list_blocks_for_port(PortId, SharedResources)
+                                                                     list_blocks_for_port(BridgeId, SharedResources)
                                                              end
                                                      end,
-                                                     Services)))}
+                                                     BridgeIds)))}
                   end,
     automate_storage:wrap_transaction(mnesia:activity(ets, Transaction)).
 
@@ -892,36 +898,6 @@ check_save_signals_in_connection(ConnectionId) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-list_userid_ports({OwnerType, OwnerId}) ->
-    MatchHead = #service_port_entry{ id='$1'
-                                   , name='_'
-                                   , owner={'$2', '$3'}
-                                   , old_skip_authentication='_'
-                                   },
-    Guards = [ {'==', '$2', OwnerType}
-             , {'==', '$3', OwnerId}
-             ],
-    ResultColumn = '$1',
-    Matcher = [{MatchHead, Guards, [ResultColumn]}],
-
-    mnesia:select(?SERVICE_PORT_TABLE, Matcher).
-
-list_public_ports() ->
-    MatchHead = #service_port_configuration{ id='$1'
-                                           , service_name='_'
-                                           , service_id='_'
-                                           , is_public='$2'
-                                           , blocks='_'
-                                           , icon='_'
-                                           , allow_multiple_connections='_'
-                                           , resources='_'
-                                           },
-    Guard = {'==', '$2', true},
-    ResultColumn = '$1',
-    Matcher = [{MatchHead, [Guard], [ResultColumn]}],
-
-    mnesia:select(?SERVICE_PORT_CONFIGURATION_TABLE, Matcher).
-
 list_shared_ports(Owner) ->
     {ok, Shares} = get_resources_shared_with(Owner),
     lists:map(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
@@ -1042,7 +1018,7 @@ can_owner_establish_connection_to_bridge(OwnerId, BridgeId) ->
     %% It can use a bridge if
     %%  - It's public
     %%  - It's the owner
-    %%  - Or it has been shared with this user
+    %%  - Or it's owned by a group where this user collaborates with enough level as to use the bridge
     Transaction = fun() ->
                           case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId) of
                               [#service_port_configuration{is_public=IsPublic}] ->
@@ -1053,7 +1029,12 @@ can_owner_establish_connection_to_bridge(OwnerId, BridgeId) ->
                                           case BridgeOwner of
                                               OwnerId -> {ok, true};
                                               _ ->
-                                                  {ok, false}
+                                                  case BridgeOwner of
+                                                      {user, _} -> %% Not a group
+                                                          {ok, false};
+                                                      {group, GroupId} ->
+                                                          automate_storage:is_user_allowed_to_connect_to_bridges_in_group(OwnerId, GroupId)
+                                                  end
                                           end
                                   end;
                               [] ->

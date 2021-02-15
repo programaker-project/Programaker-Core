@@ -603,3 +603,9 @@ mat-card.collaborator .user-name {
     padding: 1ex;
     height: 3em;
 }
+
+mat-card.disabled {
+    background: repeating-linear-gradient(45deg, #fff, #fff 10px, #eee 10px, #eee 20px);
+    color: #222;
+    pointer-events: none;
+}

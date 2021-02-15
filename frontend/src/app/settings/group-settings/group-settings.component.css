@@ -150,3 +150,8 @@ mat-select-trigger mat-icon {
     font-size: 140%;
     vertical-align: text-top;
 }
+
+.collaborator-level-for-bridge-usage mat-select {
+    margin: 1rem 0 0 1rem;
+    width: calc(100% - 1rem);
+}

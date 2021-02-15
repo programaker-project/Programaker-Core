@@ -23,6 +23,7 @@ export interface AtomicFlowBlockOptions extends FlowBlockOptions {
     icon?: string,
     block_function: string,
     message: string;
+    key?: string;
     subkey?: { "type": "argument", "index": number };
     fixed_pulses?: boolean;
 }
