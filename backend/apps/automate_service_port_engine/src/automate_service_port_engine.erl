@@ -459,15 +459,31 @@ add_service_port_extra({#service_port_entry{ id=Id
                              }.
 
 set_service_port_configuration(ServicePortId, Configuration, Owner) ->
-    SPConfiguration = parse_configuration_map(ServicePortId, Configuration),
+    SPConfiguration = parse_configuration_map(ServicePortId, Configuration, Owner),
     ?BACKEND:set_service_port_configuration(ServicePortId, SPConfiguration, Owner).
 
 parse_configuration_map(ServicePortId,
                         Config=#{ <<"blocks">> := Blocks
-                                , <<"is_public">> := IsPublic
+                                , <<"is_public">> := RequestedPublic
                                 , <<"service_name">> := ServiceName
-                                }) ->
+                                }, Owner) ->
     Resources = parse_resources(Config),
+
+    IsPublic = case RequestedPublic of
+                   false ->
+                       false;
+                   true ->
+                       case automate_storage:is_user_allowed_to_create_public_bridges(Owner) of
+                           {ok, true} ->
+                               true;
+                           {ok, false} ->
+                               automate_logging:log_platform(warning, list_to_binary(io_lib:format(
+                                                                                       "[~p:~p] ~p tried to set a bridge to public (not allowed)",
+                                                                                       [?MODULE, ?LINE, Owner]))),
+                               false
+                       end
+               end,
+
     #service_port_configuration{ id=ServicePortId
                                  , is_public=IsPublic
                                  , service_id=undefined

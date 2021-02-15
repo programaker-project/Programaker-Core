@@ -66,7 +66,8 @@ tests(_SetupResult) ->
 save_to_test() ->
     %% Create service port
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
+    {_, UserId} = ?UTILS:create_random_user(),
+    OwnerUserId = { user, UserId },
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
 
@@ -146,7 +147,8 @@ save_to_test() ->
 
 trigger_with_time() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-2-owner"])},
+    {_, UserId} = ?UTILS:create_random_user(),
+    OwnerUserId = { user, UserId },
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
 
     {_, { StartHour, StartMin, StartSec }} = calendar:now_to_datetime(erlang:timestamp()),
@@ -202,7 +204,8 @@ trigger_with_time() ->
 
 trigger_with_tz_time() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-3-owner"])},
+    {_, UserId} = ?UTILS:create_random_user(),
+    OwnerUserId = { user, UserId },
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
 
     TestTimezone = <<"Etc/GMT+1">>,

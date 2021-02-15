@@ -4,6 +4,7 @@
         , block_val/1
         , create_anonymous_program/0
         , create_user_program/1
+        , create_random_user/0
         , wait_for_program_alive/3
         , wait_for_check_ok/3
         , monitor_program_trigger/1

@@ -56,6 +56,9 @@ tests(_SetupResult) ->
     , { "[Service Port - Custom blocks] Owned public blocks appear"
       , fun owned_public_blocks_appear/0
       }
+    , { "[Service Port - Custom blocks] Non-admin cannot set public bridge (and private blocks don't appear)"
+      , fun non_admin_user_cannot_set_public_bridge/0
+      }
     , { "[Service Port - Custom blocks] Non-owned public blocks appear"
       , fun non_owned_public_blocks_appear/0
       }
@@ -72,6 +75,9 @@ tests(_SetupResult) ->
     , { "[Service port - Notifications] Route notifications targeted to non-owner on public"
       , fun route_notification_targeted_to_non_owner_on_public/0
       }
+    , { "[Service port - Notifications] Route notifications targeted to non-owner on non-public (because of non-admin)"
+      , fun route_notification_targeted_to_non_owner_on_shadowed_public/0
+      }
     , { "[Service port - Notifications] Route notifications to all users on public"
       , fun route_notification_targeted_to_all_users_on_public/0
       }
@@ -79,14 +85,8 @@ tests(_SetupResult) ->
     , { "[Service port - Configuration - Owner] A public bridge can be later set to private"
       , fun set_public_bridge_to_private_owner/0
       }
-    , { "[Service port - Configuration - User] A public bridge can be later set to private"
-      , fun set_public_bridge_to_private_user/0
-      }
     , { "[Service port - Configuration - Owner] A private bridge can be later set to public"
       , fun set_private_bridge_to_public_owner/0
-      }
-    , { "[Service port - Configuration - User] A private bridge can be later set to public"
-      , fun set_private_bridge_to_public_user/0
       }
     ].
 
@@ -95,8 +95,9 @@ tests(_SetupResult) ->
 %% Custom block tests
 %%====================================================================
 owned_private_blocks_appear() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-1-owner">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
     ServicePortName = <<?TEST_ID_PREFIX, "-test-1-service-port">>,
+
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     Configuration = #{ <<"is_public">> => false
@@ -116,8 +117,8 @@ owned_private_blocks_appear() ->
 
 
 non_owned_private_blocks_dont_appear() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-2-owner">>},
-    RequesterUserId = {user, <<?TEST_ID_PREFIX, "-test-2-requester">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    {_, RequesterUserId} = ?UTILS:create_random_user(),
     ServicePortName = <<?TEST_ID_PREFIX, "-test-2-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -143,7 +144,8 @@ non_owned_private_blocks_dont_appear() ->
 
 
 owned_public_blocks_appear() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-3-owner">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    ok = ?UTILS:set_admin_user(OwnerUserId),
     ServicePortName = <<?TEST_ID_PREFIX, "-test-3-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -162,10 +164,32 @@ owned_public_blocks_appear() ->
 
     check_test_block(CustomBlock).
 
+non_admin_user_cannot_set_public_bridge() ->
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    {_, RequesterUserId} = ?UTILS:create_random_user(),
+    ServicePortName = <<?TEST_ID_PREFIX, "-test-4-1-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+
+    Configuration = #{ <<"is_public">> => true %% This should be ignored as the user is not an admin
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ get_test_block() ]
+                     },
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
+
+    ?assertEqual({error, not_authorized}, ?UTILS:establish_connection(ServicePortId, RequesterUserId)),
+
+    {ok, Results} = ?APPLICATION:list_custom_blocks(RequesterUserId),
+    ?assertEqual(#{}, Results).
+
+
 non_owned_public_blocks_appear() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-4-owner">>},
-    RequesterUserId = {user, <<?TEST_ID_PREFIX, "-test-4-requester">>},
-    ServicePortName = <<?TEST_ID_PREFIX, "-test-4-service-port">>,
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    ok = ?UTILS:set_admin_user(OwnerUserId),
+    {_, RequesterUserId} = ?UTILS:create_random_user(),
+    ServicePortName = <<?TEST_ID_PREFIX, "-test-4-2-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
     Configuration = #{ <<"is_public">> => true
@@ -184,11 +208,10 @@ non_owned_public_blocks_appear() ->
     check_test_block(CustomBlock).
 
 owned_delete_bridge_blocks() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-test-5-owner">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
     ServicePortName = <<?TEST_ID_PREFIX, "-test-5-service-port">>,
     {ok, BridgeId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
-
-    Configuration = #{ <<"is_public">> => true
+    Configuration = #{ <<"is_public">> => false
                      , <<"service_name">> => ServicePortName
                      , <<"blocks">> => [ get_test_block() ]
                      },
@@ -208,7 +231,7 @@ owned_delete_bridge_blocks() ->
 
     {ok, ResultsOk} = ?APPLICATION:list_custom_blocks(OwnerUserId),
     ?assertMatch({ok, _}, maps:find(ServiceId, ResultsOk)),
-    {ok, BeforeDeleteServices} = automate_service_registry:get_all_services_for_user(OwnerUserId),
+    {ok, _BeforeDeleteServices} = automate_service_registry:get_all_services_for_user(OwnerUserId),
 
     %% Delete bridge
     ok = automate_service_port_engine:delete_bridge(OwnerUserId, BridgeId),
@@ -265,7 +288,7 @@ check_test_block(Block) ->
 %% Notification routing tests
 %%====================================================================
 route_notification_targeted_to_owner() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-1-owner">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
     TargetUserId = OwnerUserId,
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-1-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
@@ -298,7 +321,8 @@ route_notification_targeted_to_owner() ->
 
 
 route_notification_targeted_to_owner_on_public() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-2-owner">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    ok = ?UTILS:set_admin_user(OwnerUserId),
     TargetUserId = OwnerUserId,
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-2-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
@@ -330,8 +354,9 @@ route_notification_targeted_to_owner_on_public() ->
     end.
 
 route_notification_targeted_to_non_owner_on_public() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-3-owner">>},
-    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-3-NONowner-TARGET">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    ok = ?UTILS:set_admin_user(OwnerUserId),
+    {_, TargetUserId} = ?UTILS:create_random_user(),
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-3-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -361,9 +386,31 @@ route_notification_targeted_to_non_owner_on_public() ->
             ct:fail(timeout)
     end.
 
+route_notification_targeted_to_non_owner_on_shadowed_public() ->
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    %% User not set to admin
+    {_, TargetUserId} = ?UTILS:create_random_user(),
+    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-3-2-service-port">>,
+    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
+
+    %% Configure service port
+    Configuration = #{ <<"is_public">> => true %% This configuration is set to `is_public => false` as the owner is not admin
+                     , <<"service_name">> => ServicePortName
+                     , <<"blocks">> => [ ]
+                     },
+
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => Configuration
+                                         }),
+
+    %% Listen on the service port
+    ?assertEqual({error, not_authorized}, ?UTILS:establish_connection(ServicePortId, TargetUserId)).
+
 route_notification_targeted_to_all_users_on_public() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-4-owner">>},
-    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-4-NONowner-TARGET">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    ok = ?UTILS:set_admin_user(OwnerUserId),
+    {_, TargetUserId} = ?UTILS:create_random_user(),
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-4-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -407,7 +454,9 @@ route_notification_targeted_to_all_users_on_public() ->
 %% Configuration
 %%====================================================================
 set_public_bridge_to_private_owner() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-5-owner">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    ok = ?UTILS:set_admin_user(OwnerUserId),
+    {_, RequesterUserId} = ?UTILS:create_random_user(),
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-5-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -421,52 +470,30 @@ set_public_bridge_to_private_owner() ->
                                         #{ <<"type">> => <<"CONFIGURATION">>
                                          , <<"value">> => Configuration
                                          }),
+
+    %% Found Owner and externals
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)),
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(RequesterUserId)),
+
+    %% Set to private
+    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
+                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                         , <<"value">> => #{ <<"is_public">> => false
+                                                           , <<"service_name">> => ServicePortName
+                                                           , <<"blocks">> => [ ]
+                                                           }
+                                         }),
+    %% Still found for owner
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)),
 
-    %% Set to private
-    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        #{ <<"type">> => <<"CONFIGURATION">>
-                                         , <<"value">> => #{ <<"is_public">> => false
-                                                           , <<"service_name">> => ServicePortName
-                                                           , <<"blocks">> => [ ]
-                                                           }
-                                         }),
-    %% Still found
-    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)).
-
-
-set_public_bridge_to_private_user() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-6-owner">>},
-    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-6-NONowner-TARGET">>},
-    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-6-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
-
-    %% Configure service port
-    Configuration = #{ <<"is_public">> => true
-                     , <<"service_name">> => ServicePortName
-                     , <<"blocks">> => [ ]
-                     },
-
-    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        #{ <<"type">> => <<"CONFIGURATION">>
-                                         , <<"value">> => Configuration
-                                         }),
-    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)),
-
-    %% Set to private
-    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        #{ <<"type">> => <<"CONFIGURATION">>
-                                         , <<"value">> => #{ <<"is_public">> => false
-                                                           , <<"service_name">> => ServicePortName
-                                                           , <<"blocks">> => [ ]
-                                                           }
-                                         }),
-
-    %% No longer found
-    ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)).
+    %% Not found for externals
+    {ok, Results} = ?APPLICATION:list_custom_blocks(RequesterUserId),
+    ?assertEqual(#{}, Results).
 
 set_private_bridge_to_public_owner() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-7-owner">>},
+    {_, OwnerUserId} = ?UTILS:create_random_user(),
+    ok = ?UTILS:set_admin_user(OwnerUserId),
+    {_, TargetUserId} = ?UTILS:create_random_user(),
     ServicePortName = <<?TEST_ID_PREFIX, "-route-test-7-service-port">>,
     {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
 
@@ -480,35 +507,9 @@ set_private_bridge_to_public_owner() ->
                                         #{ <<"type">> => <<"CONFIGURATION">>
                                          , <<"value">> => Configuration
                                          }),
+
+    %% Found for owner, but NOT for externals
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)),
-
-    %% Set to public
-    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        #{ <<"type">> => <<"CONFIGURATION">>
-                                         , <<"value">> => #{ <<"is_public">> => true
-                                                           , <<"service_name">> => ServicePortName
-                                                           , <<"blocks">> => [ ]
-                                                           }
-                                         }),
-    %% Still found
-    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)).
-
-set_private_bridge_to_public_user() ->
-    OwnerUserId = {user, <<?TEST_ID_PREFIX, "-route-test-8-owner">>},
-    TargetUserId = {user, <<?TEST_ID_PREFIX, "-route-test-8-NONowner-TARGET">>},
-    ServicePortName = <<?TEST_ID_PREFIX, "-route-test-8-service-port">>,
-    {ok, ServicePortId} = ?APPLICATION:create_service_port(OwnerUserId, ServicePortName),
-
-    %% Configure service port
-    Configuration = #{ <<"is_public">> => false
-                     , <<"service_name">> => ServicePortName
-                     , <<"blocks">> => [ ]
-                     },
-
-    ok = ?APPLICATION:from_service_port(ServicePortId, OwnerUserId,
-                                        #{ <<"type">> => <<"CONFIGURATION">>
-                                         , <<"value">> => Configuration
-                                         }),
     ?assertNotMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)),
 
     %% Set to public
@@ -519,8 +520,8 @@ set_private_bridge_to_public_user() ->
                                                            , <<"blocks">> => [ ]
                                                            }
                                          }),
-
-    %% Found now
+    %% Found on owner AND on externals
+    ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(OwnerUserId)),
     ?assertMatch({ok, #{ ServicePortId := _ }}, automate_service_registry:get_all_services_for_user(TargetUserId)).
 
 
