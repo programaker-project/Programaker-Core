@@ -1,4 +1,6 @@
 -include("../../automate_common_types/src/types.hrl").
+-ifndef(AUTOMATE_STORAGE_RECORDS).
+-define(AUTOMATE_STORAGE_RECORDS, true).
 
 -type user_status() :: ready | mail_not_verified.
 -type time_in_seconds() :: integer().
@@ -176,3 +178,5 @@
                           , owner_id :: owner_id() %% For listing
                           , mime_type :: mime_type()
                           }).
+
+-endif.
