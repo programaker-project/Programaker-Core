@@ -66,6 +66,7 @@ export interface ResolvedCustomBlock {
     arguments: ResolvedBlockArgument[];
     save_to: undefined | { "type": "argument", "index": number };
     subkey: undefined | { "type": "argument", "index": number };
+    key: undefined | string;
 }
 
 export interface CategorizedCustomBlock {

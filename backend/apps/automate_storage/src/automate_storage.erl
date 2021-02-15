@@ -107,6 +107,7 @@
         , update_collaborators/2
 
         , is_user_allowed_to_create_public_bridges/1
+        , is_user_allowed_to_connect_to_bridges_in_group/2
 
         , add_mnesia_node/1
         , register_table/2
@@ -1623,6 +1624,26 @@ is_user_allowed_to_create_public_bridges({group, _}) ->
     %% No group is allowed to create public bridges
     {ok, false}.
 
+-spec is_user_allowed_to_connect_to_bridges_in_group(OwnerId :: owner_id(), GroupId :: binary()) -> { ok, boolean() }.
+is_user_allowed_to_connect_to_bridges_in_group({group, GroupId}, GroupId) ->
+    true;
+is_user_allowed_to_connect_to_bridges_in_group(OwnerId, GroupId) ->
+    Transaction = fun() ->
+                          Permissions = mnesia:read(?USER_GROUP_PERMISSIONS_TABLE, GroupId),
+                          [#user_group_entry{min_level_for_private_bridge_usage=MinLevel}] = mnesia:read(?USER_GROUPS_TABLE, GroupId),
+                          Roles = lists:filtermap(fun(#user_group_permissions_entry{ role=Role
+                                                                                   , user_id=UserId }) ->
+                                                           case UserId of
+                                                               OwnerId -> {true, Role};
+                                                               _ -> false
+                                                           end
+                                             end, Permissions),
+
+                          {ok, lists:any(fun(Role) ->
+                                                 automate_storage_utils:role_has_min_level_in_group(Role, MinLevel)
+                                         end, Roles)}
+                  end,
+    mnesia:activity(ets, Transaction).
 
 %% Exposed startup entrypoint
 start_link() ->

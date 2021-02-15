@@ -158,7 +158,10 @@ get_all_services_for_user({OwnerType, OwnerId}) ->
     AllowancesMatcher = [{AllowancesMatcherHead, AllowancesGuards, [AllowancesResultColumn]}],
 
     Transaction = fun() ->
+                          %% Public programs
                           Public = mnesia:select(?SERVICE_REGISTRY_TABLE, PublicMatcher),
+
+                          %% Programs where the user is allowed
                           UserAllowanceIds = mnesia:select(?USER_SERVICE_ALLOWANCE_TABLE, AllowancesMatcher),
                           UserAllowances = lists:filtermap(fun (ServiceId) ->
                                                                    case mnesia:read(?SERVICE_REGISTRY_TABLE, ServiceId) of
@@ -168,12 +171,54 @@ get_all_services_for_user({OwnerType, OwnerId}) ->
                                                                            {true, Result}
                                                                    end
                                                            end, UserAllowanceIds),
-                          {Public, UserAllowances}
+
+                          %% Programs from a user group where it has the role needed to use them
+                          GroupAllowances = case OwnerType of
+                                                group -> []; %% Right now a group cannot be part of another group
+                                                user ->
+                                                    {ok, UserGroups} = automate_storage:get_user_groups({user, OwnerId}),
+
+                                                    %% Obtain groups from where the user is allowed to take connections from
+                                                    AllowedInGroups = lists:filtermap(
+                                                                        fun({#user_group_entry{ id=GroupId
+                                                                                              , min_level_for_private_bridge_usage=MinLevel }
+                                                                            , Role}) ->
+                                                                                case automate_storage_utils:role_has_min_level_in_group(Role, MinLevel) of
+                                                                                    false -> false;
+                                                                                    true -> { true, GroupId }
+                                                                                end
+                                                                        end, UserGroups),
+
+                                                    %% Find the allowances of the groups found
+                                                    lists:flatmap(fun(GroupId) ->
+                                                                          GroupHead = #user_service_allowance_entry{ service_id='$1'
+                                                                                                                   , owner={'$2', '$3'}
+                                                                                                                   },
+                                                                          GroupGuard = [ {'==', '$2', group }
+                                                                                       , {'==', '$3', GroupId }
+                                                                                       ],
+                                                                          GroupResultColumn = '$1',
+                                                                          GroupMatcher = [{GroupHead, GroupGuard, [GroupResultColumn]}],
+                                                                          AllowanceIds = mnesia:select(?USER_SERVICE_ALLOWANCE_TABLE, GroupMatcher),
+                                                                          Allowances = lists:filtermap(
+                                                                                         fun (ServiceId) ->
+                                                                                                 case mnesia:read(?SERVICE_REGISTRY_TABLE, ServiceId) of
+                                                                                                     [] ->
+                                                                                                         false;
+                                                                                                     [Result] ->
+                                                                                                         {true, Result}
+                                                                                                 end
+                                                                                         end, AllowanceIds),
+                                                                          Allowances
+                                                                  end, AllowedInGroups)
+                                            end,
+
+                          {Public, UserAllowances, GroupAllowances}
                   end,
 
-    case mnesia:transaction(Transaction) of
-        {atomic, {Public, UserAllowances}} ->
-            {ok, convert_to_map(Public ++ UserAllowances)};
+    case mnesia:ets(Transaction) of
+        {Public, UserAllowances, GroupAllowances} ->
+            {ok, convert_to_map(Public ++ UserAllowances ++ GroupAllowances)};
         {aborted, Reason} ->
             {error, Reason, mnesia:error_description(Reason)}
     end.

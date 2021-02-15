@@ -339,7 +339,7 @@ render_connection_block_start(ProgramId) ->
     ,  "  dispatch(parsed);\n"
     , "});\n"
 
-    , "websocket.onclose = (function() { console.warn('Connection closed'); });\n"
+    , "websocket.onclose = (function() { console.error('Connection closed'); });\n"
     , "websocket.onerror = (function(err) { console.error(err); });\n"
     , "websocket.onopen = (function() { console.log('Connection opened'); \n"
     , "  websocket.send(JSON.stringify({ type: 'AUTHENTICATION', value: { token: 'ANONYMOUS' }}));\n"

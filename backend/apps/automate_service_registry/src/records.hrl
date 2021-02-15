@@ -1,5 +1,5 @@
 -define(PRIMITIVE_TYPES, boolean() | binary() | number()).
--include("../../automate_common_types/src/types.hrl").
+-include("../../automate_storage/src/records.hrl").
 
 -type call_type() :: 'string' | 'positive' | 'integer' | 'list' | 'boolean'.
 

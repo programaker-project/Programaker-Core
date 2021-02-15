@@ -3,7 +3,10 @@
 -export([ canonicalize/1
         , validate_username/1
         , validate_canonicalizable/1
+        , role_has_min_level_in_group/2
         ]).
+
+-include("./records.hrl").
 
 
 -define(VALID_CHARACTERS, "_-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789").
@@ -47,3 +50,18 @@ canonicalize(X) ->
     %% to properly support UTF8 characters
     Lowercased = string:lowercase(binary_to_list(X)),
     list_to_binary(Lowercased).
+
+
+-spec role_has_min_level_in_group(Role :: user_in_group_role(), MinLevel :: user_in_group_role() | not_allowed) -> boolean().
+role_has_min_level_in_group(_Role, not_allowed) ->
+    false;
+role_has_min_level_in_group(admin, _MinLevel) ->
+    true;
+role_has_min_level_in_group(_, admin) ->
+    false;
+role_has_min_level_in_group(editor, _) ->
+    true;
+role_has_min_level_in_group(viewer, editor) ->
+    false;
+role_has_min_level_in_group(_, viewer) ->
+    true.

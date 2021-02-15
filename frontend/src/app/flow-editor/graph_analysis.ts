@@ -1341,6 +1341,10 @@ function compile_block(graph: FlowGraph,
                         key: block_fun.split('.').reverse()[0],
                     };
 
+                    if (data.value.options.key) {
+                        listenerArgs.key = data.value.options.key;
+                    }
+
                     const subkey = data.value.options.subkey;
                     if (subkey) {
                         listenerArgs.subkey = compiled_args[subkey.index - 1];
@@ -1662,6 +1666,10 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
             const listenerArgs: {key: string, subkey?: any} = {
                 key: desc.block_function.split('.').reverse()[0],
             };
+
+            if (desc.key) {
+                listenerArgs.key = desc.key;
+            }
 
             const subkey = desc.subkey;
             if (subkey) {

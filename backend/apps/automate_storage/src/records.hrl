@@ -24,7 +24,8 @@
                                      }).
 
 -type user_in_group_role() :: admin | editor | viewer.
--type group_metadata_edition() :: #{ public => boolean() }.
+-type group_metadata_edition() :: #{ public => boolean(), min_level_for_private_bridge_usage => user_in_group_role() | not_allowed }.
+
 -record(user_group_entry, { id :: binary() | ?MNESIA_SELECTOR
                           , name :: binary() | ?MNESIA_SELECTOR
                           , canonical_name :: binary() | ?MNESIA_SELECTOR
