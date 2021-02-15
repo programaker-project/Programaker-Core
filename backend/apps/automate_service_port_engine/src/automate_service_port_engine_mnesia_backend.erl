@@ -114,7 +114,7 @@ gen_pending_connection(BridgeId, Owner) ->
     CurrentTime = erlang:system_time(second),
 
     Transaction = fun() ->
-                          case can_owner_use_bridge(Owner, BridgeId) of
+                          case can_owner_establish_connection_to_bridge(Owner, BridgeId) of
                               {ok, true} ->
                                   {ok, ChannelId} = automate_channel_engine:create_channel(),
                                   Entry = #user_to_bridge_pending_connection_entry{ id=ConnectionId
@@ -1037,8 +1037,8 @@ get_block_arguments(#service_port_trigger_block{ arguments=Arguments }) ->
     Arguments.
 
 
--spec can_owner_use_bridge(OwnerId :: owner_id(), BridgeId :: binary()) -> {ok, boolean()} | {error, not_found}.
-can_owner_use_bridge(OwnerId, BridgeId) ->
+-spec can_owner_establish_connection_to_bridge(OwnerId :: owner_id(), BridgeId :: binary()) -> {ok, boolean()} | {error, not_found}.
+can_owner_establish_connection_to_bridge(OwnerId, BridgeId) ->
     %% It can use a bridge if
     %%  - It's public
     %%  - It's the owner
@@ -1053,12 +1053,7 @@ can_owner_use_bridge(OwnerId, BridgeId) ->
                                           case BridgeOwner of
                                               OwnerId -> {ok, true};
                                               _ ->
-                                                  Shared = mnesia:index_read(?SERVICE_PORT_SHARED_RESOURCES_TABLE, OwnerId, shared_with),
-                                                  { ok
-                                                  , lists:any(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
-                                                                      [#user_to_bridge_connection_entry{ bridge_id=ConnectionBridgeId } ] = mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId),
-                                                                      ConnectionBridgeId == BridgeId
-                                                              end, Shared)}
+                                                  {ok, false}
                                           end
                                   end;
                               [] ->
