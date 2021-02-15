@@ -76,8 +76,12 @@ export class RegisterFormComponent implements OnInit {
             this.userErrorMessage = "User name should have at more than 3 and at most 50 characters.";
             this.validUsername = false;
         }
-        else if (!this.username.match(/^[_a-zA-Z0-9]*$/)) {
-            this.userErrorMessage = "User name can only contain letters (a-z), digits (0-9) and underscores (_).";
+        else if (!this.username.match(/^[-_a-zA-Z0-9]*$/)) {
+            this.userErrorMessage = "User name can only contain letters (a-z), digits (0-9), underscores (_) and dashes (-).";
+            this.validUsername = false;
+        }
+        else if (this.username.match(/^[-0-9]*$/)) {
+            this.userErrorMessage = "User name must container at least a letter (a-z).";
             this.validUsername = false;
         }
     }
