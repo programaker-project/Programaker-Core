@@ -131,6 +131,9 @@ export class DashboardComponent {
                         this.groupInfo = groupInfo;
                         this.profile.picture = getGroupPictureUrl(this.environmentService, this.groupInfo.id);
 
+                        this.bridgesQuery = this.updateBridges();
+                        this.updateConnections();
+
                         this.updateSharedResources();
                         return this.updateCollaborators();
                     })
