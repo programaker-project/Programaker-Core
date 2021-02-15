@@ -39,12 +39,15 @@ export class GroupSettingsComponent {
     groupInfo: GroupInfo;
 
     loadedImage: File = null;
+    minCollaboratorForPrivateBridgeUsage : CollaboratorRole | 'not_allowed';
+    inServerMinCollabLevelForBridge : CollaboratorRole | 'not_allowed';
 
     @ViewChild('imgPreview') imgPreview: ElementRef<HTMLImageElement>;
     @ViewChild('imgFileInput') imgFileInput: ElementRef<HTMLInputElement>;
     @ViewChild('saveAvatarButton') saveAvatarButton: MatButton;
 
     @ViewChild('saveCollaboratorsButton') saveCollaboratorsButton: MatButton;
+    @ViewChild('saveAdminSettingsButton') saveAdminSettingsButton: MatButton;
     @ViewChild('saveAdminButton') saveAdminButton: MatButton;
     @ViewChild('deletegroupButton') deletegroupButton: MatButton;
 
@@ -52,6 +55,14 @@ export class GroupSettingsComponent {
     @ViewChild('groupCollaboratorEditor') groupCollaboratorEditor: GroupCollaboratorEditorComponent;
 
     readonly _getGroupPicture: (userId: string) => string;
+    readonly _roleToIcon = roleToIcon;
+
+    readonly group_admitted_for = {
+        not_allowed: 'Not allowed for anyone',
+        admin: 'Only Admins',
+        editor: 'Editors and Admins',
+        viewer: 'Viewers, Editors and Admins',
+    }
 
     constructor(
         public sessionService: SessionService,
@@ -72,6 +83,7 @@ export class GroupSettingsComponent {
                 else {
                     this.is_advanced = this.session.tags.is_advanced;
                     this.groupInfo = data.groupInfo.info;
+                    this.inServerMinCollabLevelForBridge = this.minCollaboratorForPrivateBridgeUsage = this.groupInfo.min_level_for_private_bridge_usage;
 
                     this.collaborators = data.groupInfo.collaborators;
                 }
@@ -88,6 +100,19 @@ export class GroupSettingsComponent {
         buttonClass.remove('completed');
 
         await this.groupService.updateGroupCollaboratorList(this.groupInfo.id, this.groupCollaboratorEditor.getCollaborators());
+
+        buttonClass.remove('started');
+        buttonClass.add('completed');
+    }
+
+    async saveAdminSettings() {
+        const buttonClass = this.saveAdminSettingsButton._elementRef.nativeElement.classList;
+        buttonClass.add('started');
+        buttonClass.remove('completed');
+
+        await this.groupService.updateMinLevelForPrivateBridgeUsage(this.groupInfo.id, this.minCollaboratorForPrivateBridgeUsage);
+
+        this.inServerMinCollabLevelForBridge = this.minCollaboratorForPrivateBridgeUsage;
 
         buttonClass.remove('started');
         buttonClass.add('completed');

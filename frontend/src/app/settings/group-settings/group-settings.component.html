@@ -54,6 +54,40 @@
 
         <div class="admin-settings settings-group">
             <div class="title">Administration</div>
+            <div class="config-option collaborator-level-for-bridge-usage">
+                <div class="description">
+                    Which collaborators will be able to use the group's bridges for private programs?
+                </div>
+
+                <mat-select [(value)]="minCollaboratorForPrivateBridgeUsage" [disabled]="!session">
+                    <mat-select-trigger>
+                        <mat-icon>{{ minCollaboratorForPrivateBridgeUsage !== 'not_allowed'
+                                      ? _roleToIcon(minCollaboratorForPrivateBridgeUsage)
+                                      : 'do_not_disturb' }}</mat-icon>
+
+                        {{ group_admitted_for[minCollaboratorForPrivateBridgeUsage] }}
+                    </mat-select-trigger>
+
+                    <mat-option value="not_allowed"><mat-icon>do_not_disturb</mat-icon> {{ group_admitted_for['not_allowed'] }}</mat-option>
+                    <mat-option value="admin" ><mat-icon>{{ _roleToIcon('admin') }}</mat-icon > {{ group_admitted_for['admin']  }}</mat-option>
+                    <mat-option value="editor"><mat-icon>{{ _roleToIcon('editor') }}</mat-icon> {{ group_admitted_for['editor'] }}</mat-option>
+                    <mat-option value="viewer"><mat-icon>{{ _roleToIcon('viewer') }}</mat-icon> {{ group_admitted_for['viewer'] }}</mat-option>
+                </mat-select>
+            </div>
+
+            <button mat-button mat-raised-button
+                class="save-button"
+                color="primary"
+                [disabled]="minCollaboratorForPrivateBridgeUsage === inServerMinCollabLevelForBridge"
+                #saveAdminSettingsButton
+                (click)="saveAdminSettings()">
+                <span class="load-bg"></span>
+                <mat-icon class="action-icon">cloud_upload</mat-icon>
+                Save
+            </button>
+        </div>
+        <div class="removal-settings settings-group">
+            <div class="title">Deletion</div>
             <div class="config-option">
                 <button mat-button mat-raised-button color="warn"
                     class="delete-group-button"

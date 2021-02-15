@@ -185,6 +185,7 @@ group_to_json(#user_group_entry{ id=Id
                                , name=Name
                                , canonical_name=CanonicalName
                                , public=IsPublic
+                               , min_level_for_private_bridge_usage=MinLevelForPrivateBridgeUsage
                                }) ->
     Picture = case ?UTILS:group_has_picture(Id) of
                   false -> null;
@@ -196,6 +197,7 @@ group_to_json(#user_group_entry{ id=Id
      , public => IsPublic
      , canonical_name => CanonicalName
      , picture => Picture
+     , min_level_for_private_bridge_usage => MinLevelForPrivateBridgeUsage
      }.
 
 

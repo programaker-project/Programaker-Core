@@ -1449,6 +1449,7 @@ create_group(Name, AdminUserId, Public) ->
                                                            , canonical_name=Canonicalized
                                                            , public=Public
                                                            , creation_time=CurrentTime
+                                                           , min_level_for_private_bridge_usage=not_allowed
                                                            },
                                   ok = mnesia:write(?USER_GROUPS_TABLE, Entry, write),
                                   ok = mnesia:write(?USER_GROUP_PERMISSIONS_TABLE, #user_group_permissions_entry{ group_id=Id
@@ -2344,11 +2345,18 @@ get_widget_values_in_program(ProgramId) ->
 
 -spec apply_group_metadata_changes(#user_group_entry{}, group_metadata_edition()) -> #user_group_entry{}.
 apply_group_metadata_changes(Group, MetadataChanges) ->
-    apply_group_metadata_public_changes(Group, MetadataChanges).
+    G1 = apply_group_metadata_public_changes(Group, MetadataChanges),
+    G2 = apply_group_metadata_min_level_changes(G1, MetadataChanges),
+    G2.
 
 apply_group_metadata_public_changes(Group=#user_group_entry{}, #{ public := IsPublic }) ->
     Group#user_group_entry{ public=IsPublic };
 apply_group_metadata_public_changes(Group, _) ->
+    Group.
+
+apply_group_metadata_min_level_changes(Group=#user_group_entry{}, #{ min_level_for_private_bridge_usage := MinLevel } ) ->
+    Group#user_group_entry{ min_level_for_private_bridge_usage=MinLevel };
+apply_group_metadata_min_level_changes(Group, _ ) ->
     Group.
 
 -spec parse_visibility(binary()) -> user_program_visibility().

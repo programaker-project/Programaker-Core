@@ -107,7 +107,18 @@ body_to_metadata_edition(Parsed) ->
     AsList = lists:filtermap(fun({K, V}) ->
                                      case K of
                                          <<"public">> -> {true, {public, V} };
+                                         <<"min_level_for_private_bridge_usage">> -> {true, {min_level_for_private_bridge_usage, parse_collab_level(V)} };
                                          _ -> false
                                      end
                              end, maps:to_list(Parsed)),
     maps:from_list(AsList).
+
+
+parse_collab_level(<<"not_allowed">>) ->
+    not_allowed;
+parse_collab_level(<<"admin">>) ->
+    admin;
+parse_collab_level(<<"editor">>) ->
+    editor;
+parse_collab_level(<<"viewer">>) ->
+    viewer.

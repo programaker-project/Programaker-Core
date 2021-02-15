@@ -819,6 +819,22 @@ get_versioning(Nodes) ->
                                                 )
                        end
                 }
+
+                %% Add `min.level to privately use bridge` to group entry.
+                %% Default to `not_allowed`.
+              , #database_version_transformation
+                { id=26
+                , apply=fun() ->
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_GROUPS_TABLE,
+                                                 fun( {user_group_entry, Id, Name, CanonicalName, Public, CreationTime} ) ->
+                                                         {user_group_entry, Id, Name, CanonicalName, Public, CreationTime, not_allowed}
+                                                 end,
+                                                 [ id, name, canonical_name, public, creation_time, min_level_for_private_bridge_usage ],
+                                                 user_group_entry
+                                                )
+                        end
+                }
               ]
         }.
 

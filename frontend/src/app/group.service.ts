@@ -186,6 +186,19 @@ export class GroupService {
             .toPromise());
     }
 
+    async updateMinLevelForPrivateBridgeUsage(groupId: string, minLevel: CollaboratorRole | 'not_allowed') {
+        const url = this.getUpdateGroupUrl(groupId);
+
+        await (this.http
+            .patch(url,
+                   JSON.stringify({
+                       'min_level_for_private_bridge_usage': minLevel
+                   }),
+                   {headers: this.sessionService.addContentType(this.sessionService.getAuthHeader(),
+                                                                ContentType.Json)})
+            .toPromise());
+    }
+
     async deleteGroup(groupId: string): Promise<void> {
         const url = this.getDeleteGroupUrl(groupId);
 
