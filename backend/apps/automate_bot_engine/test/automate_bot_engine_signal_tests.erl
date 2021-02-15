@@ -68,12 +68,13 @@ tests(_SetupResult) ->
 %%%% Operations
 simple_wait_for_signal() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
+    {_, UserId} = ?UTILS:create_random_user(),
+    OwnerUserId = { user, UserId },
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
 
-    Configuration = #{ <<"is_public">> => true
+    Configuration = #{ <<"is_public">> => false
                      , <<"service_name">> => ServicePortName
                      , <<"blocks">> => [ ]
                      },
@@ -81,7 +82,7 @@ simple_wait_for_signal() ->
                                                         #{ <<"type">> => <<"CONFIGURATION">>
                                                          , <<"value">> => Configuration
                                                          }),
-    {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
+    {ok, _ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
@@ -133,7 +134,8 @@ simple_wait_for_signal() ->
 
 wait_for_signal_check_key() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
+    {_, UserId} = ?UTILS:create_random_user(),
+    OwnerUserId = { user, UserId },
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
@@ -146,7 +148,7 @@ wait_for_signal_check_key() ->
                                                         #{ <<"type">> => <<"CONFIGURATION">>
                                                          , <<"value">> => Configuration
                                                          }),
-    {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
+    {ok, _ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
@@ -215,7 +217,8 @@ wait_for_signal_check_key() ->
 
 wait_for_signal_check_subkey() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
+    {_, UserId} = ?UTILS:create_random_user(),
+    OwnerUserId = { user, UserId },
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
@@ -228,7 +231,7 @@ wait_for_signal_check_subkey() ->
                                                         #{ <<"type">> => <<"CONFIGURATION">>
                                                          , <<"value">> => Configuration
                                                          }),
-    {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
+    {ok, _ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
@@ -346,7 +349,8 @@ simple_wait_for_variable() ->
 
 wait_for_monitor_signal() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
+    {_, UserId} = ?UTILS:create_random_user(),
+    OwnerUserId = { user, UserId },
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),
@@ -360,7 +364,7 @@ wait_for_monitor_signal() ->
                                                         #{ <<"type">> => <<"CONFIGURATION">>
                                                          , <<"value">> => Configuration
                                                          }),
-    {ok, ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
+    {ok, _ConnectionId} = ?BRIDGE_UTILS:establish_connection(ServicePortId, OwnerUserId),
 
     {ok, ProgramId} = ?UTILS:create_user_program(OwnerUserId),
     Thread = #program_thread{ position = [1]
@@ -410,7 +414,8 @@ wait_for_monitor_signal() ->
 
 wait_for_monitor_signal_check_key() ->
     Prefix = erlang:atom_to_list(?MODULE),
-    OwnerUserId = {user, iolist_to_binary([Prefix,"-test-1-owner"])},
+    {_, UserId} = ?UTILS:create_random_user(),
+    OwnerUserId = { user, UserId },
     ServicePortName = iolist_to_binary([Prefix, "-test-1-service-port"]),
 
     {ok, ServicePortId} = automate_service_port_engine:create_service_port(OwnerUserId, ServicePortName),

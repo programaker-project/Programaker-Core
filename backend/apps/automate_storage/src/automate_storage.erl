@@ -106,6 +106,8 @@
         , add_collaborators/2
         , update_collaborators/2
 
+        , is_user_allowed_to_create_public_bridges/1
+
         , add_mnesia_node/1
         , register_table/2
 
@@ -198,6 +200,7 @@ login_user(Username, Password) ->
             { error, Reason }
     end.
 
+-spec get_user(binary()) -> {ok, #registered_user_entry{}} | {error, not_found}.
 get_user(UserId) ->
     Transaction = fun() ->
                           case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
@@ -1604,6 +1607,21 @@ update_collaborators({group, GroupId}, Collaborators) ->
                           add_collaborators({group, GroupId}, Collaborators)
                   end,
     wrap_transaction(mnesia:transaction(Transaction)).
+
+-spec is_user_allowed_to_create_public_bridges(OwnerId :: owner_id()) -> {ok, boolean()} | {error, not_found}.
+is_user_allowed_to_create_public_bridges({user, UserId}) ->
+    %% Only admins can create public bridges
+
+    case get_user(UserId) of
+        {ok, #registered_user_entry{ is_admin=IsAdmin }} ->
+            {ok, IsAdmin};
+        {error, Reason} ->
+            {error, Reason}
+    end;
+is_user_allowed_to_create_public_bridges({group, _}) ->
+    %% No group is allowed to create public bridges
+    {ok, false}.
+
 
 %% Exposed startup entrypoint
 start_link() ->

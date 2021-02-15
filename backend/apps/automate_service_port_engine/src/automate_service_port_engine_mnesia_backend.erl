@@ -108,21 +108,26 @@ create_service_port(Owner, ServicePortName) ->
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec gen_pending_connection(binary(), owner_id()) -> {ok, binary()}.
+-spec gen_pending_connection(binary(), owner_id()) -> {ok, binary()} | {error, not_authorized}.
 gen_pending_connection(BridgeId, Owner) ->
     ConnectionId = generate_id(),
     CurrentTime = erlang:system_time(second),
 
     Transaction = fun() ->
-                          {ok, ChannelId} = automate_channel_engine:create_channel(),
-                          Entry = #user_to_bridge_pending_connection_entry{ id=ConnectionId
-                                                                          , bridge_id=BridgeId
-                                                                          , owner=Owner
-                                                                          , channel_id=ChannelId
-                                                                          , creation_time=CurrentTime
-                                                                          },
-                          ok = mnesia:write(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, Entry, write),
-                          {ok, ConnectionId}
+                          case can_owner_establish_connection_to_bridge(Owner, BridgeId) of
+                              {ok, true} ->
+                                  {ok, ChannelId} = automate_channel_engine:create_channel(),
+                                  Entry = #user_to_bridge_pending_connection_entry{ id=ConnectionId
+                                                                                  , bridge_id=BridgeId
+                                                                                  , owner=Owner
+                                                                                  , channel_id=ChannelId
+                                                                                  , creation_time=CurrentTime
+                                                                                  },
+                                  ok = mnesia:write(?USER_TO_BRIDGE_PENDING_CONNECTION_TABLE, Entry, write),
+                                  {ok, ConnectionId};
+                              {ok, false} ->
+                                  {error, not_authorized}
+                          end
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
@@ -1030,3 +1035,29 @@ get_block_arguments(#service_port_block{ arguments=Arguments }) ->
     Arguments;
 get_block_arguments(#service_port_trigger_block{ arguments=Arguments }) ->
     Arguments.
+
+
+-spec can_owner_establish_connection_to_bridge(OwnerId :: owner_id(), BridgeId :: binary()) -> {ok, boolean()} | {error, not_found}.
+can_owner_establish_connection_to_bridge(OwnerId, BridgeId) ->
+    %% It can use a bridge if
+    %%  - It's public
+    %%  - It's the owner
+    %%  - Or it has been shared with this user
+    Transaction = fun() ->
+                          case mnesia:read(?SERVICE_PORT_CONFIGURATION_TABLE, BridgeId) of
+                              [#service_port_configuration{is_public=IsPublic}] ->
+                                  case IsPublic of
+                                      true -> {ok, true};
+                                      false ->
+                                          [#service_port_entry{owner=BridgeOwner}] = mnesia:read(?SERVICE_PORT_TABLE, BridgeId),
+                                          case BridgeOwner of
+                                              OwnerId -> {ok, true};
+                                              _ ->
+                                                  {ok, false}
+                                          end
+                                  end;
+                              [] ->
+                                  {error, not_found}
+                          end
+                  end,
+    mnesia:ets(Transaction).

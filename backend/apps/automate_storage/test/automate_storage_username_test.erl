@@ -57,8 +57,9 @@ invalid_usernames() ->
     ?assertEqual(false, ?LIB:validate_username(<<"te">>)),
     %% 51 characters
     ?assertEqual(false, ?LIB:validate_username(<<"a""1234567890""1234567890""1234567890""1234567890""1234567890">>)),
-    %% Only numbers
-    ?assertEqual(false, ?LIB:validate_username(<<"123">>)),
+    %% Only numbers with or without dashes
+    ?assertEqual(false, ?LIB:validate_username(<<"123456">>)),
+    ?assertEqual(false, ?LIB:validate_username(<<"123-456">>)),
     %% Bad types
     ?assertEqual(false, ?LIB:validate_username(undefined)),
     ?assertEqual(false, ?LIB:validate_username(null)),
