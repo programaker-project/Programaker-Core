@@ -22,8 +22,10 @@ start_link() ->
                    loop()
            end, ?MODULE) of
         {started, Pid} ->
+            link(Pid),
             {ok, Pid};
         {already_running, Pid} ->
+            link(Pid),
             {ok, Pid};
         {error, Error} ->
             {error, Error}

@@ -128,15 +128,19 @@ get_how_to_enable(_) ->
 %% Timekeeping service
 %%====================================================================
 spawn_timekeeper() ->
+    io:fwrite("[~p] Spawining Timekeeper~n", [node()]),
     case automate_coordination:run_task_not_parallel(
            fun() ->
+                   io:fwrite("[~p] Timekeeper started~n", [self()]),
                    {ok, ChannelId} = get_monitor_id(),
                    {ok, _} = automate_service_registry:register_public(automate_services_time),
                    timekeeping_loop(ChannelId, {{0, 0, 0}, {0, 0, 0}})
            end, ?MODULE) of
         {started, Pid} ->
+            link(Pid),
             {ok, Pid};
         {already_running, Pid} ->
+            link(Pid),
             {ok, Pid};
         {error, Error} ->
             {error, Error}

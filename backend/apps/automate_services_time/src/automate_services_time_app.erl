@@ -15,7 +15,7 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-    automate_services_time:start_link().
+    automate_services_time_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->
