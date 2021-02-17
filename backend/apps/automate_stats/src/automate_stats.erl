@@ -210,6 +210,10 @@ update_internal_metrics() ->
                      set_metric(gauge, automate_service_count, Count, [Category])
              end, ServiceCount),
 
+    set_metric(gauge, automate_node_count, length(nodes()) + 1, []),
+    set_metric(gauge, automate_mnesia_node_count, length(mnesia:system_info(db_nodes)), [all]),
+    set_metric(gauge, automate_mnesia_node_count, length(mnesia:system_info(running_db_nodes)), [active]),
+
     %% Users
     #user_stat_metrics{ count=UserCount
                       , registered_last_day=RegisteredUsersLastDay
@@ -295,6 +299,8 @@ set_log_count_metrics(LogCountPerProgram) ->
 prepare() ->
     add_metric(boolean, automate_service, <<"State of automate service.">>, [name]),
 
+    add_metric(gauge, automate_node_count, <<"Automate's backend cluster node count.">>, []),
+    add_metric(gauge, automate_mnesia_node_count, <<"Automate's mnesia node count.">>, [state]),
     add_metric(gauge, automate_bot_count, <<"Automate's bot.">>, [state]),
     add_metric(gauge, automate_program_thread_count, <<"Automate's program thread count.">>, [state]),
     add_metric(gauge, automate_monitor_count, <<"Automate's monitor.">>, [state]),
