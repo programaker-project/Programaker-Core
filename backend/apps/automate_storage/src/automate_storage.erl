@@ -2434,13 +2434,16 @@ start_coordinator() ->
                                                                                           , { self(), storage_started}])
                                                            end, NonPrimaryList);
                                          _ ->
+                                             %% Link to the primary's coordinator process
+                                             PrimaryProcess = rpc:call(Primary, erlang, whereis, [?SERVER]),
+                                             true = link(PrimaryProcess),
                                              ok
                                      end,
 
                                      Spawner ! {self(), ready},
 
-                                     %% This process cannot linger work if mnesia goes down
-                                     link(whereis(mnesia_sup)),
+                                     %% This process cannot longer work if mnesia goes down
+                                     true = link(whereis(mnesia_sup)),
                                      coordinate_loop(Primary)
                              end),
     receive
@@ -2509,6 +2512,10 @@ coordinate_loop(Primary) ->
 
         {mnesia_system_event, {mnesia_up, Node}} ->
             io:fwrite("[~p:~p] Mnesia node up: ~p~n", [?MODULE, ?LINE, Node]),
+            coordinate_loop(Primary);
+
+        {mnesia_system_event, {mnesia_info, Format, Args}} ->
+            io:fwrite("[~p:~p] " ++ Format, [?MODULE | [ ?LINE | Args ]]),
             coordinate_loop(Primary);
 
         {mnesia_system_event, {inconsistent_database, Context, Node}} ->
