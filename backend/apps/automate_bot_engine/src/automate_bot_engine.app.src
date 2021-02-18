@@ -5,14 +5,14 @@
     {mod, { automate_bot_engine_app, [] }},
     {applications, [ kernel
                    , stdlib
-                   , automate_storage
-                   , automate_coordination
-                   , automate_services_all
-                   , automate_configuration
-                   , automate_channel_engine
+                     %% , automate_storage
+                     %% , automate_coordination
+                     %% , automate_services_all
+                     %% , automate_configuration
+                     %% , automate_channel_engine
                      %% , automate_program_linker %% Not an application, just a module
-                   , automate_service_registry
-                   , automate_service_port_engine
+                     %% , automate_service_registry
+                     %% , automate_service_port_engine
     ]},
     {env, [
     ]},

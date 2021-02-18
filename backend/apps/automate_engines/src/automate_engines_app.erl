@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_rest_api public API
+%% @doc automate engines initialization
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_rest_api_app).
+-module(automate_engines_app).
 
 -behaviour(application).
 
@@ -13,14 +13,12 @@
 %%====================================================================
 %% API
 %%====================================================================
-
 start() ->
-    % Dependencies
-    {ok, _} = application:ensure_all_started(inets),
-    {ok, _} = application:ensure_all_started(cowboy),
+    %% Dependencies
+    {ok, _} = application:ensure_all_started(prometheus),
+    %% Start supervisor
+    automate_engines_sup:start_link().
 
-    %% Initialize process
-    automate_rest_api_sup:start_link().
 
 start(_StartType, _StartArgs) ->
     start().

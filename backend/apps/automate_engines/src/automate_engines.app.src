@@ -1,12 +1,12 @@
-{application, automate, [
-    {description, "Auto-mate node."},
+{application, automate_engines, [
+    {description, "Auto-mate engine group."},
     {vsn, "0.0.0"},
     {registered, []},
     {mod, { automate_app, [] }},
     {applications, [ kernel
                    , stdlib
-                   %% , automate_bot_engine
-                   %% , automate_monitor_engine
+                   , automate_configuration
+                   , automate_storage
     ]},
     {env, [
     ]},

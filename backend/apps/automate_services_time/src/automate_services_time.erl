@@ -91,7 +91,7 @@ call(get_tz_year, [Timezone], Thread, _UserId) ->
     {{Y1970, _Mon, _Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
     {ok, Thread, Y1970};
 
-call(get_tz_day_of_week, [Timezome], Thread, _UserId) ->
+call(get_tz_day_of_week, [_Timezone], Thread, _UserId) ->
     {{Y1970, Mon, Day}, {_Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
     %% Note that technically, calendar:day_of_the_week takes a Year, not Year1970 .
     %%  It should not affect this calculation, but keep it in mind.
