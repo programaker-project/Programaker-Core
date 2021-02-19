@@ -29,20 +29,35 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
+    automate_configuration_app:check_assertions(),
     {ok, { { rest_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD},
            [ #{ id => automate_configuration
-              , start => { automate_configuration_sup, start_link, [] }
+              , start => { automate_configuration_distributed, start_link, [] }
               , restart => permanent
               , shutdown => 2000
               , type => supervisor
               , modules => [automate_configuration]
               }
-           , #{ id => automate_storage
-              , start => {automate_storage_sup, start_link, []}
+           , #{ id => automate_logging
+              , start => {automate_logging_app, start, []}
               , restart => permanent
               , shutdown => 2000
               , type => supervisor
               , modules => [automate_storage]
+              }
+           , #{ id => automate_storage
+              , start => {automate_storage, start_link, []}
+              , restart => permanent
+              , shutdown => 2000
+              , type => supervisor
+              , modules => [automate_storage]
+              }
+           , #{ id => automate_coordination
+              , start => {automate_coordination, start_link, []}
+              , restart => permanent
+              , shutdown => 2000
+              , type => supervisor
+              , modules => [automate_coordination]
               }
            , #{ id => automate_engines
               , start => { automate_engines_app, start, [] }

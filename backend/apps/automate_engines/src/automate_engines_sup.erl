@@ -66,7 +66,7 @@ init([]) ->
               , modules => [automate_service_port_engine]
               }
            , #{ id => automate_template_engine
-              , start => { automate_template_engine_sup, start_link, [] }
+              , start => { automate_template_engine_app, start, [] }
               , restart => permanent
               , shutdown => 2000
               , type => supervisor
@@ -78,6 +78,13 @@ init([]) ->
               , shutdown => 2000
               , type => supervisor
               , modules => [automate_stats]
+              }
+           , #{ id => automate_services_time
+              , start => { automate_services_time_app, start, [] }
+              , restart => permanent
+              , shutdown => 2000
+              , type => supervisor
+              , modules => [automate_services_time]
               }
            ]} }.
 
