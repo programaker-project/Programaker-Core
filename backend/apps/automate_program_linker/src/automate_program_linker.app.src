@@ -3,9 +3,7 @@
   {description, "Auto-mate program linker."},
   {vsn, "0.0.0"},
   {registered, []},
-  {applications, [ automate_channel_engine
-                 , automate_configuration
-                 , stdlib
+  {applications, [ stdlib
                  , kernel
                  ]},
   {env, [

@@ -34,6 +34,7 @@ start_link() ->
                                   [ { attributes, record_info(fields, listeners_table_entry)}
                                   , { ram_copies, Nodes }
                                   , { record_name, listeners_table_entry }
+                                  , { index, [ pid ] }
                                   , { type, bag }
                                   ]) of
              { atomic, ok } ->
@@ -41,13 +42,8 @@ start_link() ->
              { aborted, { already_exists, _ }} ->
                  ok
          end,
-
-    ok = case mnesia:add_table_index(?LISTENERS_TABLE, #listeners_table_entry.pid) of
-             { atomic, ok } ->
-                 ok;
-             { aborted, { already_exists, _, _ }} ->
-                 ok
-         end,
+    ok = mnesia:wait_for_tables([ ?LISTENERS_TABLE
+                                ], automate_configuration:get_table_wait_time()),
 
     ok = case mnesia:create_table(?MONITORS_TABLE,
                                   [ { attributes, record_info(fields, monitors_table_entry)}
@@ -62,7 +58,7 @@ start_link() ->
          end,
 
     ok = mnesia:wait_for_tables([ ?LIVE_CHANNELS_TABLE
-                                , ?LISTENERS_TABLE
+                                , ?MONITORS_TABLE
                                 ], automate_configuration:get_table_wait_time()),
     ignore.
 

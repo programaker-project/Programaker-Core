@@ -1,0 +1,26 @@
+{application, automate_engines, [
+    {description, "Auto-mate engine group."},
+    {vsn, "0.0.0"},
+    {registered, []},
+    {mod, { automate_app, [] }},
+    {applications, [ kernel
+                   , stdlib
+                   , automate_configuration
+                   , automate_storage
+    ]},
+    {included_applications, [ automate_channel_engine
+                            , automate_bot_engine
+                            , automate_service_registry
+                            , automate_monitor_engine
+                            , automate_service_port_engine
+                            , automate_template_engine
+                            , automate_stats
+                            , automate_mail
+                            , automate_services_time
+                            ]},
+    {env, [
+    ]},
+    {modules, []},
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+]}.

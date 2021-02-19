@@ -91,7 +91,7 @@ call(get_tz_year, [Timezone], Thread, _UserId) ->
     {{Y1970, _Mon, _Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
     {ok, Thread, Y1970};
 
-call(get_tz_day_of_week, [Timezome], Thread, _UserId) ->
+call(get_tz_day_of_week, [_Timezone], Thread, _UserId) ->
     {{Y1970, Mon, Day}, {_Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
     %% Note that technically, calendar:day_of_the_week takes a Year, not Year1970 .
     %%  It should not affect this calculation, but keep it in mind.
@@ -128,15 +128,19 @@ get_how_to_enable(_) ->
 %% Timekeeping service
 %%====================================================================
 spawn_timekeeper() ->
+    io:fwrite("[~p] Spawining Timekeeper~n", [node()]),
     case automate_coordination:run_task_not_parallel(
            fun() ->
+                   io:fwrite("[~p] Timekeeper started~n", [self()]),
                    {ok, ChannelId} = get_monitor_id(),
                    {ok, _} = automate_service_registry:register_public(automate_services_time),
                    timekeeping_loop(ChannelId, {{0, 0, 0}, {0, 0, 0}})
            end, ?MODULE) of
         {started, Pid} ->
+            link(Pid),
             {ok, Pid};
         {already_running, Pid} ->
+            link(Pid),
             {ok, Pid};
         {error, Error} ->
             {error, Error}

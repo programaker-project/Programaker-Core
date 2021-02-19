@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_rest_api top level supervisor.
+%% @doc Timekeeping service supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_rest_api_sup).
+-module(automate_services_time_sup).
 
 -behaviour(supervisor).
 
@@ -30,13 +30,14 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
     {ok, { {one_for_one, ?AUTOMATE_SUPERVISOR_INTENSITY, ?AUTOMATE_SUPERVISOR_PERIOD},
-           [ #{ id => automate_rest_api_server
-              , start => {automate_rest_api_server, start_link, []}
+           [ #{ id => automate_services_time
+              , start => {automate_services_time, start_link, []}
               , restart => permanent
               , shutdown => 2000
               , type => worker
-              , modules => [automate_rest_api_server]
+              , modules => [automate_services_time]
               }
+
            ]} }.
 
 %%====================================================================

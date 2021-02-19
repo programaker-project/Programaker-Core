@@ -8,14 +8,16 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export([start/0, start/2, stop/1]).
 
 %%====================================================================
 %% API
 %%====================================================================
+start() ->
+    automate_services_time_sup:start_link().
 
 start(_StartType, _StartArgs) ->
-    automate_services_time:start_link().
+    start().
 
 %%--------------------------------------------------------------------
 stop(_State) ->

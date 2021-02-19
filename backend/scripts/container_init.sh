@@ -11,7 +11,7 @@ if [ ! -z "${NODE_NAME_SUFFIX}" ];then
     nodename="`hostname`${NODE_NAME_SUFFIX}"
 
     echo "NodeName: backend@$nodename"
-    sed 's/^-sname.*$/-name '"backend\@$nodename"'/' -i "${VM_ARGS_PATH}"
+    sed 's/^-sname.*$/-name '"backend\\@$nodename"'/' -i "${VM_ARGS_PATH}"
 else
     sed 's/^-sname.*$/-sname '"backend"'/' -i "${VM_ARGS_PATH}"
 fi

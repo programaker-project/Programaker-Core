@@ -18,12 +18,14 @@
 start_link() ->
     case automate_coordination:run_task_not_parallel(
            fun() ->
-                   yes = global:register_name(?MODULE, self()),
+                   yes = global:re_register_name(?MODULE, self()),
                    loop()
            end, ?MODULE) of
         {started, Pid} ->
+            link(Pid),
             {ok, Pid};
         {already_running, Pid} ->
+            link(Pid),
             {ok, Pid};
         {error, Error} ->
             {error, Error}
