@@ -15,6 +15,7 @@
                             , automate_service_port_engine
                             , automate_template_engine
                             , automate_stats
+                            , automate_mail
                             , automate_services_time
                             ]},
     {env, [

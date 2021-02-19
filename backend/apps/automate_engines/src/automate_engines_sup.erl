@@ -79,6 +79,7 @@ init([]) ->
               , type => supervisor
               , modules => [automate_stats]
               }
+             %% Automate_mail does not have a supervisor (or long running process)
            , #{ id => automate_services_time
               , start => { automate_services_time_app, start, [] }
               , restart => permanent
