@@ -2499,17 +2499,34 @@ wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
                     io:fwrite("[automate_storage coordinator | Prim, ~p] Unknown message: ~p~n",
                               [node(), X]),
                     wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo)
+
+            after ?WAIT_READY_LOOP_TIME ->
+                    lists:foreach(fun(Secondary) ->
+                                          {?SERVER, Secondary} ! { self(), {primary_waiting, node()} }
+                                  end, sets:to_list(NonPrimariesToGo)),
+                    wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo)
             end
+    end.
+
+coordinate_secondary_loop_wait() ->
+    receive
+        {_From, {primary_waiting, Node}} ->
+            io:fwrite("[~p:~p] Primary node (~p) waiting. Stopping secondary node ~p~n",
+                      [?MODULE, ?LINE, Node, node()]),
+            exit(primary_disconnected);
+        X ->
+            io:fwrite("[~p:~p][Secondary coordinator waiting for primary to go back up | ~p] Unknown message: ~p~n",
+                      [?MODULE, ?LINE, node(), X]),
+            coordinate_secondary_loop_wait()
     end.
 
 coordinate_loop(IsPrimary=false) ->
     receive
         {'DOWN', _MonitorRef, process, _Object, _Info} ->
-            io:fwrite("[~p:~p] Primary node failed. Stopping secondary node ~p~n",
+            io:fwrite("[~p:~p] Primary node failed. Waiting for primary before stopping secondary node ~p~n",
                       [?MODULE, ?LINE, node()]),
-            %% This might be better represented as a crash of the process, but
-            %% this is the most reliable way of stopping all processes.
-            erlang:halt();
+            %% Wait for primary to come back up, and exit
+            coordinate_secondary_loop_wait();
         X ->
             io:fwrite("[~p:~p][Secondary coordinator | ~p] Unknown message: ~p~n",
                       [?MODULE, ?LINE, node(), X]),
