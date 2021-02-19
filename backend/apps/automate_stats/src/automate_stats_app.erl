@@ -8,15 +8,17 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export([start/0, start/2, stop/1]).
 
 %%====================================================================
 %% API
 %%====================================================================
-
-start(_StartType, _StartArgs) ->
+start() ->
     automate_stats:prepare(),
     automate_stats_sup:start_link().
+
+start(_StartType, _StartArgs) ->
+    start().
 
 %%--------------------------------------------------------------------
 stop(_State) ->

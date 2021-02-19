@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc automate_coordination APP
+%% @doc automate engines initialization
 %% @end
 %%%-------------------------------------------------------------------
 
--module(automate_coordination_app).
+-module(automate_engines_app).
 
 -behaviour(application).
 
@@ -14,7 +14,10 @@
 %% API
 %%====================================================================
 start() ->
-    automate_coordination_sup:start_link().
+    %% Dependencies
+    {ok, _} = application:ensure_all_started(prometheus),
+    %% Start supervisor
+    automate_engines_sup:start_link().
 
 
 start(_StartType, _StartArgs) ->

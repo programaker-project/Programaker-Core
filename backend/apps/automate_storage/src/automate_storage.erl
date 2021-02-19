@@ -2397,7 +2397,7 @@ start_coordinator() ->
 
     Spawner = self(),
     Coordinator = spawn_link(fun() ->
-                                     io:fwrite("[~p] Stopping mnesia for synchronization", [?MODULE]),
+                                     io:fwrite("[~p] Stopping mnesia for synchronization~n", [?MODULE]),
                                      mnesia:stop(),
 
                                      register(?SERVER, self()),
@@ -2439,14 +2439,24 @@ start_coordinator() ->
 
                                      Spawner ! {self(), ready},
 
-                                     %% This process cannot linger work if mnesia goes down
-                                     link(whereis(mnesia_sup)),
-                                     coordinate_loop(Primary)
+                                     %% This process cannot longer work if mnesia goes down
+                                     true = link(whereis(mnesia_sup)),
+                                     case IsPrimary of
+                                         true -> coordinate_loop_primary();
+                                         false ->
+                                             %% Link to the primary's coordinator process
+                                             PrimaryProcess = rpc:call(Primary, erlang, whereis, [?SERVER]),
+                                             io:fwrite("[~p:~p] Linking to primary: ~p~n", [?MODULE, ?LINE, PrimaryProcess]),
+                                             erlang:monitor(process, PrimaryProcess),
+                                             coordinate_loop_secondary()
+                                     end
                              end),
     receive
         {Coordinator, ready} ->
             io:fwrite("[Automate storage] Ready~n"),
-            {ok, Coordinator}
+            {ok, Coordinator};
+        {shutdown,_}=Shutdown ->
+            exit(Shutdown)
     end.
 
 %% Not a primary node
@@ -2488,37 +2498,75 @@ wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
                     io:fwrite("[automate_storage coordinator | Prim, ~p] Unknown message: ~p~n",
                               [node(), X]),
                     wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo)
+
+            after ?WAIT_READY_LOOP_TIME ->
+                    lists:foreach(fun(Secondary) ->
+                                          {?SERVER, Secondary} ! { self(), {primary_waiting, node()} }
+                                  end, sets:to_list(NonPrimariesToGo)),
+                    wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo)
             end
     end.
 
-coordinate_loop(Primary) ->
+-spec coordinate_secondary_loop_wait() -> no_return().
+coordinate_secondary_loop_wait() ->
+    receive
+        {_From, {primary_waiting, Node}} ->
+            io:fwrite("[~p:~p] Primary node (~p) waiting. Stopping secondary node ~p~n",
+                      [?MODULE, ?LINE, Node, node()]),
+            exit(primary_disconnected);
+        X ->
+            io:fwrite("[~p:~p][Secondary coordinator waiting for primary to go back up | ~p] Unknown message: ~p~n",
+                      [?MODULE, ?LINE, node(), X]),
+            coordinate_secondary_loop_wait()
+    end.
+
+-spec coordinate_loop_secondary() -> no_return().
+coordinate_loop_secondary() ->
+    receive
+        {'DOWN', _MonitorRef, process, _Object, _Info} ->
+            io:fwrite("[~p:~p] Primary node failed. Waiting for primary before stopping secondary node ~p~n",
+                      [?MODULE, ?LINE, node()]),
+            %% Wait for primary to come back up, and exit
+            coordinate_secondary_loop_wait();
+        X ->
+            io:fwrite("[~p:~p][Secondary coordinator | ~p] Unknown message: ~p~n",
+                      [?MODULE, ?LINE, node(), X]),
+            coordinate_loop_secondary()
+    end.
+
+-spec coordinate_loop_primary() -> no_return().
+coordinate_loop_primary() ->
     receive
         { From, { node_ready, Node } } ->
             io:fwrite("[~p:~p] Merging diverged node: ~p~n", [?MODULE, ?LINE, Node]),
             ok = add_mnesia_node(Node),
             From ! {self(), storage_started},
-            coordinate_loop(Primary);
+            coordinate_loop_primary();
 
         {mnesia_system_event, {mnesia_fatal, Format, Args, BinaryCore}} ->
             io:fwrite("[~p:~p] Fatal error in mnesia:~n ~p~n", [?MODULE, ?LINE, {Format, Args, BinaryCore}]),
-            coordinate_loop(Primary);
+            coordinate_loop_primary();
 
         {mnesia_system_event, {mnesia_down, Node}} ->
             io:fwrite("[~p:~p] Mnesia node down: ~p~n", [?MODULE, ?LINE, Node]),
-            coordinate_loop(Primary);
+            coordinate_loop_primary();
 
         {mnesia_system_event, {mnesia_up, Node}} ->
             io:fwrite("[~p:~p] Mnesia node up: ~p~n", [?MODULE, ?LINE, Node]),
-            coordinate_loop(Primary);
+            coordinate_loop_primary();
+
+        {mnesia_system_event, {mnesia_info, Format, Args}} ->
+            io:fwrite("[~p:~p] " ++ Format, [?MODULE | [ ?LINE | Args ]]),
+            coordinate_loop_primary();
 
         {mnesia_system_event, {inconsistent_database, Context, Node}} ->
             io:fwrite("[~p:~p] Mnesia inconsistent database:~n ~p~n", [?MODULE, ?LINE, {Context, Node}]),
-            coordinate_loop(Primary);
+            coordinate_loop_primary();
 
         X ->
-            io:fwrite("[~p:~p][coordinator | ~p | Prim: ~p] Unknown message: ~p~n",
-                      [?MODULE, ?LINE, node(), Primary, X]),
-            coordinate_loop(Primary)
+            io:fwrite("[~p:~p][Primary coordinator | ~p] Unknown message: ~p~n",
+                      [?MODULE, ?LINE, node(), X]),
+            coordinate_loop_primary()
     end.
 
 prepare_nodes(Nodes) ->

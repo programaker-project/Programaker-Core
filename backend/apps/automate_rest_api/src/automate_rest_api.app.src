@@ -6,16 +6,7 @@
  , {applications, [ kernel
                   , stdlib
                   , ssl
-                  , inets
-                  , cowboy
                   , jiffy
-                  , automate_storage
-                  , automate_channel_engine
-                  , automate_stats
-                  , automate_service_port_engine
-                  , automate_template_engine
-                  , automate_configuration
-                  , automate_mail
                   ]}
 
  , {env, [ {port, 8888} ]}

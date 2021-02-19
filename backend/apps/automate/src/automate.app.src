@@ -2,13 +2,28 @@
     {description, "Auto-mate node."},
     {vsn, "0.0.0"},
     {registered, []},
+    {mod, { automate_app, [] }},
     {applications, [ kernel
                    , stdlib
-                   , automate_configuration
-                   , automate_rest_api
-                   , automate_bot_engine
-                   , automate_monitor_engine
+                   %% , automate_bot_engine
+                   %% , automate_monitor_engine
+                    , cowboy
+                    , jiffy
+                    , uuid
+                    , eargon2
+                    , mochiweb
+                    , mochiweb_xpath
+                    , prometheus
+                    , qdate
+
     ]},
+    {included_applications, [ automate_configuration
+                            , automate_logging
+                            , automate_storage
+                            , automate_coordination
+                            , automate_engines
+                            , automate_rest_api
+                            ]},
     {env, [
     ]},
     {modules, []},
