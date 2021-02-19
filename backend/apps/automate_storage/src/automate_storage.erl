@@ -2442,15 +2442,14 @@ start_coordinator() ->
                                      %% This process cannot longer work if mnesia goes down
                                      true = link(whereis(mnesia_sup)),
                                      case IsPrimary of
-                                         true -> ok;
+                                         true -> coordinate_loop_primary();
                                          false ->
                                              %% Link to the primary's coordinator process
                                              PrimaryProcess = rpc:call(Primary, erlang, whereis, [?SERVER]),
                                              io:fwrite("[~p:~p] Linking to primary: ~p~n", [?MODULE, ?LINE, PrimaryProcess]),
-                                             erlang:monitor(process, PrimaryProcess)
-                                     end,
-
-                                     coordinate_loop(IsPrimary)
+                                             erlang:monitor(process, PrimaryProcess),
+                                             coordinate_loop_secondary()
+                                     end
                              end),
     receive
         {Coordinator, ready} ->
@@ -2508,6 +2507,7 @@ wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
             end
     end.
 
+-spec coordinate_secondary_loop_wait() -> no_return().
 coordinate_secondary_loop_wait() ->
     receive
         {_From, {primary_waiting, Node}} ->
@@ -2520,7 +2520,8 @@ coordinate_secondary_loop_wait() ->
             coordinate_secondary_loop_wait()
     end.
 
-coordinate_loop(IsPrimary=false) ->
+-spec coordinate_loop_secondary() -> no_return().
+coordinate_loop_secondary() ->
     receive
         {'DOWN', _MonitorRef, process, _Object, _Info} ->
             io:fwrite("[~p:~p] Primary node failed. Waiting for primary before stopping secondary node ~p~n",
@@ -2530,41 +2531,42 @@ coordinate_loop(IsPrimary=false) ->
         X ->
             io:fwrite("[~p:~p][Secondary coordinator | ~p] Unknown message: ~p~n",
                       [?MODULE, ?LINE, node(), X]),
-            coordinate_loop(IsPrimary)
-    end;
+            coordinate_loop_secondary()
+    end.
 
-coordinate_loop(IsPrimary=true) ->
+-spec coordinate_loop_primary() -> no_return().
+coordinate_loop_primary() ->
     receive
         { From, { node_ready, Node } } ->
             io:fwrite("[~p:~p] Merging diverged node: ~p~n", [?MODULE, ?LINE, Node]),
             ok = add_mnesia_node(Node),
             From ! {self(), storage_started},
-            coordinate_loop(IsPrimary);
+            coordinate_loop_primary();
 
         {mnesia_system_event, {mnesia_fatal, Format, Args, BinaryCore}} ->
             io:fwrite("[~p:~p] Fatal error in mnesia:~n ~p~n", [?MODULE, ?LINE, {Format, Args, BinaryCore}]),
-            coordinate_loop(IsPrimary);
+            coordinate_loop_primary();
 
         {mnesia_system_event, {mnesia_down, Node}} ->
             io:fwrite("[~p:~p] Mnesia node down: ~p~n", [?MODULE, ?LINE, Node]),
-            coordinate_loop(IsPrimary);
+            coordinate_loop_primary();
 
         {mnesia_system_event, {mnesia_up, Node}} ->
             io:fwrite("[~p:~p] Mnesia node up: ~p~n", [?MODULE, ?LINE, Node]),
-            coordinate_loop(IsPrimary);
+            coordinate_loop_primary();
 
         {mnesia_system_event, {mnesia_info, Format, Args}} ->
             io:fwrite("[~p:~p] " ++ Format, [?MODULE | [ ?LINE | Args ]]),
-            coordinate_loop(IsPrimary);
+            coordinate_loop_primary();
 
         {mnesia_system_event, {inconsistent_database, Context, Node}} ->
             io:fwrite("[~p:~p] Mnesia inconsistent database:~n ~p~n", [?MODULE, ?LINE, {Context, Node}]),
-            coordinate_loop(IsPrimary);
+            coordinate_loop_primary();
 
         X ->
             io:fwrite("[~p:~p][Primary coordinator | ~p] Unknown message: ~p~n",
                       [?MODULE, ?LINE, node(), X]),
-            coordinate_loop(IsPrimary)
+            coordinate_loop_primary()
     end.
 
 prepare_nodes(Nodes) ->
