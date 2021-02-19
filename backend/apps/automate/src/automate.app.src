@@ -5,8 +5,6 @@
     {mod, { automate_app, [] }},
     {applications, [ kernel
                    , stdlib
-                   %% , automate_bot_engine
-                   %% , automate_monitor_engine
                     , cowboy
                     , jiffy
                     , uuid
