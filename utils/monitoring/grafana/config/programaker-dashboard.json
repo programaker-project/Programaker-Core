@@ -64,7 +64,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1612217907782,
+  "iteration": 1613819147118,
   "links": [],
   "panels": [
     {
@@ -138,9 +138,10 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "min(automate_service{name=\"automate_storage_sup\"})",
+          "expr": "min(automate_service{name=\"automate_storage\"})",
           "format": "time_series",
           "instant": true,
+          "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
@@ -241,9 +242,10 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "min(automate_service{name=\"automate_bot_engine_sup\"})",
+          "expr": "min(automate_service{name=\"automate_bot_engine\"})",
           "format": "time_series",
           "instant": true,
+          "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
@@ -340,9 +342,10 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "min(automate_service{name=\"automate_service_port_engine_sup\"})",
+          "expr": "min(automate_service{name=\"automate_service_port_engine\"})",
           "format": "time_series",
           "instant": true,
+          "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
@@ -472,14 +475,16 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:303",
           "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
+          "$$hashKey": "object:304",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -561,9 +566,10 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "min(automate_service{name=\"automate_service_registry_sup\"})",
+          "expr": "min(automate_service{name=\"automate_service_registry\"})",
           "format": "time_series",
           "instant": true,
+          "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
@@ -660,9 +666,10 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "min(automate_service{name=\"automate_bot_engine_runner_sup\"})",
+          "expr": "min(automate_service{name=\"automate_bot_engine_program_runner\"})",
           "format": "time_series",
           "instant": true,
+          "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
@@ -759,9 +766,10 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "min(automate_service{name=\"automate_channel_engine_sup\"})",
+          "expr": "min(automate_service{name=\"automate_channel_engine\"})",
           "format": "time_series",
           "instant": true,
+          "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
@@ -858,9 +866,10 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "min(automate_service{name=\"automate_rest_api_sup\"})",
+          "expr": "min(automate_service{name=\"automate_rest_api\"})",
           "format": "time_series",
           "instant": true,
+          "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
@@ -959,9 +968,10 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "min(automate_service{name=\"automate_bot_engine_thread_runner_sup\"})",
+          "expr": "min(automate_service{name=\"automate_bot_engine_thread_runner\"})",
           "format": "time_series",
           "instant": true,
+          "interval": "",
           "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
@@ -4994,5 +5004,5 @@
   "timezone": "browser",
   "title": "PrograMaker",
   "uid": "iKcIpW8mk-2",
-  "version": 7
+  "version": 10
 }
