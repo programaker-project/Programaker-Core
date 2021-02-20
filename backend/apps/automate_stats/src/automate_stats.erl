@@ -65,26 +65,26 @@ format(prometheus) ->
 
 -spec get_internal_metrics() -> {ok, #internal_metrics{}, [iolist()]}.
 get_internal_metrics() ->
-    Services = [ automate_storage_sup
+    Services = [ {automate_storage, automate_storage}
 
-               , automate_channel_engine_sup
+               , {automate_channel_engine, automate_channel_engine_sup}
 
-               , automate_rest_api_sup
+               , {automate_rest_api, automate_rest_api_sup}
 
-               , automate_service_registry_sup
+               , {automate_service_registry, automate_service_registry_sup}
 
-               , automate_bot_engine_runner_sup
-               , automate_bot_engine_thread_runner_sup
-               , automate_bot_engine_sup
+               , {automate_bot_engine_program_runner, automate_bot_engine_runner_sup}
+               , {automate_bot_engine_thread_runner, automate_bot_engine_thread_runner_sup}
+               , {automate_bot_engine, automate_bot_engine_sup}
 
-               , automate_monitor_engine_runner_sup
-               , automate_monitor_engine_sup
+               , {automate_monitor_engine_runner, automate_monitor_engine_runner_sup}
+               , {automate_monitor_engine, automate_monitor_engine_sup}
 
-               , automate_service_port_engine_sup
+               , {automate_service_port_engine, automate_service_port_engine_sup}
                ],
 
-    ServiceCounts = maps:from_list(lists:map(fun (S) ->
-                                                     {S, whereis(S) =/= undefined}
+    ServiceCounts = maps:from_list(lists:map(fun ({Name, Service}) ->
+                                                     {Name, whereis(Service) =/= undefined}
                                              end, Services)),
 
     Errors = [],
