@@ -41,11 +41,6 @@ export class SelectProgrammingModelDialogComponent implements OnInit {
     }
 
     selectType(program_type: ProgramType) {
-        if (program_type === 'flow_program' && !this.data.is_advanced_user) {
-            // This option cannot be accepted
-            return;
-        }
-
         this.selectedType = program_type;
     }
 

@@ -29,8 +29,7 @@
 
         <mat-card [ngClass]="{
             'col-sm-5': true,
-            'selected': selectedType === 'flow_program',
-            'disabled': !data.is_advanced_user
+            'selected': selectedType === 'flow_program'
             }"
             (click)="selectType('flow_program')"
             role="button">
@@ -39,14 +38,8 @@
                 <img src="/assets/showcase/flow/flow-example.png" />
             </div>
             <div class="description">
-                <p class="disabled-explanation" *ngIf="!data.is_advanced_user">
-                    In preview: Disabled for non-advanced users.
-                </p>
 
                 <p>PrograMaker's re-imagining of visual programming.</p>
-                <!-- Let's keep the verbosity down.
-                     <p>Designed to create an uniform experience when designing web and mobile applications.</p>
-                -->
                 <p class="reason">Choose this if you want to add visual elements to your program.</p>
             </div>
         </mat-card>
