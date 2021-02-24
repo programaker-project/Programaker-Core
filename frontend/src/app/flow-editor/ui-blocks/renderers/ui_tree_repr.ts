@@ -33,6 +33,7 @@ export type UiElementWidgetContainer
 
 export interface UiElementRepr {
     settings?: BlockConfigurationOptions;
+    dimensions?: { width: number, height: number },
     id: string,
     widget_type: AtomicUiElementWidget,
     text?: string,
