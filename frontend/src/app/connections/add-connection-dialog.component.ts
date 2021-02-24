@@ -203,6 +203,13 @@ export class AddConnectionDialogComponent {
                     }
                 }
             }
+            else if (entry.tag === 'img') {
+                element = document.createElement('img');
+                if (entry.properties !== undefined) {
+                    (element as HTMLImageElement).src = entry.properties.src || '';
+                    (element as HTMLImageElement).alt = entry.properties.alt || '';
+                }
+            }
             else {
                 throw new Error("Unknown tag: " + entry.tag);
             }
