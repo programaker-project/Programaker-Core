@@ -182,6 +182,9 @@ export class UiFlowBlock implements FlowBlock {
         if (this.blockData.content) {
             data.content = this.blockData.content;
         }
+        if (this.blockData.dimensions) {
+            data.dimensions = this.blockData.dimensions;
+        }
 
         data.settings = this.blockData.settings;
 

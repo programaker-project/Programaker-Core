@@ -4,6 +4,8 @@
         ]).
 
 -define(DEFAULT_TITLE, <<"Page title">>).
+-define(DEFAULT_IMAGE_WIDTH, <<"100">>).
+-define(DEFAULT_IMAGE_HEIGHT, <<"100">>).
 
 %%====================================================================
 %% API functions
@@ -186,8 +188,11 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_image">>
                   , <<"id">> := _WidgetId
                   }, ProgramId, _Values, Req) ->
     ImgUrl = get_image_url(E, ProgramId, Req),
+    Dimensions = get_image_dimensions(E),
     [ <<"<div class=widget-container>">>
-    , "<img class='widget' src='", ImgUrl, "'/>"
+    , "<img class='widget' src='", ImgUrl, "'"
+    , Dimensions
+    , "/>"
     , <<"</div>">>
     ];
 
@@ -250,7 +255,7 @@ render_styles(RenderAs) ->
     , Root, ".simple_card > .inner-box { margin: 1ex; padding: 1ex; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
     , Root, ".simple_card > .inner-box > .vbox { margin: auto; }"
     , Root, ".simple_card > .inner-box > .widget-container > .widget { margin: auto; }"
-    , Root, "img { max-width: 75vw; max-height: 75vh; }" % Set some baseline to image sizes
+    , Root, "img { max-width: 75vw; max-height: 75vh; object-fit: scale-down; }" % Set some limit to image sizes
     , Root, "font a { color: inherit; }"
     , <<"</style>">>
     ].
@@ -406,6 +411,11 @@ get_image_url(#{ <<"settings">> := #{ <<"body">> := #{ <<"image">> := #{ <<"id">
 get_image_url(_, _, _) ->
     []. %% TODO: Add a default image?
 
+get_image_dimensions(#{ <<"dimensions">> := #{ <<"width">> := Width, <<"height">> := Height } }) ->
+    ["width='", num_to_binary(Width),"' height='", num_to_binary(Height), "'"];
+get_image_dimensions(_) ->
+    ["width='", ?DEFAULT_IMAGE_WIDTH,"' height='", ?DEFAULT_IMAGE_HEIGHT, "'"].
+
 get_text_element_underline_color_style(#{ <<"underline">> := <<"none">>}) ->
     "text-decoration: none;";
 get_text_element_underline_color_style(#{ <<"underline">> := #{ <<"color">> := Color}}) ->
@@ -466,6 +476,11 @@ format_to_tag(<<"underline">>) ->
     "u".
 
 
+num_to_binary(X) when is_float(X) ->
+%% This is needed to avoid scientific notation, which can cause problems on CSS
+    list_to_binary(io_lib:format("~p", [X]));
+num_to_binary(X) when is_integer(X) ->
+    integer_to_binary(X).
 
 %% Attribute translation
 font_weight_to_css(<<"normal">>) ->
