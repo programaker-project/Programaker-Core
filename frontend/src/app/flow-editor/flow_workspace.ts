@@ -19,6 +19,7 @@ import { ProgramEditorEventValue } from 'app/program';
 import { Synchronizer } from 'app/syncronizer';
 import { EnvironmentService } from 'app/environment.service';
 import { SessionService } from 'app/session.service';
+import { ToastrService } from 'ngx-toastr';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -63,6 +64,8 @@ type SharedBlockData = {
     blockData: FlowBlockData,
 };
 
+export class IncompatibleConnectionError extends Error {}
+
 export class FlowWorkspace implements BlockManager {
     private eventStream: Synchronizer<ProgramEditorEventValue>;
     private eventSubscription: any;
@@ -79,12 +82,14 @@ export class FlowWorkspace implements BlockManager {
                           read_only: boolean,
                           sessionService: SessionService,
                           environmentService: EnvironmentService,
+                          toastr: ToastrService,
                          ): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
             workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId,
                                           programService, read_only,
-                                          sessionService, environmentService);
+                                          sessionService, environmentService,
+                                          toastr);
             workspace.init();
         }
         catch(err) {
@@ -467,6 +472,7 @@ export class FlowWorkspace implements BlockManager {
                         private read_only: boolean,
                         private sessionService: SessionService,
                         private environmentService: EnvironmentService,
+                        private toastr: ToastrService,
                        ) {
         this.baseElement = baseElement;
         this.getEnum = getEnum;
@@ -2594,6 +2600,60 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    isCompatibleConnection(output: string, input: string) : boolean {
+        // If type matches, nothing more to check
+        if (output === input) {
+            return true;
+        }
+
+        // Special cases
+        if (input === 'string') {
+            // Strings might also come from numbers or bools
+            return [
+                'any',
+
+                'string',
+                'integer',
+                'float',
+                'boolean',
+            ].indexOf(output) >= 0;
+        }
+        else if (input === 'integer') {
+            // Integers might also come from floats or bools
+            return [
+                'any',
+
+                'integer',
+                'float',
+                'boolean',
+            ].indexOf(output) >= 0;
+        }
+        else if (input === 'float') {
+            // Floats might also come from ints or bools
+            return [
+                'any',
+
+                'float',
+                'integer',
+                'boolean',
+            ].indexOf(output) >= 0;
+        }
+        else if (input === 'any') {
+            // Any accepts anything but pulse
+            return !([
+                'pulse',
+                'user-pulse',
+            ].indexOf(output) >= 0);
+        }
+        else if ((input === 'pulse') || (input === 'user-pulse')) {
+            // Pulses just accept pulses
+            return [
+                'pulse',
+                'user-pulse',
+            ].indexOf(output) >= 0;
+        }
+    }
+
     addConnection(from_: SourceDefinition,
                   to: SinkDefinition,
                   ): boolean {
@@ -2614,6 +2674,14 @@ export class FlowWorkspace implements BlockManager {
 
         const source = this.blocks.get(from_.block_id);
         const source_output_type = sourceObj.block.getOutputType(from_.output_index);
+
+        const sinkObj = this.blockObjs[to.block_id];
+        const sink_input_type = sinkObj.block.getInputType(to.input_index);
+        console.log("Connecting", source_output_type, 'to', sink_input_type);
+
+        if (!this.isCompatibleConnection(source_output_type, sink_input_type)) {
+            throw new IncompatibleConnectionError(`Can't connect '${source_output_type}' to '${sink_input_type}'`);
+        }
 
         // The combination (output block&port) -> (input block&port) should be unique.
         const id = `${from_.block_id}:${from_.output_index}--${to.block_id}:${to.input_index}`;
@@ -2645,7 +2713,6 @@ export class FlowWorkspace implements BlockManager {
         };
         this.connection_group.appendChild(path);
 
-        const sinkObj = this.blockObjs[conn.sink.block_id];
         const sink = this.blocks.get(conn.sink.block_id);
 
         sourceObj.block.addConnection('out', conn.source.output_index, sinkObj.block, source_output_type);
@@ -2789,6 +2856,11 @@ export class FlowWorkspace implements BlockManager {
         const sink_block = this.blockObjs[sink.block_id].block;
 
         const element = this.connectionElements[connection_id];
+        if (!element) {
+            console.warn("Trying to update connection before it is rendered");
+            return;
+        }
+
         const connector_with_marker = !!element.getAttributeNS(null, 'marker-end');
         const y_sink_offset = connector_with_marker ? 2 : 0;
 
@@ -2899,9 +2971,21 @@ export class FlowWorkspace implements BlockManager {
             });
         }
         else {
-            if (this.establishConnection(this.current_io_selected,
-                                         { block, type, index })){
-                this.disconnectIOSelected();
+            try {
+                if (this.establishConnection(this.current_io_selected,
+                                             { block, type, index })){
+                    this.disconnectIOSelected();
+                }
+            }
+            catch (error) {
+                console.error(error);
+                if (error instanceof IncompatibleConnectionError) {
+                    this.toastr.error(error.message, 'Incompatible connection', {
+                        closeButton: true,
+                        progressBar: true,
+                    });
+                    this.disconnectIOSelected();
+                }
             }
         }
     }

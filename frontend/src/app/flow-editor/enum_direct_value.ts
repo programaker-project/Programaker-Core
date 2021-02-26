@@ -219,6 +219,10 @@ export class EnumDirectValue implements FlowBlock {
         return this.options.type;
     }
 
+    public getInputType(_index: number): string {
+        throw Error("Direct enum values don't have inputs")
+    }
+
     public getOutputRunwayDirection(): Direction2D {
         return 'left';
     }

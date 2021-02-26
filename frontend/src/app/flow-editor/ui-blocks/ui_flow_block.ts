@@ -676,6 +676,10 @@ export class UiFlowBlock implements FlowBlock {
         return this.options.outputs[index].type;
     }
 
+    public getInputType(index: number): string {
+        return this.options.inputs[index].type;
+    }
+
     getOutputRunwayDirection(): Direction2D {
         return 'down';
     }

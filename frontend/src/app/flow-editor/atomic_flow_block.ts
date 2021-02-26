@@ -839,6 +839,14 @@ export class AtomicFlowBlock implements FlowBlock {
         return this.options.outputs[index].type;
     }
 
+    public getInputType(index: number): string {
+        if (this.overridenInputTypes[index]) {
+            return this.overridenInputTypes[index];
+        }
+
+        return this.options.inputs[index].type;
+    }
+
     public getOutputRunwayDirection(): Direction2D {
         return 'down';
     }
