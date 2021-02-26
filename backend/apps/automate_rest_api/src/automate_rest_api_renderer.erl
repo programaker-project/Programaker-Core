@@ -238,7 +238,7 @@ render_styles(RenderAs) ->
     , Root, <<".dynamic_text { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
     , Root, ".fixed_text { max-width: 50em; overflow-wrap: anywhere; } "
     , Root, <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
-    , Root, ".hbox > .inner-box > .widget-container { display: inline flex; width: max-content; }"
+    , Root, ".hbox > .inner-box > .widget-container { display: inline flex; width: max-content; max-width: 100%; }"
     , Root, <<".widget { margin: 0 auto; padding: 1ex; } ">>
     , Root, "hr { width: calc(50% - 2px); margin: 1ex auto; border: 1px solid #aaa; } "
     , Root, "hr.size-short { width: calc(min(100%, 20ex) - 2px); } "
@@ -246,7 +246,7 @@ render_styles(RenderAs) ->
     , Root, ".hbox > .inner-box { margin: 0 auto; width: max-content; max-width: 100%; text-align: center; }"
     , Root, ".hbox > .inner-box > .vbox, .hbox > .inner-box > .simple_card { display: inline-flex; vertical-align: top; max-width: 100%; }"
     , Root, "a.link_area { display: inline-flex; text-decoration: inherit; }"
-    , Root, ".simple_card { margin: 0 auto; width: max-content; }"
+    , Root, ".simple_card { margin: 0 auto; width: max-content; max-width: 100%; }"
     , Root, ".simple_card > .inner-box { margin: 1ex; padding: 1ex; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
     , Root, ".simple_card > .inner-box > .vbox { margin: auto; }"
     , Root, ".simple_card > .inner-box > .widget-container > .widget { margin: auto; }"
