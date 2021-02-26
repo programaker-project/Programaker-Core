@@ -106,6 +106,7 @@ export interface FlowBlock {
     getPositionOfInput(index: number, edge?: boolean): Position2D;
     getPositionOfOutput(index: number, edge?: boolean): Position2D;
     getOutputType(index: number): string;
+    getInputType(index: number): string;
     getOutputRunwayDirection(): Direction2D;
 }
 

@@ -19,6 +19,7 @@ import { ProgramEditorEventValue } from 'app/program';
 import { Synchronizer } from 'app/syncronizer';
 import { EnvironmentService } from 'app/environment.service';
 import { SessionService } from 'app/session.service';
+import { ToastrService } from 'ngx-toastr';
 
 /// <reference path="../../../node_modules/fuse.js/dist/fuse.d.ts" />
 declare const Fuse: any;
@@ -35,8 +36,9 @@ const CUT_POINT_SEARCH_INCREASES = 10;
 const CUT_POINT_SEARCH_SPACING = CUT_POINT_SEARCH_INCREASES;
 
 // Draw helper
-const HELPER_BASE_SIZE = 25;
-const HELPER_SEPARATION = HELPER_BASE_SIZE * 1.5;
+const HELPER_PADDING = 10;
+const HELPER_SEPARATION = 40;
+const HELPER_EXTRA_Y = 25;
 
 // Zoom management
 const SMALL_ZOOM_INCREMENTS = 0.1;
@@ -62,6 +64,8 @@ type SharedBlockData = {
     blockData: FlowBlockData,
 };
 
+export class IncompatibleConnectionError extends Error {}
+
 export class FlowWorkspace implements BlockManager {
     private eventStream: Synchronizer<ProgramEditorEventValue>;
     private eventSubscription: any;
@@ -78,12 +82,14 @@ export class FlowWorkspace implements BlockManager {
                           read_only: boolean,
                           sessionService: SessionService,
                           environmentService: EnvironmentService,
+                          toastr: ToastrService,
                          ): FlowWorkspace {
         let workspace: FlowWorkspace;
         try {
             workspace = new FlowWorkspace(baseElement, getEnum, dialog, programId,
                                           programService, read_only,
-                                          sessionService, environmentService);
+                                          sessionService, environmentService,
+                                          toastr);
             workspace.init();
         }
         catch(err) {
@@ -466,6 +472,7 @@ export class FlowWorkspace implements BlockManager {
                         private read_only: boolean,
                         private sessionService: SessionService,
                         private environmentService: EnvironmentService,
+                        private toastr: ToastrService,
                        ) {
         this.baseElement = baseElement;
         this.getEnum = getEnum;
@@ -2066,6 +2073,35 @@ export class FlowWorkspace implements BlockManager {
         return false;
     }
 
+    private drawInputHelper(inputGroup: SVGGElement, inputType: MessageType | 'enum') {
+        const container = document.createElementNS(SvgNS, 'rect');
+        const connectionLine = document.createElementNS(SvgNS, 'path');
+        const text = document.createElementNS(SvgNS, 'text');
+
+        inputGroup.appendChild(connectionLine);
+        inputGroup.appendChild(container);
+        inputGroup.appendChild(text);
+
+        text.textContent = inputType;
+        text.setAttributeNS(null, 'class', 'text');
+
+        const textBox = text.getBBox();
+        text.setAttributeNS(null, 'transform', `translate(${HELPER_PADDING / 2 -textBox.x - textBox.width / 2}, ${-textBox.y - HELPER_PADDING})`);
+
+        container.setAttributeNS(null, 'class', 'outer_container');
+        container.setAttributeNS(null, 'x', - ((textBox.width) / 2) + '');
+        container.setAttributeNS(null, 'y', - (HELPER_PADDING * 1.5) + '');
+        container.setAttributeNS(null, 'width', HELPER_PADDING + textBox.width + '');
+        container.setAttributeNS(null, 'height', HELPER_PADDING +  textBox.height + '');
+        container.setAttributeNS(null, 'rx', '4');
+
+        connectionLine.setAttributeNS(null, 'class', 'connection_line');
+        connectionLine.setAttributeNS(null, 'd',
+                                      `M${HELPER_PADDING / 2},${- HELPER_PADDING / 2}`
+            + ` L${HELPER_PADDING/2},${HELPER_PADDING / 2 + HELPER_SEPARATION + HELPER_EXTRA_Y}`
+                                     );
+    }
+
     private drawBlockInputHelpers(block: FlowBlock, inputHelperGroup?: SVGGElement): SVGGElement {
         let existing_inputs = 0;
 
@@ -2078,6 +2114,8 @@ export class FlowWorkspace implements BlockManager {
 
         let inputs = block.getInputs();
         if (this.read_only) { inputs = []; }
+
+        this.input_helper_section.appendChild(inputHelperGroup);
 
         let index = -1;
         for (const input of inputs) {
@@ -2098,42 +2136,15 @@ export class FlowWorkspace implements BlockManager {
             inputGroup.setAttributeNS(null, 'class', 'input_helper ' + type_class);
             inputHelperGroup.appendChild(inputGroup);
 
-            const outerCircle = document.createElementNS(SvgNS, 'circle');
-            const verticalBar = document.createElementNS(SvgNS, 'rect');
-            const horizontalBar = document.createElementNS(SvgNS, 'rect');
-            const connectionLine = document.createElementNS(SvgNS, 'path');
+            this.drawInputHelper(inputGroup, input.type);
 
-            outerCircle.setAttributeNS(null, 'class', 'outer_circle');
-            outerCircle.setAttributeNS(null, 'cx', HELPER_BASE_SIZE / 2 + '');
-            outerCircle.setAttributeNS(null, 'cy', HELPER_BASE_SIZE / 2 + '');
-            outerCircle.setAttributeNS(null, 'r', HELPER_BASE_SIZE / 2 + '');
-
-            verticalBar.setAttributeNS(null, 'class', 'vertical_bar');
-            verticalBar.setAttributeNS(null, 'x', (HELPER_BASE_SIZE / 5) * 2 + '' );
-            verticalBar.setAttributeNS(null, 'y', HELPER_BASE_SIZE / 4 + '' );
-            verticalBar.setAttributeNS(null, 'width', HELPER_BASE_SIZE / 5 + '' );
-            verticalBar.setAttributeNS(null, 'height', HELPER_BASE_SIZE / 2 + '' );
-
-            horizontalBar.setAttributeNS(null, 'class', 'horizontal_bar');
-            horizontalBar.setAttributeNS(null, 'x', HELPER_BASE_SIZE / 4 + '' );
-            horizontalBar.setAttributeNS(null, 'y', (HELPER_BASE_SIZE / 5) * 2 + '' );
-            horizontalBar.setAttributeNS(null, 'width', HELPER_BASE_SIZE / 2 + '' );
-            horizontalBar.setAttributeNS(null, 'height', HELPER_BASE_SIZE / 5 + '' );
-
-            connectionLine.setAttributeNS(null, 'class', 'connection_line');
-            connectionLine.setAttributeNS(null, 'd',
-                                          `M${HELPER_BASE_SIZE / 2},${HELPER_BASE_SIZE / 2}`
-                                          + ` L${HELPER_BASE_SIZE/2},${HELPER_BASE_SIZE / 2 + HELPER_SEPARATION}`
-                                         );
-
-            inputGroup.appendChild(connectionLine);
-            inputGroup.appendChild(outerCircle);
-            inputGroup.appendChild(horizontalBar);
-            inputGroup.appendChild(verticalBar);
-
+            const extra_y = (
+                index % 2 == 0 ? 0
+                : HELPER_EXTRA_Y
+            );
             inputGroup.setAttributeNS(null, 'transform',
-                                      `translate(${input_position.x - HELPER_BASE_SIZE / 2},`
-                                      + ` ${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+                                      `translate(${input_position.x - HELPER_PADDING},`
+                + ` ${input_position.y - HELPER_PADDING / 2 - HELPER_SEPARATION - extra_y})`);
 
             const element_index = index; // Capture current index
             inputGroup.onclick = ((_ev: MouseEvent) => {
@@ -2164,7 +2175,6 @@ export class FlowWorkspace implements BlockManager {
             });
         }
 
-        this.input_helper_section.appendChild(inputHelperGroup);
         return inputHelperGroup;
     }
 
@@ -2307,10 +2317,15 @@ export class FlowWorkspace implements BlockManager {
         for (const input of Array.from(blockObj.input_group.children)) {
             index++;
 
+            const extra_y = (
+                index % 2 == 0 ? 0
+                    : HELPER_EXTRA_Y
+            );
+
             const input_position = this.getBlockRel(blockObj.block, blockObj.block.getPositionOfInput(index));
             input.setAttributeNS(null, 'transform',
-                                 `translate(${input_position.x - HELPER_BASE_SIZE / 2},`
-                + `${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+                                 `translate(${input_position.x - HELPER_PADDING / 2},`
+                + `${input_position.y - HELPER_PADDING / 2 - HELPER_SEPARATION - extra_y})`);
         }
     }
 
@@ -2585,6 +2600,60 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    isCompatibleConnection(output: string, input: string) : boolean {
+        // If type matches, nothing more to check
+        if (output === input) {
+            return true;
+        }
+
+        // Special cases
+        if (input === 'string') {
+            // Strings might also come from numbers or bools
+            return [
+                'any',
+
+                'string',
+                'integer',
+                'float',
+                'boolean',
+            ].indexOf(output) >= 0;
+        }
+        else if (input === 'integer') {
+            // Integers might also come from floats or bools
+            return [
+                'any',
+
+                'integer',
+                'float',
+                'boolean',
+            ].indexOf(output) >= 0;
+        }
+        else if (input === 'float') {
+            // Floats might also come from ints or bools
+            return [
+                'any',
+
+                'float',
+                'integer',
+                'boolean',
+            ].indexOf(output) >= 0;
+        }
+        else if (input === 'any') {
+            // Any accepts anything but pulse
+            return !([
+                'pulse',
+                'user-pulse',
+            ].indexOf(output) >= 0);
+        }
+        else if ((input === 'pulse') || (input === 'user-pulse')) {
+            // Pulses just accept pulses
+            return [
+                'pulse',
+                'user-pulse',
+            ].indexOf(output) >= 0;
+        }
+    }
+
     addConnection(from_: SourceDefinition,
                   to: SinkDefinition,
                   ): boolean {
@@ -2605,6 +2674,13 @@ export class FlowWorkspace implements BlockManager {
 
         const source = this.blocks.get(from_.block_id);
         const source_output_type = sourceObj.block.getOutputType(from_.output_index);
+
+        const sinkObj = this.blockObjs[to.block_id];
+        const sink_input_type = sinkObj.block.getInputType(to.input_index);
+
+        if (!this.isCompatibleConnection(source_output_type, sink_input_type)) {
+            throw new IncompatibleConnectionError(`Can't connect '${source_output_type}' to '${sink_input_type}'`);
+        }
 
         // The combination (output block&port) -> (input block&port) should be unique.
         const id = `${from_.block_id}:${from_.output_index}--${to.block_id}:${to.input_index}`;
@@ -2636,7 +2712,6 @@ export class FlowWorkspace implements BlockManager {
         };
         this.connection_group.appendChild(path);
 
-        const sinkObj = this.blockObjs[conn.sink.block_id];
         const sink = this.blocks.get(conn.sink.block_id);
 
         sourceObj.block.addConnection('out', conn.source.output_index, sinkObj.block, source_output_type);
@@ -2780,6 +2855,11 @@ export class FlowWorkspace implements BlockManager {
         const sink_block = this.blockObjs[sink.block_id].block;
 
         const element = this.connectionElements[connection_id];
+        if (!element) {
+            console.warn("Trying to update connection before it is rendered");
+            return;
+        }
+
         const connector_with_marker = !!element.getAttributeNS(null, 'marker-end');
         const y_sink_offset = connector_with_marker ? 2 : 0;
 
@@ -2890,9 +2970,21 @@ export class FlowWorkspace implements BlockManager {
             });
         }
         else {
-            if (this.establishConnection(this.current_io_selected,
-                                         { block, type, index })){
-                this.disconnectIOSelected();
+            try {
+                if (this.establishConnection(this.current_io_selected,
+                                             { block, type, index })){
+                    this.disconnectIOSelected();
+                }
+            }
+            catch (error) {
+                console.error(error);
+                if (error instanceof IncompatibleConnectionError) {
+                    this.toastr.error(error.message, 'Incompatible connection', {
+                        closeButton: true,
+                        progressBar: true,
+                    });
+                    this.disconnectIOSelected();
+                }
             }
         }
     }
