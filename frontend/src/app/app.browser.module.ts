@@ -6,11 +6,14 @@ import { BrowserCookiesModule, BrowserCookiesService } from '@ngx-utils/cookies/
 import { AppComponent } from './app.component';
 import { AppModule } from './app.module';
 
+import { ToastrModule } from 'ngx-toastr';
+
 @NgModule({
     imports: [
         BrowserModule.withServerTransition({ appId: 'serverApp' }),
         BrowserCookiesModule.forRoot(),
         BrowserAnimationsModule,
+        ToastrModule.forRoot(),
         AppModule,
     ],
     bootstrap: [AppComponent],
