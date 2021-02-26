@@ -2677,7 +2677,6 @@ export class FlowWorkspace implements BlockManager {
 
         const sinkObj = this.blockObjs[to.block_id];
         const sink_input_type = sinkObj.block.getInputType(to.input_index);
-        console.log("Connecting", source_output_type, 'to', sink_input_type);
 
         if (!this.isCompatibleConnection(source_output_type, sink_input_type)) {
             throw new IncompatibleConnectionError(`Can't connect '${source_output_type}' to '${sink_input_type}'`);
