@@ -25,6 +25,7 @@ import { FlowGraph } from '../../../flow-editor/flow_graph';
 import { uuidv4 } from '../../../flow-editor/utils';
 import { UiElementWidgetType } from '../../../flow-editor/ui-blocks/renderers/ui_tree_repr';
 import { UiFlowBlockExtraData } from '../../../flow-editor/ui-blocks/ui_flow_block';
+import { ToastrModule } from 'ngx-toastr';
 
 export function configureTestBed(testBed: TestBedStatic) {
     testBed.configureTestingModule({
@@ -36,6 +37,7 @@ export function configureTestBed(testBed: TestBedStatic) {
             MatSnackBarModule,
             MatMenuModule,
             NoopAnimationsModule,
+            ToastrModule.forRoot(),
         ],
         declarations: [
             FlowEditorComponent,

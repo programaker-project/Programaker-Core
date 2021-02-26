@@ -40,6 +40,7 @@ import { CloneProgramDialogComponentData, CloneProgramDialogComponent } from '..
 import { uuidv4 } from './utils';
 import { EnvironmentDefinition } from 'environments/environment-definition';
 import { environment } from 'environments/environment';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -86,6 +87,8 @@ export class FlowEditorComponent implements OnInit {
         private sessionService: SessionService,
         private uiSignalService: UiSignalService,
         private environmentService: EnvironmentService,
+        private toastr: ToastrService,
+
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
     }
@@ -374,10 +377,23 @@ export class FlowEditorComponent implements OnInit {
     async sendProgram(): Promise<boolean> {
         const graph = this.workspace.getGraph();
         const pages = this.workspace.getPages();
-        this.updateViewPages(Object.keys(pages));
 
         const t0 = new Date();
-        const compiled_program = compile(graph);
+        let compiled_program;
+        try {
+            compiled_program = compile(graph);
+        }
+        catch (error) {
+            this.toastr.error(error, 'Invalid program', {
+                closeButton: true,
+                progressBar: true,
+            });
+
+            console.error(error);
+            return;
+        }
+        this.updateViewPages(Object.keys(pages));
+
         console.debug('Compilation time:', (new Date() as any) - (t0 as any), 'ms')
 
         // Send update
@@ -400,6 +416,19 @@ export class FlowEditorComponent implements OnInit {
         if (button){
             button.classList.remove('started');
             button.classList.add('completed');
+        }
+
+        if (result) {
+            this.toastr.success('Upload complete', '', {
+                closeButton: true,
+                progressBar: true,
+            });
+        }
+        else {
+            this.toastr.error('Error on upload', '', {
+                closeButton: true,
+                progressBar: true,
+            });
         }
 
         return result;
