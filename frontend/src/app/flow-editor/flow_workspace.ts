@@ -2606,6 +2606,13 @@ export class FlowWorkspace implements BlockManager {
             return true;
         }
 
+        // If one of the two are undefined log a warning and allow it
+        if ((!output) || (!input)) {
+            console.error(`Cannot check compatible connection when input type (${input}) or output type (${output}) are inexistent. Defaulting to true to avoid crashes for now.`) ;
+
+            return true;
+        }
+
         // Special cases
         if (input === 'string') {
             // Strings might also come from numbers or bools

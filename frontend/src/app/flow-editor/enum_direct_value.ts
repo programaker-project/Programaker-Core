@@ -216,7 +216,7 @@ export class EnumDirectValue implements FlowBlock {
     }
 
     public getOutputType(_index: number): string {
-        return this.options.type;
+        return this.options.type || 'enum';
     }
 
     public getInputType(_index: number): string {
