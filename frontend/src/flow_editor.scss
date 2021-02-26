@@ -324,10 +324,10 @@ svg.block_renderer g.input_helper.pulse_port { // Pulse port input helpers are n
     display: none;
 }
 
-svg.block_renderer g.input_helper .outer_circle {
-    fill: #fafafa; // Same as background
-    stroke: #444;
-    stroke-width: 3px;
+svg.block_renderer g.input_helper .outer_container{
+    fill: #eee; // Same as background
+    stroke: #222;
+    stroke-width: 2px;
 }
 
 svg.block_renderer g.input_helper rect {
@@ -336,7 +336,7 @@ svg.block_renderer g.input_helper rect {
 
 
 svg.block_renderer g.input_helper path.connection_line {
-    stroke: #444;
+    stroke: #eee;
     stroke-width: 2px;
     stroke-dasharray: 2px,2px;
 }

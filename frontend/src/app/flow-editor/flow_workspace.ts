@@ -35,8 +35,9 @@ const CUT_POINT_SEARCH_INCREASES = 10;
 const CUT_POINT_SEARCH_SPACING = CUT_POINT_SEARCH_INCREASES;
 
 // Draw helper
-const HELPER_BASE_SIZE = 25;
-const HELPER_SEPARATION = HELPER_BASE_SIZE * 1.5;
+const HELPER_PADDING = 10;
+const HELPER_SEPARATION = 40;
+const HELPER_EXTRA_Y = 25;
 
 // Zoom management
 const SMALL_ZOOM_INCREMENTS = 0.1;
@@ -2066,6 +2067,35 @@ export class FlowWorkspace implements BlockManager {
         return false;
     }
 
+    private drawInputHelper(inputGroup: SVGGElement, inputType: MessageType | 'enum') {
+        const container = document.createElementNS(SvgNS, 'rect');
+        const connectionLine = document.createElementNS(SvgNS, 'path');
+        const text = document.createElementNS(SvgNS, 'text');
+
+        inputGroup.appendChild(connectionLine);
+        inputGroup.appendChild(container);
+        inputGroup.appendChild(text);
+
+        text.textContent = inputType;
+        text.setAttributeNS(null, 'class', 'text');
+
+        const textBox = text.getBBox();
+        text.setAttributeNS(null, 'transform', `translate(${HELPER_PADDING / 2 -textBox.x - textBox.width / 2}, ${-textBox.y - HELPER_PADDING})`);
+
+        container.setAttributeNS(null, 'class', 'outer_container');
+        container.setAttributeNS(null, 'x', - ((textBox.width) / 2) + '');
+        container.setAttributeNS(null, 'y', - (HELPER_PADDING * 1.5) + '');
+        container.setAttributeNS(null, 'width', HELPER_PADDING + textBox.width + '');
+        container.setAttributeNS(null, 'height', HELPER_PADDING +  textBox.height + '');
+        container.setAttributeNS(null, 'rx', '4');
+
+        connectionLine.setAttributeNS(null, 'class', 'connection_line');
+        connectionLine.setAttributeNS(null, 'd',
+                                      `M${HELPER_PADDING / 2},${- HELPER_PADDING / 2}`
+            + ` L${HELPER_PADDING/2},${HELPER_PADDING / 2 + HELPER_SEPARATION + HELPER_EXTRA_Y}`
+                                     );
+    }
+
     private drawBlockInputHelpers(block: FlowBlock, inputHelperGroup?: SVGGElement): SVGGElement {
         let existing_inputs = 0;
 
@@ -2078,6 +2108,8 @@ export class FlowWorkspace implements BlockManager {
 
         let inputs = block.getInputs();
         if (this.read_only) { inputs = []; }
+
+        this.input_helper_section.appendChild(inputHelperGroup);
 
         let index = -1;
         for (const input of inputs) {
@@ -2098,42 +2130,15 @@ export class FlowWorkspace implements BlockManager {
             inputGroup.setAttributeNS(null, 'class', 'input_helper ' + type_class);
             inputHelperGroup.appendChild(inputGroup);
 
-            const outerCircle = document.createElementNS(SvgNS, 'circle');
-            const verticalBar = document.createElementNS(SvgNS, 'rect');
-            const horizontalBar = document.createElementNS(SvgNS, 'rect');
-            const connectionLine = document.createElementNS(SvgNS, 'path');
+            this.drawInputHelper(inputGroup, input.type);
 
-            outerCircle.setAttributeNS(null, 'class', 'outer_circle');
-            outerCircle.setAttributeNS(null, 'cx', HELPER_BASE_SIZE / 2 + '');
-            outerCircle.setAttributeNS(null, 'cy', HELPER_BASE_SIZE / 2 + '');
-            outerCircle.setAttributeNS(null, 'r', HELPER_BASE_SIZE / 2 + '');
-
-            verticalBar.setAttributeNS(null, 'class', 'vertical_bar');
-            verticalBar.setAttributeNS(null, 'x', (HELPER_BASE_SIZE / 5) * 2 + '' );
-            verticalBar.setAttributeNS(null, 'y', HELPER_BASE_SIZE / 4 + '' );
-            verticalBar.setAttributeNS(null, 'width', HELPER_BASE_SIZE / 5 + '' );
-            verticalBar.setAttributeNS(null, 'height', HELPER_BASE_SIZE / 2 + '' );
-
-            horizontalBar.setAttributeNS(null, 'class', 'horizontal_bar');
-            horizontalBar.setAttributeNS(null, 'x', HELPER_BASE_SIZE / 4 + '' );
-            horizontalBar.setAttributeNS(null, 'y', (HELPER_BASE_SIZE / 5) * 2 + '' );
-            horizontalBar.setAttributeNS(null, 'width', HELPER_BASE_SIZE / 2 + '' );
-            horizontalBar.setAttributeNS(null, 'height', HELPER_BASE_SIZE / 5 + '' );
-
-            connectionLine.setAttributeNS(null, 'class', 'connection_line');
-            connectionLine.setAttributeNS(null, 'd',
-                                          `M${HELPER_BASE_SIZE / 2},${HELPER_BASE_SIZE / 2}`
-                                          + ` L${HELPER_BASE_SIZE/2},${HELPER_BASE_SIZE / 2 + HELPER_SEPARATION}`
-                                         );
-
-            inputGroup.appendChild(connectionLine);
-            inputGroup.appendChild(outerCircle);
-            inputGroup.appendChild(horizontalBar);
-            inputGroup.appendChild(verticalBar);
-
+            const extra_y = (
+                index % 2 == 0 ? 0
+                : HELPER_EXTRA_Y
+            );
             inputGroup.setAttributeNS(null, 'transform',
-                                      `translate(${input_position.x - HELPER_BASE_SIZE / 2},`
-                                      + ` ${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+                                      `translate(${input_position.x - HELPER_PADDING},`
+                + ` ${input_position.y - HELPER_PADDING / 2 - HELPER_SEPARATION - extra_y})`);
 
             const element_index = index; // Capture current index
             inputGroup.onclick = ((_ev: MouseEvent) => {
@@ -2164,7 +2169,6 @@ export class FlowWorkspace implements BlockManager {
             });
         }
 
-        this.input_helper_section.appendChild(inputHelperGroup);
         return inputHelperGroup;
     }
 
@@ -2307,10 +2311,15 @@ export class FlowWorkspace implements BlockManager {
         for (const input of Array.from(blockObj.input_group.children)) {
             index++;
 
+            const extra_y = (
+                index % 2 == 0 ? 0
+                    : HELPER_EXTRA_Y
+            );
+
             const input_position = this.getBlockRel(blockObj.block, blockObj.block.getPositionOfInput(index));
             input.setAttributeNS(null, 'transform',
-                                 `translate(${input_position.x - HELPER_BASE_SIZE / 2},`
-                + `${input_position.y - HELPER_BASE_SIZE / 2 - HELPER_SEPARATION})`);
+                                 `translate(${input_position.x - HELPER_PADDING / 2},`
+                + `${input_position.y - HELPER_PADDING / 2 - HELPER_SEPARATION - extra_y})`);
         }
     }
 
