@@ -40,6 +40,7 @@ import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibili
 import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { Session } from './session';
+import { ToastrService } from 'ngx-toastr';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -112,6 +113,8 @@ export class ProgramDetailComponent implements OnInit {
         private sessionService: SessionService,
         private ngZone: NgZone,
         private environmentService: EnvironmentService,
+        private toastr: ToastrService,
+
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
         this.monitorService = monitorService;
@@ -904,11 +907,23 @@ export class ProgramDetailComponent implements OnInit {
         }
 
         // Serialize result
-        const serializer = new ScratchProgramSerializer(this.toolboxController);
-        const serialized = serializer.ToJson(xml);
-        const program = new ScratchProgram(this.program,
-                                           serialized.parsed,
-                                           serialized.orig);
+        let program;
+        try {
+            const serializer = new ScratchProgramSerializer(this.toolboxController);
+            const serialized = serializer.ToJson(xml);
+            program = new ScratchProgram(this.program,
+                                         serialized.parsed,
+                                         serialized.orig);
+        }
+        catch (error) {
+            this.toastr.error(error, 'Invalid program', {
+                closeButton: true,
+                progressBar: true,
+            });
+
+            console.error(error);
+            return;
+        }
 
         // Send update
         const button = document.getElementById('program-start-button');
@@ -922,6 +937,19 @@ export class ProgramDetailComponent implements OnInit {
         if (button){
             button.classList.remove('started');
             button.classList.add('completed');
+        }
+
+        if (result) {
+            this.toastr.success('Upload complete', '', {
+                closeButton: true,
+                progressBar: true,
+            });
+        }
+        else {
+            this.toastr.error('Error on upload', '', {
+                closeButton: true,
+                progressBar: true,
+            });
         }
 
         return result;
