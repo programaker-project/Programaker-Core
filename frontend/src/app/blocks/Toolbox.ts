@@ -106,7 +106,7 @@ export class Toolbox {
             }
 
 
-            registrations = registrations.concat(this.injectBlocks(monitors, categorized_blocks, services, connections));
+            registrations = registrations.concat(await this.injectBlocks(monitors, categorized_blocks, services, connections));
             toolboxXML = await this.injectToolbox(monitors, categorized_blocks);
 
             registrations = registrations.concat(this.addAvailableConnections(availableConnections, toolboxXML));
@@ -191,15 +191,15 @@ export class Toolbox {
         return categorized_blocks;
     }
 
-    injectBlocks(monitors: MonitorMetadata[],
+    async injectBlocks(monitors: MonitorMetadata[],
                  custom_blocks: CategorizedCustomBlock[],
                  services: AvailableService[],
                  connections: BridgeConnection[],
-                ): ToolboxRegistration[] {
+                ): Promise<ToolboxRegistration[]> {
         let registrations: ToolboxRegistrationHook[] = [];
 
         this.injectMonitorBlocks(monitors);
-        this.injectTimeBlocks();
+        await this.injectTimeBlocks();
         this.injectJSONBlocks();
         this.injectOperationBlocks(connections);
         registrations = registrations.concat(this.templateController.injectBlocks());
@@ -237,7 +237,7 @@ export class Toolbox {
         };
     }
 
-    injectTimeBlocks() {
+    injectTimeBlocks(): Promise<any> {
         Blockly.Blocks['time_trigger_at'] = {
             init: function () {
                 this.jsonInit({
@@ -303,7 +303,7 @@ export class Toolbox {
         };
 
 
-        this.assetService.getTimezoneData().then((tz) => {
+        const timeReady = this.assetService.getTimezoneData().then((tz) => {
 
             const detectedTz = jstz.determine().name();
             console.log("Autodetected Timezone:", detectedTz);
@@ -500,6 +500,8 @@ export class Toolbox {
                 throw e;
             }
         }
+
+        return timeReady;
     }
 
     injectJSONBlocks() {
