@@ -1337,7 +1337,7 @@ function compile_block(graph: FlowGraph,
                     };
                 }
                 else {
-                    const listenerArgs: {key: string, subkey?: any} = {
+                    const listenerArgs: {key: string, subkey?: any, monitor_expected_value?: any} = {
                         key: block_fun.split('.').reverse()[0],
                     };
 
@@ -1348,6 +1348,11 @@ function compile_block(graph: FlowGraph,
                     const subkey = data.value.options.subkey;
                     if (subkey) {
                         listenerArgs.subkey = compiled_args[subkey.index - 1];
+                        compiled_args.splice(subkey.index - 1, 1);
+                    }
+
+                    if (compiled_args.length > 0) {
+                        listenerArgs.monitor_expected_value = compiled_args[0];
                     }
 
                     compiled_args = (listenerArgs as any);
@@ -1663,7 +1668,7 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
                                                                                                  null, // Signal, so nothing before
                                                                                                 ));
 
-            const listenerArgs: {key: string, subkey?: any} = {
+            const listenerArgs: {key: string, subkey?: any, monitor_expected_value?: any} = {
                 key: desc.block_function.split('.').reverse()[0],
             };
 
@@ -1674,6 +1679,11 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
             const subkey = desc.subkey;
             if (subkey) {
                 listenerArgs.subkey = compiled_args[subkey.index - 1];
+                compiled_args.splice(subkey.index - 1, 1);
+            }
+
+            if (compiled_args.length > 0) {
+                listenerArgs.monitor_expected_value = compiled_args[0];
             }
 
             return {
