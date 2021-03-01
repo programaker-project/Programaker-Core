@@ -25,9 +25,10 @@ export function buildBaseToolbox(baseElement: HTMLElement,
                                  workspace: FlowWorkspace,
                                  uiSignalService: UiSignalService,
                                  session: Session,
-                                 logic_only: boolean,
+                                 hidden: boolean,
+                                 behavior: { portrait: boolean, autohide: boolean },
                                 ): Toolbox {
-    const tb = Toolbox.BuildOn(baseElement, workspace, uiSignalService, session, logic_only);
+    const tb = Toolbox.BuildOn(baseElement, workspace, uiSignalService, session, hidden, behavior);
 
     for (const category of [...UiToolboxDescription, ...BaseToolboxDescription]) {
         tb.setCategory({ id: category.id, name: category.name });
@@ -79,11 +80,12 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
                                              session: Session,
                                              dialog: MatDialog,
                                              triggerToolboxReload: () => void,
-                                             logic_only: boolean,
+                                             hidden: boolean,
+                                             behavior: { portrait: boolean, autohide: boolean },
                                             ): Promise<Toolbox> {
-    const base = buildBaseToolbox(baseElement, workspace, uiSignalService, session, logic_only);
+    const base = buildBaseToolbox(baseElement, workspace, uiSignalService, session, hidden, behavior);
 
-    if (logic_only) {
+    if (hidden) {
         return base;
     }
 
