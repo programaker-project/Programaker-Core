@@ -114,6 +114,7 @@ export class UiElementHandle {
             const resizeIcon = gen_width_height_resize_icon(RESIZE_MANIPULATOR_SIZE);
             m.appendChild(resizeIcon);
             m.onmousedown = this._startResizeWidthHeight.bind(this);
+            m.ontouchstart = this._startResizeWidthHeight.bind(this);
 
             m.setAttribute('class', 'manipulator resize-manipulator width-height-resizer');
             this.handleGroup.appendChild(m);
@@ -138,6 +139,7 @@ export class UiElementHandle {
             const resizeIcon = gen_settings_manipulator_icon(SETTINGS_MANIPULATOR_SIZE);
             m.appendChild(resizeIcon);
             m.onmousedown = this._startUpdateSettings.bind(this);
+            m.ontouchstart = this._startUpdateSettings.bind(this);
 
             m.setAttribute('class', 'manipulator settings-manipulator');
             this.handleGroup.appendChild(m);
@@ -172,6 +174,7 @@ export class UiElementHandle {
         const resizeIcon = gen_width_resize_icon(RESIZE_MANIPULATOR_SIZE);
         m.appendChild(resizeIcon);
         m.onmousedown = this._startResizeWidth.bind(this);
+        m.ontouchstart = this._startResizeWidth.bind(this);
 
         m.setAttribute('class', 'manipulator resize-manipulator width-resizer');
         this.handleGroup.appendChild(m);
