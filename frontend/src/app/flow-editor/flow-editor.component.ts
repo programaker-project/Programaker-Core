@@ -273,6 +273,7 @@ export class FlowEditorComponent implements OnInit {
                                                     this.dialog,
                                                     this.reloadToolbox.bind(this),
                                                     this.read_only,
+                                                    { portrait: this.portraitMode, autohide: this.smallScreen },
                                                    );
         this.workspace.setToolbox(this.toolbox);
     }
@@ -293,6 +294,7 @@ export class FlowEditorComponent implements OnInit {
                                                     this.dialog,
                                                     this.reloadToolbox.bind(this),
                                                     this.read_only,
+                                                    { portrait: this.portraitMode, autohide: this.smallScreen },
                                                    );
         this.workspace.setToolbox(this.toolbox);
     }

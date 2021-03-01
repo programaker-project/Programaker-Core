@@ -116,7 +116,7 @@ class SimpleButton implements UiFlowBlockHandler, TextEditable {
 
     // Aux
     _updateSize() {
-        const textArea = this.textBox.getClientRects()[0];
+        const textArea = this.textBox.getBoundingClientRect();
 
         const box_height = textArea.height * 3;
         const box_width = Math.max(textArea.width + 50, this.MinWidth);

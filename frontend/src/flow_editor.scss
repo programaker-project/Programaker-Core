@@ -618,16 +618,63 @@ svg.block_renderer .fab-button-group {
 
 // Toolbox
 .toolbox {
-    height: 100%;
-    min-width: 5ex;
-    max-width: min(30vw, 30rem);
     background-color: rgba(0,0,0,0.3);
     position: absolute;
-    top: 0;
     left: 0;
     display: flex;
 
-    padding-left: 6rem; // Space for the shortcut list
+
+    &.landscape {
+        height: 100%;
+        min-width: 5ex;
+        max-width: min(30vw, 30rem);
+
+        padding-left: 6rem; // Space for the shortcut list
+        top: 0;
+
+        .hide-button-section {
+            display: none;
+        }
+    }
+
+    &.portrait {
+        width: 100%;
+        max-height: min(30vh, 30rem);
+        min-height: 2.2rem;
+
+        padding-left: 0;
+        top: calc(100% - min(30vh, 30rem));
+
+        &.collapsed {
+            height: 2.2rem;
+            top: calc(100% - 2.2rem);
+        }
+
+        .hide-button-section {
+            position: absolute;
+            right: 0.5rem;
+        }
+    }
+}
+
+.toolbox .hide-button-section button {
+    border: none;
+    background-color: #009688;
+    color: white;
+    padding-bottom: 0.5ex;
+    font-weight: bolder;
+    border-radius: 4px;
+}
+
+
+.toolbox.collapsed {
+    .showcase {
+        visibility: hidden;
+    }
+
+    .hide-button-section {
+        display: none;
+    }
 }
 
 .toolbox.subsumed {
@@ -635,7 +682,7 @@ svg.block_renderer .fab-button-group {
     opacity: 0.2;
 }
 
-.toolbox ul.category-shortcut-list {
+.toolbox .category-shortcut-list {
     margin: 0;
     padding: 0;
     width: 6rem;
@@ -643,21 +690,69 @@ svg.block_renderer .fab-button-group {
     position: absolute;
     top: 0;
     left: 0;
+
     height: inherit;
+    max-height: inherit;
+    max-width: inherit;
+
     overflow-y: auto;
     background-color: #0f110e;
 
-    li {
-        cursor: pointer;
-        color: white;
-        text-align: center;
-        margin: 0.5ex 2px 0.5ex 2px;
-        background-color: #262826;
-        border-radius: 4px;
-        padding: 4px;
-        font-size: small;
-        word-wrap: break-word;
-        user-select: none;
+    .contents {
+        padding: 0;
+        margin: 0;
+
+        li {
+            cursor: pointer;
+            color: white;
+            text-align: center;
+            margin: 0.5ex 2px 0.5ex 2px;
+            background-color: #262826;
+            border-radius: 4px;
+            padding: 4px;
+            font-size: small;
+            word-wrap: break-word;
+            user-select: none;
+        }
+    }
+}
+
+.toolbox.portrait {
+    .category-shortcut-list {
+        top: calc(100% - 2.2rem);
+        height: 2.2rem;
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+
+        .contents {
+            width: max-content;
+
+            li {
+                display: inline-block;
+            }
+        }
+    }
+
+    &.collapsed .category-shortcut-list {
+        top: 0; // Nothing more on the section
+    }
+
+    .showcase {
+        overflow-x: auto;
+
+        .category {
+            overflow-x: auto;
+
+            .content {
+                width: max-content;
+                min-width: 100%;
+
+                .block_exhibitor {
+                    display: inline-block;
+                }
+            }
+        }
     }
 }
 
@@ -675,7 +770,7 @@ svg.block_renderer .fab-button-group {
     display: none;
 }
 
-.toolbox .category-shortcut-list .empty {
+.toolbox .category-shortcut-list .contents li.empty {
     display: none;
 }
 

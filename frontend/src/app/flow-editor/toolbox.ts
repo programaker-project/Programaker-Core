@@ -11,21 +11,24 @@ export type ActuatorGenerator = () => FlowActuator;
 
 export class Toolbox {
     toolboxDiv: HTMLDivElement;
+    hideButtonDiv: HTMLDivElement;
     blockShowcase: HTMLDivElement;
-    categories: { [key: string]: HTMLDivElement } = {};
+    categories: { [key: string]: { div: HTMLDivElement, content: HTMLDivElement } } = {};
     categoryShortcuts: { [key: string]: HTMLLIElement } = {};
     blocks: FlowBlockOptions[] = [];
-    categoryShortcutList: HTMLUListElement;
+    categoryShortcutList: HTMLDivElement;
+    categoryShortcutListContents: HTMLUListElement;
 
     public static BuildOn(baseElement: HTMLElement,
                           workspace: FlowWorkspace,
                           uiSignalService: UiSignalService,
                           session: Session,
-                          logic_only: boolean,
+                          no_dom: boolean,
+                          behavior: { portrait: boolean, autohide: boolean },
                          ): Toolbox {
         let toolbox: Toolbox;
         try {
-            toolbox = new Toolbox(baseElement, workspace, uiSignalService, session, logic_only);
+            toolbox = new Toolbox(baseElement, workspace, uiSignalService, session, no_dom, behavior);
             toolbox.init();
         }
         catch(err) {
@@ -42,7 +45,8 @@ export class Toolbox {
                         private workspace: FlowWorkspace,
                         public uiSignalService: UiSignalService,
                         private session: Session,
-                        private logic_only: boolean,
+                        private no_dom: boolean,
+                        private behavior: { portrait: boolean, autohide: boolean },
                        ) { }
 
     onResize() {}
@@ -52,16 +56,43 @@ export class Toolbox {
     }
 
     init() {
-        if (this.logic_only) {
+        if (this.no_dom) {
             return;
         }
 
+        // Toolbox
         this.toolboxDiv = document.createElement('div');
-        this.toolboxDiv.setAttribute('class', 'toolbox');
+        const classes = this.toolboxDiv.classList;
+        classes.add('toolbox');
+        if (this.behavior.portrait) {
+            classes.add('portrait')
+        }
+        else {
+            classes.add('landscape');
+        }
+        if (this.behavior.autohide) {
+            classes.add('collapsed');
+        }
+
+        // Hide button
+        this.hideButtonDiv = document.createElement('div');
+        const button = document.createElement('button');
+        button.onclick = () => {
+            classes.add('collapsed');
+        }
+        button.innerText = '⌄';
+        this.hideButtonDiv.setAttribute('class', 'hide-button-section');
+        this.hideButtonDiv.appendChild(button);
+        this.toolboxDiv.appendChild(this.hideButtonDiv);
+
         this.baseElement.appendChild(this.toolboxDiv);
 
-        this.categoryShortcutList = document.createElement('ul');
+        this.categoryShortcutList = document.createElement('div');
         this.categoryShortcutList.setAttribute('class', 'category-shortcut-list');
+
+        this.categoryShortcutListContents = document.createElement('ul');
+        this.categoryShortcutListContents.setAttribute('class', 'contents');
+        this.categoryShortcutList.appendChild(this.categoryShortcutListContents);
         this.toolboxDiv.appendChild(this.categoryShortcutList);
 
         this.blockShowcase = document.createElement('div');
@@ -71,34 +102,37 @@ export class Toolbox {
 
     setCategory(cat:{ id: string, name: string }) {
         const [div, updated] = this.getOrCreateCategory(cat);
-        if (!updated && !this.logic_only) {
+        if (!updated && !this.no_dom) {
             const title = div.getElementsByClassName('category_title')[0] as HTMLDivElement;
             title.innerText = cat.name;
         }
     }
 
-    private getOrCreateCategory(cat:{ id: string, name: string }): [HTMLDivElement, boolean, HTMLLIElement] {
-        let category_div = this.categories[cat.id];
+    private getOrCreateCategory(cat:{ id: string, name: string }): [HTMLDivElement, HTMLDivElement, boolean, HTMLLIElement] {
+        let category = this.categories[cat.id];
         let categoryShortcut = this.categoryShortcuts[cat.id];
         let created_now = false;
+        let category_div: HTMLDivElement;
+        let category_content: HTMLDivElement;
 
-        if (!category_div && !this.logic_only) {
-            category_div = this.categories[cat.id] = document.createElement('div');
+        if (!category && !this.no_dom) {
+            // Category
+            category_div = document.createElement('div');
             category_div.setAttribute('class', 'category empty cat_name_' + cat.name + ' cat_id_' + cat.id);
             this.blockShowcase.appendChild(category_div);
 
+            // Contents
+            category_content = document.createElement('div');
+            category_content.setAttribute('class', 'content');
+            category_div.appendChild(category_content);
+
+            // Title
             const cat_title = document.createElement('div');
             cat_title.setAttribute('class', 'category_title');
             cat_title.innerText = cat.name;
-            category_div.appendChild(cat_title)
-            cat_title.onclick = () => {
-                if (category_div.classList.contains('collapsed')) {
-                    category_div.classList.remove('collapsed');
-                }
-                else {
-                    category_div.classList.add('collapsed');
-                }
-            };
+            category_content.appendChild(cat_title)
+
+            this.categories[cat.id] = {div: category_div, content: category_content};
 
             created_now = true;
 
@@ -112,21 +146,25 @@ export class Toolbox {
 
             categoryShortcut.onclick = () => {
                 // Expand if it's collapsed
-                if (category_div.classList.contains('collapsed')) {
-                    category_div.classList.remove('collapsed');
+                if (this.toolboxDiv.classList.contains('collapsed')) {
+                    this.toolboxDiv.classList.remove('collapsed');
                 }
 
                 // Then scroll to it
                 category_div.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest", });
             };
-            this.categoryShortcutList.appendChild(categoryShortcut);
+            this.categoryShortcutListContents.appendChild(categoryShortcut);
+        }
+        else {
+            category_div = category.div;
+            category_content = category.content;
         }
 
-        return [category_div, created_now, categoryShortcut];
+        return [category_div, category_content, created_now, categoryShortcut];
     }
 
     addBlockGenerator(generator: BlockGenerator, category_id: string) {
-        if (this.logic_only) {
+        if (this.no_dom) {
             return;
         }
 
@@ -140,11 +178,12 @@ export class Toolbox {
             return; // Don't show internal blocks
         }
 
-        const [category_div, _created_now, category_shortcut] = this.getOrCreateCategory({ id: category_id, name: category_id })
+        const [category_div, category_content, _created_now, category_shortcut] = this.getOrCreateCategory({ id: category_id, name: category_id })
         category_div.classList.remove('empty');
+        category_content.classList.remove('empty');
         category_shortcut.classList.remove('empty');
 
-        const block_exhibitor = BlockExhibitor.FromGenerator(generator, category_div);
+        const block_exhibitor = BlockExhibitor.FromGenerator(generator, category_content);
         const element = block_exhibitor.getElement();
         element.onmousedown = element.ontouchstart = (ev: MouseEvent | TouchEvent) => {
             try {
@@ -172,7 +211,7 @@ export class Toolbox {
                     this.toolboxDiv.classList.remove('subsumed');
 
                     // Check if the block was dropped on the toolbox, if so remove it
-                    const toolboxRect = this.toolboxDiv.getClientRects()[0];
+                    const toolboxRect = this.toolboxDiv.getBoundingClientRect();
                     if ((ev.x >= toolboxRect.x) && (ev.x <= toolboxRect.x + toolboxRect.width)) {
                         if ((ev.y >= toolboxRect.y) && (ev.y <= toolboxRect.y + toolboxRect.height)) {
                             // Dropped on toolbox
@@ -212,7 +251,7 @@ export class Toolbox {
     }
 
     addActuator(generator: ActuatorGenerator, category_id: string) {
-        if (this.logic_only) {
+        if (this.no_dom) {
             return;
         }
 
@@ -222,12 +261,13 @@ export class Toolbox {
             }
         }
 
-        const [category_div, _created_now, category_shortcut] = this.getOrCreateCategory({ id: category_id, name: category_id })
+        const [category_div, category_content, _created_now, category_shortcut] = this.getOrCreateCategory({ id: category_id, name: category_id })
         category_div.classList.remove('empty');
+        category_content.classList.remove('empty');
         category_shortcut.classList.remove('empty');
 
         const actuator = generator();
-        const element = actuator.render(category_div);
+        const element = actuator.render(category_content);
         element.onclick = (ev: MouseEvent) => {
             actuator.onclick();
         };

@@ -7,6 +7,7 @@ import {
     Position2D
 } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
+import { manageTopLevelError } from '../utils';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -74,11 +75,11 @@ export class EnumDirectValue implements FlowBlock {
     }
 
     // Render elements
-    private group: SVGElement;
-    private node: SVGElement;
-    private rect: SVGElement;
-    private rectShadow: SVGElement;
-    private textBox: SVGElement;
+    private group: SVGGElement;
+    private node: SVGGElement;
+    private rect: SVGRectElement;
+    private rectShadow: SVGRectElement;
+    private textBox: SVGTextElement;
     private canvas: SVGElement;
     private _defaultText: string;
 
@@ -118,7 +119,7 @@ export class EnumDirectValue implements FlowBlock {
         return block;
     }
 
-    public getBodyElement(): SVGElement {
+    public getBodyElement(): SVGGraphicsElement {
         if (!this.group) {
             throw Error("Not rendered");
         }
@@ -263,7 +264,7 @@ export class EnumDirectValue implements FlowBlock {
                 this.value_dict[value.id] = value;
             }
 
-            this.textBox.onclick = (() => {
+            const selectValue = manageTopLevelError(() => {
                 if (this.options.on_select_requested) {
                     this.group.classList.add('editing');
 
@@ -278,6 +279,9 @@ export class EnumDirectValue implements FlowBlock {
                                                     );
                 }
             });
+
+            this.textBox.onclick = selectValue;
+            this.getBodyElement().ontouchend = selectValue;
 
             if (this.value_id === undefined) {
                 this.setValue(values[0].id);
@@ -348,11 +352,11 @@ export class EnumDirectValue implements FlowBlock {
 
         // Read text correction
         this.textCorrection = {
-            x: -(this.textBox.getClientRects()[0].left - this.node.getClientRects()[0].left),
-            y: -(this.textBox.getClientRects()[0].top - this.node.getClientRects()[0].top)
+            x: -(this.textBox.getBoundingClientRect().left - this.node.getBoundingClientRect().left),
+            y: -(this.textBox.getBoundingClientRect().top - this.node.getBoundingClientRect().top)
         };
 
-        const box_height = (this.textBox.getClientRects()[0].height * 2 + y_padding * 2);
+        const box_height = (this.textBox.getBoundingClientRect().height * 2 + y_padding * 2);
 
         // Add direct output
         const out_group = document.createElementNS(SvgNS, 'g');
@@ -392,7 +396,7 @@ export class EnumDirectValue implements FlowBlock {
         }
 
         let widest_section = MIN_WIDTH;
-        widest_section = Math.max(widest_section, this.textBox.getClientRects()[0].width + OUTPUT_PORT_SIZE);
+        widest_section = Math.max(widest_section, this.textBox.getBoundingClientRect().width + OUTPUT_PORT_SIZE);
 
         const box_width = widest_section;
 

@@ -78,6 +78,33 @@ function ground(environmentService: EnvironmentService, obj: any, field: string)
     return obj;
 }
 
+function manageTopLevelError<I,O>(f: (input: I) => O): (input: I) => O {
+    return (...args) => {
+        try {
+            return f(...args);
+        }
+        catch (error) {
+            logError(error);
+        }
+    };
+}
+
+function logError(error: Error & { _logged?: boolean }) {
+    if (error._logged) {
+        return;
+    }
+
+    error._logged = true;
+
+    const msg = error.stack && error.message
+        ? error.message + '\n' + error.stack.split('\n').map((v: string) => '> ' + v).join('\n')
+    : error
+    ;
+
+    console.error(msg);
+    console.debug("Error", error);
+}
+
 
 export {
     toWebsocketUrl,
@@ -87,4 +114,7 @@ export {
     unixMsToStr,
     addTokenQueryString,
     ground,
+
+    manageTopLevelError,
+    logError,
 };

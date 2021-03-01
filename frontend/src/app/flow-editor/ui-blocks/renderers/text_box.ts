@@ -383,7 +383,7 @@ class TextBox implements UiFlowBlockHandler, TextEditable, ConfigurableSettingsE
     }
 
     _updateFullTextArea() {
-        const textArea = this.contentBox.getClientRects()[0];
+        const textArea = this.contentBox.getBoundingClientRect();
         const zoom = this.workspace ? this.workspace.getInvZoomLevel() : 1;
 
         this.fullTextArea = {

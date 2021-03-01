@@ -1159,10 +1159,11 @@ export class FlowWorkspace implements BlockManager {
 
         // Move trashcan
         const trashbox = this.trashcan.getElementsByTagName('image')[0].getBBox();
+        const trashbox_bottom_margin = 30;
         if (trashbox) {
             // Move
             const left = width * this.inv_zoom_level - trashbox.width * this.inv_zoom_level + this.top_left.x;
-            const top = height * this.inv_zoom_level - trashbox.height * this.inv_zoom_level + this.top_left.y;
+            const top = height * this.inv_zoom_level - trashbox.height * this.inv_zoom_level + this.top_left.y - trashbox_bottom_margin;
 
             this.trashcan.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
 
@@ -1171,7 +1172,7 @@ export class FlowWorkspace implements BlockManager {
                 const buttonBox = this.button_group.getBBox();
 
                 const left = width * this.inv_zoom_level - (buttonBox.width - FAB_BUTTON_PADDING) * this.inv_zoom_level + this.top_left.x;
-                const top = height * this.inv_zoom_level - (trashbox.height + FAB_BUTTON_PADDING + buttonBox.height) * this.inv_zoom_level + this.top_left.y;
+                const top = height * this.inv_zoom_level - (trashbox.height + FAB_BUTTON_PADDING + buttonBox.height) * this.inv_zoom_level + this.top_left.y - trashbox_bottom_margin;
 
                 this.button_group.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
             }
@@ -1279,7 +1280,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     public drawAbsolute(block: FlowBlock, abs_position: Position2D): string {
-        const canvas_area = this.canvas.getClientRects()[0];
+        const canvas_area = this.canvas.getBoundingClientRect();
 
         const rel_pos = {
             x: (abs_position.x - canvas_area.x) * this.inv_zoom_level + this.top_left.x,
@@ -1462,7 +1463,7 @@ export class FlowWorkspace implements BlockManager {
         this.popupGroup.innerHTML = '';
         this.popupGroup.setAttribute('class', 'popup_group context_menu');
 
-        const canvas_rect = this.canvas.getClientRects()[0];
+        const canvas_rect = this.canvas.getBoundingClientRect();
         const workspacePos = { x: pos.x - canvas_rect.x, y: pos.y - canvas_rect.y };
 
         this.popupGroup.style.left = workspacePos.x + 'px';
@@ -1615,7 +1616,7 @@ export class FlowWorkspace implements BlockManager {
                 continue;
             }
 
-            const area = container.getBodyElement().getClientRects()[0];
+            const area = container.getBodyElement().getBoundingClientRect();
             if (!area) {
                 continue;
             }
@@ -1793,7 +1794,7 @@ export class FlowWorkspace implements BlockManager {
             }
 
             const oldContainer: string | null = this.blocks.get(block_id).container_id;
-            const pos = this._getPositionFromEvent(ev);
+            const pos = this._getPositionFromEvent(ev) || last;
             const container = this._findContainerInPos(pos, this._selectedBlocks);
             const containerId = container === null ? null : container.id;
 
@@ -2063,7 +2064,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private isInTrashcan(pos: Position2D): boolean {
-        const rect = this.trashcan.getElementsByTagName('image')[0].getClientRects()[0];
+        const rect = this.trashcan.getElementsByTagName('image')[0].getBoundingClientRect();
         if ((rect.x <= pos.x) && (rect.x + rect.width >= pos.x)) {
             if ((rect.y <= pos.y) && (rect.y + rect.height >= pos.y)) {
                 return true;
@@ -2448,7 +2449,7 @@ export class FlowWorkspace implements BlockManager {
     }
 
     private absPosToWorkspace(area: Area2D): Area2D {
-        const canvas_rect = this.canvas.getClientRects()[0];
+        const canvas_rect = this.canvas.getBoundingClientRect();
         return {
             x: ((area.x - canvas_rect.left) * this.inv_zoom_level) + this.top_left.x,
             y: ((area.y - canvas_rect.top) * this.inv_zoom_level) + this.top_left.y,
@@ -2949,8 +2950,8 @@ export class FlowWorkspace implements BlockManager {
                 }
 
                 const real_pointer = {
-                    x: (ev.x - this.canvas.getClientRects()[0].left) * this.inv_zoom_level + this.top_left.x,
-                    y: (ev.y - this.canvas.getClientRects()[0].top) * this.inv_zoom_level + this.top_left.y,
+                    x: (ev.x - this.canvas.getBoundingClientRect().left) * this.inv_zoom_level + this.top_left.x,
+                    y: (ev.y - this.canvas.getBoundingClientRect().top) * this.inv_zoom_level + this.top_left.y,
                 };
 
                 if (type == 'out') {
@@ -3008,8 +3009,8 @@ export class FlowWorkspace implements BlockManager {
         this.baseElement.appendChild(backdrop);
         backdrop.setAttribute('class', 'backdrop');
 
-        const global_pos = block.getBodyElement().getClientRects()[0];
-        const canvas_rect = this.canvas.getClientRects()[0];
+        const global_pos = block.getBodyElement().getBoundingClientRect();
+        const canvas_rect = this.canvas.getBoundingClientRect();
         const abs_pos = { x: global_pos.x - canvas_rect.x, y: global_pos.y - canvas_rect.y };
 
         // TODO: Make this popup separate from the original block.
@@ -3041,7 +3042,7 @@ export class FlowWorkspace implements BlockManager {
         // Option list (now empty)
         const options = document.createElement('ul');
         options.setAttribute('class', 'options');
-        options.style.maxHeight = canvas_rect.height - editor_input.getClientRects()[0].height - abs_pos.y - 1 + 'px';
+        options.style.maxHeight = canvas_rect.height - editor_input.getBoundingClientRect().height - abs_pos.y - 1 + 'px';
 
         this.popupGroup.appendChild(options);
 
@@ -3104,12 +3105,12 @@ export class FlowWorkspace implements BlockManager {
                     else {
                         scroll_options.block = 'start';
                         const children = options.children;
-                        const parent = options.getClientRects()[0];
+                        const parent = options.getBoundingClientRect();
                         // Go down the list until an element is not in view
                         // this is not done directly with `inc = size(container) / size(next_element)`
                         // to support for cases where elements have different sizes
                         for (; selected_index < children.length; selected_index++) {
-                            const child = children[selected_index].getClientRects()[0];
+                            const child = children[selected_index].getBoundingClientRect();
                             if (child.bottom > parent.bottom) {
                                 break;
                             }
@@ -3124,12 +3125,12 @@ export class FlowWorkspace implements BlockManager {
                         selected_index--;
                         scroll_options.block = 'end';
                         const children = options.children;
-                        const parent = options.getClientRects()[0];
+                        const parent = options.getBoundingClientRect();
                         // Go down the list until an element is not in view
                         // this is not done directly with `inc = size(container) / size(next_element)`
                         // to support for cases where elements have different sizes
                         for (; selected_index > 0; selected_index--) {
-                            const child = children[selected_index].getClientRects()[0];
+                            const child = children[selected_index].getBoundingClientRect();
                             if (child.top < parent.top) {
                                 break;
                             }

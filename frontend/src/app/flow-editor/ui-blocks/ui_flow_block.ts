@@ -103,7 +103,7 @@ export class UiFlowBlock implements FlowBlock {
     readonly id: string;
     readonly onMoveCallbacks: ((pos: Position2D) => void)[] = [];
 
-    private group: SVGElement;
+    private group: SVGGElement;
     protected position: {x: number, y: number};
     private output_groups: SVGGElement[];
     private input_groups: SVGGElement[];
@@ -192,7 +192,7 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     private _renderOutputs(group: SVGGElement) {
-        const nodeBox = group.getClientRects()[0];
+        const nodeBox = group.getBoundingClientRect();
 
         // Add outputs
         let output_index = -1;
@@ -233,18 +233,18 @@ export class UiFlowBlock implements FlowBlock {
                 out_group.appendChild(text);
 
                 output_position_end = Math.max(output_position_end, (output_x_position
-                                                                     + text.getClientRects()[0].width
+                                                                     + text.getBoundingClientRect().width
                                                                      + output_plating_x_margin * 2));
 
                 const output_width = output_position_end - output_position_start;
 
-                text.setAttributeNS(null, 'x', output_position_start + output_width/2 - text.getClientRects()[0].width/2  + '');
+                text.setAttributeNS(null, 'x', output_position_start + output_width/2 - text.getBoundingClientRect().width/2  + '');
                 text.setAttributeNS(null, 'y', nodeBox.height - (OUTPUT_PORT_REAL_SIZE/2) + '' );
 
                 output_x_position = output_position_end + outputs_x_margin;
 
                 const output_height = Math.max(output_port_size / 2, (OUTPUT_PORT_REAL_SIZE
-                                                                      + text.getClientRects()[0].height));
+                                                                      + text.getBoundingClientRect().height));
 
                 // Configure port connector now that we know where the output will be positioned
                 port_plating.setAttributeNS(null, 'class', 'port_plating');
@@ -289,7 +289,7 @@ export class UiFlowBlock implements FlowBlock {
     }
 
     private _renderInputs(group: SVGGElement) {
-        const nodeBox = group.getClientRects()[0];
+        const nodeBox = group.getBoundingClientRect();
 
         // Add inputs
         let input_index = -1;
@@ -330,18 +330,18 @@ export class UiFlowBlock implements FlowBlock {
                 in_group.appendChild(text);
 
                 input_position_end = Math.max(input_position_end, (input_x_position
-                                                                     + text.getClientRects()[0].width
+                                                                     + text.getBoundingClientRect().width
                                                                      + input_plating_x_margin * 2));
 
                 const input_width = input_position_end - input_position_start;
 
-                text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getClientRects()[0].width/2  + '');
+                text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getBoundingClientRect().width/2  + '');
                 text.setAttributeNS(null, 'y', nodeBox.height - (INPUT_PORT_REAL_SIZE/2) + '' );
 
                 input_x_position = input_position_end + inputs_x_margin;
 
                 const input_height = Math.max(input_port_size / 2, (INPUT_PORT_REAL_SIZE
-                                                                      + text.getClientRects()[0].height));
+                                                                      + text.getBoundingClientRect().height));
 
                 // Configure port connector now that we know where the input will be positioned
                 port_plating.setAttributeNS(null, 'class', 'port_plating');
@@ -441,7 +441,7 @@ export class UiFlowBlock implements FlowBlock {
         throw new Error(`Renderer not found for block (id: ${blockId}).`);
     }
 
-    public getBodyElement(): SVGElement {
+    public getBodyElement(): SVGGraphicsElement {
         return this.group;
     }
 

@@ -83,6 +83,6 @@ export class BlockExhibitor implements BlockManager {
     }
 
     public getInnerElementRect(): Area2D {
-        return this.block.getBodyElement().getClientRects()[0];
+        return this.block.getBodyElement().getBoundingClientRect();
     }
 }

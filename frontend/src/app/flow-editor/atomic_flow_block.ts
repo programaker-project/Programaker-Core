@@ -300,10 +300,10 @@ export class AtomicFlowBlock implements FlowBlock {
     }
 
     // Render elements
-    private group: SVGElement;
-    private node: SVGElement;
-    private rect: SVGElement;
-    private rectShadow: SVGElement;
+    private group: SVGGElement;
+    private node: SVGGElement;
+    private rect: SVGRectElement;
+    private rectShadow: SVGRectElement;
     private canvas: SVGElement;
     private icon: SVGImageElement;
     private iconPlate: SVGRectElement;
@@ -363,7 +363,7 @@ export class AtomicFlowBlock implements FlowBlock {
         return block;
     }
 
-    public getBodyElement(): SVGElement {
+    public getBodyElement(): SVGGraphicsElement {
         if (!this.group) {
             throw Error("Not rendered");
         }
@@ -629,17 +629,17 @@ export class AtomicFlowBlock implements FlowBlock {
             in_group.appendChild(text);
 
             input_position_end = Math.max(input_position_end, (this.input_x_position
-                                                               + text.getClientRects()[0].width
+                                                               + text.getBoundingClientRect().width
                                                                + input_plating_x_margin * 2));
             const input_width = input_position_end - input_position_start;
 
-            text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getClientRects()[0].width/2  + '');
-            text.setAttributeNS(null, 'y', (INPUT_PORT_REAL_SIZE + text.getClientRects()[0].height/3) + '' );
+            text.setAttributeNS(null, 'x', input_position_start + input_width/2 - text.getBoundingClientRect().width/2  + '');
+            text.setAttributeNS(null, 'y', (INPUT_PORT_REAL_SIZE + text.getBoundingClientRect().height/3) + '' );
 
             this.input_x_position = input_position_end + inputs_x_margin;
 
             const input_height = Math.max(input_port_size / 2, (INPUT_PORT_REAL_SIZE
-                                                                + text.getClientRects()[0].height));
+                                                                + text.getBoundingClientRect().height));
 
             // Configure port connector now that we know where the input will be positioned
             port_plating.setAttributeNS(null, 'class', 'port_plating');
@@ -716,14 +716,14 @@ export class AtomicFlowBlock implements FlowBlock {
         let chunks_width = 0;
         for (let i = 0; i < this.chunks.length; i++) {
             if (this.chunks[i].type === 'const') {
-                chunks_width += this.chunkBoxes[i].getClientRects()[0].width + X_PADDING;
+                chunks_width += this.chunkBoxes[i].getBoundingClientRect().width + X_PADDING;
             }
             else if (this.chunks[i].type === 'named_var') {
                 const group = this.chunkBoxes[i];
                 const image = group.getElementsByClassName('var_dropdown_icon')[0];
 
                 const text = group.getElementsByClassName('var_name')[0];
-                chunks_width += text.getClientRects()[0].width + image.getClientRects()[0].width
+                chunks_width += text.getBoundingClientRect().width + image.getBoundingClientRect().width
                     + X_PADDING + PLATE_X_PADDING * 2 + IMAGE_X_PADDING * 2;
             }
             else if (this.chunks[i].type === 'index_var') {
@@ -744,7 +744,7 @@ export class AtomicFlowBlock implements FlowBlock {
             const chunk = this.chunks[i];
             if (chunk.type === 'const') {
                 this.chunkBoxes[i].setAttributeNS(null, 'x', next_chunk_position + '');
-                next_chunk_position += this.chunkBoxes[i].getClientRects()[0].width + X_PADDING;
+                next_chunk_position += this.chunkBoxes[i].getBoundingClientRect().width + X_PADDING;
             }
             else if (chunk.type === 'named_var') {
                 const group = this.chunkBoxes[i];
@@ -755,12 +755,12 @@ export class AtomicFlowBlock implements FlowBlock {
                 text.setAttributeNS(null, 'x', next_chunk_position + PLATE_X_PADDING * 2
                                     + '');
 
-                const text_width = text.getClientRects()[0].width;
+                const text_width = text.getBoundingClientRect().width;
 
                 image.setAttributeNS(null, 'x', next_chunk_position + PLATE_X_PADDING * 2 + text_width + IMAGE_X_PADDING
                                      + '');
 
-                const image_width = image.getClientRects()[0].width;
+                const image_width = image.getBoundingClientRect().width;
 
                 plate.setAttributeNS(null, 'x', next_chunk_position + '');
                 plate.setAttributeNS(null, 'width', text_width + image_width + PLATE_X_PADDING * 2 + IMAGE_X_PADDING * 2 + "");
@@ -935,7 +935,7 @@ export class AtomicFlowBlock implements FlowBlock {
         refText.textContent = "test";
         this.canvas.appendChild(refText);
 
-        const refBox = refText.getClientRects()[0];
+        const refBox = refText.getBoundingClientRect();
         this.canvas.removeChild(refText);
         // End of text correction calculation
 
@@ -992,18 +992,18 @@ export class AtomicFlowBlock implements FlowBlock {
                 out_group.appendChild(text);
 
                 output_position_end = Math.max(output_position_end, (this.output_x_position
-                                                                     + text.getClientRects()[0].width
+                                                                     + text.getBoundingClientRect().width
                                                                      + output_plating_x_margin * 2));
 
                 const output_width = output_position_end - output_position_start;
 
-                text.setAttributeNS(null, 'x', output_position_start + output_width/2 - text.getClientRects()[0].width/2  + '');
+                text.setAttributeNS(null, 'x', output_position_start + output_width/2 - text.getBoundingClientRect().width/2  + '');
                 text.setAttributeNS(null, 'y', box_height - (OUTPUT_PORT_REAL_SIZE/2) + '' );
 
                 this.output_x_position = output_position_end + outputs_x_margin;
 
                 const output_height = Math.max(output_port_size / 2, (OUTPUT_PORT_REAL_SIZE
-                                                                      + text.getClientRects()[0].height));
+                                                                      + text.getBoundingClientRect().height));
 
                 // Configure port connector now that we know where the output will be positioned
                 port_plating.setAttributeNS(null, 'class', 'port_plating');
@@ -1085,7 +1085,7 @@ export class AtomicFlowBlock implements FlowBlock {
                 image.setAttributeNS(null, 'href', '/assets/sprites/expand_more.svg');
                 image.setAttributeNS(null, 'width', '2ex');
                 image.setAttributeNS(null, 'height', '2ex');
-                image.setAttributeNS(null, 'y', box_height/2 - image.getClientRects()[0].height/2  + "");
+                image.setAttributeNS(null, 'y', box_height/2 - image.getBoundingClientRect().height/2  + "");
 
                 this.namedChunkTextBoxes[chunk.name] = text;
 

@@ -20,7 +20,7 @@ export function getRefBox(canvas: SVGElement): DOMRect {
     refText.textContent = "test";
     canvas.appendChild(refText);
 
-    const refBox = refText.getClientRects()[0];
+    const refBox = refText.getBoundingClientRect();
 
     canvas.removeChild(refText);
 
@@ -405,7 +405,7 @@ const ButtonBarId = 'flow-editor-in-element-button-bar-' + uuidv4();
 const ON_ELEMENT_EDITOR_MARGIN = 50;
 
 export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeignObjectElement, dialog: MatDialog, onDone: (text: FormattedTextTree) => void, resize: (width: number, height: number) => void) {
-    const elementPos = element.getClientRects()[0];
+    const elementPos = element.getBoundingClientRect();
 
     {
         const oldButtonBar = document.getElementById(ButtonBarId);
@@ -467,7 +467,7 @@ export function startOnElementEditor(element: HTMLDivElement, parent: SVGForeign
 
         document.body.appendChild(buttonBar);
 
-        const buttonDim = buttonBar.getClientRects()[0];
+        const buttonDim = buttonBar.getBoundingClientRect();
         buttonBar.style.top = elementPos.y - buttonDim.height + 'px';
         buttonBar.style.left = elementPos.x + 'px';
     }

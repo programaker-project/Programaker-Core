@@ -66,8 +66,8 @@ class HorizontalUiSection implements ContainerFlowBlockHandler, HandleableElemen
         this.placeholder.setAttributeNS(null, 'class', 'block_type_annotation');
         this.placeholder.textContent = BLOCK_TYPE_ANNOTATION;
 
-        const text_width = this.placeholder.getClientRects()[0].width;
-        const text_height = this.placeholder.getClientRects()[0].height;
+        const text_width = this.placeholder.getBoundingClientRect().width;
+        const text_height = this.placeholder.getBoundingClientRect().height;
         const textDim = { width: text_width, height: text_height };
 
         const bdims = block.blockData.dimensions;

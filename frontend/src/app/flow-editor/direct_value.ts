@@ -80,10 +80,10 @@ export class DirectValue implements FlowBlock {
     }
 
     // Render elements
-    private group: SVGElement;
-    private node: SVGElement;
-    private rect: SVGElement;
-    private rectShadow: SVGElement;
+    private group: SVGGElement;
+    private node: SVGGElement;
+    private rect: SVGRectElement;
+    private rectShadow: SVGRectElement;
     private textBox: SVGTextElement;
     private canvas: SVGElement;
 
@@ -119,7 +119,7 @@ export class DirectValue implements FlowBlock {
         return new DirectValue(options, blockId);
     }
 
-    public getBodyElement(): SVGElement {
+    public getBodyElement(): SVGGraphicsElement {
         if (!this.group) {
             throw Error("Not rendered");
         }
