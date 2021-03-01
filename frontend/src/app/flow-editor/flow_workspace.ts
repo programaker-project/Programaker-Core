@@ -1793,7 +1793,7 @@ export class FlowWorkspace implements BlockManager {
             }
 
             const oldContainer: string | null = this.blocks.get(block_id).container_id;
-            const pos = this._getPositionFromEvent(ev);
+            const pos = this._getPositionFromEvent(ev) || last;
             const container = this._findContainerInPos(pos, this._selectedBlocks);
             const containerId = container === null ? null : container.id;
 
