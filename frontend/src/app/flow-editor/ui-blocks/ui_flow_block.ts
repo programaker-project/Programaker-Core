@@ -103,7 +103,7 @@ export class UiFlowBlock implements FlowBlock {
     readonly id: string;
     readonly onMoveCallbacks: ((pos: Position2D) => void)[] = [];
 
-    private group: SVGElement;
+    private group: SVGGElement;
     protected position: {x: number, y: number};
     private output_groups: SVGGElement[];
     private input_groups: SVGGElement[];
@@ -441,7 +441,7 @@ export class UiFlowBlock implements FlowBlock {
         throw new Error(`Renderer not found for block (id: ${blockId}).`);
     }
 
-    public getBodyElement(): SVGElement {
+    public getBodyElement(): SVGGraphicsElement {
         return this.group;
     }
 

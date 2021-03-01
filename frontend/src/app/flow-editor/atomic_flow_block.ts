@@ -300,10 +300,10 @@ export class AtomicFlowBlock implements FlowBlock {
     }
 
     // Render elements
-    private group: SVGElement;
-    private node: SVGElement;
-    private rect: SVGElement;
-    private rectShadow: SVGElement;
+    private group: SVGGElement;
+    private node: SVGGElement;
+    private rect: SVGRectElement;
+    private rectShadow: SVGRectElement;
     private canvas: SVGElement;
     private icon: SVGImageElement;
     private iconPlate: SVGRectElement;
@@ -363,7 +363,7 @@ export class AtomicFlowBlock implements FlowBlock {
         return block;
     }
 
-    public getBodyElement(): SVGElement {
+    public getBodyElement(): SVGGraphicsElement {
         if (!this.group) {
             throw Error("Not rendered");
         }

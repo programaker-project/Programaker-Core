@@ -74,11 +74,11 @@ export class EnumDirectValue implements FlowBlock {
     }
 
     // Render elements
-    private group: SVGElement;
-    private node: SVGElement;
-    private rect: SVGElement;
-    private rectShadow: SVGElement;
-    private textBox: SVGElement;
+    private group: SVGGElement;
+    private node: SVGGElement;
+    private rect: SVGRectElement;
+    private rectShadow: SVGRectElement;
+    private textBox: SVGTextElement;
     private canvas: SVGElement;
     private _defaultText: string;
 
@@ -118,7 +118,7 @@ export class EnumDirectValue implements FlowBlock {
         return block;
     }
 
-    public getBodyElement(): SVGElement {
+    public getBodyElement(): SVGGraphicsElement {
         if (!this.group) {
             throw Error("Not rendered");
         }
