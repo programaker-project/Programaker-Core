@@ -639,8 +639,8 @@ svg.block_renderer .fab-button-group {
 
     &.portrait {
         width: 100%;
-        min-height: 5ex;
         max-height: min(30vh, 30rem);
+        min-height: 2.2rem;
 
         padding-left: 0;
         top: calc(100% - min(30vh, 30rem));
