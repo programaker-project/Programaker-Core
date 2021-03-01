@@ -631,6 +631,10 @@ svg.block_renderer .fab-button-group {
 
         padding-left: 6rem; // Space for the shortcut list
         top: 0;
+
+        .hide-button-section {
+            display: none;
+        }
     }
 
     &.portrait {
@@ -639,7 +643,37 @@ svg.block_renderer .fab-button-group {
         max-height: min(30vh, 30rem);
 
         padding-left: 0;
-        top: calc(100% - min(30vh, 30rem))
+        top: calc(100% - min(30vh, 30rem));
+
+        &.collapsed {
+            height: 2.2rem;
+            top: calc(100% - 2.2rem);
+        }
+
+        .hide-button-section {
+            position: absolute;
+            right: 0.5rem;
+        }
+    }
+}
+
+.toolbox .hide-button-section button {
+    border: none;
+    background-color: #009688;
+    color: white;
+    padding-bottom: 0.5ex;
+    font-weight: bolder;
+    border-radius: 4px;
+}
+
+
+.toolbox.collapsed {
+    .showcase {
+        visibility: hidden;
+    }
+
+    .hide-button-section {
+        display: none;
     }
 }
 
@@ -698,6 +732,10 @@ svg.block_renderer .fab-button-group {
                 display: inline-block;
             }
         }
+    }
+
+    &.collapsed .category-shortcut-list {
+        top: 0; // Nothing more on the section
     }
 
     .showcase {

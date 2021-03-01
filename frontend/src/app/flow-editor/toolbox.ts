@@ -11,6 +11,7 @@ export type ActuatorGenerator = () => FlowActuator;
 
 export class Toolbox {
     toolboxDiv: HTMLDivElement;
+    hideButtonDiv: HTMLDivElement;
     blockShowcase: HTMLDivElement;
     categories: { [key: string]: { div: HTMLDivElement, content: HTMLDivElement } } = {};
     categoryShortcuts: { [key: string]: HTMLLIElement } = {};
@@ -59,6 +60,7 @@ export class Toolbox {
             return;
         }
 
+        // Toolbox
         this.toolboxDiv = document.createElement('div');
         const classes = this.toolboxDiv.classList;
         classes.add('toolbox');
@@ -68,6 +70,20 @@ export class Toolbox {
         else {
             classes.add('landscape');
         }
+        if (this.behavior.autohide) {
+            classes.add('collapsed');
+        }
+
+        // Hide button
+        this.hideButtonDiv = document.createElement('div');
+        const button = document.createElement('button');
+        button.onclick = () => {
+            classes.add('collapsed');
+        }
+        button.innerText = '⌄';
+        this.hideButtonDiv.setAttribute('class', 'hide-button-section');
+        this.hideButtonDiv.appendChild(button);
+        this.toolboxDiv.appendChild(this.hideButtonDiv);
 
         this.baseElement.appendChild(this.toolboxDiv);
 
@@ -130,8 +146,8 @@ export class Toolbox {
 
             categoryShortcut.onclick = () => {
                 // Expand if it's collapsed
-                if (category_div.classList.contains('collapsed')) {
-                    category_div.classList.remove('collapsed');
+                if (this.toolboxDiv.classList.contains('collapsed')) {
+                    this.toolboxDiv.classList.remove('collapsed');
                 }
 
                 // Then scroll to it
