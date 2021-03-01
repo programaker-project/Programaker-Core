@@ -7,6 +7,7 @@ import {
     Position2D
 } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
+import { manageTopLevelError } from '../utils';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -263,7 +264,7 @@ export class EnumDirectValue implements FlowBlock {
                 this.value_dict[value.id] = value;
             }
 
-            this.textBox.onclick = (() => {
+            const selectValue = manageTopLevelError(() => {
                 if (this.options.on_select_requested) {
                     this.group.classList.add('editing');
 
@@ -278,6 +279,9 @@ export class EnumDirectValue implements FlowBlock {
                                                     );
                 }
             });
+
+            this.textBox.onclick = selectValue;
+            this.getBodyElement().ontouchend = selectValue;
 
             if (this.value_id === undefined) {
                 this.setValue(values[0].id);
