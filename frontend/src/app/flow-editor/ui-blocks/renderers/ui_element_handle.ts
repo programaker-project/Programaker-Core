@@ -199,7 +199,7 @@ export class UiElementHandle {
     }
 
     // Event handling
-    private _startResizeWidthHeight(ev: MouseEvent) {
+    private _startResizeWidthHeight(ev: MouseEvent | TouchEvent) {
         ev.preventDefault();           // Avoid triggering default events
         ev.stopImmediatePropagation(); // Avoid triggering other custom events up-tree
 
@@ -208,17 +208,7 @@ export class UiElementHandle {
         return true;
     }
 
-    private _startResizeHeight(ev: MouseEvent) {
-        ev.preventDefault();           // Avoid triggering default events
-        ev.stopImmediatePropagation(); // Avoid triggering other custom events up-tree
-
-        // TODO: Add resize type
-        this.workspace.startResizing(this.element as any as Resizeable, ev);
-
-        return true;
-    }
-
-    private _startResizeWidth(ev: MouseEvent) {
+    private _startResizeHeight(ev: MouseEvent | TouchEvent) {
         ev.preventDefault();           // Avoid triggering default events
         ev.stopImmediatePropagation(); // Avoid triggering other custom events up-tree
 
@@ -228,7 +218,17 @@ export class UiElementHandle {
         return true;
     }
 
-    private _startUpdateSettings(ev: MouseEvent){
+    private _startResizeWidth(ev: MouseEvent | TouchEvent) {
+        ev.preventDefault();           // Avoid triggering default events
+        ev.stopImmediatePropagation(); // Avoid triggering other custom events up-tree
+
+        // TODO: Add resize type
+        this.workspace.startResizing(this.element as any as Resizeable, ev);
+
+        return true;
+    }
+
+    private _startUpdateSettings(ev: MouseEvent | TouchEvent){
         ev.preventDefault();           // Avoid triggering default events
         ev.stopImmediatePropagation(); // Avoid triggering other custom events up-tree
 
