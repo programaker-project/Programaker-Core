@@ -1159,10 +1159,11 @@ export class FlowWorkspace implements BlockManager {
 
         // Move trashcan
         const trashbox = this.trashcan.getElementsByTagName('image')[0].getBBox();
+        const trashbox_bottom_margin = 30;
         if (trashbox) {
             // Move
             const left = width * this.inv_zoom_level - trashbox.width * this.inv_zoom_level + this.top_left.x;
-            const top = height * this.inv_zoom_level - trashbox.height * this.inv_zoom_level + this.top_left.y;
+            const top = height * this.inv_zoom_level - trashbox.height * this.inv_zoom_level + this.top_left.y - trashbox_bottom_margin;
 
             this.trashcan.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
 
@@ -1171,7 +1172,7 @@ export class FlowWorkspace implements BlockManager {
                 const buttonBox = this.button_group.getBBox();
 
                 const left = width * this.inv_zoom_level - (buttonBox.width - FAB_BUTTON_PADDING) * this.inv_zoom_level + this.top_left.x;
-                const top = height * this.inv_zoom_level - (trashbox.height + FAB_BUTTON_PADDING + buttonBox.height) * this.inv_zoom_level + this.top_left.y;
+                const top = height * this.inv_zoom_level - (trashbox.height + FAB_BUTTON_PADDING + buttonBox.height) * this.inv_zoom_level + this.top_left.y - trashbox_bottom_margin;
 
                 this.button_group.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
             }
