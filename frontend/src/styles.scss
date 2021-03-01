@@ -9,6 +9,11 @@ html, body, my-app, .app-content {
   height: 100%;
 }
 
+html, body {
+    /* Block refresh on scroll. */
+    overscroll-behavior-y: contain;
+}
+
 mat-sidenav-container {
     margin: 0;
     width: 100%;
