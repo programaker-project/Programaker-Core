@@ -172,7 +172,7 @@ export class Toolbox {
                     this.toolboxDiv.classList.remove('subsumed');
 
                     // Check if the block was dropped on the toolbox, if so remove it
-                    const toolboxRect = this.toolboxDiv.getClientRects()[0];
+                    const toolboxRect = this.toolboxDiv.getBoundingClientRect();
                     if ((ev.x >= toolboxRect.x) && (ev.x <= toolboxRect.x + toolboxRect.width)) {
                         if ((ev.y >= toolboxRect.y) && (ev.y <= toolboxRect.y + toolboxRect.height)) {
                             // Dropped on toolbox

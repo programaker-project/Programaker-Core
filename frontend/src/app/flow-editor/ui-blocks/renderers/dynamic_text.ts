@@ -286,7 +286,7 @@ class DynamicText implements UiFlowBlockHandler, ConfigurableSettingsElement, Ha
     }
 
     _updateSize(opts?: { anchor?: 'bottom-center' | 'top-left' }) {
-        const textArea = this.textBox.getClientRects()[0];
+        const textArea = this.textBox.getBoundingClientRect();
 
         const box_height = textArea.height * 1.5;
         const box_width = Math.max(textArea.width + 50, this.MinWidth);

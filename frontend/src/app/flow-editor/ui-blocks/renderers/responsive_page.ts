@@ -72,8 +72,8 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
         this.node.appendChild(this.textBox);
         group.appendChild(this.node);
 
-        const text_width = this.textBox.getClientRects()[0].width;
-        const text_height = this.textBox.getClientRects()[0].height;
+        const text_width = this.textBox.getBoundingClientRect().width;
+        const text_height = this.textBox.getBoundingClientRect().height;
         this.textDim = { width: text_width, height: text_height };
 
         const bdims = block.blockData.dimensions;
@@ -179,8 +179,8 @@ class ResponsivePage implements ContainerFlowBlockHandler, HandleableElement, Te
     }
 
     updateSizes() {
-        const text_width = this.textBox.getClientRects()[0].width;
-        const text_height = this.textBox.getClientRects()[0].height;
+        const text_width = this.textBox.getBoundingClientRect().width;
+        const text_height = this.textBox.getBoundingClientRect().height;
         this.textDim = { width: text_width, height: text_height };
 
         const titleHeight = this.textDim.height + TITLE_PADDING * 2;
