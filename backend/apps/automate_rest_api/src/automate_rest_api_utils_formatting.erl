@@ -1,7 +1,7 @@
 -module(automate_rest_api_utils_formatting).
 
 -export([ format_message/1
-        , serialize_logs/1
+        , serialize_logs/2
         , serialize_log_entry/1
         , serialize_icon/1
         , serialize_maybe_undefined/1
@@ -29,12 +29,20 @@ format_message(Log=#user_program_log_entry{}) ->
     {ok, #{ type => program_log
           , value => serialize_log_entry(Log)
           }};
+format_message(Log=#user_generated_log_entry{}) ->
+    {ok, #{ type => debug_log
+          , value => serialize_log_entry(Log)
+          }};
 format_message(_) ->
     {error, unknown_format}.
 
 
-serialize_logs(Logs) ->
-    lists:map(fun (Entry) -> serialize_log_entry(Entry) end, Logs).
+serialize_logs(ErrorLogs, UserLogs) ->
+    lists:sort(fun (#{ event_time := A }, #{ event_time := B }) ->
+                       A < B
+               end,
+               lists:map(fun (Entry) -> serialize_log_entry(Entry) end, ErrorLogs)
+               ++ lists:map(fun (Entry) -> serialize_log_entry(Entry) end, UserLogs)).
 
 serialize_log_entry(#user_program_log_entry{ program_id=ProgramId
                                            , thread_id=ThreadId
@@ -60,6 +68,23 @@ serialize_log_entry(#user_program_log_entry{ program_id=ProgramId
      , user_id => serialize_string_or_none(OwnerId)
      , block_id => serialize_string_or_none(BlockId)
      , event_data => serialize_event_error(EventData)
+     , event_message => EventMessage
+     , event_time => EventTime
+     , severity => Severity
+     };
+
+serialize_log_entry(#user_generated_log_entry{ program_id=ProgramId
+                                             , block_id=BlockId
+                                             , event_message=EventMessage
+                                             , event_time=EventTime
+                                             , severity=Severity
+                                             }) ->
+    #{ program_id => ProgramId
+     , thread_id => null
+     , owner => null
+     , user_id => null
+     , block_id => serialize_string_or_none(BlockId)
+     , event_data => debug
      , event_message => EventMessage
      , event_time => EventTime
      , severity => Severity

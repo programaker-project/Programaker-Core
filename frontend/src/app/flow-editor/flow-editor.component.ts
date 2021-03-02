@@ -222,6 +222,9 @@ export class FlowEditorComponent implements OnInit {
                         if (update.type === 'program_log') {
                             this.updateLogsDrawer(update.value);
                         }
+                        else if (update.type === 'debug_log') {
+                            this.updateLogsDrawer(update.value);
+                        }
                     },
                     error: (error: any) => {
                         console.error("Error reading logs:", error);
@@ -667,17 +670,18 @@ export class FlowEditorComponent implements OnInit {
 
         element.appendChild(message);
 
-        if (line.block_id) {
-            const mark_button = document.createElement('button');
-            mark_button.classList.value = 'log-marker mat-button mat-raised-button mat-button-base mat-primary';
+        // This is not yet implemented on flow editor
+        // if (line.block_id) {
+        //     const mark_button = document.createElement('button');
+        //     mark_button.classList.value = 'log-marker mat-button mat-raised-button mat-button-base mat-primary';
 
-            mark_button.innerText = 'Mark block';
-            mark_button.onclick = () => {
-                this.toggleMark(mark_button, line);
-            }
+        //     mark_button.innerText = 'Mark block';
+        //     mark_button.onclick = () => {
+        //         this.toggleMark(mark_button, line);
+        //     }
 
-            element.appendChild(mark_button);
-        }
+        //     element.appendChild(mark_button);
+        // }
 
         return element;
     }
