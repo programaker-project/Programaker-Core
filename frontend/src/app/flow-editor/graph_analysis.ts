@@ -2,7 +2,7 @@ import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions, isAtomicF
 import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_description';
 import { DirectValueFlowBlockData, isDirectValueBlockData } from './direct_value';
 import { EnumDirectValueFlowBlockData, isEnumDirectValueBlockData } from './enum_direct_value';
-import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode, CompiledBlockArgList, CompiledBlockType } from './flow_graph';
+import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode, CompiledBlockArgList, CompiledBlockType, CompiledBlockArgMonitorDict, CompiledBlockArgCallServiceDict, CompiledBlockServiceCallSelectorArgs } from './flow_graph';
 import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream, split_streaming_after_stepped, is_pulse } from './graph_transformations';
 import { index_connections, reverse_index_connections, EdgeIndex, IndexedFlowGraphEdge } from './graph_utils';
 import { TIME_MONITOR_ID } from './platform_facilities';
@@ -1288,7 +1288,7 @@ function compile_block(graph: FlowGraph,
             }
 
             // Is not an arg (so, it's a signal) or it's a new block
-            if ((!flags.inside_args) || (!alreadyRun)) {
+            if (!flags.inside_args) {
                 block_type = "wait_for_monitor";
                 compiled_args = {
                     monitor_id: {
@@ -1296,6 +1296,17 @@ function compile_block(graph: FlowGraph,
                     },
                     key: key,
                     monitor_expected_value: 'any_value',
+                };
+            }
+            else if (!alreadyRun) {
+                block_type = "wait_for_monitor";
+                compiled_args = {
+                    monitor_id: {
+                        from_service: TIME_MONITOR_ID,
+                    },
+                    key: key,
+                    monitor_expected_value: 'any_value',
+                    monitored_value: flags.arg_index,
                 };
             }
             else {
@@ -1825,6 +1836,138 @@ export function assemble_flow(graph: FlowGraph,
     return [_link_graph(compiled_graph)];
 }
 
+function extract_blocks_from_content(block: ContentBlock): CompiledBlock[] {
+    const results = [];
+    for (const content of block.contents) {
+        if ((content as CompiledBlock).type) {
+            results.push(content as CompiledBlock);
+        }
+        else {
+            results.splice(results.length, 0, ...extract_blocks_from_content(content as ContentBlock));
+        }
+    }
+
+    return results;
+}
+
+function extract_non_arguments_from_block(startBlock: CompiledBlock): CompiledBlock[] {
+    const todo = [startBlock];
+    const extracted = [] as CompiledBlock[];
+
+    while (todo.length > 0) {
+        const block = todo.pop();
+        const contents = block.contents;
+
+        for (const content of contents) {
+            if ((content as CompiledBlock).type) {
+                todo.push(content as CompiledBlock);
+            }
+            else {
+                todo.splice(todo.length, 0, ...extract_blocks_from_content(content as ContentBlock));
+            }
+        }
+
+        // Args
+        const skipExtraction = (block.type === 'control_wait_for_next_value');
+
+        let args = block.args;
+
+        if (!args) {
+            continue;
+        }
+
+        else if ((args as CompiledBlockArgMonitorDict).monitor_id) {
+            continue; // Nothing can be extracted here
+        }
+
+        else if ((args as CompiledBlockServiceCallSelectorArgs).key) {
+            continue; // Nothing can be extracted here
+        }
+
+        else if ((args as CompiledBlockArgCallServiceDict).service_call_values) {
+            // Look into the CompiledBlockArgList
+            args = (args as CompiledBlockArgCallServiceDict).service_call_values;
+        }
+
+        else if (!Array.isArray(args)) {
+            // Expected an Arg list, this is the one we will use and the only one left.
+            throw Error(`Unknown argument type: ${args}`);
+        }
+
+        const argList = args as CompiledBlockArgList;
+
+        for (const arg of argList) {
+            if (arg.type === 'constant') {
+                // Nothing to do here
+                continue;
+            }
+            else if (arg.type === 'variable' || arg.type === 'list') {
+                // Nothing to do here
+                continue;
+            }
+            else if (arg.type !== 'block') {
+                throw Error(`Unknown argument type: ${arg.type}`);
+            }
+
+            let idx = -1;
+            for (const block of (arg.value)) {
+                idx++;
+
+                todo.push(block);
+
+                // Extract required operations
+                const toExtract = (block.type === 'wait_for_monitor');
+                if (toExtract) {
+                    let valueIdx = 0;
+                    const monitorDict = (block.args as CompiledBlockArgMonitorDict);
+                    if (monitorDict.monitored_value || monitorDict.monitored_value === 0) {
+                        valueIdx = monitorDict.monitored_value;
+                        delete monitorDict.monitored_value;
+                    }
+
+                    if (!skipExtraction) {
+                        extracted.push(block);
+
+                        if (!block.id) {
+                            block.id = uuidv4();
+                        }
+
+                        arg.value[idx] = {
+                            type: "flow_last_value",
+                            args: [
+                                {
+                                    type: 'constant',
+                                    value: block.id,
+                                },
+                                {
+                                    type: 'constant',
+                                    value: valueIdx,
+                                }
+                            ],
+                            contents: [],
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    return extracted;
+}
+
+function extract_non_arguments(flow: CompiledFlowGraph) {
+    let pos = 0;
+    while (pos < flow.length) {
+        const non_arguments = extract_non_arguments_from_block(flow[pos]);
+
+        // Insert the arguments reversed on the flow
+        non_arguments.reverse();
+        flow.splice(pos, 0, ...non_arguments);
+
+        pos += non_arguments.length + 1;
+    }
+}
+
 export function compile(graph: FlowGraph): CompiledFlowGraph[] {
     // Isolate destructive changes. These are mostly performed on
     // `lift_common_ops` and `extract_internally_reused_arguments`.
@@ -1892,6 +2035,8 @@ export function compile(graph: FlowGraph): CompiledFlowGraph[] {
         }
     }
 
+    // Extract operations that cannot be done as arguments
+    flows.forEach(flow => extract_non_arguments(flow));
 
     // TODO: Deduplicate programs
 

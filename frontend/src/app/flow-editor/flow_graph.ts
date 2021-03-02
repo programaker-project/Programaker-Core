@@ -38,7 +38,9 @@ export interface CompiledBlockArgMonitorDict {
     save_to?: {
         type: 'variable',
         value: string,
-    }
+    },
+
+    monitored_value?: number,
 }
 
 export interface CompiledBlockArgCallServiceDict {
@@ -52,7 +54,7 @@ export interface CompiledBlockArgBlock {
     value: CompiledBlock[]
 }
 
-interface CompiledBlockServiceCallSelectorArgs {
+export interface CompiledBlockServiceCallSelectorArgs {
     key: string,
     subkey?: { type: 'argument', index: number },
 };
