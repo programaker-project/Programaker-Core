@@ -1217,7 +1217,7 @@ function compile_block(graph: FlowGraph,
     if (isAtomicFlowBlockData(block.data)){
         const data = block.data;
 
-        let compiled_contents: (CompiledBlock | ContentBlock)[] = [];
+        let compiled_contents: (CompiledBlock[]) | (ContentBlock[]) = [];
         if (contents && contents.length) {
             if (flags.inside_args) {
                 throw new Error("Found block with contents inside args");
@@ -1836,36 +1836,16 @@ export function assemble_flow(graph: FlowGraph,
     return [_link_graph(compiled_graph)];
 }
 
-function extract_blocks_from_content(block: ContentBlock): CompiledBlock[] {
-    const results = [];
-    for (const content of block.contents) {
-        if ((content as CompiledBlock).type) {
-            results.push(content as CompiledBlock);
-        }
-        else {
-            results.splice(results.length, 0, ...extract_blocks_from_content(content as ContentBlock));
-        }
-    }
-
-    return results;
-}
-
 function extract_non_arguments_from_block(startBlock: CompiledBlock): CompiledBlock[] {
+    // [DESTRUCTIVE]
+    //
+    // Finds blocks that call to functions that are not supported on arguments,
+    // replaces it by a `flow-last-value` and returns them to be moved.
     const todo = [startBlock];
     const extracted = [] as CompiledBlock[];
 
     while (todo.length > 0) {
         const block = todo.pop();
-        const contents = block.contents;
-
-        for (const content of contents) {
-            if ((content as CompiledBlock).type) {
-                todo.push(content as CompiledBlock);
-            }
-            else {
-                todo.splice(todo.length, 0, ...extract_blocks_from_content(content as ContentBlock));
-            }
-        }
 
         // Args
         const skipExtraction = (block.type === 'control_wait_for_next_value');
@@ -1955,10 +1935,38 @@ function extract_non_arguments_from_block(startBlock: CompiledBlock): CompiledBl
     return extracted;
 }
 
-function extract_non_arguments(flow: CompiledFlowGraph) {
+function extract_non_arguments_from_content(block: ContentBlock | CompiledBlock) {
+    // [DESTRUCTIVE]
+    //
+    // Calls `extract_non_arguments` for all the contents inside `block`.
+    const contents = block.contents;
+
+    if (contents.length == 0) {
+        return;
+    }
+
+    const sample = contents[0];
+    if ((sample as CompiledBlock).type) {
+        extract_non_arguments(contents as CompiledBlock[]);
+    }
+    else {
+        (contents as ContentBlock[]).forEach(content => extract_non_arguments_from_content(content));
+    }
+}
+
+function extract_non_arguments(flow: CompiledBlock[]) {
+    // [DESTRUCTIVE]
+    //
+    // Finds calls to operations that cannot be resolved immediately (like
+    // wait-for-monitor) that are done in arguments and DESTRUCTIVELY moves it
+    // to the operations before it would be used so.
     let pos = 0;
     while (pos < flow.length) {
-        const non_arguments = extract_non_arguments_from_block(flow[pos]);
+        const block = flow[pos];
+
+        extract_non_arguments_from_content(block);
+
+        const non_arguments = extract_non_arguments_from_block(block);
 
         // Insert the arguments reversed on the flow
         non_arguments.reverse();
