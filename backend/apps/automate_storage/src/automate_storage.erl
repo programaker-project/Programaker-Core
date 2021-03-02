@@ -1245,7 +1245,7 @@ add_user_generated_log(LogEntry=#user_generated_log_entry{program_id=ProgramId})
             {error, Reason}
     end.
 
--spec get_user_generated_logs(binary()) -> {ok, [#user_generated_log_entry{}]}.
+-spec get_user_generated_logs(binary()) -> {ok, [#user_generated_log_entry{}]} | {error, _}.
 get_user_generated_logs(ProgramId) ->
     Transaction = fun() ->
                           {ok, mnesia:read(?USER_GENERATED_LOGS_TABLE, ProgramId)}

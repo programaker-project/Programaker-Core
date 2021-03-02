@@ -189,8 +189,8 @@ get_program_logs(ProgramId) ->
             case automate_storage:get_user_generated_logs(ProgramId) of
                 {ok, UserLogs} ->
                     {ok, ErrorLogs, UserLogs};
-                X ->
-                    X
+                Y ->
+                    Y
             end;
         X ->
             X
