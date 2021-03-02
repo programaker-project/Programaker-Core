@@ -284,6 +284,10 @@ export class ProgramDetailComponent implements OnInit {
                                 this.updateLogsDrawer(update.value);
                                 this.logCount++;
                             }
+                            else if (update.type === 'debug_log') {
+                                this.updateLogsDrawer(update.value);
+                                this.logCount++;
+                            }
                         },
                         error: (error: any) => {
                             console.error("Error reading logs:", error);
