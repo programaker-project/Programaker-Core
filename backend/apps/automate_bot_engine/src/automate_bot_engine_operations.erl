@@ -115,6 +115,21 @@ get_expected_action_from_operation(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                   io_lib:format("Cannot find appropriate channel to hear for op: ~p", [Op])),
     ?TRIGGERED_BY_MONITOR;
 
+get_expected_action_from_operation(#{ ?TYPE := ?WAIT_FOR_MONITOR
+                                    , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId } }
+                                    }, #program_thread{ program_id=ProgramId }) ->
+
+    {ok, Owner} = automate_storage:get_program_owner(ProgramId),
+
+    Key = case MonitorArgs of
+              #{ <<"key">> := MonKey } ->
+                  MonKey;
+              _ ->
+                  undefined
+          end,
+    automate_service_registry_query:listen_service(ServiceId, Owner, {Key, undefined}),
+    ?TRIGGERED_BY_MONITOR;
+
 get_expected_action_from_operation(_Op, _Thread) ->
     %% Just wait for next TICK
     ?SIGNAL_PROGRAM_TICK.
@@ -1039,6 +1054,39 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                                                                            Id)
                               end;
                           _ -> Thread
+                      end,
+
+            {ran_this_tick, increment_position(Thread2)}
+    end;
+
+run_instruction(Op=#{ ?TYPE := ?WAIT_FOR_MONITOR
+                    , ?ARGUMENTS := MonArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId } }
+                    },
+                Thread,
+                { ?TRIGGERED_BY_MONITOR, {_MonitorId, Message=#{ <<"service_id">> := ServiceId  }} }) ->
+
+    Accepted = case MonArgs of
+                   #{ <<"key">> := ExpectedKey } ->
+                       case Message of
+                           #{ <<"key">> := ExpectedKey} ->
+                               true;
+                           _ ->
+                               false
+                       end;
+                   _ -> %% No key required
+                       true
+               end,
+    case Accepted of
+        false ->
+            {did_not_run, waiting};
+        true ->
+            Thread2 = case ?UTILS:get_block_id(Op) of
+                          none ->
+                              Thread;
+                          Id ->
+                              automate_bot_engine_variables:set_instruction_memory(Thread,
+                                                                                   Message,
+                                                                                   Id)
                       end,
 
             {ran_this_tick, increment_position(Thread2)}
