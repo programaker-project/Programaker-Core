@@ -280,7 +280,15 @@ export class ProgramDetailComponent implements OnInit {
                 .subscribe(
                     {
                         next: (update: ProgramInfoUpdate) => {
+                            if (update.value.program_id !== this.programId) {
+                                return;
+                            }
+
                             if (update.type === 'program_log') {
+                                this.updateLogsDrawer(update.value);
+                                this.logCount++;
+                            }
+                            else if (update.type === 'debug_log') {
                                 this.updateLogsDrawer(update.value);
                                 this.logCount++;
                             }
@@ -859,13 +867,6 @@ export class ProgramDetailComponent implements OnInit {
 
     dispose() {
         try {
-            this.workspace.dispose();
-            this.workspace = null;
-        } catch(error) {
-            console.error("Error disposing workspace:", error);
-        }
-
-        try {
             if (this.eventSubscription) {
                 this.eventSubscription.unsubscribe();
                 this.eventSubscription = null;
@@ -884,6 +885,13 @@ export class ProgramDetailComponent implements OnInit {
             this.eventStream = null;
         } catch(error) {
             console.error("Error closing event stream:", error);
+        }
+
+        try {
+            this.workspace.dispose();
+            this.workspace = null;
+        } catch(error) {
+            console.error("Error disposing workspace:", error);
         }
 
         // Restore the patched function, to cleaup the state.

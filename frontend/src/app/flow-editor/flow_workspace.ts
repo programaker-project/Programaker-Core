@@ -1260,6 +1260,16 @@ export class FlowWorkspace implements BlockManager {
             this.inlineEditorContainer = null;
         }
 
+        if (this.eventSubscription) {
+            this.eventSubscription.unsubscribe();
+            this.eventSubscription = null;
+        }
+
+        if (this.wsSyncProvider) {
+            this.wsSyncProvider.disconnect();
+            this.wsSyncProvider = null;
+        }
+
         if (this.popupGroup) {
             this.baseElement.removeChild(this.popupGroup);
             this.popupGroup = null;

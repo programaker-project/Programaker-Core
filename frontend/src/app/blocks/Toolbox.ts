@@ -199,6 +199,7 @@ export class Toolbox {
         let registrations: ToolboxRegistrationHook[] = [];
 
         this.injectMonitorBlocks(monitors);
+        this.injectCustomControls();
         await this.injectTimeBlocks();
         this.injectJSONBlocks();
         this.injectOperationBlocks(connections);
@@ -776,6 +777,25 @@ export class Toolbox {
         }
     }
 
+    injectCustomControls() {
+        Blockly.Blocks['logging_add_log'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'logging_add_log',
+                    'message0': 'Log %1',
+                    'args0': [
+                        {
+                            'type': 'input_value',
+                            'name': 'STRING1'
+                        }
+                    ],
+                    'category': Blockly.Categories.control,
+                    'extensions': ['colours_control', 'shape_statement']
+                });
+            }
+        };
+    }
+
     static get_bridge_color(bridge_id: string): string {
         return '#' + bridge_id.replace(/\D/g,'').substring(0,6);
     }
@@ -940,6 +960,13 @@ export class Toolbox {
           -->
           <block type="control_if" id="control_if"></block>
           <block type="control_if_else" id="control_if_else"></block>
+          <block type="logging_add_log" id="logging_add_log">
+            <value name="STRING1">
+              <shadow type="text">
+                <field name="TEXT">Hello!</field>
+              </shadow>
+            </value>
+          </block>
           <block type="control_wait_until" id="control_wait_until"></block>
           <block type="control_repeat_until" id="control_repeat_until"></block>
           <!--

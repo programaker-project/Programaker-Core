@@ -41,6 +41,7 @@ import { uuidv4 } from './utils';
 import { EnvironmentDefinition } from 'environments/environment-definition';
 import { environment } from 'environments/environment';
 import { ToastrService } from 'ngx-toastr';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -71,6 +72,7 @@ export class FlowEditorComponent implements OnInit {
     read_only: boolean = true;
     can_admin: boolean = false;
     visibility: VisibilityEnum;
+    logSubscription: Subscription;
 
     constructor(
         private browser: BrowserService,
@@ -214,12 +216,19 @@ export class FlowEditorComponent implements OnInit {
     }
 
     initializeListeners() {
-        this.programService.watchProgramLogs(this.program.id,
+        this.logSubscription = this.programService.watchProgramLogs(this.program.id,
                                              { request_previous_logs: true })
             .subscribe(
                 {
                     next: (update: ProgramInfoUpdate) => {
+                        if (update.value.program_id !== this.programId) {
+                            return;
+                        }
+
                         if (update.type === 'program_log') {
+                            this.updateLogsDrawer(update.value);
+                        }
+                        else if (update.type === 'debug_log') {
                             this.updateLogsDrawer(update.value);
                         }
                     },
@@ -373,6 +382,10 @@ export class FlowEditorComponent implements OnInit {
     dispose() {
         if (this.workspace) {
             this.workspace.dispose();
+        }
+        if (this.logSubscription) {
+            this.logSubscription.unsubscribe();
+            this.logSubscription = null;
         }
         this.workspace = null;
     }
@@ -667,17 +680,18 @@ export class FlowEditorComponent implements OnInit {
 
         element.appendChild(message);
 
-        if (line.block_id) {
-            const mark_button = document.createElement('button');
-            mark_button.classList.value = 'log-marker mat-button mat-raised-button mat-button-base mat-primary';
+        // This is not yet implemented on flow editor
+        // if (line.block_id) {
+        //     const mark_button = document.createElement('button');
+        //     mark_button.classList.value = 'log-marker mat-button mat-raised-button mat-button-base mat-primary';
 
-            mark_button.innerText = 'Mark block';
-            mark_button.onclick = () => {
-                this.toggleMark(mark_button, line);
-            }
+        //     mark_button.innerText = 'Mark block';
+        //     mark_button.onclick = () => {
+        //         this.toggleMark(mark_button, line);
+        //     }
 
-            element.appendChild(mark_button);
-        }
+        //     element.appendChild(mark_button);
+        // }
 
         return element;
     }

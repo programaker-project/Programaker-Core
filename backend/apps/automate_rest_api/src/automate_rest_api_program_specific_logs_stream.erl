@@ -83,7 +83,7 @@ websocket_info(ping_interval, State) ->
     erlang:send_after(?PING_INTERVAL_MILLISECONDS, self(), ping_interval),
     {reply, ping, State};
 
-websocket_info({channel_engine, _ChannelId, Message=#user_program_log_entry{}}, State) ->
+websocket_info({channel_engine, _ChannelId, Message}, State) when is_record(Message, user_program_log_entry) orelse is_record(Message, user_generated_log_entry)  ->
     case ?FORMATTING:format_message(Message) of
         {ok, Structured} ->
             {reply, {text, jiffy:encode(Structured)}, State};

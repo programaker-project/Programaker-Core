@@ -80,8 +80,8 @@ content_types_provided(Req, State) ->
 to_json(Req, State) ->
     #state{ program_id=ProgramId} = State,
     case automate_rest_api_backend:get_program_logs(ProgramId) of
-        { ok, Logs } ->
-            Output = jiffy:encode(?FORMATTING:serialize_logs(Logs)),
+        { ok, ErrorLogs, UserLogs } ->
+            Output = jiffy:encode(?FORMATTING:serialize_logs(ErrorLogs, UserLogs)),
             Res1 = cowboy_req:delete_resp_header(<<"content-type">>, Req),
             Res2 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res1),
 

@@ -185,8 +185,13 @@ get_program(ProgramId) ->
 
 get_program_logs(ProgramId) ->
     case automate_storage:get_logs_from_program_id(ProgramId) of
-        {ok, Logs} ->
-            {ok, Logs};
+        {ok, ErrorLogs} ->
+            case automate_storage:get_user_generated_logs(ProgramId) of
+                {ok, UserLogs} ->
+                    {ok, ErrorLogs, UserLogs};
+                Y ->
+                    Y
+            end;
         X ->
             X
     end.
