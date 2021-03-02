@@ -27,6 +27,9 @@ export class UiSignalService {
     }
 
     setProgramId(programId: string) {
+        if (programId !== this.programId) {
+            this._clearWebsocket();
+        }
         this.programId = programId;
     }
 
@@ -76,6 +79,9 @@ export class UiSignalService {
     }
 
     private _clearWebsocket() {
+        if (this.websocketEstablishment) {
+            this.websocketEstablishment.then(ws => ws.close());
+        }
         this.websocketEstablishment = null;
     }
 
