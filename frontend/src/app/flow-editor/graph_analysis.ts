@@ -1217,7 +1217,7 @@ function compile_block(graph: FlowGraph,
     if (isAtomicFlowBlockData(block.data)){
         const data = block.data;
 
-        let compiled_contents: (CompiledBlock[]) | (ContentBlock[]) = [];
+        let compiled_contents: (CompiledBlock | ContentBlock)[] = [];
         if (contents && contents.length) {
             if (flags.inside_args) {
                 throw new Error("Found block with contents inside args");
@@ -1847,9 +1847,11 @@ function extract_non_arguments_from_block(startBlock: CompiledBlock): CompiledBl
     while (todo.length > 0) {
         const block = todo.pop();
 
-        // Args
+        // Extraction is not needed for certain blocks, in these cases we'll
+        // perform the block property cleanup, but won't extract the blocks.
         const skipExtraction = (block.type === 'control_wait_for_next_value');
 
+        // Args
         let args = block.args;
 
         if (!args) {
