@@ -124,6 +124,18 @@ export class EnumDirectValue implements FlowBlock {
         }
 
         const options: EnumDirectValueOptions = JSON.parse(JSON.stringify(data.value.options));
+
+        // Port over from past structure
+        if (!options.definition) {
+            options.definition = {
+                type: 'enum',
+                enum_name: (options as any).enum_name,
+                enum_namespace: (options as any).enum_namespace,
+            }
+            delete (options as any).enum_name;
+            delete (options as any).enum_namespace;
+        }
+
         options.on_io_selected = manager.onIoSelected.bind(manager);
         options.on_select_requested = manager.onSelectRequested.bind(manager);
         options.get_values = enumGetter;
