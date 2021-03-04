@@ -19,8 +19,8 @@
         , internal_user_id_to_connection_id/2
         , get_user_service_ports/1
         , delete_bridge/2
-        , callback_bridge/3
-        , callback_bridge_through_connection/3
+        , callback_bridge/4
+        , callback_bridge_through_connection/4
         , get_channel_origin_bridge/1
         , get_bridge_info/1
         , get_bridge_owner/1
@@ -268,11 +268,11 @@ delete_bridge(Accessor, BridgeId) when is_tuple(Accessor) ->
     ?BACKEND:delete_bridge(Accessor, BridgeId).
 
 
--spec callback_bridge(owner_id(), binary(), binary()) -> {ok, map() | [#{ id => binary(), name => binary() }]} | {error, term()}.
-callback_bridge(Owner, BridgeId, CallbackName) when is_tuple(Owner) ->
+-spec callback_bridge(owner_id(), binary(), binary(), undefined | binary()) -> {ok, map() | [#{ id => binary(), name => binary() }]} | {error, term()}.
+callback_bridge(Owner, BridgeId, CallbackName, SequenceId) when is_tuple(Owner) ->
     case internal_user_id_to_connection_id(Owner, BridgeId) of
         {ok, ConnectionId} ->
-            case callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName) of
+            case callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName, SequenceId) of
                 {ok, #{ <<"result">> := Result } } ->
                     {ok, Result};
                 {error, Reason} ->
@@ -310,11 +310,16 @@ callback_bridge(Owner, BridgeId, CallbackName) when is_tuple(Owner) ->
             {error, Reason}
     end.
 
--spec callback_bridge_through_connection(binary(), binary(), binary()) -> {ok, map()} | {error, term()}.
-callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName) ->
+-spec callback_bridge_through_connection(binary(), binary(), binary(), undefined | binary()) -> {ok, map()} | {error, term()}.
+callback_bridge_through_connection(ConnectionId, BridgeId, CallbackName, SequenceId) ->
     ?ROUTER:call_bridge(BridgeId, #{ <<"type">> => <<"CALLBACK">>
                                    , <<"user_id">> => ConnectionId
-                                   , <<"value">> => #{ <<"callback">> => CallbackName }
+                                   , <<"value">> => #{ <<"callback">> => CallbackName
+                                                     , <<"sequence_id">> => case SequenceId of
+                                                                                undefined -> null;
+                                                                                _ -> SequenceId
+                                                                            end
+                                                     }
                                    }).
 
 
@@ -617,7 +622,15 @@ parse_argument(#{ <<"type">> := Type
                 }) ->
     #service_port_block_dynamic_argument{ callback=Callback
                                         , type=Type
-                                        }.
+                                        };
+
+parse_argument(#{ <<"type">> := Type
+                , <<"values">> := #{ <<"callback_sequence">> := CallbackSequence
+                                   }
+                }) ->
+    #service_port_block_dynamic_sequence_argument{ callback_sequence=CallbackSequence
+                                                 , type=Type
+                                                 }.
 
 answer_advice_taken(AdviceTaken, MessageId, Pid) ->
     Pid ! {{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken }.

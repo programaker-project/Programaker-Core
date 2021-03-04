@@ -75,7 +75,7 @@ to_json(Req, State=#state{ bridge_id=BridgeId, owner=Owner }) ->
                                                           {ok, ConnectionShares} = automate_service_port_engine:get_connection_shares(ConnectionId),
 
                                                           lists:map(fun(ResourceName) ->
-                                                                            {ok, #{ <<"result">> := Values }} = automate_service_port_engine:callback_bridge_through_connection(ConnectionId, BridgeId, ResourceName),
+                                                                            {ok, #{ <<"result">> := Values }} = automate_service_port_engine:callback_bridge_through_connection(ConnectionId, BridgeId, ResourceName, undefined),
                                                                             {ResourceName, maps:map(fun(K, V) -> V#{ connection_id => ConnectionId
                                                                                                                    , shared_with => find_shares(ConnectionShares, ResourceName, K)
                                                                                                                    } end, Values)}

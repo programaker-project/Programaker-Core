@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 import { SessionService } from './session.service';
-import { CustomBlock, ResolvedCustomBlock, ResolvedBlockArgument, BlockArgument, DynamicBlockArgument, StaticBlockArgument, ResolvedDynamicBlockArgument } from './custom_block';
+import { CustomBlock, ResolvedCustomBlock, ResolvedBlockArgument, BlockArgument, DynamicBlockArgument, StaticBlockArgument, ResolvedDynamicBlockArgument, DynamicSequenceBlockArgument, ResolvedDynamicSequenceBlockArgument } from './custom_block';
 import { Observable } from 'rxjs';
 import { BrowserService } from './browser.service';
 import { EnvironmentService } from './environment.service';
@@ -150,10 +150,13 @@ export class CustomBlockService {
 
     private async _resolveArgument(programId: string, arg: BlockArgument, block: CustomBlock): Promise<ResolvedBlockArgument> {
         // Note that the argument is not copied, the resolution is done destructively!
-        if (!(arg as DynamicBlockArgument).callback) {
+        if (!((arg as DynamicBlockArgument).callback || ((arg as DynamicSequenceBlockArgument).callback_sequence)) ) {
             return arg as StaticBlockArgument;
         }
 
+        if ((arg as DynamicSequenceBlockArgument).callback_sequence) {
+            (arg as any).callback = (arg as any).callback_sequence[0];
+        }
 
         const dynamicArg = arg as DynamicBlockArgument;
         let options : [string, string][];
@@ -193,7 +196,16 @@ export class CustomBlockService {
         }
 
         const resolved = dynamicArg as ResolvedDynamicBlockArgument;
-        resolved.options = options;
+
+        if ((arg as DynamicSequenceBlockArgument).callback_sequence) {
+            (resolved as any as ResolvedDynamicSequenceBlockArgument).first_level_options = options;
+            (resolved as any as ResolvedDynamicSequenceBlockArgument).bridge_id = block.service_port_id;
+            (resolved as any as ResolvedDynamicSequenceBlockArgument).program_id = programId;
+        }
+        else {
+            resolved.options = options;
+        }
+
 
         return resolved;
     }
@@ -247,6 +259,40 @@ export class CustomBlockService {
         }
     }
 
+    private reformatCallbackResult(result: CallbackResult): [string, string][] {
+        const options: [string, string][] = [];
+        if (result.constructor == Object) {
+            // Data from callback as dictionary
+            const resultDict = result as { [key: string]: { name: string } };
+
+            for (const key of Object.keys(resultDict)) {
+                options.push([resultDict[key].name || key, key]);
+            }
+        }
+        else {
+            // Data from callback as list
+            const resultList = result as [ {id: string, name: string} ];
+
+            for (const item of resultList) {
+                options.push([item.name, item.id]);
+            }
+        }
+        return options;
+    }
+
+    // Note that this values are NOT cached
+    public getCallbackOptionsOnSequence(programId: string, bridgeId: string, callbackName: string, sequenceId: string): Promise<[string, string][]> {
+        const url = `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/bridges/by-id/${bridgeId}/callbacks/${callbackName}`;
+
+        return (this.http.get(url, {
+            headers: this.sessionService.getAuthHeader(),
+            params: { sequence_id: sequenceId }
+        }).toPromise()
+            .then((response: { result: CallbackResult } ) => {
+                return this.reformatCallbackResult(response.result);
+            }));
+    }
+
     private async getArgOptions(programId: string, bridgeId: string, callbackName: string): Promise<[string, string][]> {
         const url = `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/bridges/by-id/${bridgeId}/callbacks/${callbackName}`;
 
@@ -257,29 +303,7 @@ export class CustomBlockService {
 
         const query = (this.http.get(url, { headers: this.sessionService.getAuthHeader() }).toPromise()
             .then((response: { result: CallbackResult } ) => {
-                if (response.result.constructor == Object) {
-                    // Data from callback as dictionary
-                    const options = [];
-                    const result = response.result as { [key: string]: { name: string } };
-
-                    for (const key of Object.keys(result)) {
-                        options.push([result[key].name || key, key]);
-                    }
-
-                    return options as [string, string][];
-                }
-                else {
-                    // Data from callback as list
-                    // Data from callback as dictionary
-                    const options = [];
-                    const result = response.result as [ {id: string, name: string} ];
-
-                    for (const item of result) {
-                        options.push([item.name, item.id]);
-                    }
-
-                    return options as [string, string][];
-                }
+                return this.reformatCallbackResult(response.result);
             }));
 
         // Cache result

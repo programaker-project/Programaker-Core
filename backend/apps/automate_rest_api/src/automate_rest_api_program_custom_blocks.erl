@@ -160,6 +160,13 @@ encode_argument(#service_port_block_dynamic_argument{ type=Type
      , <<"callback">> => Callback
      };
 
+encode_argument(#service_port_block_dynamic_sequence_argument{ type=Type
+                                                             , callback_sequence=CallbackSequence
+                                                             }) ->
+    #{ <<"type">> => Type
+     , <<"callback_sequence">> => CallbackSequence
+     };
+
 encode_argument(#service_port_block_collection_argument{ name=Collection
                                                        }) ->
     #{ type => string

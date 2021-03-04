@@ -36,7 +36,6 @@
         , list_bridges/1
         , list_available_connections/1
         , list_established_connections/1
-        , callback_bridge/3
         , bridge_function_call/4
 
         , create_custom_signal/2
@@ -377,9 +376,6 @@ list_available_connections(Owner) ->
 -spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.
 list_established_connections(UserId) ->
     automate_service_port_engine:list_established_connections({user, UserId}).
-
-callback_bridge(UserId, BridgeId, Callback) ->
-    automate_service_port_engine:callback_bridge(UserId, BridgeId, Callback).
 
 -spec bridge_function_call(owner_id(), binary(), binary(), any()) -> {ok, map()} |{ error, term()}.
 bridge_function_call(UserId, BridgeId, FunctionName, Arguments) ->

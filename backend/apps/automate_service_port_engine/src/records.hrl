@@ -22,11 +22,16 @@
                                              , callback :: binary()
                                              }).
 
+-record(service_port_block_dynamic_sequence_argument, { type :: service_port_block_argument_type()
+                                                      , callback_sequence :: [binary()]
+                                                      }).
+
 -record(service_port_block_collection_argument, { name :: binary()
                                                 }).
 
 -type service_port_block_argument() :: #service_port_block_static_argument{}
                                      | #service_port_block_dynamic_argument{}
+                                     | #service_port_block_dynamic_sequence_argument{}
                                      | #service_port_block_collection_argument{} .
 
 -type block_save_to() :: null | #{ binary() => any()}.
