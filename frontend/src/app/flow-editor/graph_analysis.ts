@@ -1125,7 +1125,8 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
     else if (isEnumDirectValueBlockData(block.data)){
         let value = block.data.value.value_id;
 
-        if (block.data.value.options.definition.type === 'enum_sequence') {
+        const definition = block.data.value.options.definition;
+        if (definition && definition.type === 'enum_sequence') {
             value = EnumDirectValue.cleanSequenceValue(value);
         }
 
