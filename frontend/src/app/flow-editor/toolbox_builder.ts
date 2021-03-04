@@ -6,7 +6,7 @@ import { EnvironmentService } from 'app/environment.service';
 import { ServiceService } from 'app/service.service';
 import { UiSignalService } from 'app/services/ui-signal.service';
 import { Session } from 'app/session';
-import { ResolvedBlockArgument, ResolvedCustomBlock, ResolvedDynamicBlockArgument } from '../custom_block';
+import { ResolvedBlockArgument, ResolvedCustomBlock, ResolvedDynamicBlockArgument, ResolvedDynamicSequenceBlockArgument } from '../custom_block';
 import { CustomBlockService } from '../custom_block.service';
 import { iconDataToUrl } from '../utils';
 import { AtomicFlowBlock, isAtomicFlowBlockOptions, AtomicFlowBlockOptions } from './atomic_flow_block';
@@ -230,7 +230,16 @@ function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {
 }
 
 function get_block_arg(block: ResolvedCustomBlock, arg: ResolvedBlockArgument): InputPortDefinition {
-    if ((arg as ResolvedDynamicBlockArgument).callback) {
+    if ((arg as ResolvedDynamicSequenceBlockArgument).callback_sequence) {
+        const dyn_arg = (arg as ResolvedDynamicSequenceBlockArgument);
+
+        return {
+            type: 'enum_sequence',
+            enum_sequence: dyn_arg.callback_sequence,
+            enum_namespace: block.service_port_id,
+        }
+    }
+    else if ((arg as ResolvedDynamicBlockArgument).callback) {
         const dyn_arg = (arg as ResolvedDynamicBlockArgument);
 
         return {

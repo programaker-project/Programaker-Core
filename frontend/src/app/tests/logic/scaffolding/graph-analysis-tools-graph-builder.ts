@@ -150,8 +150,11 @@ export class GraphBuilder {
                 value_id: id,
                 value_text: value,
                 options: {
-                    enum_name: name,
-                    enum_namespace: namespace,
+                    definition: {
+                        type: 'enum',
+                        enum_name: name,
+                        enum_namespace: namespace,
+                    },
                 } as EnumDirectValueOptions
             }
         }

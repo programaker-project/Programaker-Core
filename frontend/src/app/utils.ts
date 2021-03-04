@@ -96,13 +96,7 @@ function logError(error: Error & { _logged?: boolean }) {
 
     error._logged = true;
 
-    const msg = error.stack && error.message
-        ? error.message + '\n' + error.stack.split('\n').map((v: string) => '> ' + v).join('\n')
-    : error
-    ;
-
-    console.error(msg);
-    console.debug("Error", error);
+    console.error(error);
 }
 
 

@@ -4,10 +4,13 @@ import {
 
     FlowBlockData, FlowBlockInitOpts, InputPortDefinition,
     MessageType, OnIOSelected,
-    Position2D
+    Position2D,
+    BridgeEnumInputPortDefinition,
+    BridgeEnumSequenceInputPortDefinition
 } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
 import { manageTopLevelError } from '../utils';
+import { SEPARATION } from './ui-blocks/renderers/positioning';
 
 const SvgNS = "http://www.w3.org/2000/svg";
 
@@ -27,12 +30,14 @@ const OUTPUT_PORT_REAL_SIZE = 10;
 const MIN_WIDTH = 50;
 const OUTPUT_PORT_SIZE = 25;
 
+export const SEQUENCE_SEPARATOR = '\\';
+
 export type EnumValue = {
     id: string,
     name: string,
 };
 
-export type EnumGetter = (namespace: string, name: string) => EnumValue[] | Promise<EnumValue[]>;
+export type EnumGetter = (namespace: string, name: string, selector?: string) => EnumValue[] | Promise<EnumValue[]>;
 
 export type OnSelectRequested = ((block: FlowBlock,
                                   previous_value: string,
@@ -42,8 +47,7 @@ export type OnSelectRequested = ((block: FlowBlock,
                                  ) => void);
 
 export interface EnumDirectValueOptions {
-    enum_name: string,
-    enum_namespace: string,
+    definition: BridgeEnumInputPortDefinition | BridgeEnumSequenceInputPortDefinition,
     get_values: EnumGetter;
     type?: MessageType,
     on_io_selected?: OnIOSelected,
@@ -53,6 +57,19 @@ export interface EnumDirectValueOptions {
 export function isEnumDirectValueBlockData(opt: FlowBlockData): opt is EnumDirectValueFlowBlockData {
     return opt.type === BLOCK_TYPE;
 }
+
+function tagDepth(parent: string, list: EnumValue[]): EnumValue[] {
+    const newValues = [] as EnumValue[];
+    for (const item of list) {
+        newValues.push({
+            name: item.name,
+            id: `${parent}${SEQUENCE_SEPARATOR}${item.id}`,
+        });
+    }
+
+    return newValues;
+}
+
 
 export class EnumDirectValue implements FlowBlock {
     options: EnumDirectValueOptions;
@@ -240,7 +257,7 @@ export class EnumDirectValue implements FlowBlock {
         const selected = this.value_dict[id];
 
         if (this.group) {
-            this.textBox.textContent = selected.name || '-';
+            this.textBox.textContent = (selected && selected.name) || '-';
             this.updateSize();
         }
 
@@ -255,7 +272,129 @@ export class EnumDirectValue implements FlowBlock {
         this.textBox.textContent = data.value.value_text;
     }
 
+    static cleanSequenceValue(value: string): string {
+        const chunks = value.split(SEQUENCE_SEPARATOR);
+        return chunks[chunks.length - 1];
+    }
+
     private loadValues() {
+
+            const selectValue = (id: string) => {
+                this.group.classList.remove('editing');
+                const oldValue = this.value_id;
+                this.setValue(id);
+
+                if (this.options.definition.type === 'enum') {
+                    return;
+                }
+                else if (this.options.definition.type !== 'enum_sequence') {
+                    throw Error(`Unknown enum type: ${(this.options.definition as any).type}`);
+                }
+
+                if (id === 'Select') {
+                    console.log(id, this.value_id);
+                    on_done([{ id: "Select", name: 'Not found' }])
+                    return;
+                }
+
+                if ((id === oldValue) && (this.values)) {
+                    console.log("Skipping reload on", oldValue, '->', id);
+                    return;
+                }
+
+
+                const chunks = id ? id.split(SEQUENCE_SEPARATOR) : [];
+
+                const foundName = this.values ? this.values.find((value: EnumValue) => value.id === id) : null;
+                let selectedName = foundName ? foundName.name : null;
+                if (selectedName && selectedName.match(/Go back [0-9]+ steps?/)) {
+                    // TODO: Properly extract this name
+                    selectedName = null;
+                }
+
+                const selectedDepth = chunks.length;
+
+                if (selectedDepth === 0) {
+                    this.setValue('Select');
+                    const result = this.options.get_values(this.options.definition.enum_namespace, this.options.definition.enum_sequence[0]);
+
+                    if ((result as any).then) {
+                        (result as Promise<EnumValue[]>).then(on_done);
+                    }
+                    else {
+                        on_done(result as EnumValue[]);
+                    }
+
+                    return;
+                }
+                else {
+                    const depth = selectedDepth < this.options.definition.enum_sequence.length
+                        ? selectedDepth
+                        : this.options.definition.enum_sequence.length - 1;
+
+                    let _fullRef: string[];
+                    if (depth === selectedDepth) {
+                        _fullRef = chunks;
+                    }
+                    else {
+                        _fullRef = chunks.slice(0, chunks.length - 1); // Parent
+                    }
+                    const fullReference = _fullRef.join(SEQUENCE_SEPARATOR);
+                    const lastLevel = _fullRef[_fullRef.length - 1];
+
+                    const result = this.options.get_values(this.options.definition.enum_namespace,
+                                                           this.options.definition.enum_sequence[depth],
+                                                           lastLevel);
+
+                    const loopNext = manageTopLevelError((values: EnumValue[]) => {
+                        console.log("Looping from", chunks);
+                        console.log("Looping to", values);
+
+                        const prelude : EnumValue[] = [ { name: "Back to Top", id: '' } ];
+                        for (let i = 1; i < depth; i++ ) {
+                            prelude.push({
+                                name: `Go back ${i} step` + (i === 1 ? '' : 's'),
+                                id: id.split(SEQUENCE_SEPARATOR, depth - i).join(SEQUENCE_SEPARATOR),
+                            });
+                        }
+
+                        const newName = selectedName ? `Select in ${selectedName}` : 'Select';
+                        if (depth === selectedDepth) {
+                            // This is not needed if we're "seeing" it from another level
+                            prelude.push({ name: newName, id: id });
+                        }
+
+                        const menu = prelude.concat(tagDepth(fullReference, values));
+
+                        on_done(menu);
+                        this.setValue(id);
+                    });
+
+                    if ((result as any).then) {
+                        (result as Promise<EnumValue[]>).then(loopNext);
+                    }
+                    else {
+                        loopNext(result as EnumValue[]);
+                    }
+                }
+            };
+
+        const initialize = () => {
+            const startEditing = manageTopLevelError(() => {
+                if (this.options.on_select_requested) {
+                    this.group.classList.add('editing');
+
+                    this.options.on_select_requested(
+                        this, this.value_id, this.values, this.value_dict,
+                        manageTopLevelError(selectValue)
+                    );
+                }
+            });
+
+            this.textBox.onclick = startEditing;
+            this.getBodyElement().ontouchend = startEditing;
+        };
+
         const on_done = (values: EnumValue[]) => {
             this.values = values;
 
@@ -264,24 +403,7 @@ export class EnumDirectValue implements FlowBlock {
                 this.value_dict[value.id] = value;
             }
 
-            const selectValue = manageTopLevelError(() => {
-                if (this.options.on_select_requested) {
-                    this.group.classList.add('editing');
-
-                    this.options.on_select_requested(this,
-                                                     this.value_id,
-                                                     this.values,
-                                                     this.value_dict,
-                                                     (id: string) => {
-                                                         this.group.classList.remove('editing');
-                                                         this.setValue(id);
-                                                     }
-                                                    );
-                }
-            });
-
-            this.textBox.onclick = selectValue;
-            this.getBodyElement().ontouchend = selectValue;
+            initialize();
 
             if (this.value_id === undefined) {
                 this.setValue(values[0].id);
@@ -292,12 +414,20 @@ export class EnumDirectValue implements FlowBlock {
             this.textBox.textContent = this._defaultText;
         }
 
-        const result = this.options.get_values(this.options.enum_namespace, this.options.enum_name);
-        if ((result as any).then) {
-            (result as Promise<EnumValue[]>).then(on_done);
+        if (this.options.definition.type === 'enum') {
+            const result = this.options.get_values(this.options.definition.enum_namespace, this.options.definition.enum_name);
+            if ((result as any).then) {
+                (result as Promise<EnumValue[]>).then(on_done);
+            }
+            else {
+                on_done(result as EnumValue[]);
+            }
+        }
+        else if (this.options.definition.type === 'enum_sequence') {
+            selectValue(this.value_id || '');
         }
         else {
-            on_done(result as EnumValue[]);
+            throw Error(`Unknown enum type: ${(this.options.definition as any).type}`);
         }
     }
 

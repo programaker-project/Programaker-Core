@@ -123,6 +123,10 @@ svg.block_renderer path.enum_wire {
     stroke: $enum-color;
 }
 
+svg.block_renderer path.enum_sequence_wire {
+    stroke: $enum-color;
+}
+
 svg.block_renderer path.any_wire {
     stroke: $any-color;
 }
@@ -263,6 +267,10 @@ svg.block_renderer g.flow_node circle.external_port.user-pulse_port {
 }
 
 svg.block_renderer g.flow_node circle.external_port.enum_port {
+    fill: $enum-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.enum_sequence_port {
     fill: $enum-color;
 }
 
@@ -842,6 +850,10 @@ svg.block_renderer .fab-button-group {
         stroke: $enum-color;
     }
 
+    &.enum_sequence_port {
+        stroke: $enum-color;
+    }
+
     &.any_port {
         stroke: $any-color;
     }
@@ -878,6 +890,10 @@ path.var_path {
     }
 
     &.enum_port {
+        stroke: $enum-color;
+    }
+
+    &.enum_sequence_port {
         stroke: $enum-color;
     }
 
