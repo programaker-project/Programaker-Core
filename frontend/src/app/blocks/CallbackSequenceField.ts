@@ -6,8 +6,6 @@ import { CustomBlockService } from "app/custom_block.service";
 export const TYPE = 'callback_sequence';
 
 declare const goog: any;
-goog.provide('CallbackSequenceField');
-goog.require('Blockly.Field');
 
 export const SEQUENCE_SEPARATOR = '\\';
 
@@ -118,6 +116,13 @@ function sequenceValidator(customBlockService: CustomBlockService, block: Resolv
     }
 }
 
+
+if (typeof goog !== 'undefined') {
+    // Goog cannot be used from SSR... we don't need it anyway
+    goog.provide('CallbackSequenceField');
+    goog.require('Blockly.Field');
+}
+
 const CallbackSequenceField = function(customBlockService: CustomBlockService, opt_value: ResolvedDynamicSequenceBlockArgument | any, opt_validator: any): any {
     this.menuGenerator_ = (opt_value as ResolvedDynamicSequenceBlockArgument).first_level_options;
     this.trimOptions_();
@@ -128,7 +133,11 @@ const CallbackSequenceField = function(customBlockService: CustomBlockService, o
     (Blockly.FieldDropdown as any).superClass_.constructor.call(this, '', opt_validator ? opt_validator : this.validator);
     this.addArgType('dropdown');
 };
-goog.inherits(CallbackSequenceField, Blockly.FieldDropdown);
+
+if (typeof goog !== 'undefined') {
+    // Goog cannot be used from SSR... we don't need it anyway
+    goog.inherits(CallbackSequenceField, Blockly.FieldDropdown);
+}
 
 CallbackSequenceField.prototype.setValue = function(newValue: string, fromValidator: boolean) {
     if (!fromValidator) {
@@ -140,6 +149,7 @@ CallbackSequenceField.prototype.setValue = function(newValue: string, fromValida
 }
 
 export function registerCallbackSequenceField(customBlockService: CustomBlockService) {
+
     (CallbackSequenceField as any).fromJson = function(element: { options: ResolvedDynamicSequenceBlockArgument }): any {
         // @ts-ignore
         return new CallbackSequenceField(customBlockService, element.options, null);
