@@ -9,12 +9,14 @@ declare const goog: any;
 goog.provide('CallbackSequenceField');
 goog.require('Blockly.Field');
 
-function tagDepth(depth: number, list: [string, string][]): string[][] {
+export const SEQUENCE_SEPARATOR = '\\';
+
+function tagDepth(parent: string, list: [string, string][]): string[][] {
     const newValues = [] as [string, string][];
     for (const [name, key] of list) {
         newValues.push([
             name,
-            `${depth}_${key}`,
+            `${parent}${SEQUENCE_SEPARATOR}${key}`,
         ]);
     }
 
@@ -22,66 +24,120 @@ function tagDepth(depth: number, list: [string, string][]): string[][] {
 }
 
 export function cleanCallbackSequenceValue(value: string): string {
-    return value.replace(/^([0-9]+)_/, '');
-
+    const chunks = value.split(SEQUENCE_SEPARATOR);
+    return chunks[chunks.length - 1];
 }
 
 function sequenceValidator(customBlockService: CustomBlockService, block: ResolvedDynamicSequenceBlockArgument, field: Blockly.FieldDropdown): ((value: string) => void) {
     return (value: string) => {
         if (value === 'Select') {
-            console.log("Ignore looping...")
             return;
         }
-
-        console.log("Selected", value, '(block=', block, ') on', field);
-        console.log("SRVice", customBlockService);
 
         const foundName = ((field as any).menuGenerator_ as [string, string][]).find(([_x, y]) => y === value);
-        const selectedName = foundName ? foundName[0] : null;
+        let selectedName = foundName ? foundName[0] : null;
 
-        const m = value.match(/([0-9]+)_(.*)/)
-        const selectedDepth = parseInt(m[1]) + 1;
-        const selectedId = m[2];
+        if (selectedName && selectedName.match(/Go back [0-9]+ steps?/)) {
+            // TODO: Properly extract this name
+            selectedName = null;
+        }
+
+        const chunks = value ? value.split(SEQUENCE_SEPARATOR) : [];
+
+        const selectedDepth = chunks.length;
+        const selectedId = chunks[selectedDepth - 1];
 
         if (selectedDepth >= block.callback_sequence.length) {
-            console.log("Reached last level!");
-            field.setValue(value);
+            // Pull options from parent element.
+            // TODO: Deduplicate with the `else`
+            const depth = selectedDepth - 1;
+            const parentId = chunks[chunks.length - 2];
+
+            customBlockService.getCallbackOptionsOnSequence(block.program_id, block.bridge_id, block.callback_sequence[depth], parentId)
+                .then((options: [string, string][]) => {
+
+                    const prelude = [ ["Back to Top", ''] ];
+                    for (let i = 1; i < depth; i++ ) {
+                        prelude.push([
+                            `Go back ${i} step` + (i === 1 ? '' : 's'),
+                            value.split(SEQUENCE_SEPARATOR, depth - i).join(SEQUENCE_SEPARATOR)
+                        ]);
+                    }
+
+                    const menu = prelude.concat(tagDepth(value.split(SEQUENCE_SEPARATOR, depth).join(SEQUENCE_SEPARATOR), options));
+
+                    (field as any).menuGenerator_ = menu;
+
+                    if (field.value_ !== value) {
+                        (field.setValue as any)(value, true);
+                    }
+                    else {
+                        // As the value might not change, manually trigger an update
+                        Blockly.Events.fire(new Blockly.Events.BlockChange(
+                            field.sourceBlock_, 'field', field.name, field.value_, value));
+                    }
+
+                    (field.setValue as any)(value, true);
+                });
+
             return;
         }
 
-        console.log("SELECTED:", selectedId, "DEPTH", selectedDepth);
-
         if (selectedDepth === 0) {
-            console.log("Top level");
-            (field as any).menuGenerator_ = tagDepth(0, block.first_level_options);
-            field.setValue('Select');
+            (field as any).menuGenerator_ = block.first_level_options;
+            (field.setValue as any)('Select', true);
         }
         else {
-            console.log("Pulling")
             customBlockService.getCallbackOptionsOnSequence(block.program_id, block.bridge_id, block.callback_sequence[selectedDepth], selectedId)
                 .then((options: [string, string][]) => {
-                    console.log("Result", options);
-                    (field as any).menuGenerator_ = tagDepth(selectedDepth, options);
-                    field.setValue(selectedName ? `Select in ${selectedName}` : 'Select');
+
+                    const prelude = [ ["Back to Top", ''] ];
+                    for (let i = 1; i < selectedDepth; i++ ) {
+                        prelude.push([
+                            `Go back ${i} step` + (i === 1 ? '' : 's'),
+                            value.split(SEQUENCE_SEPARATOR, selectedDepth - i).join(SEQUENCE_SEPARATOR)
+                        ]);
+                    }
+
+                    const newName = selectedName ? `Select in ${selectedName}` : 'Select';
+                    prelude.push([newName, value]);
+                    const menu = prelude.concat(tagDepth(value, options));
+
+                    (field as any).menuGenerator_ = menu;
+
+                    if (field.value_ !== value) {
+                        (field.setValue as any)(value, true);
+                    }
+                    else {
+                        // As the value might not change, manually trigger an update
+                        Blockly.Events.fire(new Blockly.Events.BlockChange(
+                            field.sourceBlock_, 'field', field.name, field.value_, value));
+                    }
                 });
         }
     }
 }
 
 const CallbackSequenceField = function(customBlockService: CustomBlockService, opt_value: ResolvedDynamicSequenceBlockArgument | any, opt_validator: any): any {
-
-
-    this.menuGenerator_ = tagDepth(0, (opt_value as ResolvedDynamicSequenceBlockArgument).first_level_options);
+    this.menuGenerator_ = (opt_value as ResolvedDynamicSequenceBlockArgument).first_level_options;
     this.trimOptions_();
-    const firstTuple = this.getOptions()[0];
+
+    this.validator = sequenceValidator(customBlockService, opt_value, this);
 
     // Call parent's constructor.
-    (Blockly.FieldDropdown as any).superClass_.constructor.call(this, firstTuple[1],
-                                                                opt_validator ? opt_validator : sequenceValidator(customBlockService,
-                                                                                                                  opt_value, this));
+    (Blockly.FieldDropdown as any).superClass_.constructor.call(this, '', opt_validator ? opt_validator : this.validator);
     this.addArgType('dropdown');
 };
 goog.inherits(CallbackSequenceField, Blockly.FieldDropdown);
+
+CallbackSequenceField.prototype.setValue = function(newValue: string, fromValidator: boolean) {
+    if (!fromValidator) {
+        this.validator(newValue);
+    }
+    else {
+        Blockly.FieldDropdown.prototype.setValue.call(this, newValue);
+    }
+}
 
 export function registerCallbackSequenceField(customBlockService: CustomBlockService) {
     (CallbackSequenceField as any).fromJson = function(element: { options: ResolvedDynamicSequenceBlockArgument }): any {
