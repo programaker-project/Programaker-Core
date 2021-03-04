@@ -8,7 +8,7 @@ import { OP_ON_BLOCK_RUN, OP_PRELOAD_BLOCK } from './base_toolbox_description';
 import { isUiFlowBlockData, UiFlowBlock, UiFlowBlockData } from './ui-blocks/ui_flow_block';
 import { MessageType } from './flow_block';
 
-export function is_pulse(x: { type: MessageType | 'enum'}): boolean {
+export function is_pulse(x: { type: MessageType | 'enum' | 'enum_sequence'}): boolean {
     return [ 'pulse', 'user-pulse' ].indexOf(x.type) >= 0;
 }
 

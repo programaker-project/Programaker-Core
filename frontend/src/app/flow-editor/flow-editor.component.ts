@@ -308,7 +308,7 @@ export class FlowEditorComponent implements OnInit {
         this.workspace.setToolbox(this.toolbox);
     }
 
-    async getEnumValues(enum_namespace: string, enum_name: string): Promise<EnumValue[]> {
+    async getEnumValues(enum_namespace: string, enum_name: string, selector?: string): Promise<EnumValue[]> {
         if (enum_namespace === 'programaker') {
             if (enum_name === 'bridges') {
                 const connections = await this.connectionService.getConnectionsOnProgram(this.programId);
@@ -325,7 +325,13 @@ export class FlowEditorComponent implements OnInit {
             }
         }
         else {
-            const values = await this.customBlockService.getCallbackOptions(this.program.id, enum_namespace, enum_name);
+            let values;
+            if (!selector) {
+                values = await this.customBlockService.getCallbackOptions(this.program.id, enum_namespace, enum_name);
+            }
+            else {
+                values = await this.customBlockService.getCallbackOptionsOnSequence(this.program.id, enum_namespace, enum_name, selector);
+            }
 
             return values.map(v => {
                 return {

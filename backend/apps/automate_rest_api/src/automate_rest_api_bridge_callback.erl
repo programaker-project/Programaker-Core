@@ -17,7 +17,11 @@
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
--record(state, { user_id :: binary(), bridge_id :: binary(), callback :: binary() }).
+-record(state, { user_id :: binary()
+               , bridge_id :: binary()
+               , callback :: binary()
+               , sequence_id :: binary() | undefined
+               }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -25,10 +29,15 @@ init(Req, _Opts) ->
     BridgeId = cowboy_req:binding(bridge_id, Req),
     Callback = cowboy_req:binding(callback, Req),
     Req1 = automate_rest_api_cors:set_headers(Req),
+
+    Qs = cowboy_req:parse_qs(Req1),
+    SequenceId = proplists:get_value(<<"sequence_id">>, Qs),
+
     {cowboy_rest, Req1
     , #state{ user_id=UserId
             , bridge_id=BridgeId
             , callback=Callback
+            , sequence_id=SequenceId
             }}.
 
 %% CORS
@@ -68,9 +77,8 @@ content_types_provided(Req, State) ->
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
-to_json(Req, State) ->
-    #state{bridge_id=BridgeId, callback=Callback, user_id=UserId} = State,
-    case automate_rest_api_backend:callback_bridge({user, UserId}, BridgeId, Callback) of
+to_json(Req, State=#state{bridge_id=BridgeId, callback=Callback, user_id=UserId, sequence_id=SequenceId}) ->
+    case automate_service_port_engine:callback_bridge({user, UserId}, BridgeId, Callback, SequenceId) of
         {ok, Result} ->
             Output = jiffy:encode(Result),
             Res = ?UTILS:send_json_format(Req),

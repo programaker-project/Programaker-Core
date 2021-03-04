@@ -32,6 +32,7 @@ import { AddConnectionDialogComponent } from 'app/connections/add-connection-dia
 import { EditorController } from 'app/program-editors/editor-controller';
 import { NgZone } from '@angular/core';
 import { EnvironmentService } from 'app/environment.service';
+import { registerCallbackSequenceField } from './CallbackSequenceField';
 
 declare const Blockly: any;
 
@@ -192,12 +193,13 @@ export class Toolbox {
     }
 
     async injectBlocks(monitors: MonitorMetadata[],
-                 custom_blocks: CategorizedCustomBlock[],
-                 services: AvailableService[],
-                 connections: BridgeConnection[],
-                ): Promise<ToolboxRegistration[]> {
+                       custom_blocks: CategorizedCustomBlock[],
+                       services: AvailableService[],
+                       connections: BridgeConnection[],
+                      ): Promise<ToolboxRegistration[]> {
         let registrations: ToolboxRegistrationHook[] = [];
 
+        registerCallbackSequenceField(this.customBlockService);
         this.injectMonitorBlocks(monitors);
         this.injectCustomControls();
         await this.injectTimeBlocks();
@@ -861,9 +863,21 @@ export class Toolbox {
                           flip_rtl: false,
                       };
                   }
+
+                  let message = block.message;
+                  // HACK: avoid ending with a field (%1 for a dropdown) or
+                  // Blockly.Block.interpolate_ will not flush the
+                  // `fieldStack`.
+                  if (message.match(/%[0-9]+$/)) {
+                      // The character added is a "Braille Pattern Blank", which
+                      // looks like a space but won't get trimmed away.
+                      // TODO: Fix Blockly.Block.interpolate_ to remove the need for this.
+                      message += '\u2800';
+                  }
+
                   this.jsonInit({
                       'id': block.id,
-                      'message0': msg_prefix + block.message,
+                      'message0': msg_prefix + message,
                       'category': Blockly.Categories.event,
                       'extensions': ['colours_bridge_' + blocks.bridge_data.bridge_id,
                                      get_block_category(block)],

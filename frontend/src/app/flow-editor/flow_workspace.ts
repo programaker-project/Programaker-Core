@@ -2,7 +2,7 @@ import { AtomicFlowBlock, AtomicFlowBlockData } from './atomic_flow_block';
 import { BlockManager } from './block_manager';
 import { DirectValue } from './direct_value';
 import { EnumDirectValue, EnumGetter, EnumValue } from './enum_direct_value';
-import { Area2D, BridgeEnumInputPortDefinition, ContainerBlock, Direction2D, FlowBlock, FlowBlockData, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, Resizeable } from './flow_block';
+import { Area2D, BridgeEnumInputPortDefinition, ContainerBlock, Direction2D, FlowBlock, FlowBlockData, InputPortDefinition, MessageType, OutputPortDefinition, Position2D, Resizeable, BridgeEnumSequenceInputPortDefinition } from './flow_block';
 import { FlowConnectionData, SourceDefinition, SinkDefinition, setConnectionType } from './flow_connection';
 import { FlowGraph, FlowGraphEdge, FlowGraphNode } from './flow_graph';
 import { Toolbox } from './toolbox';
@@ -543,7 +543,7 @@ export class FlowWorkspace implements BlockManager {
                 delete this._connectionDependencies[key];
             }
             else if (change.action === 'update') {
-                console.debug(`BLOCK "${key}" was updated.`);
+                // console.debug(`BLOCK "${key}" was updated.`);
 
                 // Note that moveTo() does not trigger `block.onMove()` callbacks.
                 const block = this.blockObjs[key].block;
@@ -619,8 +619,8 @@ export class FlowWorkspace implements BlockManager {
                 }
             }
             else if (change.action === 'update') {
-                console.debug(`CONNECTION "${key}" updated. New value:`, this.connections.get(key),
-                              '. Previous value:', change.oldValue);
+                // console.debug(`CONNECTION "${key}" updated. New value:`, this.connections.get(key),
+                //               '. Previous value:', change.oldValue);
                 // As this mostly immutable, this signal isn't really useful
             }
             else if (change.action === 'delete') {
@@ -2084,7 +2084,7 @@ export class FlowWorkspace implements BlockManager {
         return false;
     }
 
-    private drawInputHelper(inputGroup: SVGGElement, inputType: MessageType | 'enum') {
+    private drawInputHelper(inputGroup: SVGGElement, inputType: MessageType | 'enum' | 'enum_sequence') {
         const container = document.createElementNS(SvgNS, 'rect');
         const connectionLine = document.createElementNS(SvgNS, 'path');
         const text = document.createElementNS(SvgNS, 'text');
@@ -2176,6 +2176,9 @@ export class FlowWorkspace implements BlockManager {
                     if (input.type === 'enum') {
                         this.createEnumValue(input, block.id, element_index, { position })
                     }
+                    else if (input.type === 'enum_sequence') {
+                        this.createEnumValue(input, block.id, element_index, { position })
+                    }
                     else {
                         this.createDirectValue(input.type, block.id, element_index, { position });
                     }
@@ -2189,11 +2192,11 @@ export class FlowWorkspace implements BlockManager {
         return inputHelperGroup;
     }
 
-    private createEnumValue(input: BridgeEnumInputPortDefinition, block_id: string, input_index: number,
+    private createEnumValue(input: BridgeEnumInputPortDefinition | BridgeEnumSequenceInputPortDefinition,
+                            block_id: string, input_index: number,
                             options: { position: Position2D, value?: string }) {
         const enum_input = new EnumDirectValue({
-            enum_name: input.enum_name,
-            enum_namespace: input.enum_namespace,
+            definition: input,
             get_values: this.getEnum,
             on_select_requested: this.onSelectRequested.bind(this),
             on_io_selected: this.onIoSelected.bind(this),
@@ -2668,6 +2671,15 @@ export class FlowWorkspace implements BlockManager {
             return [
                 'pulse',
                 'user-pulse',
+            ].indexOf(output) >= 0;
+        }
+        // Right now the outputs are still not recognized as `enum_sequence`
+        // TODO: Remove this when `enum_sequence` outputs are correctly recognized.
+        else if (input === 'enum_sequence') {
+            return [
+                'enum_sequence',
+
+                'enum',
             ].indexOf(output) >= 0;
         }
     }

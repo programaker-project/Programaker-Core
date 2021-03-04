@@ -1,4 +1,5 @@
 import { ToolboxController } from "../blocks/ToolboxController";
+import { cleanCallbackSequenceValue } from "app/blocks/CallbackSequenceField";
 
 type CompiledScratchBlock = { id: string, type: string, args: any[] | {[key: string]: any}, contents: any[], save_to?: { index: number } };
 
@@ -236,9 +237,15 @@ export default class ScratchProgramSerializer {
     private serializeArg(argument: HTMLElement): any {
         if (argument.tagName === 'FIELD') {
             let type = argument.getAttribute('name').toLowerCase();
+            let value = argument.innerText;
 
             if (type.startsWith('val')) {
                 type = "constant";
+            }
+            else if (type.startsWith('cbsequence')) {
+                // Additional modifications must be done on this blocks
+                type = "constant";
+                value = cleanCallbackSequenceValue(value);
             }
             if (argument.getAttribute('id') === null) {
                 type = 'constant';  // No block or value, but dropdown/constant
@@ -247,7 +254,7 @@ export default class ScratchProgramSerializer {
                 name: argument.getAttribute('name'),
                 // Type here might be 'constant', 'variable' or 'list'
                 type: ScratchProgramSerializer.cleanTypeName(type),
-                value: argument.innerText,
+                value: value,
             }
         }
 

@@ -1,7 +1,7 @@
 import { AtomicFlowBlock, AtomicFlowBlockData, AtomicFlowBlockOptions, isAtomicFlowBlockOptions, isAtomicFlowBlockData } from './atomic_flow_block';
 import { BaseToolboxDescription, ToolboxDescription } from './base_toolbox_description';
 import { DirectValueFlowBlockData, isDirectValueBlockData } from './direct_value';
-import { EnumDirectValueFlowBlockData, isEnumDirectValueBlockData } from './enum_direct_value';
+import { EnumDirectValueFlowBlockData, isEnumDirectValueBlockData, EnumDirectValue } from './enum_direct_value';
 import { CompiledBlock, CompiledBlockArg, CompiledBlockArgs, CompiledFlowGraph, ContentBlock, FlowGraph, FlowGraphEdge, FlowGraphNode, CompiledBlockArgList, CompiledBlockType, CompiledBlockArgMonitorDict, CompiledBlockArgCallServiceDict, CompiledBlockServiceCallSelectorArgs } from './flow_graph';
 import { extract_internally_reused_arguments, is_pulse_output, lift_common_ops, scan_downstream, scan_upstream, split_streaming_after_stepped, is_pulse } from './graph_transformations';
 import { index_connections, reverse_index_connections, EdgeIndex, IndexedFlowGraphEdge } from './graph_utils';
@@ -1123,9 +1123,16 @@ function compile_arg(graph: FlowGraph, arg: BlockTreeArgument, parent: string, o
         };
     }
     else if (isEnumDirectValueBlockData(block.data)){
+        let value = block.data.value.value_id;
+
+        const definition = block.data.value.options.definition;
+        if (definition && definition.type === 'enum_sequence') {
+            value = EnumDirectValue.cleanSequenceValue(value);
+        }
+
         return {
             type: 'constant',
-            value: block.data.value.value_id,
+            value: value,
         };
     }
     else if (isUiFlowBlockData(block.data)) {

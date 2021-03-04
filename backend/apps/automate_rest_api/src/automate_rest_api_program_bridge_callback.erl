@@ -22,6 +22,7 @@
                , program_id :: binary()
                , bridge_id :: binary()
                , callback :: binary()
+               , sequence_id :: binary() | undefined
                }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
@@ -30,11 +31,16 @@ init(Req, _Opts) ->
     BridgeId = cowboy_req:binding(bridge_id, Req),
     Callback = cowboy_req:binding(callback, Req),
     Req1 = automate_rest_api_cors:set_headers(Req),
+
+    Qs = cowboy_req:parse_qs(Req1),
+    SequenceId = proplists:get_value(<<"sequence_id">>, Qs),
+
     {cowboy_rest, Req1
     , #state{ owner=undefined
             , program_id=ProgramId
             , bridge_id=BridgeId
             , callback=Callback
+            , sequence_id=SequenceId
             }}.
 
 %% CORS
@@ -76,8 +82,8 @@ content_types_provided(Req, State) ->
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
-to_json(Req, State=#state{bridge_id=BridgeId, callback=Callback, owner=Owner}) ->
-    case automate_service_port_engine:callback_bridge(Owner, BridgeId, Callback) of
+to_json(Req, State=#state{bridge_id=BridgeId, callback=Callback, owner=Owner, sequence_id=SequenceId}) ->
+    case automate_service_port_engine:callback_bridge(Owner, BridgeId, Callback, SequenceId) of
         {ok, Result} ->
             Output = jiffy:encode(#{ success => true, result => Result }),
             Res = ?UTILS:send_json_format(Req),

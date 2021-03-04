@@ -1,3 +1,5 @@
+import { TYPE as CALLBACK_SEQUENCE_TYPE } from './blocks/CallbackSequenceField';
+
 type VariableClass = 'single' | 'list' | undefined;
 
 export interface StaticBlockArgument {
@@ -11,7 +13,13 @@ export interface DynamicBlockArgument {
     callback: string;
     collection?: string;
 };
-export type BlockArgument = StaticBlockArgument | DynamicBlockArgument;
+
+export interface DynamicSequenceBlockArgument {
+    type: string;
+    callback_sequence: string[];
+};
+
+export type BlockArgument = StaticBlockArgument | DynamicBlockArgument | DynamicSequenceBlockArgument;
 
 interface ScratchSerializableArgument {
     type: string,
@@ -41,7 +49,15 @@ export interface ResolvedDynamicBlockArgument {
     options: [string, string][];
 };
 
-export type ResolvedBlockArgument = StaticBlockArgument | ResolvedDynamicBlockArgument;
+export interface ResolvedDynamicSequenceBlockArgument {
+    type: string;
+    callback_sequence: string[];
+    first_level_options: [string, string][];
+    bridge_id: string;
+    program_id: string;
+};
+
+export type ResolvedBlockArgument = StaticBlockArgument | ResolvedDynamicBlockArgument | ResolvedDynamicSequenceBlockArgument;
 
 export interface CustomBlock {
     id: string;
@@ -184,7 +200,15 @@ export function get_block_category(block: CustomBlock): string {
 
 export function get_block_toolbox_arguments(block: ResolvedCustomBlock): ScratchBlockArgument[] {
     return block.arguments.map((arg, index, _array) => {
-        if ((arg as any).options) {  // Dynamic value
+        if ((arg as ResolvedDynamicSequenceBlockArgument).callback_sequence) {
+            const resolved_arg = arg as ResolvedDynamicSequenceBlockArgument;
+            return {
+                type: CALLBACK_SEQUENCE_TYPE,
+                name: 'CBSEQUENCE' + index,
+                options: resolved_arg
+            };
+        }
+        else if ((arg as any).options) {  // Dynamic value
             const resolved_arg = arg as ResolvedDynamicBlockArgument;
             return {
                 type: 'field_dropdown',
