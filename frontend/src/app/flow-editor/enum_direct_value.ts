@@ -304,13 +304,12 @@ export class EnumDirectValue implements FlowBlock {
                 }
 
                 if (id === 'Select') {
-                    console.log(id, this.value_id);
                     on_done([{ id: "Select", name: 'Not found' }])
                     return;
                 }
 
                 if ((id === oldValue) && (this.values)) {
-                    console.log("Skipping reload on", oldValue, '->', id);
+                    console.debug("Skipping reload on", oldValue, '->', id);
                     return;
                 }
 
@@ -359,8 +358,6 @@ export class EnumDirectValue implements FlowBlock {
                                                            lastLevel);
 
                     const loopNext = manageTopLevelError((values: EnumValue[]) => {
-                        console.log("Looping from", chunks);
-                        console.log("Looping to", values);
 
                         const prelude : EnumValue[] = [ { name: "Back to Top", id: '' } ];
                         for (let i = 1; i < depth; i++ ) {
