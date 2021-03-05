@@ -126,6 +126,7 @@
 
 -define(WAIT_READY_LOOP_TIME, 1000).
 -define(DEFAULT_PROGRAM_TYPE, scratch_program).
+-define(ETS_TABLE_SECONDARY_NODE_RESTART, autoamte_storage_secondary_node_ets_table_for_restart).
 
 %%====================================================================
 %% API functions
@@ -2507,12 +2508,15 @@ wait_for_all_nodes_ready(true, Primary, NonPrimariesToGo) ->
             end
     end.
 
--spec coordinate_secondary_loop_wait() -> no_return().
-coordinate_secondary_loop_wait() ->
+-spec coordinate_secondary_loop_wait_for_primary_and_crash() -> no_return().
+coordinate_secondary_loop_wait_for_primary_and_crash() ->
     receive
         {_From, {primary_waiting, Node}} ->
             io:fwrite("[~p:~p] Primary node (~p) waiting. Stopping secondary node ~p~n",
                       [?MODULE, ?LINE, Node, node()]),
+
+            %% Mark the node as partially restarted
+            true = ets:insert(?ETS_TABLE_SECONDARY_NODE_RESTART, [ { partial_restart, true } ]),
             exit(primary_disconnected);
         X ->
             io:fwrite("[~p:~p][Secondary coordinator waiting for primary to go back up | ~p] Unknown message: ~p~n",
@@ -2520,19 +2524,40 @@ coordinate_secondary_loop_wait() ->
             coordinate_secondary_loop_wait()
     end.
 
--spec coordinate_loop_secondary() -> no_return().
-coordinate_loop_secondary() ->
+-spec coordinate_secondary_loop_wait() -> no_return().
+coordinate_secondary_loop_wait() ->
     receive
         {'DOWN', _MonitorRef, process, _Object, _Info} ->
             io:fwrite("[~p:~p] Primary node failed. Waiting for primary before stopping secondary node ~p~n",
                       [?MODULE, ?LINE, node()]),
             %% Wait for primary to come back up, and exit
-            coordinate_secondary_loop_wait();
+            coordinate_secondary_loop_wait_for_primary_and_crash();
         X ->
             io:fwrite("[~p:~p][Secondary coordinator | ~p] Unknown message: ~p~n",
                       [?MODULE, ?LINE, node(), X]),
-            coordinate_loop_secondary()
+            coordinate_secondary_loop_wait()
     end.
+
+-spec coordinate_loop_secondary() -> no_return().
+coordinate_loop_secondary() ->
+    %% Prepare a table to be used to store data between processes of automate_storage.
+    case ets:whereis(?ETS_TABLE_SECONDARY_NODE_RESTART) of
+        undefined ->
+            ets:new(?ETS_TABLE_SECONDARY_NODE_RESTART, [ named_table, public, set, { heir, whereis(automate_sup), 'process-metadata' } ] );
+        _ ->
+            ok
+    end,
+
+    case ets:lookup(?ETS_TABLE_SECONDARY_NODE_RESTART, partial_restart) of
+        [{ partial_restart, true }] ->
+            %% Crash the node to restart completely
+            erlang:halt();
+        [] ->
+            %% Everything is alright
+            ok
+    end,
+
+    coordinate_secondary_loop_wait().
 
 -spec coordinate_loop_primary() -> no_return().
 coordinate_loop_primary() ->
