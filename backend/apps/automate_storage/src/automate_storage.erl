@@ -2513,7 +2513,7 @@ coordinate_secondary_loop_wait() ->
         {_From, {primary_waiting, Node}} ->
             io:fwrite("[~p:~p] Primary node (~p) waiting. Stopping secondary node ~p~n",
                       [?MODULE, ?LINE, Node, node()]),
-            exit(primary_disconnected);
+            erlang:halt();
         X ->
             io:fwrite("[~p:~p][Secondary coordinator waiting for primary to go back up | ~p] Unknown message: ~p~n",
                       [?MODULE, ?LINE, node(), X]),
