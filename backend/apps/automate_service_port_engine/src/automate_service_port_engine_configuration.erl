@@ -258,7 +258,7 @@ get_versioning(Nodes) ->
                                            , type=set
                                            }, Nodes),
 
-                                    ok = mnesia:wait_for_tables([ ?BRIDGE_TOKEN_TABLE
+                                    ok = mnesia:wait_for_tables([ ?BRIDGE_TOKEN_TABLE, ?SERVICE_PORT_TABLE
                                                                 ], automate_configuration:get_table_wait_time()),
 
                                     {atomic, ok} = mnesia:add_table_index(?BRIDGE_TOKEN_TABLE, bridge_id),
