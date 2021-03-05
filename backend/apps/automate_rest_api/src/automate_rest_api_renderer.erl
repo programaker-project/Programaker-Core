@@ -243,7 +243,7 @@ render_styles(RenderAs) ->
     , Root, <<".dynamic_text { color: #fc4; background-color: #222; margin: auto; display: flex; justify-content: center; flex-direction: column; width: 100%; height: 100%; } ">>
     , Root, ".fixed_text { max-width: 50em; overflow-wrap: anywhere; } "
     , Root, <<".widget-container { width: 100%; height: 100%; display: flex; } ">>
-    , Root, ".hbox > .inner-box > .widget-container { display: inline flex; width: max-content; max-width: 100%; }"
+    , Root, ".hbox > .inner-box > .widget-container { display: inline-flex; width: max-content; max-width: 100%; }"
     , Root, <<".widget { margin: 0 auto; padding: 1ex; } ">>
     , Root, "hr { width: calc(50% - 2px); margin: 1ex auto; border: 1px solid #aaa; } "
     , Root, "hr.size-short { width: calc(min(100%, 20ex) - 2px); } "
