@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { SessionService, SessionInfoUpdate } from './session.service';
 import { Session } from './session';
 import { Subscription } from 'rxjs';
-import { MatSidenav } from '@angular/material/sidenav';
 import { getUserPictureUrl } from './utils';
 import { BrowserService } from './browser.service';
 import { EnvironmentService } from './environment.service';
@@ -23,8 +22,6 @@ export class AppComponent {
     title = 'PrograMaker';
     session: Session;
 
-    @ViewChild('sidenav', { static: false })
-    private sidenav: ElementRef<MatSidenav>;
     readonly _getUserPicture: (userId: string) => string;
 
     constructor(
@@ -68,18 +65,13 @@ export class AppComponent {
     updateVerticalSpaces(): void {
         const height = this.browser.window.innerHeight;
         const higherPart = document.getElementById('main-toolbar') as HTMLElement;
-        const lowerPart = document.getElementsByClassName('mat-drawer-container')[0] as HTMLElement;
+        const lowerPart = document.getElementById('app-content') as HTMLElement;
 
         lowerPart.style.minHeight = (height - higherPart.clientHeight) + 'px';
     }
 
     logout(): void {
         this.sessionService.logout();
-        this.resetSidenavState();
         this.router.navigate(['/login']);
-    }
-
-    resetSidenavState(): void {
-        (this.sidenav as any as MatSidenav).close();
     }
 }

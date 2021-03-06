@@ -72,19 +72,6 @@ a.action-link {
     height: 100vh;
 }
 
-a.sidenav-link {
-    color: #272727;
-    text-align: right;
-    width: 100%;
-    font-size: 24px;
-    padding: 1ex;
-}
-
-a.sidenav-link:hover {
-    color: inherit;
-    text-decoration: none;
-}
-
 a[mat-menu-item] {
     color: #272727;
 }

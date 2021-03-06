@@ -1,6 +1,5 @@
 <div class="app-content">
     <mat-toolbar id="main-toolbar">
-        <span id="main-menu-opener" role="button" (click)="sidenav.toggle()"><mat-icon>menu</mat-icon></span>
         <a routerLink="/" id="main-title"> <img class="logo" src="/assets/logo.png" aria-hidden="true" alt="Back to dashboard"> {{title}} </a>
         <span class="floating-elements">
             <span class="login-indicator">
@@ -39,48 +38,7 @@
             </mat-menu>
         </span>
     </mat-toolbar>
-    <mat-sidenav-container>
-        <mat-sidenav #sidenav mode="over" opened="false">
-            <ul class="panels"
-                *ngIf="session.active">
-                <li>
-                    <a class="sidenav-link" routerLink="/dashboard" (click)="!!this.resetSidenavState()" mat-button>
-                        Dashboard
-                    </a>
-                </li>
-            </ul>
-            <ul class="user-controls"
-                *ngIf="session.active">
-                <li>
-                    <a class="sidenav-link" routerLink="/settings" (click)="!!this.resetSidenavState()" mat-button>
-                        Settings
-                    </a>
-                </li>
-                <li *ngIf="session.tags && session.tags.is_admin">
-                    <a class="sidenav-link" routerLink="/settings/admin" (click)="!!this.resetSidenavState()" mat-button>
-                        Admin panel
-                    </a>
-                </li>
-                <li>
-                    <button mat-button (click)="logout()">
-                        <span>
-                            Logout
-                        </span>
-                    </button>
-                </li>
-            </ul>
-            <ul class="user-controls"
-                *ngIf="!session.active">
-                <li>
-                    <a class="sidenav-link" routerLink="/login" (click)="!!this.resetSidenavState()" mat-button>
-                        Login
-                    </a>
-                </li>
-            </ul>
-        </mat-sidenav>
-
-        <div class="viewer">
-            <router-outlet></router-outlet>
-        </div>
-    </mat-sidenav-container>
+    <div class="viewer" id="app-content">
+        <router-outlet></router-outlet>
+    </div>
 </div>
