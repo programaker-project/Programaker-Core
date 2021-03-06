@@ -1028,11 +1028,6 @@ export class ProgramDetailComponent implements OnInit {
                     }
 
                     this.program.name = programData.name;
-                    const path = document.location.pathname.split("/");
-                    path[path.length - 1] = encodeURIComponent(this.program.name);
-
-                    this.router.navigate([path.join("/")]);
-                    console.log("Changing name to", this.program);
                 }));
             progbar.track(rename);
         });
