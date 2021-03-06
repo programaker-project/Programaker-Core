@@ -130,6 +130,7 @@ export class FlowEditorComponent implements OnInit {
                                     // Trying to read a program without a session, login
                                     this.router.navigate(['/login'], {replaceUrl: true});
                                     reject();
+                                    this.toastr.error(err.message, "Error loading");
                                     throw Error("Error loading");
                                 }
                                 else {
@@ -137,7 +138,7 @@ export class FlowEditorComponent implements OnInit {
                                     // TODO: Show an appropriate error
 
                                     console.error("Error:", err);
-                                    this.goBack();
+                                    this.toastr.error(err.message, "Error loading");
                                     reject();
                                     throw Error("Error loading");
                                 }
@@ -155,14 +156,14 @@ export class FlowEditorComponent implements OnInit {
                             }).catch(err => {
                                 console.error(err);
                                 resolve();
-                                // this.goBack();
+                                this.toastr.error(err, "Error loading");
                             });
                         });
                 })
                 .catch(err => {
                     console.error("Error loading program:", err);
                     reject();
-                    this.goBack();
+                    this.toastr.error(err, "Error loading");
                 });
         }));
     }

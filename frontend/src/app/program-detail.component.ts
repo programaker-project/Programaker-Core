@@ -159,12 +159,13 @@ export class ProgramDetailComponent implements OnInit {
                             if (!this.session.active) {
                                 this.router.navigate(['/login'], {replaceUrl:true});
                                 reject();
+                                this.toastr.error(err.message, "Error loading");
                                 throw Error("Error loading");
                             }
                             else {
                                 console.error("Error:", err);
-                                this.goBack();
-                                throw Error("Error loading");
+                                this.toastr.error(err.message, "Error loading");
+                                return null;
                             }
                         });
                     }
@@ -178,13 +179,17 @@ export class ProgramDetailComponent implements OnInit {
                             }
                             else {
                                 console.error("Error:", err);
-                                this.goBack();
-                                throw Error("Error loading");
+                                this.toastr.error(err.message, "Error loading");
+                                return null;
                             }
                         })
                     }
                 }))
                 .subscribe(program => {
+                    if (program === null) {
+                        return;
+                    }
+
                     this.programId = program.id;
                     this.read_only = program.readonly;
                     this.visibility = program.visibility;
@@ -197,7 +202,7 @@ export class ProgramDetailComponent implements OnInit {
                     }).catch(err => {
                         console.error("Error:", err);
                         resolve();
-                        this.goBack();
+                        this.toastr.error(err, "Error loading");
                     });
                 });
         }));
