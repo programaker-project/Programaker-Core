@@ -596,17 +596,17 @@ parse_argument(#{ <<"default">> := DefaultValue
                                        , class=undefined
                                        };
 
-parse_argument(#{ <<"type">> := <<"variable">>
+parse_argument(Arg=#{ <<"type">> := <<"variable">>
                 , <<"class">> := Class
                 }) ->
-    #service_port_block_static_argument{ type= <<"variable">>
+    #service_port_block_static_argument{ type=get_variable_type(Arg)
                                        , class=Class
                                        , default=undefined
                                        };
 
-parse_argument(#{ <<"type">> := <<"variable">>
+parse_argument(Arg=#{ <<"type">> := <<"variable">>
                 }) ->
-    #service_port_block_static_argument{ type= <<"variable">>
+    #service_port_block_static_argument{ type=get_variable_type(Arg)
                                        , default=undefined
                                        , class=undefined
                                        };
@@ -631,6 +631,11 @@ parse_argument(#{ <<"type">> := Type
     #service_port_block_dynamic_sequence_argument{ callback_sequence=CallbackSequence
                                                  , type=Type
                                                  }.
+
+get_variable_type(#{ <<"var_type">> := Type }) when Type =/= null ->
+    { <<"variable">>, Type };
+get_variable_type(_) ->
+    <<"variable">>.
 
 answer_advice_taken(AdviceTaken, MessageId, Pid) ->
     Pid ! {{ automate_service_port_engine, advice_taken}, MessageId, AdviceTaken }.

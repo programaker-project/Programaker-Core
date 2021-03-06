@@ -167,11 +167,19 @@ encode_argument(#service_port_block_static_argument{ type=Type
                                                    , default=Default
                                                    , class=Class
                                                    }) ->
-    #{ <<"type">> => Type
-     , <<"default_value">> => Default
-     , <<"class">> => Class
-     };
-
+    case Type of
+        {<<"variable">>, VarType} ->
+            #{ <<"type">> => <<"variable">>
+             , <<"default_value">> => Default
+             , <<"class">> => Class
+             , <<"var_type">> => VarType
+             };
+        _ ->
+            #{ <<"type">> => Type
+             , <<"default_value">> => Default
+             , <<"class">> => Class
+             }
+    end;
 encode_argument(#service_port_block_dynamic_argument{ type=Type
                                                     , callback=Callback
                                                     }) ->
