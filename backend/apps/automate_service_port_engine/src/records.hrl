@@ -13,7 +13,7 @@
                                           %% | <<"boolean">>
                                           %%   .
 
--record(service_port_block_static_argument, { type :: service_port_block_argument_type()
+-record(service_port_block_static_argument, { type :: service_port_block_argument_type() | { binary(), service_port_block_argument_type() }
                                             , default :: binary() | 'undefined'
                                             , class :: binary() | 'undefined'
                                             }).

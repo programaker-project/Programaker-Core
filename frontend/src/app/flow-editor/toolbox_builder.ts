@@ -268,6 +268,12 @@ function get_block_outputs(block: ResolvedCustomBlock): OutputPortDefinition[] {
                 break
 
             case 'number':
+                result_type = 'float';
+                break;
+
+            case 'any':
+            case 'struct':
+                result_type = 'any';
                 break;
 
             case null:
@@ -311,20 +317,31 @@ function get_block_outputs(block: ResolvedCustomBlock): OutputPortDefinition[] {
 }
 
 function get_arg_type(arg: any): MessageType  {
+    let argType = arg.type;
+
     if (arg.type === 'variable') {
-        return 'any';
+        if (!arg.var_type) {
+            return 'any';
+        }
+        argType = arg.var_type;
     }
 
     let result_type = 'any';
-    switch (arg.type) {
+    switch (argType) {
         case 'string':
         case 'boolean':
         case 'integer':
-            result_type = arg.type;
+        case 'float':
+            result_type = argType;
             break
 
         case 'number':
-        case 'float':
+            result_type = 'float';
+            break;
+
+        case 'any':
+        case 'struct':
+            result_type = 'any';
             break;
 
         case null:
