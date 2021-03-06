@@ -135,7 +135,7 @@ render_element(E=#{ <<"container_type">> := <<"link_area">>
 render_element(E=#{ <<"widget_type">> := <<"simple_button">>
                   , <<"id">> := WidgetId
                   }, _ProgramId, _Values, _Req) ->
-    [ <<"<div class=widget-container><button class='widget simple_button' id='elem-">>
+    [ <<"<div class='widget-container' ><button class='widget simple_button' id='elem-">>
     , WidgetId
     , <<"'>">>
     , html_escape(maps:get(<<"text">>, E, "Click me!"))
@@ -146,7 +146,7 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_text">>
                   , <<"id">> := WidgetId
                   }, _ProgramId, _Values, _Req) ->
     ElementStyle = get_text_element_style(E),
-    [ <<"<div class=widget-container><div class='widget text fixed_text' id='elem-">>
+    [ <<"<div class='widget-container' ><div class='widget text fixed_text' id='elem-">>
     , WidgetId
     , <<"'">>
     , " style='", ElementStyle, "'"
@@ -162,7 +162,7 @@ render_element(E=#{ <<"widget_type">> := Type= <<"text_box">>
                                     maps:get(<<Type/binary, ".", WidgetId/binary>>, Values,
                                              <<"">>))),
     ElementStyle = get_text_element_style(E),
-    [ <<"<div class=widget-container><input type='text' class='widget text text_box' id='elem-">>, WidgetId, <<"'">>
+    [ <<"<div class='widget-container' ><input type='text' class='widget text text_box' id='elem-">>, WidgetId, <<"'">>
     , " style='", ElementStyle, "'"
     , <<" placeholder=\"">>
     , Contents
@@ -176,7 +176,7 @@ render_element(E=#{ <<"widget_type">> := Type= <<"dynamic_text">>
                                     maps:get(<<Type/binary, ".", WidgetId/binary>>, Values,
                                              <<"- No content yet -">>))),
     ElementStyle = get_text_element_style(E),
-    [ <<"<div class=widget-container><div class='widget text dynamic_text' id='elem-">>, WidgetId, <<"'">>
+    [ <<"<div class='widget-container' ><div class='widget text dynamic_text' id='elem-">>, WidgetId, <<"'">>
     , " style='", ElementStyle, "'"
     , <<"><div>">>
     , Contents
@@ -189,8 +189,8 @@ render_element(E=#{ <<"widget_type">> := <<"fixed_image">>
                   }, ProgramId, _Values, Req) ->
     ImgUrl = get_image_url(E, ProgramId, Req),
     Dimensions = get_image_dimensions(E),
-    [ <<"<div class=widget-container>">>
-    , "<img class='widget' src='", ImgUrl, "'"
+    [ <<"<div class='widget-container' >">>
+    , "<img class='widget' src=' ", ImgUrl, "' "
     , Dimensions
     , "/>"
     , <<"</div>">>
@@ -250,7 +250,7 @@ render_styles(RenderAs) ->
     , Root, "hr.size-full { width: calc(100% - 2px); } "
     , Root, ".hbox > .inner-box { margin: 0 auto; width: max-content; max-width: 100%; text-align: center; }"
     , Root, ".hbox > .inner-box > .vbox, .hbox > .inner-box > .simple_card { display: inline-flex; vertical-align: top; max-width: 100%; }"
-    , Root, "a.link_area { display: inline-flex; text-decoration: inherit; }"
+    , Root, "a.link_area { text-decoration: inherit; }"
     , Root, ".simple_card { margin: 0 auto; width: max-content; max-width: 100%; }"
     , Root, ".simple_card > .inner-box { margin: 1ex; padding: 1ex; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
     , Root, ".simple_card > .inner-box > .vbox { margin: auto; }"
