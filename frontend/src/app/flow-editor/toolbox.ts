@@ -155,7 +155,7 @@ export class Toolbox {
             };
             this.categoryShortcutListContents.appendChild(categoryShortcut);
         }
-        else {
+        else if (!this.no_dom) {
             category_div = category.div;
             category_content = category.content;
         }

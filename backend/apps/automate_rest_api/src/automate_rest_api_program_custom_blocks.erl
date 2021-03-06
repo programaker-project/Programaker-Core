@@ -19,14 +19,19 @@
 
 -record(state, { program_id :: binary()
                , owner :: owner_id() | undefined
+               , read_only :: boolean()
                }).
+
+-define(UTILS, automate_rest_api_utils).
 -define(FORMATTING, automate_rest_api_utils_formatting).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
     ProgramId = cowboy_req:binding(program_id, Req),
     {cowboy_rest, Req
-    , #state{ program_id=ProgramId }
+    , #state{ program_id=ProgramId
+            , read_only=true
+            }
     }.
 
 %% CORS
@@ -45,18 +50,31 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
+        Method ->
+            {ok, #user_program_entry{ visibility=Visibility }} = automate_storage:get_program_from_id(ProgramId),
+            IsPublic = ?UTILS:is_public(Visibility),
+            {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(ProgramId),
+
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
-                    { {false, <<"Authorization header not found">>} , Req1, State };
+                    case {Method, IsPublic} of
+                        {<<"GET">>, true} ->
+                            { true, Req1, State#state{ owner=Owner, read_only=true } };
+                        _ ->
+                            { {false, <<"Authorization header not found">>} , Req1, State }
+                    end;
                 X ->
                     case automate_rest_api_backend:is_valid_token_uid(X) of
                         {true, UserId} ->
-                            {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(ProgramId),
                             case automate_storage:can_user_view_as({user, UserId}, Owner) of
-                                true -> { true, Req1, State#state{ owner=Owner } };
+                                true -> { true, Req1, State#state{ owner=Owner, read_only=false } };
                                 false ->
-                                    { { false, <<"Operation not allowed">>}, Req1, State }
+                                    case {Method, IsPublic} of
+                                        {<<"GET">>, true} ->
+                                            { true, Req1, State#state{ owner=Owner, read_only=true } };
+                                        _ ->
+                                            { { false, <<"Operation not allowed">>}, Req1, State }
+                                    end
                             end;
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
@@ -71,7 +89,8 @@ content_types_provided(Req, State) ->
 
 -spec to_json(cowboy_req:req(), #state{})
              -> {binary(),cowboy_req:req(), #state{}}.
-to_json(Req, State=#state{owner=Owner}) ->
+to_json(Req, State=#state{owner=Owner, program_id=ProgramId, read_only=ReadOnly}) ->
+    %% TODO: When ReadOnly only show blocks used on the program
     case automate_service_port_engine:list_custom_blocks(Owner) of
         { ok, CustomBlocks } ->
             Output = jiffy:encode(maps:map(fun encode_blocks/2, CustomBlocks)),

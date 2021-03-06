@@ -836,11 +836,15 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     hide_block_menu() {
-        (this.workspace as any).getFlyout().setVisible(false);
+        if ((this.workspace as any).getFlyout()) {
+            (this.workspace as any).getFlyout().setVisible(false);
+        }
     }
 
     show_block_menu() {
-        (this.workspace as any).getFlyout().setVisible(true);
+        if ((this.workspace as any).getFlyout()) {
+            (this.workspace as any).getFlyout().setVisible(true);
+        }
     }
 
     show_workspace(workspace: HTMLElement) {
