@@ -79,7 +79,19 @@ export class Toolbox {
         let registrations: ToolboxRegistration[] = [];
         let toolboxXML: HTMLElement;
 
-        if (!this.readOnly) {
+        if (this.readOnly) {
+            const [custom_blocks, services] = await Promise.all([
+                this.customBlockService.getCustomBlocksOnProgram(this.program.id, true),
+                this.serviceService.getAvailableServicesOnProgram(this.program.id),
+            ]);
+
+            this.controller.addCustomBlocks(custom_blocks);
+            const categorized_blocks = this.categorize_blocks(custom_blocks, services);
+
+            registrations = registrations.concat(await this.injectBlocks([], categorized_blocks, services, []));
+            toolboxXML = await this.injectToolbox([], categorized_blocks);
+        }
+        else {
             const availableConnectionsQuery = this.connectionService.getAvailableBridgesForNewConnectionOnProgram(this.program.id);
 
             const [monitors, custom_blocks, services, connections] = await Promise.all([
@@ -106,14 +118,10 @@ export class Toolbox {
                 }
             }
 
-
             registrations = registrations.concat(await this.injectBlocks(monitors, categorized_blocks, services, connections));
             toolboxXML = await this.injectToolbox(monitors, categorized_blocks);
 
             registrations = registrations.concat(this.addAvailableConnections(availableConnections, toolboxXML));
-        }
-        else {
-            toolboxXML = await this.injectToolbox([], []);
         }
 
         this.controller.setToolbox(toolboxXML);
