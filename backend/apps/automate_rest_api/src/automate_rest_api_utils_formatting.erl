@@ -3,6 +3,7 @@
 -export([ format_message/1
         , serialize_logs/2
         , serialize_log_entry/1
+        , serialize_variable_map/1
         , serialize_icon/1
         , serialize_maybe_undefined/1
         , reason_to_json/1
@@ -89,6 +90,9 @@ serialize_log_entry(#user_generated_log_entry{ program_id=ProgramId
      , event_time => EventTime
      , severity => Severity
      }.
+
+serialize_variable_map(VariableMap) ->
+    VariableMap.
 
 serialize_string_or_none(none) ->
     null;

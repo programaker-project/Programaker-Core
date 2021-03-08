@@ -43,6 +43,7 @@ import { Session } from './session';
 import { ToastrService } from 'ngx-toastr';
 
 type NonReadyReason = 'loading' | 'disconnected';
+type DrawerType = 'logs' | 'variables';
 
 @Component({
     selector: 'app-my-program-detail',
@@ -65,9 +66,10 @@ export class ProgramDetailComponent implements OnInit {
     environment: { [key: string]: any };
     session: Session;
 
-    @ViewChild('logs_drawer') logs_drawer: MatDrawer;
+    @ViewChild('drawer') drawer: MatDrawer;
+    drawer_type: DrawerType | null = null;
 
-    logs_drawer_initialized: boolean = false;
+    drawer_initialized: boolean = false;
     commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
 
     toolboxController: ToolboxController;
@@ -1155,11 +1157,26 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     toggleLogsPanel() {
-        if (this.logs_drawer.opened) {
-            this.closeLogsPanel();
+        if (this.drawer.opened && this.drawer_type === 'logs') {
+            this.closeDrawer();
         }
         else {
-            this.openLogsPanel();
+            this.setDrawerType('logs');
+            if (!this.drawer.opened) {
+                this.openDrawer();
+            }
+        }
+    }
+
+    toggleVariablesPanel() {
+        if (this.drawer.opened && this.drawer_type === 'variables') {
+            this.closeDrawer();
+        }
+        else {
+            this.setDrawerType('variables');
+            if (!this.drawer.opened) {
+                this.openDrawer();
+            }
         }
     }
 
@@ -1167,32 +1184,36 @@ export class ProgramDetailComponent implements OnInit {
         this.browser.window.dispatchEvent(new Event('resize'));
     }
 
-    closeLogsPanel() {
-        this.logs_drawer.close().then(() => {
+    closeDrawer() {
+        return this.drawer.close().then(() => {
             // Notify Scratch containers
             this.notifyResize();
         });
     }
 
-    openLogsPanel() {
-        this.logs_drawer.open().then(() => {
+    openDrawer() {
+        return this.drawer.open().then(() => {
             // Notify Scratch containers
             this.notifyResize();
         });
+    }
+
+    setDrawerType(type: DrawerType) {
+        this.drawer_type = type;
     }
 
     updateLogsDrawer(line: ProgramLogEntry) {
         const container = document.getElementById('logs_panel_container');
-        if (!this.logs_drawer_initialized) {
+        if (!this.drawer_initialized) {
             container.innerHTML = ''; // Clear container
 
-            this.logs_drawer_initialized = true;
+            this.drawer_initialized = true;
         }
 
         const newLine = this.renderLogLine(line);
         container.appendChild(newLine);
 
-        if (this.logs_drawer.opened) {
+        if (this.drawer.opened && this.drawer_type === 'logs') {
             newLine.scrollIntoView();
         }
     }

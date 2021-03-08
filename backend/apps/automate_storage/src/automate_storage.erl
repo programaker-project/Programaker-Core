@@ -57,6 +57,7 @@
 
         , get_program_owner/1
         , get_program_pid/1
+        , get_program_variables/1
         , get_user_from_pid/1
         , register_program_runner/2
         , get_program_from_id/1
@@ -846,6 +847,17 @@ get_program_pid(ProgramId) ->
         {error, Reason} ->
             {error, Reason}
     end.
+
+-spec get_program_variables(binary()) -> {'ok', any()}.
+get_program_variables(ProgramId) ->
+    mnesia:ets(fun() ->
+                       Vars = mnesia:index_read(?PROGRAM_VARIABLE_TABLE, ProgramId, program_id),
+                       Map = maps:from_list(lists:map(
+                                              fun(#program_variable_table_entry{ id={_, VarName}, value=Value}) ->
+                                                      {VarName, Value}
+                                              end, Vars)),
+                       {ok, Map}
+           end).
 
 
 -spec get_user_from_pid(pid()) -> { ok, owner_id() } | {error, not_found}.
@@ -2325,6 +2337,7 @@ get_running_program_id(ProgramId) ->
 set_program_variable(ProgramId, Key, Value) ->
     Transaction = fun() ->
                           mnesia:write(?PROGRAM_VARIABLE_TABLE, #program_variable_table_entry{ id={ProgramId, Key}
+                                                                                             , program_id=ProgramId
                                                                                              , value=Value
                                                                                              },
                                        write)

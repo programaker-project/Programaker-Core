@@ -72,8 +72,22 @@
     display: block;
 }
 
+#variables_panel_container,
 #logs_panel_container {
     max-width: 30em;
+}
+
+.program-drawer.hidden {
+    display: none;
+}
+
+.drawer-controls {
+    width: max-content;
+    margin-right: 1.5ex;
+
+    .selector {
+        vertical-align: super;
+    }
 }
 
 .closer > button {
@@ -88,6 +102,7 @@ button#program-start-button,
 button#program-delete-button,
 button#program-stop-button,
 button#program-logs-button,
+button#program-variables-button,
 button#advanced-program-controls-button {
     vertical-align: top;
     padding: 1ex;
