@@ -66,7 +66,7 @@ export class CloneProgramDialogComponent {
     constructor(private dialogRef: MatDialogRef<CloneProgramDialogComponent>,
                 environmentService: EnvironmentService,
                 sessionService: SessionService,
-                groupService: GroupService,
+                private groupService: GroupService,
                 private formBuilder: FormBuilder,
                 private programService: ProgramService,
                 private connectionService: ConnectionService,
@@ -108,7 +108,7 @@ export class CloneProgramDialogComponent {
 
         sessionService.getSession().then(session => this.session = session );
 
-        groupService.getUserGroups()
+        this.groupService.getUserGroups()
             .then(groups => this.user_groups = groups);
 
         this.programBridges = getRequiredBridges(data.program);
@@ -158,6 +158,18 @@ export class CloneProgramDialogComponent {
         else {
             this.existingBridges = await this.connectionService.getConnectionsOnGroup(this.destinationAccount);
             this.selectedGroup = this.user_groups.find(g => g.id === this.destinationAccount);
+
+            const sharedBridgesOnTarget = await this.groupService.getSharedResources(this.destinationAccount);
+            for (const share of sharedBridgesOnTarget) {
+                this.existingBridges.push({
+                    connection_id: null,
+                    name: share.name,
+                    icon: share.icon,
+                    bridge_id: share.bridge_id,
+                    bridge_name: share.name,
+                    saving: null,
+                });
+            }
         }
 
         this.usedBridges = await this.getUsedBridges();
