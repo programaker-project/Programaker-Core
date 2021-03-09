@@ -105,6 +105,12 @@ export class ProgramDetailComponent implements OnInit {
     blockSynchronizer: BlockSynchronizer;
     visibility: VisibilityEnum;
 
+
+
+    readonly _typeof = (x: any) => typeof x;
+    readonly json_stringify = (x: any) => JSON.stringify(x);
+
+
     constructor(
         private browser: BrowserService,
         private monitorService: MonitorService,

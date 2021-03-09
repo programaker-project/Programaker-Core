@@ -179,7 +179,7 @@
                                 </td>
                                 <td class="name" scole="row">{{ v.name }}</td>
                                 <td class="value">
-                                    <mat-form-field>
+                                    <mat-form-field *ngIf="['number','string'].indexOf(_typeof(v.value)) >= 0">
                                         <input matInput
                                             required
                                             [(ngModel)]="v.value"
@@ -189,6 +189,9 @@
                                             <mat-icon>backspace</mat-icon>
                                         </button>
                                     </mat-form-field>
+                                    <ng-container *ngIf="['number','string'].indexOf(_typeof(v.value)) < 0">
+                                        {{ json_stringify(v.value) }}
+                                    </ng-container>
                                 </td>
                             </tr>
                         </ng-container>
