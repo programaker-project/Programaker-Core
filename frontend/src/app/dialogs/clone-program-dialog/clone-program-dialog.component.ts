@@ -42,7 +42,7 @@ export class CloneProgramDialogComponent {
     links: {[key: string]: string} = {};
     selectedGroup: UserGroupInfo | null;
     programNameToSubmit: string;
-    usedLinks: { from: BridgeConnection, to: BridgeIndexData }[] = [];
+    usedLinks: { from: BridgeConnection, to: BridgeConnection }[] = [];
 
     // Utils used on template
     readonly _getUserPicture: (userId: string) => string;
@@ -55,7 +55,7 @@ export class CloneProgramDialogComponent {
     programBridges: string[];
     connectionQuery: Promise<BridgeConnection[]>;
     usedBridges: BridgeConnection[];
-    existingBridges: BridgeIndexData[];
+    existingBridges: BridgeConnection[];
     cloningInProcess: boolean = false;
     cloningDone: boolean = false;
     createdProgramId: string;
@@ -69,8 +69,7 @@ export class CloneProgramDialogComponent {
                 groupService: GroupService,
                 private formBuilder: FormBuilder,
                 private programService: ProgramService,
-                private bridgeService: BridgeService,
-                connectionService: ConnectionService,
+                private connectionService: ConnectionService,
                 private assetService: AssetService,
 
                 @Inject(MAT_DIALOG_DATA)
@@ -113,7 +112,7 @@ export class CloneProgramDialogComponent {
             .then(groups => this.user_groups = groups);
 
         this.programBridges = getRequiredBridges(data.program);
-        this.connectionQuery = connectionService.getConnectionsOnProgram(data.program.id);
+        this.connectionQuery = this.connectionService.getConnectionsOnProgram(data.program.id);
     }
 
     updateDestinationAccount(value: string) {
@@ -139,11 +138,11 @@ export class CloneProgramDialogComponent {
         this.bridgesConnected = false;
 
         if (this.destinationAccount === '__user') {
-            this.existingBridges = (await this.bridgeService.listUserBridges()).bridges;
+            this.existingBridges = (await this.connectionService.getConnections());
             this.selectedGroup = null;
         }
         else {
-            this.existingBridges = await this.bridgeService.listGroupBridges(this.destinationAccount);
+            this.existingBridges = await this.connectionService.getConnectionsOnGroup(this.destinationAccount);
             this.selectedGroup = this.user_groups.find(g => g.id === this.destinationAccount);
         }
 
@@ -152,10 +151,10 @@ export class CloneProgramDialogComponent {
         for (const conn of this.usedBridges) {
             let linkedTo: string | null = null;
 
-            const idIdx = this.existingBridges.findIndex((b) => b.id == conn.bridge_id );
+            const idIdx = this.existingBridges.findIndex((b) => b.bridge_id == conn.bridge_id );
 
             if (idIdx >= 0) {
-                linkedTo = this.existingBridges[idIdx].id;
+                linkedTo = this.existingBridges[idIdx].bridge_id;
             }
 
             this.links[conn.bridge_id] = linkedTo;
@@ -177,7 +176,7 @@ export class CloneProgramDialogComponent {
 
                 usedLinks.push({
                     from: srcBridge,
-                    to: this.existingBridges.find(b => b.id === toBridge)
+                    to: this.existingBridges.find(b => b.bridge_id === toBridge)
                 })
             }
             this.usedLinks = usedLinks;
