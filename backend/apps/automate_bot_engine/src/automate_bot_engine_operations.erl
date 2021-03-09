@@ -4,7 +4,6 @@
 -export([ get_expected_signals/1
         , run_thread/3
         , get_result/2
-        , notify_variable_update/3
         ]).
 
 -ifdef(TEST).
@@ -362,7 +361,6 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_SET_VARIABLE
 
     {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, Op),
     {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, VariableName, Value),
-    ok = notify_variable_update(VariableName, Thread3, Value),
     {ran_this_tick, increment_position(Thread3)};
 
 
@@ -384,7 +382,6 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                                                  })
                      end,
     {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, VariableName, NewValue),
-    ok = notify_variable_update(VariableName, Thread3, NewValue),
     {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
@@ -543,7 +540,6 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_ADD_TO_LIST
 
     {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, ListName, ValueAfter),
 
-    ok = notify_variable_update(ListName, Thread3, ValueAfter),
     {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
@@ -568,7 +564,6 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
     ValueAfter = automate_bot_engine_naive_lists:remove_nth(ValueBefore, Index),
 
     {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, ListName, ValueAfter),
-    ok = notify_variable_update(ListName, Thread3, ValueAfter),
     {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
@@ -579,7 +574,6 @@ run_instruction(#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
                  }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Thread2 } = automate_bot_engine_variables:set_program_variable(Thread, ListName, []),
-    ok = notify_variable_update(ListName, Thread2, []),
     {ran_this_tick, increment_position(Thread2)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
@@ -607,7 +601,6 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
     ValueAfter = automate_bot_engine_naive_lists:insert_nth(PaddedValue, Index, Value),
 
     {ok, Thread4 } = automate_bot_engine_variables:set_program_variable(Thread3, ListName, ValueAfter),
-    ok = notify_variable_update(ListName, Thread4, ValueAfter),
     {ran_this_tick, increment_position(Thread4)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
@@ -634,7 +627,6 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
     ValueAfter = automate_bot_engine_naive_lists:replace_nth(PaddedValue, Index, Value),
 
     {ok, Thread4 } = automate_bot_engine_variables:set_program_variable(Thread3, ListName, ValueAfter),
-    ok = notify_variable_update(ListName, Thread4, ValueAfter),
     {ran_this_tick, increment_position(Thread4)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
@@ -1626,18 +1618,6 @@ eval_args(Arguments, Thread, Op) ->
     %% native language is left-to-right, which might not be true...)
     {lists:reverse(RevValues), Thread2}.
 
--spec notify_variable_update(VariableName :: binary(), #program_thread{}, _) -> ok | {error, _}.
-notify_variable_update(VariableName, #program_thread{ program_id=ProgramId }, Value) ->
-    case automate_storage:get_program_from_id(ProgramId) of
-        {ok, #user_program_entry{ program_channel=ChannelId }} ->
-            automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => variable_events
-                                                                  %% This canonicalization is done also on the channel engine, but it's not saved to the subkey
-                                                                , <<"subkey">> => automate_channel_engine_utils:canonicalize_selector(VariableName)
-                                                                , <<"value">> => Value
-                                                                });
-        {error, Reason} ->
-            {error, Reason}
-    end.
 
 %% Error construction
 throw_bridge_call_error(no_connection, ServiceId, Op, Action) ->
