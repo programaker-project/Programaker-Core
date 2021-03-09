@@ -1,21 +1,20 @@
 import { Component, Inject, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatStepper } from '@angular/material/stepper';
+import { AssetService } from 'app/asset.service';
+import { SharedResource } from 'app/bridges/bridge';
+import { BridgeConnection } from 'app/connection';
+import { ConnectionService } from 'app/connection.service';
 import { EnvironmentService } from 'app/environment.service';
 import { UserGroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
+import { getRequiredAssets, getRequiredBridges, transformProgram } from 'app/program-transformations';
+import { ProgramService } from 'app/program.service';
 import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
 import { getGroupPictureUrl, getUserPictureUrl } from 'app/utils';
 import { ProgramContent, ProgramMetadata } from '../../program';
-import { getRequiredBridges, transformProgram, getRequiredAssets } from 'app/program-transformations';
-import { ProgramService } from 'app/program.service';
-import { BridgeService } from 'app/bridges/bridge.service';
-import { ConnectionService } from 'app/connection.service';
-import { BridgeConnection } from 'app/connection';
-import { BridgeIndexData } from 'app/bridges/bridge';
-import { AssetService } from 'app/asset.service';
-import { MatStepper } from '@angular/material/stepper';
 
 export type CloneProgramDialogComponentData = {
     name: string,
@@ -62,6 +61,7 @@ export class CloneProgramDialogComponent {
 
     // Views
     @ViewChild('stepper') stepper: MatStepper;
+    sharedResourcesQuery: Promise<SharedResource[]>;
 
     constructor(private dialogRef: MatDialogRef<CloneProgramDialogComponent>,
                 environmentService: EnvironmentService,
@@ -113,6 +113,7 @@ export class CloneProgramDialogComponent {
 
         this.programBridges = getRequiredBridges(data.program);
         this.connectionQuery = this.connectionService.getConnectionsOnProgram(data.program.id);
+        this.sharedResourcesQuery = this.programService.getProgramSharedResources(data.program.id);
     }
 
     updateDestinationAccount(value: string) {
@@ -122,11 +123,24 @@ export class CloneProgramDialogComponent {
 
     async getUsedBridges(): Promise<BridgeConnection[]> {
         const connections = await this.connectionQuery;
-        const usedOnProgram = [];
+        const sharedResources = await this.sharedResourcesQuery;
+        const usedOnProgram: BridgeConnection[] = [];
 
         for (const conn of connections) {
             if (this.programBridges.indexOf(conn.bridge_id) >= 0) {
                 usedOnProgram.push(conn);
+            }
+        }
+        for (const res of sharedResources) {
+            if (this.programBridges.indexOf(res.bridge_id) >= 0) {
+                usedOnProgram.push({
+                    connection_id: null,
+                    name: res.name,
+                    icon: res.icon,
+                    bridge_id: res.bridge_id,
+                    bridge_name: res.name,
+                    saving: null,
+                });
             }
         }
 
