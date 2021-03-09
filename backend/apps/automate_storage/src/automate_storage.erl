@@ -81,6 +81,7 @@
         , get_threads_from_program/1
 
         , set_program_variable/3
+        , delete_program_variable/2
         , get_program_variable/2
         , set_widget_value/3
         , get_widget_values_in_program/1
@@ -2348,6 +2349,20 @@ set_program_variable(ProgramId, Key, Value) ->
         { aborted, Reason } ->
             io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
+    end.
+
+-spec delete_program_variable(binary(), binary()) -> ok | {error, any()}.
+delete_program_variable(ProgramId, Key) ->
+    Transaction = fun() ->
+                          mnesia:delete(?PROGRAM_VARIABLE_TABLE, {ProgramId, Key},
+                                        write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, ok } ->
+            ok;
+        { aborted, Reason } ->
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
+            {error, Reason}
     end.
 
 -spec set_widget_value(ProgramId :: binary(), WidgetId :: binary(), Value :: any()) -> ok.

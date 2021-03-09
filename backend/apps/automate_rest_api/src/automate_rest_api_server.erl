@@ -96,6 +96,7 @@ start_link() ->
                         , {"/api/v0/programs/by-id/:program_id/assets", automate_rest_api_program_assets_root, []}
                         , {"/api/v0/programs/by-id/:program_id/assets/by-id/:asset_id", automate_rest_api_program_assets_by_id, []}
                         , {"/api/v0/programs/by-id/:program_id/variables", automate_rest_api_program_variables_root, []}
+                        , {"/api/v0/programs/by-id/:program_id/variables/:var_name", automate_rest_api_program_variables_specific, []}
 
                           %% Connection management
                         , {"/api/v0/users/id/:user_id/connections/available", automate_rest_api_connections_available_root, []}

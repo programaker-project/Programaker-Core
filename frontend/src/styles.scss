@@ -329,6 +329,10 @@ body .mat-dialog-container {
 
 /* Variables panel */
 #variables_panel_container table.var-table {
+    .to-delete {
+        background: repeating-linear-gradient( 45deg, #ddd, #ddd 10px, #fff 10px, #fff 20px );
+    }
+
     td {
         vertical-align: baseline;
 

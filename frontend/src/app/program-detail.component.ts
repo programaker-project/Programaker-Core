@@ -91,6 +91,8 @@ export class ProgramDetailComponent implements OnInit {
     serverVariables: { [key: string]: any } = {};
     streamingVariables = false;
     updatedVariables: string[] = [];
+    variablesInCreation: { name: string, value: any }[] = [];
+    variablesToRemove: string[] = [];
 
     read_only: boolean = true;
     can_admin: boolean = false;
@@ -397,23 +399,60 @@ export class ProgramDetailComponent implements OnInit {
         }
     }
 
+    addVariable() {
+        let index = 1;
+        for (; this.variables.find(v => v.name === 'var-' + index)
+            || this.variablesInCreation.find(v => v.name === 'var-' + index)
+            ; index++ ) {}
+        this.variablesInCreation.push({ name: 'var-' + index, value: "Value" });
+    }
+
+    removeVariable(name: string) {
+        this.variablesToRemove.push(name);
+    }
+
+    removeVariableInCreation(name: string) {
+        const idx = this.variablesInCreation.findIndex(v => v.name === name);
+        this.variablesInCreation.splice(idx, 1);
+    }
+
+    unremoveVariable(name: string) {
+        const idx = this.variablesToRemove.indexOf(name);
+        this.variablesToRemove.splice(idx, 1);
+    }
+
     async uploadVariableChanges() {
         const target: { name: string, value: any }[] = [];
         for (const name of this.updatedVariables) {
             const result = this.variables.find(v => v.name === name);
             target.push({ name: name, value: result.value });
         }
+        for (const item of this.variablesInCreation) {
+            target.push({ name: item.name, value: item.value });
+        }
 
         try {
-            await this.programService.updatePrograVariables(this.programId, target);
+            await this.programService.updateProgramVariables(this.programId, target);
+            this.variablesInCreation = [];
 
-            this.toastr.success('Upload complete', '', {
+            await Promise.all(this.variablesToRemove.map(name => this.programService.removeVariable(this.programId, name)));
+
+            for (const name of this.variablesToRemove) {
+                const idx = this.variables.findIndex(v => v.name === name);
+                delete this.serverVariables[name];
+                if (idx >= 0) {
+                    this.variables.splice(idx, 1);
+                }
+            }
+            this.variablesToRemove = [];
+
+            this.toastr.success('Change complete', '', {
                 closeButton: true,
                 progressBar: true,
             });
         }
         catch (error) {
-            this.toastr.error(error, 'Error on upload', {
+            this.toastr.error(JSON.stringify(error), 'Error on update', {
                 closeButton: true,
                 progressBar: true,
             });

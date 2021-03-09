@@ -72,6 +72,10 @@ export class ProgramService {
         return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/variables`;
     }
 
+    private async getProgramVariableUrl(programId: string, name: string) {
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/variables/${name}`;
+    }
+
     private async getProgramStreamingLogsUrl(programId: string) {
         const token = this.sessionService.getToken();
         return addTokenQueryString(toWebsocketUrl(this.environmentService,
@@ -157,10 +161,17 @@ export class ProgramService {
         return (result as any)['variables'];
     }
 
-    async updatePrograVariables(programId: string, values: { name: string, value: any }[]): Promise<void> {
+    async updateProgramVariables(programId: string, values: { name: string, value: any }[]): Promise<void> {
         const url = await this.getProgramVariablesUrl(programId);
         const result = await this.http.patch(url,
                                              { values: values },
+                                             { headers: this.sessionService.getAuthHeader() }
+                                            ).toPromise();
+    }
+
+    async removeVariable(programId: string, name: string): Promise<void> {
+        const url = await this.getProgramVariableUrl(programId, name);
+        const result = await this.http.delete(url,
                                              { headers: this.sessionService.getAuthHeader() }
                                             ).toPromise();
     }

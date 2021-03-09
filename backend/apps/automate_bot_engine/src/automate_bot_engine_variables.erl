@@ -6,6 +6,7 @@
         , set_thread_value/3
         , get_program_variable/2
         , set_program_variable/3
+        , delete_program_variable/2
 
         , set_last_bridge_value/3
         , get_last_bridge_value/2
@@ -106,6 +107,10 @@ set_thread_value(Thread = #program_thread{ global_memory=Global }, Key, Value) -
 set_program_variable(ProgramId, Key, Value) ->
     ok = automate_storage:set_program_variable(ProgramId, Key, Value),
     notify_variable_update(Key, ProgramId, Value).
+
+-spec delete_program_variable(binary(), binary()) -> ok | {error, _}.
+delete_program_variable(ProgramId, Key) ->
+    automate_storage:delete_program_variable(ProgramId, Key).
 
 -spec get_program_variable(#program_thread{}, binary()) -> {ok, any()} | {error, not_found}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
