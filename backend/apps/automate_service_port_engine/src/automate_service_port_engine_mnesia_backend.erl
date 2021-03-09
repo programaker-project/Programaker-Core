@@ -420,7 +420,10 @@ list_custom_blocks(Owner) ->
                                                                  {ok, false} ->
                                                                      none;
                                                                  {ok, true, SharedResources } ->
-                                                                     list_blocks_for_port(BridgeId, SharedResources)
+                                                                     list_blocks_for_port(BridgeId, SharedResources);
+                                                                 {error, not_found} ->
+                                                                     automate_logging:log_platform(error, io_lib:format("[~p:~p] Connection not found for bridge: ~p", [?MODULE, ?LINE, BridgeId])),
+                                                                     none
                                                              end
                                                      end,
                                                      BridgeIds)))}
@@ -463,7 +466,7 @@ internal_user_id_to_connection_id(Owner, ServicePortId) ->
             {error, Reason}
     end.
 
--spec get_all_connections(owner_id(), binary()) -> {ok, [binary()]} | {error, binary()}.
+-spec get_all_connections(owner_id(), binary()) -> {ok, [binary()]} | {error, _}.
 get_all_connections({OwnerType, OwnerId}, BridgeId) ->
     MatchHead = #user_to_bridge_connection_entry{ id='$1'
                                                 , bridge_id='$2'
@@ -497,6 +500,8 @@ is_user_connected_to_bridge(Owner, BridgeId) ->
             with_shared_connection(Owner, BridgeId);
         {ok, List} when is_list(List) ->
             {ok, true, all};
+        {error, not_found} ->
+            {error, not_found};
         {error, Reason} ->
             {error, Reason}
     end.
@@ -757,7 +762,7 @@ get_resources_shared_with(Owner) ->
     {ok, automate_storage:wrap_transaction(mnesia:activity(ets, T))}.
 
 
--spec get_connection_bridge(ConnectionId :: binary()) -> {ok, binary()}.
+-spec get_connection_bridge(ConnectionId :: binary()) -> {ok, binary()} | {error, not_found}.
 get_connection_bridge(ConnectionId) ->
     T = fun() ->
                 case mnesia:read(?USER_TO_BRIDGE_CONNECTION_TABLE, ConnectionId) of
@@ -900,9 +905,13 @@ check_save_signals_in_connection(ConnectionId) ->
 %%====================================================================
 list_shared_ports(Owner) ->
     {ok, Shares} = get_resources_shared_with(Owner),
-    lists:map(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
-                      {ok, BridgeId} = automate_service_port_engine:get_connection_bridge(ConnectionId),
-                      BridgeId
+    lists:filtermap(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
+                      case get_connection_bridge(ConnectionId) of
+                          {ok, BridgeId} -> {true, BridgeId};
+                          {error, not_found} ->
+                              automate_logging:log_platform(error, io_lib:format("[~p:~p] Bridge not found for connection: ~p", [?MODULE, ?LINE, ConnectionId])),
+                              false
+                      end
               end, Shares).
 
 with_shared_connection(Owner, BridgeId) ->
@@ -911,7 +920,7 @@ with_shared_connection(Owner, BridgeId) ->
                                                                  , resource=Resource
                                                                  , value=Value
                                                                  }, Acc) ->
-                                         case automate_service_port_engine:get_connection_bridge(ConnectionId) of
+                                         case get_connection_bridge(ConnectionId) of
                                              {ok, BridgeId} ->
                                                  case Acc of
                                                      #{ Resource := PrevValues } ->
@@ -920,6 +929,9 @@ with_shared_connection(Owner, BridgeId) ->
                                                          Acc#{ Resource => sets:from_list([Value]) }
                                                  end;
                                              {ok, _} ->
+                                                 Acc;
+                                             {error, not_found} ->
+                                                 automate_logging:log_platform(error, io_lib:format("[~p:~p] Bridge not found for connection: ~p", [?MODULE, ?LINE, ConnectionId])),
                                                  Acc
                                          end
                                  end, #{}, Shares),

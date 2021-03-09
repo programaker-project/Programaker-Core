@@ -104,9 +104,13 @@ to_json(Req, State=#state{owner=Owner, program_id=ProgramId, read_only=ReadOnly}
     {ok, Services} =  automate_service_registry:get_all_services_for_user(Owner),
     {ok, SharedConnections} = automate_service_port_engine:get_resources_shared_with(Owner),
 
-    SharedBridges = lists:map(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
-                                      {ok, BridgeId} = automate_service_port_engine:get_connection_bridge(ConnectionId),
-                                      BridgeId
+    SharedBridges = lists:filtermap(fun(#bridge_resource_share_entry{ connection_id=ConnectionId }) ->
+                                            case automate_service_port_engine:get_connection_bridge(ConnectionId) of
+                                                {ok, BridgeId} -> {true, BridgeId};
+                                                {error, not_found} ->
+                                                    automate_logging:log_api(error, ?MODULE, binary:list_to_bin(io_lib:format("Bridge not found for connection: ~p", [ConnectionId]))),
+                                                    false
+                                            end
               end, SharedConnections),
     SharedServices = lists:map(fun(BridgeId) ->
                                        {ok, #service_port_configuration{service_id=ServiceId}} = automate_service_port_engine:get_bridge_configuration(BridgeId),

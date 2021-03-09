@@ -1,14 +1,15 @@
-import { map, share} from 'rxjs/operators';
-import { Injectable } from '@angular/core';
-import { ProgramMetadata, ProgramContent, ProgramInfoUpdate, ProgramLogEntry, ProgramType, ProgramEditorEvent, ProgramEditorEventValue, VisibilityEnum } from './program';
-
-import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { SessionService } from './session.service';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map, share } from 'rxjs/operators';
+import { SharedResource } from './bridges/bridge';
 import { ContentType } from './content-type';
-import { toWebsocketUrl, addTokenQueryString } from './utils';
-import { Synchronizer } from './syncronizer';
 import { EnvironmentService } from './environment.service';
+import { ProgramContent, ProgramEditorEvent, ProgramEditorEventValue, ProgramInfoUpdate, ProgramLogEntry, ProgramMetadata, ProgramType, VisibilityEnum } from './program';
+import { SessionService } from './session.service';
+import { Synchronizer } from './syncronizer';
+import { addTokenQueryString, toWebsocketUrl } from './utils';
+
 
 @Injectable()
 export class ProgramService {
@@ -53,6 +54,10 @@ export class ProgramService {
 
     async getProgramCheckpointUrlById(programId: string) {
         return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/checkpoint`;
+    }
+
+    getProgramSharedResourcesUrl(programId: string) {
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/shared-resources`;
     }
 
     async getProgramTagsUrl(programId: string) {
@@ -308,6 +313,17 @@ export class ProgramService {
         }
 
         return `${baseServerPath}/api/v0/programs/by-id/${programId}/render${pagePath}`;
+    }
+
+    async getProgramSharedResources(programId: string): Promise<SharedResource[]> {
+        const url = this.getProgramSharedResourcesUrl(programId);
+
+        const response = await (this.http
+            .get(url,
+                 {headers: this.sessionService.getAuthHeader()})
+            .toPromise());
+
+        return (response as any)['resources'] as SharedResource[];
     }
 
 

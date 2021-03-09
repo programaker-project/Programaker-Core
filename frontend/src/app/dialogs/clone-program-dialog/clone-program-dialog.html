@@ -51,8 +51,8 @@
                         <mat-form-field>
                             <mat-label>Bridge to link to</mat-label>
                             <mat-select (selectionChange)="onLinksUpdate()" [(value)]="links[conn.bridge_id]" required>
-                                <mat-option [value]="to_bridge.id" *ngFor="let to_bridge of existingBridges">
-                                    {{ to_bridge.name }}
+                                <mat-option [value]="to_bridge.bridge_id" *ngFor="let to_bridge of existingBridges">
+                                    {{ to_bridge.bridge_name }}
                                 </mat-option>
                             </mat-select>
                         </mat-form-field>
@@ -132,7 +132,7 @@
                             <li *ngFor="let link of usedLinks">
                                 {{ link.from.bridge_name }}
                                 <mat-icon>keyboard_arrow_right</mat-icon>
-                                {{ link.to.name }}
+                                {{ link.to.bridge_name }}
                             </li>
                         </ul>
                     </span>

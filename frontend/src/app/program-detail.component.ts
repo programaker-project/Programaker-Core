@@ -202,7 +202,7 @@ export class ProgramDetailComponent implements OnInit {
                     }).catch(err => {
                         console.error("Error:", err);
                         resolve();
-                        this.toastr.error(err, "Error loading");
+                        this.toastr.error(JSON.stringify(err), "Error loading");
                     });
                 });
         }));

@@ -116,11 +116,11 @@ assert_unexpected_expected() {
 }
 
 assert_logged() {
-    assert_unexpected_expected "$1" Login Logout
+    assert_unexpected_expected "$1" Login 'Profile info'
 }
 
 assert_anonymous() {
-    assert_unexpected_expected "$1" Logout Login
+    assert_unexpected_expected "$1" 'Profile info' Login
 }
 
 assert_logged "$LOGGED_SETTINGS"

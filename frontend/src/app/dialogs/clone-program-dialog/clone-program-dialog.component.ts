@@ -1,21 +1,20 @@
 import { Component, Inject, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatStepper } from '@angular/material/stepper';
+import { AssetService } from 'app/asset.service';
+import { SharedResource } from 'app/bridges/bridge';
+import { BridgeConnection } from 'app/connection';
+import { ConnectionService } from 'app/connection.service';
 import { EnvironmentService } from 'app/environment.service';
 import { UserGroupInfo } from 'app/group';
 import { GroupService } from 'app/group.service';
+import { getRequiredAssets, getRequiredBridges, transformProgram } from 'app/program-transformations';
+import { ProgramService } from 'app/program.service';
 import { Session } from 'app/session';
 import { SessionService } from 'app/session.service';
 import { getGroupPictureUrl, getUserPictureUrl } from 'app/utils';
 import { ProgramContent, ProgramMetadata } from '../../program';
-import { getRequiredBridges, transformProgram, getRequiredAssets } from 'app/program-transformations';
-import { ProgramService } from 'app/program.service';
-import { BridgeService } from 'app/bridges/bridge.service';
-import { ConnectionService } from 'app/connection.service';
-import { BridgeConnection } from 'app/connection';
-import { BridgeIndexData } from 'app/bridges/bridge';
-import { AssetService } from 'app/asset.service';
-import { MatStepper } from '@angular/material/stepper';
 
 export type CloneProgramDialogComponentData = {
     name: string,
@@ -42,7 +41,7 @@ export class CloneProgramDialogComponent {
     links: {[key: string]: string} = {};
     selectedGroup: UserGroupInfo | null;
     programNameToSubmit: string;
-    usedLinks: { from: BridgeConnection, to: BridgeIndexData }[] = [];
+    usedLinks: { from: BridgeConnection, to: BridgeConnection }[] = [];
 
     // Utils used on template
     readonly _getUserPicture: (userId: string) => string;
@@ -55,22 +54,22 @@ export class CloneProgramDialogComponent {
     programBridges: string[];
     connectionQuery: Promise<BridgeConnection[]>;
     usedBridges: BridgeConnection[];
-    existingBridges: BridgeIndexData[];
+    existingBridges: BridgeConnection[];
     cloningInProcess: boolean = false;
     cloningDone: boolean = false;
     createdProgramId: string;
 
     // Views
     @ViewChild('stepper') stepper: MatStepper;
+    sharedResourcesQuery: Promise<SharedResource[]>;
 
     constructor(private dialogRef: MatDialogRef<CloneProgramDialogComponent>,
                 environmentService: EnvironmentService,
                 sessionService: SessionService,
-                groupService: GroupService,
+                private groupService: GroupService,
                 private formBuilder: FormBuilder,
                 private programService: ProgramService,
-                private bridgeService: BridgeService,
-                connectionService: ConnectionService,
+                private connectionService: ConnectionService,
                 private assetService: AssetService,
 
                 @Inject(MAT_DIALOG_DATA)
@@ -109,11 +108,12 @@ export class CloneProgramDialogComponent {
 
         sessionService.getSession().then(session => this.session = session );
 
-        groupService.getUserGroups()
+        this.groupService.getUserGroups()
             .then(groups => this.user_groups = groups);
 
         this.programBridges = getRequiredBridges(data.program);
-        this.connectionQuery = connectionService.getConnectionsOnProgram(data.program.id);
+        this.connectionQuery = this.connectionService.getConnectionsOnProgram(data.program.id);
+        this.sharedResourcesQuery = this.programService.getProgramSharedResources(data.program.id);
     }
 
     updateDestinationAccount(value: string) {
@@ -123,11 +123,24 @@ export class CloneProgramDialogComponent {
 
     async getUsedBridges(): Promise<BridgeConnection[]> {
         const connections = await this.connectionQuery;
-        const usedOnProgram = [];
+        const sharedResources = await this.sharedResourcesQuery;
+        const usedOnProgram: BridgeConnection[] = [];
 
         for (const conn of connections) {
             if (this.programBridges.indexOf(conn.bridge_id) >= 0) {
                 usedOnProgram.push(conn);
+            }
+        }
+        for (const res of sharedResources) {
+            if (this.programBridges.indexOf(res.bridge_id) >= 0) {
+                usedOnProgram.push({
+                    connection_id: null,
+                    name: res.name,
+                    icon: res.icon,
+                    bridge_id: res.bridge_id,
+                    bridge_name: res.name,
+                    saving: null,
+                });
             }
         }
 
@@ -139,12 +152,24 @@ export class CloneProgramDialogComponent {
         this.bridgesConnected = false;
 
         if (this.destinationAccount === '__user') {
-            this.existingBridges = (await this.bridgeService.listUserBridges()).bridges;
+            this.existingBridges = (await this.connectionService.getConnections());
             this.selectedGroup = null;
         }
         else {
-            this.existingBridges = await this.bridgeService.listGroupBridges(this.destinationAccount);
+            this.existingBridges = await this.connectionService.getConnectionsOnGroup(this.destinationAccount);
             this.selectedGroup = this.user_groups.find(g => g.id === this.destinationAccount);
+
+            const sharedBridgesOnTarget = await this.groupService.getSharedResources(this.destinationAccount);
+            for (const share of sharedBridgesOnTarget) {
+                this.existingBridges.push({
+                    connection_id: null,
+                    name: share.name,
+                    icon: share.icon,
+                    bridge_id: share.bridge_id,
+                    bridge_name: share.name,
+                    saving: null,
+                });
+            }
         }
 
         this.usedBridges = await this.getUsedBridges();
@@ -152,10 +177,10 @@ export class CloneProgramDialogComponent {
         for (const conn of this.usedBridges) {
             let linkedTo: string | null = null;
 
-            const idIdx = this.existingBridges.findIndex((b) => b.id == conn.bridge_id );
+            const idIdx = this.existingBridges.findIndex((b) => b.bridge_id == conn.bridge_id );
 
             if (idIdx >= 0) {
-                linkedTo = this.existingBridges[idIdx].id;
+                linkedTo = this.existingBridges[idIdx].bridge_id;
             }
 
             this.links[conn.bridge_id] = linkedTo;
@@ -177,7 +202,7 @@ export class CloneProgramDialogComponent {
 
                 usedLinks.push({
                     from: srcBridge,
-                    to: this.existingBridges.find(b => b.id === toBridge)
+                    to: this.existingBridges.find(b => b.bridge_id === toBridge)
                 })
             }
             this.usedLinks = usedLinks;

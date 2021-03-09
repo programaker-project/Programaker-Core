@@ -398,7 +398,7 @@ set_shared_resource(ConnectionId, ResourceName, Shares) ->
 get_connection_shares(ConnectionId) ->
     ?BACKEND:get_connection_shares(ConnectionId).
 
--spec get_connection_bridge(ConnectionId :: binary()) -> {ok, binary()}.
+-spec get_connection_bridge(ConnectionId :: binary()) -> {ok, binary()} | {error, not_found}.
 get_connection_bridge(ConnectionId) ->
     ?BACKEND:get_connection_bridge(ConnectionId).
 
