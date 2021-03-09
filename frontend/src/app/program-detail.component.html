@@ -159,7 +159,10 @@
                         <th>Var. name</th>
                         <th>Var. value</th>
                     </tr>
-                    <!-- TODO: Add here the variable list -->
+                    <tr *ngFor="let v of variables">
+                        <td>{{ v.name }}</td>
+                        <td>{{ v.value }}</td>
+                    </tr>
                 </table>
             </div>
         </mat-sidenav>

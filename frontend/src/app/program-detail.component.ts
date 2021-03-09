@@ -87,6 +87,9 @@ export class ProgramDetailComponent implements OnInit {
     logCount = 0;
     streamingLogs = false;
 
+    variables: { name: string, value: any }[] = [];
+    streamingVariables = false;
+
     read_only: boolean = true;
     can_admin: boolean = false;
 
@@ -94,6 +97,7 @@ export class ProgramDetailComponent implements OnInit {
     private _pinRequiredMatMenuLibrary: MatMenu;
     eventSubscription: Unsubscribable | null;
     logSubscription: Unsubscribable | null;
+    variableSubscription: Unsubscribable | null;
     blockSynchronizer: BlockSynchronizer;
     visibility: VisibilityEnum;
 
@@ -309,6 +313,30 @@ export class ProgramDetailComponent implements OnInit {
                             this.streamingLogs = false;
                         }
                     });
+
+            this.variableSubscription = this.programService.watchProgramVariables(this.program.id,
+                                                                        { request_previous: true })
+                .subscribe(
+                    {
+                        next: (variable: { name: string, value: any }) => {
+                            const idx = this.variables.findIndex(v => v.name === variable.name);
+                            if (idx === -1) {
+                                this.variables.push(variable);
+                            }
+                            else {
+                                this.variables[idx].value = variable.value;
+                            }
+                        },
+                        error: (error: any) => {
+                            console.error("Error reading variables:", error);
+                            this.streamingVariables = false;
+                        },
+                        complete: () => {
+                            console.warn("No more variable updates on program", this.programId)
+                            this.streamingVariables = false;
+                        }
+                    });
+
         }
 
         this.initializeEventSynchronization();
@@ -886,6 +914,11 @@ export class ProgramDetailComponent implements OnInit {
             if (this.logSubscription) {
                 this.logSubscription.unsubscribe();
                 this.logSubscription = null;
+            }
+
+            if (this.variableSubscription) {
+                this.variableSubscription.unsubscribe();
+                this.variableSubscription = null;
             }
 
             if (this.blockSynchronizer) {

@@ -74,6 +74,7 @@ start_link() ->
                         , {"/api/v0/programs/by-id/:program_id", automate_rest_api_program_specific_by_id, []}
                         , {"/api/v0/programs/by-id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []}
                         , {"/api/v0/programs/by-id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
+                        , {"/api/v0/programs/by-id/:program_id/variables-stream", automate_rest_api_program_specific_variables_stream, []}
                         , {"/api/v0/programs/by-id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
                         , {"/api/v0/programs/by-id/:program_id/shared-resources", automate_rest_api_program_shared_resources, []}
                         , {"/api/v0/programs/by-id/:program_id/ui-events", automate_rest_api_program_specific_ui_events, []}
