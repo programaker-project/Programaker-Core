@@ -1,6 +1,6 @@
 import { Location, isPlatformServer } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, ViewChild, Inject, NgZone, PLATFORM_ID } from '@angular/core';
+import { Component, Input, OnInit, AfterViewInit, ViewChild, Inject, NgZone, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue, VisibilityEnum } from './program';
 import { ProgramService } from './program.service';
@@ -59,7 +59,7 @@ type DrawerType = 'logs' | 'variables';
         'libs/css/bootstrap.min.css',
     ],
 })
-export class ProgramDetailComponent implements OnInit {
+export class ProgramDetailComponent implements OnInit, AfterViewInit {
     @Input() program: ProgramContent;
     workspace: Blockly.WorkspaceSvg;
     programId: string;
@@ -102,13 +102,14 @@ export class ProgramDetailComponent implements OnInit {
     eventSubscription: Unsubscribable | null;
     logSubscription: Unsubscribable | null;
     variableSubscription: Unsubscribable | null;
+    mutationObserver: MutationObserver | null;
     blockSynchronizer: BlockSynchronizer;
     visibility: VisibilityEnum;
 
 
 
     readonly _typeof = (x: any) => typeof x;
-    readonly json_stringify = (x: any) => JSON.stringify(x);
+    readonly json_stringify = JSON.stringify;
 
 
     constructor(
@@ -222,6 +223,25 @@ export class ProgramDetailComponent implements OnInit {
                     });
                 });
         }));
+    }
+
+    ngAfterViewInit() {
+        // this.drawer._animationDoneListener = () => {
+        //     this.notifyResize();
+        // }
+        const elem = (this.drawer as any)._elementRef.nativeElement;
+
+        this.mutationObserver = new MutationObserver(() => {
+            this.notifyResize();
+
+            // HACK: Wait for animations to finish
+            for (let delay = 200; delay < 1000; delay *= 2 ) {
+                setTimeout(() => {
+                    this.notifyResize();
+                }, delay);
+            }
+        });
+        this.mutationObserver.observe(elem, { attributes: true, subtree: true  });
     }
 
     /**
@@ -1047,6 +1067,11 @@ export class ProgramDetailComponent implements OnInit {
                 this.variableSubscription = null;
             }
 
+            if (this.mutationObserver) {
+                this.mutationObserver.disconnect();
+                this.mutationObserver = null;
+            }
+
             if (this.blockSynchronizer) {
                 this.blockSynchronizer.close();
                 this.blockSynchronizer = null;
@@ -1344,17 +1369,11 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     closeDrawer() {
-        return this.drawer.close().then(() => {
-            // Notify Scratch containers
-            this.notifyResize();
-        });
+        return this.drawer.close();
     }
 
     openDrawer() {
-        return this.drawer.open().then(() => {
-            // Notify Scratch containers
-            this.notifyResize();
-        });
+        return this.drawer.open();
     }
 
     setDrawerType(type: DrawerType) {

@@ -347,8 +347,14 @@ body .mat-dialog-container {
             }
         }
 
-        .name {
+        &.name {
             text-align: center;
+        }
+
+        &.value {
+            .snippet {
+                max-height: 75vh;
+            }
         }
     }
 }

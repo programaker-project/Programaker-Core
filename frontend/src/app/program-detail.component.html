@@ -190,7 +190,7 @@
                                         </button>
                                     </mat-form-field>
                                     <ng-container *ngIf="['number','string'].indexOf(_typeof(v.value)) < 0">
-                                        {{ json_stringify(v.value) }}
+                                        <pre class="snippet">{{ json_stringify(v.value, null, 4) }}</pre>
                                     </ng-container>
                                 </td>
                             </tr>
