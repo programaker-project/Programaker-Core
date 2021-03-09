@@ -77,6 +77,17 @@
     max-width: 30em;
 }
 
+button#add-variable-button,
+button#upload-variable-button {
+    width: calc(100% - 1ex);
+    margin: 0.5ex;
+    padding: 1ex;
+
+    label {
+        margin: 0;
+    }
+}
+
 .program-drawer.hidden {
     display: none;
 }

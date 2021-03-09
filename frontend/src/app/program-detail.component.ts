@@ -88,7 +88,9 @@ export class ProgramDetailComponent implements OnInit {
     streamingLogs = false;
 
     variables: { name: string, value: any }[] = [];
+    serverVariables: { [key: string]: any } = {};
     streamingVariables = false;
+    updatedVariables: string[] = [];
 
     read_only: boolean = true;
     can_admin: boolean = false;
@@ -315,17 +317,25 @@ export class ProgramDetailComponent implements OnInit {
                     });
 
             this.variableSubscription = this.programService.watchProgramVariables(this.program.id,
-                                                                        { request_previous: true })
+                                                                                  { request_previous: true })
                 .subscribe(
                     {
                         next: (variable: { name: string, value: any }) => {
                             const idx = this.variables.findIndex(v => v.name === variable.name);
+
                             if (idx === -1) {
-                                this.variables.push(variable);
+                                this.variables.push({ name: variable.name, value: variable.value });
                             }
                             else {
-                                this.variables[idx].value = variable.value;
+                                if ((!this.serverVariables[variable.name])
+                                    || (this.serverVariables[variable.name] === this.variables[idx].value)) {
+
+                                    this.variables[idx].value = variable.value;
+                                }
                             }
+
+                            this.serverVariables[variable.name] = variable.value;
+                            this.updateVariable(variable.name);
                         },
                         error: (error: any) => {
                             console.error("Error reading variables:", error);
@@ -341,6 +351,77 @@ export class ProgramDetailComponent implements OnInit {
 
         this.initializeEventSynchronization();
     }
+
+    preparedChangeOnVar(name: string): boolean {
+        const idx = this.variables.findIndex(v => v.name === name);
+
+        if (idx < 0) {
+            return false;
+        }
+        else if (!this.serverVariables[name]) {
+            return true;
+        }
+        else {
+            return this.variables[idx].value !== this.serverVariables[name];
+        }
+    }
+
+    resetVariable(name: string) {
+        const idx = this.variables.findIndex(v => v.name === name);
+
+        if (!this.serverVariables[name]) {
+            if (idx >= 0) {
+                this.variables.splice(idx, 1);
+            }
+        }
+        else {
+            this.variables[idx].value = this.serverVariables[name];
+        }
+
+        this.updateVariable(name);
+    }
+
+    updateVariable(name: string) {
+        const val = this.variables.find(v => v.name === name).value;
+        const indexInUpdate = this.updatedVariables.indexOf(name);
+
+        if (val !== this.serverVariables[name]) {
+            if (indexInUpdate < 0) {
+                this.updatedVariables.push(name);
+            }
+        }
+        else {
+            if (indexInUpdate >= 0) {
+                this.updatedVariables.splice(indexInUpdate, 1);
+            }
+        }
+    }
+
+    async uploadVariableChanges() {
+        const target: { name: string, value: any }[] = [];
+        for (const name of this.updatedVariables) {
+            const result = this.variables.find(v => v.name === name);
+            target.push({ name: name, value: result.value });
+        }
+
+        try {
+            await this.programService.updatePrograVariables(this.programId, target);
+
+            this.toastr.success('Upload complete', '', {
+                closeButton: true,
+                progressBar: true,
+            });
+        }
+        catch (error) {
+            this.toastr.error(error, 'Error on upload', {
+                closeButton: true,
+                progressBar: true,
+            });
+
+            console.error(error);
+        }
+    }
+
 
     initializeEventSynchronization() {
         // Initialize editor event listeners

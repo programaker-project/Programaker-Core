@@ -102,15 +102,10 @@ set_thread_value(Thread = #program_thread{}, Key, Value) when is_list(Key) ->
 set_thread_value(Thread = #program_thread{ global_memory=Global }, Key, Value) ->
     {ok, Thread#program_thread{ global_memory=Global#{ Key => Value } } }.
 
--spec set_program_variable(#program_thread{}, binary(), any()) -> {ok, #program_thread{}}.
-set_program_variable(Thread = #program_thread{ program_id=ProgramId }, Key, Value) ->
+-spec set_program_variable(binary(), binary(), any()) -> ok | {error, _}.
+set_program_variable(ProgramId, Key, Value) ->
     ok = automate_storage:set_program_variable(ProgramId, Key, Value),
-    case notify_variable_update(Key, Thread, Value) of
-        ok ->
-            {ok, Thread};
-        Error ->
-            Error
-    end.
+    notify_variable_update(Key, ProgramId, Value).
 
 -spec get_program_variable(#program_thread{}, binary()) -> {ok, any()} | {error, not_found}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
@@ -256,8 +251,8 @@ add_to_context_acc([ _ | T ], Context) ->
 add_to_context_acc(_, Context) ->
     Context.
 
--spec notify_variable_update(VariableName :: binary(), #program_thread{}, _) -> ok | {error, _}.
-notify_variable_update(VariableName, #program_thread{ program_id=ProgramId }, Value) ->
+-spec notify_variable_update(VariableName :: binary(), binary(), _) -> ok | {error, _}.
+notify_variable_update(VariableName, ProgramId, Value) ->
     case automate_storage:get_program_from_id(ProgramId) of
         {ok, #user_program_entry{ program_channel=ChannelId }} ->
             automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => variable_events

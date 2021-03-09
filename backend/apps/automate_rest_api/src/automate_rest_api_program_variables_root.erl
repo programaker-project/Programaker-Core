@@ -9,11 +9,14 @@
         , is_authorized/2
         , content_types_provided/2
         , resource_exists/2
+        , content_types_accepted/2
         ]).
 
 -export([ to_json/2
+        , accept_json/2
         ]).
 
+-define(UTILS, automate_rest_api_utils).
 -define(FORMATTING, automate_rest_api_utils_formatting).
 -include("./records.hrl").
 -include("../../automate_storage/src/records.hrl").
@@ -43,7 +46,7 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    {[<<"GET">>, <<"OPTIONS">>], Req, State}.
+    {[<<"GET">>, <<"PATCH">>, <<"OPTIONS">>], Req, State}.
 
 is_authorized(Req, State=#state{program_id=ProgramId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
@@ -87,3 +90,28 @@ to_json(Req, State) ->
 
             { Output, Res2, State }
     end.
+
+
+%% PATCH handler
+content_types_accepted(Req, State) ->
+    {[{{<<"application">>, <<"json">>, []}, accept_json}],
+     Req, State}.
+
+accept_json(Req, State) ->
+    case cowboy_req:method(Req) of
+        <<"PATCH">> ->
+            update_variables(Req, State)
+    end.
+
+
+update_variables(Req, State=#state{program_id=ProgramId}) ->
+    {ok, Body, Req1} = ?UTILS:read_body(Req),
+    #{ <<"values">> := Values } = jiffy:decode(Body, [return_maps]),
+    %% Wrap all in the same transaction
+    {atomic, ok} = mnesia:transaction(fun() ->
+                                              ok = lists:foreach(fun(#{ <<"name">> := Name, <<"value">> := Value}) ->
+                                                                         ok = automate_bot_engine_variables:set_program_variable(ProgramId, Name, Value)
+                                                                 end, Values)
+                                      end),
+    Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req1),
+    { true, Req2, State }.

@@ -327,6 +327,33 @@ body .mat-dialog-container {
     animation-duration: 2s;
 }
 
+/* Variables panel */
+#variables_panel_container table.var-table {
+    td {
+        vertical-align: baseline;
+
+        .mat-form-field {
+
+            .mat-form-field-wrapper {
+                padding: 0;
+
+                .mat-form-field-underline {
+                    bottom: 0;
+                }
+            }
+        }
+
+        .name {
+            text-align: center;
+        }
+    }
+}
+
+.invisible {
+    visibility: hidden;
+}
+
+
 /* Program detail upload button animation */
 @keyframes button-load-started {
     from {width: 100%;}

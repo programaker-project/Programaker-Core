@@ -154,16 +154,51 @@
                 </span>
             </div>
             <div [class]="drawer_type !== 'variables' ? 'hidden program-drawer' : 'program-drawer'" id="variables_panel_container">
-                <table>
-                    <tr>
-                        <th>Var. name</th>
-                        <th>Var. value</th>
-                    </tr>
-                    <tr *ngFor="let v of variables">
-                        <td>{{ v.name }}</td>
-                        <td>{{ v.value }}</td>
-                    </tr>
+                <table class="table var-table">
+                    <thead>
+                        <tr>
+                            <th class="name" scope="col">Var. name</th>
+                            <th class="value" scope="col">Var. value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let v of variables">
+                            <td class="name" scole="row">{{ v.name }}</td>
+                            <td class="value">
+                                <mat-form-field>
+                                    <input matInput
+                                        required
+                                        [(ngModel)]="v.value"
+                                        (change)="updateVariable(v.name)"
+                                        placeholder="Variable value" />
+                                    <button mat-button [class]="v.value !== this.serverVariables[v.name] ? '': 'invisible'" matSuffix mat-icon-button aria-label="Clear" (click)="resetVariable(v.name)">
+                                        <mat-icon>backspace</mat-icon>
+                                    </button>
+                                </mat-form-field>
+
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
+                <button color="primary"
+                    id="add-variable-button"
+                    [disabled]="read_only"
+                    (click)="addVariable()" mat-button mat-raised-button>
+                    <mat-icon>add</mat-icon>
+                    <label class="label">
+                        Add variable
+                    </label>
+                </button>
+
+                <button color="primary"
+                    id="upload-variable-button"
+                    [disabled]="read_only || updatedVariables.length === 0"
+                    (click)="uploadVariableChanges()" mat-button mat-raised-button>
+                    <mat-icon>cloud_upload</mat-icon>
+                    <label class="label">
+                        Upload changes
+                    </label>
+                </button>
             </div>
         </mat-sidenav>
 

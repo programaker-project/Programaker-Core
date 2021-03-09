@@ -357,11 +357,13 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_SET_VARIABLE
                                        }
                                     , ValueArgument
                                     ]
-                    }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+                    }
+               , Thread=#program_thread{program_id=ProgramId}
+               , {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, Op),
-    {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, VariableName, Value),
-    {ran_this_tick, increment_position(Thread3)};
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, Value),
+    {ran_this_tick, increment_position(Thread2)};
 
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
@@ -370,7 +372,9 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                                        }
                                     , ValueArgument
                                     ]
-                    }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+                    }
+               , Thread=#program_thread{program_id=ProgramId}
+               , {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Change, Thread2} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, Op),
     {ok, NewValue} = case automate_bot_engine_variables:get_program_variable(Thread2, VariableName) of
@@ -381,8 +385,8 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                                                  , block_id=?UTILS:get_block_id(Op)
                                                  })
                      end,
-    {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, VariableName, NewValue),
-    {ran_this_tick, increment_position(Thread3)};
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, NewValue),
+    {ran_this_tick, increment_position(Thread2)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
                     , ?ARGUMENTS := [Argument]
@@ -525,7 +529,10 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_ADD_TO_LIST
                                        }
                                     , NewValueArg
                                     ]
-                    }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+                    }
+                    , Thread=#program_thread{program_id=ProgramId}
+                    , {?SIGNAL_PROGRAM_TICK, _}) ->
+
 
     {ok, NewValue, Thread2} = automate_bot_engine_variables:resolve_argument(NewValueArg, Thread, Op),
     ValueBefore = case automate_bot_engine_variables:get_program_variable(Thread2, ListName) of
@@ -538,9 +545,9 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_ADD_TO_LIST
     %% TODO (optimization) avoid using list++list
     ValueAfter = ValueBefore ++ [NewValue],
 
-    {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, ListName, ValueAfter),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter),
 
-    {ran_this_tick, increment_position(Thread3)};
+    {ran_this_tick, increment_position(Thread2)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
@@ -548,7 +555,9 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
                                        }
                                     , IndexValueArg
                                     ]
-                    }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+                    }
+               , Thread=#program_thread{program_id=ProgramId}
+               , {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, IndexValue, Thread2} = automate_bot_engine_variables:resolve_argument(IndexValueArg, Thread, Op),
     Index = to_int(IndexValue),
@@ -563,18 +572,20 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
 
     ValueAfter = automate_bot_engine_naive_lists:remove_nth(ValueBefore, Index),
 
-    {ok, Thread3 } = automate_bot_engine_variables:set_program_variable(Thread2, ListName, ValueAfter),
-    {ran_this_tick, increment_position(Thread3)};
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter),
+    {ran_this_tick, increment_position(Thread2)};
 
 run_instruction(#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
                  , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
                                     , ?VALUE := ListName
                                     }
                                  ]
-                 }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+                 }
+               , Thread=#program_thread{program_id=ProgramId}
+               , {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, Thread2 } = automate_bot_engine_variables:set_program_variable(Thread, ListName, []),
-    {ran_this_tick, increment_position(Thread2)};
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, []),
+    {ran_this_tick, increment_position(Thread)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
@@ -583,7 +594,9 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
                                     , ValueArg
                                     , IndexArg
                                     ]
-                    }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+                    }
+               , Thread=#program_thread{program_id=ProgramId}
+               , {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, IndexValue, Thread2} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread, Op),
     Index = to_int(IndexValue),
@@ -600,8 +613,8 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
 
     ValueAfter = automate_bot_engine_naive_lists:insert_nth(PaddedValue, Index, Value),
 
-    {ok, Thread4 } = automate_bot_engine_variables:set_program_variable(Thread3, ListName, ValueAfter),
-    {ran_this_tick, increment_position(Thread4)};
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter),
+    {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
@@ -610,7 +623,9 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
                                     , IndexArg
                                     , ValueArg
                                     ]
-                    }, Thread, {?SIGNAL_PROGRAM_TICK, _}) ->
+                    }
+               , Thread=#program_thread{program_id=ProgramId}
+               , {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, IndexValue, Thread2} = automate_bot_engine_variables:resolve_argument(IndexArg, Thread, Op),
     Index = to_int(IndexValue),
@@ -626,8 +641,8 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
                     ValueBefore, IndexValue - 1, ?LIST_FILL), %% Remember: 1-indexed
     ValueAfter = automate_bot_engine_naive_lists:replace_nth(PaddedValue, Index, Value),
 
-    {ok, Thread4 } = automate_bot_engine_variables:set_program_variable(Thread3, ListName, ValueAfter),
-    {ran_this_tick, increment_position(Thread4)};
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter),
+    {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
                     , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
@@ -722,19 +737,19 @@ run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
     {ok, #{ module := Module }} = automate_service_registry:get_service_by_id(ServiceId),
     case automate_service_registry_query:call(Module, Action, Values, Thread2, UserId) of
         {ok, Thread3, Value} ->
-            {ok, Thread4} = case SaveTo of
-                                { index, Index } ->
-                                    #{ <<"value">> := VariableName
-                                     } = lists:nth(Index, Arguments),
-                                    automate_bot_engine_variables:set_program_variable(
-                                      Thread3,
-                                      %% Note that erlang is 1-indexed, protocol is 0-indexed
-                                      VariableName,
-                                      Value);
-                                _ ->
-                                    {ok, Thread3}
-                            end,
-            {ran_this_tick, increment_position(Thread4)};
+            ok = case SaveTo of
+                     { index, Index } ->
+                         #{ <<"value">> := VariableName
+                          } = lists:nth(Index, Arguments),
+                         automate_bot_engine_variables:set_program_variable(
+                           ProgramId,
+                           %% Note that erlang is 1-indexed, protocol is 0-indexed
+                           VariableName,
+                           Value);
+                     _ ->
+                         ok
+                 end,
+            {ran_this_tick, increment_position(Thread3)};
         {error, Reason} ->
             throw_bridge_call_error(Reason, ServiceId, Operation, Action)
     end;

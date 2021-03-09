@@ -157,6 +157,14 @@ export class ProgramService {
         return (result as any)['variables'];
     }
 
+    async updatePrograVariables(programId: string, values: { name: string, value: any }[]): Promise<void> {
+        const url = await this.getProgramVariablesUrl(programId);
+        const result = await this.http.patch(url,
+                                             { values: values },
+                                             { headers: this.sessionService.getAuthHeader() }
+                                            ).toPromise();
+    }
+
     public async createProgram(programType?: ProgramType, programName?: string): Promise<ProgramMetadata> {
         const data: { type?: string, name?: string } = {};
         if (programType) {
