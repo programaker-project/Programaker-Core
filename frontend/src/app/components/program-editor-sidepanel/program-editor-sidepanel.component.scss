@@ -1,0 +1,28 @@
+.program-drawer.hidden {
+    display: none;
+}
+
+.drawer-controls {
+    width: max-content;
+    margin-right: 1.5ex;
+
+    .selector {
+        vertical-align: super;
+    }
+}
+
+.closer > button {
+    border: none;
+    background-color: inherit;
+}
+
+button#add-variable-button,
+button#upload-variable-button {
+    width: calc(100% - 1ex);
+    margin: 0.5ex;
+    padding: 1ex;
+
+    label {
+        margin: 0;
+    }
+}

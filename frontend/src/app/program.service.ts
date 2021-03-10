@@ -68,12 +68,28 @@ export class ProgramService {
         return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/logs`;
     }
 
+    private async getProgramVariablesUrl(programId: string) {
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/variables`;
+    }
+
+    private async getProgramVariableUrl(programId: string, name: string) {
+        return `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/variables/${name}`;
+    }
+
     private async getProgramStreamingLogsUrl(programId: string) {
         const token = this.sessionService.getToken();
         return addTokenQueryString(toWebsocketUrl(this.environmentService,
                                                   `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/logs-stream`),
                                   token,
                                  );
+    }
+
+    private async getProgramStreamingVariablesUrl(programId: string) {
+        const token = this.sessionService.getToken();
+        return addTokenQueryString(toWebsocketUrl(this.environmentService,
+                                                  `${this.environmentService.getApiRoot()}/programs/by-id/${programId}/variables-stream`),
+                                   token,
+                                  );
     }
 
     private getProgramStreamingEventsUrl(programId: string) {
@@ -136,6 +152,28 @@ export class ProgramService {
                 .then(url =>
                       this.http.get(url, {headers: this.sessionService.getAuthHeader()})
                       .toPromise()) as Promise<ProgramLogEntry[]>);
+    }
+
+    async getProgramVariables(programId: string): Promise<{ [key: string]: any }> {
+        const url = await this.getProgramVariablesUrl(programId);
+        const result = await this.http.get(url, {headers: this.sessionService.getAuthHeader()}).toPromise();
+
+        return (result as any)['variables'];
+    }
+
+    async updateProgramVariables(programId: string, values: { name: string, value: any }[]): Promise<void> {
+        const url = await this.getProgramVariablesUrl(programId);
+        const result = await this.http.patch(url,
+                                             { values: values },
+                                             { headers: this.sessionService.getAuthHeader() }
+                                            ).toPromise();
+    }
+
+    async removeVariable(programId: string, name: string): Promise<void> {
+        const url = await this.getProgramVariableUrl(programId, name);
+        const result = await this.http.delete(url,
+                                             { headers: this.sessionService.getAuthHeader() }
+                                            ).toPromise();
     }
 
     public async createProgram(programType?: ProgramType, programName?: string): Promise<ProgramMetadata> {
@@ -348,6 +386,66 @@ export class ProgramService {
                                     type: 'program_log',
                                     value: entry,
                                 });
+                            }
+
+                            for (const entry of buffer) {
+                                observer.next(entry);
+                            }
+
+                            buffer = []; // Empty buffer
+                            state = 'all_ready';
+                        });
+                    }
+                    else {
+                        state = 'all_ready';
+                    }
+                });
+
+                websocket.onmessage = ((ev) => {
+                    if (state === 'ws_ready') {
+                        buffer.push(JSON.parse(ev.data));
+                    }
+                    else {
+                        observer.next(JSON.parse(ev.data));
+                    }
+                });
+
+                websocket.onclose = (() => {
+                    observer.complete();
+                });
+
+                websocket.onerror = ((ev) => {
+                    observer.error(ev);
+                    observer.complete();
+                });
+            });
+
+            return () => {
+                if (websocket) {
+                    websocket.close();
+                }
+            }
+        });
+    }
+
+    watchProgramVariables(programId: string, options: { request_previous?: boolean }): Observable<{ name: string, value: any }> {
+        let websocket: WebSocket | null = null;
+
+        return new Observable((observer) => {
+
+            this.getProgramStreamingVariablesUrl(programId).then(streamingUrl => {
+
+                let buffer: any[] = [];
+                let state : 'none_ready' | 'ws_ready' | 'all_ready' = 'none_ready';
+
+                websocket = new WebSocket(streamingUrl);
+                websocket.onopen = (() => {
+                    if (options.request_previous) {
+                        state = 'ws_ready';
+
+                        this.getProgramVariables(programId).then(entries => {
+                            for (const name of Object.keys(entries)) {
+                                observer.next({ name: name, value: entries[name]});
                             }
 
                             for (const entry of buffer) {

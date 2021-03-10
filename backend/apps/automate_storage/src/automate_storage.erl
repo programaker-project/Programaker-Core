@@ -57,6 +57,7 @@
 
         , get_program_owner/1
         , get_program_pid/1
+        , get_program_variables/1
         , get_user_from_pid/1
         , register_program_runner/2
         , get_program_from_id/1
@@ -80,6 +81,7 @@
         , get_threads_from_program/1
 
         , set_program_variable/3
+        , delete_program_variable/2
         , get_program_variable/2
         , set_widget_value/3
         , get_widget_values_in_program/1
@@ -846,6 +848,17 @@ get_program_pid(ProgramId) ->
         {error, Reason} ->
             {error, Reason}
     end.
+
+-spec get_program_variables(binary()) -> {'ok', any()}.
+get_program_variables(ProgramId) ->
+    mnesia:ets(fun() ->
+                       Vars = mnesia:index_read(?PROGRAM_VARIABLE_TABLE, ProgramId, program_id),
+                       Map = maps:from_list(lists:map(
+                                              fun(#program_variable_table_entry{ id={_, VarName}, value=Value}) ->
+                                                      {VarName, Value}
+                                              end, Vars)),
+                       {ok, Map}
+           end).
 
 
 -spec get_user_from_pid(pid()) -> { ok, owner_id() } | {error, not_found}.
@@ -2325,6 +2338,7 @@ get_running_program_id(ProgramId) ->
 set_program_variable(ProgramId, Key, Value) ->
     Transaction = fun() ->
                           mnesia:write(?PROGRAM_VARIABLE_TABLE, #program_variable_table_entry{ id={ProgramId, Key}
+                                                                                             , program_id=ProgramId
                                                                                              , value=Value
                                                                                              },
                                        write)
@@ -2335,6 +2349,20 @@ set_program_variable(ProgramId, Key, Value) ->
         { aborted, Reason } ->
             io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
             {error, mnesia:error_description(Reason)}
+    end.
+
+-spec delete_program_variable(binary(), binary()) -> ok | {error, any()}.
+delete_program_variable(ProgramId, Key) ->
+    Transaction = fun() ->
+                          mnesia:delete(?PROGRAM_VARIABLE_TABLE, {ProgramId, Key},
+                                        write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        { atomic, ok } ->
+            ok;
+        { aborted, Reason } ->
+            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
+            {error, Reason}
     end.
 
 -spec set_widget_value(ProgramId :: binary(), WidgetId :: binary(), Value :: any()) -> ok.

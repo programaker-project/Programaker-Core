@@ -74,6 +74,7 @@ start_link() ->
                         , {"/api/v0/programs/by-id/:program_id", automate_rest_api_program_specific_by_id, []}
                         , {"/api/v0/programs/by-id/:program_id/checkpoint", automate_rest_api_program_specific_checkpoint, []}
                         , {"/api/v0/programs/by-id/:program_id/logs-stream", automate_rest_api_program_specific_logs_stream, []}
+                        , {"/api/v0/programs/by-id/:program_id/variables-stream", automate_rest_api_program_specific_variables_stream, []}
                         , {"/api/v0/programs/by-id/:program_id/editor-events", automate_rest_api_program_specific_editor_events, []}
                         , {"/api/v0/programs/by-id/:program_id/shared-resources", automate_rest_api_program_shared_resources, []}
                         , {"/api/v0/programs/by-id/:program_id/ui-events", automate_rest_api_program_specific_ui_events, []}
@@ -94,6 +95,8 @@ start_link() ->
                         , {"/api/v0/programs/by-id/:program_id/status", automate_rest_api_program_status, []}
                         , {"/api/v0/programs/by-id/:program_id/assets", automate_rest_api_program_assets_root, []}
                         , {"/api/v0/programs/by-id/:program_id/assets/by-id/:asset_id", automate_rest_api_program_assets_by_id, []}
+                        , {"/api/v0/programs/by-id/:program_id/variables", automate_rest_api_program_variables_root, []}
+                        , {"/api/v0/programs/by-id/:program_id/variables/:var_name", automate_rest_api_program_variables_specific, []}
 
                           %% Connection management
                         , {"/api/v0/users/id/:user_id/connections/available", automate_rest_api_connections_available_root, []}

@@ -72,13 +72,10 @@
     display: block;
 }
 
-#logs_panel_container {
-    max-width: 30em;
-}
 
-.closer > button {
-    border: none;
-    background-color: inherit;
+#sidepanel {
+    max-width: 30em;
+    display: block;
 }
 
 button#program-visibility-state,
@@ -88,6 +85,7 @@ button#program-start-button,
 button#program-delete-button,
 button#program-stop-button,
 button#program-logs-button,
+button#program-variables-button,
 button#advanced-program-controls-button {
     vertical-align: top;
     padding: 1ex;

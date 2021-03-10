@@ -322,10 +322,10 @@ simple_wait_for_variable() ->
                             , program_id=ProgramId
                             , thread_id=undefined
                             },
-    {ok, Thread2} = automate_bot_engine_variables:set_program_variable(Thread,  <<"checkpoint">>, false),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId,  <<"checkpoint">>, false),
 
     %% Launch
-    {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread2),
+    {ok, _ThreadId} = automate_bot_engine_thread_launcher:launch_thread(ProgramId, Thread),
 
     %% Check logs before sending signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),
@@ -336,7 +336,7 @@ simple_wait_for_variable() ->
     ?assertMatch([ <<"before">> ], MsgsBefore),
 
     %% Update variable
-    {ok, _Thread3} = automate_bot_engine_variables:set_program_variable(Thread2,  <<"checkpoint">>, true),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId,  <<"checkpoint">>, true),
 
     %% Check logs after sending signal
     timer:sleep(?WAIT_PER_INSTRUCTION * 3),

@@ -553,10 +553,13 @@ trigger_thread_with_matching_message(Program, ProgramId, Channel, MonitorArgs, M
 
     {true, NewThread}.
 
-save_value(Thread, #{ ?TYPE := ?VARIABLE_VARIABLE
-                    , ?VALUE := VariableName
-                    }, Value) ->
-    automate_bot_engine_variables:set_program_variable(Thread, VariableName, Value).
+
+save_value(Thread=#program_thread{ program_id=ProgramId }
+          , #{ ?TYPE := ?VARIABLE_VARIABLE
+             , ?VALUE := VariableName
+             }, Value) ->
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, Value),
+    {ok, Thread}.
 
 
 -ifdef(TEST).

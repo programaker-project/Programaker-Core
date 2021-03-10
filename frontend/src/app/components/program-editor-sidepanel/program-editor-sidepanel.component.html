@@ -1,0 +1,113 @@
+<div class="drawer-controls">
+    <span class="closer">
+        <button (click)="onClose()">
+            <mat-icon >close</mat-icon>
+        </button>
+    </span>
+
+    <mat-form-field class="selector">
+        <mat-select [(value)]="drawer_type">
+            <mat-option value="logs">Logs</mat-option>
+            <mat-option value="variables">Variables</mat-option>
+        </mat-select>
+    </mat-form-field>
+</div>
+
+<div [class]="drawer_type !== 'logs' ? 'hidden program-drawer' : ' program-drawer'" id="logs_panel_container">
+    Error logs are empty.
+    <span id="contact-mail-call" *ngIf="environment && environment.contact_mail">
+        If you have any problem, contact us on <a class="contact-mail" href="mailto:{{environment.contact_mail}}">{{environment.contact_mail}}</a>
+    </span>
+</div>
+<div [class]="drawer_type !== 'variables' ? 'hidden program-drawer' : 'program-drawer'" id="variables_panel_container">
+    <table class="table var-table">
+        <thead>
+            <tr>
+                <th></th>
+                <th class="name" scope="col">Var. name</th>
+                <th class="value" scope="col">Var. value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <ng-container *ngFor="let v of variables">
+                <tr [class]="variablesToRemove.indexOf(v.name) >= 0 ? 'to-delete' : ''">
+                    <td class="control">
+                        <button mat-button *ngIf="variablesToRemove.indexOf(v.name) < 0"
+                            class="remove-variable"
+                            (click)="removeVariable(v.name)" >
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                        <button mat-button *ngIf="variablesToRemove.indexOf(v.name) >= 0"
+                            class="remove-variable"
+                            (click)="unremoveVariable(v.name)" >
+                            <mat-icon>restore</mat-icon>
+                        </button>
+                    </td>
+                    <td class="name" scole="row">{{ v.name }}</td>
+                    <td class="value">
+                        <mat-form-field *ngIf="['number','string'].indexOf(_typeof(v.value)) >= 0">
+                            <input matInput
+                                required
+                                [(ngModel)]="v.value"
+                                (change)="updateVariable(v.name)"
+                                placeholder="Value" />
+                            <button mat-button [class]="v.value !== this.serverVariables[v.name] ? '': 'invisible'"
+                                matSuffix mat-icon-button
+                                aria-label="Clear"
+                                (click)="resetVariable(v.name)">
+                                <mat-icon>backspace</mat-icon>
+                            </button>
+                        </mat-form-field>
+                        <ng-container *ngIf="['number','string'].indexOf(_typeof(v.value)) < 0">
+                            <pre class="snippet">{{ json_stringify(v.value, null, 4) }}</pre>
+                        </ng-container>
+                    </td>
+                </tr>
+            </ng-container>
+            <tr *ngFor="let v of variablesInCreation">
+                <td class="control">
+                    <button mat-button
+                        class="remove-variable"
+                        (click)="removeVariableInCreation(v.name)" >
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </td>
+                <td class="name" scole="row">
+                    <mat-form-field>
+                        <input matInput
+                            required
+                            [(ngModel)]="v.name"
+                            placeholder="Name" />
+                    </mat-form-field>
+                </td>
+                <td class="value">
+                    <mat-form-field>
+                        <input matInput
+                            required
+                            [(ngModel)]="v.value"
+                            placeholder="Value" />
+                    </mat-form-field>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <button color="primary"
+        id="add-variable-button"
+        [disabled]="program.readonly"
+        (click)="addVariable()" mat-button mat-raised-button>
+        <mat-icon>add</mat-icon>
+        <label class="label">
+            Add variable
+        </label>
+    </button>
+
+    <button color="primary"
+        id="upload-variable-button"
+        [disabled]="program.readonly || (updatedVariables.length + variablesInCreation.length + variablesToRemove.length) == 0"
+        (click)="uploadVariableChanges()" mat-button mat-raised-button>
+        <mat-icon>cloud_upload</mat-icon>
+        <label class="label">
+            Upload changes
+        </label>
+    </button>
+</div>

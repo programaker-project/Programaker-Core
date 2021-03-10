@@ -835,6 +835,28 @@ get_versioning(Nodes) ->
                                                 )
                         end
                 }
+
+                %% Index program variables by ProgramId.
+              , #database_version_transformation
+                { id=27
+                , apply=fun() ->
+
+                                ok = mnesia:wait_for_tables([ ?PROGRAM_VARIABLE_TABLE
+                                                            ],
+                                                            automate_configuration:get_table_wait_time()),
+
+                                    {atomic, ok} = mnesia:transform_table(
+                                                     ?PROGRAM_VARIABLE_TABLE,
+                                                     fun( {program_variable_table_entry, {ProgramId, VarName}, Value} ) ->
+                                                             {program_variable_table_entry, {ProgramId, VarName}, ProgramId, Value}
+                                                     end,
+                                                     [ id, program_id, value ],
+                                                     program_variable_table_entry
+                                                    ),
+
+                                {atomic, ok} = mnesia:add_table_index(?PROGRAM_VARIABLE_TABLE, program_id)
+                        end
+                }
               ]
         }.
 

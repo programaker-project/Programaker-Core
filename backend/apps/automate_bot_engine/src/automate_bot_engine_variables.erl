@@ -6,6 +6,7 @@
         , set_thread_value/3
         , get_program_variable/2
         , set_program_variable/3
+        , delete_program_variable/2
 
         , set_last_bridge_value/3
         , get_last_bridge_value/2
@@ -102,10 +103,14 @@ set_thread_value(Thread = #program_thread{}, Key, Value) when is_list(Key) ->
 set_thread_value(Thread = #program_thread{ global_memory=Global }, Key, Value) ->
     {ok, Thread#program_thread{ global_memory=Global#{ Key => Value } } }.
 
--spec set_program_variable(#program_thread{}, binary(), any()) -> {ok, #program_thread{}}.
-set_program_variable(Thread = #program_thread{ program_id=ProgramId }, Key, Value) ->
+-spec set_program_variable(binary(), binary(), any()) -> ok | {error, _}.
+set_program_variable(ProgramId, Key, Value) ->
     ok = automate_storage:set_program_variable(ProgramId, Key, Value),
-    {ok, Thread}.
+    notify_variable_update(Key, ProgramId, Value).
+
+-spec delete_program_variable(binary(), binary()) -> ok | {error, _}.
+delete_program_variable(ProgramId, Key) ->
+    automate_storage:delete_program_variable(ProgramId, Key).
 
 -spec get_program_variable(#program_thread{}, binary()) -> {ok, any()} | {error, not_found}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
@@ -250,3 +255,16 @@ add_to_context_acc([ _ | T ], Context) ->
     add_to_context_acc(T, Context);
 add_to_context_acc(_, Context) ->
     Context.
+
+-spec notify_variable_update(VariableName :: binary(), binary(), _) -> ok | {error, _}.
+notify_variable_update(VariableName, ProgramId, Value) ->
+    case automate_storage:get_program_from_id(ProgramId) of
+        {ok, #user_program_entry{ program_channel=ChannelId }} ->
+            automate_channel_engine:send_to_channel(ChannelId, #{ <<"key">> => variable_events
+                                                                  %% This canonicalization is done also on the channel engine, but it's not saved to the subkey
+                                                                , <<"subkey">> => automate_channel_engine_utils:canonicalize_selector(VariableName)
+                                                                , <<"value">> => Value
+                                                                });
+        {error, Reason} ->
+            {error, Reason}
+    end.

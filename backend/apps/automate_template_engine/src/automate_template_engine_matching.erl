@@ -11,6 +11,7 @@
 
 -define(BACKEND, automate_template_engine_mnesia_backend).
 -include("records.hrl").
+-include("../../automate_bot_engine/src/program_records.hrl").
 
 %%====================================================================
 %% API functions
@@ -42,9 +43,9 @@ match_content(Thread, Template, InputValue) ->
 set_variables(_Original, [], [], Thread) ->
     {ok, Thread};
 
-set_variables(Original, [{Start, Len} | Matches], [Variable | Variables], Thread) ->
+set_variables(Original, [{Start, Len} | Matches], [Variable | Variables], Thread=#program_thread{ program_id=ProgramId }) ->
     Value = binary:part(Original, Start, Len),
-    {ok, NewThread} = automate_bot_engine_variables:set_program_variable(Thread, Variable, Value),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, Variable, Value),
     set_variables(Original, Matches, Variables, Thread).
 
 

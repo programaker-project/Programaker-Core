@@ -1,6 +1,6 @@
 import { Location, isPlatformServer } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, ViewChild, Inject, NgZone, PLATFORM_ID } from '@angular/core';
+import { Component, Input, OnInit, AfterViewInit, ViewChild, Inject, NgZone, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue, VisibilityEnum } from './program';
 import { ProgramService } from './program.service';
@@ -41,6 +41,7 @@ import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clon
 import { CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { Session } from './session';
 import { ToastrService } from 'ngx-toastr';
+import { ProgramEditorSidepanelComponent } from './components/program-editor-sidepanel/program-editor-sidepanel.component';
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -58,17 +59,16 @@ type NonReadyReason = 'loading' | 'disconnected';
         'libs/css/bootstrap.min.css',
     ],
 })
-export class ProgramDetailComponent implements OnInit {
+export class ProgramDetailComponent implements OnInit, AfterViewInit {
     @Input() program: ProgramContent;
     workspace: Blockly.WorkspaceSvg;
     programId: string;
     environment: { [key: string]: any };
     session: Session;
 
-    @ViewChild('logs_drawer') logs_drawer: MatDrawer;
+    @ViewChild('drawer') drawer: MatDrawer;
+    @ViewChild('sidepanel') sidepanel: ProgramEditorSidepanelComponent;
 
-    logs_drawer_initialized: boolean = false;
-    commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
 
     toolboxController: ToolboxController;
     portraitMode: boolean;
@@ -82,8 +82,6 @@ export class ProgramDetailComponent implements OnInit {
     private cursorDiv: HTMLElement;
     private cursorInfo: {[key: string]: HTMLElement};
     nonReadyReason: NonReadyReason;
-    logCount = 0;
-    streamingLogs = false;
 
     read_only: boolean = true;
     can_admin: boolean = false;
@@ -91,9 +89,10 @@ export class ProgramDetailComponent implements OnInit {
     // HACK: Prevent the MatMenu import for being removed
     private _pinRequiredMatMenuLibrary: MatMenu;
     eventSubscription: Unsubscribable | null;
-    logSubscription: Unsubscribable | null;
+    mutationObserver: MutationObserver | null;
     blockSynchronizer: BlockSynchronizer;
     visibility: VisibilityEnum;
+
 
     constructor(
         private browser: BrowserService,
@@ -208,6 +207,22 @@ export class ProgramDetailComponent implements OnInit {
         }));
     }
 
+    ngAfterViewInit() {
+        const elem = (this.drawer as any)._elementRef.nativeElement;
+
+        this.mutationObserver = new MutationObserver(() => {
+            this.notifyResize();
+
+            // HACK: Wait for animations to finish
+            for (let delay = 200; delay < 1000; delay *= 2 ) {
+                setTimeout(() => {
+                    this.notifyResize();
+                }, delay);
+            }
+        });
+        this.mutationObserver.observe(elem, { attributes: true, subtree: true  });
+    }
+
     /**
      * Check if an DOM element is a Scratch block object.
      */
@@ -277,38 +292,6 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     initializeListeners() {
-        // Initialize log listeners
-        this.streamingLogs = true;
-        if (!this.program.readonly) {
-            this.logSubscription = this.programService.watchProgramLogs(this.program.id,
-                                                                        { request_previous_logs: true })
-                .subscribe(
-                    {
-                        next: (update: ProgramInfoUpdate) => {
-                            if (update.value.program_id !== this.programId) {
-                                return;
-                            }
-
-                            if (update.type === 'program_log') {
-                                this.updateLogsDrawer(update.value);
-                                this.logCount++;
-                            }
-                            else if (update.type === 'debug_log') {
-                                this.updateLogsDrawer(update.value);
-                                this.logCount++;
-                            }
-                        },
-                        error: (error: any) => {
-                            console.error("Error reading logs:", error);
-                            this.streamingLogs = false;
-                        },
-                        complete: () => {
-                            console.warn("No more logs about program", this.programId)
-                            this.streamingLogs = false;
-                        }
-                    });
-        }
-
         this.initializeEventSynchronization();
     }
 
@@ -358,6 +341,12 @@ export class ProgramDetailComponent implements OnInit {
                 next: (ev: ProgramEditorEventValue) => {
                     if (ev.type === 'blockly_event') {
                         const event = Blockly.Events.fromJson(ev.value, this.workspace);
+                        if ((event as any).type === 'comment_create'
+                            || (event as any).type === 'comment_delete') {
+
+                            console.debug("Ignoring changes in comments")
+                            return;
+                        }
 
                         this.blockSynchronizer.receivedEvent(event as BlocklyEvent);
                         if (ev.value.type === 'create') {
@@ -367,7 +356,14 @@ export class ProgramDetailComponent implements OnInit {
                             delete onCreation[ev.value.blockId];
                         }
 
-                        event.run(true);
+                        try {
+                            event.run(true);
+                        }
+                        catch(err) {
+                            this.toastr.error("Error loading updates");
+                            console.log("EV", ev, event);
+                            console.error(err);
+                        }
                     }
                     else if (ev.type === 'cursor_event') {
                         this.drawPointer(ev.value);
@@ -881,9 +877,13 @@ export class ProgramDetailComponent implements OnInit {
                 this.eventSubscription = null;
             }
 
-            if (this.logSubscription) {
-                this.logSubscription.unsubscribe();
-                this.logSubscription = null;
+            if (this.sidepanel) {
+                this.sidepanel.dispose();
+            }
+
+            if (this.mutationObserver) {
+                this.mutationObserver.disconnect();
+                this.mutationObserver = null;
             }
 
             if (this.blockSynchronizer) {
@@ -1155,11 +1155,26 @@ export class ProgramDetailComponent implements OnInit {
     }
 
     toggleLogsPanel() {
-        if (this.logs_drawer.opened) {
-            this.closeLogsPanel();
+        if (this.drawer.opened && this.sidepanel.drawerType === 'logs') {
+            this.closeDrawer();
         }
         else {
-            this.openLogsPanel();
+            this.sidepanel.setDrawerType('logs');
+            if (!this.drawer.opened) {
+                this.openDrawer();
+            }
+        }
+    }
+
+    toggleVariablesPanel() {
+        if (this.drawer.opened && this.sidepanel.drawerType === 'variables') {
+            this.closeDrawer();
+        }
+        else {
+            this.sidepanel.setDrawerType('variables');
+            if (!this.drawer.opened) {
+                this.openDrawer();
+            }
         }
     }
 
@@ -1167,84 +1182,20 @@ export class ProgramDetailComponent implements OnInit {
         this.browser.window.dispatchEvent(new Event('resize'));
     }
 
-    closeLogsPanel() {
-        this.logs_drawer.close().then(() => {
-            // Notify Scratch containers
-            this.notifyResize();
-        });
+    openDrawer() {
+        return this.drawer.open();
     }
 
-    openLogsPanel() {
-        this.logs_drawer.open().then(() => {
-            // Notify Scratch containers
-            this.notifyResize();
-        });
+    closeDrawer = () => {
+        return this.drawer.close();
     }
 
-    updateLogsDrawer(line: ProgramLogEntry) {
-        const container = document.getElementById('logs_panel_container');
-        if (!this.logs_drawer_initialized) {
-            container.innerHTML = ''; // Clear container
-
-            this.logs_drawer_initialized = true;
+    onToggleMark = (blockId: string, activate: boolean, message: string) => {
+        if (activate) {
+            this.workspace.getBlockById(blockId).setCommentText(message);
         }
-
-        const newLine = this.renderLogLine(line);
-        container.appendChild(newLine);
-
-        if (this.logs_drawer.opened) {
-            newLine.scrollIntoView();
-        }
-    }
-
-    renderLogLine(line: ProgramLogEntry): HTMLElement {
-        const element = document.createElement('div');
-        element.classList.add('log-entry');
-
-        const line_time = document.createElement('span');
-        line_time.classList.add('time');
-        line_time.innerText = unixMsToStr(line.event_time);
-
-        element.appendChild(line_time);
-
-        const message = document.createElement('span');
-        message.classList.add('message');
-        message.innerText = line.event_message;
-
-        element.appendChild(message);
-
-        if (line.block_id) {
-            const mark_button = document.createElement('button');
-            mark_button.classList.value = 'log-marker mat-button mat-raised-button mat-button-base mat-primary';
-
-            mark_button.innerText = 'Mark block';
-            mark_button.onclick = () => {
-                this.toggleMark(mark_button, line);
-            }
-
-            element.appendChild(mark_button);
-        }
-
-        return element;
-    }
-
-    toggleMark(button: HTMLButtonElement, log_line: ProgramLogEntry) {
-        const entry = this.commented_blocks[log_line.block_id];
-        const marked = (entry !== undefined) && (entry[0] == log_line.event_time);
-
-        if (marked) { // Unmark
-            button.innerText = 'Mark block';
-            this.commented_blocks[log_line.block_id] = undefined;
-            this.workspace.getBlockById(log_line.block_id).setCommentText(null);
-        }
-        else { // Mark block
-            button.innerText = 'Unmark block';
-            if (entry !== undefined) {
-                entry[1].innerText = 'Mark block';
-            }
-
-            this.commented_blocks[log_line.block_id] = [log_line.event_time, button];
-            this.workspace.getBlockById(log_line.block_id).setCommentText(log_line.event_message);
+        else {
+            this.workspace.getBlockById(blockId).setCommentText(null);
         }
     }
 }

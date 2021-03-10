@@ -149,6 +149,7 @@
                                   }).
 
 -record(program_variable_table_entry, { id :: { binary(), binary() } % { program id, variable name }
+                                      , program_id :: binary()
                                       , value :: any()
                                       }).
 

@@ -84,6 +84,7 @@ import { AssetService } from './asset.service';
 import { UserProfileComponent } from './profiles/user-profile.component';
 import { ProfileService } from './profiles/profile.service';
 import { GroupProfileComponent } from './profiles/group-profile.component';
+import { ProgramEditorSidepanelComponent } from './components/program-editor-sidepanel/program-editor-sidepanel.component';
 
 
 
@@ -134,6 +135,7 @@ import { GroupProfileComponent } from './profiles/group-profile.component';
 
         // Independent components
         GroupCollaboratorEditorComponent,
+        ProgramEditorSidepanelComponent,
 
         // Pipes
         SummarizeJSON,
