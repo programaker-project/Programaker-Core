@@ -124,6 +124,9 @@ export class BlockSynchronizer {
         if (classif === null) {
             return false;
         }
+        else if (['comment_create', 'comment_delete'].indexOf(event.type) >= 0) {
+            return true; // Just ignore it
+        }
         else if (!classif) {
             // This shouldn't happen unless this type is not controlled
             console.error(`Unexpected event type: ${event.type}`);

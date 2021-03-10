@@ -341,6 +341,12 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
                 next: (ev: ProgramEditorEventValue) => {
                     if (ev.type === 'blockly_event') {
                         const event = Blockly.Events.fromJson(ev.value, this.workspace);
+                        if ((event as any).type === 'comment_create'
+                            || (event as any).type === 'comment_delete') {
+
+                            console.debug("Ignoring changes in comments")
+                            return;
+                        }
 
                         this.blockSynchronizer.receivedEvent(event as BlocklyEvent);
                         if (ev.value.type === 'create') {
@@ -350,7 +356,14 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
                             delete onCreation[ev.value.blockId];
                         }
 
-                        event.run(true);
+                        try {
+                            event.run(true);
+                        }
+                        catch(err) {
+                            this.toastr.error("Error loading updates");
+                            console.log("EV", ev, event);
+                            console.error(err);
+                        }
                     }
                     else if (ev.type === 'cursor_event') {
                         this.drawPointer(ev.value);
