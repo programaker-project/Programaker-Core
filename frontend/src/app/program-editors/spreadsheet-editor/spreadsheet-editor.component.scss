@@ -140,11 +140,14 @@ button#program-start-button .action-icon {
 }
 
 .spreadsheet-table {
-    td[scope="row"], th[scope="col"] {
-        background-color: #222;
-        color: #fff;
+    background-color: #fff;
+
+    td[scope="row"], th {
+        background-color: #f0f0f0;
+        color: #222;
         text-align: center;
         min-width: 4rem;
+        border: 1px solid #ccc;
 
         &[scope="row"] {
             min-width: 4rem;
@@ -153,20 +156,14 @@ button#program-start-button .action-icon {
     td {
         border: 1px solid #ccc;
         padding: 0.25rem;
-        min-width: 4rem;
-    }
-
-    td:hover {
-        background-color: #bef;
-    }
-
-    tr:hover {
-        background-color: #eff;
+        min-width: 7rem;
+        font-size: small;
     }
 
     .col-resize-bar {
         width: 5px;
-        background-color: #444;
+        margin-right: -3.5px; // width / 2 + th border
+        background-color: #ccc;
         cursor: col-resize;
         float: right;
         user-select: none;
@@ -174,5 +171,19 @@ button#program-start-button .action-icon {
         &:hover {
             background-color: #BBB;
         }
+    }
+
+    td.active {
+        border: 2px solid #1a73e8;
+    }
+}
+
+#floating-editor {
+    position: absolute;
+    z-index: 9;
+    border: 2px solid #1a73e8;
+
+    &.editing {
+        box-shadow: 0 0 2px 1px #1a73e8;
     }
 }

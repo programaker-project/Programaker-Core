@@ -1,5 +1,5 @@
 import { isPlatformServer, Location } from '@angular/common';
-import { AfterViewInit, Component, Inject, Input, NgZone, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, Inject, Input, NgZone, OnInit, PLATFORM_ID, ViewChild, ElementRef } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDrawer } from '@angular/material/sidenav';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -58,6 +58,7 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
 
     @ViewChild('drawer') drawer: MatDrawer;
     @ViewChild('sidepanel') sidepanel: ProgramEditorSidepanelComponent;
+    @ViewChild('floatingEditor') floatingEditor: ElementRef<HTMLInputElement>;
 
     portraitMode: boolean;
     smallScreen: boolean;
@@ -72,6 +73,8 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     cellValues: {[key:string]: string} = {};
     private cursorDiv: HTMLElement;
     private cursorInfo: {[key: string]: HTMLElement};
+    activeCells: HTMLTableDataCellElement[] = [];
+    current: HTMLTableDataCellElement;
 
     // HACK: Prevent the MatMenu import for being removed
     private _pinRequiredMatMenuLibrary: MatMenu;
@@ -613,6 +616,77 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     }
 
     startResize(ev: MouseEvent) {
-        console.log("TODO: Start resizing");
+        const ref = (ev.target as HTMLElement).parentElement;
+        window.onmousemove = (move: MouseEvent) => {
+            ref.style.minWidth = move.clientX - ref.getBoundingClientRect().left + 'px';
+        }
+
+        window.onmouseup = () => {
+            window.onmousemove = window.onmouseup = null;
+        }
+    }
+
+    mousedownOnCell(ev: MouseEvent) {
+        const elem = ev.target as HTMLTableDataCellElement;
+
+        if (elem === this.current) {
+            // Just treat it as text
+            return;
+        }
+
+        const editor = this.floatingEditor.nativeElement;
+        if (this.current && editor.value.trim().startsWith('=')) {
+            // Selecting other cell while on formula
+            ev.preventDefault();
+
+            const val = this.getCellId(elem);
+            editor.value = editor.value.substr(0, editor.selectionStart) + val[0] + ':' + val[1] + editor.value.substr(editor.selectionStart)
+
+            return;
+        }
+
+        // Changing the current cell
+        this.unsetActive();
+        elem.classList.add('active');
+        this.activeCells = [elem];
+        this.makeCurrent(elem);
+    }
+
+    makeCurrent(elem: HTMLTableDataCellElement) {
+        this.current = elem;
+        const toRect = this.current.getBoundingClientRect();
+        const editor = this.floatingEditor.nativeElement;
+        editor.value = elem.innerText;
+
+        const workspace = document.getElementById('workspace');
+        const wsRect = workspace.getBoundingClientRect();
+
+        editor.classList.remove('hidden');
+        editor.classList.remove('editing');
+
+        editor.style.left = toRect.left - wsRect.left + 'px';
+        editor.style.top = toRect.top - wsRect.top + 'px';
+        editor.style.minHeight = toRect.height + 'px';
+        editor.style.width = toRect.width + 'px';
+
+        setTimeout(() => editor.focus(), 0);
+    }
+
+    getCellId(elem: HTMLTableDataCellElement): [string, number] {
+        const [_, row, col] = elem.id.split('_');
+
+        return [col, parseInt(row)];
+    }
+
+    unsetActive() {
+        const editor = this.floatingEditor.nativeElement;
+        if (this.current) {
+            this.current.innerText = editor.value;
+        }
+        editor.value = '';
+
+        for (const cell of this.activeCells) {
+            cell.classList.remove('active');
+        }
     }
 }

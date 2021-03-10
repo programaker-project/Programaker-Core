@@ -149,23 +149,30 @@
                                 {{ j }}
 
                                 <span class="col-resize-bar"
-                                    (mousedown)="startResize($ev)"
+                                    (mousedown)="startResize($event)"
                                 >&nbsp;</span>
                             </th>
                         </tr>
                     </thead>
-                    <tbody contenteditable="true">
+                    <tbody>
                         <tr *ngFor="let i of seq(1,100)" id="row_{{ i }}">
                             <td scope="row">
                                 {{ i }}
                             </td>
                             <td *ngFor="let j of seq(1,100)"
-                                id="cell_{{i}}_{{j}}">
+                                id="cell_{{i}}_{{j}}"
+                                (mousedown)="mousedownOnCell($event)"
+                            >
                                 {{ cellValues[i] }}
                             </td>
                         </tr>
                     </tbody>
                 </table>
+                <div class="helper">
+                    <input #floatingEditor id="floating-editor" class="hidden"
+                        onkeydown="this.classList.add('editing');"
+                    />
+                </div>
             </div>
         </div>
     </mat-sidenav-container>
