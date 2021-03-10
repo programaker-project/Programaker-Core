@@ -49,13 +49,9 @@
     display: block;
 }
 
-#logs_panel_container {
+#sidepanel {
     max-width: 30em;
-}
-
-.closer > button {
-    border: none;
-    background-color: inherit;
+    display: block;
 }
 
 button#program-visibility-state,
@@ -65,6 +61,7 @@ button#program-start-button,
 button#program-delete-button,
 button#program-stop-button,
 button#program-logs-button,
+button#program-variables-button,
 button#advancedProgramControls,
 button#navigateToPageControls,
 button#addResponsiveGridControls {

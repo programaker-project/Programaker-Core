@@ -1,6 +1,6 @@
 import { Location, isPlatformServer } from '@angular/common';
 import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, ViewChild, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { ProgramContent, ProgramLogEntry, ProgramInfoUpdate, ProgramType, VisibilityEnum } from '../program';
 import { ProgramService } from '../program.service';
@@ -42,6 +42,7 @@ import { EnvironmentDefinition } from 'environments/environment-definition';
 import { environment } from 'environments/environment';
 import { ToastrService } from 'ngx-toastr';
 import { Subscription } from 'rxjs';
+import { ProgramEditorSidepanelComponent } from 'app/components/program-editor-sidepanel/program-editor-sidepanel.component';
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -52,18 +53,16 @@ import { Subscription } from 'rxjs';
         '../libs/css/bootstrap.min.css',
     ],
 })
-export class FlowEditorComponent implements OnInit {
+export class FlowEditorComponent implements OnInit, AfterViewInit {
     @Input() program: ProgramContent;
-    @ViewChild('logs_drawer') logs_drawer: MatDrawer;
+    @ViewChild('drawer') drawer: MatDrawer;
+    @ViewChild('sidepanel') sidepanel: ProgramEditorSidepanelComponent;
 
     session: Session;
     programId: string;
     environment: EnvironmentDefinition;
     workspace: FlowWorkspace;
     toolbox: Toolbox;
-
-    logs_drawer_initialized: boolean = false;
-    commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
 
     portraitMode: boolean;
     smallScreen: boolean;
@@ -72,7 +71,7 @@ export class FlowEditorComponent implements OnInit {
     read_only: boolean = true;
     can_admin: boolean = false;
     visibility: VisibilityEnum;
-    logSubscription: Subscription;
+    mutationObserver: MutationObserver | null;
 
     constructor(
         private browser: BrowserService,
@@ -168,6 +167,22 @@ export class FlowEditorComponent implements OnInit {
         }));
     }
 
+    ngAfterViewInit() {
+        const elem = (this.drawer as any)._elementRef.nativeElement;
+
+        this.mutationObserver = new MutationObserver(() => {
+            this.notifyResize();
+
+            // HACK: Wait for animations to finish
+            for (let delay = 200; delay < 1000; delay *= 2 ) {
+                setTimeout(() => {
+                    this.notifyResize();
+                }, delay);
+            }
+        });
+        this.mutationObserver.observe(elem, { attributes: true, subtree: true  });
+    }
+
     load_program(program: ProgramContent) {
         if (program.orig && program.orig !== 'undefined') {
             this.workspace.load(program.orig as FlowGraph);
@@ -184,8 +199,6 @@ export class FlowEditorComponent implements OnInit {
         (window as any).repositionIt = this.workspace.repositionIteratively.bind(this.workspace);
 
         this.workspace.center();
-
-        this.initializeListeners();
 
         const pages = this.workspace.getPages();
         this.updateViewPages(Object.keys(pages));
@@ -214,32 +227,6 @@ export class FlowEditorComponent implements OnInit {
     openDefaultPage() {
         const url = this.programService.getPageUrl(this.programId, '/');
         let res = window.open(url,'_blank', 'noopener,noreferrer');
-    }
-
-    initializeListeners() {
-        this.logSubscription = this.programService.watchProgramLogs(this.program.id,
-                                             { request_previous_logs: true })
-            .subscribe(
-                {
-                    next: (update: ProgramInfoUpdate) => {
-                        if (update.value.program_id !== this.programId) {
-                            return;
-                        }
-
-                        if (update.type === 'program_log') {
-                            this.updateLogsDrawer(update.value);
-                        }
-                        else if (update.type === 'debug_log') {
-                            this.updateLogsDrawer(update.value);
-                        }
-                    },
-                    error: (error: any) => {
-                        console.error("Error reading logs:", error);
-                    },
-                    complete: () => {
-                        console.log("No more logs about program", this.programId)
-                    }
-                });
     }
 
     async prepareWorkspace(): Promise<void> {
@@ -390,10 +377,11 @@ export class FlowEditorComponent implements OnInit {
         if (this.workspace) {
             this.workspace.dispose();
         }
-        if (this.logSubscription) {
-            this.logSubscription.unsubscribe();
-            this.logSubscription = null;
+
+        if (this.sidepanel) {
+            this.sidepanel.dispose();
         }
+
         this.workspace = null;
     }
 
@@ -629,11 +617,26 @@ export class FlowEditorComponent implements OnInit {
     }
 
     toggleLogsPanel() {
-        if (this.logs_drawer.opened) {
-            this.closeLogsPanel();
+        if (this.drawer.opened && this.sidepanel.drawerType === 'logs') {
+            this.closeDrawer();
         }
         else {
-            this.openLogsPanel();
+            this.sidepanel.setDrawerType('logs');
+            if (!this.drawer.opened) {
+                this.openDrawer();
+            }
+        }
+    }
+
+    toggleVariablesPanel() {
+        if (this.drawer.opened && this.sidepanel.drawerType === 'variables') {
+            this.closeDrawer();
+        }
+        else {
+            this.sidepanel.setDrawerType('variables');
+            if (!this.drawer.opened) {
+                this.openDrawer();
+            }
         }
     }
 
@@ -641,85 +644,11 @@ export class FlowEditorComponent implements OnInit {
         this.browser.window.dispatchEvent(new Event('resize'));
     }
 
-    closeLogsPanel() {
-        this.logs_drawer.close().then(() => {
-            // Notify Scratch containers
-            this.notifyResize();
-        });
+    openDrawer() {
+        return this.drawer.open();
     }
 
-    openLogsPanel() {
-        this.logs_drawer.open().then(() => {
-            // Notify Scratch containers
-            this.notifyResize();
-        });
-    }
-
-    updateLogsDrawer(line: ProgramLogEntry) {
-        const container = document.getElementById('logs_panel_container');
-        if (!this.logs_drawer_initialized) {
-            container.innerHTML = ''; // Clear container
-
-            this.logs_drawer_initialized = true;
-        }
-
-        const newLine = this.renderLogLine(line);
-        container.appendChild(newLine);
-
-        if (this.logs_drawer.opened) {
-            newLine.scrollIntoView();
-        }
-    }
-
-    renderLogLine(line: ProgramLogEntry): HTMLElement {
-        const element = document.createElement('div');
-        element.classList.add('log-entry');
-
-        const line_time = document.createElement('span');
-        line_time.classList.add('time');
-        line_time.innerText = unixMsToStr(line.event_time);
-
-        element.appendChild(line_time);
-
-        const message = document.createElement('span');
-        message.classList.add('message');
-        message.innerText = line.event_message;
-
-        element.appendChild(message);
-
-        // This is not yet implemented on flow editor
-        // if (line.block_id) {
-        //     const mark_button = document.createElement('button');
-        //     mark_button.classList.value = 'log-marker mat-button mat-raised-button mat-button-base mat-primary';
-
-        //     mark_button.innerText = 'Mark block';
-        //     mark_button.onclick = () => {
-        //         this.toggleMark(mark_button, line);
-        //     }
-
-        //     element.appendChild(mark_button);
-        // }
-
-        return element;
-    }
-
-    toggleMark(button: HTMLButtonElement, log_line: ProgramLogEntry) {
-        const entry = this.commented_blocks[log_line.block_id];
-        const marked = (entry !== undefined) && (entry[0] == log_line.event_time);
-
-        // if (marked) { // Unmark
-        //     button.innerText = 'Mark block';
-        //     this.commented_blocks[log_line.block_id] = undefined;
-        //     this.workspace.getBlockById(log_line.block_id).setCommentText(null);
-        // }
-        // else { // Mark block
-        //     button.innerText = 'Unmark block';
-        //     if (entry !== undefined) {
-        //         entry[1].innerText = 'Mark block';
-        //     }
-
-        //     this.commented_blocks[log_line.block_id] = [log_line.event_time, button];
-        //     this.workspace.getBlockById(log_line.block_id).setCommentText(log_line.event_message);
-        // }
+    closeDrawer = () => {
+        return this.drawer.close();
     }
 }
