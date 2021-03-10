@@ -414,6 +414,9 @@ export class DashboardComponent {
         if (program.type === 'flow_program') {
             programType = 'flow';
         }
+        if (program.type === 'spreadsheet_program') {
+            programType = 'spreadsheet';
+        }
 
         this.router.navigateByUrl(`/programs/${program.id}/${programType}`);
     }

@@ -17,6 +17,8 @@ get_program_type_from_options(#{ <<"type">> := <<"scratch_program">> }) ->
     scratch_program;
 get_program_type_from_options(#{ <<"type">> := <<"flow_program">> }) ->
     flow_program;
+get_program_type_from_options(#{ <<"type">> := <<"spreadsheet_program">> }) ->
+    spreadsheet_program;
 get_program_type_from_options(#{ <<"type">> := Type }) when is_binary(Type) ->
     Type;
 get_program_type_from_options(_) ->

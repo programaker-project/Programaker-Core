@@ -1,0 +1,173 @@
+<div class="program-pad">
+    <div id="program-header" class="">
+        <h2 class="program-name">
+            <a href (click)="goBack()"><mat-icon class="back-arrow">arrow_back_ios</mat-icon></a>
+            <span class="program-title" *ngIf="program !== undefined">{{program.name}}</span>
+            <span class="program-title" *ngIf="program === undefined">Loading...</span>
+        </h2>
+
+        <span class="hint hint-scrollable">
+            <mat-icon class="hint-icon " aria-label="Scrollable section" aria-hidden="true">expand_more</mat-icon>
+            <span class="hint-text">Scroll to find more buttons</span>
+        </span>
+
+        <!-- Program state -->
+        <button id="program-visibility-state" color="secondary"
+            class="annotated-icon"
+            [disabled]="!can_admin"
+            (click)="changeVisibility()"
+            mat-button mat-raised-button>
+
+            <mat-icon *ngIf="visibility==='public'">public</mat-icon>
+            <label *ngIf="visibility==='public'" class="label">
+                Public
+            </label>
+
+            <mat-icon *ngIf="visibility==='shareable'">link</mat-icon>
+            <label *ngIf="visibility==='shareable'" class="label">
+                Shareable
+            </label>
+
+            <mat-icon *ngIf="visibility==='private'">lock</mat-icon>
+            <label *ngIf="visibility==='private'" class="label">
+                Private
+            </label>
+        </button>
+
+        <button id="program-clone-button" color="secondary"
+            class="annotated-icon"
+            [disabled]="!program || !session.active"
+            (click)="cloneProgram()"
+            mat-button mat-raised-button>
+
+            <img class="icon" src="/assets/icons/clone.svg" />
+            <label class="label">
+                Clone
+            </label>
+        </button>
+
+        <!-- Basic functions -->
+        <button mat-button mat-raised-button
+            class="annotated-icon"
+            id="program-start-button" color="primary"
+            [disabled]="read_only"
+            (click)="sendProgram()">
+
+            <span class="load-bg"></span>
+            <mat-icon class="action-icon">cloud_upload</mat-icon>
+            <label class="label">
+                Upload
+            </label>
+        </button>
+
+        <button id="program-rename-button" color="secondary"
+            class="annotated-icon"
+            [disabled]="read_only"
+            (click)="renameProgram()" mat-button mat-raised-button>
+            <mat-icon>edit</mat-icon>
+            <label class="label">
+                Rename
+            </label>
+        </button>
+
+        <button id="program-logs-button" color="secondary"
+            class="annotated-icon"
+            [disabled]="read_only"
+            (click)="toggleLogsPanel()" mat-button mat-raised-button>
+            <mat-icon>error_outline</mat-icon>
+            <label class="label">
+                <span *ngIf="drawer.opened && sidepanel.drawerType === 'logs'">Hide</span>
+                <span *ngIf="!(drawer.opened && sidepanel.drawerType === 'logs')">Show</span>
+                logs
+            </label>
+        </button>
+
+        <button id="program-variables-button" color="secondary"
+            class="annotated-icon"
+            [disabled]="read_only"
+            (click)="toggleVariablesPanel()" mat-button mat-raised-button>
+            <mat-icon>storage</mat-icon>
+            <label class="label">
+                <span *ngIf="drawer.opened && sidepanel.drawerType === 'variables'">Hide</span>
+                <span *ngIf="!(drawer.opened && sidepanel.drawerType === 'variables')">Show</span>
+                variables
+            </label>
+        </button>
+
+        <button id="program-stop-button" color="warn"
+            class="annotated-icon"
+            [disabled]="read_only"
+            (click)="stopThreadsProgram()" mat-button mat-raised-button>
+            <mat-icon>stop</mat-icon>
+            <label class="label">
+                Cancel running
+            </label>
+        </button>
+        <!-- Advanced functions, on a menu -->
+        <button id="advanced-program-controls-button" color="secondary"
+            [matMenuTriggerFor]="advancedProgramControls"
+            [disabled]="read_only"
+            mat-button mat-raised-button>
+            <mat-icon>more_vert</mat-icon> Advanced
+        </button>
+        <mat-menu #advancedProgramControls="matMenu">
+            <button mat-menu-item
+                (click)="setProgramTags()">
+                <mat-icon class="example-tab-icon">label</mat-icon>
+                Tags
+            </button>
+        </mat-menu>
+
+        <!-- Dangerous stuff, on its own -->
+        <button id="program-delete-button" color="warn"
+            [disabled]="read_only"
+            (click)="deleteProgram()" mat-button mat-raised-button>
+            <mat-icon>delete_forever</mat-icon> Delete program
+        </button>
+    </div>
+
+    <mat-sidenav-container>
+        <mat-sidenav #drawer mode="side" position="end">
+            <app-program-editor-sidepanel id="sidepanel" #sidepanel
+                [program]="program"
+                [onToggleMark]="onToggleMark"
+                [onClose]="closeDrawer"
+                *ngIf="program"
+            >
+            </app-program-editor-sidepanel>
+        </mat-sidenav>
+
+        <div class="viewer">
+            <div id="workspace">
+                <table class="spreadsheet-table">
+                    <thead>
+                        <tr>
+                            <th class="corner"></th>
+                            <th *ngFor="let j of seq(1,100)"
+                                id="col_{{j}}"
+                                scope="col">
+                                {{ j }}
+
+                                <span class="col-resize-bar"
+                                    (mousedown)="startResize($ev)"
+                                >&nbsp;</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody contenteditable="true">
+                        <tr *ngFor="let i of seq(1,100)" id="row_{{ i }}">
+                            <td scope="row">
+                                {{ i }}
+                            </td>
+                            <td *ngFor="let j of seq(1,100)"
+                                id="cell_{{i}}_{{j}}">
+                                {{ cellValues[i] }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </mat-sidenav-container>
+    <div id="program-cursors"></div>
+</div>

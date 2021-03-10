@@ -85,6 +85,7 @@ import { UserProfileComponent } from './profiles/user-profile.component';
 import { ProfileService } from './profiles/profile.service';
 import { GroupProfileComponent } from './profiles/group-profile.component';
 import { ProgramEditorSidepanelComponent } from './components/program-editor-sidepanel/program-editor-sidepanel.component';
+import { SpreadsheetEditorComponent } from './program-editors/spreadsheet-editor/spreadsheet-editor.component';
 
 
 
@@ -97,6 +98,7 @@ import { ProgramEditorSidepanelComponent } from './components/program-editor-sid
         GroupSettingsComponent,
         ProgramDetailComponent,
         FlowEditorComponent,
+        SpreadsheetEditorComponent,
         ServicesComponent,
         LoginFormComponent,
         ResetPasswordStartComponent,
