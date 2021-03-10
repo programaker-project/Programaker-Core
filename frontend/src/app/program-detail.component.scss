@@ -72,38 +72,10 @@
     display: block;
 }
 
-#variables_panel_container,
-#logs_panel_container {
+
+#sidepanel {
     max-width: 30em;
-}
-
-button#add-variable-button,
-button#upload-variable-button {
-    width: calc(100% - 1ex);
-    margin: 0.5ex;
-    padding: 1ex;
-
-    label {
-        margin: 0;
-    }
-}
-
-.program-drawer.hidden {
-    display: none;
-}
-
-.drawer-controls {
-    width: max-content;
-    margin-right: 1.5ex;
-
-    .selector {
-        vertical-align: super;
-    }
-}
-
-.closer > button {
-    border: none;
-    background-color: inherit;
+    display: block;
 }
 
 button#program-visibility-state,

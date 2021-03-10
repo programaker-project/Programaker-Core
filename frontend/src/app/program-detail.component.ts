@@ -41,9 +41,9 @@ import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clon
 import { CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { Session } from './session';
 import { ToastrService } from 'ngx-toastr';
+import { ProgramEditorSidepanelComponent } from './components/program-editor-sidepanel/program-editor-sidepanel.component';
 
 type NonReadyReason = 'loading' | 'disconnected';
-type DrawerType = 'logs' | 'variables';
 
 @Component({
     selector: 'app-my-program-detail',
@@ -67,10 +67,8 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
     session: Session;
 
     @ViewChild('drawer') drawer: MatDrawer;
-    drawer_type: DrawerType | null = null;
+    @ViewChild('sidepanel') sidepanel: ProgramEditorSidepanelComponent;
 
-    drawer_initialized: boolean = false;
-    commented_blocks: { [key:string]: [number, HTMLButtonElement]} = {};
 
     toolboxController: ToolboxController;
     portraitMode: boolean;
@@ -84,15 +82,6 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
     private cursorDiv: HTMLElement;
     private cursorInfo: {[key: string]: HTMLElement};
     nonReadyReason: NonReadyReason;
-    logCount = 0;
-    streamingLogs = false;
-
-    variables: { name: string, value: any }[] = [];
-    serverVariables: { [key: string]: any } = {};
-    streamingVariables = false;
-    updatedVariables: string[] = [];
-    variablesInCreation: { name: string, value: any }[] = [];
-    variablesToRemove: string[] = [];
 
     read_only: boolean = true;
     can_admin: boolean = false;
@@ -100,16 +89,9 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
     // HACK: Prevent the MatMenu import for being removed
     private _pinRequiredMatMenuLibrary: MatMenu;
     eventSubscription: Unsubscribable | null;
-    logSubscription: Unsubscribable | null;
-    variableSubscription: Unsubscribable | null;
     mutationObserver: MutationObserver | null;
     blockSynchronizer: BlockSynchronizer;
     visibility: VisibilityEnum;
-
-
-
-    readonly _typeof = (x: any) => typeof x;
-    readonly json_stringify = JSON.stringify;
 
 
     constructor(
@@ -226,9 +208,6 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit() {
-        // this.drawer._animationDoneListener = () => {
-        //     this.notifyResize();
-        // }
         const elem = (this.drawer as any)._elementRef.nativeElement;
 
         this.mutationObserver = new MutationObserver(() => {
@@ -313,180 +292,8 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
     }
 
     initializeListeners() {
-        // Initialize log listeners
-        this.streamingLogs = true;
-        if (!this.program.readonly) {
-            this.logSubscription = this.programService.watchProgramLogs(this.program.id,
-                                                                        { request_previous_logs: true })
-                .subscribe(
-                    {
-                        next: (update: ProgramInfoUpdate) => {
-                            if (update.value.program_id !== this.programId) {
-                                return;
-                            }
-
-                            if (update.type === 'program_log') {
-                                this.updateLogsDrawer(update.value);
-                                this.logCount++;
-                            }
-                            else if (update.type === 'debug_log') {
-                                this.updateLogsDrawer(update.value);
-                                this.logCount++;
-                            }
-                        },
-                        error: (error: any) => {
-                            console.error("Error reading logs:", error);
-                            this.streamingLogs = false;
-                        },
-                        complete: () => {
-                            console.warn("No more logs about program", this.programId)
-                            this.streamingLogs = false;
-                        }
-                    });
-
-            this.variableSubscription = this.programService.watchProgramVariables(this.program.id,
-                                                                                  { request_previous: true })
-                .subscribe(
-                    {
-                        next: (variable: { name: string, value: any }) => {
-                            const idx = this.variables.findIndex(v => v.name === variable.name);
-
-                            if (idx === -1) {
-                                this.variables.push({ name: variable.name, value: variable.value });
-                            }
-                            else {
-                                if ((!this.serverVariables[variable.name])
-                                    || (this.serverVariables[variable.name] === this.variables[idx].value)) {
-
-                                    this.variables[idx].value = variable.value;
-                                }
-                            }
-
-                            this.serverVariables[variable.name] = variable.value;
-                            this.updateVariable(variable.name);
-                        },
-                        error: (error: any) => {
-                            console.error("Error reading variables:", error);
-                            this.streamingVariables = false;
-                        },
-                        complete: () => {
-                            console.warn("No more variable updates on program", this.programId)
-                            this.streamingVariables = false;
-                        }
-                    });
-
-        }
-
         this.initializeEventSynchronization();
     }
-
-    preparedChangeOnVar(name: string): boolean {
-        const idx = this.variables.findIndex(v => v.name === name);
-
-        if (idx < 0) {
-            return false;
-        }
-        else if (!this.serverVariables[name]) {
-            return true;
-        }
-        else {
-            return this.variables[idx].value !== this.serverVariables[name];
-        }
-    }
-
-    resetVariable(name: string) {
-        const idx = this.variables.findIndex(v => v.name === name);
-
-        if (!this.serverVariables[name]) {
-            if (idx >= 0) {
-                this.variables.splice(idx, 1);
-            }
-        }
-        else {
-            this.variables[idx].value = this.serverVariables[name];
-        }
-
-        this.updateVariable(name);
-    }
-
-    updateVariable(name: string) {
-        const val = this.variables.find(v => v.name === name).value;
-        const indexInUpdate = this.updatedVariables.indexOf(name);
-
-        if (val !== this.serverVariables[name]) {
-            if (indexInUpdate < 0) {
-                this.updatedVariables.push(name);
-            }
-        }
-        else {
-            if (indexInUpdate >= 0) {
-                this.updatedVariables.splice(indexInUpdate, 1);
-            }
-        }
-    }
-
-    addVariable() {
-        let index = 1;
-        for (; this.variables.find(v => v.name === 'var-' + index)
-            || this.variablesInCreation.find(v => v.name === 'var-' + index)
-            ; index++ ) {}
-        this.variablesInCreation.push({ name: 'var-' + index, value: "Value" });
-    }
-
-    removeVariable(name: string) {
-        this.variablesToRemove.push(name);
-    }
-
-    removeVariableInCreation(name: string) {
-        const idx = this.variablesInCreation.findIndex(v => v.name === name);
-        this.variablesInCreation.splice(idx, 1);
-    }
-
-    unremoveVariable(name: string) {
-        const idx = this.variablesToRemove.indexOf(name);
-        this.variablesToRemove.splice(idx, 1);
-    }
-
-    async uploadVariableChanges() {
-        const target: { name: string, value: any }[] = [];
-        for (const name of this.updatedVariables) {
-            const result = this.variables.find(v => v.name === name);
-            target.push({ name: name, value: result.value });
-        }
-        for (const item of this.variablesInCreation) {
-            target.push({ name: item.name, value: item.value });
-        }
-
-        try {
-            await this.programService.updateProgramVariables(this.programId, target);
-            this.variablesInCreation = [];
-
-            await Promise.all(this.variablesToRemove.map(name => this.programService.removeVariable(this.programId, name)));
-
-            for (const name of this.variablesToRemove) {
-                const idx = this.variables.findIndex(v => v.name === name);
-                delete this.serverVariables[name];
-                if (idx >= 0) {
-                    this.variables.splice(idx, 1);
-                }
-            }
-            this.variablesToRemove = [];
-
-            this.toastr.success('Change complete', '', {
-                closeButton: true,
-                progressBar: true,
-            });
-        }
-        catch (error) {
-            this.toastr.error(JSON.stringify(error), 'Error on update', {
-                closeButton: true,
-                progressBar: true,
-            });
-
-            console.error(error);
-        }
-    }
-
 
     initializeEventSynchronization() {
         // Initialize editor event listeners
@@ -1057,14 +864,8 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
                 this.eventSubscription = null;
             }
 
-            if (this.logSubscription) {
-                this.logSubscription.unsubscribe();
-                this.logSubscription = null;
-            }
-
-            if (this.variableSubscription) {
-                this.variableSubscription.unsubscribe();
-                this.variableSubscription = null;
+            if (this.sidepanel) {
+                this.sidepanel.dispose();
             }
 
             if (this.mutationObserver) {
@@ -1341,11 +1142,11 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
     }
 
     toggleLogsPanel() {
-        if (this.drawer.opened && this.drawer_type === 'logs') {
+        if (this.drawer.opened && this.sidepanel.drawerType === 'logs') {
             this.closeDrawer();
         }
         else {
-            this.setDrawerType('logs');
+            this.sidepanel.setDrawerType('logs');
             if (!this.drawer.opened) {
                 this.openDrawer();
             }
@@ -1353,11 +1154,11 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
     }
 
     toggleVariablesPanel() {
-        if (this.drawer.opened && this.drawer_type === 'variables') {
+        if (this.drawer.opened && this.sidepanel.drawerType === 'variables') {
             this.closeDrawer();
         }
         else {
-            this.setDrawerType('variables');
+            this.sidepanel.setDrawerType('variables');
             if (!this.drawer.opened) {
                 this.openDrawer();
             }
@@ -1368,82 +1169,20 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
         this.browser.window.dispatchEvent(new Event('resize'));
     }
 
-    closeDrawer() {
-        return this.drawer.close();
-    }
-
     openDrawer() {
         return this.drawer.open();
     }
 
-    setDrawerType(type: DrawerType) {
-        this.drawer_type = type;
+    closeDrawer = () => {
+        return this.drawer.close();
     }
 
-    updateLogsDrawer(line: ProgramLogEntry) {
-        const container = document.getElementById('logs_panel_container');
-        if (!this.drawer_initialized) {
-            container.innerHTML = ''; // Clear container
-
-            this.drawer_initialized = true;
+    onToggleMark = (blockId: string, activate: boolean, message: string) => {
+        if (activate) {
+            this.workspace.getBlockById(blockId).setCommentText(message);
         }
-
-        const newLine = this.renderLogLine(line);
-        container.appendChild(newLine);
-
-        if (this.drawer.opened && this.drawer_type === 'logs') {
-            newLine.scrollIntoView();
-        }
-    }
-
-    renderLogLine(line: ProgramLogEntry): HTMLElement {
-        const element = document.createElement('div');
-        element.classList.add('log-entry');
-
-        const line_time = document.createElement('span');
-        line_time.classList.add('time');
-        line_time.innerText = unixMsToStr(line.event_time);
-
-        element.appendChild(line_time);
-
-        const message = document.createElement('span');
-        message.classList.add('message');
-        message.innerText = line.event_message;
-
-        element.appendChild(message);
-
-        if (line.block_id) {
-            const mark_button = document.createElement('button');
-            mark_button.classList.value = 'log-marker mat-button mat-raised-button mat-button-base mat-primary';
-
-            mark_button.innerText = 'Mark block';
-            mark_button.onclick = () => {
-                this.toggleMark(mark_button, line);
-            }
-
-            element.appendChild(mark_button);
-        }
-
-        return element;
-    }
-
-    toggleMark(button: HTMLButtonElement, log_line: ProgramLogEntry) {
-        const entry = this.commented_blocks[log_line.block_id];
-        const marked = (entry !== undefined) && (entry[0] == log_line.event_time);
-
-        if (marked) { // Unmark
-            button.innerText = 'Mark block';
-            this.commented_blocks[log_line.block_id] = undefined;
-            this.workspace.getBlockById(log_line.block_id).setCommentText(null);
-        }
-        else { // Mark block
-            button.innerText = 'Unmark block';
-            if (entry !== undefined) {
-                entry[1].innerText = 'Mark block';
-            }
-
-            this.commented_blocks[log_line.block_id] = [log_line.event_time, button];
-            this.workspace.getBlockById(log_line.block_id).setCommentText(log_line.event_message);
+        else {
+            this.workspace.getBlockById(blockId).setCommentText(null);
         }
     }
 }
