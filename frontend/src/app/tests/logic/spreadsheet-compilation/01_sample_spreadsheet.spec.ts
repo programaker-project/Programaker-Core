@@ -23,7 +23,7 @@ export function gen_toolbox() : ISpreadsheetToolbox {
             blocks: [
                 {
                     id: '7e34_on_new_message',
-                    message: 'On new message, save %1',
+                    message: 'When I say something in any channel. Set %1',
                 },
                 {
                     id: '7e34_answer_message',
@@ -35,6 +35,57 @@ export function gen_toolbox() : ISpreadsheetToolbox {
                 },
             ]
         }
+    ], [
+		{
+			"subkey": null,
+			"save_to": {
+				"type": "argument",
+				"index": 0
+			},
+			"message": "When I say something in any channel. Set %1",
+			"key": "on_new_message",
+			"function_name": "on_new_message",
+			"service_port_id": BRIDGE_ID,
+            "id": 'services.' + BRIDGE_ID + '.' + "on_new_message",
+			"block_type": "trigger",
+            block_result_type: null,
+			"block_id": "on_new_message",
+			"arguments": [
+				{
+					"var_type": "string",
+					"type": "variable",
+					"default_value": "undefined",
+					"class": "single"
+				}
+			]
+		},
+		{
+			"save_to": null,
+			"message": "Respond %1",
+			"function_name": "answer_message",
+			"block_type": "operation",
+			"block_result_type": null,
+            "id": 'services.' + BRIDGE_ID + '.' + "answer_message",
+			"service_port_id": BRIDGE_ID,
+			"block_id": "answer_message",
+			"arguments": [
+				{
+					"type": "string",
+					"default_value": "Hello",
+				}
+			]
+		},
+		{
+			"save_to": null,
+			"message": "Get value",
+			"function_name": "get_value",
+			"block_type": "getter",
+            "id": 'services.' + BRIDGE_ID + '.' + "get_value",
+			"service_port_id": BRIDGE_ID,
+			"block_result_type": "string",
+			"block_id": "get_value",
+			"arguments": [],
+		}
     ]);
 }
 

@@ -3,6 +3,7 @@ import { BLOCK_TYPE as VALUE_BLOCK_TYPE } from '../../flow-editor/direct_value';
 import { CompiledFlowGraph, FlowGraph } from "../../flow-editor/flow_graph";
 import { compile } from "../../flow-editor/graph_analysis";
 import { ISpreadsheetToolbox } from "./spreadsheet-toolbox";
+import { uuidv4 } from '../../flow-editor/utils';
 
 export function colName(index: number) {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -190,7 +191,7 @@ function parse_tokens(data: string): SpreadsheetOperation[] {
             const left = tokens_in_arg.pop();
             const infix_op: SpreadsheetOperation = {
                 type: 'call',
-                func_name: data[idx],
+                func_name: get_infix_operation(data[idx]),
                 arguments: [
                     left,
                 ]
@@ -227,6 +228,14 @@ function escape_char(char: string): string {
     };
 
     return escape_mapping[char]
+}
+
+function get_infix_operation(char: string): string {
+    const mapping: {[key: string]: string} = {
+        '+': 'operator_add',
+    };
+
+    return mapping[char]
 }
 
 function parse_cell(data: string): SpreadsheetOperation {
@@ -270,15 +279,25 @@ function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox,
         throw Error("CELL-REF not implemented as operation");
     }
 
+    console.log(op.func_name, op, toolbox.blockMap[op.func_name])
     const call = toolbox.blockMap[op.func_name];
-    const block = call.block;
+    let block = {
+        block_type: 'getter',
+        message: op.func_name,
+        id: op.func_name,
+    };
+
+    if (call) {
+        block = call.block;
+    }
+
     g.nodes[id] = {
         data: {
             type: ATOMIC_BLOCK_TYPE,
             value: {
                 options: {
                     type: block.block_type as AtomicFlowBlockOperationType,
-                    block_function: block.function_name,
+                    block_function: block.id,
                     message: block.message,
                 } as AtomicFlowBlockOptions,
                 slots: {},
@@ -287,9 +306,45 @@ function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox,
             }
         }
     }
+
+    let idx = -1;
+    for (const arg of op.arguments) {
+        idx++; // First argument is index: 0
+
+        if (arg.type === 'cell-ref') {
+            // Cells are referenced directly, to avoid unnecessary intermediate steps
+            g.edges.push({
+                from: {
+                    id: arg.value,
+                    output_index: 0,
+                },
+                to: {
+                    id: id,
+                    input_index: idx,
+                }
+            });
+            continue;
+        }
+
+        const arg_id = uuidv4();
+        add_op_to_graph(arg, toolbox, g, arg_id);
+        g.edges.push({
+            from: {
+                id: arg_id,
+                output_index: 0,
+            },
+            to: {
+                id: id,
+                input_index: idx,
+            }
+        });
+    }
 }
 
 export function compile_spreadsheet(orig: {[key: string]: string}, toolbox: ISpreadsheetToolbox): CompiledFlowGraph[] {
     const graph = build_graph(orig, toolbox);
+
+    console.log("Graph: \n" + JSON.stringify(graph, null, 4));
+
     return compile(graph);
 }

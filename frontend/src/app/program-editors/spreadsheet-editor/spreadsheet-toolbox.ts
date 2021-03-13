@@ -1,11 +1,11 @@
-import { ConnectionService } from "app/connection.service";
-import { CustomBlockService } from "app/custom_block.service";
-import { EnvironmentService } from "app/environment.service";
-import { ServiceService } from "app/service.service";
-import { Session } from "app/session";
-import { BridgeConnection } from "app/connection";
-import { iconDataToUrl } from "app/utils";
-import { ResolvedCustomBlock } from "app/custom_block";
+import { ConnectionService } from "../../connection.service";
+import { CustomBlockService } from "../../custom_block.service";
+import { EnvironmentService } from "../../environment.service";
+import { ServiceService } from "../../service.service";
+import { Session } from "../../session";
+import { BridgeConnection } from "../../connection";
+import { iconDataToUrl } from "../../utils";
+import { ResolvedCustomBlock } from "../../custom_block";
 
 export type BlockDef = {
     id: string,
@@ -20,9 +20,15 @@ export type CategoryDef = {
 }
 
 export interface ISpreadsheetToolbox {
-    categories: CategoryDef[] = [];
+    categories: CategoryDef[];
     nonEmptyCategories: CategoryDef[];
     blockMap: { [key: string]: { cat: CategoryDef, block: ResolvedCustomBlock } };
+}
+
+export function simplify_id(block: ResolvedCustomBlock) {
+    return block.service_port_id.substr(0, 2)
+        + block.service_port_id.substr(block.service_port_id.length - 2)
+        + '_' + block.function_name
 }
 
 export class SpreadsheetToolbox {
@@ -76,11 +82,7 @@ export class SpreadsheetToolbox {
             }
 
             const category = categories.find(c => c.id === block.service_port_id);
-            const reducedId = (
-                block.service_port_id.substr(0, 2)
-                    + block.service_port_id.substr(block.service_port_id.length - 2)
-                    + '_' + block.function_name
-            );
+            const reducedId = simplify_id(block);
             category.blocks.push({
                 icon: icon,
                 message: block.message,
