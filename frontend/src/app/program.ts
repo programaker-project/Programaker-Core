@@ -43,7 +43,13 @@ export class ScratchProgram extends ProgramContent {
 
 export class FlowProgram extends ProgramContent {
     constructor(metadata: ProgramMetadata, parsed: any, orig: any) {
-        super(metadata, parsed, orig, 'scratch_program');
+        super(metadata, parsed, orig, 'flow_program');
+    }
+}
+
+export class SpreadsheetProgram extends ProgramContent {
+    constructor(metadata: ProgramMetadata, parsed: any, orig: any) {
+        super(metadata, parsed, orig, 'spreadsheet_program');
     }
 }
 

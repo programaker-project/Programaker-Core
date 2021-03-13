@@ -85,7 +85,7 @@ button#program-start-button,
 button#program-delete-button,
 button#program-stop-button,
 button#program-logs-button,
-button#program-variables-button,
+button#program-functions-button,
 button#advanced-program-controls-button {
     vertical-align: top;
     padding: 1ex;
@@ -185,5 +185,23 @@ button#program-start-button .action-icon {
 
     &.editing {
         box-shadow: 0 0 2px 1px #1a73e8;
+    }
+
+    &.hidden {
+        display: none;
+    }
+}
+
+.functions-panel {
+    .block-list {
+        padding: 0;
+
+        li {
+            padding-left: 1rem;
+
+            &:hover {
+                background-color: #eee;
+            }
+        }
     }
 }

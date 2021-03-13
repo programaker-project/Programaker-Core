@@ -21,7 +21,7 @@ import { DeleteProgramDialogComponent } from '../../DeleteProgramDialogComponent
 import { ChangeProgramVisilibityDialog } from '../../dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
 import { EnvironmentService } from '../../environment.service';
 import { MonitorService } from '../../monitor.service';
-import { ProgramContent, ProgramEditorEventValue, VisibilityEnum } from '../../program';
+import { ProgramContent, ProgramEditorEventValue, VisibilityEnum, SpreadsheetProgram } from '../../program';
 import { ProgramService } from '../../program.service';
 import { SetProgramTagsDialogComponent } from '../../program_tags/SetProgramTagsDialogComponent';
 import { RenameProgramDialogComponent } from '../../RenameProgramDialogComponent';
@@ -33,6 +33,8 @@ import { Synchronizer } from '../../syncronizer';
 import { TemplateService } from '../../templates/template.service';
 import * as progbar from '../../ui/progbar';
 import { MatMenu } from '@angular/material/menu';
+import { SpreadsheetToolbox, BlockDef } from './spreadsheet-toolbox';
+import { compile_spreadsheet, colName } from './spreadsheet-compiler';
 
 
 @Component({
@@ -50,7 +52,6 @@ import { MatMenu } from '@angular/material/menu';
     ],
 })
 export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
-    @Input() program: ProgramContent;
     workspace: Blockly.WorkspaceSvg;
     programId: string;
     environment: { [key: string]: any };
@@ -60,6 +61,7 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     @ViewChild('sidepanel') sidepanel: ProgramEditorSidepanelComponent;
     @ViewChild('floatingEditor') floatingEditor: ElementRef<HTMLInputElement>;
 
+    program: ProgramContent;
     portraitMode: boolean;
     smallScreen: boolean;
     patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
@@ -82,6 +84,10 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     mutationObserver: MutationObserver | null;
     blockSynchronizer: BlockSynchronizer;
     visibility: VisibilityEnum;
+    toolbox: SpreadsheetToolbox;
+
+    // Tools for template
+    readonly _colName = colName;
 
 
     constructor(
@@ -107,7 +113,11 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
         this.cursorInfo = {};
-        console.log("Cell", this.cellValues);
+
+        if (isPlatformServer(this.platformId)) {
+            // This cannot be rendered on server, so halt it's load
+            return;
+        }
     }
 
     ngOnInit(): void {
@@ -170,10 +180,21 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
                         return;
                     }
 
+                    this.program = program;
                     this.programId = program.id;
+
+                    this.toolbox = new SpreadsheetToolbox(this.customBlockService,
+                                                          this.serviceService,
+                                                          this.environmentService,
+                                                          this.program.id,
+                                                          this.connectionService,
+                                                          this.session,
+                                                         );
+
                     this.read_only = program.readonly;
                     this.visibility = program.visibility;
                     this.can_admin = program.can_admin;
+                    this.cellValues = program.orig;
 
                     // this.prepareWorkspace(program).then((controller: ToolboxController) => {
                     //     this.program = program;
@@ -321,63 +342,55 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
         // }
     }
 
-    // async sendProgram(): Promise<boolean> {
-    //     // Get workspace
-    //     const xml = Blockly.Xml.workspaceToDom(this.workspace);
+    async sendProgram(): Promise<boolean> {
+        // Serialize result
+        let program;
+        try {
+            const orig = this.cellValues;
+            const parsed: any[] = compile_spreadsheet(orig, this.toolbox);
+            program = new SpreadsheetProgram(this.program,
+                                             parsed,
+                                             orig);
+        }
+        catch (error) {
+            this.toastr.error(error, 'Invalid program', {
+                closeButton: true,
+                progressBar: true,
+            });
 
-    //     // Remove comments
-    //     for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
-    //         comment.parentNode.removeChild(comment);
-    //     }
+            console.error(error);
+            return;
+        }
 
-    //     // Serialize result
-    //     let program;
-    //     try {
-    //         const serializer = new ScratchProgramSerializer(this.toolboxController);
-    //         const serialized = serializer.ToJson(xml);
-    //         program = new ScratchProgram(this.program,
-    //                                      serialized.parsed,
-    //                                      serialized.orig);
-    //     }
-    //     catch (error) {
-    //         this.toastr.error(error, 'Invalid program', {
-    //             closeButton: true,
-    //             progressBar: true,
-    //         });
+        // Send update
+        const button = document.getElementById('program-start-button');
+        if (button){
+            button.classList.add('started');
+            button.classList.remove('completed');
+        }
 
-    //         console.error(error);
-    //         return;
-    //     }
+        const result = await this.programService.updateProgram(program);
 
-    //     // Send update
-    //     const button = document.getElementById('program-start-button');
-    //     if (button){
-    //         button.classList.add('started');
-    //         button.classList.remove('completed');
-    //     }
+        if (button){
+            button.classList.remove('started');
+            button.classList.add('completed');
+        }
 
-    //     const result = await this.programService.updateProgram(program);
+        if (result) {
+            this.toastr.success('Upload complete', '', {
+                closeButton: true,
+                progressBar: true,
+            });
+        }
+        else {
+            this.toastr.error('Error on upload', '', {
+                closeButton: true,
+                progressBar: true,
+            });
+        }
 
-    //     if (button){
-    //         button.classList.remove('started');
-    //         button.classList.add('completed');
-    //     }
-
-    //     if (result) {
-    //         this.toastr.success('Upload complete', '', {
-    //             closeButton: true,
-    //             progressBar: true,
-    //         });
-    //     }
-    //     else {
-    //         this.toastr.error('Error on upload', '', {
-    //             closeButton: true,
-    //             progressBar: true,
-    //         });
-    //     }
-
-    //     return result;
-    // }
+        return result;
+    }
 
     cloneProgram() {
         // const programData: CloneProgramDialogComponentData = {
@@ -431,7 +444,7 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
                 return;
             }
 
-            // await this.sendProgram();
+            await this.sendProgram();
             const rename = (this.programService.renameProgram(this.program, programData.name)
                 .catch(() => { return false; })
                 .then((success: boolean) => {
@@ -573,12 +586,12 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
         }
     }
 
-    toggleVariablesPanel() {
-        if (this.drawer.opened && this.sidepanel.drawerType === 'variables') {
+    toggleFunctionsPanel() {
+        if (this.drawer.opened && this.sidepanel.drawerType === 'custom') {
             this.closeDrawer();
         }
         else {
-            this.sidepanel.setDrawerType('variables');
+            this.sidepanel.setDrawerType('custom');
             if (!this.drawer.opened) {
                 this.openDrawer();
             }
@@ -626,21 +639,32 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
         }
     }
 
+    contextMenuOnCell(ev: MouseEvent) {
+        console.log("Canceling context menu");
+        ev.preventDefault();
+    }
+
     mousedownOnCell(ev: MouseEvent) {
         const elem = ev.target as HTMLTableDataCellElement;
 
+        ev.preventDefault();
+
         if (elem === this.current) {
-            // Just treat it as text
+            // Just check that it's being edited
+            if (!this.floatingEditor.nativeElement.classList.contains('editing')) {
+                this.startEditing(elem);
+            }
+
             return;
         }
 
         const editor = this.floatingEditor.nativeElement;
         if (this.current && editor.value.trim().startsWith('=')) {
             // Selecting other cell while on formula
-            ev.preventDefault();
-
             const val = this.getCellId(elem);
-            editor.value = editor.value.substr(0, editor.selectionStart) + val[0] + ':' + val[1] + editor.value.substr(editor.selectionStart)
+            editor.value = editor.value.substr(0, editor.selectionStart)
+                + colName(val[0]) + val[1]
+                + editor.value.substr(editor.selectionStart)
 
             return;
         }
@@ -650,15 +674,56 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
         elem.classList.add('active');
         this.activeCells = [elem];
         this.makeCurrent(elem);
+        if (ev.button === 2) {
+            this.closeEditor();
+            this.showOptions(elem);
+        }
+        else {
+            this.startEditing(elem);
+        }
+    }
+
+    showOptions(elem: HTMLTableDataCellElement) {
+        console.log("TODO: Show options for", elem);
+    }
+
+    keydownOnEditor(ev: KeyboardEvent) {
+        this.floatingEditor.nativeElement.classList.add('editing');
+        if (ev.key === 'Enter') {
+            this.commitEditor();
+            this.closeEditor();
+        }
+    }
+
+    commitEditor() {
+        const editor = this.floatingEditor.nativeElement;
+        if (this.current) {
+            const value = editor.value;
+            const [col, row] = this.getCellId(this.current);
+
+            this.cellValues[colName(col)+row] = value;
+        }
+        editor.value = '';
+    }
+
+    closeEditor() {
+        const editor = this.floatingEditor.nativeElement;
+        const classes = editor.classList;
+        classes.remove('editing');
+        classes.add('hidden');
+        editor.blur();
     }
 
     makeCurrent(elem: HTMLTableDataCellElement) {
         this.current = elem;
+    }
+
+    startEditing(elem: HTMLTableDataCellElement) {
         const toRect = this.current.getBoundingClientRect();
         const editor = this.floatingEditor.nativeElement;
         editor.value = elem.innerText;
 
-        const workspace = document.getElementById('workspace');
+        const workspace = document.querySelector('.spreadsheet-viewer');
         const wsRect = workspace.getBoundingClientRect();
 
         editor.classList.remove('hidden');
@@ -672,18 +737,27 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
         setTimeout(() => editor.focus(), 0);
     }
 
-    getCellId(elem: HTMLTableDataCellElement): [string, number] {
+    getCellId(elem: HTMLTableDataCellElement): [number, number] {
         const [_, row, col] = elem.id.split('_');
 
-        return [col, parseInt(row)];
+        return [parseInt(col), parseInt(row)];
+    }
+
+    copyBlock(block: BlockDef) {
+        console.log("Copying", block);
+        if (this.current) {
+            const editor = this.floatingEditor.nativeElement;
+            editor.value = '=' + block.id + '()';
+            editor.selectionEnd = editor.selectionStart = editor.value.length - 1;
+            editor.scrollIntoView({ block: 'end' });
+            editor.focus();
+        }
     }
 
     unsetActive() {
-        const editor = this.floatingEditor.nativeElement;
-        if (this.current) {
-            this.current.innerText = editor.value;
+        if (this.floatingEditor.nativeElement.classList.contains('editing')) {
+            this.commitEditor();
         }
-        editor.value = '';
 
         for (const cell of this.activeCells) {
             cell.classList.remove('active');

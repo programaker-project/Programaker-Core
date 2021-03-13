@@ -8,7 +8,8 @@
     <mat-form-field class="selector">
         <mat-select [(value)]="drawer_type">
             <mat-option value="logs">Logs</mat-option>
-            <mat-option value="variables">Variables</mat-option>
+            <mat-option *ngIf="!noVariables" value="variables">Variables</mat-option>
+            <mat-option *ngIf="customElementName" value="custom">{{ customElementName }}</mat-option>
         </mat-select>
     </mat-form-field>
 </div>
@@ -19,7 +20,7 @@
         If you have any problem, contact us on <a class="contact-mail" href="mailto:{{environment.contact_mail}}">{{environment.contact_mail}}</a>
     </span>
 </div>
-<div [class]="drawer_type !== 'variables' ? 'hidden program-drawer' : 'program-drawer'" id="variables_panel_container">
+<div *ngIf="!noVariables" [class]="drawer_type !== 'variables' ? 'hidden program-drawer' : 'program-drawer'" id="variables_panel_container">
     <table class="table var-table">
         <thead>
             <tr>
@@ -110,4 +111,7 @@
             Upload changes
         </label>
     </button>
+</div>
+<div *ngIf="customElementName" [class]="drawer_type !== 'custom' ? 'hidden program-drawer' : 'program-drawer'" id="custom_panel_container">
+    <ng-content></ng-content>
 </div>

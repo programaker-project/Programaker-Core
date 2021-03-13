@@ -9,7 +9,7 @@ import { Unsubscribable } from 'rxjs';
 import { environment } from 'environments/environment';
 import { EnvironmentDefinition } from 'environments/environment-definition';
 
-type DrawerType = 'logs' | 'variables';
+type DrawerType = 'logs' | 'variables' | 'custom';
 
 @Component({
     selector: 'app-program-editor-sidepanel',
@@ -25,6 +25,8 @@ export class ProgramEditorSidepanelComponent implements OnInit {
     @Input() program: ProgramContent;
     @Input() onToggleMark: (blockId: string, activate: boolean, message: string) => void;
     @Input() onClose: () => void;
+    @Input() noVariables: boolean;
+    @Input() customElementName: string  | null;
 
     // Utils for template
     readonly _typeof = (x: any) => typeof x;
