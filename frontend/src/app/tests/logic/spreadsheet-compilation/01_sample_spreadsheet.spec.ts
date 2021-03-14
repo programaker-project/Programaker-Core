@@ -95,8 +95,12 @@ describe('Spreadsheet-01: Sample spreadsheet.', () => {
             gen_compiled(dsl_to_ast(
                 `;PM-DSL ;; Entrypoint for mmm-mode
                 (services.${BRIDGE_ID}.on_new_message)
-                (services.${BRIDGE_ID}.answer_message (+ "Hello" (flow-last-value "C2" 0) " " 123)
-                                                      (services.${BRIDGE_ID}.get_value (+ 123 456)) )
+                (call-service id: ${BRIDGE_ID}
+                              action: answer_message
+                              values: ( (+ (+ (+ "Hello" (flow-last-value "C2" 1)) " ") 123)
+                                        (call-service id: ${BRIDGE_ID}
+                                                      action: get_value
+                                                      values: ((+ 123 456)))))
                 `))
         ]);
     });

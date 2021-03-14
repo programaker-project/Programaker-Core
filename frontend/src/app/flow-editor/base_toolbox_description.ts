@@ -882,3 +882,23 @@ export const BaseToolboxDescription: ToolboxDescription = [
         ]
     }
 ];
+
+const BLOCK_MAP: {[key: string]: AtomicFlowBlockOptions} = {};
+let BLOCK_MAP_READY = false;
+export function get_block_from_base_toolbox(func_name: string): AtomicFlowBlockOptions {
+    if (!BLOCK_MAP_READY) {
+        build_block_map();
+    }
+    return BLOCK_MAP[func_name];
+}
+
+function build_block_map() {
+    for (const cat of BaseToolboxDescription) {
+        for (const block of cat.blocks) {
+            let ablock = block as AtomicFlowBlockOptions;
+            if (ablock.block_function) {
+                BLOCK_MAP[ablock.block_function] = ablock;
+            }
+        }
+    }
+}

@@ -36,7 +36,12 @@ export function convert_to_graphviz(graph: FlowGraph): string {
         }
         else if (node.data.type === VALUE_BLOCK_TYPE ) {
             const v_node = node.data as DirectValueFlowBlockData;
-            raws[node_id] = v_node.value.value;
+            if (typeof v_node.value.value === 'string') {
+                raws[node_id] = `\\"${v_node.value.value}\\"`;
+            }
+            else {
+                raws[node_id] = v_node.value.value;
+            }
         }
         else if (node.data.type === ENUM_BLOCK_TYPE ) {
             const e_node = node.data as EnumDirectValueFlowBlockData;

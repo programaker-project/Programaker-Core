@@ -1886,7 +1886,11 @@ function extract_non_arguments_from_block(startBlock: CompiledBlock): CompiledBl
         const argList = args as CompiledBlockArgList;
 
         for (const arg of argList) {
-            if (arg.type === 'constant') {
+            if (!arg) {
+                // Empty argument
+                continue;
+            }
+            else if (arg.type === 'constant') {
                 // Nothing to do here
                 continue;
             }

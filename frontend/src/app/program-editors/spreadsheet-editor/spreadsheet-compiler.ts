@@ -1,9 +1,12 @@
-import { AtomicFlowBlockOperationType, BLOCK_TYPE as ATOMIC_BLOCK_TYPE, AtomicFlowBlockOptions } from '../../flow-editor/atomic_flow_block';
+import { ResolvedCustomBlock } from '../../custom_block';
+import { get_block_from_base_toolbox } from '../../flow-editor/base_toolbox_description';
+import { InputPortDefinition, MessageType, OutputPortDefinition } from '../../flow-editor/flow_block';
+import { AtomicFlowBlockOperationType, AtomicFlowBlockOptions, BLOCK_TYPE as ATOMIC_BLOCK_TYPE, isAtomicFlowBlockData } from '../../flow-editor/atomic_flow_block';
 import { BLOCK_TYPE as VALUE_BLOCK_TYPE } from '../../flow-editor/direct_value';
 import { CompiledFlowGraph, FlowGraph } from "../../flow-editor/flow_graph";
 import { compile } from "../../flow-editor/graph_analysis";
-import { ISpreadsheetToolbox } from "./spreadsheet-toolbox";
 import { uuidv4 } from '../../flow-editor/utils';
+import { ISpreadsheetToolbox } from "./spreadsheet-toolbox";
 
 export function colName(index: number) {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -88,15 +91,12 @@ function parse_tokens(data: string): SpreadsheetOperation[] {
         }
         else if (m = data.substr(idx).match(/^(?<name>[a-zA-Z0-9_]+)\(/)) {
             // Function call
-            console.log('m', m);
             const name = m.groups["name"];
 
             const call_start_idx = idx;
             const arg_start_idx = idx + name.length + 1;
             idx = arg_start_idx - 1;
             let parens_count = 0;
-
-            console.log("X", data[idx], idx);
 
             // Find the end of the function call
             for(; idx < data.length; idx++) {
@@ -116,24 +116,19 @@ function parse_tokens(data: string): SpreadsheetOperation[] {
                 }
                 else if (data[idx] === '(') {
                     parens_count++;
-                    console.log(">", parens_count);
                 }
                 else if (data[idx] === ')') {
                     parens_count--;
-                    console.log("<", parens_count);
                     if (parens_count === 0) {
                         break;
                     }
                 }
             }
 
-            console.log("IDX", idx);
-
             if (idx === data.length){
                 throw Error(`Uncomplete call: ${data.substr(call_start_idx)}`);
             }
 
-            console.log('=>', name, data.substring(arg_start_idx, idx));
             const args = arg_start_idx < idx
                 ? parse_tokens(data.substring(arg_start_idx, idx))
                 : [];
@@ -165,6 +160,9 @@ function parse_tokens(data: string): SpreadsheetOperation[] {
                     next_on = tokens_in_arg;
                     current_token = [];
                     in_string_char = null;
+                }
+                else {
+                    current_token.push(data[idx]);
                 }
             }
         }
@@ -205,8 +203,6 @@ function parse_tokens(data: string): SpreadsheetOperation[] {
         }
     }
 
-    console.log("OP", operations);
-    console.log("TOK", tokens_in_arg);
     if (next_on !== tokens_in_arg) {
         throw Error(`Uncomplete infix operation: ${data.substr(next_on_swap_pos)}`);
     }
@@ -254,52 +250,82 @@ function parse_cell(data: string): SpreadsheetOperation {
 export function build_graph(orig: {[key: string]: string}, toolbox: ISpreadsheetToolbox): FlowGraph {
     const g: FlowGraph = { nodes: {}, edges: [] };
 
-    const ops = [];
+    let deferred_links: (() => void)[] = [];
     for (const id of Object.keys(orig)) {
         const data = orig[id];
         const op = parse_cell(data);
 
-        add_op_to_graph(op, toolbox, g, id);
+        deferred_links = deferred_links.concat(add_op_to_graph(op, toolbox, g, id));
+    }
+
+    for (const deferred of deferred_links) {
+        deferred();
     }
 
     return g;
 }
 
-function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox, g: FlowGraph, id: string ) {
+function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox, g: FlowGraph, id: string ): (() => void)[] {
     if (op.type === 'constant') {
         g.nodes[id] = {
             data: {
                 type: VALUE_BLOCK_TYPE,
-                value: op.value,
+                value: {
+                    value: op.value,
+                }
             }
         }
-        return;
+        return [];
     }
     else if (op.type === 'cell-ref') {
         throw Error("CELL-REF not implemented as operation");
     }
 
-    console.log(op.func_name, op, toolbox.blockMap[op.func_name])
     const call = toolbox.blockMap[op.func_name];
-    let block = {
-        block_type: 'getter',
-        message: op.func_name,
-        id: op.func_name,
-    };
+    let outputs: OutputPortDefinition[] = [];
+    let inputs: InputPortDefinition[] = [];
+    let options: AtomicFlowBlockOptions;
 
     if (call) {
-        block = call.block;
+        const block = call.block;
+
+        const block_type = block.block_type;
+        if (block_type === 'operation' || block_type === 'trigger') {
+            outputs.push({
+                type: 'pulse',
+            })
+        }
+        else {
+            outputs.push({
+                type: block.block_result_type as MessageType,
+            })
+        }
+
+        if (block.save_to) {
+            outputs.push({
+                type: block.block_result_type as MessageType
+            })
+        }
+
+        options = {
+            type: block.block_type as AtomicFlowBlockOperationType,
+            block_function: block.id,
+            message: block.message,
+            inputs: inputs,
+            outputs: outputs,
+        } as AtomicFlowBlockOptions;
     }
+    else {
+        options = get_block_from_base_toolbox(op.func_name);
+    }
+
+    const block_type = options.type;
 
     g.nodes[id] = {
         data: {
             type: ATOMIC_BLOCK_TYPE,
             value: {
-                options: {
-                    type: block.block_type as AtomicFlowBlockOperationType,
-                    block_function: block.id,
-                    message: block.message,
-                } as AtomicFlowBlockOptions,
+                options: options,
                 slots: {},
                 synthetic_input_count: 0,
                 synthetic_output_count: 0,
@@ -308,26 +334,47 @@ function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox,
     }
 
     let idx = -1;
+    if (block_type === 'operation') {
+        idx++; // First input is pulse
+    }
+
+    let deferred_links: (() => void)[] = [];
     for (const arg of op.arguments) {
         idx++; // First argument is index: 0
 
         if (arg.type === 'cell-ref') {
             // Cells are referenced directly, to avoid unnecessary intermediate steps
-            g.edges.push({
-                from: {
-                    id: arg.value,
-                    output_index: 0,
-                },
-                to: {
-                    id: id,
-                    input_index: idx,
+
+            // These links might need information not yet present on the graph,
+            // so their addition is deferred. Keep original reference for `idx` and `arg` as they
+            // change on later iterations.
+            const def_idx = idx;
+            const def_arg = arg;
+            deferred_links.push(() => {
+                const out_data = g.nodes[def_arg.value].data;
+                let out_port_idx = 0;
+                if (isAtomicFlowBlockData(out_data)) {
+                    if (out_data.value.options.type !== 'getter') {
+                        out_port_idx++;
+                    }
                 }
+
+                g.edges.push({
+                    from: {
+                        id: def_arg.value,
+                        output_index: out_port_idx,
+                    },
+                    to: {
+                        id: id,
+                        input_index: def_idx,
+                    }
+                });
             });
-            continue;
-        }
+        continue;
+    }
 
         const arg_id = uuidv4();
-        add_op_to_graph(arg, toolbox, g, arg_id);
+        deferred_links = deferred_links.concat(add_op_to_graph(arg, toolbox, g, arg_id));
         g.edges.push({
             from: {
                 id: arg_id,
@@ -339,12 +386,12 @@ function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox,
             }
         });
     }
+
+    return deferred_links;
 }
 
 export function compile_spreadsheet(orig: {[key: string]: string}, toolbox: ISpreadsheetToolbox): CompiledFlowGraph[] {
     const graph = build_graph(orig, toolbox);
-
-    console.log("Graph: \n" + JSON.stringify(graph, null, 4));
 
     return compile(graph);
 }
