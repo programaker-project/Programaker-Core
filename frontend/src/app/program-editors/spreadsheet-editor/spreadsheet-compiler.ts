@@ -3,10 +3,13 @@ import { get_block_from_base_toolbox } from '../../flow-editor/base_toolbox_desc
 import { InputPortDefinition, MessageType, OutputPortDefinition } from '../../flow-editor/flow_block';
 import { AtomicFlowBlockOperationType, AtomicFlowBlockOptions, BLOCK_TYPE as ATOMIC_BLOCK_TYPE, isAtomicFlowBlockData } from '../../flow-editor/atomic_flow_block';
 import { BLOCK_TYPE as VALUE_BLOCK_TYPE } from '../../flow-editor/direct_value';
-import { CompiledFlowGraph, FlowGraph } from "../../flow-editor/flow_graph";
+import { CompiledFlowGraph, FlowGraph, FlowGraphNode } from "../../flow-editor/flow_graph";
 import { compile } from "../../flow-editor/graph_analysis";
 import { uuidv4 } from '../../flow-editor/utils';
 import { ISpreadsheetToolbox } from "./spreadsheet-toolbox";
+import { reverse_index_connections, EdgeIndex } from '../../flow-editor/graph_utils';
+import { isUiFlowBlockData } from '../../flow-editor/ui-blocks/ui_flow_block';
+import { find_upstream } from '../../flow-editor/graph_transformations';
 
 export function colName(index: number) {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -262,7 +265,56 @@ export function build_graph(orig: {[key: string]: string}, toolbox: ISpreadsheet
         deferred();
     }
 
+    for (const id of Object.keys(orig)) {
+        const rev_conn_index = reverse_index_connections(g);
+        wire_pulse(id, g, rev_conn_index);
+    }
+
     return g;
+}
+
+function wire_pulse(id: string, g: FlowGraph, rev_conn_index: EdgeIndex) {
+    const target = g.nodes[id];
+    if (isAtomicFlowBlockData(target.data)) {
+        if (target.data.value.options.type === 'getter') {
+            return;
+        }
+    }
+    else if (isUiFlowBlockData(target.data)) {
+        throw Error(`Unexpected UI block in spreadsheet`);
+    }
+    else {
+        return;
+    }
+
+    const upstream = find_upstream(g, id, rev_conn_index,
+                                   (_node_id: string, node: FlowGraphNode) => {
+                                       if (isAtomicFlowBlockData(node.data)) {
+                                           if (node.data.value.options.type !== 'getter') {
+                                               return 'capture';
+                                           }
+                                           else {
+                                               return 'continue';
+                                           }
+                                       }
+                                       else if (isUiFlowBlockData(node.data)) {
+                                           throw Error(`Unexpected UI block in spreadsheet`);
+                                       }
+
+                                       return 'stop'; // Ignore values and enums
+                                   });
+    for (const node of upstream) {
+        g.edges.push({
+            from: {
+                id: node,
+                output_index: 0,
+            },
+            to: {
+                id: id,
+                input_index: 0,
+            }
+        });
+    }
 }
 
 function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox, g: FlowGraph, id: string ): (() => void)[] {
@@ -355,7 +407,7 @@ function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox,
                 let out_port_idx = 0;
                 if (isAtomicFlowBlockData(out_data)) {
                     if (out_data.value.options.type !== 'getter') {
-                        out_port_idx++;
+                        out_port_idx++; // Use the second output of the trigger/operation
                     }
                 }
 
@@ -370,8 +422,8 @@ function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox,
                     }
                 });
             });
-        continue;
-    }
+            continue;
+        }
 
         const arg_id = uuidv4();
         deferred_links = deferred_links.concat(add_op_to_graph(arg, toolbox, g, arg_id));
