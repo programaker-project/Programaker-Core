@@ -2475,6 +2475,9 @@ start_coordinator() ->
                                              ok
                                      end,
 
+                                     io:fwrite("[~p~p] Waiting for tables before setup: ~0tp~n",
+                                               [ ?MODULE, ?LINE, mnesia:system_info(tables) ]),
+                                     ok = mnesia:wait_for_tables(mnesia:system_info(tables), automate_configuration:get_table_wait_time()),
                                      Spawner ! {self(), ready},
 
                                      %% This process cannot longer work if mnesia goes down
