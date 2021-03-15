@@ -26,7 +26,7 @@ export function run(): Promise<any[]> {
                     resolve(file);
                 }
                 else {
-                    process.stdout.write('No flow found\n');
+                    process.stdout.write('No sheet found\n');
                     resolve(null);
                 }
             }

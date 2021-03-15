@@ -130,7 +130,6 @@ export class SettingsComponent {
 
         if (success) {
             this.session = await this.sessionService.forceUpdateSession();
-            console.log("Session", this.session);
         }
 
         if (button){

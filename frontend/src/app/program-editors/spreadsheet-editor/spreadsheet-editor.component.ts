@@ -1,6 +1,7 @@
 import { isPlatformServer, Location } from '@angular/common';
-import { AfterViewInit, Component, Inject, Input, NgZone, OnInit, PLATFORM_ID, ViewChild, ElementRef } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Inject, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
+import { MatMenu } from '@angular/material/menu';
 import { MatDrawer } from '@angular/material/sidenav';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Params, Router } from '@angular/router';
@@ -8,20 +9,15 @@ import { ToastrService } from 'ngx-toastr';
 import { Unsubscribable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { AssetService } from '../../asset.service';
-import { BlockSynchronizer } from '../../blocks/BlockSynchronizer';
-import { ToolboxRegistration } from '../../blocks/Toolbox';
-import { ToolboxController } from '../../blocks/ToolboxController';
 import { BrowserService } from '../../browser.service';
 import { ProgramEditorSidepanelComponent } from '../../components/program-editor-sidepanel/program-editor-sidepanel.component';
 import { ConnectionService } from '../../connection.service';
 import { CustomBlockService } from '../../custom_block.service';
-import { CustomSignalService } from '../../custom_signals/custom_signal.service';
 import { DeleteProgramDialogComponent } from '../../DeleteProgramDialogComponent';
 import { ChangeProgramVisilibityDialog } from '../../dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
+import { CloneProgramDialogComponent, CloneProgramDialogComponentData } from '../../dialogs/clone-program-dialog/clone-program-dialog.component';
 import { EnvironmentService } from '../../environment.service';
-import { MonitorService } from '../../monitor.service';
-import { ProgramContent, ProgramEditorEventValue, VisibilityEnum, SpreadsheetProgram } from '../../program';
+import { ProgramContent, ProgramEditorEventValue, SpreadsheetProgram, VisibilityEnum } from '../../program';
 import { ProgramService } from '../../program.service';
 import { SetProgramTagsDialogComponent } from '../../program_tags/SetProgramTagsDialogComponent';
 import { RenameProgramDialogComponent } from '../../RenameProgramDialogComponent';
@@ -30,20 +26,17 @@ import { Session } from '../../session';
 import { SessionService } from '../../session.service';
 import { StopThreadProgramDialogComponent } from '../../StopThreadProgramDialogComponent';
 import { Synchronizer } from '../../syncronizer';
-import { TemplateService } from '../../templates/template.service';
 import * as progbar from '../../ui/progbar';
-import { MatMenu } from '@angular/material/menu';
-import { SpreadsheetToolbox, BlockDef } from './spreadsheet-toolbox';
-import { compile_spreadsheet, colName } from './spreadsheet-compiler';
+import { colName, compile_spreadsheet } from './spreadsheet-compiler';
+import { BlockDef, SpreadsheetToolbox } from './spreadsheet-toolbox';
 
 
 @Component({
     selector: 'app-my-spreadsheet-editor',
     templateUrl: './spreadsheet-editor.component.html',
     providers: [
-        AssetService, ConnectionService, CustomBlockService, CustomSignalService,
-        MonitorService, ProgramService, ServiceService, SessionService,
-        TemplateService
+        ConnectionService, CustomBlockService,
+        ProgramService, ServiceService, SessionService
     ],
     styleUrls: [
         'spreadsheet-editor.component.scss',
@@ -52,7 +45,6 @@ import { compile_spreadsheet, colName } from './spreadsheet-compiler';
     ],
 })
 export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
-    workspace: Blockly.WorkspaceSvg;
     programId: string;
     environment: { [key: string]: any };
     session: Session;
@@ -64,7 +56,6 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     program: ProgramContent;
     portraitMode: boolean;
     smallScreen: boolean;
-    patchedFunctions: {recordDeleteAreas: (() => void)} = { recordDeleteAreas: null };
     eventStream: Synchronizer<ProgramEditorEventValue>;
     connectionLost: boolean;
 
@@ -82,7 +73,6 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     private _pinRequiredMatMenuLibrary: MatMenu;
     eventSubscription: Unsubscribable | null;
     mutationObserver: MutationObserver | null;
-    blockSynchronizer: BlockSynchronizer;
     visibility: VisibilityEnum;
     toolbox: SpreadsheetToolbox;
 
@@ -92,21 +82,16 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
 
     constructor(
         private browser: BrowserService,
-        private monitorService: MonitorService,
         private programService: ProgramService,
         private customBlockService: CustomBlockService,
-        private customSignalService: CustomSignalService,
-        private assetService: AssetService,
         private route: ActivatedRoute,
         private router: Router,
         private _location: Location,
-        private templateService: TemplateService,
         private serviceService: ServiceService,
         private notification: MatSnackBar,
         private dialog: MatDialog,
         private connectionService: ConnectionService,
         private sessionService: SessionService,
-        private ngZone: NgZone,
         private environmentService: EnvironmentService,
         private toastr: ToastrService,
 
@@ -195,16 +180,10 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
                     this.visibility = program.visibility;
                     this.can_admin = program.can_admin;
                     this.cellValues = program.orig;
-
-                    // this.prepareWorkspace(program).then((controller: ToolboxController) => {
-                    //     this.program = program;
-                    //     this.load_program(controller, program);
-                    //     resolve();
-                    // }).catch(err => {
-                    //     console.error("Error:", err);
-                    //     resolve();
-                    //     this.toastr.error(JSON.stringify(err), "Error loading");
-                    // });
+                    if (!this.cellValues || (this.cellValues as any) === 'undefined') {
+                        this.cellValues = {};
+                    }
+                    resolve();
                 });
         }));
     }
@@ -225,16 +204,6 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
         this.mutationObserver.observe(elem, { attributes: true, subtree: true  });
     }
 
-    load_program(controller: ToolboxController, program: ProgramContent) {
-        // let source = program.orig;
-        // if (program.checkpoint) {
-        //     source = program.checkpoint;
-        // }
-        // const xml = Blockly.Xml.textToDom(source);
-        // this.removeNonExistingBlocks(xml, controller);
-        // (Blockly.Xml as any).clearWorkspaceAndLoadFromXml(xml, this.workspace);
-    }
-
     initializeListeners() {
         this.initializeEventSynchronization();
     }
@@ -245,16 +214,7 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     checkpointProgram() {
     }
 
-    // static getEditorPosition(workspaceElement: HTMLElement): {x:number, y: number, scale: number} | null {
-    // }
-
-    patch_flyover_area_deletion() {
-    }
-
     async reloadToolbox(): Promise<any> {
-    }
-
-    injectWorkspace(toolbox: HTMLElement, registrations: ToolboxRegistration[], controller: ToolboxController) {
     }
 
     calculate_size(workspace: HTMLElement) {
@@ -281,9 +241,6 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     reset_zoom() {
     }
 
-    // get_position(element: any): { x: number, y: number } {
-    // }
-
     reset_header_scroll() {
         document.getElementById('program-header').scrollTo(0, 0);
     }
@@ -299,47 +256,14 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     }
 
     dispose() {
-        // try {
-        //     if (this.eventSubscription) {
-        //         this.eventSubscription.unsubscribe();
-        //         this.eventSubscription = null;
-        //     }
+        if (this.sidepanel) {
+            this.sidepanel.dispose();
+        }
 
-        //     if (this.sidepanel) {
-        //         this.sidepanel.dispose();
-        //     }
-
-        //     if (this.mutationObserver) {
-        //         this.mutationObserver.disconnect();
-        //         this.mutationObserver = null;
-        //     }
-
-        //     if (this.blockSynchronizer) {
-        //         this.blockSynchronizer.close();
-        //         this.blockSynchronizer = null;
-        //     }
-
-        //     this.eventStream = null;
-        // } catch(error) {
-        //     console.error("Error closing event stream:", error);
-        // }
-
-        // try {
-        //     this.workspace.dispose();
-        //     this.workspace = null;
-        // } catch(error) {
-        //     console.error("Error disposing workspace:", error);
-        // }
-
-        // // Restore the patched function, to cleaup the state.
-        // try {
-        //     if (this.patchedFunctions.recordDeleteAreas) {
-        //         (Blockly.WorkspaceSvg.prototype as any).recordDeleteAreas_ = this.patchedFunctions.recordDeleteAreas;
-        //         this.patchedFunctions.recordDeleteAreas = null;
-        //     }
-        // } catch (error) {
-        //     console.error("Error restoring recordDeleteAreas:", error);
-        // }
+        if (this.mutationObserver) {
+            this.mutationObserver.disconnect();
+            this.mutationObserver = null;
+        }
     }
 
     async sendProgram(): Promise<boolean> {
@@ -393,42 +317,30 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     }
 
     cloneProgram() {
-        // const programData: CloneProgramDialogComponentData = {
-        //     name: this.program.name,
-        //     program: JSON.parse(JSON.stringify(this.program)),
-        // };
+        const programData: CloneProgramDialogComponentData = {
+            name: this.program.name,
+            program: JSON.parse(JSON.stringify(this.program)),
+        };
 
-        // // Get workspace
-        // const xml = Blockly.Xml.workspaceToDom(this.workspace);
+        programData.program.orig = this.cellValues;
+        if (((!programData.program.parsed) || (programData.program.parsed === 'undefined'))) {
+            programData.program.parsed = { blocks: [], variables: [] };
+        }
 
-        // // Remove comments
-        // for (const comment of Array.from(xml.getElementsByTagName('COMMENT'))) {
-        //     comment.parentNode.removeChild(comment);
-        // }
+        const dialogRef = this.dialog.open(CloneProgramDialogComponent, {
+            data: programData
+        });
 
-        // // Serialize result
-        // const serializer = new ScratchProgramSerializer(this.toolboxController);
-        // const serialized = serializer.ToJson(xml);
+        dialogRef.afterClosed().subscribe(async (result) => {
+            if (!result) {
+                console.log("Cancelled");
+                return;
+            }
 
-        // programData.program.orig = serialized.orig;
-        // if (((!programData.program.parsed) || (programData.program.parsed === 'undefined'))) {
-        //     programData.program.parsed = { blocks: [], variables: [] };
-        // }
-
-        // const dialogRef = this.dialog.open(CloneProgramDialogComponent, {
-        //     data: programData
-        // });
-
-        // dialogRef.afterClosed().subscribe(async (result) => {
-        //     if (!result) {
-        //         console.log("Cancelled");
-        //         return;
-        //     }
-
-        //     const program_id = result.program_id;
-        //     this.dispose();
-        //     this.router.navigate([`/programs/${program_id}/scratch`], { replaceUrl: false });
-        // });
+            const program_id = result.program_id;
+            this.dispose();
+            this.router.navigate([`/programs/${program_id}/scratch`], { replaceUrl: false });
+        });
     }
 
     renameProgram() {
@@ -611,12 +523,7 @@ export class SpreadsheetEditorComponent implements OnInit, AfterViewInit {
     }
 
     onToggleMark = (blockId: string, activate: boolean, message: string) => {
-        if (activate) {
-            this.workspace.getBlockById(blockId).setCommentText(message);
-        }
-        else {
-            this.workspace.getBlockById(blockId).setCommentText(null);
-        }
+        console.log("TODO: Mark block id=", blockId);
     }
 
     // Template helpers

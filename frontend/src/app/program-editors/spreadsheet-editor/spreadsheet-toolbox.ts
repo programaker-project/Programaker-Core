@@ -91,59 +91,8 @@ export class SpreadsheetToolbox {
             blockMap[reducedId] = { cat: category, block: block };
         }
 
-        const availableBridges = await availableConnectionsQuery;
-        for (const bridge of availableBridges) {
-            // base.addActuator(() =>
-            //     new ToolboxFlowButton({
-            //         message: "Connect to " + bridge.name,
-            //         action: () => {
-            //             const dialogRef = dialog.open(AddConnectionDialogComponent, {
-            //                 disableClose: false,
-            //                 data: {
-            //                     programId: programId,
-            //                     bridgeInfo: bridge,
-            //                 }
-            //             });
-
-            //             dialogRef.afterClosed().subscribe(async (result) => {
-            //                 if (!result) {
-            //                     console.log("Cancelled");
-            //                     return;
-            //                 }
-
-            //                 console.debug("Reloading toolbox...");
-            //                 triggerToolboxReload();
-            //             });
-            //         }
-            //     }), bridge.id);
-        }
-
         this.categories = categories;
         this.nonEmptyCategories = this.categories.filter(cat => cat.blocks.length > 0);
         this.blockMap = blockMap;
     }
-
-    // function get_block_message(block: ResolvedCustomBlock): [string, number[]] {
-    //     const output_indexes = get_output_indexes(block);
-
-    //     const translationTable: number[] = [];
-    //     let offset = 0;
-
-    //     const message = block.message.replace(/%(\d+)/g, (_match, digits) => {
-    //         const num = parseInt(digits);
-    //         if (output_indexes.indexOf(num - 1) < 0) { // %num are 1-indexed
-    //             translationTable[num] = num - offset;
-    //             return `%i${num - offset}`;
-    //         }
-    //         else {
-    //             offset += 1;
-    //             if (output_indexes.length !== 1) {
-    //                 console.error('TODO: Index output remapping', block);
-    //             }
-    //             return '%o1';
-    //         }
-    //     });
-
-    //     return [message, translationTable];
-    // }
 }
