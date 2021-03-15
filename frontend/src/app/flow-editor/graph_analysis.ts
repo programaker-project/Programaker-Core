@@ -531,7 +531,7 @@ export function get_stepped_block_arguments(graph: FlowGraph, block_id: string,
             args.shift();
         }
         else {
-            throw new Error(`Non-pulse input before a pulse one on block_id:${block_id}`);
+            throw new Error(`Non-pulse input before a pulse one on block_id:${block_id} (Port: ${pulse_offset}. Block: ${JSON.stringify(graph.nodes[block_id].data)})`);
         }
     }
 
