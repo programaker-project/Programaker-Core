@@ -1253,9 +1253,7 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_ADD
     %% TODO: Consider how this can be made variadic
     case automate_bot_engine_values:add(FirstValue, SecondValue) of
         {ok, Value} ->
-            {ok, Value, Thread2};
-        Error ->
-            Error
+            {ok, Value, Thread2}
     end;
 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_SUBTRACT

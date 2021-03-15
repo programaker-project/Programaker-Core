@@ -1,5 +1,5 @@
 import { ISpreadsheetToolbox, CategoryDef, simplify_id } from "../../../program-editors/spreadsheet-editor/spreadsheet-toolbox";
-import { ResolvedCustomBlock } from "app/custom_block";
+import { ResolvedCustomBlock } from "../../../custom_block";
 
 export class FakeSpreadsheetToolbox implements ISpreadsheetToolbox {
     public categories: CategoryDef[];

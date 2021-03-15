@@ -18,7 +18,7 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec add(_, _) -> {ok, number()} | {error, not_found}.
+-spec add(_, _) -> {ok, number()}.
 add(Left, Right) when is_binary(Left) and is_binary(Right) ->
     case combined_type(Left, Right) of
         {integer, PreviousInt, ChangeInt} ->

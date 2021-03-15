@@ -242,7 +242,10 @@ export class DashboardComponent {
     }
 
     addProgram(): void {
-        const dialogRef = this.dialog.open(SelectProgrammingModelDialogComponent, { width: '90%', data: { is_advanced_user: this.session.tags.is_advanced }});
+        const dialogRef = this.dialog.open(SelectProgrammingModelDialogComponent, { width: '90%', data: {
+            is_advanced_user: this.session.tags.is_advanced,
+            is_user_in_preview: this.session.tags.is_in_preview,
+        }});
 
         dialogRef.afterClosed().subscribe((result: {success: boolean, program_type: ProgramType, program_name: string}) => {
             if (result && result.success) {
