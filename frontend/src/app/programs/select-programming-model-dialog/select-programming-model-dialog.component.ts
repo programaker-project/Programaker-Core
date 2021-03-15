@@ -22,10 +22,8 @@ export class SelectProgrammingModelDialogComponent implements OnInit {
                 public connectionService: ConnectionService,
 
                 @Inject(MAT_DIALOG_DATA)
-                public data: { is_advanced_user: boolean }) {
-        if (!data.is_advanced_user) {
-            this.selectedType = 'scratch_program';
-        }
+                public data: { is_advanced_user: boolean, is_user_in_preview: boolean }) {
+        this.selectedType = 'scratch_program';
     }
 
     ngOnInit(): void {

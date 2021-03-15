@@ -47,6 +47,7 @@
             'col-sm-5': true,
             'selected': selectedType === 'spreadsheet_program'
             }"
+            *ngIf="data.is_user_in_preview"
             (click)="selectType('spreadsheet_program')"
             role="button">
             <h4 class="title">Spreadsheet</h4>
