@@ -1,11 +1,11 @@
 import { MatDialog } from '@angular/material/dialog';
-import { BridgeConnection } from 'app/connection';
-import { ConnectionService } from 'app/connection.service';
-import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
-import { EnvironmentService } from 'app/environment.service';
-import { ServiceService } from 'app/service.service';
-import { UiSignalService } from 'app/services/ui-signal.service';
-import { Session } from 'app/session';
+import { BridgeConnection } from '../connection';
+import { ConnectionService } from '../connection.service';
+import { AddConnectionDialogComponent } from '../connections/add-connection-dialog.component';
+import { EnvironmentService } from '../environment.service';
+import { ServiceService } from '../service.service';
+import { UiSignalService } from '../services/ui-signal.service';
+import { Session } from '../session';
 import { ResolvedBlockArgument, ResolvedCustomBlock, ResolvedDynamicBlockArgument, ResolvedDynamicSequenceBlockArgument } from '../custom_block';
 import { CustomBlockService } from '../custom_block.service';
 import { iconDataToUrl } from '../utils';
@@ -196,7 +196,7 @@ function get_output_indexes(block: ResolvedCustomBlock): number[] {
     return output_indexes;
 }
 
-function get_block_message(block: ResolvedCustomBlock): [string, number[]] {
+export function get_block_message(block: ResolvedCustomBlock): [string, number[]] {
     const output_indexes = get_output_indexes(block);
 
     const translationTable: number[] = [];
@@ -220,7 +220,7 @@ function get_block_message(block: ResolvedCustomBlock): [string, number[]] {
     return [message, translationTable];
 }
 
-function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {
+export function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {
     // Remove save_to
     const skipped_indexes = get_output_indexes(block);
 
@@ -229,7 +229,7 @@ function get_block_inputs(block: ResolvedCustomBlock): InputPortDefinition[] {
         .map((value) => (get_block_arg(block, value)) ));
 }
 
-function get_block_arg(block: ResolvedCustomBlock, arg: ResolvedBlockArgument): InputPortDefinition {
+export function get_block_arg(block: ResolvedCustomBlock, arg: ResolvedBlockArgument): InputPortDefinition {
     if ((arg as ResolvedDynamicSequenceBlockArgument).callback_sequence) {
         const dyn_arg = (arg as ResolvedDynamicSequenceBlockArgument);
 
@@ -255,7 +255,7 @@ function get_block_arg(block: ResolvedCustomBlock, arg: ResolvedBlockArgument): 
     }
 }
 
-function get_block_outputs(block: ResolvedCustomBlock): OutputPortDefinition[] {
+export function get_block_outputs(block: ResolvedCustomBlock): OutputPortDefinition[] {
     if (block.block_type === 'getter') {
         let result_type: MessageType = 'any';
 
@@ -316,7 +316,7 @@ function get_block_outputs(block: ResolvedCustomBlock): OutputPortDefinition[] {
     }];
 }
 
-function get_arg_type(arg: any): MessageType  {
+export function get_arg_type(arg: any): MessageType  {
     let argType = arg.type;
 
     if (arg.type === 'variable') {

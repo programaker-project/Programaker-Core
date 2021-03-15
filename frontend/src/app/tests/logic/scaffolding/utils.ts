@@ -1,8 +1,9 @@
-import { isUiFlowBlockData, UiFlowBlockData } from '../../../flow-editor/ui-blocks/ui_flow_block';
+import { is_pulse_output } from '../../../flow-editor/graph_transformations';
 import { AtomicFlowBlockData, BLOCK_TYPE as ATOMIC_BLOCK_TYPE } from '../../../flow-editor/atomic_flow_block';
 import { BLOCK_TYPE as VALUE_BLOCK_TYPE, DirectValueFlowBlockData } from '../../../flow-editor/direct_value';
 import { BLOCK_TYPE as ENUM_BLOCK_TYPE, EnumDirectValueFlowBlockData } from '../../../flow-editor/enum_direct_value';
 import { FlowGraph } from '../../../flow-editor/flow_graph';
+import { isUiFlowBlockData } from '../../../flow-editor/ui-blocks/ui_flow_block';
 
 export function convert_to_graphviz(graph: FlowGraph): string {
     const tokens: string[] = ['digraph {'];
@@ -55,13 +56,17 @@ export function convert_to_graphviz(graph: FlowGraph): string {
 
     for (const conn of graph.edges) {
         let from_id = conn.from.id;
+        let extras = '';
         if (raws[from_id]) {
             const value = raws[from_id];
 
             from_id = raw_value_prefixes + next_raw_id++;
             tokens.push(`  "${from_id}"[label="${value}"]`);
         }
-        tokens.push(`  "${from_id}" -> "${conn.to.id}"[label="${conn.from.output_index} → ${conn.to.input_index}"];`);
+        else if (is_pulse_output(graph.nodes[from_id], conn.from.output_index)) {
+            extras = ',color="black:#ffaa00:black",arrowhead="vee",penwidth=2';
+        }
+        tokens.push(`  "${from_id}" -> "${conn.to.id}"[label="${conn.from.output_index} → ${conn.to.input_index}"${extras}];`);
     }
 
     tokens.push('}');

@@ -10,6 +10,7 @@ import { ISpreadsheetToolbox } from "./spreadsheet-toolbox";
 import { reverse_index_connections, EdgeIndex } from '../../flow-editor/graph_utils';
 import { isUiFlowBlockData } from '../../flow-editor/ui-blocks/ui_flow_block';
 import { find_upstream } from '../../flow-editor/graph_transformations';
+import { get_block_inputs, get_block_outputs, get_block_message } from '../../flow-editor/toolbox_builder';
 
 export function colName(index: number) {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -334,37 +335,36 @@ function add_op_to_graph(op: SpreadsheetOperation, toolbox: ISpreadsheetToolbox,
     }
 
     const call = toolbox.blockMap[op.func_name];
-    let outputs: OutputPortDefinition[] = [];
-    let inputs: InputPortDefinition[] = [];
     let options: AtomicFlowBlockOptions;
 
     if (call) {
         const block = call.block;
 
-        const block_type = block.block_type;
+        const block_type = block.block_type as AtomicFlowBlockOperationType;
+
+        const pulseOutputs = [] as OutputPortDefinition[];
+        const pulseInputs = [] as InputPortDefinition[];
+
         if (block_type === 'operation' || block_type === 'trigger') {
-            outputs.push({
+            pulseOutputs.push({
                 type: 'pulse',
             })
         }
-        else {
-            outputs.push({
-                type: block.block_result_type as MessageType,
+
+        if (block_type === 'operation') {
+            pulseInputs.push({
+                type: 'pulse',
             })
         }
 
-        if (block.save_to) {
-            outputs.push({
-                type: block.block_result_type as MessageType
-            })
-        }
+        const [message, _translationTable] = get_block_message(block);
 
         options = {
-            type: block.block_type as AtomicFlowBlockOperationType,
+            type: block_type,
             block_function: block.id,
-            message: block.message,
-            inputs: inputs,
-            outputs: outputs,
+            message: message,
+            inputs: pulseInputs.concat(get_block_inputs(block)),
+            outputs: pulseOutputs.concat(get_block_outputs(block)),
         } as AtomicFlowBlockOptions;
     }
     else {

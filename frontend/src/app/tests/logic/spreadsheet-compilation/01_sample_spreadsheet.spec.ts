@@ -98,9 +98,7 @@ describe('Spreadsheet-01: Sample spreadsheet.', () => {
                 (call-service id: ${BRIDGE_ID}
                               action: answer_message
                               values: ( (+ (+ (+ "Hello" (flow-last-value "C2" 1)) " ") 123)
-                                        (call-service id: ${BRIDGE_ID}
-                                                      action: get_value
-                                                      values: ((+ 123 456)))))
+                                        (call-service id: ${BRIDGE_ID} action: get_value values: ((+ 123 456)))))
                 `))
         ]);
     });
