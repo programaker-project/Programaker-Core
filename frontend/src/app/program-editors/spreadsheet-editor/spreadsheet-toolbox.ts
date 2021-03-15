@@ -82,6 +82,11 @@ export class SpreadsheetToolbox {
             }
 
             const category = categories.find(c => c.id === block.service_port_id);
+            if (!category) {
+                console.error("Ignoring block. Category not found for", block, block.service_port_id);
+                continue;
+            }
+
             const reducedId = simplify_id(block);
             category.blocks.push({
                 icon: icon,
