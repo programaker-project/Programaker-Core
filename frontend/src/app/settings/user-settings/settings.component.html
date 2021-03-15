@@ -48,7 +48,7 @@
             </div>
         </div>
 
-        <div class="user-settings settings-group">
+        <div *ngIf="session" class="user-settings settings-group">
             <div class="title">User settings</div>
 
             <div class="advanced-user toggle-setting">
@@ -60,6 +60,18 @@
                     [checked]=is_advanced
                     (change)="onChangeAdvancedSettings($event)">
                     <span>{{ is_advanced ? 'Enabled' : 'Disabled' }}</span>
+                </mat-slide-toggle>
+            </div>
+
+            <div *ngIf="is_advanced" class="advanced-user toggle-setting">
+                <label for="in-preview-user-toggle">Preview features in Alpha</label>
+
+                <mat-slide-toggle
+                    class="value"
+                    color="accent"
+                    [checked]=is_in_preview
+                    (change)="onChangeInPreviewSettings($event)">
+                    <span>{{ is_in_preview ? 'Enabled' : 'Disabled' }}</span>
                 </mat-slide-toggle>
             </div>
 

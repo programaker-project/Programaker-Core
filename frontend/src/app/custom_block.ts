@@ -5,7 +5,8 @@ type VariableClass = 'single' | 'list' | undefined;
 export interface StaticBlockArgument {
     type: string;
     default_value: string;
-    class: VariableClass;
+    class?: VariableClass;
+    var_type?: string,
 };
 
 export interface DynamicBlockArgument {
@@ -81,8 +82,8 @@ export interface ResolvedCustomBlock {
     message: string;
     arguments: ResolvedBlockArgument[];
     save_to: undefined | { "type": "argument", "index": number };
-    subkey: undefined | { "type": "argument", "index": number };
-    key: undefined | string;
+    subkey?: { "type": "argument", "index": number };
+    key?: string;
 }
 
 export interface CategorizedCustomBlock {

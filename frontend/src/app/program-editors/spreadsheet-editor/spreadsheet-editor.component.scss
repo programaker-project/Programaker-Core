@@ -1,0 +1,207 @@
+.program-pad #workspace {
+    width: 100%;
+}
+
+.program-pad #workspace-read-only-marker {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 999;
+    background-color: rgba(0,0,0,0.7);
+}
+
+.program-pad #workspace-read-only-marker .message {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 250%;
+    color: white;
+    width: 100%;
+    text-align: center;
+}
+
+.program-pad #workspace-read-only-marker .message button .action-icon {
+    font-size: inherit;
+    width: 1em;
+    vertical-align: sub;
+}
+
+.app-content {
+    overflow: hidden;
+}
+
+#program-header {
+    border-bottom: 1px solid #AAA;
+    overflow-y: auto;
+    height: 3em;
+}
+
+#program-header:not(.is-scrollable) > .hint-scrollable {
+    display: none;
+}
+
+#program-header.is-scrollable > .hint-scrollable {
+    position: absolute;
+    top: 1ex;
+    right: 1ex;
+    z-index: 10;
+}
+
+#program-header > .hint-scrollable > mat-icon {
+    background: rgba(255,255,255,0.8);
+    border-radius: 22px;
+}
+
+#program-header > .hint-scrollable > .hint-text {
+    display: none;
+
+    position: absolute;
+    z-index: 10;
+    margin-left: -25ex;
+    padding: 0.5ex;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    border-radius: 5px;
+    top: -0.5ex;
+    width: 25ex;
+    text-align: center;
+    pointer-events: none;
+}
+
+#program-header > .hint:hover > .hint-text {
+    display: block;
+}
+
+
+#sidepanel {
+    max-width: 30em;
+    display: block;
+}
+
+button#program-visibility-state,
+button#program-clone-button,
+button#program-rename-button,
+button#program-start-button,
+button#program-delete-button,
+button#program-stop-button,
+button#program-logs-button,
+button#program-functions-button,
+button#advanced-program-controls-button {
+    vertical-align: top;
+    padding: 1ex;
+    margin-left: 0.5ex;
+
+    &.annotated-icon {
+        padding: 0.25ex;
+        margin-bottom: 1px;
+    }
+}
+
+button#program-delete-button{
+    float: right;
+}
+
+button#program-start-button .action-icon {
+    vertical-align: top;
+}
+
+.program-name .program-title {
+    vertical-align: middle;
+}
+
+.program-title {
+    font-size: 1.15rem;
+}
+
+.program-name {
+    display: inline;
+    padding-right: 1ex;
+}
+
+.program-name > a {
+    padding-left: 1ex;
+}
+
+.program-name > .program-title {
+    display: inline-block;
+    width: 15ex;
+    max-width: 50vw;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.program-name .back-arrow {
+    vertical-align: middle;
+}
+
+.viewer {
+    margin: 0;
+}
+
+.spreadsheet-table {
+    background-color: #fff;
+
+    td[scope="row"], th {
+        background-color: #f0f0f0;
+        color: #222;
+        text-align: center;
+        min-width: 4rem;
+        border: 1px solid #ccc;
+
+        &[scope="row"] {
+            min-width: 4rem;
+        }
+    }
+    td {
+        border: 1px solid #ccc;
+        padding: 0.25rem;
+        min-width: 7rem;
+        font-size: small;
+    }
+
+    .col-resize-bar {
+        width: 5px;
+        margin-right: -3.5px; // width / 2 + th border
+        background-color: #ccc;
+        cursor: col-resize;
+        float: right;
+        user-select: none;
+
+        &:hover {
+            background-color: #BBB;
+        }
+    }
+
+    td.active {
+        border: 2px solid #1a73e8;
+    }
+}
+
+#floating-editor {
+    position: absolute;
+    z-index: 9;
+    border: 2px solid #1a73e8;
+
+    &.editing {
+        box-shadow: 0 0 2px 1px #1a73e8;
+    }
+
+    &.hidden {
+        display: none;
+    }
+}
+
+.functions-panel {
+    .block-list {
+        padding: 0;
+
+        li {
+            padding-left: 1rem;
+
+            &:hover {
+                background-color: #eee;
+            }
+        }
+    }
+}

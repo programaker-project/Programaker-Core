@@ -238,7 +238,7 @@ export function is_pulse_output(block: FlowGraphNode, index: number): boolean {
 
         const outputs = data.value.options.outputs;
         if (!outputs[index]) {
-            throw new Error(`IndexError: Index (${index}) not found on outputs (${JSON.stringify(outputs)})`)
+            throw new Error(`IndexError: Index (${index}) not found on outputs (${JSON.stringify(outputs)}). Block: ${JSON.stringify(block.data)}`)
         }
 
         // If it has no pulse inputs its a source block

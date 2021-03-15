@@ -1253,9 +1253,7 @@ get_block_result(Op=#{ ?TYPE := ?COMMAND_ADD
     %% TODO: Consider how this can be made variadic
     case automate_bot_engine_values:add(FirstValue, SecondValue) of
         {ok, Value} ->
-            {ok, Value, Thread2};
-        Error ->
-            Error
+            {ok, Value, Thread2}
     end;
 
 get_block_result(Op=#{ ?TYPE := ?COMMAND_SUBTRACT
@@ -1617,8 +1615,16 @@ remove_save_to(Arguments, {index, Index}) ->
 eval_args(Arguments, Thread, Op) ->
     { Thread2, RevValues } = lists:foldl(
                                fun(Arg, {UpdThread, Values}) ->
-                                       {ok, Value, UpdThread2} = automate_bot_engine_variables:resolve_argument(Arg, UpdThread, Op),
-                                       {UpdThread2, [ Value | Values ]}
+                                       case automate_bot_engine_variables:resolve_argument(Arg, UpdThread, Op) of
+                                           {ok, Value, UpdThread2} ->
+                                               {UpdThread2, [ Value | Values ]};
+                                           {error, not_found} ->
+                                               automate_logging:log_platform(error, io_lib:format("[~p:~p] Cannot resolve argument: ~p",
+                                                                                                  [?MODULE, ?LINE, Arg])),
+                                               throw(#program_error{ error=#unknown_operation{}
+                                                                   , block_id=?UTILS:get_block_id(Op)
+                                                                   })
+                                       end
                                end,
                                { Thread, [ ] }, Arguments),
     %% This lists:reverse could be avoided if we used `lists:foldr` instead of `lists:foldl`.

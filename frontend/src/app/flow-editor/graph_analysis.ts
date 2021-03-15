@@ -531,7 +531,7 @@ export function get_stepped_block_arguments(graph: FlowGraph, block_id: string,
             args.shift();
         }
         else {
-            throw new Error(`Non-pulse input before a pulse one on block_id:${block_id}`);
+            throw new Error(`Non-pulse input before a pulse one on block_id:${block_id} (Port: ${pulse_offset}. Block: ${JSON.stringify(graph.nodes[block_id].data)})`);
         }
     }
 
@@ -1886,7 +1886,11 @@ function extract_non_arguments_from_block(startBlock: CompiledBlock): CompiledBl
         const argList = args as CompiledBlockArgList;
 
         for (const arg of argList) {
-            if (arg.type === 'constant') {
+            if (!arg) {
+                // Empty argument
+                continue;
+            }
+            else if (arg.type === 'constant') {
                 // Nothing to do here
                 continue;
             }

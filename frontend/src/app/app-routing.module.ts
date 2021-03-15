@@ -29,6 +29,7 @@ import { SettingsComponent } from './settings/user-settings/settings.component';
 import { UserProfileComponent } from './profiles/user-profile.component';
 import { UserGroupsResolver } from './resolvers/user-groups.resolver';
 import { UserBridgesResolver } from './resolvers/user-bridges.resolver';
+import { SpreadsheetEditorComponent } from './program-editors/spreadsheet-editor/spreadsheet-editor.component';
 
 
 const routes: Routes = [
@@ -54,6 +55,7 @@ const routes: Routes = [
     { path: 'users/:user_id/programs/:program_id', component: ProgramDetailComponent },
     { path: 'programs/:program_id/flow', component: FlowEditorComponent },
     { path: 'programs/:program_id/scratch', component: ProgramDetailComponent },
+    { path: 'programs/:program_id/spreadsheet', component: SpreadsheetEditorComponent },
 
     // Bridges
     { path: 'bridges', redirectTo: '/dashboard#bridges' },

@@ -37,6 +37,7 @@ import { UserProfileInfo } from 'app/profiles/profile.service';
 export class SettingsComponent {
     session: Session;
     is_advanced: boolean;
+    is_in_preview: boolean;
 
     loadedImage: File = null;
 
@@ -82,6 +83,7 @@ export class SettingsComponent {
                     }
                     else {
                         this.is_advanced = this.session.tags.is_advanced;
+                        this.is_in_preview = this.session.tags.is_in_preview;
                     }
                 },
                 error: err => {
@@ -93,6 +95,10 @@ export class SettingsComponent {
 
     onChangeAdvancedSettings(event: MatSlideToggleChange) {
         this.is_advanced = event.checked;
+    }
+
+    onChangeInPreviewSettings(event: MatSlideToggleChange) {
+        this.is_in_preview = event.checked;
     }
 
     async saveUserSettings() {
@@ -112,9 +118,15 @@ export class SettingsComponent {
 
         await this.sessionService.updateUserProfileSettings({ groups: publicGroups });
 
-        const success = await this.sessionService.updateUserSettings({
+        const userSettings: {is_advanced: boolean, is_in_preview?: boolean} = {
             is_advanced: this.is_advanced,
-        });
+        };
+
+        if (this.is_advanced) {
+            userSettings.is_in_preview = this.is_in_preview;
+        }
+
+        const success = await this.sessionService.updateUserSettings(userSettings);
 
         if (success) {
             this.session = await this.sessionService.forceUpdateSession();

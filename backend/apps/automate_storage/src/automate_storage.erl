@@ -1885,7 +1885,16 @@ apply_user_permissions(User, Settings) ->
                            #{} ->
                                { User, Errors }
                        end,
-    {User1, Errors1}.
+    {User2, Errors2} = case Settings of
+                           #{ <<"is_in_preview">> := IsInPreview } when is_boolean(IsInPreview) ->
+                               { User1#registered_user_entry{ is_in_preview=IsInPreview}, Errors1 };
+                           #{ <<"is_in_preview">> := _IsInPreview } ->
+                               %% In preview found, but it's not boolean
+                               { User1, [ { bad_type, is_in_preview } | Errors1 ] };
+                           #{} ->
+                               { User1, Errors1 }
+                       end,
+    {User2, Errors2}.
 
 -spec create_verification_entry(binary(), verification_type()) -> {ok, binary()} | {error, _}.
 create_verification_entry(UserId, VerificationType) ->
@@ -2466,6 +2475,9 @@ start_coordinator() ->
                                              ok
                                      end,
 
+                                     io:fwrite("[~p~p] Waiting for tables before setup: ~0tp~n",
+                                               [ ?MODULE, ?LINE, mnesia:system_info(tables) ]),
+                                     ok = mnesia:wait_for_tables(mnesia:system_info(tables), automate_configuration:get_table_wait_time()),
                                      Spawner ! {self(), ready},
 
                                      %% This process cannot longer work if mnesia goes down
@@ -2579,6 +2591,7 @@ coordinate_loop_secondary() ->
     case ets:lookup(?ETS_TABLE_SECONDARY_NODE_RESTART, partial_restart) of
         [{ partial_restart, true }] ->
             %% Crash the node to restart completely
+            ets:delete(?ETS_TABLE_SECONDARY_NODE_RESTART),
             erlang:halt();
         [] ->
             %% Everything is alright

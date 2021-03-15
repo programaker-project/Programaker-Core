@@ -1,3 +1,5 @@
+import { CompiledFlowGraph } from "./flow-editor/flow_graph";
+
 export type VisibilityEnum = 'public' | 'shareable' | 'private';
 
 export class ProgramMetadata {
@@ -9,7 +11,7 @@ export class ProgramMetadata {
     bridges_in_use: string[];
 }
 
-export type ProgramType = 'scratch_program' | 'flow_program';
+export type ProgramType = 'scratch_program' | 'flow_program' | 'spreadsheet_program';
 export type OwnerType = 'user' | 'group';
 
 export class ProgramContent extends ProgramMetadata {
@@ -43,7 +45,13 @@ export class ScratchProgram extends ProgramContent {
 
 export class FlowProgram extends ProgramContent {
     constructor(metadata: ProgramMetadata, parsed: any, orig: any) {
-        super(metadata, parsed, orig, 'scratch_program');
+        super(metadata, parsed, orig, 'flow_program');
+    }
+}
+
+export class SpreadsheetProgram extends ProgramContent {
+    constructor(metadata: ProgramMetadata, parsed: CompiledFlowGraph, orig: any) {
+        super(metadata, { blocks: parsed, variables: []}, orig, 'spreadsheet_program');
     }
 }
 

@@ -38,12 +38,29 @@
                 <img src="/assets/showcase/flow/flow-example.png" />
             </div>
             <div class="description">
-
                 <p>PrograMaker's re-imagining of visual programming.</p>
                 <p class="reason">Choose this if you want to add visual elements to your program.</p>
             </div>
         </mat-card>
-    </div>
+
+        <mat-card [ngClass]="{
+            'col-sm-5': true,
+            'selected': selectedType === 'spreadsheet_program'
+            }"
+            *ngIf="data.is_user_in_preview"
+            (click)="selectType('spreadsheet_program')"
+            role="button">
+            <h4 class="title">Spreadsheet</h4>
+            <div class="example">
+                <img src="/assets/showcase/spreadsheet/spreadsheet-concept-for-dashboard.svg" width="50%" />
+            </div>
+            <div class="description">
+                <p>The tried-and-true spreadsheet.</p>
+                <p class="warning">Consider this a preview, it's still under heavy development.</p>
+                <p class="reason">Choose this if you are used to build spreadsheets.</p>
+            </div>
+        </mat-card>
+</div>
 
 </mat-dialog-content>
 <mat-dialog-actions>

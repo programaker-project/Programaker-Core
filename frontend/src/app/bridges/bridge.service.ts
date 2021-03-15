@@ -1,10 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { addTokenQueryString, toWebsocketUrl } from 'app/utils';
+import { addTokenQueryString, toWebsocketUrl } from '../utils';
 import { Observable, Observer } from 'rxjs';
 import { SessionService } from '../session.service';
 import { BridgeIndexData, BridgeMetadata, BridgeResource, BridgeResourceEntry, BridgeResourceMap, BridgeSignal, FullOwnerId, BridgeTokenInfo, FullBridgeTokenInfo } from './bridge';
-import { EnvironmentService } from 'app/environment.service';
+import { EnvironmentService } from '../environment.service';
 
 export type BridgeInfoUpdate = { count: number };
 

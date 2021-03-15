@@ -151,7 +151,7 @@ export class SessionService {
         return token;
     }
 
-    async updateUserSettings(user_settings_update : { is_advanced: boolean }): Promise<boolean> {
+    async updateUserSettings(user_settings_update : { is_advanced: boolean, is_in_preview?: boolean }): Promise<boolean> {
         const url = (await this.getApiRootForUserId()) + '/settings';
         const response = await (this.http
                                 .post(url, JSON.stringify(user_settings_update),

@@ -2,8 +2,8 @@ import { BlockExhibitor, BlockGenerator } from './block_exhibitor';
 import { BlockManager } from './block_manager';
 import { FlowBlock, Position2D, FlowBlockOptions, FlowActuator } from './flow_block';
 import { FlowWorkspace } from './flow_workspace';
-import { UiSignalService } from 'app/services/ui-signal.service';
-import { Session } from 'app/session';
+import { UiSignalService } from '../services/ui-signal.service';
+import { Session } from '../session';
 import { ADVANCED_CATEGORY, INTERNAL_CATEGORY } from './base_toolbox_description';
 import { uuidv4 } from './utils';
 
