@@ -14,6 +14,6 @@ export class SessionResolver implements Resolve<Session> {
         _route: ActivatedRouteSnapshot,
         _state: RouterStateSnapshot
     ): Promise<Session> {
-        return this.sessionService.forceUpdateSession();
+        return this.sessionService.getSession();
     }
 }
