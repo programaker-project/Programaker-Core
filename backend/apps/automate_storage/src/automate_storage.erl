@@ -2579,6 +2579,7 @@ coordinate_loop_secondary() ->
     case ets:lookup(?ETS_TABLE_SECONDARY_NODE_RESTART, partial_restart) of
         [{ partial_restart, true }] ->
             %% Crash the node to restart completely
+            ets:delete(?ETS_TABLE_SECONDARY_NODE_RESTART),
             erlang:halt();
         [] ->
             %% Everything is alright
