@@ -25,8 +25,8 @@ add(Left, Right) when is_binary(Left) and is_binary(Right) ->
             {ok, PreviousInt + ChangeInt};
         {float, PreviousF, ChangeF} ->
             {ok, PreviousF + ChangeF};
-        {string, _PreviousS, _ChangeS} ->
-            {error, not_found}
+        {string, LeftS, RightS} ->
+            { ok, binary:list_to_bin(io_lib:format("~s~s", [LeftS, RightS])) }
     end;
 
 %% If everything else failed, just do simple concatenation
@@ -206,9 +206,9 @@ combined_type(V1, V2) when is_binary(V1) and is_binary(V2) ->
             end
     end;
 
-%% If everything else failed, just do simple concatenation
+%% Map all to strings if they are not already
 combined_type(V1, V2) ->
-    {string, io_lib:format("~p", [V1]), io_lib:format("~p", [V2])}.
+    {string, to_bin(V1), to_bin(V2)}.
 
 to_int(Value) when is_binary(Value) ->
     case string:to_integer(Value) of

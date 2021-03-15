@@ -1,3 +1,5 @@
+import { CompiledFlowGraph } from "./flow-editor/flow_graph";
+
 export type VisibilityEnum = 'public' | 'shareable' | 'private';
 
 export class ProgramMetadata {
@@ -48,8 +50,8 @@ export class FlowProgram extends ProgramContent {
 }
 
 export class SpreadsheetProgram extends ProgramContent {
-    constructor(metadata: ProgramMetadata, parsed: any, orig: any) {
-        super(metadata, parsed, orig, 'spreadsheet_program');
+    constructor(metadata: ProgramMetadata, parsed: CompiledFlowGraph, orig: any) {
+        super(metadata, { blocks: parsed, variables: []}, orig, 'spreadsheet_program');
     }
 }
 

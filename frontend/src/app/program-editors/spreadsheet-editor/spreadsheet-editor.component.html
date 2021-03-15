@@ -130,7 +130,6 @@
         <mat-sidenav #drawer mode="side" position="end">
             <app-program-editor-sidepanel id="sidepanel" #sidepanel
                 [program]="program"
-                [onToggleMark]="onToggleMark"
                 [onClose]="closeDrawer"
                 *ngIf="program"
                 [noVariables]="true"
