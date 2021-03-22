@@ -11,7 +11,10 @@ export class ProgramMetadata {
     bridges_in_use: string[];
 }
 
-export type ProgramType = 'scratch_program' | 'flow_program' | 'spreadsheet_program';
+export type ProgramType = 'scratch_program'
+    | 'flow_program'
+    | 'spreadsheet_program' // No longer created through UI
+;
 export type OwnerType = 'user' | 'group';
 
 export class ProgramContent extends ProgramMetadata {
