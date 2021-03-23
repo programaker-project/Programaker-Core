@@ -6,8 +6,8 @@
         , get_user/1
         , generate_token_for_user/3
         , delete_user/1
-        , get_session_username/2
-        , get_session_userid/2
+        , check_session_username/3
+        , check_session_userid/3
         , create_monitor/2
         , get_monitor_from_id/1
         , dirty_list_monitors/0
@@ -304,17 +304,49 @@ generate_token_for_user(UserId, Scope, Expiration) ->
             {error, Reason}
     end.
 
-get_session_username(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
+-spec check_session_username(binary(), session_scope_item(), boolean())  -> { ok, binary() }| {error, session_not_found | scope_not_allowed}.
+check_session_username(SessionId, Scope, RefreshUsedTime) when is_binary(SessionId) ->
     Transaction = fun() ->
                           case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
                               [] ->
                                   { error, session_not_found };
-                              [Session=#user_session_entry{ user_id=UserId } | _] ->
-                                  case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
-                                      [] ->
-                                          %% TODO log event, this shouldn't happen
-                                          { error, session_not_found };
-                                      [#registered_user_entry{canonical_username=Username} | _] ->
+                              [Session=#user_session_entry{ user_id=UserId, session_scope=TokenScope } | _] ->
+                                  case token_scope_covers(TokenScope, Scope) of
+                                      true ->
+                                          case mnesia:read(?REGISTERED_USERS_TABLE, UserId) of
+                                              [] ->
+                                                  %% TODO log event, this shouldn't happen
+                                                  { error, session_not_found };
+                                              [#registered_user_entry{canonical_username=Username} | _] ->
+                                                  ok = case RefreshUsedTime of
+                                                           true ->
+                                                               mnesia:write(
+                                                                 ?USER_SESSIONS_TABLE
+                                                                , Session#user_session_entry{session_last_used_time=erlang:system_time(second)}
+                                                                , write);
+                                                           false ->
+                                                               ok
+                                                       end,
+                                                  {ok, Username}
+                                          end;
+                                      false ->
+                                          {error, scope_not_allowed}
+                                  end
+                          end
+                  end,
+
+    {atomic, Result} = mnesia:transaction(Transaction),
+    Result.
+
+-spec check_session_userid(binary(), session_scope_item(), boolean())  -> { ok, binary() }| {error, session_not_found | scope_not_allowed}.
+check_session_userid(SessionId, Scope, RefreshUsedTime) when is_binary(SessionId) ->
+    Transaction = fun() ->
+                          case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
+                              [] ->
+                                  { error, session_not_found };
+                              [Session=#user_session_entry{ user_id=UserId, session_scope=TokenScope } | _] ->
+                                  case token_scope_covers(TokenScope, Scope) of
+                                      true ->
                                           ok = case RefreshUsedTime of
                                                    true ->
                                                        mnesia:write(
@@ -324,30 +356,10 @@ get_session_username(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
                                                    false ->
                                                        ok
                                                end,
-                                          {ok, Username}
+                                          {ok, UserId};
+                                      false ->
+                                          {error, scope_not_allowed}
                                   end
-                          end
-                  end,
-
-    {atomic, Result} = mnesia:transaction(Transaction),
-    Result.
-
-get_session_userid(SessionId, RefreshUsedTime) when is_binary(SessionId) ->
-    Transaction = fun() ->
-                          case mnesia:read(?USER_SESSIONS_TABLE, SessionId) of
-                              [] ->
-                                  { error, session_not_found };
-                              [Session=#user_session_entry{ user_id=UserId } | _] ->
-                                  ok = case RefreshUsedTime of
-                                           true ->
-                                               mnesia:write(
-                                                 ?USER_SESSIONS_TABLE
-                                                , Session#user_session_entry{session_last_used_time=erlang:system_time(second)}
-                                                , write);
-                                           false ->
-                                               ok
-                                       end,
-                                  {ok, UserId}
                           end
                   end,
 
@@ -2660,3 +2672,27 @@ build_tables(Nodes) ->
 
 generate_id() ->
     binary:list_to_bin(uuid:to_string(uuid:uuid4())).
+
+
+-spec token_scope_covers(TokenScope :: session_scope(), Scope :: session_scope_item()) -> boolean().
+token_scope_covers(all, _) -> true;
+token_scope_covers(TokenScope, Scope) when is_list(TokenScope) ->
+    %% Look for a direct match
+    case lists:member(Scope, TokenScope) of
+        true ->
+            true;
+        false ->
+            lists:any(fun(TokenScopeItem) ->
+                              token_scope_covers_by_higher_level(TokenScopeItem, Scope)
+                      end, TokenScope)
+    end.
+
+-spec token_scope_covers_by_higher_level(TokenScopeItem :: session_scope_item(), Scope :: session_scope_item()) -> boolean().
+
+%% Full permissions over bridges user's own bridges
+token_scope_covers_by_higher_level(call_any_bridge, { call_bridge, _, _ }) -> true;
+token_scope_covers_by_higher_level(call_any_bridge, { call_bridge_callback, _ }) -> true;
+token_scope_covers_by_higher_level(call_any_bridge, { call_bridge_callback, _, _ }) -> true;
+
+%% No match
+token_scope_covers_by_higher_level(_, _) -> false.

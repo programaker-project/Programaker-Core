@@ -41,7 +41,7 @@ is_authorized(Req, State=#state{ group_info=#user_group_entry{ id=GroupId } }) -
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, { read_group_info, GroupId }) of
                         {true, UserId} ->
                             case automate_storage:can_user_view_as({user, UserId}, { group, GroupId }) of
                                 true ->

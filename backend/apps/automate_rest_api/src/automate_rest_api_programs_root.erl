@@ -53,13 +53,18 @@ is_authorized(Req, State) ->
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
+        Method ->
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
+                    Scope = case Method of
+                                <<"GET">> -> list_programs;
+                                <<"POST">> -> create_programs
+                            end,
+
                     #create_program_seq{username=Username} = State,
-                    case automate_rest_api_backend:is_valid_token(X) of
+                    case automate_rest_api_backend:is_valid_token(X, Scope) of
                         {true, Username} ->
                             { true, Req1, State };
                         {true, _} -> %% Non matching username

@@ -65,10 +65,10 @@ is_authorized(Req, State=#state{user_id=UserId}) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, edit_user_picture) of
                         {true, UserId} ->
                             { true, Req1, State };
-                        {_, false} ->
+                        false ->
                             { { false, <<"Unauthorized">>}, Req1, State }
                     end
             end

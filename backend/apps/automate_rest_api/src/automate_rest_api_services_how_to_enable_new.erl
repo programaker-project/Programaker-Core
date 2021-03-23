@@ -43,20 +43,20 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    {[<<"GET">>, <<"PUT">>, <<"OPTIONS">>], Req, State}.
+    {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State=#state{program_id=ProgramId, group_id=GroupId}) ->
+is_authorized(Req, State=#state{program_id=ProgramId, group_id=GroupId, service_id=BridgeId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
+        Method ->
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, {read_how_to_enable_service, BridgeId}) of
                         {true, UserId} ->
                             case {ProgramId, GroupId} of
                                 {Pid, _} when is_binary(Pid) ->

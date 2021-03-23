@@ -73,7 +73,7 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                             { {false, <<"Authorization header not found">>} , Req1, State }
                     end;
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, { list_program_services, ProgramId }) of
                         {true, UserId} ->
                             {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(ProgramId),
                             case automate_storage:can_user_view_as({user, UserId}, Owner) of

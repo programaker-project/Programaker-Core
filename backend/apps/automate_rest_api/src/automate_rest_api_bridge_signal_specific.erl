@@ -21,7 +21,7 @@ init(Req, _Opts) ->
     UserId = cowboy_req:binding(user_id, Req),
     BridgeId = cowboy_req:binding(bridge_id, Req),
     Key = cowboy_req:binding(key, Req),
-    {IsAuthorized, ErrorCode} = check_is_authorized(Req, UserId),
+    {IsAuthorized, ErrorCode} = check_is_authorized(Req, UserId, BridgeId, Key),
 
     {cowboy_websocket, Req, #state{ user_id=UserId
                                   , bridge_id=BridgeId
@@ -30,13 +30,12 @@ init(Req, _Opts) ->
                                   , errorCode=ErrorCode
                                   }}.
 
-
-check_is_authorized(Req, UserId) ->
+check_is_authorized(Req, UserId, BridgeId, Key) ->
     case cowboy_req:header(<<"authorization">>, Req, undefined) of
         undefined ->
             { false, <<"Authorization header not found">> } ;
         X ->
-            case automate_rest_api_backend:is_valid_token_uid(X) of
+            case automate_rest_api_backend:is_valid_token_uid(X, {read_bridge_signal, BridgeId, Key }) of
                 {true, UserId} ->
                     { true, none };
                 {true, TokenUserId} -> %% Non matching user_id

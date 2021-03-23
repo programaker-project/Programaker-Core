@@ -51,16 +51,16 @@ is_authorized(Req, State=#state{owner_id=OwnerId}) ->
         <<"OPTIONS">> ->
             { true, Req1, State };
         _ ->
-            Action = case cowboy_req:method(Req1) of
-                         <<"GET">> -> can_user_view_as;
-                         <<"DELETE">> -> can_user_admin_as;
-                         _ -> can_user_edit_as
+            {Action, Scope} = case cowboy_req:method(Req1) of
+                         <<"GET">> -> {can_user_view_as, read_assets};
+                         <<"DELETE">> -> {can_user_admin_as, delete_assets};
+                         _ -> {can_user_edit_as, create_assets}
                      end,
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, Scope) of
                         {true, UserId} ->
                             case automate_storage:Action({user, UserId}, OwnerId) of
                                 true ->

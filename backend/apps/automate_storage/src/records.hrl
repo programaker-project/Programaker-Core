@@ -51,7 +51,84 @@
                                  }).
 
 -type session_expiration_time() :: session | time_in_seconds() | never.
--type session_scope_item() :: list_bridges | call_any_bridge.
+-type session_scope_item() :: check %% Any permission is enough for check
+                            | ui    %% For ui-related functions only. Not really related to permissions actually...
+                            | list_custom_blocks %% Might be merged into read_program
+
+                              %% Connections
+                            | { edit_connection, binary() }
+                            | {read_how_to_enable_service, binary()}
+                            | list_connections_available | list_connections_established
+
+                              %% Assets
+                            | read_assets | delete_assets | create_assets
+
+                              %% Programs
+                            | list_programs | create_programs | {delete_program, binary()}
+                            | {read_program, binary()} | {edit_program, binary()}
+                            | {edit_program_status, binary()} | {read_program_logs, binary()} | {edit_program_metadata, binary()}
+                            | {render_program, binary()}
+
+                              %% Bridges
+                            | list_briges | create_bridges
+                            | call_any_bridge | {call_bridge, binary(), binary()}
+                            | { call_bridge_callback, binary() }
+                            | {delete_bridge, binary()} | {delete_bridge_tokens, binary()}
+
+                              %% Bridge signals
+                            | { read_bridge_signal, binary() } %% Moderately sensitive
+                            | { read_bridge_signal, binary(), binary() } %% More specific
+
+                              %% Bridge shares
+                            | { read_bridge_resources, binary() }
+                            | { edit_connection_shares, binary() }
+
+                              %% Services
+                            | list_services | create_services
+
+                              %% Groups
+                            | list_groups | create_groups
+
+                              %% Templates
+                            | list_templates | create_templates
+
+                              %% Custom signals
+                            | list_custom_signals | create_custom_signals
+
+                              %% Monitors
+                            | list_monitors | create_monitors
+
+                              %% Private, but don't affect mechanics
+                            | edit_user_profile
+                            | edit_user_picture
+                            | edit_user_settings
+
+                              %% Actions on groups
+                            | {list_group_bridges, binary()}
+                            | {create_group_bridges, binary()}
+                            | {read_group_programs, binary()} | { create_group_programs, binary() }
+                            | {read_group_info, binary()} | {list_group_connections_available, binary()}| {list_group_connections_established, binary()}
+                            | {edit_group_picture, binary()}
+                            | {list_group_shares, binary()}
+
+                              %% Actions on programs
+                            | { establish_program_connection, binary() }
+                            | { list_program_shares, binary() }
+                            | { call_program_bridge_callback, binary(), binary() }
+                            | { list_program_connections_available, binary() } | { list_program_connections_established, binary() }
+                            | { list_program_services, binary() }
+                            | { read_program_variables, binary() } | { edit_program_variables, binary() }
+                            | { list_program_monitors, binary() }
+
+                              %% Especially sensitive
+                            | { admin_group_info, binary() }
+                            | { list_bridge_tokens, binary() } | { create_bridge_tokens, binary() }
+                            | create_api_tokens
+
+                              %% Admin-only
+                            | admin_read_stats
+                            | admin_list_users
+                              .
 -type session_scope() :: all | [session_scope_item()].
 -record(user_session_entry, { session_id
                             , user_id

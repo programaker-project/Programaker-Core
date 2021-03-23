@@ -58,15 +58,15 @@ is_authorized(Req, State=#state{group_id=GroupId}) ->
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> -> {true, Req1, State};
         Method ->
-            Check = case Method of
-                        <<"GET">> -> fun automate_storage:is_allowed_to_read_in_group/2;
-                        _ -> fun automate_storage:is_allowed_to_write_in_group/2
+            {Check, Scope} = case Method of
+                        <<"GET">> -> {fun automate_storage:is_allowed_to_read_in_group/2, { list_group_bridges, GroupId }};
+                        _ -> {fun automate_storage:is_allowed_to_write_in_group/2, { create_group_bridges, GroupId }}
                     end,
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, Scope) of
                         {true, UserId} ->
                             case Check({user, UserId}, GroupId) of
                                 true -> { true, Req1, State#state{ user_id=UserId } };

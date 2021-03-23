@@ -21,11 +21,11 @@
 -define(UTILS, automate_rest_api_utils).
 -define(FORMATTING, automate_rest_api_utils_formatting).
 
--record(get_program_seq, { username :: binary()
-                         , program_name :: binary()
-                         , program_id :: binary()
-                         , user_id :: undefined | binary()
-                         }).
+-record(state, { username :: binary()
+               , program_name :: binary()
+               , program_id :: binary()
+               , user_id :: undefined | binary()
+               }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
@@ -34,11 +34,11 @@ init(Req, _Opts) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     {ok, #user_program_entry{ id=ProgramId }} = automate_storage:get_program(UserName, ProgramName),
     {cowboy_rest, Req1
-    , #get_program_seq{ username=UserName
-                      , program_name=ProgramName
-                      , program_id=ProgramId
-                      , user_id=undefined
-                      }}.
+    , #state{ username=UserName
+            , program_name=ProgramName
+            , program_id=ProgramId
+            , user_id=undefined
+            }}.
 
 %% CORS
 options(Req, State) ->
@@ -49,7 +49,7 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"PUT">>, <<"PATCH">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State=#get_program_seq{username=Username, program_id=ProgramId}) ->
+is_authorized(Req, State=#state{username=Username, program_id=ProgramId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -68,18 +68,31 @@ is_authorized(Req, State=#get_program_seq{username=Username, program_id=ProgramI
                             { {false, <<"Authorization header not found">>} , Req1, State }
                     end;
                 X ->
-                    case automate_rest_api_backend:is_valid_token(X) of
+                    {Action, Scope} = case Method of
+                                          <<"GET">> -> {read_program, { read_program, ProgramId }};
+                                          <<"PUT">> -> {edit_program, { edit_program, ProgramId }};
+                                          <<"PATCH">> -> {edit_program, { edit_program_metadata, ProgramId }};
+                                          <<"DELETE">> -> {delete_program, { delete_program, ProgramId }}
+                                      end,
+                    case automate_rest_api_backend:is_valid_token(X, Scope) of
                         {true, Username} ->
-                            {ok, {user, UserId}} = automate_storage:get_userid_from_username(Username),
-                            { true, Req1, State#get_program_seq{ user_id=UserId } };
-                        {true, AuthUser} -> %% Non matching username
-                            case {Method, IsPublic} of
-                                {<<"GET">>, true} ->
-                                    {ok, {user, UserId}} = automate_storage:get_userid_from_username(AuthUser),
-                                    {true, Req1, State#get_program_seq{ user_id=UserId }};
-                                _ ->
-                                    { { false, <<"Unauthorized to create a program here">>}, Req1, State }
+                            {ok, {user, UId}} = automate_storage:get_userid_from_username(Username),
+                            case automate_storage:is_user_allowed({user, UId}, ProgramId, Action) of
+                                {ok, true} ->
+                                    { true, Req1, State#state{user_id=UId} };
+                                {ok, false} ->
+                                    case {Method, IsPublic} of
+                                        {<<"GET">>, true} ->
+                                            {true, Req1, State#state{user_id=UId}};
+                                        _ ->
+                                            { { false, <<"Action not authorized">>}, Req1, State }
+                                    end;
+                                {error, Reason} ->
+                                    automate_logging:log_api(warning, ?MODULE, {authorization_error, Reason}),
+                                    { { false, <<"Error on authorization">>}, Req1, State }
                             end;
+                        {true, AuthUser} -> %% Non matching username
+                            { { false, <<"Authorization not correct">>}, Req1, State };
                         false ->
                             { { false, <<"Authorization not correct">>}, Req1, State }
                     end
@@ -91,9 +104,9 @@ content_types_provided(Req, State) ->
     {[{{<<"application">>, <<"json">>, []}, to_json}],
      Req, State}.
 
--spec to_json(cowboy_req:req(), #get_program_seq{})
-             -> { stop | binary() ,cowboy_req:req(), #get_program_seq{}}.
-to_json(Req, State=#get_program_seq{program_id=ProgramId, user_id=UserId}) ->
+-spec to_json(cowboy_req:req(), #state{})
+             -> { stop | binary() ,cowboy_req:req(), #state{}}.
+to_json(Req, State=#state{program_id=ProgramId, user_id=UserId}) ->
     Qs = cowboy_req:parse_qs(Req),
     IncludePages = case proplists:get_value(<<"retrieve_pages">>, Qs) of
                        <<"yes">> ->
@@ -159,7 +172,7 @@ accept_json_program(Req, State) ->
 
 %% PUT handler
 update_program(Req, State) ->
-    #get_program_seq{program_name=ProgramName, username=Username} = State,
+    #state{program_name=ProgramName, username=Username} = State,
 
     {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = jiffy:decode(Body, [return_maps]),
@@ -175,7 +188,7 @@ update_program(Req, State) ->
 
 %% PATCH handler
 update_program_metadata(Req, State) ->
-    #get_program_seq{program_name=ProgramName, username=Username} = State,
+    #state{program_name=ProgramName, username=Username} = State,
 
     {ok, Body, Req1} = ?UTILS:read_body(Req),
     Parsed = jiffy:decode(Body, [return_maps]),
@@ -190,7 +203,7 @@ update_program_metadata(Req, State) ->
 
 %% DELETE handler
 delete_resource(Req, State) ->
-    #get_program_seq{program_name=ProgramName, username=Username} = State,
+    #state{program_name=ProgramName, username=Username} = State,
     case automate_rest_api_backend:delete_program(Username, ProgramName) of
         ok ->
             Req1 = send_json_output(jiffy:encode(#{ <<"success">> => true}), Req),

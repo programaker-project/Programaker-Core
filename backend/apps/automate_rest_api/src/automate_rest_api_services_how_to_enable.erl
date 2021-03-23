@@ -34,9 +34,9 @@ options(Req, State) ->
 %% Authentication
 -spec allowed_methods(cowboy_req:req(),_) -> {[binary()], cowboy_req:req(),_}.
 allowed_methods(Req, State) ->
-    {[<<"GET">>, <<"PUT">>, <<"OPTIONS">>], Req, State}.
+    {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#state{ service_id=ServiceId }) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -48,7 +48,7 @@ is_authorized(Req, State) ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
                     #state{username=Username} = State,
-                    case automate_rest_api_backend:is_valid_token(X) of
+                    case automate_rest_api_backend:is_valid_token(X, { read_how_to_enable_service, ServiceId }) of
                         {true, Username} ->
                             { true, Req1, State };
                         {true, _} -> %% Non matching username

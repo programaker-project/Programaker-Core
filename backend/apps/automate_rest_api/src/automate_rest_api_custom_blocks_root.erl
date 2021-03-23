@@ -47,7 +47,7 @@ is_authorized(Req, State) ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
                     #state{username=Username} = State,
-                    case automate_rest_api_backend:is_valid_token(X) of
+                    case automate_rest_api_backend:is_valid_token(X, list_custom_blocks) of
                         {true, Username} ->
                             { true, Req1, State };
                         {true, _} -> %% Non matching username

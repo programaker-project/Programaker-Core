@@ -40,7 +40,7 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#state{ bridge_id=BridgeId }) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -51,7 +51,7 @@ is_authorized(Req, State) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, { read_bridge_resources, BridgeId }) of
                         {true, UserId} ->
                             { true, Req1, State#state{ owner={user, UserId} } };
                         false ->

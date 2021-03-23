@@ -54,7 +54,7 @@ is_authorized(Req, State=#state{connection_id=ConnectionId}) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, { edit_connection_shares, ConnectionId }) of
                         {true, UserId} ->
                             case automate_service_port_engine:get_connection_owner(ConnectionId) of
                                 {ok, {user, UserId}} ->

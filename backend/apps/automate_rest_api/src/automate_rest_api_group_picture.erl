@@ -67,7 +67,7 @@ is_authorized(Req, State=#state{group_id=GroupId}) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, {edit_group_picture, GroupId}) of
                         {true, UserId} ->
                             case automate_storage:is_allowed_to_admin_in_group({user, UserId}, GroupId) of
                                 true -> { true, Req1, State };
