@@ -2694,5 +2694,8 @@ token_scope_covers_by_higher_level(call_any_bridge, { call_bridge, _, _ }) -> tr
 token_scope_covers_by_higher_level(call_any_bridge, { call_bridge_callback, _ }) -> true;
 token_scope_covers_by_higher_level(call_any_bridge, { call_bridge_callback, _, _ }) -> true;
 
+%% Any is ok for check
+token_scope_covers_by_higher_level(_, check) -> true;
+
 %% No match
 token_scope_covers_by_higher_level(_, _) -> false.

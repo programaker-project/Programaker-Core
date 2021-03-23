@@ -91,6 +91,10 @@ parse_scopes(Scopes) when is_list(Scopes) ->
 
 parse_single_scope(<<"list_bridges">>) ->
     list_bridges;
+parse_single_scope(<<"list_custom_blocks">>) ->
+    list_custom_blocks;
+parse_single_scope(<<"list_connections_established">>) ->
+    list_connections_established;
 parse_single_scope(<<"call_any_bridge">>) ->
     call_any_bridge.
 

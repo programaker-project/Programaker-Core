@@ -9,7 +9,9 @@ import { ToastrService } from 'ngx-toastr';
 
 const SCOPE_DESCRIPTIONS: {[key: string]: string} = {
     'list_bridges': "List user's bridges.",
+    'list_connections_established': "List connections established with user's bridges.",
     'call_any_bridge': "Invoke any bridge with the user's credentials.",
+    'list_custom_blocks': "List user's custom blocks.",
 };
 
 @Component({

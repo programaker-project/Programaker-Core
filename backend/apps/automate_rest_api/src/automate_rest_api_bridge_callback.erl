@@ -61,7 +61,7 @@ is_authorized(Req, State=#state{ bridge_id=BridgeId }) ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
                     #state{user_id=UserId} = State,
-                    case automate_rest_api_backend:is_valid_token_uid(X, { get_bridge_callback, BridgeId }) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, { call_bridge_callback, BridgeId }) of
                         {true, UserId} ->
                             { true, Req1, State };
                         {true, _TokenUserId} -> %% Non matching user_id
