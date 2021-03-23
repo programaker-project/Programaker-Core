@@ -19,14 +19,17 @@
         Generate token
     </button>
 
-    <br />
     <ng-container *ngIf="token">
-        Token:
-        <input matInput
-            *ngIf="token"
-            class="generated-token"
-            size="{{ token.length }}"
-            readonly="readonly"
-            [value]="token" />
+        <div>
+            Token:
+            <input matInput
+                *ngIf="token"
+                class="generated-token"
+                size="{{ token.length }}"
+                readonly="readonly"
+                [value]="token" />
+
+        </div>
+        Copy this to the web that linked you here to complete the authorization.
     </ng-container>
 </div>
