@@ -1,0 +1,32 @@
+<div class="token-creation-screen screen">
+    <h2>Generating new authorization</h2>
+
+    <div class="scopes">
+        <div class="explanation">
+            The owner of this token will have permissions to:
+        </div>
+        <ul class="scope-list">
+            <li *ngFor="let scope of scopes">
+                <span class="name">{{ scope_name(scope) }}</span>
+                <span class="description">{{ scope_description(scope) }}</span>
+            </li>
+        </ul>
+    </div>
+
+    <button id="grant-permission" color="primary"
+        [disabled]="generatingToken"
+        (click)="generateToken()" mat-button mat-raised-button>
+        Generate token
+    </button>
+
+    <br />
+    <ng-container *ngIf="token">
+        Token:
+        <input matInput
+            *ngIf="token"
+            class="generated-token"
+            size="{{ token.length }}"
+            readonly="readonly"
+            [value]="token" />
+    </ng-container>
+</div>

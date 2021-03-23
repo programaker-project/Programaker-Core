@@ -30,12 +30,14 @@ import { UserProfileComponent } from './profiles/user-profile.component';
 import { UserGroupsResolver } from './resolvers/user-groups.resolver';
 import { UserBridgesResolver } from './resolvers/user-bridges.resolver';
 import { SpreadsheetEditorComponent } from './program-editors/spreadsheet-editor/spreadsheet-editor.component';
+import { AuthorizeNewTokenComponent } from './components/authorize-new-token/authorize-new-token.component';
 
 
 const routes: Routes = [
     { path: '', component: HomeRedirectComponent, pathMatch: 'full' },
     { path: 'about', component: AboutPageComponent, resolve: { renderedAbout: RenderedAboutResolver } },
 
+    { path: 'authorize', component: AuthorizeNewTokenComponent, pathMatch: 'full' },
     { path: 'login', component: LoginFormComponent },
     { path: 'login/reset', component: ResetPasswordStartComponent },
     { path: 'login/reset/verify/:reset_verification_code', component: ResetPasswordUpdatePasswordComponent },

@@ -39,6 +39,7 @@ start_link() ->
                           %% Session management
                         , {"/api/v0/sessions/check", automate_rest_api_sessions_check, []}
                         , {"/api/v0/sessions/login", automate_rest_api_sessions_login, []}
+                        , {"/api/v0/tokens", automate_rest_api_tokens_root, []}
 
                           %% Users
                         , {"/api/v0/users", automate_rest_api_users_root, []}

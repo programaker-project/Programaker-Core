@@ -857,6 +857,32 @@ get_versioning(Nodes) ->
                                 {atomic, ok} = mnesia:add_table_index(?PROGRAM_VARIABLE_TABLE, program_id)
                         end
                 }
+
+                %% - Add scopes to user tokens
+                %% - Add expiration date to user tokens
+                %%
+                %% Previous tokens are set to scopes=all, expiration_time=session
+              , #database_version_transformation
+                { id=28
+                , apply=fun() ->
+                                ok = mnesia:wait_for_tables([ ?USER_SESSIONS_TABLE ],
+                                                            automate_configuration:get_table_wait_time()),
+                                {atomic, ok} = mnesia:transform_table(
+                                                 ?USER_SESSIONS_TABLE,
+                                                 fun({user_session_entry, SessionId, UserId, SessionStartTime, SessionLastUsedTime }) ->
+                                                         %% Replicate the entry. Set session_last_used_time to unknown.
+                                                         { user_session_entry, SessionId, UserId, SessionStartTime, SessionLastUsedTime
+                                                         , all %% Scopes
+                                                         , session %% Expiration time
+                                                         }
+                                                 end,
+                                                 [ session_id, user_id, session_start_time, session_last_used_time
+                                                 , session_scope, session_expiration_time ],
+                                                 user_session_entry
+                                                )
+                        end
+                }
+
               ]
         }.
 

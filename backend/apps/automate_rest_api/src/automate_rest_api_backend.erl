@@ -9,7 +9,6 @@
 
         , login_user/1
         , get_user/1
-        , generate_token_for_user/1
         , is_valid_token/1
         , is_valid_token_uid/1
         , create_monitor/2
@@ -115,9 +114,6 @@ reset_password(VerificationCode, Password) ->
 
 get_user(UserId) ->
     automate_storage:get_user(UserId).
-
-generate_token_for_user(UserId) ->
-    automate_storage:generate_token_for_user(UserId).
 
 is_valid_token(Token) when is_binary(Token) ->
     case automate_storage:get_session_username(Token, true) of

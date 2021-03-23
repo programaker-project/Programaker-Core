@@ -50,10 +50,15 @@
                                  , used :: boolean() | ?MNESIA_SELECTOR
                                  }).
 
+-type session_expiration_time() :: session | time_in_seconds() | never.
+-type session_scope_item() :: list_bridges | call_any_bridge.
+-type session_scope() :: all | [session_scope_item()].
 -record(user_session_entry, { session_id
                             , user_id
                             , session_start_time :: time_in_seconds() | ?MNESIA_SELECTOR
                             , session_last_used_time :: time_in_seconds() | ?MNESIA_SELECTOR
+                            , session_scope :: session_scope() | ?MNESIA_SELECTOR
+                            , session_expiration_time :: session_expiration_time() | ?MNESIA_SELECTOR
                             }).
 
 -record(user_program_entry, { id :: binary()            | ?MNESIA_SELECTOR

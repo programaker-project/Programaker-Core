@@ -56,6 +56,8 @@ get_user_metrics() ->
                                           , user_id='$1'
                                           , session_start_time='_'
                                           , session_last_used_time='$2'
+                                          , session_scope='_'
+                                          , session_expiration_time='_'
                                           },
     SessionResultColumn = '$1',
     HourlyActiveSessionMatcher = [{ SessionMatchHead

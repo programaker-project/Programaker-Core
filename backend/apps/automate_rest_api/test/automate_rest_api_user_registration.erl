@@ -147,7 +147,14 @@ handle_verify_twice(Port, MailTab) ->
                      {ok, {VerifyStatus, _VerifyHeaders, VerifyBody}} = VerifyResult,
 
                      io:fwrite("VerifyBody: ~p~n", [VerifyBody]),
-                     ?assertMatch({_, 200, _VerifyStatusMessage}, VerifyStatus)
+                     {_, 200, _VerifyStatusMessage} = VerifyStatus,
+                     #{ <<"success">> := true
+                      , <<"session">> := #{ <<"token">> := Token
+                                          , <<"user_id">> := _
+                                          , <<"username">> := Username
+                                          }
+                      } = jiffy:decode(VerifyBody, [return_maps]),
+                     ?assert(size(Token) > 4)
              end,
 
     Verify(),

@@ -4,7 +4,7 @@
 -export([ create_user/4
         , login_user/2
         , get_user/1
-        , generate_token_for_user/1
+        , generate_token_for_user/3
         , delete_user/1
         , get_session_username/2
         , get_session_userid/2
@@ -186,7 +186,7 @@ login_user(Username, Password) ->
                     case Status of
                         ready ->
                             SessionToken = generate_id(),
-                            ok = add_token_to_user(UserId, SessionToken),
+                            ok = add_token_to_user(UserId, SessionToken, all, session),
                             { ok, {SessionToken, UserId} };
                         _ ->
                             {error, {user_not_ready, Status}}
@@ -267,6 +267,7 @@ search_users(Query) ->
 admin_list_users() ->
     Transaction = fun() ->
                           Result = lists:map(fun(UserId) ->
+                                                     %% Pull last usage time of a user
                                                      [V] = mnesia:read(?REGISTERED_USERS_TABLE, UserId),
                                                      Sessions = get_userid_sessions(UserId),
                                                      Last = case Sessions of
@@ -290,11 +291,12 @@ admin_list_users() ->
             {error, Reason}
     end.
 
-generate_token_for_user(UserId) ->
+-spec generate_token_for_user(binary(),  session_scope(), session_expiration_time()) -> {ok, binary()} | {error, user_not_ready} | {error, _}.
+generate_token_for_user(UserId, Scope, Expiration) ->
     case get_user(UserId) of
         {ok, #registered_user_entry{ status=ready }} ->
             SessionToken = generate_id(),
-            ok = add_token_to_user(UserId, SessionToken),
+            ok = add_token_to_user(UserId, SessionToken, Scope, Expiration),
             { ok, SessionToken };
         {ok, _} ->
             {error, user_not_ready};
@@ -1721,7 +1723,8 @@ verify_passwd_hash(Hash=("$argon2id$" ++ _), Password) ->
     eargon2:verify_2id(Hash, Password).
 
 
-add_token_to_user(UserId, SessionToken) ->
+-spec add_token_to_user(binary(), binary(), session_scope(), session_expiration_time()) -> ok.
+add_token_to_user(UserId, SessionToken, Scope, Expiration) ->
     StartTime = erlang:system_time(second),
     Transaction = fun() ->
                           mnesia:write(?USER_SESSIONS_TABLE
@@ -1729,6 +1732,8 @@ add_token_to_user(UserId, SessionToken) ->
                                                            , user_id=UserId
                                                            , session_start_time=StartTime
                                                            , session_last_used_time=0
+                                                           , session_scope=Scope
+                                                           , session_expiration_time=Expiration
                                                            }
                                       , write)
                   end,
@@ -1741,6 +1746,8 @@ get_userid_sessions(UserId) ->
                                           , user_id='$1'
                                           , session_start_time='_'
                                           , session_last_used_time='_'
+                                          , session_scope='_'
+                                          , session_expiration_time='_'
                                           },
     SessionResultColumn = '$_',
     SessionMatcher = [{ SessionMatchHead

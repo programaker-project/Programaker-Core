@@ -125,6 +125,16 @@ export class SessionService {
         return this.getUserAvatarUrl();
     }
 
+    async generateApiTokenForScopes(scopes: string[]): Promise<{ token: string}> {
+        const url = this.environmentService.getApiRoot() + `/tokens`;
+        const req = await this.http.post(url, JSON.stringify({ scopes: scopes }), {
+            headers: this.addJsonContentType(this.getAuthHeader()),
+        }).toPromise();
+
+
+        return (req as any).value;
+    }
+
     storeToken(token: string) {
         const storage = this.browser.window.localStorage;
 
