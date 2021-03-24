@@ -37,7 +37,7 @@ is_authorized(Req, State=#state{group_id=GroupId}) ->
             { true, Req1, State };
         Method ->
             {Check, Scope} = case Method of
-                        <<"GET">> -> {fun automate_storage:is_allowed_to_read_in_group/2, { read_group_programs, GroupId }};
+                        <<"GET">> -> {fun automate_storage:is_allowed_to_read_in_group/2, { list_group_programs, GroupId }};
                         _ -> {fun automate_storage:is_allowed_to_write_in_group/2, { create_group_programs, GroupId }}
                     end,
             case cowboy_req:header(<<"authorization">>, Req, undefined) of

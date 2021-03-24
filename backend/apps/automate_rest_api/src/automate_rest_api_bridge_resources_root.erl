@@ -51,7 +51,7 @@ is_authorized(Req, State=#state{ bridge_id=BridgeId }) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X, { read_bridge_resources, BridgeId }) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, { list_bridge_resources, BridgeId }) of
                         {true, UserId} ->
                             { true, Req1, State#state{ owner={user, UserId} } };
                         false ->

@@ -52,8 +52,7 @@ is_authorized(Req, State=#state{owner_id=OwnerId}) ->
             { true, Req1, State };
         _ ->
             {Action, Scope} = case cowboy_req:method(Req1) of
-                         <<"GET">> -> {can_user_view_as, read_assets};
-                         <<"DELETE">> -> {can_user_admin_as, delete_assets};
+                         <<"GET">> -> {can_user_view_as, list_assets};
                          _ -> {can_user_edit_as, create_assets}
                      end,
             case cowboy_req:header(<<"authorization">>, Req, undefined) of

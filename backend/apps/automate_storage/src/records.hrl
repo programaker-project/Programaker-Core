@@ -61,7 +61,7 @@
                             | list_connections_available | list_connections_established
 
                               %% Assets
-                            | read_assets | delete_assets | create_assets
+                            | list_assets | create_assets
 
                               %% Programs
                             | list_programs | create_programs | {delete_program, binary()}
@@ -70,7 +70,7 @@
                             | {render_program, binary()}
 
                               %% Bridges
-                            | list_briges | create_bridges
+                            | list_bridges | create_bridges
                             | call_any_bridge | {call_bridge, binary(), binary()}
                             | { call_bridge_callback, binary() }
                             | {delete_bridge, binary()} | {delete_bridge_tokens, binary()}
@@ -80,7 +80,7 @@
                             | { read_bridge_signal, binary(), binary() } %% More specific
 
                               %% Bridge shares
-                            | { read_bridge_resources, binary() }
+                            | { list_bridge_resources, binary() }
                             | { edit_connection_shares, binary() }
 
                               %% Services
@@ -91,6 +91,7 @@
 
                               %% Templates
                             | list_templates | create_templates
+                            | {read_template, binary()} | { edit_template, binary() } | { delete_template, binary() }
 
                               %% Custom signals
                             | list_custom_signals | create_custom_signals
@@ -106,19 +107,25 @@
                               %% Actions on groups
                             | {list_group_bridges, binary()}
                             | {create_group_bridges, binary()}
-                            | {read_group_programs, binary()} | { create_group_programs, binary() }
+                            | {list_group_programs, binary()} | { create_group_programs, binary() }
                             | {read_group_info, binary()} | {list_group_connections_available, binary()}| {list_group_connections_established, binary()}
                             | {edit_group_picture, binary()}
                             | {list_group_shares, binary()}
 
                               %% Actions on programs
-                            | { establish_program_connection, binary() }
                             | { list_program_shares, binary() }
                             | { call_program_bridge_callback, binary(), binary() }
                             | { list_program_connections_available, binary() } | { list_program_connections_established, binary() }
                             | { list_program_services, binary() }
                             | { read_program_variables, binary() } | { edit_program_variables, binary() }
                             | { list_program_monitors, binary() }
+
+                            | { establish_program_connection, binary() } % This naming goes out
+                                                % of list/read/edit/delete/create/call convention.
+                                                %
+                                                % Ideally we should remove it
+
+
 
                               %% Especially sensitive
                             | { admin_group_info, binary() }
