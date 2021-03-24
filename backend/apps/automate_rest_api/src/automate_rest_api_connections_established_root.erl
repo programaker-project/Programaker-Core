@@ -57,7 +57,7 @@ is_authorized(Req, State) ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
                     #state{user_id=UserId} = State,
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, list_connections_established) of
                         {true, UserId} ->
                             { true, Req1, State };
                         {true, _} -> %% Non matching user_id

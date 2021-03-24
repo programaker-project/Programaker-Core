@@ -19,7 +19,7 @@
 
 init(Req, _Opts) ->
     BridgeId = cowboy_req:binding(bridge_id, Req),
-    {IsAuthorized, ErrorCode, Owner} = check_is_authorized(Req),
+    {IsAuthorized, ErrorCode, Owner} = check_is_authorized(Req, BridgeId),
 
     {cowboy_websocket, Req, #state{ bridge_id=BridgeId
                                   , owner=Owner
@@ -28,7 +28,7 @@ init(Req, _Opts) ->
                                   }}.
 
 
-check_is_authorized(Req) ->
+check_is_authorized(Req, BridgeId) ->
     Qs = cowboy_req:parse_qs(Req),
     Token = case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
@@ -41,7 +41,7 @@ check_is_authorized(Req) ->
         undefined ->
             { false, <<"Authorization data not found">>, undefined };
         X ->
-            case automate_rest_api_backend:is_valid_token_uid(X) of
+            case automate_rest_api_backend:is_valid_token_uid(X, { read_bridge_signal, BridgeId }) of
                 {true, UserId} ->
                     case proplists:get_value(<<"as_group">>, Qs, undefined) of
                         undefined ->

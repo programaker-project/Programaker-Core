@@ -32,7 +32,7 @@ is_authorized(Req, State) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, admin_list_users) of
                         {true, UserId} ->
                             case automate_storage:get_user(UserId) of
                                 {ok, #registered_user_entry{ is_admin=true }} ->

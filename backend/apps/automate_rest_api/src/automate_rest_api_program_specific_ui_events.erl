@@ -66,7 +66,7 @@ handle_message(Msg, State=#state{ program_id=ProgramId
                   , <<"value">> := #{ <<"token">> := Token
                                     }
                   } ->
-                     case automate_rest_api_backend:is_valid_token_uid(Token) of
+                     case automate_rest_api_backend:is_valid_token_uid(Token, { render_program, ProgramId }) of
                          {true, TokenUserId} ->
                              {ok, UserCanView} = automate_storage:is_user_allowed({user, TokenUserId}, ProgramId, read_program),
                              {ok, UserCanEdit} = automate_storage:is_user_allowed({user, TokenUserId}, ProgramId, edit_program),

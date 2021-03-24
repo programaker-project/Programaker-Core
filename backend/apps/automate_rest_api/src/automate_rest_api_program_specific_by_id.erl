@@ -52,11 +52,12 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
         Method ->
             {ok, #user_program_entry{ visibility=Visibility }} = automate_storage:get_program_from_id(ProgramId),
             IsPublic = ?UTILS:is_public(Visibility),
-            Action = case Method of
-                         <<"GET">> -> read_program;
-                         <<"DELETE">> -> delete_program;
-                         _ -> edit_program
-                     end,
+            {Action, Scope} = case Method of
+                                  <<"GET">> -> {read_program, { read_program, ProgramId }};
+                                  <<"PUT">> -> {edit_program, { edit_program, ProgramId }};
+                                  <<"PATCH">> -> {edit_program, { edit_program_metadata, ProgramId }};
+                                  <<"DELETE">> -> {delete_program, { delete_program, ProgramId }}
+                              end,
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     case {Method, IsPublic} of
@@ -66,7 +67,7 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                             { {false, <<"Authorization header not found">>} , Req1, State }
                     end;
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, Scope) of
                         {true, UId} ->
                             case automate_storage:is_user_allowed({user, UId}, ProgramId, Action) of
                                 {ok, true} ->

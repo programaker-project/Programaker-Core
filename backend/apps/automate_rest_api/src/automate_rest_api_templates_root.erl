@@ -52,13 +52,17 @@ is_authorized(Req, State) ->
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
+        Method ->
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
+                    Scope = case Method of
+                                <<"GET">> -> list_templates;
+                                <<"POST">> -> create_templates
+                            end,
                     #state{user_id=UserId} = State,
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, Scope) of
                         {true, UserId} ->
                             { true, Req1, State };
                         {true, _} -> %% Non matching user id

@@ -54,12 +54,16 @@ is_authorized(Req, State=#state{ bridge_id=BridgeId }) ->
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
+        Method ->
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    Scope = case Method of
+                                <<"GET">> -> {list_bridge_tokens, BridgeId};
+                                <<"POST">> -> {create_bridge_tokens, BridgeId}
+                            end,
+                    case automate_rest_api_backend:is_valid_token_uid(X, Scope) of
                         {true, UserId} ->
                             {ok, Owner} = automate_service_port_engine:get_bridge_owner(BridgeId),
                             case automate_storage:can_user_admin_as({user, UserId}, Owner) of

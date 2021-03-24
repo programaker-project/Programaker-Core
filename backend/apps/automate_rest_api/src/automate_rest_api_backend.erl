@@ -9,9 +9,8 @@
 
         , login_user/1
         , get_user/1
-        , generate_token_for_user/1
-        , is_valid_token/1
-        , is_valid_token_uid/1
+        , is_valid_token/2
+        , is_valid_token_uid/2
         , create_monitor/2
         , lists_monitors_from_username/1
         , create_program/3
@@ -116,11 +115,9 @@ reset_password(VerificationCode, Password) ->
 get_user(UserId) ->
     automate_storage:get_user(UserId).
 
-generate_token_for_user(UserId) ->
-    automate_storage:generate_token_for_user(UserId).
-
-is_valid_token(Token) when is_binary(Token) ->
-    case automate_storage:get_session_username(Token, true) of
+-spec is_valid_token(binary(), session_scope_item()) -> {true, binary()} | false.
+is_valid_token(Token, Scope) when is_binary(Token) ->
+    case automate_storage:check_session_username(Token, Scope, true) of
         { ok, Username } ->
             {true, Username};
         { error, session_not_found } ->
@@ -130,8 +127,9 @@ is_valid_token(Token) when is_binary(Token) ->
             false
     end.
 
-is_valid_token_uid(Token) when is_binary(Token) ->
-    case automate_storage:get_session_userid(Token, true) of
+-spec is_valid_token_uid(binary(), session_scope_item()) -> {true, binary()} | false.
+is_valid_token_uid(Token, Scope) when is_binary(Token) ->
+    case automate_storage:check_session_userid(Token, Scope, true) of
         { ok, UserId } ->
             {true, UserId};
         { error, session_not_found } ->

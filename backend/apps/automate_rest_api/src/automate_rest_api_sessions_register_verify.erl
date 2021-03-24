@@ -53,7 +53,7 @@ accept_json_modify_collection(Req, Session) ->
                                 {ok, #registered_user_entry{ username=Username
                                                            , status=ready
                                                            }} ->
-                                    { ok, Token } = automate_rest_api_backend:generate_token_for_user(UserId),
+                                    { ok, Token } = automate_storage:generate_token_for_user(UserId, all, session),
                                     Output = jiffy:encode(#{ <<"success">> => true
                                                            , <<"session">> => #{ <<"token">> => Token
                                                                                , <<"user_id">> => UserId

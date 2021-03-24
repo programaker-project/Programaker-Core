@@ -52,7 +52,7 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State=#state{program_id=ProgramId}) ->
+is_authorized(Req, State=#state{program_id=ProgramId, bridge_id=BridgeId}) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
@@ -63,7 +63,7 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, { call_program_bridge_callback, BridgeId, ProgramId }) of
                         {true, UserId} ->
                             {ok, #user_program_entry{ owner=Owner }} = automate_storage:get_program_from_id(ProgramId),
                             case automate_storage:can_user_view_as({user, UserId}, Owner) of

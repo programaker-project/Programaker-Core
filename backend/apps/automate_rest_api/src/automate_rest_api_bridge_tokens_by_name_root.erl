@@ -55,7 +55,7 @@ is_authorized(Req, State=#state{ bridge_id=BridgeId }) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, { delete_bridge_tokens, BridgeId }) of
                         {true, UserId} ->
                             {ok, Owner} = automate_service_port_engine:get_bridge_owner(BridgeId),
                             case automate_storage:can_user_admin_as({user, UserId}, Owner) of

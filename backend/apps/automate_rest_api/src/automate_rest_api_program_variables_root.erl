@@ -54,12 +54,16 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
+        Method ->
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    Scope = case Method of
+                                <<"GET">> ->  {read_program_variables, ProgramId};
+                                <<"PATCH">> -> {edit_program_variables, ProgramId}
+                            end,
+                    case automate_rest_api_backend:is_valid_token_uid(X, Scope) of
                         {true, UserId} ->
                             case automate_storage:is_user_allowed({user, UserId}, ProgramId, edit_program) of
                                 {ok, true} ->

@@ -56,11 +56,11 @@ is_authorized(Req, State=#state{program_id=ProgramId}) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    Action = case Method of
-                                <<"GET">> -> read_program;
-                                _ -> edit_program
+                    {Action, Scope} = case Method of
+                                          <<"GET">> -> {read_program, {read_program, ProgramId}};
+                                          _ -> {edit_program, {edit_program, ProgramId}}
                             end,
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, Scope) of
                         {true, UserId} ->
                             case automate_storage:is_user_allowed({user, UserId}, ProgramId, Action) of
                                 {ok, true} ->

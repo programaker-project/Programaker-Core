@@ -58,7 +58,7 @@ is_authorized(Req, State=#state{program_id=ProgramId, copy_from=CopyFrom}) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, create_assets) of
                         {true, UId} ->
                             {ok, Owner} = automate_storage:get_program_owner(ProgramId),
                             case automate_storage:can_user_edit_as({user, UId}, Owner) of

@@ -57,7 +57,7 @@ is_authorized(Req, State=#state{program_id=ProgramId, group_id=GroupId}) ->
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    case automate_rest_api_backend:is_valid_token_uid(X, create_services) of
                         {true, UserId} ->
                             case {ProgramId, GroupId} of
                                 {Pid, _} when is_binary(Pid) ->

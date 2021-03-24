@@ -41,19 +41,25 @@ options(Req, State) ->
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"PUT">>, <<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
-is_authorized(Req, State) ->
+is_authorized(Req, State=#state{ template_id=TemplateId }) ->
     Req1 = automate_rest_api_cors:set_headers(Req),
     case cowboy_req:method(Req1) of
         %% Don't do authentication if it's just asking for options
         <<"OPTIONS">> ->
             { true, Req1, State };
-        _ ->
+        Method ->
             case cowboy_req:header(<<"authorization">>, Req, undefined) of
                 undefined ->
                     { {false, <<"Authorization header not found">>} , Req1, State };
                 X ->
                     #state{user_id=UserId} = State,
-                    case automate_rest_api_backend:is_valid_token_uid(X) of
+                    Scope = case Method of
+                                <<"GET">> -> { read_template, TemplateId };
+                                <<"PUT">> -> { edit_template, TemplateId };
+                                <<"DELETE">> -> { delete_template, TemplateId }
+
+                            end,
+                    case automate_rest_api_backend:is_valid_token_uid(X, Scope) of
                         {true, UserId} ->
                             { true, Req1, State };
                         {true, _} -> %% Non matching user_id

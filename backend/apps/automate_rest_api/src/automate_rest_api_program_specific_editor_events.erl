@@ -38,7 +38,7 @@ init(Req, _Opts) ->
         undefined ->
                      {<<"Authorization header not found">>, none, false};
         X ->
-            case automate_rest_api_backend:is_valid_token_uid(X) of
+            case automate_rest_api_backend:is_valid_token_uid(X, {edit_program, ProgramId}) of
                 {true, TokenUserId} ->
                     {ok, UserCanView} = automate_storage:is_user_allowed({user, TokenUserId}, ProgramId, read_program),
                     {ok, UserCanEdit} = automate_storage:is_user_allowed({user, TokenUserId}, ProgramId, edit_program),
