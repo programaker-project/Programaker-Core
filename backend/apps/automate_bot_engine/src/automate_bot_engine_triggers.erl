@@ -12,6 +12,8 @@
 -include("instructions.hrl").
 -include("../../automate_channel_engine/src/records.hrl").
 -include("../../automate_common_types/src/protocol.hrl").
+-include("../../automate_services_time/src/definitions.hrl").
+-include("../../automate_testing/src/testing.hrl").
 
 %%%===================================================================
 %%% API
@@ -211,7 +213,37 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                #program_state{program_id=ProgramId}) ->
     trigger_thread_with_matching_message(Program, ProgramId, {channel, MonitorId}, MonitorArgs, MessageContent, FullMessage, Trigger);
 
-%% With matching value
+
+%% Special case for handling of timezone trigger
+trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                                    , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ?TIME_SERVICE_UUID }
+                                                                                 , ?MONITOR_EXPECTED_VALUE := #{ <<"value">> := ExpectedTime }
+                                                                                 , <<"timezone">> := Timezone
+                                                                                 }
+                                                        }
+                                       , subprogram=Program
+                                       },
+               { ?TRIGGERED_BY_MONITOR, {_MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent, <<"service_id">> := ServiceId }} },
+               #program_state{program_id=ProgramId}) ->
+
+    {Today, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
+    ok = qdate:set_timezone(Timezone),
+    {_, { Hour, Min, Sec }} = qdate:parse(ExpectedTime),
+    {_, { ExHour, ExMin, ExSec }} = qdate:to_date(<<"UTC">>, {Today, {Hour, Min, Sec}}),
+    ok = qdate:set_timezone(<<"UTC">>),
+
+    ExpectedTimeWithTimezone = binary:list_to_bin(lists:flatten(io_lib:format("~p:~p:~p", [ExHour, ExMin, ExSec]))),
+
+    case MessageContent == ExpectedTimeWithTimezone of
+        true ->
+            trigger_thread_with_matching_message(Program, ProgramId, {service, ServiceId},
+                                                 MonitorArgs, MessageContent, FullMessage,
+                                                 Trigger);
+        false ->
+            false
+    end;
+
+%% Others, with matching value
 trigger_thread(Trigger=#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                                         , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId }
                                                                                      , ?MONITOR_EXPECTED_VALUE := Argument
