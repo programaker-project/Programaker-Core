@@ -14,6 +14,7 @@
                    , automate_service_port_engine
     ]},
     { included_applications, [ automate_program_linker %% Not a real application, just a module
+                             , automate_testing
                              ] },
     {env, [
     ]},

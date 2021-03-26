@@ -7,6 +7,7 @@
 -include("../../automate_bot_engine/src/instructions.hrl").
 -include("../../automate_services_time/src/definitions.hrl").
 -include("records.hrl").
+-include("../../automate_testing/src/testing.hrl").
 
 %%====================================================================
 %% API functions
@@ -46,7 +47,7 @@ relink_block_contents(Block=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
     %% TODO: Note that the timezone conversion will take into account the
     %% daylight savings at the point in time where it was linked.
     ok = qdate:set_timezone(Timezone),
-    {NowDate, _NowTime} = calendar:now_to_datetime(erlang:timestamp()),
+    {NowDate, _NowTime} = calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp())),
     {_, { Hour, Min, Sec }} = qdate:parse(ExpectedTime),
     {_, { ExHour, ExMin, ExSec }} = qdate:to_date(<<"UTC">>, {NowDate, {Hour, Min, Sec}}),
     ok = qdate:set_timezone(<<"UTC">>),

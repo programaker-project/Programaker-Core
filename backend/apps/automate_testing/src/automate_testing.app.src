@@ -1,0 +1,14 @@
+{application, automate_testing,
+ [
+  {description, "Auto-mate testing tools."},
+  {vsn, "0.0.0"},
+  {registered, []},
+  {applications, [ stdlib
+                 , kernel
+                 ]},
+  {env, [
+        ]},
+  {modules, []},
+  {licenses, ["Apache 2.0"]},
+  {links, []}
+ ]}.
