@@ -236,8 +236,9 @@ scheduled_handles_interruptions() ->
 
     ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
 
-    %% Check that program id alive
+    %% Check that program alive and has been activated once
     ?assertMatch(ok, wait_for_program_alive(ProgramId, 10, 100)),
+    ?assertMatch(ok, wait_for_variable_in_program(ProgramId, { internal, { next_scheduled_time } }, 20, 100)),
 
     {ok, ProgramPid} = automate_storage:get_program_pid(ProgramId),
     ?assert(is_process_alive(ProgramPid)),
@@ -311,7 +312,7 @@ constant_val(Val) ->
      , ?VALUE => Val
      }.
 
-wait_for_program_alive(Pid, 0, SleepTime) ->
+wait_for_program_alive(_Pid, 0, _SleepTime) ->
     {error, timeout};
 
 wait_for_program_alive(ProgramId, TestTimes, SleepTime) ->
@@ -321,4 +322,16 @@ wait_for_program_alive(ProgramId, TestTimes, SleepTime) ->
         {error, not_running} ->
             timer:sleep(SleepTime),
             wait_for_program_alive(ProgramId, TestTimes - 1, SleepTime)
+    end.
+
+wait_for_variable_in_program(_Pid, _Key, 0, _SleepTime) ->
+    {error, timeout};
+
+wait_for_variable_in_program(ProgramId, Key, TestTimes, SleepTime) ->
+    case automate_bot_engine_variables:get_program_variable(ProgramId, Key) of
+        {ok, _} ->
+            ok;
+        {error, not_found} ->
+            timer:sleep(SleepTime),
+            wait_for_variable_in_program(ProgramId, Key, TestTimes - 1, SleepTime)
     end.

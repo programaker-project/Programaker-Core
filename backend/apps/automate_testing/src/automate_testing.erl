@@ -32,7 +32,6 @@ set_corrected_time(CorrectedTimestamp) ->
     Now = calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(erlang:timestamp())),
     Corrected = calendar:datetime_to_gregorian_seconds(CorrectedTimestamp),
     Diff = Corrected - Now,
-    io:fwrite("\033[1mApplied correction. ~p seconds\033[0m~n", [Diff]),
 
     true = ets:insert(time_tests, { correction, Diff }),
     ok.
