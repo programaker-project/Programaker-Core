@@ -61,6 +61,7 @@ tests(_SetupResult) ->
     , {"[Bot engine][Timing] Wait for time signal on Timezone change", fun wait_for_time_signal_on_timezone_change/0}
 %%%% Service discontinuity
     , {"[Bot engine][Timing discontinuity] Scheduled tasks are executed even with interruptions", fun scheduled_handles_interruptions/0}
+    , {"[Bot engine][Timing discontinuity] Started tasks are not immediately executed", fun scheduled_not_immediate/0}
     ].
 
 %%%% Triggers
@@ -253,6 +254,52 @@ scheduled_handles_interruptions() ->
 
     io:fwrite("Logs after signal: ~p~n", [MsgsAfter]),
     ?assertMatch([ <<"after">> ], MsgsAfter),
+    ok.
+
+scheduled_not_immediate() ->
+    ScheduledTime = <<"07:30:00">>,
+    StartTime = {{2021, 03, 26}, {7, 31, 00}},
+
+    ok = automate_testing:set_corrected_time(StartTime),
+
+    ProgramData = [ { ?WAIT_FOR_MONITOR_COMMAND,
+                      #{ ?MONITOR_ID => #{ ?FROM_SERVICE => ?TIME_SERVICE_UUID  }
+                       , ?MONITOR_EXPECTED_VALUE => #{ <<"type">> => <<"constant">>
+                                                     , <<"value">> => ScheduledTime
+                                                     }
+                       , <<"timezone">> => <<"UTC">>
+                       }
+                    }
+                  , { ?COMMAND_LOG_VALUE, [constant_val(<<"after">>)] }
+                  ],
+
+    {Username, ProgramName, ProgramId} = ?UTILS:create_anonymous_program(),
+    %% Launch program
+    ?assertMatch({ok, ProgramId},
+                 automate_storage:update_program(
+                   Username, ProgramName,
+                   #stored_program_content{ type=scratch_program
+                                          , parsed=#{ <<"blocks">> => [ ?UTILS:build_ast(ProgramData) ]
+                                                    , <<"variables">> => []
+                                                    }
+                                          , orig= <<"*test*">>
+                                          , pages=#{}
+                                          })),
+
+    ?assertMatch(ok, automate_bot_engine_launcher:update_program(ProgramId)),
+
+    %% Check that program id alive
+    ?assertMatch(ok, wait_for_program_alive(ProgramId, 10, 100)),
+
+    %% Wait ~2 seconds, should be enough for the time signal to arrive
+    timer:sleep(2000),
+    {ok, LogsAfter} = automate_bot_engine:get_user_generated_logs(ProgramId),
+    MsgsAfter = [ M || #user_generated_log_entry{event_message=M} <- LogsAfter ],
+
+    automate_testing:unset_corrected_time(),
+
+    io:fwrite("Logs after signal: ~p~n", [MsgsAfter]),
+    ?assertMatch([ ], MsgsAfter),
     ok.
 
 

@@ -220,25 +220,73 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                                                                                  , ?MONITOR_EXPECTED_VALUE := #{ <<"value">> := ExpectedTime }
                                                                                  , <<"timezone">> := Timezone
                                                                                  }
-                                                        }
+                                                    }
                                        , subprogram=Program
                                        },
-               { ?TRIGGERED_BY_MONITOR, {_MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent, <<"service_id">> := ServiceId }} },
+               { ?TRIGGERED_BY_MONITOR, {_MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent
+                                                                  , <<"full">> := #{ <<"__as_gregorian_seconds">> := GregorianSeconds }
+                                                                  , <<"service_id">> := ServiceId
+                                                                  } } },
                #program_state{program_id=ProgramId}) ->
 
-    {Today, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
-    ok = qdate:set_timezone(Timezone),
-    {_, { Hour, Min, Sec }} = qdate:parse(ExpectedTime),
-    {_, { ExHour, ExMin, ExSec }} = qdate:to_date(<<"UTC">>, {Today, {Hour, Min, Sec}}),
-    ok = qdate:set_timezone(<<"UTC">>),
+    Schedule = fun(RequireFuture) ->
+                       Inc = case RequireFuture of
+                                 true -> 1;
+                                 false -> 0
+                             end,
 
-    ExpectedTimeWithTimezone = binary:list_to_bin(lists:flatten(io_lib:format("~p:~p:~p", [ExHour, ExMin, ExSec]))),
+                       {CMegaSec, CSec, CMicroSec} = ?CORRECT_EXECUTION_TIME(erlang:timestamp()),
 
-    case MessageContent == ExpectedTimeWithTimezone of
+                       %% Current time in UTC
+                       CurrentDateTime = calendar:now_to_datetime({CMegaSec, CSec + Inc, CMicroSec}),
+                       %% In epoch-like
+                       CurrentSecs = calendar:datetime_to_gregorian_seconds(CurrentDateTime),
+
+
+                       %% Current day in Timezone
+                       {Today, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
+                       ok = qdate:set_timezone(Timezone),
+                       {_, { Hour, Min, Sec }} = qdate:parse(ExpectedTime),
+                       %% Goal time, in UTC
+                       GoalDateTime = qdate:to_date(<<"UTC">>, {Today, {Hour, Min, Sec}}),
+                       ok = qdate:set_timezone(<<"UTC">>),
+                       GoalSecs = calendar:datetime_to_gregorian_seconds(GoalDateTime),
+
+                       DoTomorrow = GoalSecs < CurrentSecs,
+
+                       case DoTomorrow of
+                           true ->
+                               TomorrowDate = calendar:gregorian_days_to_date(calendar:date_to_gregorian_days(Today) + 1),
+
+                               %%
+                               ok = qdate:set_timezone(Timezone),
+                               {_, { Hour, Min, Sec }} = qdate:parse(ExpectedTime),
+                               %% Goal time, in UTC
+                               TomorrowsGoal = qdate:to_date(<<"UTC">>, {TomorrowDate, {Hour, Min, Sec}}),
+                               ok = qdate:set_timezone(<<"UTC">>),
+                               calendar:datetime_to_gregorian_seconds(TomorrowsGoal);
+                           false ->
+                               GoalSecs
+                       end
+               end,
+
+    Next = case automate_bot_engine_variables:get_program_variable(ProgramId, { internal, { next_scheduled_time } }) of
+               {error, not_found} ->
+                   NextTime = Schedule(false),
+                   ok = automate_bot_engine_variables:set_program_variable(ProgramId, { internal, { next_scheduled_time } }, NextTime),
+                   NextTime;
+               {ok, NextTime} ->
+                   NextTime
+           end,
+
+    case Next =< GregorianSeconds of
         true ->
-            trigger_thread_with_matching_message(Program, ProgramId, {service, ServiceId},
-                                                 MonitorArgs, MessageContent, FullMessage,
-                                                 Trigger);
+            Future = Schedule(true),
+            {true, Thread} = trigger_thread_with_matching_message(Program, ProgramId, {service, ServiceId},
+                                                                  MonitorArgs, MessageContent, FullMessage,
+                                                                  Trigger),
+            ok = automate_bot_engine_variables:set_program_variable(ProgramId, { internal, { next_scheduled_time } }, Future),
+            {true, Thread};
         false ->
             false
     end;

@@ -149,10 +149,12 @@ spawn_timekeeper() ->
 
 
 timekeeping_loop(ChannelId, {{LYear, LMonth, LDay}, {LHour, LMin, LSec}}) ->
-    {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp())),
+    DateTime = calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp())),
+    {{Year, Month, Day}, {Hour, Min, Sec}} = DateTime,
     case (Sec =/= LSec) orelse (Min =/= LMin) orelse (Hour =/= LHour) of
         true ->
             StrTime = binary:list_to_bin(lists:flatten(io_lib:format("~p:~p:~p", [Hour, Min, Sec]))),
+            GregorianSeconds = calendar:datetime_to_gregorian_seconds(DateTime),
             automate_channel_engine:send_to_channel(ChannelId,
                                                     #{ ?CHANNEL_MESSAGE_CONTENT => StrTime
                                                      , <<"full">> => #{ <<"year">> => Year
@@ -162,6 +164,7 @@ timekeeping_loop(ChannelId, {{LYear, LMonth, LDay}, {LHour, LMin, LSec}}) ->
                                                                       , <<"hour">> => Hour
                                                                       , <<"minute">> => Min
                                                                       , <<"second">> => Sec
+                                                                      , <<"__as_gregorian_seconds">> => GregorianSeconds
                                                                       }
                                                      , <<"as_list">> => [ Hour, Min, Sec]
                                                      , <<"key">> => <<"utc_time">>

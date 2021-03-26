@@ -112,8 +112,10 @@ set_program_variable(ProgramId, Key, Value) ->
 delete_program_variable(ProgramId, Key) ->
     automate_storage:delete_program_variable(ProgramId, Key).
 
--spec get_program_variable(#program_thread{}, binary()) -> {ok, any()} | {error, not_found}.
+-spec get_program_variable(#program_thread{} | binary(), binary()) -> {ok, any()} | {error, not_found}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
+    get_program_variable(ProgramId, Key);
+get_program_variable(ProgramId, Key) when is_binary(ProgramId) ->
     case automate_storage:get_program_variable(ProgramId, Key) of
         {ok, Value} ->
             {ok, Value};

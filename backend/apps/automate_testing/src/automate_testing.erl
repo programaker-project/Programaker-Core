@@ -16,7 +16,6 @@ apply_time(X) ->
                 [{correction, C}] ->
                     { MegaS, S, MicroS } = X,
                     Corrected = { MegaS, S + C, MicroS },
-                    io:fwrite("\033[7mCORRECTION ~p + ~p => ~p\033[0m~n", [x, C, corr]),
                     Corrected
             end
     end.
