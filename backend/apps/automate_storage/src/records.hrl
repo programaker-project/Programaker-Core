@@ -237,7 +237,8 @@
                                   , enabled :: boolean()        | ?MNESIA_SELECTOR
                                   }).
 
--record(program_variable_table_entry, { id :: { binary(), binary() } % { program id, variable name }
+-record(program_variable_table_entry, { id :: { binary()
+                                              , binary() | {internal, _} } % { program id, variable name }
                                       , program_id :: binary()
                                       , value :: any()
                                       }).

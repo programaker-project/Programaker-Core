@@ -86,7 +86,7 @@ websocket_info(ping_interval, State) ->
 websocket_info({channel_engine, _ChannelId, #{ <<"key">> := variable_events
                                              , <<"subkey">> := ReceivedVariable
                                              , <<"value">> := Value
-                                             }}, State)  ->
+                                             }}, State) when is_binary(ReceivedVariable) or is_list(ReceivedVariable) ->
     Update = #{ name => ReceivedVariable, value => Value },
     try jiffy:encode(Update) of
         Encoded when is_binary(Encoded) ->

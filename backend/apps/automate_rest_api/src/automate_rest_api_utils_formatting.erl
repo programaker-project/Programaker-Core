@@ -92,7 +92,9 @@ serialize_log_entry(#user_generated_log_entry{ program_id=ProgramId
      }.
 
 serialize_variable_map(VariableMap) ->
-    VariableMap.
+    maps:filter(fun(K, _V) ->
+                        is_binary(K) or is_list(K)
+                end, VariableMap).
 
 serialize_string_or_none(none) ->
     null;
