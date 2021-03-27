@@ -207,6 +207,7 @@ scheduled_handles_interruptions() ->
     StartTime = {{2021, 03, 26}, {7, 00, 00}},
     ScheduledTime = <<"07:30:00">>,
     JumpTime = {{2021, 03, 26}, {8, 00, 00}},
+    Timezone = <<"UTC">>,
 
     ok = automate_testing:set_corrected_time(StartTime),
 
@@ -215,7 +216,7 @@ scheduled_handles_interruptions() ->
                        , ?MONITOR_EXPECTED_VALUE => #{ <<"type">> => <<"constant">>
                                                      , <<"value">> => ScheduledTime
                                                      }
-                       , <<"timezone">> => <<"UTC">>
+                       , <<"timezone">> => Timezone
                        }
                     }
                   , { ?COMMAND_LOG_VALUE, [constant_val(<<"after">>)] }
@@ -238,7 +239,7 @@ scheduled_handles_interruptions() ->
 
     %% Check that program alive and has been activated once
     ?assertMatch(ok, wait_for_program_alive(ProgramId, 10, 100)),
-    ?assertMatch(ok, wait_for_variable_in_program(ProgramId, { internal, { next_scheduled_time } }, 20, 100)),
+    ?assertMatch(ok, wait_for_variable_in_program(ProgramId, { internal, { time_cache, {  ScheduledTime, Timezone } } }, 20, 100)),
 
     {ok, ProgramPid} = automate_storage:get_program_pid(ProgramId),
     ?assert(is_process_alive(ProgramPid)),

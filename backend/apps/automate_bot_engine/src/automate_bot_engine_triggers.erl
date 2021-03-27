@@ -229,6 +229,9 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                                                                   } } },
                #program_state{program_id=ProgramId}) ->
 
+    %% TODO: Periodically clear this cache. Maybe when a new version is uploaded?
+    CacheKey = { internal, { time_cache, { ExpectedTime, Timezone } } },
+
     Schedule = fun(RequireFuture) ->
                        Inc = case RequireFuture of
                                  true -> 1;
@@ -241,7 +244,6 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                        CurrentDateTime = calendar:now_to_datetime({CMegaSec, CSec + Inc, CMicroSec}),
                        %% In epoch-like
                        CurrentSecs = calendar:datetime_to_gregorian_seconds(CurrentDateTime),
-
 
                        %% Current day in Timezone
                        {Today, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
@@ -256,9 +258,9 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
 
                        case DoTomorrow of
                            true ->
+                               %% Recalculate next execution day, now for tomorrow
                                TomorrowDate = calendar:gregorian_days_to_date(calendar:date_to_gregorian_days(Today) + 1),
 
-                               %%
                                ok = qdate:set_timezone(Timezone),
                                {_, { Hour, Min, Sec }} = qdate:parse(ExpectedTime),
                                %% Goal time, in UTC
@@ -270,10 +272,10 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                        end
                end,
 
-    Next = case automate_bot_engine_variables:get_program_variable(ProgramId, { internal, { next_scheduled_time } }) of
+    Next = case automate_bot_engine_variables:get_program_variable(ProgramId, CacheKey) of
                {error, not_found} ->
                    NextTime = Schedule(false),
-                   ok = automate_bot_engine_variables:set_program_variable(ProgramId, { internal, { next_scheduled_time } }, NextTime),
+                   ok = automate_bot_engine_variables:set_program_variable(ProgramId, CacheKey, NextTime),
                    NextTime;
                {ok, NextTime} ->
                    NextTime
@@ -285,7 +287,7 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
             {true, Thread} = trigger_thread_with_matching_message(Program, ProgramId, {service, ServiceId},
                                                                   MonitorArgs, MessageContent, FullMessage,
                                                                   Trigger),
-            ok = automate_bot_engine_variables:set_program_variable(ProgramId, { internal, { next_scheduled_time } }, Future),
+            ok = automate_bot_engine_variables:set_program_variable(ProgramId, CacheKey, Future),
             {true, Thread};
         false ->
             false
@@ -306,7 +308,6 @@ trigger_thread(Trigger=#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MON
         {ok, MessageContent, UpdatedThread} ->
             {true, Thread};
         {ok, Found, _DiscardedThread} ->
-            %% io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
             false
     end;
 
