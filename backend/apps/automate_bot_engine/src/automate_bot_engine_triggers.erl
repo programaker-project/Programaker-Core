@@ -12,6 +12,8 @@
 -include("instructions.hrl").
 -include("../../automate_channel_engine/src/records.hrl").
 -include("../../automate_common_types/src/protocol.hrl").
+-include("../../automate_services_time/src/definitions.hrl").
+-include("../../automate_testing/src/testing.hrl").
 
 %%%===================================================================
 %%% API
@@ -211,7 +213,86 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                #program_state{program_id=ProgramId}) ->
     trigger_thread_with_matching_message(Program, ProgramId, {channel, MonitorId}, MonitorArgs, MessageContent, FullMessage, Trigger);
 
-%% With matching value
+
+%% Special case for handling of timezone trigger
+trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
+                                                    , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ?TIME_SERVICE_UUID }
+                                                                                 , ?MONITOR_EXPECTED_VALUE := #{ <<"value">> := ExpectedTime }
+                                                                                 , <<"timezone">> := Timezone
+                                                                                 }
+                                                    }
+                                       , subprogram=Program
+                                       },
+               { ?TRIGGERED_BY_MONITOR, {_MonitorId, FullMessage=#{ ?CHANNEL_MESSAGE_CONTENT := MessageContent
+                                                                  , <<"full">> := #{ <<"__as_gregorian_seconds">> := GregorianSeconds }
+                                                                  , <<"service_id">> := ServiceId
+                                                                  } } },
+               #program_state{program_id=ProgramId}) ->
+
+    %% TODO: Periodically clear this cache. Maybe when a new version is uploaded?
+    CacheKey = { internal, { time_cache, { ExpectedTime, Timezone } } },
+
+    Schedule = fun(RequireFuture) ->
+                       Inc = case RequireFuture of
+                                 true -> 1;
+                                 false -> 0
+                             end,
+
+                       {CMegaSec, CSec, CMicroSec} = ?CORRECT_EXECUTION_TIME(erlang:timestamp()),
+
+                       %% Current time in UTC
+                       CurrentDateTime = calendar:now_to_datetime({CMegaSec, CSec + Inc, CMicroSec}),
+                       %% In epoch-like
+                       CurrentSecs = calendar:datetime_to_gregorian_seconds(CurrentDateTime),
+
+                       %% Current day in Timezone
+                       {Today, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
+                       ok = qdate:set_timezone(Timezone),
+                       {_, { Hour, Min, Sec }} = qdate:parse(ExpectedTime),
+                       %% Goal time, in UTC
+                       GoalDateTime = qdate:to_date(<<"UTC">>, {Today, {Hour, Min, Sec}}),
+                       ok = qdate:set_timezone(<<"UTC">>),
+                       GoalSecs = calendar:datetime_to_gregorian_seconds(GoalDateTime),
+
+                       PastTodayTime = GoalSecs < CurrentSecs,
+
+                       case PastTodayTime of
+                           true ->
+                               %% Recalculate next execution date, now for tomorrow
+                               TomorrowDate = calendar:gregorian_days_to_date(calendar:date_to_gregorian_days(Today) + 1),
+
+                               %% Goal time, in UTC
+                               ok = qdate:set_timezone(Timezone),
+                               TomorrowsGoal = qdate:to_date(<<"UTC">>, {TomorrowDate, {Hour, Min, Sec}}),
+                               ok = qdate:set_timezone(<<"UTC">>),
+                               calendar:datetime_to_gregorian_seconds(TomorrowsGoal);
+                           false ->
+                               GoalSecs
+                       end
+               end,
+
+    Next = case automate_bot_engine_variables:get_program_variable(ProgramId, CacheKey) of
+               {error, not_found} ->
+                   NextTime = Schedule(false),
+                   ok = automate_bot_engine_variables:set_program_variable(ProgramId, CacheKey, NextTime),
+                   NextTime;
+               {ok, NextTime} ->
+                   NextTime
+           end,
+
+    case Next =< GregorianSeconds of
+        true ->
+            Future = Schedule(true),
+            {true, Thread} = trigger_thread_with_matching_message(Program, ProgramId, {service, ServiceId},
+                                                                  MonitorArgs, MessageContent, FullMessage,
+                                                                  Trigger),
+            ok = automate_bot_engine_variables:set_program_variable(ProgramId, CacheKey, Future),
+            {true, Thread};
+        false ->
+            false
+    end;
+
+%% Others, with matching value
 trigger_thread(Trigger=#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MONITOR_COMMAND
                                                         , ?ARGUMENTS := MonitorArgs=#{ ?MONITOR_ID := #{ ?FROM_SERVICE := ServiceId }
                                                                                      , ?MONITOR_EXPECTED_VALUE := Argument
@@ -226,7 +307,6 @@ trigger_thread(Trigger=#program_trigger{ condition= Op=#{ ?TYPE := ?WAIT_FOR_MON
         {ok, MessageContent, UpdatedThread} ->
             {true, Thread};
         {ok, Found, _DiscardedThread} ->
-            %% io:format("No match. Expected “~p”, found “~p”~n", [MessageContent, Found]),
             false
     end;
 

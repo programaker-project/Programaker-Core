@@ -1189,7 +1189,7 @@ dirty_is_thread_alive(ThreadId) ->
             {ok, true}
     end.
 
--spec get_program_variable(binary(), binary()) -> {ok, any()} | {error, not_found}.
+-spec get_program_variable(binary(), binary() | {internal, _}) -> {ok, any()} | {error, not_found}.
 get_program_variable(ProgramId, Key) ->
     Transaction = fun() ->
                           mnesia:read(?PROGRAM_VARIABLE_TABLE, {ProgramId, Key})
@@ -2362,7 +2362,7 @@ get_running_program_id(ProgramId) ->
             {error, mnesia:error_description(Reason)}
     end.
 
--spec set_program_variable(binary(), binary(), any()) -> ok | {error, any()}.
+-spec set_program_variable(binary(), binary() | { internal, _ }, any()) -> ok | {error, any()}.
 set_program_variable(ProgramId, Key, Value) ->
     Transaction = fun() ->
                           mnesia:write(?PROGRAM_VARIABLE_TABLE, #program_variable_table_entry{ id={ProgramId, Key}

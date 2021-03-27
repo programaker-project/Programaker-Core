@@ -103,7 +103,7 @@ set_thread_value(Thread = #program_thread{}, Key, Value) when is_list(Key) ->
 set_thread_value(Thread = #program_thread{ global_memory=Global }, Key, Value) ->
     {ok, Thread#program_thread{ global_memory=Global#{ Key => Value } } }.
 
--spec set_program_variable(binary(), binary(), any()) -> ok | {error, _}.
+-spec set_program_variable(binary(), binary() | {internal, _}, any()) -> ok | {error, _}.
 set_program_variable(ProgramId, Key, Value) ->
     ok = automate_storage:set_program_variable(ProgramId, Key, Value),
     notify_variable_update(Key, ProgramId, Value).
@@ -112,8 +112,10 @@ set_program_variable(ProgramId, Key, Value) ->
 delete_program_variable(ProgramId, Key) ->
     automate_storage:delete_program_variable(ProgramId, Key).
 
--spec get_program_variable(#program_thread{}, binary()) -> {ok, any()} | {error, not_found}.
+-spec get_program_variable(#program_thread{} | binary(), binary() | {internal, _}) -> {ok, any()} | {error, not_found}.
 get_program_variable(#program_thread{ program_id=ProgramId }, Key) ->
+    get_program_variable(ProgramId, Key);
+get_program_variable(ProgramId, Key) when is_binary(ProgramId) ->
     case automate_storage:get_program_variable(ProgramId, Key) of
         {ok, Value} ->
             {ok, Value};
@@ -256,7 +258,9 @@ add_to_context_acc([ _ | T ], Context) ->
 add_to_context_acc(_, Context) ->
     Context.
 
--spec notify_variable_update(VariableName :: binary(), binary(), _) -> ok | {error, _}.
+-spec notify_variable_update(VariableName :: binary() | { internal, _ }, binary(), _) -> ok | {error, _}.
+notify_variable_update({internal, _ }, _ProgramId, _Value) ->
+    ok; %% Unused at this point
 notify_variable_update(VariableName, ProgramId, Value) ->
     case automate_storage:get_program_from_id(ProgramId) of
         {ok, #user_program_entry{ program_channel=ChannelId }} ->

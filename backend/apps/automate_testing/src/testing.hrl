@@ -1,0 +1,5 @@
+-ifdef(TEST).
+-define(CORRECT_EXECUTION_TIME(X), automate_testing:apply_time(X)).
+-else.
+-define(CORRECT_EXECUTION_TIME(X), X).
+-endif.

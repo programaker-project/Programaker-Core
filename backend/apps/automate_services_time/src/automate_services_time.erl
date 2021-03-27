@@ -19,6 +19,7 @@
 
 -include("./definitions.hrl").
 -include("../../automate_channel_engine/src/records.hrl").
+-include("../../automate_testing/src/testing.hrl").
 -define(SLEEP_RESOULUTION_MS, 500).
 
 %%====================================================================
@@ -56,43 +57,43 @@ listen_service(_Owner, _Selector) ->
     automate_channel_engine:listen_channel(ChannelId).
 
 call(get_utc_hour, _Values, Thread, _UserId) ->
-    {{_Y1970, _Mon, _Day}, {Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    {{_Y1970, _Mon, _Day}, {Hour, _Min, _Sec}} = calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp())),
     {ok, Thread, Hour};
 
 call(get_utc_minute, _Values, Thread, _UserId) ->
-    {{_Y1970, _Mon, _Day}, {_Hour, Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    {{_Y1970, _Mon, _Day}, {_Hour, Min, _Sec}} = calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp())),
     {ok, Thread, Min};
 
 call(get_utc_seconds, _Values, Thread, _UserId) ->
-    {{_Y1970, _Mon, _Day}, {_Hour, _Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    {{_Y1970, _Mon, _Day}, {_Hour, _Min, Sec}} = calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp())),
     {ok, Thread, Sec};
 
 call(get_tz_hour, [Timezone], Thread, _UserId) ->
-    {{_Y1970, _Mon, _Day}, {Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {{_Y1970, _Mon, _Day}, {Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
     {ok, Thread, Hour};
 
 call(get_tz_minute, [Timezone], Thread, _UserId) ->
-    {{_Y1970, _Mon, _Day}, {_Hour, Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {{_Y1970, _Mon, _Day}, {_Hour, Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
     {ok, Thread, Min};
 
 call(get_tz_seconds, [Timezone], Thread, _UserId) ->
-    {{_Y1970, _Mon, _Day}, {_Hour, _Min, Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {{_Y1970, _Mon, _Day}, {_Hour, _Min, Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
     {ok, Thread, Sec};
 
 call(get_tz_day_of_month, [Timezone], Thread, _UserId) ->
-    {{_Y1970, _Mon, Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {{_Y1970, _Mon, Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
     {ok, Thread, Day};
 
 call(get_tz_month_of_year, [Timezone], Thread, _UserId) ->
-    {{_Y1970, Mon, _Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {{_Y1970, Mon, _Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
     {ok, Thread, Mon};
 
 call(get_tz_year, [Timezone], Thread, _UserId) ->
-    {{Y1970, _Mon, _Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(erlang:timestamp())),
+    {{Y1970, _Mon, _Day}, {_Hour, _Min, _Sec}} = qdate:to_date(Timezone, prefer_standard, calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp()))),
     {ok, Thread, Y1970};
 
 call(get_tz_day_of_week, [_Timezone], Thread, _UserId) ->
-    {{Y1970, Mon, Day}, {_Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    {{Y1970, Mon, Day}, {_Hour, _Min, _Sec}} = calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp())),
     %% Note that technically, calendar:day_of_the_week takes a Year, not Year1970 .
     %%  It should not affect this calculation, but keep it in mind.
     %%  See http://erlang.org/doc/man/calendar.html#type-year
@@ -100,7 +101,7 @@ call(get_tz_day_of_week, [_Timezone], Thread, _UserId) ->
     {ok, Thread, DayOfWeek};
 
 call(<<"utc_is_day_of_week">>, [DayOfWeek], Thread, _UserId) ->
-    {{Y1970, Mon, Day}, {_Hour, _Min, _Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    {{Y1970, Mon, Day}, {_Hour, _Min, _Sec}} = calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp())),
     %% Note that technically, calendar:day_of_the_week takes a Year, not Year1970 .
     %%  It should not affect this calculation, but keep it in mind.
     %%  See http://erlang.org/doc/man/calendar.html#type-year
@@ -148,10 +149,12 @@ spawn_timekeeper() ->
 
 
 timekeeping_loop(ChannelId, {{LYear, LMonth, LDay}, {LHour, LMin, LSec}}) ->
-    {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_datetime(erlang:timestamp()),
+    DateTime = calendar:now_to_datetime(?CORRECT_EXECUTION_TIME(erlang:timestamp())),
+    {{Year, Month, Day}, {Hour, Min, Sec}} = DateTime,
     case (Sec =/= LSec) orelse (Min =/= LMin) orelse (Hour =/= LHour) of
         true ->
             StrTime = binary:list_to_bin(lists:flatten(io_lib:format("~p:~p:~p", [Hour, Min, Sec]))),
+            GregorianSeconds = calendar:datetime_to_gregorian_seconds(DateTime),
             automate_channel_engine:send_to_channel(ChannelId,
                                                     #{ ?CHANNEL_MESSAGE_CONTENT => StrTime
                                                      , <<"full">> => #{ <<"year">> => Year
@@ -161,6 +164,7 @@ timekeeping_loop(ChannelId, {{LYear, LMonth, LDay}, {LHour, LMin, LSec}}) ->
                                                                       , <<"hour">> => Hour
                                                                       , <<"minute">> => Min
                                                                       , <<"second">> => Sec
+                                                                      , <<"__as_gregorian_seconds">> => GregorianSeconds
                                                                       }
                                                      , <<"as_list">> => [ Hour, Min, Sec]
                                                      , <<"key">> => <<"utc_time">>
