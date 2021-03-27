@@ -254,16 +254,15 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
                        ok = qdate:set_timezone(<<"UTC">>),
                        GoalSecs = calendar:datetime_to_gregorian_seconds(GoalDateTime),
 
-                       DoTomorrow = GoalSecs < CurrentSecs,
+                       PastTodayTime = GoalSecs < CurrentSecs,
 
-                       case DoTomorrow of
+                       case PastTodayTime of
                            true ->
-                               %% Recalculate next execution day, now for tomorrow
+                               %% Recalculate next execution date, now for tomorrow
                                TomorrowDate = calendar:gregorian_days_to_date(calendar:date_to_gregorian_days(Today) + 1),
 
-                               ok = qdate:set_timezone(Timezone),
-                               {_, { Hour, Min, Sec }} = qdate:parse(ExpectedTime),
                                %% Goal time, in UTC
+                               ok = qdate:set_timezone(Timezone),
                                TomorrowsGoal = qdate:to_date(<<"UTC">>, {TomorrowDate, {Hour, Min, Sec}}),
                                ok = qdate:set_timezone(<<"UTC">>),
                                calendar:datetime_to_gregorian_seconds(TomorrowsGoal);
