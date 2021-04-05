@@ -125,10 +125,7 @@ get_internal_metrics() ->
                                      { #{ public => maps:size(PublicServices)
                                         , all => automate_service_registry:count_all_services()
                                         }
-                                     , Err3 };
-                                 {error, Reason, _} ->
-                                     { #{ all => undefined, public => undefined }
-                                     , [ { public_services, Reason } | Err3 ]}
+                                     , Err3 }
                              end,
 
     %% Users

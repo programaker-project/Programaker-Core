@@ -15,16 +15,14 @@
 
 -include("../../automate_storage/src/records.hrl").
 
--spec stop_program_threads(binary()) -> ok | {error, any()}.
+-spec stop_program_threads(binary()) -> ok.
 stop_program_threads(ProgramId) ->
     case automate_storage:get_threads_from_program(ProgramId) of
         { ok, Threads } ->
             lists:foreach(fun (ThreadId) ->
                                   automate_bot_engine_thread_runner:stop_by_id(ThreadId)
                           end, Threads),
-            ok;
-        { error, Reason } ->
-            { error, Reason }
+            ok
     end.
 
 -spec change_program_status(binary(),boolean()) -> ok | {error, any()}.

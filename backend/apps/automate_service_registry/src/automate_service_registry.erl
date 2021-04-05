@@ -34,11 +34,11 @@
 %%====================================================================
 %% API functions
 %%====================================================================
--spec get_all_public_services() -> {ok, service_info_map()} | {error, term(), string()}.
+-spec get_all_public_services() -> {ok, service_info_map()}.
 get_all_public_services() ->
     ?BACKEND:list_all_public().
 
--spec get_all_services_for_user(owner_id()) -> {ok, service_info_map()} | {error, term(), string()}.
+-spec get_all_services_for_user(owner_id()) -> {ok, service_info_map()}.
 get_all_services_for_user(Owner) ->
     ?BACKEND:get_all_services_for_user(Owner).
 

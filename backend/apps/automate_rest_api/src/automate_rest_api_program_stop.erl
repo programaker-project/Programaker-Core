@@ -85,14 +85,5 @@ accept_thread_program_stop(Req, State=#state{program_id=ProgramId}) ->
             Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
 
-            { true, Res3, State};
-        {error, _} ->
-            Output = jiffy:encode(#{ <<"success">> => false
-                                   }),
-
-            Res1 = cowboy_req:set_resp_body(Output, Req),
-            Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
-            Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
-
-            { false, Res3, State}
+            { true, Res3, State}
     end.
