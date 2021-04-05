@@ -78,7 +78,7 @@ update_service_module(Uuid, #{ name := Name
             {error, Reason, mnesia:error_description(Reason)}
     end.
 
--spec list_all_public() -> {ok, service_info_map()} | {error, term(), string()}.
+-spec list_all_public() -> {ok, service_info_map()}.
 list_all_public() ->
     MatchHead = #services_table_entry{ id='_'
                                      , public='$1'
@@ -95,11 +95,9 @@ list_all_public() ->
                           mnesia:select(?SERVICE_REGISTRY_TABLE, Matcher)
                   end,
 
-    case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            {ok, convert_to_map(Result)};
-        {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+    case mnesia:ets(Transaction) of
+        Result ->
+            {ok, convert_to_map(Result)}
     end.
 
 -spec allow_user(binary(), owner_id()) -> ok | {error, service_not_found}.
@@ -137,7 +135,7 @@ update_visibility(ServiceId, IsPublic) ->
             {error, Reason}
     end.
 
--spec get_all_services_for_user(owner_id()) -> {ok, service_info_map()} | {error, term(), string()}.
+-spec get_all_services_for_user(owner_id()) -> {ok, service_info_map()}.
 get_all_services_for_user({OwnerType, OwnerId}) ->
     MatchHead = #services_table_entry{ id='_'
                                      , public='$1'
@@ -218,9 +216,7 @@ get_all_services_for_user({OwnerType, OwnerId}) ->
 
     case mnesia:ets(Transaction) of
         {Public, UserAllowances, GroupAllowances} ->
-            {ok, convert_to_map(Public ++ UserAllowances ++ GroupAllowances)};
-        {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+            {ok, convert_to_map(Public ++ UserAllowances ++ GroupAllowances)}
     end.
 
 -spec get_service_by_id(binary()) -> {ok, service_entry()} | {error, not_found}.
@@ -234,13 +230,11 @@ get_service_by_id(ServiceId) ->
                                   {ok, Result}
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, {ok, Result}} ->
+    case mnesia:ets(Transaction) of
+        {ok, Result} ->
             {ok, entry_to_map(Result)};
-        {atomic, Result} ->
-            Result;
-        {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
+        Result ->
+            Result
     end.
 
 
@@ -255,12 +249,7 @@ get_config_for_service(ServiceId, Property) ->
                                   {ok, Value}
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            Result;
-        {aborted, Reason} ->
-            {error, Reason, mnesia:error_description(Reason)}
-    end.
+    mnesia:ets(Transaction).
 
 -spec set_config_for_service(binary(), atom(), any()) -> ok | {error, atom()}.
 set_config_for_service(ServiceId, Property, Value) ->
