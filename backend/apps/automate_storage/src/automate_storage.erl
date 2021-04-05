@@ -198,10 +198,7 @@ login_user(Username, Password) ->
                     {error, invalid_user_password}
             end;
         {error, no_user_found} ->
-            {error, no_user_found};
-
-        {error, Reason} ->
-            { error, Reason }
+            {error, no_user_found}
     end.
 
 -spec get_user(binary()) -> {ok, #registered_user_entry{}} | {error, not_found}.
@@ -214,12 +211,7 @@ get_user(UserId) ->
                                   {error, not_found}
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            Result;
-        {aborted, Reason} ->
-            {error, Reason}
-    end.
+    mnesia:ets(Transaction).
 
 promote_user_to_admin(UserId) ->
     Transaction = fun() ->
@@ -284,12 +276,7 @@ admin_list_users() ->
                                              mnesia:all_keys(?REGISTERED_USERS_TABLE)),
                           { ok, Result }
                   end,
-    case mnesia:transaction(Transaction) of
-        {atomic, Result} ->
-            Result;
-        {aborted, Reason} ->
-            {error, Reason}
-    end.
+    mnesia:ets(Transaction).
 
 -spec generate_token_for_user(binary(),  session_scope(), session_expiration_time()) -> {ok, binary()} | {error, user_not_ready} | {error, _}.
 generate_token_for_user(UserId, Scope, Expiration) ->
@@ -389,12 +376,11 @@ get_monitor_from_id(MonitorId) ->
     Transaction = fun() ->
                           mnesia:read(?USER_MONITORS_TABLE, MonitorId)
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, [Result] } ->
+    case mnesia:ets(Transaction) of
+        [Result] ->
             Result;
-        { aborted, Reason } ->
-            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
-            {error, mnesia:error_description(Reason)}
+        [] ->
+            {error, not_found}
     end.
 
 -spec lists_monitors_from_username(binary()) -> {'ok', [ { binary(), binary() } ] }.
@@ -494,12 +480,7 @@ get_user_from_mail_address(Email) ->
                                   {error, no_user_found}
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, Reason}
-    end.
+    mnesia:ets(Transaction).
 
 -spec reset_password(binary(), binary()) -> ok | {error, _}.
 reset_password(VerificationCode, Password) ->
@@ -635,12 +616,7 @@ is_user_allowed(Owner, ProgramId, Action) ->
                                   {error, not_found}
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, Reason}
-    end.
+    mnesia:ets(Transaction).
 
 -spec get_program_pages(ProgramId :: binary()) -> {ok, [#program_pages_entry{}]} | {error, not_found}.
 get_program_pages(ProgramId) ->
@@ -916,12 +892,7 @@ get_user_from_pid(Pid) ->
                                   end
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, Reason}
-    end.
+    mnesia:ets(Transaction).
 
 -spec get_program_owner(binary()) -> {'ok', owner_id() | undefined} | {error, not_found}.
 get_program_owner(ProgramId) ->
@@ -966,13 +937,7 @@ get_program_from_id(ProgramId) ->
                                   {ok, Program}
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
-            {error, mnesia:error_description(Reason)}
-    end.
+    mnesia:ets(Transaction).
 
 -spec register_program_tags(binary(), [binary()]) -> 'ok' | {error, not_running}.
 register_program_tags(ProgramId, Tags) ->
@@ -1007,13 +972,7 @@ get_tags_program_from_id(ProgramId) ->
                                   {ok, Tags}
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
-            {error, mnesia:error_description(Reason)}
-    end.
+    mnesia:ets(Transaction).
 
 -spec get_logs_from_program_id(binary()) -> {ok, [#user_program_log_entry{}]} | {error, atom()}.
 get_logs_from_program_id(ProgramId) ->
@@ -1047,12 +1006,7 @@ get_program_events(ProgramId) ->
     T = fun() ->
                 mnesia:read(?USER_PROGRAM_EVENTS_TABLE, ProgramId)
         end,
-    case mnesia:transaction(T) of
-        {atomic, Results} ->
-            {ok, Results};
-        {aborted, Reason} ->
-            {error, Reason}
-    end.
+    {ok, mnesia:ets(T)}.
 
 -spec create_thread(binary(), #program_thread{}) -> {ok, thread_id()}.
 create_thread(ParentProgramId, #program_thread{ program=Instructions
@@ -1130,12 +1084,7 @@ get_threads_from_program(ParentProgramId) ->
     Transaction = fun() ->
                           mnesia:select(?RUNNING_THREADS_TABLE, Matcher)
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            {ok, Result};
-        { aborted, Reason } ->
-            {error, Reason}
-    end.
+    {ok, mnesia:ets(Transaction)}.
 
 
 dirty_list_running_threads() ->
@@ -1172,13 +1121,7 @@ get_thread_from_id(ThreadId) ->
                                   {ok, Thread}
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
-            {error, mnesia:error_description(Reason)}
-    end.
+    mnesia:ets(Transaction).
 
 -spec dirty_is_thread_alive(binary()) -> {ok, boolean()}.
 dirty_is_thread_alive(ThreadId) ->
@@ -1194,7 +1137,7 @@ get_program_variable(ProgramId, Key) ->
     Transaction = fun() ->
                           mnesia:read(?PROGRAM_VARIABLE_TABLE, {ProgramId, Key})
                   end,
-    case mnesia:async_dirty(Transaction) of
+    case mnesia:ets(Transaction) of
         [#program_variable_table_entry{value=Value}] ->
             {ok, Value};
         [] ->
@@ -1348,13 +1291,11 @@ get_userid_from_username(Username) ->
     Transaction = fun() ->
                           mnesia:select(?REGISTERED_USERS_TABLE, Matcher)
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, [Result] } ->
+    case mnesia:ets(Transaction) of
+        [Result] ->
             {ok, {user, Result}};
-        { atomic, [] } ->
-            {error, no_user_found};
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
+        [] ->
+            {error, no_user_found}
     end.
 
 -spec update_user_settings(binary(), map(), [atom()]) -> ok | {error, _}.
@@ -1457,12 +1398,7 @@ list_custom_signals({OwnerType, OwnerId}) ->
 
                           {ok, mnesia:select(?CUSTOM_SIGNALS_TABLE, Matcher)}
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
-    end.
+    mnesia:ets(Transaction).
 
 %% Group management
 -spec create_group(binary(), binary(), boolean()) -> {ok, #user_group_entry{}} | {error, any()}.
@@ -1838,13 +1774,11 @@ get_user_from_username(Username) ->
                                   []
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, [Result] } ->
+    case mnesia:ets(Transaction) of
+        [Result] ->
             {ok, Result};
-        { atomic, [] } ->
-            {error, no_user_found};
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
+        [] ->
+            {error, no_user_found}
     end.
 
 get_user_from_email(Email) ->
@@ -1871,13 +1805,11 @@ get_user_from_email(Email) ->
                                   []
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, [Result] } ->
+    case mnesia:ets(Transaction) of
+        [Result] ->
             {ok, Result};
-        { atomic, [] } ->
-            {error, no_user_found};
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
+        [] ->
+            {error, no_user_found}
     end.
 
 apply_user_settings(User, Settings, Permissions) ->
@@ -1948,16 +1880,13 @@ check_verification_code(VerificationCode, VerificationType) ->
                                   {error, {invalid_verification_type, OtherVerificationType}}
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, {error, {invalid_verification_type, OtherVerificationType}} } ->
+    case mnesia:ets(Transaction) of
+        {error, {invalid_verification_type, OtherVerificationType}} ->
             io:fwrite("[Storage] Expected type ~p on verification, found: ~p~n",
                       [VerificationType, OtherVerificationType]),
             {error, invalid_verification_type};
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            io:format("[~p:~p] Error: ~p~n", [?MODULE, ?LINE, mnesia:error_description(Reason)]),
-            {error, Reason}
+        Result ->
+            Result
     end.
 
 store_new_monitor(Monitor) ->
@@ -2008,13 +1937,11 @@ retrieve_monitors_list_from_username(Username) ->
                                   [mnesia:read(?USER_MONITORS_TABLE, ResultId) || ResultId <- Results]
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, { error, Reason }} ->
+    case mnesia:ets(Transaction) of
+        { error, Reason } ->
             {error, Reason };
-        { atomic, Result } ->
-            {ok, Result};
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
+        Result ->
+            {ok, Result}
     end.
 
 store_new_program(UserProgram) ->
@@ -2089,13 +2016,11 @@ retrieve_program(Username, ProgramName) ->
                                   end
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, [Result] } ->
+    case mnesia:ets(Transaction) of
+        [Result] ->
             {ok, Result};
-        { atomic, [] } ->
-            {error, not_found};
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
+        [] ->
+            {error, not_found}
     end.
 
 retrieve_program_list_from_username(Username) ->
@@ -2145,13 +2070,11 @@ retrieve_program_list_from_username(Username) ->
                                   [mnesia:read(?USER_PROGRAMS_TABLE, ResultId) || ResultId <- Results]
                           end
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, { error, Reason }} ->
+    case mnesia:ets(Transaction) of
+        { error, Reason } ->
             {error, Reason };
-        { atomic, Result } ->
-            {ok, Result};
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
+        Result ->
+            {ok, Result}
     end.
 
 -spec store_new_program_content(binary(), binary(), #stored_program_content{}) -> { 'ok', binary() } | { 'error', any() }.
@@ -2355,12 +2278,7 @@ get_running_program_id(ProgramId) ->
     Transaction = fun() ->
                           mnesia:read(?RUNNING_PROGRAMS_TABLE, ProgramId)
                   end,
-    case mnesia:transaction(Transaction) of
-        { atomic, Result } ->
-            Result;
-        { aborted, Reason } ->
-            {error, mnesia:error_description(Reason)}
-    end.
+    mnesia:ets(Transaction).
 
 -spec set_program_variable(binary(), binary() | { internal, _ }, any()) -> ok | {error, any()}.
 set_program_variable(ProgramId, Key, Value) ->

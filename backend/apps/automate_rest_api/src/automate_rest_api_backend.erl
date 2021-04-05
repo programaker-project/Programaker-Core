@@ -292,14 +292,12 @@ delete_program(ProgramId) ->
     end.
 
 
--spec list_services_from_username(binary()) -> {'ok', [ #service_metadata{} ]} | {error, term(), binary()}.
+-spec list_services_from_username(binary()) -> {'ok', [ #service_metadata{} ]}.
 list_services_from_username(Username) ->
     {ok, Owner} = automate_storage:get_userid_from_username(Username),
     case automate_service_registry:get_all_services_for_user(Owner) of
         {ok, Services} ->
-            {ok, get_services_metadata(Services, Owner)};
-        E = {error, _, _} ->
-            E
+            {ok, get_services_metadata(Services, Owner)}
     end.
 
 get_services_metadata(Services, Owner) ->
@@ -366,9 +364,7 @@ list_available_connections(Owner) ->
                                                               { true, BridgeData }
                                                       end
                             end, maps:to_list(Services)),
-            {ok, EnabledServices};
-        E = {error, _, _} ->
-            E
+            {ok, EnabledServices}
     end.
 
 -spec list_established_connections(binary()) -> {ok, [#user_to_bridge_connection_entry{}]}.

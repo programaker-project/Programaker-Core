@@ -85,9 +85,7 @@ websocket_init(State=#state{ program_id=ProgramId
                               {ok, Evs} ->
                                   lists:map(fun(#user_program_editor_event{ event=Ev }) ->
                                                     {text, jiffy:encode(Ev)}
-                                            end, Evs);
-                              _ ->
-                                  []
+                                            end, Evs)
                           end
              end,
 
