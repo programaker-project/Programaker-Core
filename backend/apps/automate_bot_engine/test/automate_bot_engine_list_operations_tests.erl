@@ -74,7 +74,7 @@ tests(_SetupResult) ->
 %%%% Operations
 add_to_list_with_values() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
     {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_ADD_TO_LIST
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -112,7 +112,7 @@ add_to_list_not_defined() ->
 
 delete_of_list() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
     {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_DELETE_OF_LIST
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -132,7 +132,7 @@ delete_of_list() ->
 
 delete_all_list_with_values() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
     {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_DELETE_ALL_LIST
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -168,7 +168,7 @@ delete_all_list_not_defined() ->
 
 insert_at_position_in_list_with_values() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
     {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_INSERT_AT_LIST
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -209,7 +209,7 @@ insert_at_position_in_list_not_defined() ->
 
 replace_item_of_list_with_values() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
     {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_REPLACE_VALUE_AT_INDEX
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -249,7 +249,7 @@ replace_item_of_list_not_defined() ->
 
 get_item_of_list_with_values_found() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
     R = automate_bot_engine_operations:get_result(
           #{ ?TYPE => ?COMMAND_ITEM_OF_LIST
            , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -262,7 +262,7 @@ get_item_of_list_with_values_found() ->
 
 get_item_of_list_with_values_not_found() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
     ok = try automate_bot_engine_operations:get_result(
                #{ ?TYPE => ?COMMAND_ITEM_OF_LIST
                 , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -299,7 +299,7 @@ get_item_of_list_not_defined() ->
 
 get_item_index_of_list_with_values_found() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [<<"a">>, <<"b">>, <<"c">>, <<"d">>]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [<<"a">>, <<"b">>, <<"c">>, <<"d">>], undefined),
     R = automate_bot_engine_operations:get_result(
           #{ ?TYPE => ?COMMAND_ITEMNUM_OF_LIST
            , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -312,7 +312,7 @@ get_item_index_of_list_with_values_found() ->
 
 get_item_index_of_list_with_values_not_found() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
     R = automate_bot_engine_operations:get_result(
           #{ ?TYPE => ?COMMAND_ITEMNUM_OF_LIST
            , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -343,7 +343,7 @@ get_item_index_of_list_not_defined() ->
 
 get_length_of_list_with_values() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
     R = automate_bot_engine_operations:get_result(
           #{ ?TYPE => ?COMMAND_LENGTH_OF_LIST
            , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -366,7 +366,7 @@ get_length_of_list_not_defined() ->
 
 list_contains_item_with_values_true() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [<<"a">>, <<"b">>, <<"c">>, <<"d">>]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [<<"a">>, <<"b">>, <<"c">>, <<"d">>], undefined),
     R = automate_bot_engine_operations:get_result(
           #{ ?TYPE => ?COMMAND_LIST_CONTAINS_ITEM
            , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
@@ -379,7 +379,7 @@ list_contains_item_with_values_true() ->
 
 list_contains_item_with_values_false() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [<<"a">>, <<"b">>, <<"c">>, <<"d">>]),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [<<"a">>, <<"b">>, <<"c">>, <<"d">>], undefined),
     R = automate_bot_engine_operations:get_result(
           #{ ?TYPE => ?COMMAND_LIST_CONTAINS_ITEM
            , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST

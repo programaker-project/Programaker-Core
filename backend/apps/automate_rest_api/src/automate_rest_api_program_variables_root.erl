@@ -114,7 +114,7 @@ update_variables(Req, State=#state{program_id=ProgramId}) ->
     %% Wrap all in the same transaction
     {atomic, ok} = mnesia:transaction(fun() ->
                                               ok = lists:foreach(fun(#{ <<"name">> := Name, <<"value">> := Value}) ->
-                                                                         ok = automate_bot_engine_variables:set_program_variable(ProgramId, Name, Value)
+                                                                         ok = automate_bot_engine_variables:set_program_variable(ProgramId, Name, Value, undefined)
                                                                  end, Values)
                                       end),
     Req2 = ?UTILS:send_json_output(jiffy:encode(#{ <<"success">> => true }), Req1),

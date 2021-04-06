@@ -45,7 +45,7 @@ set_variables(_Original, [], [], Thread) ->
 
 set_variables(Original, [{Start, Len} | Matches], [Variable | Variables], Thread=#program_thread{ program_id=ProgramId }) ->
     Value = binary:part(Original, Start, Len),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, Variable, Value),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, Variable, Value, undefined),
     set_variables(Original, Matches, Variables, Thread).
 
 
