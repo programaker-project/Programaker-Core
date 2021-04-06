@@ -13,7 +13,11 @@
         , are_equal/1
         , is_equal_to/2
         , string_contains/2
+        , check_variable_safety/1
         ]).
+
+-include("../../automate_common_types/src/limits.hrl").
+-include("program_records.hrl").
 
 %%%===================================================================
 %%% API
@@ -26,16 +30,18 @@ add(Left, Right) when is_binary(Left) and is_binary(Right) ->
         {float, PreviousF, ChangeF} ->
             {ok, PreviousF + ChangeF};
         {string, LeftS, RightS} ->
-            { ok, binary:list_to_bin(io_lib:format("~s~s", [LeftS, RightS])) }
+            join(LeftS, RightS)
     end;
 
 %% If everything else failed, just do simple concatenation
 add(V1, V2) ->
     add(to_bin(V1), to_bin(V2)).
 
--spec join(_, _) -> {ok, binary()} | {error, any()}.
+-spec join(_, _) -> {ok, binary()}.
+join(V1, V2) when is_binary(V1) and is_binary(V2) ->
+    {ok, <<V1/binary, V2/binary>>};
 join(V1, V2) ->
-    {ok, binary:list_to_bin(lists:flatten(io_lib:format("~s~s", [to_string(V1), to_string(V2)])))}.
+    {ok, binary:list_to_bin(io_lib:format("~s~s", [to_string(V1), to_string(V2)]))}.
 
 -spec get_value_by_key(binary(), map()) -> {ok, binary()} | {error, not_found}.
 get_value_by_key(Key, Map) when is_map(Map) and is_binary(Key) ->
@@ -244,3 +250,31 @@ canonicalize_string(Str) when is_binary(Str) ->
 
     %% Unify casing and convert back from list to binary.
     list_to_binary(string:casefold(Filtered)).
+
+
+%%%===================================================================
+%%% Safety checks
+%%%===================================================================
+-spec check_variable_safety(_) -> ok | {error, {safety_error, #memory_item_size_exceeded{}}}.
+check_variable_safety(Var) ->
+    check_variable_size_safety(Var).
+
+check_variable_size_safety(Var) ->
+    Size = get_var_size(Var),
+    case Size < ?USER_PROGRAM_MAX_VAR_SIZE of
+        true ->
+            ok;
+        false ->
+            {error, {safety_error, #memory_item_size_exceeded{ next_size=Size, max_size=?USER_PROGRAM_MAX_VAR_SIZE }}}
+    end.
+
+%% Do note that this is very approximate, should not be trusted more than for simple tests.
+-spec get_var_size(_) -> pos_integer().
+get_var_size(B) when is_binary(B) ->
+    size(B);
+get_var_size(L) when is_list(L) ->
+    lists:foldl(fun(E, Acc) -> get_var_size(E) + Acc end, 0, L);
+get_var_size(M) when is_map(M) ->
+    lists:foldl(fun({K, V}, Acc) -> get_var_size(K) + get_var_size(V) + Acc end, 0, maps:to_list(M));
+get_var_size(_) ->
+    erlang:system_info(wordsize).

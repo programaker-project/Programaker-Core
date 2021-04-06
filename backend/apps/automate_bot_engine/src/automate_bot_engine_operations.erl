@@ -257,6 +257,14 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                                 , BlockId
                                 };
 
+                            #program_error{ error=#memory_item_size_exceeded{next_size=NextSize, max_size=MaxSize}
+                                          , block_id=BlockId
+                                          } ->
+                                { Error
+                                , list_to_binary(io_lib:format("Memory item size exceeded. Next size: ~p. Max: ~p", [NextSize, MaxSize]))
+                                , BlockId
+                                };
+
                             #program_error{error=#disconnected_bridge{ bridge_id=BridgeId
                                                                      , action=Action
                                                                      }
@@ -362,7 +370,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_SET_VARIABLE
                , {?SIGNAL_PROGRAM_TICK, _}) ->
 
     {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, Op),
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, Value),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, Value, ?UTILS:get_block_id(Op)),
     {ran_this_tick, increment_position(Thread2)};
 
 
@@ -385,7 +393,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                                                  , block_id=?UTILS:get_block_id(Op)
                                                  })
                      end,
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, NewValue),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, NewValue, ?UTILS:get_block_id(Op)),
     {ran_this_tick, increment_position(Thread2)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
@@ -545,8 +553,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_ADD_TO_LIST
     %% TODO (optimization) avoid using list++list
     ValueAfter = ValueBefore ++ [NewValue],
 
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter),
-
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter, ?UTILS:get_block_id(Op)),
     {ran_this_tick, increment_position(Thread2)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
@@ -572,19 +579,19 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
 
     ValueAfter = automate_bot_engine_naive_lists:remove_nth(ValueBefore, Index),
 
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter, ?UTILS:get_block_id(Op)),
     {ran_this_tick, increment_position(Thread2)};
 
-run_instruction(#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
-                 , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
-                                    , ?VALUE := ListName
-                                    }
-                                 ]
-                 }
+run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
+                    , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                       , ?VALUE := ListName
+                                       }
+                                    ]
+                    }
                , Thread=#program_thread{program_id=ProgramId}
                , {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, []),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, [], ?UTILS:get_block_id(Op)),
     {ran_this_tick, increment_position(Thread)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
@@ -613,7 +620,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
 
     ValueAfter = automate_bot_engine_naive_lists:insert_nth(PaddedValue, Index, Value),
 
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter, ?UTILS:get_block_id(Op)),
     {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
@@ -641,7 +648,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
                     ValueBefore, IndexValue - 1, ?LIST_FILL), %% Remember: 1-indexed
     ValueAfter = automate_bot_engine_naive_lists:replace_nth(PaddedValue, Index, Value),
 
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter, ?UTILS:get_block_id(Op)),
     {ran_this_tick, increment_position(Thread3)};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
@@ -745,7 +752,7 @@ run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
                            ProgramId,
                            %% Note that erlang is 1-indexed, protocol is 0-indexed
                            VariableName,
-                           Value);
+                           Value, ?UTILS:get_block_id(Operation));
                      _ ->
                          ok
                  end,

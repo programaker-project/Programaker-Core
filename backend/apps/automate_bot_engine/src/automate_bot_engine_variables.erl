@@ -5,7 +5,7 @@
 
         , set_thread_value/3
         , get_program_variable/2
-        , set_program_variable/3
+        , set_program_variable/4
         , delete_program_variable/2
 
         , set_last_bridge_value/3
@@ -103,10 +103,15 @@ set_thread_value(Thread = #program_thread{}, Key, Value) when is_list(Key) ->
 set_thread_value(Thread = #program_thread{ global_memory=Global }, Key, Value) ->
     {ok, Thread#program_thread{ global_memory=Global#{ Key => Value } } }.
 
--spec set_program_variable(binary(), binary() | {internal, _}, any()) -> ok | {error, _}.
-set_program_variable(ProgramId, Key, Value) ->
-    ok = automate_storage:set_program_variable(ProgramId, Key, Value),
-    notify_variable_update(Key, ProgramId, Value).
+-spec set_program_variable(binary(), binary() | {internal, _}, any(), undefined | binary()) -> ok | {error, _}.
+set_program_variable(ProgramId, Key, Value, BlockId) ->
+    case automate_bot_engine_values:check_variable_safety(Value) of
+        ok ->
+            ok = automate_storage:set_program_variable(ProgramId, Key, Value),
+            notify_variable_update(Key, ProgramId, Value);
+        {error, { safety_error, Error }} ->
+            throw(#program_error{error=Error, block_id=BlockId})
+    end.
 
 -spec delete_program_variable(binary(), binary()) -> ok | {error, _}.
 delete_program_variable(ProgramId, Key) ->

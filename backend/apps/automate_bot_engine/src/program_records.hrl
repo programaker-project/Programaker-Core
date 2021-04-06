@@ -41,6 +41,10 @@
 -record(memory_not_set, { block_id :: any()
                         }).
 
+-record(memory_item_size_exceeded, { next_size :: pos_integer()
+                                   , max_size :: pos_integer()
+                                   }).
+
 -record(unknown_operation, { }).
 
 %% Bridge errors
@@ -65,6 +69,7 @@
 -type program_error_type() :: #index_not_in_list{} | #invalid_list_index_type{}
                             | #list_not_set{} | #variable_not_set{}
                             | #memory_not_set{}
+                            | #memory_item_size_exceeded{}
                             | #unknown_operation{}
                             | #disconnected_bridge{} | #bridge_call_connection_not_found{} | #bridge_call_timeout{} | #bridge_call_failed{}
                             | #bridge_call_error_getting_resource{}.

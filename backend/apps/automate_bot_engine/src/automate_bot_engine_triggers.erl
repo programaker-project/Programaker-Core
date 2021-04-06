@@ -274,7 +274,7 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
     Next = case automate_bot_engine_variables:get_program_variable(ProgramId, CacheKey) of
                {error, not_found} ->
                    NextTime = Schedule(false),
-                   ok = automate_bot_engine_variables:set_program_variable(ProgramId, CacheKey, NextTime),
+                   ok = automate_bot_engine_variables:set_program_variable(ProgramId, CacheKey, NextTime, undefined),
                    NextTime;
                {ok, NextTime} ->
                    NextTime
@@ -286,7 +286,7 @@ trigger_thread(Trigger=#program_trigger{ condition=#{ ?TYPE := ?WAIT_FOR_MONITOR
             {true, Thread} = trigger_thread_with_matching_message(Program, ProgramId, {service, ServiceId},
                                                                   MonitorArgs, MessageContent, FullMessage,
                                                                   Trigger),
-            ok = automate_bot_engine_variables:set_program_variable(ProgramId, CacheKey, Future),
+            ok = automate_bot_engine_variables:set_program_variable(ProgramId, CacheKey, Future, undefined),
             {true, Thread};
         false ->
             false
@@ -638,7 +638,7 @@ save_value(Thread=#program_thread{ program_id=ProgramId }
           , #{ ?TYPE := ?VARIABLE_VARIABLE
              , ?VALUE := VariableName
              }, Value) ->
-    ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, Value),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, Value, undefined),
     {ok, Thread}.
 
 
