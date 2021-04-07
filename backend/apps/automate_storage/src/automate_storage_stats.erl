@@ -167,6 +167,8 @@ get_program_metrics() ->
                                                                                  index_not_in_list;
                                                                              { program_error, {memory_not_set, _}, _ } ->
                                                                                  memory_not_set;
+                                                                             { program_error, {memory_item_size_exceeded, _, _}, _ } ->
+                                                                                 memory_item_size_exceeded;
 
                                                                              %% Version errors
                                                                              bad_operation ->
