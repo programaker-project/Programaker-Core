@@ -147,8 +147,17 @@ export class ProgramEditorSidepanelComponent implements OnInit {
         }
 
         const newLine = this.renderLogLine(line);
-        container.appendChild(newLine);
 
+        // Insert at top of the view
+        const first = container.firstChild;
+        if (first) {
+            container.insertBefore(newLine, first);
+        }
+        else {
+            container.appendChild(newLine);
+        }
+
+        // Then, scroll the view to see it
         if (this.drawer_type === 'logs') {
             newLine.scrollIntoView();
         }
