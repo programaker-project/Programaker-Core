@@ -1179,6 +1179,16 @@ export class FlowWorkspace implements BlockManager {
         }
     }
 
+    public hideControls() {
+        this.trashcan.style.visibility = 'hidden';
+        this.button_group.style.visibility = 'hidden';
+    }
+
+    public showControls() {
+        this.trashcan.style.visibility = 'visible';
+        this.button_group.style.visibility = 'visible';
+    }
+
     // Max zoom: 0.5
     // Min zoom: 1/10
     // It's easier to manage zoom level with inverses.

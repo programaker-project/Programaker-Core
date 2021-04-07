@@ -590,6 +590,39 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
         });
     }
 
+    downloadScreenshot() {
+        this.workspace.hideControls();
+
+        try {
+            // See: https://stackoverflow.com/a/46403589
+            const canvas = this.workspace.getCanvas();
+            const name = this.program.name.replace(/[^a-zA-Z0-9]/g, '-').replace(/--+/g, '-') + '.svg';
+
+            // Build XML blob
+            const svgData = canvas.outerHTML;
+            const preface = '<?xml version="1.0" standalone="no"?>\r\n';
+            const svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
+
+            // Convert to URL
+            const svgUrl = URL.createObjectURL(svgBlob);
+
+            // Build a clickable link
+            const downloadLink = document.createElement("a");
+            downloadLink.href = svgUrl;
+            downloadLink.download = name;
+            document.body.appendChild(downloadLink);
+
+            // Click on it
+            downloadLink.click();
+
+            // Cleanup
+            document.body.removeChild(downloadLink);
+        }
+        finally {
+            this.workspace.showControls();
+        }
+    }
+
     deleteProgram() {
         const programData = { name: this.program.name };
 

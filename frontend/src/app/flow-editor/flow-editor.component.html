@@ -118,7 +118,16 @@
             </label>
         </button>
 
-        <!-- Advanced functions, on a menu -->
+        <button id="program-screenshot-button" color="secondary"
+            class="annotated-icon"
+            [disabled]="read_only"
+            (click)="downloadScreenshot()" mat-button mat-raised-button>
+            <mat-icon>camera</mat-icon>
+            <label class="label">
+                Screenshot
+            </label>
+        </button>
+
         <button id="program-stop-button" color="warn"
             class="annotated-icon"
             [disabled]="read_only"
@@ -129,6 +138,7 @@
             </label>
         </button>
 
+        <!-- Advanced functions, on a menu -->
         <button id="advancedProgramControls" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
             [disabled]="read_only"
