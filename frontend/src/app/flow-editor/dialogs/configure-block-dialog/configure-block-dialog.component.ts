@@ -40,6 +40,7 @@ export type BodyPropertyConfiguration = {
 
 type TargetPropertyConfiguration = {
     link?: { value: string };
+    openInTab?: { value: boolean };
 };
 
 export type BlockConfigurationOptions = {
@@ -125,6 +126,7 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
 
     // Target link
     targetLinkControl : FormControl | null = null;
+    openInTab: boolean = false;
 
     currentConfig: BlockConfigurationOptions;
     allowedConfigurations: BlockAllowedConfigurations;
@@ -169,6 +171,10 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
 
                 if (this.currentConfig.target && this.currentConfig.target.link) {
                     this.targetLinkControl.setValue(this.currentConfig.target.link.value);
+                }
+
+                if (this.currentConfig.target && this.currentConfig.target.openInTab) {
+                    this.openInTab = this.currentConfig.target.openInTab.value;
                 }
             }
         }
@@ -372,6 +378,7 @@ export class ConfigureBlockDialogComponent implements AfterViewInit {
             settings.target = {};
             if (this.allowedConfigurations.target.link) {
                 settings.target.link = { value: this.targetLinkControl.value };
+                settings.target.openInTab = { value: this.openInTab };
             }
         }
 

@@ -117,6 +117,12 @@
                         <mat-hint><span class="url-sample">http://...</span> or <span class="url-sample">mailto:some@mail.com</span></mat-hint>
                         <mat-error *ngIf="targetLinkControl.invalid">{{getUrlErrorMessage()}}</mat-error>
                     </mat-form-field>
+
+                    <ul class="extra-options">
+                        <li>
+                            <mat-checkbox [(ngModel)]="openInTab">Open link in tab</mat-checkbox>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>

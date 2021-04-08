@@ -122,7 +122,16 @@ render_element(E=#{ <<"container_type">> := <<"link_area">>
                      Link; %% TODO: Validate link types
                  _ -> "#"
              end,
-    [ "<a class='link_area' href='", Target, "'>"
+    OpenInTab = case E of
+                    #{ <<"settings">> := #{ <<"target">> := #{ <<"openInTab">> := #{ <<"value">> := DoOpenInTab }
+                                                             }}} when is_boolean(DoOpenInTab) ->
+                        DoOpenInTab;
+                    _ -> false
+                end,
+
+    [ "<a class='link_area' href='", Target
+    , "' rel='noopener noreferrer'", case OpenInTab of true -> " target='_blank'"; _ -> "" end
+    , ">"
     , "<div class='inner-box' "
     , ">"
     , case Content of
