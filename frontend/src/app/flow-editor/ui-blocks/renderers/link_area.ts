@@ -318,11 +318,16 @@ class LinkArea implements ContainerFlowBlockHandler, HandleableElement, Autoresi
     _applyConfiguration(settings: BlockConfigurationOptions): void {
         const settingsStorage = Object.assign({}, this.block.blockData.settings || {});
 
-        if (settings.target && settings.target.link) {
+        if (settings.target) {
             if (!settingsStorage.target) {
                 settingsStorage.target = {};
             }
-            settingsStorage.target.link = { value: settings.target.link.value };
+            if (settings.target.link) {
+                settingsStorage.target.link = { value: settings.target.link.value };
+            }
+            if (settings.target.openInTab) {
+                settingsStorage.target.openInTab = { value: settings.target.openInTab.value };
+            }
         }
 
         this.block.blockData.settings = settingsStorage;
