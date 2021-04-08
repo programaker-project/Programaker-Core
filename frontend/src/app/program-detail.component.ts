@@ -1,49 +1,48 @@
-import { Location, isPlatformServer } from '@angular/common';
-import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, AfterViewInit, ViewChild, Inject, NgZone, PLATFORM_ID } from '@angular/core';
+import { isPlatformServer, Location } from '@angular/common';
+import { AfterViewInit, Component, Inject, Input, NgZone, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { MatMenu } from '@angular/material/menu';
+import { MatDrawer } from '@angular/material/sidenav';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue, VisibilityEnum } from './program';
-import { ProgramService } from './program.service';
-
+import { ToastrService } from 'ngx-toastr';
+import { Unsubscribable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { environment } from '../environments/environment';
+import { AssetService } from './asset.service';
+import { BlocklyEvent, BlockSynchronizer } from './blocks/BlockSynchronizer';
 import { Toolbox, ToolboxRegistration } from './blocks/Toolbox';
-import { BlockSynchronizer, BlocklyEvent } from './blocks/BlockSynchronizer';
-import * as progbar from './ui/progbar';
+import { ToolboxController } from './blocks/ToolboxController';
+import { BrowserService } from './browser.service';
+import { ProgramEditorSidepanelComponent } from './components/program-editor-sidepanel/program-editor-sidepanel.component';
+import { ConnectionService } from './connection.service';
+import { CustomBlockService } from './custom_block.service';
+import { CustomSignalService } from './custom_signals/custom_signal.service';
+import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
+import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
+import { CloneProgramDialogComponent, CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
+import { EnvironmentService } from './environment.service';
+import { MonitorService } from './monitor.service';
+import { ProgramContent, ProgramEditorEventValue, ScratchProgram, VisibilityEnum } from './program';
+import { EditorController } from './program-editors/editor-controller';
+import { ProgramService } from './program.service';
 /// <reference path="./blocks/blockly-core.d.ts" />
 import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
-import { MonitorService } from './monitor.service';
-import { CustomBlockService } from './custom_block.service';
-
-import { MatDialog } from '@angular/material/dialog';
-import { MatDrawer } from '@angular/material/sidenav';
-
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
-import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
-import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
 import { SetProgramTagsDialogComponent } from './program_tags/SetProgramTagsDialogComponent';
-import { ToolboxController } from './blocks/ToolboxController';
-import { TemplateService } from './templates/template.service';
+import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { ServiceService } from './service.service';
-import { CustomSignalService } from './custom_signals/custom_signal.service';
-import { ConnectionService } from './connection.service';
-import { SessionService } from './session.service';
-import { environment } from '../environments/environment';
-import { unixMsToStr } from './utils';
-import { Synchronizer } from './syncronizer';
-import { MatMenu } from '@angular/material/menu';
-import { AssetService } from './asset.service';
-import { BrowserService } from './browser.service';
-import { EditorController } from './program-editors/editor-controller';
-import { Unsubscribable } from 'rxjs';
-import { EnvironmentService } from './environment.service';
-import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
-import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clone-program-dialog.component';
-import { CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { Session } from './session';
-import { ToastrService } from 'ngx-toastr';
-import { ProgramEditorSidepanelComponent } from './components/program-editor-sidepanel/program-editor-sidepanel.component';
+import { SessionService } from './session.service';
+import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
+import { Synchronizer } from './syncronizer';
+import { TemplateService } from './templates/template.service';
+import * as progbar from './ui/progbar';
+
 
 type NonReadyReason = 'loading' | 'disconnected';
+
+const SvgNS = "http://www.w3.org/2000/svg";
+const PRINT_MARGIN = 20;
 
 @Component({
     selector: 'app-my-program-detail',
@@ -1126,6 +1125,158 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
                 }));
             progbar.track(stopThreads);
         });
+    }
+
+    async downloadScreenshot() {
+        // See: https://stackoverflow.com/q/23218174
+        const canvas = this.workspaceElement.getElementsByTagNameNS(SvgNS, 'svg')[0].cloneNode(true) as SVGElement;
+        const name = this.program.name.replace(/[^a-zA-Z0-9]/g, '-').replace(/--+/g, '-') + '.svg';
+
+        // Pull style file
+        const styles = document.createElementNS(SvgNS, 'style');
+        const styleSheet = Array.from((Blockly.Css.styleSheet_ as any).cssRules).map((r: any) => r.cssText).join('\n');
+
+        styles.innerHTML = ('/* <![CDATA[ */\n' +
+            styleSheet +
+            // Supplement flow editor CSS with global styles that affect it
+            '* {font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }\n' +
+            '/* ]]> */<');
+
+        canvas.insertBefore(styles, canvas.firstChild);
+
+        // Make image locations absolute
+        for (const image of Array.from(canvas.getElementsByTagNameNS(SvgNS, 'image')) as SVGImageElement[]) {
+            let baseServerPath = document.location.origin;
+
+            if (!image.href) {
+                continue;
+            }
+
+            let stripped = false;
+            while (image.href.baseVal.startsWith('../')) {
+                image.href.baseVal = image.href.baseVal.substring(3);
+                stripped = true;
+            }
+
+            if (stripped) {
+                image.href.baseVal = '/' + image.href.baseVal;
+            }
+
+            if (image.href.baseVal.startsWith('/')) {
+                // Image relative to current domain
+                image.href.baseVal = baseServerPath + image.href.baseVal;
+            }
+        }
+
+        // Remove controls
+        for (const cls of ['blocklyMainBackground', 'blocklyTrash', 'blocklyBubbleCanvas', 'blocklyScrollbarBackground', 'blocklyZoom']) {
+            for (const e of Array.from(canvas.getElementsByClassName(cls))) {
+                e.parentNode.removeChild(e);
+            }
+        }
+
+        // Adjust viewport
+        this.adjustCanvasViewport(canvas);
+
+        // Build XML blob
+        const serializer = new XMLSerializer();
+
+        let source = serializer.serializeToString(canvas);
+
+        //add name spaces.
+        if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+            source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        if(!source.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)){
+            source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+        }
+
+        const svgBlob = new Blob([source], {type:"image/svg+xml;charset=utf-8"});
+
+        // Convert to URL
+        const svgUrl = URL.createObjectURL(svgBlob);
+
+        // Build a clickable link
+        const downloadLink = document.createElement("a");
+        downloadLink.href = svgUrl;
+        downloadLink.download = name;
+        document.body.appendChild(downloadLink);
+
+        // Click on it
+        downloadLink.click();
+
+        // Cleanup
+        document.body.removeChild(downloadLink);
+    }
+
+    private adjustCanvasViewport(canvas: SVGElement) {
+        const blocks = this.workspace.getAllBlocks() as any[] as { width: number, height: number, svgGroup_: SVGGElement }[];
+
+        if (blocks.length === 0) {
+            console.debug("No blocks found on screenshot");
+            return; // Nothing to show ¯\_(ツ)_/¯
+        }
+
+        const topLevel = this.workspace.getCanvas();
+
+
+        const getRect = (block: { width: number, height: number, svgGroup_: SVGGElement }) => {
+
+            const reposition = { x: 0, y: 0};
+            let elem = block.svgGroup_;
+
+            const SVG_TRANSFORM_TRANSLATE = 2;
+
+            while (elem !== topLevel) {
+                if (elem.transform) {
+                    for (let i = 0; i < elem.transform.baseVal.numberOfItems; i++) {
+                        const t = elem.transform.baseVal.getItem(i);
+                        if (t.type === SVG_TRANSFORM_TRANSLATE) {
+                            reposition.x += t.matrix.e;
+                            reposition.y += t.matrix.f;
+                        }
+                    }
+                }
+                elem = elem.parentElement as any as SVGGElement;
+            }
+
+            return {
+                left: reposition.x,
+                top: reposition.y,
+                right: reposition.x + block.width,
+                bottom: reposition.y + block.height,
+            }
+        }
+
+        const rect = getRect(blocks[0]);
+
+        for (const block of blocks) {
+            const blockArea = getRect(block);
+
+
+            if (blockArea.left < rect.left) {
+                rect.left = blockArea.left;
+            }
+            if (blockArea.top < rect.top) {
+                rect.top = blockArea.top;
+            }
+            if (blockArea.right > rect.right) {
+                rect.right = blockArea.right;
+            }
+            if (blockArea.bottom > rect.bottom) {
+                rect.bottom = blockArea.bottom;
+            }
+        }
+
+        const width = rect.right - rect.left;
+        const height = rect.bottom - rect.top;
+
+        canvas.getElementsByClassName('blocklyBlockCanvas')[0].removeAttribute('transform');
+
+        canvas.setAttribute('viewBox',
+                            `${rect.left - PRINT_MARGIN} ${rect.top - PRINT_MARGIN} ${width + PRINT_MARGIN} ${height + PRINT_MARGIN}`);
+        canvas.removeAttribute('width');
+        canvas.removeAttribute('height');
     }
 
     deleteProgram() {

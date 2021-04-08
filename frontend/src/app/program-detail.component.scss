@@ -83,9 +83,7 @@ button#program-clone-button,
 button#program-rename-button,
 button#program-start-button,
 button#program-delete-button,
-button#program-stop-button,
 button#program-logs-button,
-button#program-variables-button,
 button#advanced-program-controls-button {
     vertical-align: top;
     padding: 1ex;
@@ -94,6 +92,23 @@ button#advanced-program-controls-button {
     &.annotated-icon {
         padding: 0.25ex;
         margin-bottom: 1px;
+    }
+}
+
+button.dangerous {
+    background-color: #FAA;
+
+    mat-icon {
+        color: #000;
+    }
+
+    &:hover {
+        color: #fff;
+        background-color: #F44336;
+
+        mat-icon {
+            color: #fff;
+        }
     }
 }
 
