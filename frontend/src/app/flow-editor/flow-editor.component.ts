@@ -599,8 +599,6 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
         const canvas = this.workspace.getPrintViewCanvas();
         const name = this.program.name.replace(/[^a-zA-Z0-9]/g, '-').replace(/--+/g, '-') + '.svg';
 
-        canvas.classList.add('printed-namespace');
-
         // Pull style file
         const styles = document.createElementNS(SvgNS, 'style');
         styles.innerHTML = ('/* <![CDATA[ */\n' +

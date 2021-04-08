@@ -1132,8 +1132,6 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
         const canvas = this.workspaceElement.getElementsByTagNameNS(SvgNS, 'svg')[0].cloneNode(true) as SVGElement;
         const name = this.program.name.replace(/[^a-zA-Z0-9]/g, '-').replace(/--+/g, '-') + '.svg';
 
-        canvas.classList.add('printed-namespace');
-
         // Pull style file
         const styles = document.createElementNS(SvgNS, 'style');
         const styleSheet = Array.from((Blockly.Css.styleSheet_ as any).cssRules).map((r: any) => r.cssText).join('\n');
