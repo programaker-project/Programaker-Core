@@ -1156,7 +1156,21 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
         for (const image of Array.from(canvas.getElementsByTagNameNS(SvgNS, 'image')) as SVGImageElement[]) {
             let baseServerPath = document.location.origin;
 
-            if (image.href && image.href.baseVal.startsWith('/')) {
+            if (!image.href) {
+                continue;
+            }
+
+            let stripped = false;
+            while (image.href.baseVal.startsWith('../')) {
+                image.href.baseVal = image.href.baseVal.substring(3);
+                stripped = true;
+            }
+
+            if (stripped) {
+                image.href.baseVal = '/' + image.href.baseVal;
+            }
+
+            if (image.href.baseVal.startsWith('/')) {
                 // Image relative to current domain
                 image.href.baseVal = baseServerPath + image.href.baseVal;
             }
