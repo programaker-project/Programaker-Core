@@ -1,48 +1,43 @@
-import { Location, isPlatformServer } from '@angular/common';
-import {switchMap} from 'rxjs/operators';
-import { Component, Input, OnInit, AfterViewInit, ViewChild, Inject, NgZone, PLATFORM_ID } from '@angular/core';
+import { isPlatformServer, Location } from '@angular/common';
+import { AfterViewInit, Component, Inject, Input, NgZone, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { MatMenu } from '@angular/material/menu';
+import { MatDrawer } from '@angular/material/sidenav';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { ProgramContent, ScratchProgram, ProgramLogEntry, ProgramInfoUpdate, ProgramEditorEventValue, VisibilityEnum } from './program';
-import { ProgramService } from './program.service';
-
+import { ToastrService } from 'ngx-toastr';
+import { Unsubscribable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { environment } from '../environments/environment';
+import { AssetService } from './asset.service';
+import { BlocklyEvent, BlockSynchronizer } from './blocks/BlockSynchronizer';
 import { Toolbox, ToolboxRegistration } from './blocks/Toolbox';
-import { BlockSynchronizer, BlocklyEvent } from './blocks/BlockSynchronizer';
-import * as progbar from './ui/progbar';
+import { ToolboxController } from './blocks/ToolboxController';
+import { BrowserService } from './browser.service';
+import { ProgramEditorSidepanelComponent } from './components/program-editor-sidepanel/program-editor-sidepanel.component';
+import { ConnectionService } from './connection.service';
+import { CustomBlockService } from './custom_block.service';
+import { CustomSignalService } from './custom_signals/custom_signal.service';
+import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
+import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
+import { CloneProgramDialogComponent, CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
+import { EnvironmentService } from './environment.service';
+import { MonitorService } from './monitor.service';
+import { ProgramContent, ProgramEditorEventValue, ScratchProgram, VisibilityEnum } from './program';
+import { EditorController } from './program-editors/editor-controller';
+import { ProgramService } from './program.service';
 /// <reference path="./blocks/blockly-core.d.ts" />
 import ScratchProgramSerializer from './program_serialization/scratch-program-serializer';
-import { MonitorService } from './monitor.service';
-import { CustomBlockService } from './custom_block.service';
-
-import { MatDialog } from '@angular/material/dialog';
-import { MatDrawer } from '@angular/material/sidenav';
-
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
-import { DeleteProgramDialogComponent } from './DeleteProgramDialogComponent';
-import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
 import { SetProgramTagsDialogComponent } from './program_tags/SetProgramTagsDialogComponent';
-import { ToolboxController } from './blocks/ToolboxController';
-import { TemplateService } from './templates/template.service';
+import { RenameProgramDialogComponent } from './RenameProgramDialogComponent';
 import { ServiceService } from './service.service';
-import { CustomSignalService } from './custom_signals/custom_signal.service';
-import { ConnectionService } from './connection.service';
-import { SessionService } from './session.service';
-import { environment } from '../environments/environment';
-import { unixMsToStr } from './utils';
-import { Synchronizer } from './syncronizer';
-import { MatMenu } from '@angular/material/menu';
-import { AssetService } from './asset.service';
-import { BrowserService } from './browser.service';
-import { EditorController } from './program-editors/editor-controller';
-import { Unsubscribable } from 'rxjs';
-import { EnvironmentService } from './environment.service';
-import { ChangeProgramVisilibityDialog } from './dialogs/change-program-visibility-dialog/change-program-visibility-dialog.component';
-import { CloneProgramDialogComponent } from './dialogs/clone-program-dialog/clone-program-dialog.component';
-import { CloneProgramDialogComponentData } from './dialogs/clone-program-dialog/clone-program-dialog.component';
 import { Session } from './session';
-import { ToastrService } from 'ngx-toastr';
-import { ProgramEditorSidepanelComponent } from './components/program-editor-sidepanel/program-editor-sidepanel.component';
-import { HttpClient } from '@angular/common/http';
+import { SessionService } from './session.service';
+import { StopThreadProgramDialogComponent } from './StopThreadProgramDialogComponent';
+import { Synchronizer } from './syncronizer';
+import { TemplateService } from './templates/template.service';
+import * as progbar from './ui/progbar';
+
 
 type NonReadyReason = 'loading' | 'disconnected';
 
@@ -117,7 +112,6 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
         private ngZone: NgZone,
         private environmentService: EnvironmentService,
         private toastr: ToastrService,
-        private http: HttpClient,
 
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
