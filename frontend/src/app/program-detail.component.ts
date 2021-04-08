@@ -47,6 +47,7 @@ import { HttpClient } from '@angular/common/http';
 type NonReadyReason = 'loading' | 'disconnected';
 
 const SvgNS = "http://www.w3.org/2000/svg";
+const PRINT_MARGIN = 20;
 
 @Component({
     selector: 'app-my-program-detail',
@@ -1134,7 +1135,7 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
 
     async downloadScreenshot() {
         // See: https://stackoverflow.com/q/23218174
-        const canvas = this.workspaceElement.getElementsByTagNameNS(SvgNS, 'svg')[0];
+        const canvas = this.workspaceElement.getElementsByTagNameNS(SvgNS, 'svg')[0].cloneNode(true) as SVGElement;
         const name = this.program.name.replace(/[^a-zA-Z0-9]/g, '-').replace(/--+/g, '-') + '.svg';
 
         canvas.classList.add('printed-namespace');
@@ -1160,6 +1161,16 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
                 image.href.baseVal = baseServerPath + image.href.baseVal;
             }
         }
+
+        // Remove controls
+        for (const cls of ['blocklyMainBackground', 'blocklyTrash', 'blocklyBubbleCanvas', 'blocklyScrollbarBackground', 'blocklyZoom']) {
+            for (const e of Array.from(canvas.getElementsByClassName(cls))) {
+                e.parentNode.removeChild(e);
+            }
+        }
+
+        // Adjust viewport
+        this.adjustCanvasViewport(canvas);
 
         // Build XML blob
         const serializer = new XMLSerializer();
@@ -1190,6 +1201,76 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
 
         // Cleanup
         document.body.removeChild(downloadLink);
+    }
+
+    private adjustCanvasViewport(canvas: SVGElement) {
+        const blocks = this.workspace.getAllBlocks() as any[] as { width: number, height: number, svgGroup_: SVGGElement }[];
+
+        if (blocks.length === 0) {
+            console.debug("No blocks found on screenshot");
+            return; // Nothing to show ¯\_(ツ)_/¯
+        }
+
+        const topLevel = this.workspace.getCanvas();
+
+
+        const getRect = (block: { width: number, height: number, svgGroup_: SVGGElement }) => {
+
+            const reposition = { x: 0, y: 0};
+            let elem = block.svgGroup_;
+
+            const SVG_TRANSFORM_TRANSLATE = 2;
+
+            while (elem !== topLevel) {
+                if (elem.transform) {
+                    for (let i = 0; i < elem.transform.baseVal.numberOfItems; i++) {
+                        const t = elem.transform.baseVal.getItem(i);
+                        if (t.type === SVG_TRANSFORM_TRANSLATE) {
+                            reposition.x += t.matrix.e;
+                            reposition.y += t.matrix.f;
+                        }
+                    }
+                }
+                elem = elem.parentElement as any as SVGGElement;
+            }
+
+            return {
+                left: reposition.x,
+                top: reposition.y,
+                right: reposition.x + block.width,
+                bottom: reposition.y + block.height,
+            }
+        }
+
+        const rect = getRect(blocks[0]);
+
+        for (const block of blocks) {
+            const blockArea = getRect(block);
+
+
+            if (blockArea.left < rect.left) {
+                rect.left = blockArea.left;
+            }
+            if (blockArea.top < rect.top) {
+                rect.top = blockArea.top;
+            }
+            if (blockArea.right > rect.right) {
+                rect.right = blockArea.right;
+            }
+            if (blockArea.bottom > rect.bottom) {
+                rect.bottom = blockArea.bottom;
+            }
+        }
+
+        const width = rect.right - rect.left;
+        const height = rect.bottom - rect.top;
+
+        canvas.getElementsByClassName('blocklyBlockCanvas')[0].removeAttribute('transform');
+
+        canvas.setAttribute('viewBox',
+                            `${rect.left - PRINT_MARGIN} ${rect.top - PRINT_MARGIN} ${width + PRINT_MARGIN} ${height + PRINT_MARGIN}`);
+        canvas.removeAttribute('width');
+        canvas.removeAttribute('height');
     }
 
     deleteProgram() {
