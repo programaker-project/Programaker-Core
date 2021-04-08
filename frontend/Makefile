@@ -2,15 +2,20 @@ CSS_LIBS_PATH=src/app/libs/css
 FONTS_LIBS_PATH=src/app/libs/fonts
 INDEX_LIBS_PATH=src/libs/
 
-.PHONY: all libs
+.PHONY: all libs assets
 
-all: libs
+all: libs assets
 
 libs: $(CSS_LIBS_PATH)/bootstrap.min.css \
 	  $(CSS_LIBS_PATH)/material-icons.css \
 	  $(INDEX_LIBS_PATH)/js/nprogress.js \
 	  $(INDEX_LIBS_PATH)/css/nprogress.css \
 	  $(FONTS_LIBS_PATH)/material-icons.ttf
+
+assets: src/assets/flow_editor.css
+
+src/assets/flow_editor.css: src/flow_editor.scss
+	node node_modules/sass/sass.js $< > $@
 
 $(INDEX_LIBS_PATH)/js/nprogress.js: node_modules/nprogress/nprogress.js
 	cp -v $< $@

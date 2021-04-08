@@ -35,6 +35,8 @@ const TIME_BETWEEN_POSITION_ITERATIONS = 100; // In milliseconds
 const CUT_POINT_SEARCH_INCREASES = 10;
 const CUT_POINT_SEARCH_SPACING = CUT_POINT_SEARCH_INCREASES;
 
+const PRINT_MARGIN = 20;
+
 // Draw helper
 const HELPER_PADDING = 10;
 const HELPER_SEPARATION = 40;
@@ -1177,6 +1179,81 @@ export class FlowWorkspace implements BlockManager {
                 this.button_group.setAttributeNS(null, 'transform', `matrix(${this.inv_zoom_level},0,0,${this.inv_zoom_level},${left},${top})`);
             }
         }
+    }
+
+    public getPrintViewCanvas(): SVGSVGElement {
+        try {
+            this.hideControls();
+
+            const clone = this.canvas.cloneNode(true) as SVGSVGElement;
+
+            // Find area to cover
+            const blockIds = Object.keys(this.blockObjs);
+            if (blockIds.length === 0) {
+                return clone; // Nothing to show ¯\_(ツ)_/¯
+            }
+
+            const block1Area = this.blockObjs[blockIds[0]].block.getBodyArea();
+            const rect = {
+                left: block1Area.x,
+                top: block1Area.y,
+                right: block1Area.x + block1Area.width,
+                bottom: block1Area.y + block1Area.height,
+            };
+
+            for (let i = 1 ; i < blockIds.length; i++) {
+                const blockArea = this.blockObjs[blockIds[i]].block.getBodyArea();
+
+                if (blockArea.x < rect.left) {
+                    rect.left = blockArea.x;
+                }
+                if (blockArea.y < rect.top) {
+                    rect.top = blockArea.y;
+                }
+
+                const right = blockArea.x + blockArea.width;
+                const bottom = blockArea.y + blockArea.height;
+                if (right > rect.right) {
+                    rect.right = right;
+                }
+                if (bottom > rect.bottom) {
+                    rect.bottom = bottom;
+                }
+            }
+
+            const width = rect.right - rect.left;
+            const height = rect.bottom - rect.top;
+
+            clone.setAttributeNS(null, 'viewBox',
+                                 `${rect.left - PRINT_MARGIN} ${rect.top - PRINT_MARGIN} ${width + PRINT_MARGIN} ${height + PRINT_MARGIN}`);
+
+            // De-select elements
+            for (const selected of Array.from(clone.getElementsByClassName('selected')) as SVGElement[]) {
+                selected.classList.remove('selected');
+            }
+
+            // Remove manipulators
+            for (const manipulator of Array.from(clone.getElementsByClassName('manipulators')) as SVGGElement[]) {
+                manipulator.parentNode.removeChild(manipulator);
+            }
+
+            return clone;
+        }
+        finally {
+            this.showControls();
+        }
+    }
+
+    private hideControls() {
+        this.trashcan.style.visibility = 'hidden';
+        this.button_group.style.visibility = 'hidden';
+    }
+
+    private showControls() {
+        if (!this.read_only) {
+            this.trashcan.style.visibility = 'visible';
+        }
+        this.button_group.style.visibility = 'visible';
     }
 
     // Max zoom: 0.5

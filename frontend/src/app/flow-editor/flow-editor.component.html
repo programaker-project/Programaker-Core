@@ -82,18 +82,6 @@
             </label>
         </button>
 
-        <button id="program-variables-button" color="secondary"
-            class="annotated-icon"
-            [disabled]="read_only"
-            (click)="toggleVariablesPanel()" mat-button mat-raised-button>
-            <mat-icon>storage</mat-icon>
-            <label class="label">
-                <span *ngIf="drawer.opened && sidepanel.drawerType === 'variables'">Hide</span>
-                <span *ngIf="!(drawer.opened && sidepanel.drawerType === 'variables')">Show</span>
-                variables
-            </label>
-        </button>
-
         <button id="navigateToPageControls" color="secondary"
             class="annotated-icon"
             *ngIf="workspace && workspace.hasPages"
@@ -119,27 +107,45 @@
         </button>
 
         <!-- Advanced functions, on a menu -->
-        <button id="program-stop-button" color="warn"
-            class="annotated-icon"
-            [disabled]="read_only"
-            (click)="stopThreadsProgram()" mat-button mat-raised-button>
-            <mat-icon>stop</mat-icon>
-            <label class="label">
-                Cancel running
-            </label>
-        </button>
-
         <button id="advancedProgramControls" color="secondary"
             [matMenuTriggerFor]="advancedProgramControls"
-            [disabled]="read_only"
             mat-button mat-raised-button>
             <mat-icon>more_vert</mat-icon> Advanced
         </button>
         <mat-menu #advancedProgramControls="matMenu">
             <button mat-menu-item
+                (click)="downloadScreenshot()">
+                <mat-icon>camera</mat-icon>
+                <label class="label">
+                    Screenshot
+                </label>
+            </button>
+
+            <button mat-menu-item
+                [disabled]="read_only"
                 (click)="setProgramTags()">
                 <mat-icon class="example-tab-icon">label</mat-icon>
                 Tags
+            </button>
+
+            <button mat-menu-item
+                [disabled]="read_only"
+                (click)="toggleVariablesPanel()">
+                <mat-icon>storage</mat-icon>
+                <label class="label">
+                    <span *ngIf="drawer.opened && sidepanel.drawerType === 'variables'">Hide</span>
+                    <span *ngIf="!(drawer.opened && sidepanel.drawerType === 'variables')">Show</span>
+                    variables
+                </label>
+            </button>
+
+            <button mat-menu-item class="dangerous"
+                [disabled]="read_only"
+                (click)="stopThreadsProgram()">
+                <mat-icon>stop</mat-icon>
+                <label class="label">
+                    Cancel running
+                </label>
             </button>
         </mat-menu>
 

@@ -11,11 +11,11 @@ $enum-color:    #888;
 $unknown-color: #7f7f7f;
 
 // Basics
-#workspace > svg {
+#workspace > svg, svg.printed-workspace {
     width: 100%;
     height: 100%;
 
-    // Taken from https://codepen.io/tennowman/pen/ynrih
+    // Background pattern taken from https://codepen.io/tennowman/pen/ynrih
     background-color: #269;
     background-image:
         linear-gradient(rgba(255,255,255,.3) 2px, transparent 2px),
@@ -24,7 +24,10 @@ $unknown-color: #7f7f7f;
         linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
     background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
     background-position: -2px -2px, -2px -2px, -1px -1px, -1px -1px;
+}
 
+// Define variables in a way that it's accessible to elements in the SVG
+defs {
     \-\-user-pulse-1: $user-pulse-color-1;
     \-\-user-pulse-2: $user-pulse-color-2;
 }

@@ -43,6 +43,9 @@ import { environment } from 'environments/environment';
 import { ToastrService } from 'ngx-toastr';
 import { Subscription } from 'rxjs';
 import { ProgramEditorSidepanelComponent } from 'app/components/program-editor-sidepanel/program-editor-sidepanel.component';
+import { HttpClient } from '@angular/common/http';
+
+const SvgNS = "http://www.w3.org/2000/svg";
 
 @Component({
     selector: 'app-my-flow-editor',
@@ -89,6 +92,7 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
         private uiSignalService: UiSignalService,
         private environmentService: EnvironmentService,
         private toastr: ToastrService,
+        private http: HttpClient,
 
         @Inject(PLATFORM_ID) private platformId: Object
     ) {
@@ -588,6 +592,66 @@ export class FlowEditorComponent implements OnInit, AfterViewInit {
                 }));
             progbar.track(stopThreads);
         });
+    }
+
+    async downloadScreenshot() {
+        // See: https://stackoverflow.com/q/23218174
+        const canvas = this.workspace.getPrintViewCanvas();
+        const name = this.program.name.replace(/[^a-zA-Z0-9]/g, '-').replace(/--+/g, '-') + '.svg';
+
+        canvas.classList.add('printed-namespace');
+
+        // Pull style file
+        const styles = document.createElementNS(SvgNS, 'style');
+        styles.innerHTML = ('/* <![CDATA[ */\n' +
+            (await (this.http.get('/assets/flow_editor.css',
+                                  { responseType: 'text' as 'json' }
+                                 ).toPromise() as any as Promise<string>)) +
+            // Supplement flow editor CSS with global styles that affect it
+            '* {font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }\n' +
+            '/* ]]> */<');
+
+        canvas.insertBefore(styles, canvas.firstChild);
+
+        // Make image locations absolute
+        for (const image of Array.from(canvas.getElementsByTagNameNS(SvgNS, 'image')) as SVGImageElement[]) {
+            let baseServerPath = document.location.origin;
+
+            if (image.href && image.href.baseVal.startsWith('/')) {
+                // Image relative to current domain
+                image.href.baseVal = baseServerPath + image.href.baseVal;
+            }
+        }
+
+        // Build XML blob
+        const serializer = new XMLSerializer();
+
+        let source = serializer.serializeToString(canvas);
+
+        //add name spaces.
+        if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+            source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        if(!source.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)){
+            source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+        }
+
+        const svgBlob = new Blob([source], {type:"image/svg+xml;charset=utf-8"});
+
+        // Convert to URL
+        const svgUrl = URL.createObjectURL(svgBlob);
+
+        // Build a clickable link
+        const downloadLink = document.createElement("a");
+        downloadLink.href = svgUrl;
+        downloadLink.download = name;
+        document.body.appendChild(downloadLink);
+
+        // Click on it
+        downloadLink.click();
+
+        // Cleanup
+        document.body.removeChild(downloadLink);
     }
 
     deleteProgram() {
