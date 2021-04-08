@@ -1227,6 +1227,16 @@ export class FlowWorkspace implements BlockManager {
             clone.setAttributeNS(null, 'viewBox',
                                  `${rect.left - PRINT_MARGIN} ${rect.top - PRINT_MARGIN} ${width + PRINT_MARGIN} ${height + PRINT_MARGIN}`);
 
+            // De-select elements
+            for (const selected of Array.from(clone.getElementsByClassName('selected')) as SVGElement[]) {
+                selected.classList.remove('selected');
+            }
+
+            // Remove manipulators
+            for (const manipulator of Array.from(clone.getElementsByClassName('manipulators')) as SVGGElement[]) {
+                manipulator.parentNode.removeChild(manipulator);
+            }
+
             return clone;
         }
         finally {
