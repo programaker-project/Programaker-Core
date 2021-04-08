@@ -251,6 +251,7 @@ render_styles(RenderAs) ->
     , Root, ".hbox > .inner-box { margin: 0 auto; width: max-content; max-width: 100%; text-align: center; }"
     , Root, ".hbox > .inner-box > .vbox, .hbox > .inner-box > .simple_card { display: inline-flex; vertical-align: top; max-width: 100%; }"
     , Root, "a.link_area { text-decoration: inherit; }"
+    , Root, "a.link_area > .inner-box { display: inline-block; }"
     , Root, ".simple_card { margin: 0 auto; width: max-content; max-width: 100%; }"
     , Root, ".simple_card > .inner-box { margin: 1ex; padding: 1ex; border-radius: 4px; box-shadow: ", MaterialShadow, "; min-width: 20ex; min-height: 8ex; }"
     , Root, ".simple_card > .inner-box > .vbox { margin: auto; }"
