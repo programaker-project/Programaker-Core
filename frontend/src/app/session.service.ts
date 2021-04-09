@@ -83,7 +83,7 @@ export class SessionService {
     async getUserApiRoot(): Promise<string> {
         const session = await this.getSession();
         if (!session.active) {
-            throw Error("No session");
+            throw Error("[getUserApiRoot] No active session");
         }
 
         return this.getApiRootForUser(session.username);
@@ -97,7 +97,7 @@ export class SessionService {
         if (!user_id) {
             const session = await this.getSession();
             if (!session.active) {
-                throw Error("No session");
+                throw Error("[getApiRootForUserId] No active session");
             }
             user_id = session.user_id;
         }
@@ -108,7 +108,7 @@ export class SessionService {
         if (!user_id) {
             const session = await this.getSession();
             if (!session.active) {
-                throw Error("No session");
+                throw Error("[getApiRootForUserIdNew] No active session");
             }
             user_id = session.user_id;
         }

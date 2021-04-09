@@ -32,9 +32,6 @@ export class CustomSignalController {
     }
 
     register_custom_signal_blocks() {
-        if ((!this.availableCustomSignals) || (this.availableCustomSignals.length === 0)) {
-            return;
-        }
         if (this.registeredCustomSignalBlocks) {
             return;
         }
@@ -42,6 +39,9 @@ export class CustomSignalController {
         this.registeredCustomSignalBlocks = true;
 
         const availableCustomSignals = this.availableCustomSignals;
+        if (availableCustomSignals.length === 0) {
+            availableCustomSignals.push(["Unkown", '__plaza_internal_unlisted'])
+        }
 
         // Create signal trigger block
         Blockly.Blocks['automate_trigger_custom_signal'] = {
@@ -81,7 +81,6 @@ export class CustomSignalController {
 
         triggerBlockArgValue.appendChild(triggerBlockArgValueShadow);
         triggerBlock.appendChild(triggerBlockArgValue)
-        this.customSignalsCategory.appendChild(triggerBlock);
 
         // Create a signal receiver
         Blockly.Blocks['automate_on_custom_signal'] = {
@@ -106,11 +105,14 @@ export class CustomSignalController {
             }
         };
 
-        this.customSignalsCategory.appendChild(createDom('block',
-            {
+        if (this.customSignalsCategory) {
+            this.customSignalsCategory.appendChild(createDom('block',
+                                                             {
                 type: "automate_on_custom_signal",
                 id: "automate_on_custom_signal",
             }));
+            this.customSignalsCategory.appendChild(triggerBlock);
+        }
 
         this.toolboxController.update();
     }
@@ -131,6 +133,8 @@ export class CustomSignalController {
 
         return [
             (workspace: Blockly.WorkspaceSvg) => {
+                this.register_custom_signal_blocks();
+
                 workspace.registerButtonCallback('AUTOMATE_CREATE_CUSTOM_SIGNAL', (b: Blockly.FlyoutButton) => {
                     this.create_custom_signal().then((custom_signal_name) => {
 
@@ -143,8 +147,11 @@ export class CustomSignalController {
 
                                 console.log('Signal created');
 
+                                if (this.availableCustomSignals[0][1] === '__plaza_internal_unlisted') {
+                                    this.availableCustomSignals.splice(0, 1);
+                                }
+
                                 this.availableCustomSignals.push([custom_signal_name, custom_signal_creation.id]);
-                                this.register_custom_signal_blocks();
 
                                 this.toolboxController.update();
                             })
@@ -206,8 +213,6 @@ export class CustomSignalController {
                 this.customSignals[signal.id] = signal;
                 this.availableCustomSignals.push([signal.name, signal.id]);
             }
-
-            this.register_custom_signal_blocks();
 
             return cat;
         });
