@@ -33,16 +33,17 @@ export class TemplateController {
     }
 
     register_template_blocks() {
-        if ((!this.availableTemplates) || (this.availableTemplates.length === 0)) {
-            return;
-        }
         if (this.registeredTemplateBlocks) {
             return;
         }
 
         this.registeredTemplateBlocks = true;
 
-        const availableTemplates = this.availableTemplates;
+        const availableTemplates = this.availableTemplates || [];
+
+        if (availableTemplates.length === 0) {
+            availableTemplates.push(["Unkown", '__plaza_internal_unlisted'])
+        }
 
         Blockly.Blocks['automate_match_template_check'] = {
             init: function () {
@@ -66,12 +67,6 @@ export class TemplateController {
             }
         };
 
-        this.templatesCategory.appendChild(createDom('block',
-            {
-                type: "automate_match_template_check",
-                id: "automate_match_template_check",
-            }));
-
         Blockly.Blocks['automate_match_template_stmt'] = {
             init: function () {
                 this.jsonInit({
@@ -94,11 +89,19 @@ export class TemplateController {
             }
         };
 
-        this.templatesCategory.appendChild(createDom('block',
-            {
+        if (this.templatesCategory) {
+            this.templatesCategory.appendChild(createDom('block',
+                                                         {
+                type: "automate_match_template_check",
+                id: "automate_match_template_check",
+            }));
+
+            this.templatesCategory.appendChild(createDom('block',
+                                                         {
                 type: "automate_match_template_stmt",
                 id: "automate_match_template_stmt",
             }));
+        }
 
         this.toolboxController.update();
     }
@@ -119,6 +122,8 @@ export class TemplateController {
 
         return [
             (workspace) => {
+                this.register_template_blocks();
+
                 workspace.registerButtonCallback('AUTOMATE_CREATE_TEMPLATE', (b: Blockly.FlyoutButton) => {
                     this.create_template().then(([template_name, template_content]) => {
 
@@ -130,8 +135,6 @@ export class TemplateController {
                                 }
 
                                 this.availableTemplates.push([template_name, template_creation.id]);
-                                this.register_template_blocks();
-
                                 this.toolboxController.update();
                             })
                             .catch(err => {
@@ -178,8 +181,6 @@ export class TemplateController {
                 this.templates[template.id] = template;
                 this.availableTemplates.push([template.name, template.id]);
             }
-
-            this.register_template_blocks();
 
             return cat;
         });
