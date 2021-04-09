@@ -134,6 +134,10 @@ export class TemplateController {
                                     return;
                                 }
 
+                                if (this.availableTemplates[0][1] === '__plaza_internal_unlisted') {
+                                    this.availableTemplates.splice(0, 1);
+                                }
+
                                 this.availableTemplates.push([template_name, template_creation.id]);
                                 this.toolboxController.update();
                             })

@@ -147,6 +147,10 @@ export class CustomSignalController {
 
                                 console.log('Signal created');
 
+                                if (this.availableCustomSignals[0][1] === '__plaza_internal_unlisted') {
+                                    this.availableCustomSignals.splice(0, 1);
+                                }
+
                                 this.availableCustomSignals.push([custom_signal_name, custom_signal_creation.id]);
 
                                 this.toolboxController.update();
