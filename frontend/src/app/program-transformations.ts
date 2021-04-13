@@ -2,6 +2,7 @@ import { FlowGraphNode, FlowGraph } from './flow-editor/flow_graph';
 import { ProgramContent } from './program';
 
 export class NoTranslationFoundError extends Error {}
+const TIME_BRIDGE = "0093325b-373f-4f1c-bace-4532cce79df4";
 
 export function getRequiredAssets(programData: ProgramContent): string[] {
     if (programData.type !== 'flow_program') {
@@ -205,6 +206,11 @@ function transformBlocks(blocks: any[], translations: {[key: string]: string}) {
 
 // Destructively transform the program so it can be applied to the target user
 export function transformProgram(programData: ProgramContent, translations: { [key: string]: string }) {
+
+    // By default the time bridge maps to itself
+    if (!translations[TIME_BRIDGE]) {
+        translations[TIME_BRIDGE] = TIME_BRIDGE;
+    }
 
     // Transform editor representation
     if (programData.type === 'flow_program') {
