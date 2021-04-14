@@ -47,6 +47,7 @@ export class AuthorizeNewTokenComponent implements OnInit {
         this.route.queryParamMap.subscribe((params: Params) => {
             this.scopes = params.params.scope.split(' ');
         });
+        this.session = await this.sessionService.getSession();
     }
 
     scope_name(scope: string): string {

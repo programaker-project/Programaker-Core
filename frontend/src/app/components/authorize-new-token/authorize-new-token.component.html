@@ -13,23 +13,33 @@
         </ul>
     </div>
 
-    <button id="grant-permission" color="primary"
-        [disabled]="generatingToken"
-        (click)="generateToken()" mat-button mat-raised-button>
-        Generate token
-    </button>
+    <ng-container *ngIf="session && session.active">
+        <button id="grant-permission" color="primary"
+            [disabled]="generatingToken"
+            (click)="generateToken()" mat-button mat-raised-button>
+            Generate token
+        </button>
 
-    <ng-container *ngIf="token">
-        <div>
-            Token:
-            <input matInput
-                *ngIf="token"
-                class="generated-token"
-                size="{{ token.length }}"
-                readonly="readonly"
-                [value]="token" />
+        <ng-container *ngIf="token">
+            <div>
+                Token:
+                <input matInput
+                    *ngIf="token"
+                    class="generated-token"
+                    size="{{ token.length }}"
+                    readonly="readonly"
+                    [value]="token" />
 
-        </div>
-        Copy this to the web that linked you here to complete the authorization.
+            </div>
+            Copy this to the web that linked you here to complete the authorization.
+        </ng-container>
+    </ng-container>
+
+    <ng-container *ngIf="session && !session.active">
+        You are not logged to PrograMaker. An anonymous user cannot generate an authorization.
+
+        <br /> <br />
+        <a class="login-link" routerLink="/login">Log in</a> or
+        <a class="register-link" routerLink="/register">Register new user</a>
     </ng-container>
 </div>
