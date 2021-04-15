@@ -18,10 +18,11 @@
 -include("./records.hrl").
 -include("../../automate_service_port_engine/src/records.hrl").
 
--record(state, { user_id :: binary(), bridge_id :: binary(), function_name :: binary() }).
+-record(state, { user_id :: binary(), bridge_id :: binary(), function_name :: binary(), metrics_data :: any() }).
 
 -spec init(_,_) -> {'cowboy_rest',_,_}.
 init(Req, _Opts) ->
+    MetricsData = ?UTILS:start_metrics(Req, api_function_call),
     UserId = cowboy_req:binding(user_id, Req),
     BridgeId = cowboy_req:binding(bridge_id, Req),
     FunctionName = cowboy_req:binding(function, Req),
@@ -30,6 +31,7 @@ init(Req, _Opts) ->
     , #state{ user_id=UserId
             , bridge_id=BridgeId
             , function_name=FunctionName
+            , metrics_data=MetricsData
             }}.
 
 resource_exists(Req, State) ->
@@ -78,7 +80,7 @@ content_types_accepted(Req, State) ->
      Req, State}.
 
 accept_function_call(Req, State) ->
-    #state{bridge_id=BridgeId, function_name=FunctionName, user_id=UserId} = State,
+    #state{bridge_id=BridgeId, function_name=FunctionName, user_id=UserId, metrics_data=MetricsData} = State,
     {ok, Body, _} = ?UTILS:read_body(Req),
     #{<<"arguments">> := Arguments } = jiffy:decode(Body, [return_maps]),
 
@@ -90,6 +92,7 @@ accept_function_call(Req, State) ->
             Res2 = cowboy_req:delete_resp_header(<<"content-type">>, Res1),
             Res3 = cowboy_req:set_resp_header(<<"content-type">>, <<"application/json">>, Res2),
 
+            ?UTILS:end_metrics(MetricsData),
             { true, Res3, State };
         {error, Reason} ->
             Code = case Reason of
@@ -99,6 +102,7 @@ accept_function_call(Req, State) ->
                    end,
             Output = jiffy:encode(#{ <<"success">> => false, <<"message">> => Reason }),
             Res = cowboy_req:reply(Code, #{ <<"content-type">> => <<"application/json">> }, Output, Req),
+            ?UTILS:end_metrics_with_error(MetricsData, Reason),
             {stop, Res, State}
     end.
 

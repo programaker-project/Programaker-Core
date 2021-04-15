@@ -173,6 +173,18 @@ start_link() ->
                  ]),
 
     Port = get_port(),
+
+    %% Prepare API metrics
+    prometheus_histogram:declare([ { name, automate_api_latency}
+                                 , { labels, [ endpoint, user_agent_bucket, error ] }
+                                 , { buckets, [ 1, 5, 10, 100
+                                              , 300, 500, 750, 1_000
+                                              , 2_000, 5_000, 10_000, 30_000
+                                              , 60_000, 120_000, 300_000
+                                              ]}
+                                 , { help, "API latency."}
+                                 ]),
+    %% Start listening
     io:fwrite("== Listening on: ~p~n", [Port]),
     Start = cowboy:start_clear(http, [{port, Port}],
                                #{
