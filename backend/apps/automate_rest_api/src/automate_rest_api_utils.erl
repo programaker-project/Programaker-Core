@@ -14,6 +14,10 @@
         , get_bridges_on_program_id/1
         , get_owner_asset_directory/1
         , is_public/1
+
+        , start_metrics/2
+        , end_metrics/1
+        , end_metrics_with_error/2
         ]).
 
 -include("../../automate_common_types/src/types.hrl").
@@ -208,3 +212,42 @@ url_safe_base64_encode(Bin) ->
     S1 = binary:replace(RawB64, <<"/">>, <<"-">>, [global]),
     S2 = binary:replace(S1, <<"+">>, <<"_">>, [global]),
     S2.
+
+%%====================================================================
+%% Metrics
+%%====================================================================
+-type user_agent_bucket() :: google_apps_script | other.
+-record(metrics_data, { user_agent_bucket :: user_agent_bucket()
+                      , start_time :: integer()
+                      , endpoint :: atom()
+                      }).
+
+get_user_agent_bucket(undefined) ->
+    other;
+get_user_agent_bucket(UserAgent) ->
+    case binary:matches(UserAgent, <<"Google-Apps-Script">>) of
+        [] -> other;
+        _ -> google_apps_script
+    end.
+
+start_metrics(Req, Endpoint) ->
+    #metrics_data{ user_agent_bucket=get_user_agent_bucket(cowboy_req:header(<<"user-agent">>, Req))
+                 , start_time=erlang:monotonic_time()
+                 , endpoint=Endpoint
+                 }.
+
+end_metrics(#metrics_data{ user_agent_bucket=Bucket
+                         , start_time=StartTime
+                         , endpoint=Endpoint
+                         }) ->
+    EndTime = erlang:monotonic_time(),
+    TimeElapsed = erlang:convert_time_unit(EndTime - StartTime, native, millisecond),
+    prometheus_histogram:observe(default, automate_api_latency, [Endpoint, Bucket, ok], TimeElapsed).
+
+end_metrics_with_error(#metrics_data{ user_agent_bucket=Bucket
+                                    , start_time=StartTime
+                                    , endpoint=Endpoint
+                                    }, Error) ->
+    EndTime = erlang:monotonic_time(),
+    TimeElapsed = erlang:convert_time_unit(EndTime - StartTime, native, millisecond),
+    prometheus_histogram:observe(default, automate_api_latency, [Endpoint, Bucket, Error], TimeElapsed).
