@@ -88,7 +88,7 @@ export class ServiceService {
     }
 
     registerService(data: { [key: string]: string },
-                        service_id: string,
+                    service_id: string,
                     connection_id: string,
                     params?: { program_id: string, group_id: string } ): Promise<{success: boolean}> {
 
@@ -99,6 +99,14 @@ export class ServiceService {
             (data as any).metadata.connection_id = connection_id;
         }
 
+        const cleanParams: { program_id?: string, group_id?: string } = {};
+        if (params.program_id) {
+            cleanParams.program_id = params.program_id;
+        }
+        if (params.group_id) {
+            cleanParams.group_id = params.group_id;
+        }
+
         const url = this.getServiceRegistryUrl(service_id);
         return (this.http.post(
             url, JSON.stringify(data),
@@ -106,7 +114,7 @@ export class ServiceService {
                 headers: this.sessionService.addContentType(
                     this.sessionService.getAuthHeader(),
                     ContentType.Json),
-                params: params,
+                params: cleanParams,
             }).toPromise()) as Promise<{success: boolean}>;
     }
 

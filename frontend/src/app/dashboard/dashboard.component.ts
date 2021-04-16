@@ -24,6 +24,8 @@ import { BridgeConnectionWithIconUrl, IconReference } from 'app/connection';
 import { EnvironmentService } from 'app/environment.service';
 import { ProfileService, GroupProfileInfo } from 'app/profiles/profile.service';
 import { Subscription } from 'rxjs';
+import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
+import { ConnectToAvailableDialogComponent } from 'app/dialogs/connect-to-available-dialog/connect-to-available-dialog.component';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -258,6 +260,17 @@ export class DashboardComponent {
                 }
 
                 programCreation.then(program => this.openProgram(program));
+            }
+        });
+    }
+
+    addConnection(): void {
+        const dialogRef = this.dialog.open(ConnectToAvailableDialogComponent, { width: '90%',
+                                                                                data: { groupId: this.groupInfo?.id }});
+
+        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+            if (result && result.success) {
+                this.updateConnections();
             }
         });
     }

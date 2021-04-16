@@ -87,6 +87,7 @@ import { GroupProfileComponent } from './profiles/group-profile.component';
 import { ProgramEditorSidepanelComponent } from './components/program-editor-sidepanel/program-editor-sidepanel.component';
 import { SpreadsheetEditorComponent } from './program-editors/spreadsheet-editor/spreadsheet-editor.component';
 import { AuthorizeNewTokenComponent } from './components/authorize-new-token/authorize-new-token.component';
+import { ConnectToAvailableDialogComponent } from './dialogs/connect-to-available-dialog/connect-to-available-dialog.component';
 
 
 
@@ -136,6 +137,7 @@ import { AuthorizeNewTokenComponent } from './components/authorize-new-token/aut
         ConfigureFontColorDialogComponent,
         ChangeProgramVisilibityDialog,
         CloneProgramDialogComponent,
+        ConnectToAvailableDialogComponent,
 
         // Independent components
         GroupCollaboratorEditorComponent,
