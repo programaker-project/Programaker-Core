@@ -62,6 +62,7 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
     @Input() program: ProgramContent;
     workspace: Blockly.WorkspaceSvg;
     programId: string;
+    programName: string;
     environment: { [key: string]: any };
     session: Session;
 
@@ -168,8 +169,8 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
                         });
                     }
                     else {
-                        const programId = params['program_id'];
-                        return this.programService.getProgramById(programId).catch(err => {
+                        this.programId = params['program_id'];
+                        return this.programService.getProgramById(this.programId).catch(err => {
                             if (!this.session.active) {
                                 this.router.navigate(['/login'], {replaceUrl:true});
                                 reject();
@@ -188,6 +189,7 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
                         return;
                     }
 
+                    this.programName = program.name;
                     this.programId = program.id;
                     this.read_only = program.readonly;
                     this.visibility = program.visibility;
@@ -1280,7 +1282,7 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
     }
 
     deleteProgram() {
-        const programData = { name: this.program.name };
+        const programData = { name: this.programName || '*error getting program name*' };
 
         const dialogRef = this.dialog.open(DeleteProgramDialogComponent, {
             data: programData
@@ -1292,7 +1294,7 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
                 return;
             }
 
-            const deletion = (this.programService.deleteProgram(this.program)
+            const deletion = (this.programService.deleteProgramById(this.programId)
                 .catch(() => { return false; })
                 .then(success => {
                     if (!success) {

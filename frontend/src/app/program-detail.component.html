@@ -2,7 +2,7 @@
     <div id="program-header" class="">
         <h2 class="program-name">
             <a href (click)="goBack()"><mat-icon class="back-arrow">arrow_back_ios</mat-icon></a>
-            <span class="program-title" *ngIf="program !== undefined">{{program.name}}</span>
+            <span class="program-title" *ngIf="program !== undefined">{{programName}}</span>
             <span class="program-title" *ngIf="program === undefined">Loading...</span>
         </h2>
 
