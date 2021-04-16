@@ -24,6 +24,8 @@ import { BridgeConnectionWithIconUrl, IconReference } from 'app/connection';
 import { EnvironmentService } from 'app/environment.service';
 import { ProfileService, GroupProfileInfo } from 'app/profiles/profile.service';
 import { Subscription } from 'rxjs';
+import { AddConnectionDialogComponent } from 'app/connections/add-connection-dialog.component';
+import { ConnectToAvailableDialogComponent } from 'app/dialogs/connect-to-available-dialog/connect-to-available-dialog.component';
 
 type TutorialData = { description: string, icons: string[], url: string };
 
@@ -41,11 +43,11 @@ type TutorialData = { description: string, icons: string[], url: string };
 export class DashboardComponent {
     programs: ProgramMetadata[] = [];
     connections: BridgeConnectionWithIconUrl[] = null;
-    connectionsNotInBridges: BridgeConnectionWithIconUrl[] = null;
 
     session: Session = null;
     profile: {type: 'user' | 'group', name: string, groups: GroupInfo[], picture: string};
     bridgeInfo: { [key:string]: { icon: string, name: string }} = {};
+    bridgesById: { [key:string]: BridgeIndexData} = {};
     collaborators: Collaborator[] = null;
 
     bridges: BridgeIndexData[] = null;
@@ -262,6 +264,17 @@ export class DashboardComponent {
         });
     }
 
+    addConnection(): void {
+        const dialogRef = this.dialog.open(ConnectToAvailableDialogComponent, { width: '90%',
+                                                                                data: { groupId: this.groupInfo?.id }});
+
+        dialogRef.afterClosed().subscribe((result: {success: boolean}) => {
+            if (result && result.success) {
+                this.updateConnections();
+            }
+        });
+    }
+
     addBridge(): void {
         const dialogRef = this.dialog.open(AddBridgeDialogComponent, { width: '80%',
                                                                        data: { groupId: this.groupInfo?.id },
@@ -292,6 +305,7 @@ export class DashboardComponent {
                 name: bridge.name,
                 icon: iconDataToUrl(this.environmentService, bridge.icon, bridge.id)
             };
+            this.bridgesById[bridge.id] = bridge;
         }
     }
 
@@ -370,18 +384,17 @@ export class DashboardComponent {
         else {
             connectionQuery = this.connectionService.getConnections();
         }
+
         const connections = await connectionQuery;
         this.connections = connections.map((v, _i, _a) => {
             const icon_url = iconDataToUrl(this.environmentService, v.icon, v.bridge_id);
 
             return { conn: v, extra: {icon_url: icon_url }};
+        }).sort((a, b) => {
+            return a.conn.bridge_name.localeCompare(b.conn.bridge_name, undefined, { ignorePunctuation: true, sensitivity: 'base' });
         });
 
         await this.bridgesQuery; // Wait for the bridges query to complete
-
-        this.connectionsNotInBridges = this.connections.filter((v, _i, _a) => {
-            return !this.bridges.find((b) => v.conn.bridge_id === b.id);
-        });
     }
 
     openBridgePanel(bridge: {id: string, name: string}, isOwner: boolean=true ) {

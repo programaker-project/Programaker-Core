@@ -140,55 +140,30 @@
         <mat-tab *ngIf="isOwnUser || userRole">
             <ng-template matTabLabel>
                 <span matBadgeOverlap="false"
-                    [matBadge]="bridges && bridges.length + (connectionsNotInBridges && connectionsNotInBridges.length || 0)"
+                    [matBadge]="bridges && bridges.length + (connections && connections.length || 0)"
                 >Bridges</span>
             </ng-template>
 
             <section *ngIf="bridges" class="bridges">
-                <div *ngIf="(bridges.length == 0) && (profile.type === 'user' || userRole)" class="not-joined-explanation">
-                    {{ profile.type === 'user' ? 'You don\'t' : 'This group doesn\'t' }} maintain any bridge.
-                </div>
-
-                <div class="row">
-                    <div class="col-sm-6 item-holder">
-                        <mat-card role="button" (click)="addBridge()" class="module bridge call-to-action {{ profile.type !== 'user' && userRole !== 'admin' ? 'disabled' : '' }}">
-                            <div class="card-title">
-                                <span>
-                                    <mat-icon>add</mat-icon>
-                                    Add new bridge
-                                </span>
-                            </div>
-                        </mat-card>
+                <div *ngIf="connections" class="bridge-connections-subsection">
+                    <h4>{{ connections.length }} Connections to bridges</h4>
+                    <div *ngIf="(bridges.length == 0) && (profile.type === 'user' || userRole)" class="not-joined-explanation">
+                        {{ profile.type === 'user' ? 'You haven\'t' : 'This group hasn\'t' }} established any connection to any bridge.
                     </div>
-                    <div class="col-sm-6 item-holder"
-                        *ngFor="let bridge of bridges">
-                        <mat-card
-                            matRipple matRippleColor="#00000017"
-                            class="bridge"
-                            role="button"
-                            (click)="openBridgePanel(bridge)"
-                        >
-                            <div class="bridge-data">
-                                <span class="bridge-status connected-{{bridge.is_connected}}"
-                                    matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
-                                    <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
-                                    <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
-                                </span>
-
-                                <img role="avatar" class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
-
-                                <div *ngIf="!bridge.icon" class="bridge-name">
-                                    {{bridge.name || "unnamed bridge"}}
-                                </div>
-                            </div>
-                        </mat-card>
-                    </div>
-                </div>
-                <div *ngIf="connectionsNotInBridges && connectionsNotInBridges.length > 0" class="bridge-connections-subsection">
-                    <h4>Connections to other bridges</h4>
                     <div class="row">
+                        <div class="col-sm-6 item-holder">
+                            <mat-card role="button" (click)="addConnection()" class="module bridge call-to-action {{ profile.type !== 'user' && userRole !== 'admin' ? 'disabled' : '' }}">
+                                <div class="card-title">
+                                    <span>
+                                        <mat-icon>add</mat-icon>
+                                        Connect to bridge
+                                    </span>
+                                </div>
+                            </mat-card>
+                        </div>
+
                         <div class="col-sm-6 item-holder"
-                            *ngFor="let connection of connectionsNotInBridges">
+                            *ngFor="let connection of connections">
                             <mat-card
                                 matRipple matRippleColor="#00000017"
                                 class="bridge"
@@ -196,10 +171,59 @@
                                 (click)="openBridgePanelFromConnection(connection)"
                             >
                                 <div class="bridge-data">
+                                    <span *ngIf="bridgesById[connection.conn.bridge_id]"
+                                        class="bridge-status connected-{{bridgesById[connection.conn.bridge_id].is_connected}}"
+                                        matTooltip="{{ bridgesById[connection.conn.bridge_id].is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
+                                        <mat-icon *ngIf="bridgesById[connection.conn.bridge_id].is_connected">link</mat-icon>
+                                        <mat-icon *ngIf="!bridgesById[connection.conn.bridge_id].is_connected">link_off</mat-icon>
+                                    </span>
+
                                     <img class="icon" role="avatar" *ngIf="connection.extra.icon_url" src="{{ connection.extra.icon_url }}" alt="{{ connection.conn.bridge_name }}" />
 
                                     <div *ngIf="!connection.extra.icon_url" class="bridge-name">
                                         {{ connection.conn.bridge_name }}
+                                    </div>
+                                </div>
+                            </mat-card>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bridges-maintained-subsection">
+                    <h4>{{ bridges.length }} Bridges</h4>
+                    <div *ngIf="(bridges.length == 0) && (profile.type === 'user' || userRole)" class="not-joined-explanation">
+                        {{ profile.type === 'user' ? 'You don\'t' : 'This group doesn\'t' }} maintain any bridge.
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-6 item-holder">
+                            <mat-card role="button" (click)="addBridge()" class="module bridge call-to-action {{ profile.type !== 'user' && userRole !== 'admin' ? 'disabled' : '' }}">
+                                <div class="card-title">
+                                    <span>
+                                        <mat-icon>add</mat-icon>
+                                        Add new bridge
+                                    </span>
+                                </div>
+                            </mat-card>
+                        </div>
+                        <div class="col-sm-6 item-holder"
+                            *ngFor="let bridge of bridges">
+                            <mat-card
+                                matRipple matRippleColor="#00000017"
+                                class="bridge"
+                                role="button"
+                                (click)="openBridgePanel(bridge)"
+                            >
+                                <div class="bridge-data">
+                                    <span class="bridge-status connected-{{bridge.is_connected}}"
+                                        matTooltip="{{ bridge.is_connected ? 'Bridge connected' : 'Bridge disconnected' }}">
+                                        <mat-icon *ngIf="bridge.is_connected">link</mat-icon>
+                                        <mat-icon *ngIf="!bridge.is_connected">link_off</mat-icon>
+                                    </span>
+
+                                    <img role="avatar" class="icon" *ngIf="bridge.icon" src="{{ _iconDataToUrl(bridge.icon, bridge.id) }}" alt="{{ bridge.name }}" />
+
+                                    <div *ngIf="!bridge.icon" class="bridge-name">
+                                        {{bridge.name || "unnamed bridge"}}
                                     </div>
                                 </div>
                             </mat-card>

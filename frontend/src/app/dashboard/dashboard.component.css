@@ -450,11 +450,11 @@ section.bridges .row .item-holder {
     vertical-align: bottom;
 }
 
-section.bridges .bridge-connections-subsection {
+section.bridges .bridges-maintained-subsection {
     border-top: 1px solid #aaa;
 }
 
-section.bridges .bridge-connections-subsection h4 {
+section.bridges h4 {
     margin: 1ex;
 }
 
