@@ -552,10 +552,12 @@ export class Toolbox {
                 Blockly.DataCategory = patch;
             }
 
-            const variableModelList = workspace.getVariablesOfType(Blockly.LIST_VARIABLE_TYPE);
-            variableModelList.sort(Blockly.VariableModel.compareByName);
-            if (variableModelList.length > 0) {
-                var firstVariable = variableModelList[0];
+            const firstListOperation = xmlList.findIndex((x: Element) => x.getAttribute('type') === 'data_addtolist');
+            const operationPatched = xmlList.findIndex((x: Element) => x.getAttribute('type') === 'data_setlistto') >= 0;
+            if ((firstListOperation >= 0) && (!operationPatched)) {
+                const variableModelList = workspace.getVariablesOfType(Blockly.LIST_VARIABLE_TYPE);
+                variableModelList.sort(Blockly.VariableModel.compareByName);
+                const firstVariable = variableModelList[0];
 
                 const setListTo = createDom('block', { type: 'data_setlistto', gap: '8' } );
                 const listVal = createDom('field', { name: 'LIST', variabletype: "list" });
@@ -568,10 +570,22 @@ export class Toolbox {
                 value.appendChild(shadow);
                 setListTo.appendChild(value);
 
-                xmlList.push(setListTo);
+                xmlList.splice(firstListOperation, 0, setListTo);
             }
 
-            return xmlList;
+            // Remove show/hide list and variable operations.
+            return xmlList.filter((op: Element) => {
+                const t = op.getAttribute('type');
+
+                const unused_operation = [
+                    'data_showvariable',
+                    'data_hidevariable',
+                    'data_showlist',
+                    'data_hidelist',
+                ].indexOf(t) >= 0;
+
+                return !unused_operation;
+            });
         };
     }
 
