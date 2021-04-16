@@ -1647,6 +1647,19 @@ function build_signal_from_source(graph: FlowGraph, source: BlockTreeOutputValue
                 contents: [],
             }
         }
+        else if (desc.block_function === 'data_itemoflist') {
+            return {
+                id: source.block.block_id,
+                type: "on_data_variable_update",
+                args: [
+                    {
+                        type: "variable",
+                        value: source_node.data.value.slots['list'],
+                    }
+                ],
+                contents: [],
+            }
+        }
         else if (desc.type === 'operation') {
             return {
                 type: "flow_last_value",

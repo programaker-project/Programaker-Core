@@ -623,6 +623,20 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter, ?UTILS:get_block_id(Op)),
     {ran_this_tick, increment_position(Thread3)};
 
+run_instruction(Op=#{ ?TYPE := ?COMMAND_SET_LIST
+                    , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
+                                       , ?VALUE := ListName
+                                       }
+                                    , ValueArgument
+                                    ]
+                    }
+               , Thread=#program_thread{program_id=ProgramId}
+               , {?SIGNAL_PROGRAM_TICK, _}) ->
+
+    {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, Op),
+    ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, Value, ?UTILS:get_block_id(Op)),
+    {ran_this_tick, increment_position(Thread2)};
+
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
                                        , ?VALUE := ListName

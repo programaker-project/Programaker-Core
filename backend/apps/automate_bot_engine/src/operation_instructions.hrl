@@ -63,6 +63,7 @@
 -define(COMMAND_LENGTH_OF_LIST, <<"data_lengthoflist">>).
 -define(COMMAND_LIST_CONTAINS_ITEM, <<"data_listcontainsitem">>).
 -define(COMMAND_LIST_GET_CONTENTS, <<"data_listcontents">>).
+-define(COMMAND_SET_LIST, <<"data_setlistto">>).
 
 %% Data-control operations
 %% Introduced by compiler

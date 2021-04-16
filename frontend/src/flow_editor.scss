@@ -7,6 +7,7 @@ $integer-color: #4444ff;
 $float-color:   #44dddd;
 $boolean-color: #dd4444;
 $any-color:     #dd44dd;
+$list-color:    #845801;
 $enum-color:    #888;
 $unknown-color: #7f7f7f;
 
@@ -134,6 +135,10 @@ svg.block_renderer path.any_wire {
     stroke: $any-color;
 }
 
+svg.block_renderer path.list_wire {
+    stroke: $list-color;
+}
+
 svg.block_renderer path.pulse_wire {
     stroke: $pulse-color;
     stroke-width: 7px;
@@ -170,6 +175,10 @@ svg.block_renderer:not(.drawing):not(.dragging) {
         }
 
         &.any_wire {
+            stroke: #9d049d;
+        }
+
+        &.list_wire {
             stroke: #9d049d;
         }
 
@@ -279,6 +288,10 @@ svg.block_renderer g.flow_node circle.external_port.enum_sequence_port {
 
 svg.block_renderer g.flow_node circle.external_port.any_port {
     fill: $any-color;
+}
+
+svg.block_renderer g.flow_node circle.external_port.list_port {
+    fill: $list-color;
 }
 
 svg.block_renderer g.flow_node circle.external_port.unknown_type {
@@ -861,6 +874,10 @@ svg.block_renderer .fab-button-group {
         stroke: $any-color;
     }
 
+    &.list_port {
+        stroke: $list-color;
+    }
+
     &.pulse_port {
         stroke: $pulse-color;
     }
@@ -902,6 +919,10 @@ path.var_path {
 
     &.any_port {
         stroke: $any-color;
+    }
+
+    &.list_port {
+        stroke: $list-color;
     }
 
     &.pulse_port {
