@@ -276,6 +276,10 @@ export function get_block_outputs(block: ResolvedCustomBlock): OutputPortDefinit
                 result_type = 'any';
                 break;
 
+            case 'list':
+                result_type = 'list';
+                break;
+
             case null:
                 console.warn('Return type not set on', block);
                 break;

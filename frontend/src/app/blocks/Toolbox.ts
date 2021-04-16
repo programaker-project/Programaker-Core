@@ -212,6 +212,7 @@ export class Toolbox {
         this.injectCustomControls();
         await this.injectTimeBlocks();
         this.injectJSONBlocks();
+        this.injectListBlocks();
         this.injectOperationBlocks(connections);
         registrations = registrations.concat(this.templateController.injectBlocks());
         registrations = registrations.concat(this.customSignalController.injectBlocks());
@@ -513,6 +514,65 @@ export class Toolbox {
         }
 
         return timeReady;
+    }
+
+    injectListBlocks() {
+        Blockly.Blocks['data_setlistto'] = {
+            init: function () {
+                this.jsonInit({
+                    'id': 'data_setlistto',
+                    'message0': 'set list %1 to %2',
+                    "args0": [
+                        {
+                            "type": "field_variable",
+                            "name": "LIST",
+                            "variableTypes": [Blockly.LIST_VARIABLE_TYPE],
+                        },
+                        {
+                            "type": "input_value",
+                            "name": "VALUE"
+                        }
+                    ],
+                    "category": Blockly.Categories.dataLists,
+                    "extensions": ["contextMenu_getListBlock", "colours_data_lists", "shape_statement"],
+                });
+            }
+        };
+
+        const oldDataCategory = Blockly.DataCategory;
+
+        // Patch DataCategory to add our own block
+        const patch = Blockly.DataCategory = (workspace: any) => {
+            let xmlList;
+            try {
+                Blockly.DataCategory = oldDataCategory;
+                xmlList = oldDataCategory(workspace);
+            }
+            finally {
+                Blockly.DataCategory = patch;
+            }
+
+            const variableModelList = workspace.getVariablesOfType(Blockly.LIST_VARIABLE_TYPE);
+            variableModelList.sort(Blockly.VariableModel.compareByName);
+            if (variableModelList.length > 0) {
+                var firstVariable = variableModelList[0];
+
+                const setListTo = createDom('block', { type: 'data_setlistto', gap: '8' } );
+                const listVal = createDom('field', { name: 'LIST', variabletype: "list" });
+                listVal.innerText = firstVariable.name;
+                setListTo.appendChild(listVal);
+
+                const value = createDom('value', { name: 'VALUE' });
+                const shadow = createDom('shadow', {type: Blockly.LIST_VARIABLE_TYPE});
+                shadow.appendChild(createDom('field', { name: 'LIST' }));
+                value.appendChild(shadow);
+                setListTo.appendChild(value);
+
+                xmlList.push(setListTo);
+            }
+
+            return xmlList;
+        };
     }
 
     injectJSONBlocks() {

@@ -698,6 +698,18 @@ export const BaseToolboxDescription: ToolboxDescription = [
         blocks: [
             {
                 icon: PLATFORM_ICON,
+                message: 'Set list %(list) to %i1',
+                block_function: 'data_setlistto',
+                inputs: [
+                    {
+                        required: true,
+                        type: 'list',
+                    }
+                ],
+                type: 'operation'
+            },
+            {
+                icon: PLATFORM_ICON,
                 message: 'Add %i1 to %(list)',
                 block_function: 'data_addtolist',
                 inputs: [

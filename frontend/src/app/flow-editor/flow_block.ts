@@ -1,6 +1,6 @@
 import { FlowWorkspace } from "./flow_workspace";
 
-export type MessageType = 'integer' | 'float' | 'boolean' | 'string' | 'any' | 'pulse' | 'user-pulse';
+export type MessageType = 'integer' | 'float' | 'boolean' | 'string' | 'any' | 'pulse' | 'user-pulse' | 'list';
 
 export interface Position2D { x: number; y: number };
 export interface Area2D { x: number, y: number, width: number, height: number  };

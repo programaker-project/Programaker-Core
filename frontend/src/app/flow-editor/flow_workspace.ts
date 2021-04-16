@@ -2759,6 +2759,12 @@ export class FlowWorkspace implements BlockManager {
                 'enum',
             ].indexOf(output) >= 0;
         }
+        else if (input === 'list') {
+            // List inputs can only receive lists
+            return [
+                'list'
+            ].indexOf(output) >= 0;
+        }
     }
 
     addConnection(from_: SourceDefinition,
