@@ -454,7 +454,7 @@ section.bridges .bridge-connections-subsection {
     border-top: 1px solid #aaa;
 }
 
-section.bridges .bridge-connections-subsection h4 {
+section.bridges h4 {
     margin: 1ex;
 }
 
