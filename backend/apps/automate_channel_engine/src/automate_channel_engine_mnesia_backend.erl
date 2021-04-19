@@ -182,7 +182,7 @@ get_listeners_on_channel(ChannelId) ->
                           end
                   end,
 
-    {atomic, Result} = mnesia:transaction(Transaction),
+    Result = mnesia:ets(Transaction),
 
     case Result of
         {error, Error} -> {error, Error};
@@ -229,7 +229,7 @@ get_monitors_on_channel(ChannelId) ->
                           end
                   end,
 
-    {atomic, Result} = mnesia:transaction(Transaction),
+    Result = mnesia:ets(Transaction),
 
     case Result of
         {error, Error} -> {error, Error};
