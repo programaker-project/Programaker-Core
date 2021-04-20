@@ -6,6 +6,7 @@
 -module(automate_storage_configuration).
 
 -export([ get_versioning/1
+        , db_map/2
         ]).
 
 -include("./databases.hrl").

@@ -998,7 +998,11 @@ export class Toolbox {
                 continue;
             }
 
-            const custom_blocks_xml = custom_blocks.resolved_custom_blocks.map(
+            const custom_blocks_xml = custom_blocks.resolved_custom_blocks.filter(
+                (block) => {
+                    return block.show_in_toolbox !== false;
+                }
+            ).map(
                 (block, _index, _array) => {
                     return block_to_xml(block);
                 });

@@ -2760,9 +2760,10 @@ export class FlowWorkspace implements BlockManager {
             ].indexOf(output) >= 0;
         }
         else if (input === 'list') {
-            // List inputs can only receive lists
+            // List inputs can only receive lists or any
             return [
-                'list'
+                'any',
+                'list',
             ].indexOf(output) >= 0;
         }
     }

@@ -549,6 +549,7 @@ parse_block(Block=#{ <<"arguments">> := Arguments
                        , block_type=BlockType
                        , block_result_type=BlockResultType
                        , save_to=get_block_save_to(Block)
+                       , show_in_toolbox=get_block_show_in_toolbox(Block)
                        };
 
 parse_block(Block=#{ <<"arguments">> := Arguments
@@ -569,12 +570,23 @@ parse_block(Block=#{ <<"arguments">> := Arguments
                                , expected_value=ExpectedValue
                                , key=Key
                                , subkey=get_block_subkey(Block)
+                               , show_in_toolbox=get_block_show_in_toolbox(Block)
                                }.
 
 get_block_save_to(#{ <<"save_to">> := SaveTo }) ->
     SaveTo;
 get_block_save_to(_) ->
     undefined.
+
+get_block_show_in_toolbox(#{ <<"show_in_toolbox">> := ShowInToolbox }) when is_boolean(ShowInToolbox) ->
+    ShowInToolbox;
+get_block_show_in_toolbox(#{ <<"show_in_toolbox">> := ShowInToolbox
+                           , <<"function_name">> := FunctionName
+                           }) ->
+    automate_logging:log_bridge(warning, io_lib:format("'show_in_toolbox' parameter is not boolean (show_in_toolbox=~p) on function_name=~p", [ShowInToolbox, FunctionName])),
+    true; %% Default to true
+get_block_show_in_toolbox(_) ->
+    true.
 
 
 get_block_subkey(#{ <<"subkey">> := SubKey }) ->
