@@ -14,6 +14,7 @@
         , add_user_generated_program_log/1
         , log_platform/4
         , log_platform/2
+        , log_bridge/2
         , log_api/3
         ]).
 
@@ -179,6 +180,10 @@ log_platform(Severity, Msg) when is_list(Msg) ->
     io:fwrite("~s [~p] ~s~n", [get_time_string(), Severity, binary:list_to_bin(lists:flatten(Msg))]);
 log_platform(Severity, Msg) ->
     io:fwrite("~s [~p] ~p~n", [get_time_string(), Severity, Msg]).
+
+-spec log_bridge(log_severity(), iolist()) -> ok.
+log_bridge(Severity, Msg) ->
+    io:fwrite("~s [~p] ~s~n", [get_time_string(), Severity, binary:list_to_bin([Msg])]).
 
 -spec log_api(log_severity(), _, _) -> ok.
 log_api(debug, _, _) ->

@@ -110,6 +110,7 @@ encode_block(#service_port_block{ block_id=BlockId
                                 , block_type=BlockType
                                 , block_result_type=BlockResultType
                                 , save_to=SaveTo
+                                , show_in_toolbox=ShowInToolbox
                                 }) ->
     #{ <<"block_id">> => BlockId
      , <<"function_name">> => FunctionName
@@ -118,6 +119,7 @@ encode_block(#service_port_block{ block_id=BlockId
      , <<"block_type">> => BlockType
      , <<"block_result_type">> => BlockResultType
      , <<"save_to">> => ?FORMATTING:serialize_maybe_undefined(SaveTo)
+     , <<"show_in_toolbox">> => ShowInToolbox
      };
 
 encode_block(#service_port_trigger_block{ block_id=BlockId
@@ -129,6 +131,7 @@ encode_block(#service_port_trigger_block{ block_id=BlockId
                                         , expected_value=ExpectedValue
                                         , key=Key
                                         , subkey=SubKey
+                                        , show_in_toolbox=ShowInToolbox
                                         }) ->
     #{ <<"block_id">> => BlockId
      , <<"function_name">> => FunctionName
@@ -139,6 +142,7 @@ encode_block(#service_port_trigger_block{ block_id=BlockId
      , <<"expected_value">> => ExpectedValue
      , <<"key">> => ?FORMATTING:serialize_maybe_undefined(Key)
      , <<"subkey">> => ?FORMATTING:serialize_maybe_undefined(SubKey)
+     , <<"show_in_toolbox">> => ShowInToolbox
      };
 
 %% TODO: Add DB migration to avoid the need of this compatibility
@@ -161,6 +165,7 @@ encode_block({service_port_trigger_block
      , <<"expected_value">> => ExpectedValue
      , <<"key">> => ?FORMATTING:serialize_maybe_undefined(Key)
      , <<"subkey">> => null
+     , <<"show_in_toolbox">> => true
      }.
 
 encode_argument(#service_port_block_static_argument{ type=Type

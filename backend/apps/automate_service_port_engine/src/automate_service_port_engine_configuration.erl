@@ -324,6 +324,76 @@ get_versioning(Nodes) ->
                             end
                     }
 
+                  , #database_version_transformation
+                    %% Add `show_in_toolbox` to block descriptions
+                    { id=9
+                    , apply=fun() ->
+
+                                    ok = mnesia:wait_for_tables([ ?SERVICE_PORT_CONFIGURATION_TABLE
+                                                                ], automate_configuration:get_table_wait_time()),
+
+                                    ok = automate_storage_configuration:db_map(
+                                           ?SERVICE_PORT_CONFIGURATION_TABLE
+                                          , fun({ service_port_configuration, Id, ServiceName, ServiceId, IsPublic
+                                                , Blocks
+                                                , Icon, AllowMultipleConnections, Resources
+                                                }) ->
+
+                                                    NewBlocks = lists:map(fun(Block) ->
+                                                                                  case Block of
+                                                                                      { service_port_block
+                                                                                      , BlockId
+                                                                                      , FunctionName
+                                                                                      , Message
+                                                                                      , Arguments
+                                                                                      , BlockType
+                                                                                      , BlockResultType
+                                                                                      , SaveTo
+                                                                                      } ->
+                                                                                          { service_port_block
+                                                                                          , BlockId
+                                                                                          , FunctionName
+                                                                                          , Message
+                                                                                          , Arguments
+                                                                                          , BlockType
+                                                                                          , BlockResultType
+                                                                                          , SaveTo
+                                                                                          , true %% show_in_toolbox
+                                                                                          };
+                                                                                      { service_port_trigger_block
+                                                                                      , BlockId
+                                                                                      , FunctionName
+                                                                                      , Message
+                                                                                      , Arguments
+                                                                                      , BlockType
+                                                                                      , SaveTo
+                                                                                      , ExpectedValue
+                                                                                      , Key
+                                                                                      , Subkey
+                                                                                      } ->
+                                                                                          { service_port_trigger_block
+                                                                                          , BlockId
+                                                                                          , FunctionName
+                                                                                          , Message
+                                                                                          , Arguments
+                                                                                          , BlockType
+                                                                                          , SaveTo
+                                                                                          , ExpectedValue
+                                                                                          , Key
+                                                                                          , Subkey
+                                                                                          , true %% show_in_toolbox
+                                                                                          }
+                                                                                  end
+                                                                          end, Blocks),
+
+                                                    { service_port_configuration, Id, ServiceName, ServiceId, IsPublic
+                                                    , NewBlocks
+                                                    , Icon, AllowMultipleConnections, Resources
+                                                    }
+                                            end
+                                          )
+                            end
+                    }
                   ]
         }.
 

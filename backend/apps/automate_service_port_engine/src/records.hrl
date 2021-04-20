@@ -44,6 +44,7 @@
                             , block_type :: binary()
                             , block_result_type :: binary()
                             , save_to :: block_save_to()
+                            , show_in_toolbox :: boolean()
                             }).
 
 -type service_port_trigger_expected_value() :: null | #{ binary() => any()}.
@@ -57,6 +58,7 @@
                                     , expected_value :: service_port_trigger_expected_value()
                                     , key :: binary()
                                     , subkey :: block_subkey()
+                                    , show_in_toolbox :: boolean()
                                     }).
 
 -type supported_icon_hashes() :: 'sha256'.
