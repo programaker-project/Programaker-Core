@@ -84,6 +84,7 @@ export interface ResolvedCustomBlock {
     save_to: undefined | { "type": "argument", "index": number };
     subkey?: { "type": "argument", "index": number };
     key?: string;
+    show_in_toolbox?: boolean;
 }
 
 export interface CategorizedCustomBlock {
