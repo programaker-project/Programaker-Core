@@ -143,29 +143,6 @@ encode_block(#service_port_trigger_block{ block_id=BlockId
      , <<"key">> => ?FORMATTING:serialize_maybe_undefined(Key)
      , <<"subkey">> => ?FORMATTING:serialize_maybe_undefined(SubKey)
      , <<"show_in_toolbox">> => ShowInToolbox
-     };
-
-%% TODO: Add DB migration to avoid the need of this compatibility
-encode_block({service_port_trigger_block
-             , BlockId
-             , FunctionName
-             , Message
-             , Arguments
-             , BlockType
-             , SaveTo
-             , ExpectedValue
-             , Key
-             }) ->
-    #{ <<"block_id">> => BlockId
-     , <<"function_name">> => FunctionName
-     , <<"message">> => Message
-     , <<"arguments">> => lists:map(fun encode_argument/1, Arguments)
-     , <<"block_type">> => BlockType
-     , <<"save_to">> => ?FORMATTING:serialize_maybe_undefined(SaveTo)
-     , <<"expected_value">> => ExpectedValue
-     , <<"key">> => ?FORMATTING:serialize_maybe_undefined(Key)
-     , <<"subkey">> => null
-     , <<"show_in_toolbox">> => true
      }.
 
 encode_argument(#service_port_block_static_argument{ type=Type

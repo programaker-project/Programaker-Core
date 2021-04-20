@@ -382,6 +382,29 @@ get_versioning(Nodes) ->
                                                                                           , Key
                                                                                           , Subkey
                                                                                           , true %% show_in_toolbox
+                                                                                          };
+                                                                                      %% Old trigger blocks
+                                                                                      { service_port_trigger_block
+                                                                                      , BlockId
+                                                                                      , FunctionName
+                                                                                      , Message
+                                                                                      , Arguments
+                                                                                      , BlockType
+                                                                                      , SaveTo
+                                                                                      , ExpectedValue
+                                                                                      , Key
+                                                                                      } ->
+                                                                                          { service_port_trigger_block
+                                                                                          , BlockId
+                                                                                          , FunctionName
+                                                                                          , Message
+                                                                                          , Arguments
+                                                                                          , BlockType
+                                                                                          , SaveTo
+                                                                                          , ExpectedValue
+                                                                                          , Key
+                                                                                          , undefined
+                                                                                          , true %% show_in_toolbox
                                                                                           }
                                                                                   end
                                                                           end, Blocks),
