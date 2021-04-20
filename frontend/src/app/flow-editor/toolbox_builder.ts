@@ -111,6 +111,10 @@ export async function fromCustomBlockService(baseElement: HTMLElement,
     for (const block of blocks) {
         let icon: string | null = null;
 
+        if (block.show_in_toolbox === false) {
+            continue; // Skip
+        }
+
         const connection = connection_by_id[block.service_port_id];
         if (connection) {
             icon = iconDataToUrl(environmentService, connection.icon, connection.bridge_id);
