@@ -1,0 +1,29 @@
+version: 2
+updates:
+- package-ecosystem: docker
+  directory: "/frontend"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  target-branch: develop
+  reviewers:
+  - kenkeiras
+  assignees:
+  - kenkeiras
+- package-ecosystem: docker
+  directory: "/backend"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  target-branch: develop
+  reviewers:
+  - kenkeiras
+  assignees:
+  - kenkeiras
+  ignore:
+  - dependency-name: alpine
+    versions:
+    - 3.13.1
+    - 3.13.2
+    - 3.13.3
+    - 3.13.4
