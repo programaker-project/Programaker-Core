@@ -1,4 +1,4 @@
-FROM erlang:23-alpine as programaker-backend-ci-base
+FROM erlang:24-alpine as programaker-backend-ci-base
 
 # Build dependencies
 RUN apk add git gcc libc-dev g++ make libtool autoconf automake
