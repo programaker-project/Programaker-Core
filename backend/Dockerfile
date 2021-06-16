@@ -19,7 +19,7 @@ RUN sh -x -c 'if [ ! -f config/sys.config ]; then cp -v config/sys.config.orig c
 # Prepare release
 RUN rebar3 release
 
-FROM alpine:3.12 as final
+FROM alpine:3.14.0 as final
 
 RUN apk add ncurses libstdc++ erlang
 
