@@ -145,12 +145,16 @@ handle_bridge_message(Msg, State=#state{ service_port_id=BridgeId
              end,
     case Passed of
         true ->
+            WasConnectionBefore = automate_service_port_engine:is_bridge_connected(BridgeId),
             ok = automate_service_port_engine:register_service_port(BridgeId),
-            ok = send_connection_signal(BridgeId, Owner),
+            on_new_connection(BridgeId, Owner, WasConnectionBefore),
+
             {ok, State#state{ authenticated=true }};
         skip ->
+            WasConnectionBefore = automate_service_port_engine:is_bridge_connected(BridgeId),
             ok = automate_service_port_engine:register_service_port(BridgeId),
-            ok = send_connection_signal(BridgeId, Owner),
+            on_new_connection(BridgeId, Owner, WasConnectionBefore),
+
             handle_bridge_message(Msg, State#state{ authenticated=true });
         {false, Reason} ->
             automate_logging:log_api(warning, ?MODULE,
@@ -185,26 +189,39 @@ handle_bridge_message(Msg, State=#state{ service_port_id=ServicePortId
     end.
 
 terminate(Reason, _PartialReq, #state{ service_port_id=BridgeId
-                                          , owner=Owner
+                                     , owner=Owner
                                      }) ->
     automate_logging:log_api(warning, ?MODULE, list_to_binary(io_lib:format("Bridge (id=~0tp) disconnected with reason: '~0tp'", [BridgeId, Reason]))),
-    Msg = #{ <<"type">> => <<"NOTIFICATION">>
-           , <<"key">> => ?PROTO_ON_BRIDGE_DISCONNECTED
-           , <<"subkey">> => BridgeId
-           , <<"to_user">> => null
-           , <<"value">> => <<"disconnected">>
-           , <<"content">> => <<"disconnected">>
-           },
-    ok = automate_service_port_engine:from_service_port(BridgeId, Owner, Msg),
+    ok = automate_service_port_engine:unregister_service_port(BridgeId),
+    case automate_service_port_engine:is_bridge_connected(BridgeId) of
+        {ok, true} ->
+            %% There's still a remaining connection
+            ok;
+        _ ->
+            %% No remaining connections
+            Msg = #{ <<"type">> => <<"NOTIFICATION">>
+                   , <<"key">> => ?PROTO_ON_BRIDGE_DISCONNECTED
+                   , <<"subkey">> => BridgeId
+                   , <<"to_user">> => null
+                   , <<"value">> => <<"disconnected">>
+                   , <<"content">> => <<"disconnected">>
+                   },
+            ok = automate_service_port_engine:from_service_port(BridgeId, Owner, Msg)
+    end.
 
-    ok.
-
-send_connection_signal(BridgeId, Owner) ->
-    Msg = #{ <<"type">> => <<"NOTIFICATION">>
-           , <<"key">> => ?PROTO_ON_BRIDGE_CONNECTED
-           , <<"subkey">> => BridgeId
-           , <<"to_user">> => null
-           , <<"value">> => <<"connected">>
-           , <<"content">> => <<"connected">>
-           },
-    ok = automate_service_port_engine:from_service_port(BridgeId, Owner, Msg).
+on_new_connection(BridgeId, Owner, WasConnectionBefore) ->
+    case WasConnectionBefore of
+        {ok, true} ->
+            %% There was a connection before this one
+            ok;
+        _ ->
+            %% This connection makes the bridge usable
+            Msg = #{ <<"type">> => <<"NOTIFICATION">>
+                   , <<"key">> => ?PROTO_ON_BRIDGE_CONNECTED
+                   , <<"subkey">> => BridgeId
+                   , <<"to_user">> => null
+                   , <<"value">> => <<"connected">>
+                   , <<"content">> => <<"connected">>
+                   },
+            ok = automate_service_port_engine:from_service_port(BridgeId, Owner, Msg)
+    end.

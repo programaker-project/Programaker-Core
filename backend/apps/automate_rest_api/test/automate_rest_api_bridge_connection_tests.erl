@@ -50,7 +50,6 @@ stop({_Port, _NodeName}) ->
 
 
 tests({Port, _}) ->
-    %% Token creation
     [ { "[API - Bridges - Detect when connection is established] Detect connection and disconnection of bridge"
       , fun() -> detect_bridge_connection_disconnection(Port) end
       }

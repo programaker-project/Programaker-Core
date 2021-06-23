@@ -9,6 +9,7 @@
 %% Application callbacks
 -export([ create_service_port/2
         , register_service_port/1
+        , unregister_service_port/1
         , from_service_port/3
         , call_service_port/5
         , get_how_to_enable/2
@@ -25,6 +26,7 @@
         , get_bridge_info/1
         , get_bridge_owner/1
         , get_bridge_configuration/1
+        , is_bridge_connected/1
 
         , listen_bridge/2
         , listen_bridge/3
@@ -66,6 +68,10 @@ create_service_port(Owner, ServicePortName) when is_tuple(Owner) ->
 -spec register_service_port(binary()) -> ok.
 register_service_port(ServicePortId) ->
     ?ROUTER:connect_bridge(ServicePortId).
+
+-spec unregister_service_port(binary()) -> ok.
+unregister_service_port(ServicePortId) ->
+    ?ROUTER:disconnect_bridge(ServicePortId).
 
 -spec call_service_port(binary(), binary(), any(), owner_id() | binary(), map()) -> {ok, map()} | {error, ?ROUTER_ERROR_CLASSES}.
 call_service_port(ServicePortId, FunctionName, Arguments, Owner, ExtraData) when is_tuple(Owner) ->
@@ -344,6 +350,9 @@ get_bridge_owner(BridgeId) ->
 get_bridge_configuration(BridgeId) ->
     ?BACKEND:get_bridge_configuration(BridgeId).
 
+-spec is_bridge_connected(binary()) -> {ok, boolean()} | {error, _}.
+is_bridge_connected(BridgeId) ->
+    ?ROUTER:is_bridge_connected(BridgeId).
 
 -spec list_established_connections(owner_id()) -> {ok, [#user_to_bridge_connection_entry{}]}.
 list_established_connections(Owner) when is_tuple(Owner) ->
@@ -450,7 +459,7 @@ add_service_port_extra({#service_port_entry{ id=Id
                                            , name=Name
                                            , owner=Owner
                                            }, Config}) ->
-    {ok, IsConnected} = ?ROUTER:is_bridge_connected(Id),
+    {ok, IsConnected} = is_bridge_connected(Id),
 
     BridgeIcon = case Config of
                      undefined -> undefined;

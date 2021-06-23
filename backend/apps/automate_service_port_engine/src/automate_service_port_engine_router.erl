@@ -3,6 +3,7 @@
 %% API
 -export([ start_link/0
         , connect_bridge/1
+        , disconnect_bridge/1
         , call_bridge/2
         , is_bridge_connected/1
         , answer_message/2
@@ -27,7 +28,7 @@
 %% @doc
 %% Connect a bridge to the router.
 %%
-%% @spec connect_bridge(BridgeId) -> ok | {error, Error}
+%% @spec connect_bridge(BridgeId :: binary()) -> ok | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 connect_bridge(BridgeId) ->
@@ -40,6 +41,31 @@ connect_bridge(BridgeId) ->
                                                                     , node=Node
                                                                     },
                                             write)
+                  end,
+    case mnesia:transaction(Transaction) of
+        {atomic, Result} ->
+            Result;
+        {aborted, Error} ->
+            {error, Error}
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Disconnect a bridge to the router.
+%%
+%% @spec connect_bridge(BridgeId :: binary()) -> ok | {error, Error}
+%% @end
+%%--------------------------------------------------------------------
+disconnect_bridge(BridgeId) ->
+    Pid = self(),
+    Node = node(),
+    Transaction = fun() ->
+                          ok = mnesia:delete_object(?CONNECTED_BRIDGES_TABLE,
+                                                    #bridge_connection_entry{ id=BridgeId
+                                                                            , pid=Pid
+                                                                            , node=Node
+                                                                            },
+                                                    write)
                   end,
     case mnesia:transaction(Transaction) of
         {atomic, Result} ->
