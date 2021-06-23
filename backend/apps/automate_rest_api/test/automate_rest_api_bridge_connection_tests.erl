@@ -54,6 +54,9 @@ tests({Port, _}) ->
     [ { "[API - Bridges - Detect when connection is established] Detect connection and disconnection of bridge"
       , fun() -> detect_bridge_connection_disconnection(Port) end
       }
+    , { "[API - Bridges - Detect when connection is established] Interlocking connection-disconnection"
+      , fun() -> detect_bridge_connection_disconnection_interlocking(Port) end
+      }
     ].
 
 
@@ -109,6 +112,120 @@ detect_bridge_connection_disconnection(Port) ->
     receive
         { channel_engine
         , _ChannelId2
+        , #{ <<"key">> := '__proto_on_bridge_disconnected'
+           , <<"service_id">> := BridgeId
+           , <<"subkey">> := BridgeId
+           , <<"value">> := <<"disconnected">>
+           }
+        } ->
+            ok
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end,
+
+    ok.
+
+detect_bridge_connection_disconnection_interlocking(Port) ->
+    #{ user_id := UserId
+     , bridge_id := BridgeId
+     , bridge_token := BridgeToken
+     } = create_bridge_and_token(Port),
+
+    Configuration = #{ <<"is_public">> => false
+                     , <<"service_name">> => "Bridge connection detection test - 1"
+                     , <<"blocks">> => [ ]
+                     },
+
+    ok = automate_service_port_engine:from_service_port(BridgeId, {user, UserId},
+                                                        #{ <<"type">> => <<"CONFIGURATION">>
+                                                         , <<"value">> => Configuration
+                                                         }),
+
+    {ok, _ConnectionId} = establish_connection(BridgeId, {user, UserId}),
+
+    ok = automate_service_registry_query:listen_service(BridgeId, {user, UserId}, {undefined, undefined}),
+
+    AuthMessage = jiffy:encode(#{ <<"type">> => <<"AUTHENTICATION">>
+                                , <<"value">> => #{ <<"token">> => BridgeToken
+                                                  }
+                                }),
+
+    %% Connections are handled on different processes so the router can differentiate them
+    %% First connection, on a different PID so the router can differentiate between the two
+    Conn1 = spawn(
+                   fun() ->
+                           {ok, AuthState2={state, _, _, _, true}} = automate_rest_api_service_ports_specific_communication:websocket_handle(
+                                                                       {text, AuthMessage}, { state, {user, UserId}, BridgeId, #{}, false }),
+                           receive continue -> ok end,
+                           %% Disconnect
+                           ok = automate_rest_api_service_ports_specific_communication:terminate(test, idk, AuthState2)
+                   end),
+
+
+    %% First connection triggers a connection event
+    receive
+        { channel_engine
+        , _ChannelId
+        , #{ <<"key">> := '__proto_on_bridge_connected'
+           , <<"service_id">> := BridgeId
+           , <<"subkey">> := BridgeId
+           , <<"value">> := <<"connected">>
+           }
+        } ->
+            ok
+    after ?RECEIVE_TIMEOUT ->
+            ct:fail(timeout)
+    end,
+
+    %% Second connection, on a different PID so the router can differentiate between the two
+    Conn2 = spawn(
+                   fun() ->
+                           {ok, AuthState2={state, _, _, _, true}} = automate_rest_api_service_ports_specific_communication:websocket_handle(
+                                                                       {text, AuthMessage}, { state, {user, UserId}, BridgeId, #{}, false }),
+                           receive continue -> ok end,
+                           %% Disconnect
+                           ok = automate_rest_api_service_ports_specific_communication:terminate(test, idk, AuthState2)
+                   end),
+
+    %% Second connnection does NOT trigger a connection event
+    receive
+        { channel_engine
+        , _ChannelId2
+        , #{ <<"key">> := '__proto_on_bridge_connected'
+           , <<"service_id">> := BridgeId
+           , <<"subkey">> := BridgeId
+           , <<"value">> := <<"connected">>
+           }
+        } ->
+            ct:fail(should_not_happen)
+    after ?RECEIVE_TIMEOUT ->
+            ok
+    end,
+
+    Conn1 ! continue,
+
+    %% First disconnection does NOT trigger a disconnection event
+    receive
+        { channel_engine
+        , _ChannelId3
+        , #{ <<"key">> := '__proto_on_bridge_disconnected'
+           , <<"service_id">> := BridgeId
+           , <<"subkey">> := BridgeId
+           , <<"value">> := <<"disconnected">>
+           }
+        } ->
+            ct:fail(should_not_happen)
+    after ?RECEIVE_TIMEOUT ->
+            ok
+    end,
+
+    %% Second disconnection
+    Conn2 ! continue,
+
+    %% Second disconnection does trigger a disconnection event
+    receive
+        { channel_engine
+        , _ChannelId4
         , #{ <<"key">> := '__proto_on_bridge_disconnected'
            , <<"service_id">> := BridgeId
            , <<"subkey">> := BridgeId
