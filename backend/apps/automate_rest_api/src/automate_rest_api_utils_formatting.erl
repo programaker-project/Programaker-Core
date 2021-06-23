@@ -205,11 +205,11 @@ serialize_maybe_undefined(X) ->
 
 %% Reason
 reason_to_json({Type, Subtype}) ->
-    #{ type => Type
-     , subtype => Subtype
+    #{ type => list_to_binary(io_lib:format("~p", [Type]))
+     , subtype => list_to_binary(io_lib:format("~p", [Subtype]))
      };
 reason_to_json(Type) ->
-    #{ type => Type
+    #{ type => list_to_binary(io_lib:format("~p", [Type]))
      }.
 
 group_to_json(#user_group_entry{ id=Id

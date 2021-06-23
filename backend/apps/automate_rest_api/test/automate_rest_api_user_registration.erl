@@ -35,7 +35,10 @@ setup() ->
     %% Use a custom node name to avoid overwriting the actual databases
     net_kernel:start([testing, shortnames]),
 
+    {ok, _} = application:ensure_all_started(automate_storage),
+    {ok, _} = application:ensure_all_started(automate_channel_engine),
     {ok, _} = application:ensure_all_started(?APPLICATION),
+
 
     {Port, MailTab, NodeName}.
 
