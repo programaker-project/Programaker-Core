@@ -54,6 +54,11 @@ tests(_SetupResult) ->
     , {"[Bot engine][String operations] Text contains - Case insensitive  - True", fun text_contains_case_insensitive/0}
     , {"[Bot engine][String operations] Text contains - Accent insensitive  - True", fun text_contains_accent_insensitive/0}
     , {"[Bot engine][String operations] Text contains - Several Characters Map to same", fun text_contains_several_map_to_same/0}
+      %% String concat
+    , {"[Bot engine][String operations] String concatenation simple", fun string_concatenation_simple/0}
+    , {"[Bot engine][String operations] String concatenation left_empty", fun string_concatenation_left_empty/0}
+    , {"[Bot engine][String operations] String concatenation right_empty", fun string_concatenation_right_empty/0}
+    , {"[Bot engine][String operations] String concatenation single_param", fun string_concatenation_single_param/0}
     ].
 
 %%%% Operations
@@ -124,6 +129,48 @@ text_contains_several_map_to_same() ->
                                                    , Unicode
                                                    ]
                                    }, Thread)).
+
+string_concatenation_simple() ->
+    Left = constant_val(<<"Hello, ">>),
+    Right = constant_val(<<"World!">>),
+    Thread = empty_thread(),
+    ?assertMatch({ok, <<"Hello, World!">>, _}, automate_bot_engine_operations:get_result(
+                                                 #{ ?TYPE => ?COMMAND_JOIN
+                                                  , ?ARGUMENTS => [ Left
+                                                                  , Right
+                                                                  ]
+                                                  }, Thread)).
+
+string_concatenation_left_empty() ->
+    Left = null,
+    Right = constant_val(<<"World!">>),
+    Thread = empty_thread(),
+    ?assertMatch({ok, <<"World!">>, _}, automate_bot_engine_operations:get_result(
+                                          #{ ?TYPE => ?COMMAND_JOIN
+                                           , ?ARGUMENTS => [ Left
+                                                           , Right
+                                                           ]
+                                           }, Thread)).
+
+string_concatenation_right_empty() ->
+    Left = constant_val(<<"Hello, ">>),
+    Right = null,
+    Thread = empty_thread(),
+    ?assertMatch({ok, <<"Hello, ">>, _}, automate_bot_engine_operations:get_result(
+                                           #{ ?TYPE => ?COMMAND_JOIN
+                                            , ?ARGUMENTS => [ Left
+                                                            , Right
+                                                            ]
+                                            }, Thread)).
+
+string_concatenation_single_param() ->
+    Left = constant_val(<<"Hello, ">>),
+    Thread = empty_thread(),
+    ?assertMatch({ok, <<"Hello, ">>, _}, automate_bot_engine_operations:get_result(
+                                           #{ ?TYPE => ?COMMAND_JOIN
+                                            , ?ARGUMENTS => [ Left
+                                                            ]
+                                            }, Thread)).
 
 %%====================================================================
 %% Util functions
