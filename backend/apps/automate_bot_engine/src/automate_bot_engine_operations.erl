@@ -1210,12 +1210,17 @@ run_getter_block(Op, Thread) ->
 %% String operators
 -spec get_block_result(map(), #program_thread{}) -> {ok, any(), #program_thread{}} | {error, not_found}.
 get_block_result(Op=#{ ?TYPE := ?COMMAND_JOIN
-                     , ?ARGUMENTS := [ First
-                                     , Second
-                                     ]
+                     , ?ARGUMENTS := OpArgs
                      }, Thread) ->
 
-    {[FirstVal, SecondVal], Thread2} = eval_args([First, Second], Thread, Op),
+    Default = <<"">>,
+    {Args, Thread2} = eval_args_with_default(OpArgs, Thread, Op, Default),
+    [FirstVal, SecondVal] = case Args of
+                                [_, _] -> Args;
+                                [Left] -> [Left, Default];
+                                [] -> [Default, Default]
+                            end,
+
     %% TODO: Consider how this can be made variadic
     {ok, Value} = automate_bot_engine_values:join(FirstVal, SecondVal),
     {ok, Value, Thread2};
@@ -1634,17 +1639,39 @@ remove_save_to(Arguments, {index, Index}) ->
 
 -spec eval_args([any()], #program_thread{}, map()) -> {[any()], #program_thread{}}.
 eval_args(Arguments, Thread, Op) ->
+    eval_args_handling_null(Arguments, Thread, Op,
+                            fun() ->
+                                    automate_logging:log_platform(error, io_lib:format("[~p:~p] Null argument found on: ~p",
+                                                                                       [?MODULE, ?LINE, Op])),
+                                    throw(#program_error{ error=#unknown_operation{}
+                                                        , block_id=?UTILS:get_block_id(Op)
+                                                        })
+                            end).
+
+-spec eval_args_with_default([any()], #program_thread{}, map(), any()) -> {[any()], #program_thread{}}.
+eval_args_with_default(Arguments, Thread, Op, Default) ->
+    eval_args_handling_null(Arguments, Thread, Op,
+                            fun() ->
+                                    Default
+                            end).
+
+-spec eval_args_handling_null([any()], #program_thread{}, map(), function()) -> {[any()], #program_thread{}}.
+eval_args_handling_null(Arguments, Thread, Op, OnNull) ->
     { Thread2, RevValues } = lists:foldl(
                                fun(Arg, {UpdThread, Values}) ->
-                                       case automate_bot_engine_variables:resolve_argument(Arg, UpdThread, Op) of
-                                           {ok, Value, UpdThread2} ->
-                                               {UpdThread2, [ Value | Values ]};
-                                           {error, not_found} ->
-                                               automate_logging:log_platform(error, io_lib:format("[~p:~p] Cannot resolve argument: ~p",
-                                                                                                  [?MODULE, ?LINE, Arg])),
-                                               throw(#program_error{ error=#unknown_operation{}
-                                                                   , block_id=?UTILS:get_block_id(Op)
-                                                                   })
+                                       case Arg of
+                                           null ->
+                                               {UpdThread, [OnNull() | Values] };
+                                           _ -> case automate_bot_engine_variables:resolve_argument(Arg, UpdThread, Op) of
+                                                    {ok, Value, UpdThread2} ->
+                                                        {UpdThread2, [ Value | Values ]};
+                                                    {error, not_found} ->
+                                                        automate_logging:log_platform(error, io_lib:format("[~p:~p] Cannot resolve argument: ~p",
+                                                                                                           [?MODULE, ?LINE, Arg])),
+                                                        throw(#program_error{ error=#unknown_operation{}
+                                                                            , block_id=?UTILS:get_block_id(Op)
+                                                                            })
+                                                end
                                        end
                                end,
                                { Thread, [ ] }, Arguments),
