@@ -5,7 +5,6 @@
     "declaration": false,
     "moduleResolution": "node",
     "noImplicitAny": true,
-    "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "lib": [
       "dom",

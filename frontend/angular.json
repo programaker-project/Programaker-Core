@@ -38,19 +38,21 @@
               "node_modules/fuse.js/dist/fuse.min.js",
               "node_modules/nprogress/nprogress.js",
               "node_modules/huebee/dist/huebee.pkgd.min.js"
-            ]
+            ],
+            "aot": false,
+            "vendorChunk": true,
+            "extractLicenses": false,
+            "buildOptimizer": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true
           },
           "configurations": {
             "pm-dev": {
-              "optimization": false,
               "outputHashing": "all",
-              "sourceMap": true,
               "extractCss": false,
               "namedChunks": false,
-              "aot": false,
-              "extractLicenses": false,
               "vendorChunk": false,
-              "buildOptimizer": false,
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -61,7 +63,6 @@
             "programaker": {
               "optimization": true,
               "outputHashing": "all",
-              "sourceMap": true,
               "extractCss": true,
               "namedChunks": false,
               "aot": true,
@@ -78,7 +79,6 @@
             "production": {
               "optimization": true,
               "outputHashing": "all",
-              "sourceMap": true,
               "extractCss": true,
               "namedChunks": false,
               "aot": true,
@@ -92,7 +92,8 @@
                 }
               ]
             }
-          }
+          },
+          "defaultConfiguration": ""
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
@@ -168,7 +169,9 @@
           "options": {
             "outputPath": "dist/programaker/server",
             "main": "server.ts",
-            "tsConfig": "src/tsconfig.server.json"
+            "tsConfig": "src/tsconfig.server.json",
+            "sourceMap": true,
+            "optimization": false
           },
           "configurations": {
             "production": {
@@ -190,10 +193,10 @@
                   "with": "src/environments/environment.programaker.ts"
                 }
               ],
-              "sourceMap": true,
               "optimization": true
             }
-          }
+          },
+          "defaultConfiguration": ""
         },
         "serve-ssr": {
           "builder": "@nguniversal/builders:ssr-dev-server",
