@@ -27,6 +27,7 @@ scripts/frontend-browser-ci-partial.dockerfile
 !.vscode/extensions.json
 
 # misc
+/.angular/cache
 /.sass-cache
 /connect.lock
 /coverage/*
