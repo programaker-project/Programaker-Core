@@ -29,54 +29,55 @@ import { ToastrModule } from 'ngx-toastr';
 
 export function configureTestBed(testBed: TestBedStatic) {
     testBed.configureTestingModule({
-        imports: [
-            BrowserCookiesModule.forRoot(),
-            RouterTestingModule,
-            HttpClientTestingModule,
-            MatDialogModule,
-            MatSnackBarModule,
-            MatMenuModule,
-            NoopAnimationsModule,
-            ToastrModule.forRoot(),
-        ],
-        declarations: [
-            FlowEditorComponent,
-        ],
-        providers: [
-            {
-                provide: CookiesService,
-                useClass: BrowserCookiesService,
-            },
-            {
-                provide: HttpClient,
-                useValue: {}
-            },
-            {
-                provide: SessionService,
-                useClass: FakeSessionService,
-            },
-            {
-                provide: ProgramService,
-                useClass: FakeProgramService,
-            },
-            {
-                provide: UiSignalService,
-                useClass: FakeUiSignalService,
-            },
-            {
-                provide: ConnectionService,
-                useClass: FakeConnectionService,
-            },
-            {
-                provide: ServiceService,
-                useClass: FakeServiceService,
-            },
-            {
-                provide: CustomBlockService,
-                useClass: FakeCustomBlockService,
-            }
-        ]
-    });
+    imports: [
+        BrowserCookiesModule.forRoot(),
+        RouterTestingModule,
+        HttpClientTestingModule,
+        MatDialogModule,
+        MatSnackBarModule,
+        MatMenuModule,
+        NoopAnimationsModule,
+        ToastrModule.forRoot(),
+    ],
+    declarations: [
+        FlowEditorComponent,
+    ],
+    providers: [
+        {
+            provide: CookiesService,
+            useClass: BrowserCookiesService,
+        },
+        {
+            provide: HttpClient,
+            useValue: {}
+        },
+        {
+            provide: SessionService,
+            useClass: FakeSessionService,
+        },
+        {
+            provide: ProgramService,
+            useClass: FakeProgramService,
+        },
+        {
+            provide: UiSignalService,
+            useClass: FakeUiSignalService,
+        },
+        {
+            provide: ConnectionService,
+            useClass: FakeConnectionService,
+        },
+        {
+            provide: ServiceService,
+            useClass: FakeServiceService,
+        },
+        {
+            provide: CustomBlockService,
+            useClass: FakeCustomBlockService,
+        }
+    ],
+    teardown: { destroyAfterEach: false }
+});
 }
 
 type TestGraphElement = {
