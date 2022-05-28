@@ -1,5 +1,5 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { async, TestBed } from '@angular/core/testing';
+import { TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CookiesService } from '@ngx-utils/cookies';
 import { BrowserCookiesModule, BrowserCookiesService } from '@ngx-utils/cookies/browser';
@@ -8,7 +8,7 @@ import { MatMenuModule } from '@angular/material/menu';
 
 
 describe('AppComponent', () => {
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
         TestBed.configureTestingModule({
             imports: [
                 BrowserCookiesModule.forRoot(),
@@ -28,13 +28,13 @@ describe('AppComponent', () => {
         }).compileComponents();
     }));
 
-    it('should create the app', async(() => {
+    it('should create the app', waitForAsync(() => {
         const fixture = TestBed.createComponent(AppComponent);
         const app = fixture.debugElement.componentInstance;
         expect(app).toBeTruthy();
     }));
 
-    it('should have an div.app-content', async(() => {
+    it('should have an div.app-content', waitForAsync(() => {
         const fixture = TestBed.createComponent(AppComponent);
         fixture.detectChanges();
         const compiled = fixture.debugElement.nativeElement;

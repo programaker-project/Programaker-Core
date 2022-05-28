@@ -1,5 +1,5 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CookiesService } from '@ngx-utils/cookies';
 import { BrowserCookiesModule, BrowserCookiesService } from '@ngx-utils/cookies/browser';
@@ -22,7 +22,7 @@ describe('ConfigureBlockDialogComponent', () => {
         programId: 'test-id',
     };
 
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
         TestBed.configureTestingModule({
             imports: [
                 BrowserCookiesModule.forRoot(),

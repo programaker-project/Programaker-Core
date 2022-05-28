@@ -1,4 +1,4 @@
-import { async, TestBed } from '@angular/core/testing';
+import { TestBed, waitForAsync } from '@angular/core/testing';
 import { FlowEditorComponent } from '../../../flow-editor/flow-editor.component';
 import { FlowWorkspace } from '../../../flow-editor/flow_workspace';
 import { SEPARATION } from 'app/flow-editor/ui-blocks/renderers/positioning';
@@ -8,7 +8,7 @@ import { MIN_WIDTH as MIN_PAGE_WIDTH } from '../../../flow-editor/ui-blocks/rend
 
 describe('FlowUI positioning: 05. Image positioning.', () => {
 
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
         configureTestBed(TestBed);
     }));
 

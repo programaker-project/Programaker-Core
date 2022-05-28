@@ -1,4 +1,4 @@
-import { async, TestBed } from '@angular/core/testing';
+import { TestBed, waitForAsync } from '@angular/core/testing';
 import { FlowEditorComponent } from '../../../flow-editor/flow-editor.component';
 import { FlowWorkspace } from '../../../flow-editor/flow_workspace';
 import { SEPARATION } from 'app/flow-editor/ui-blocks/renderers/positioning';
@@ -8,7 +8,7 @@ import { MAX_WIDTH as TEXT_MAX_WIDTH } from 'app/flow-editor/ui-blocks/renderers
 
 describe('FlowUI positioning: 04. Position sections in a single step.', () => {
 
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
         configureTestBed(TestBed);
     }));
 

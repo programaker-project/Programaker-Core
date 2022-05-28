@@ -1,4 +1,4 @@
-import { async, TestBed } from '@angular/core/testing';
+import { TestBed, waitForAsync } from '@angular/core/testing';
 import { FlowEditorComponent } from '../../../flow-editor/flow-editor.component';
 import { FlowGraph } from '../../../flow-editor/flow_graph';
 import { FlowWorkspace } from '../../../flow-editor/flow_workspace';
@@ -7,7 +7,7 @@ import { configureTestBed } from './builder';
 
 describe('FlowUI positioning: 01. Simple positioning. ', () => {
 
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
         configureTestBed(TestBed);
     }));
 

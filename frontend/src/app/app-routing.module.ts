@@ -79,7 +79,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-    imports: [ RouterModule.forRoot(routes, { initialNavigation: 'enabled' }) ],
+    imports: [ RouterModule.forRoot(routes, { initialNavigation: 'enabled', relativeLinkResolution: 'legacy' }) ],
     exports: [ RouterModule ],
     providers: [
         ProgramListResolver,
