@@ -144,7 +144,7 @@ export class ProgramDetailComponent implements OnInit, AfterViewInit {
         }
         this.smallScreen = this.browser.window.innerWidth < 750;
 
-        progbar.track(new Promise(async (resolve, reject) => {
+        progbar.track(new Promise<void>(async (resolve, reject) => {
 
             this.session = await this.sessionService.getSession();
 
