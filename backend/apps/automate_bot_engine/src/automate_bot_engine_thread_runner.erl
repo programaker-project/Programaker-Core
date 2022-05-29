@@ -127,7 +127,7 @@ run_tick(State = #state{ thread=Thread }, Message) ->
                                              {true, NewState};
                                          { did_not_run, _Reason } ->
                                              {false, RunnerState};
-                                         { ran_this_tick, RanThreadState } ->
+                                         { ran_this_tick, RanThreadState, _ } ->
                                              #running_program_thread_entry{ parent_program_id=Ppid } = Thread,
                                              automate_stats:log_observation(counter, automate_bot_engine_cycles, [Ppid]),
                                              {true, RanThreadState}

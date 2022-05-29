@@ -364,7 +364,7 @@ allow_to_make_calls_on_shared_resource_values() ->
                             , thread_id=undefined
                             },
 
-    ?assertMatch({ran_this_tick, NewThreadState}, automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined)).
+    ?assertMatch({ran_this_tick, NewThreadState, _}, automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined)).
 
 disallow_calls_on_non_shared_resource_values() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-4-owner">>},
@@ -493,7 +493,7 @@ allow_to_make_calls_on_shared_resource_values_multiple_resources() ->
                             , thread_id=undefined
                             },
 
-    ?assertMatch({ran_this_tick, NewThreadState}, automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined)).
+    ?assertMatch({ran_this_tick, NewThreadState, _}, automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined)).
 
 disallow_calls_on_non_shared_resource_values_multiple_resources() ->
     OwnerUser = {user, <<?TEST_ID_PREFIX, "-test-41-owner">>},

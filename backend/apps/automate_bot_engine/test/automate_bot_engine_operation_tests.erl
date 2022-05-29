@@ -64,7 +64,7 @@ tests(_SetupResult) ->
 %%%% Operations
 test_log_value() ->
     #program_thread{program_id=Pid}=Thread=empty_thread(),
-    {ran_this_tick, _Thread2} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, _Thread2, _} = automate_bot_engine_operations:run_instruction(
                                   #{ ?TYPE => ?COMMAND_LOG_VALUE
                                    , ?ARGUMENTS => [ constant_val(<<"test line">>)
                                                    ]

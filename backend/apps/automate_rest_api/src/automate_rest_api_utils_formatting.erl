@@ -17,6 +17,7 @@
         , bridge_to_json/1
         , connection_to_json/1
         , asset_list_to_json/1
+        , serialize_event_error/1
         ]).
 
 -include("./records.hrl").

@@ -154,7 +154,7 @@ run_thread_single_tick() ->
     {did_not_run, waiting} = automate_bot_engine_operations:run_thread(Thread, TriggerMonitorSignal, undefined),
 
     %% Expected signal, does run
-    {ran_this_tick, NewThreadState} = automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined),
+    {ran_this_tick, NewThreadState, _} = automate_bot_engine_operations:run_thread(Thread, {?SIGNAL_PROGRAM_TICK, none}, undefined),
     ?assertMatch(#program_thread{position=[]}, NewThreadState).
 
 

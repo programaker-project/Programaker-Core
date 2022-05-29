@@ -91,7 +91,7 @@ limit_add_to_list() ->
     Chunk = binary:list_to_bin(lists:foldl(fun(_, Acc) -> [ Block | Acc ] end, [],  lists:seq(1, 512))),
 
     Thread2 = lists:foldl(fun(_, InnerThread) ->
-                                  {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
+                                  {ran_this_tick, Thread2, _} = automate_bot_engine_operations:run_instruction(
                                                                #{ ?TYPE => ?COMMAND_ADD_TO_LIST
                                                                 , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                                                    , ?VALUE => <<"test">>
@@ -106,7 +106,7 @@ limit_add_to_list() ->
     %% But adding 64 + 1 more should not be possible
     ?assertException(throw, {program_error, {memory_item_size_exceeded, _, ?USER_PROGRAM_MAX_VAR_SIZE } , _ },
                      lists:foldl(fun(_, InnerThread) ->
-                                         {ran_this_tick, Thread3} = automate_bot_engine_operations:run_instruction(
+                                         {ran_this_tick, Thread3, _} = automate_bot_engine_operations:run_instruction(
                                                                       #{ ?TYPE => ?COMMAND_ADD_TO_LIST
                                                                        , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                                                           , ?VALUE => <<"test">>

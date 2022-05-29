@@ -9,6 +9,7 @@
 -export([ log_event/2
         , log_signal_to_bridge_and_owner/3
         , get_signal_by_bridge_and_owner_history/2
+        , log_program_call_by_user/2
         , log_call_to_bridge/5
         , log_program_error/1
         , add_user_generated_program_log/1
@@ -20,6 +21,8 @@
 
 -define(DEFAULT_LOG_HISTORY_RETRIEVE, 1000).
 -include("../../automate_storage/src/records.hrl").
+-include("../../automate_bot_engine/src/program_records.hrl").
+-include("./records.hrl").
 
 %%====================================================================
 %% Logging API
@@ -104,9 +107,40 @@ get_signal_by_bridge_and_owner_history(BridgeId, {OwnerType, OwnerId}) ->
             , [<<"[">>, binary:replace(Body, <<"\0">>, <<",">>, [global]), <<"]">>]
             };
         undefined ->
+            {error, no_signal_logging};
+        none ->
             {error, no_signal_logging}
     end.
 
+-spec log_program_call_by_user(CallData :: #call_data{}, Owner :: owner_id() | 'none' | 'undefined') -> ok.
+log_program_call_by_user(CallData, undefined) ->
+    io:fwrite("[WARN] Cannot log call which is done by no user~n"),
+    ok;
+log_program_call_by_user(CallData, none) ->
+    io:fwrite("[WARN] Cannot log call which is done by no user~n"),
+    ok;
+log_program_call_by_user(CallData, {OwnerType, OwnerId}) ->
+    ProgramConfig = get_program_call_log_storage_config(),
+    case ProgramConfig of
+        #{ type := raw
+         , url := BaseURL
+         } ->
+            Url = lists:flatten(io_lib:format("~s/~p_~s", [BaseURL, OwnerType, OwnerId])),
+            Type = "application/json",
+            Body = list_to_binary([jiffy:encode(to_map(CallData))]),
+            Headers = [],
+            HTTPOptions = [],
+            Options = [],
+            case httpc:request(post, {Url, Headers, Type, Body}, HTTPOptions, Options) of
+                {ok, _} -> ok;
+                {error, Reason} ->
+                    log_platform(error, list_to_binary(io_lib:format("Error logging signal: ~p", [Reason])))
+            end;
+        undefined ->
+            io:fwrite("[Error] Signal logging configuration not set~n");
+        none ->
+            io:fwrite("[WARN] Signal logging configuration not set~n")
+    end.
 
 -spec log_call_to_bridge(binary(), binary(), binary(), binary(), map()) -> ok.
 log_call_to_bridge(BridgeId, FunctionName, Arguments, UserId, ExtraData) ->
@@ -213,9 +247,44 @@ get_signal_storage_config() ->
             none
     end.
 
+get_program_call_log_storage_config() ->
+    case application:get_env(automate_logging, program_call_log_storage_endpoint) of
+        {ok, Config} ->
+            Config;
+        undefined ->
+            none
+    end.
+
 get_timestamp() ->
     erlang:system_time(millisecond).
 
 get_time_string() ->
     {{Year,Month,Day},{Hour,Min,Sec}} = erlang:localtime(),
     io_lib:format("~4..0B/~2..0B/~2..0B ~2..0B:~2..0B:~2..0B", [Year, Month, Day, Hour, Min, Sec]).
+
+-spec to_map(#call_data{}) -> map().
+to_map(#call_data{ call_start_time=CallStartTime
+                 , call_end_time=CallEndTime
+                 , program_id=ProgramId
+                 , operation=Operation
+                 , arguments=Arguments
+                 , result=Result
+    }) ->
+    #{ call_start_time => CallStartTime
+     , call_end_time =>   CallEndTime
+     , program_id => ProgramId
+     , operation =>  Operation
+     , arguments =>  case Arguments of
+                        Tup when is_tuple(Tup) ->
+                            tuple_to_list(Tup);
+                        _ -> Arguments
+                    end
+     , result => case Result of
+                    #program_error{} ->
+                        %% HACK: It's not ideal to require something at the
+                        %%   "bottom" of the module dependency graph from the top.
+                        automate_rest_api_utils_formatting:serialize_event_error(Result);
+                    _ -> Result
+                end
+
+    }.
