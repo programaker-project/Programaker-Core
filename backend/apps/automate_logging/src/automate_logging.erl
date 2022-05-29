@@ -283,7 +283,7 @@ to_map(#call_data{ call_start_time=CallStartTime
                     #program_error{} ->
                         %% HACK: It's not ideal to require something at the
                         %%   "bottom" of the module dependency graph from the top.
-                        automate_rest_api_utils_formatting:serialize_event_error(Result);
+                        <<"error">>;
                     _ -> Result
                 end
 
