@@ -804,7 +804,7 @@ eq_variadic_true() ->
     ?assertMatch({ok, true, _}, R).
 
 preload_last_val_eq_int_int_true() ->
-    {ran_this_tick, Thread} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread, _} = automate_bot_engine_operations:run_instruction(
                                 #{ ?TYPE => ?COMMAND_PRELOAD_GETTER
                                  , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
                                                     , ?VALUE => [ #{ ?TYPE => ?COMMAND_EQUALS
@@ -825,7 +825,7 @@ preload_last_val_eq_int_int_true() ->
     ?assertMatch({ok, true, _}, R).
 
 preload_last_val_eq_int_int_false() ->
-    {ran_this_tick, Thread} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread, _} = automate_bot_engine_operations:run_instruction(
                                 #{ ?TYPE => ?COMMAND_PRELOAD_GETTER
                                  , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_BLOCK
                                                     , ?VALUE => [ #{ ?TYPE => ?COMMAND_EQUALS

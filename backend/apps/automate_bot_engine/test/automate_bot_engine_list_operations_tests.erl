@@ -75,7 +75,7 @@ tests(_SetupResult) ->
 add_to_list_with_values() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
-    {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread2, _} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_ADD_TO_LIST
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                      , ?VALUE => <<"test list">>
@@ -93,7 +93,7 @@ add_to_list_with_values() ->
     ?assertMatch({ok, [a, b, c, d, <<"e">>], _}, R).
 
 add_to_list_not_defined() ->
-    {ran_this_tick, Thread} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread, _} = automate_bot_engine_operations:run_instruction(
                                 #{ ?TYPE => ?COMMAND_ADD_TO_LIST
                                  , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                     , ?VALUE => <<"test list">>
@@ -113,7 +113,7 @@ add_to_list_not_defined() ->
 delete_of_list() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
-    {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread2, _} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_DELETE_OF_LIST
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                      , ?VALUE => <<"test list">>
@@ -133,7 +133,7 @@ delete_of_list() ->
 delete_all_list_with_values() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
-    {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread2, _} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_DELETE_ALL_LIST
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                      , ?VALUE => <<"test list">>
@@ -150,7 +150,7 @@ delete_all_list_with_values() ->
     ?assertMatch({ok, [], _}, R).
 
 delete_all_list_not_defined() ->
-    {ran_this_tick, Thread} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread, _} = automate_bot_engine_operations:run_instruction(
                                 #{ ?TYPE => ?COMMAND_DELETE_ALL_LIST
                                  , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                     , ?VALUE => <<"test list">>
@@ -169,7 +169,7 @@ delete_all_list_not_defined() ->
 insert_at_position_in_list_with_values() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
-    {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread2, _} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_INSERT_AT_LIST
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                      , ?VALUE => <<"test list">>
@@ -188,7 +188,7 @@ insert_at_position_in_list_with_values() ->
     ?assertMatch({ok, [a, <<"new">>, b, c, d], _}, R).
 
 insert_at_position_in_list_not_defined() ->
-    {ran_this_tick, Thread} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread, _} = automate_bot_engine_operations:run_instruction(
                                 #{ ?TYPE => ?COMMAND_INSERT_AT_LIST
                                  , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                     , ?VALUE => <<"test list">>
@@ -210,7 +210,7 @@ insert_at_position_in_list_not_defined() ->
 replace_item_of_list_with_values() ->
     #program_thread{ program_id=ProgramId } = Thread = empty_thread(),
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, <<"test list">>, [a, b, c, d], undefined),
-    {ran_this_tick, Thread2} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread2, _} = automate_bot_engine_operations:run_instruction(
                                  #{ ?TYPE => ?COMMAND_REPLACE_VALUE_AT_INDEX
                                   , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                      , ?VALUE => <<"test list">>
@@ -229,7 +229,7 @@ replace_item_of_list_with_values() ->
     ?assertMatch({ok, [a, <<"new">>, c, d], _}, R).
 
 replace_item_of_list_not_defined() ->
-    {ran_this_tick, Thread} = automate_bot_engine_operations:run_instruction(
+    {ran_this_tick, Thread, _} = automate_bot_engine_operations:run_instruction(
                                 #{ ?TYPE => ?COMMAND_REPLACE_VALUE_AT_INDEX
                                  , ?ARGUMENTS => [ #{ ?TYPE => ?VARIABLE_LIST
                                                     , ?VALUE => <<"test list">>

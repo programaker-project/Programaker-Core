@@ -16,6 +16,7 @@
 -include("program_records.hrl").
 -include("instructions.hrl").
 -include("../../automate_channel_engine/src/records.hrl").
+-include("../../automate_logging/src/records.hrl").
 
 -define(UTILS, automate_bot_engine_utils).
 
@@ -170,20 +171,61 @@ resolve_subblock_with_position(#{<<"contents">> := Contents}, [Position | T]) ->
 -spec run_thread(#program_thread{}, {atom(), any()}, binary())
                 -> {stopped, thread_finished} | {did_not_run, waiting}
               | {did_not_run, {new_state, #program_thread{}}}
-              | {ran_this_tick, #program_thread{}}.
+              | {ran_this_tick, #program_thread{}, [_]}.
 run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
     case get_instruction(Thread) of
         {ok, Instruction} ->
+
+            %% Prepare data to log call and return of the instruction
+            CallStartTime = erlang:system_time(second),
+            OpName = case Instruction of
+                #{ ?TYPE := Operation } -> Operation;
+                _ -> %% This will normally happen on "content" blocks
+                    none
+            end,
+
+            OwnerId = case automate_storage:get_program_owner(ProgramId) of
+                        {ok, Owner} ->
+                            Owner;
+                        {error, Reason} ->
+                            io:fwrite("[Double ERROR][ThreadId=~p] Now owner found: ~0tp~n",
+                                    [ThreadId, Reason]),
+                            none
+            end,
+
             try
                 run_instruction(Instruction, Thread, Message)
             of
                 Result ->
+                    case Result of
+                        { ran_this_tick, _, Arguments } ->
+                            case OpName of
+                                none -> ok;
+                                _ ->
+                                    CallEndTime = erlang:system_time(second),
+
+                                    automate_logging:log_program_call_by_user(
+                                        #call_data{ call_start_time=CallStartTime
+                                                  , call_end_time=CallEndTime
+                                                  , block_id=?UTILS:get_block_id(Instruction)
+                                                  , program_id=ProgramId
+                                                  , thread_id=ThreadId
+                                                  , succeeded=true
+                                                  , operation=OpName
+                                                  , arguments=Arguments
+                                                  , result=ok
+                                        }, OwnerId)
+                            end;
+                        _ -> ok
+                    end,
+
                     case {Result, Instruction} of
-                        { {ran_this_tick, Thread2}
+                        { {ran_this_tick, Thread2, _}
                         , #{ ?BLOCK_ID := BlockId
                            , ?REPORT_STATE := true
                            }
                         } ->
+
                             {ok, #user_program_entry{ program_channel=ChannelId }} = automate_storage:get_program_from_id(ProgramId),
 
                             Value = case automate_bot_engine_variables:retrieve_instruction_memory(Thread2, BlockId) of
@@ -206,14 +248,19 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
                     io:fwrite("[ERROR][Thread][ProgId=~p,ThreadId=~p] Critical error: ~0tp~n~0tp~n",
                               [ProgramId, ThreadId, {ErrorNS, Error}, StackTrace]),
 
-                    UserId = case automate_storage:get_program_owner(ProgramId) of
-                                 {ok, OwnerId} ->
-                                     OwnerId;
-                                 {error, Reason} ->
-                                     io:fwrite("[Double ERROR][ThreadId=~p] Now owner found: ~0tp~n",
-                                               [ThreadId, Reason]),
-                                     none
-                             end,
+                    CallEndTime = erlang:system_time(second),
+
+                    automate_logging:log_program_call_by_user(
+                        #call_data{ call_start_time=CallStartTime
+                                  , call_end_time=CallEndTime
+                                  , block_id=?UTILS:get_block_id(Instruction)
+                                  , program_id=ProgramId
+                                  , thread_id=ThreadId
+                                  , succeeded=false
+                                  , operation=OpName
+                                  , arguments=[]
+                                  , result=Error
+                        }, OwnerId),
 
                     {EventData, EventMessage, FailedBlockId} =
                         case Error of
@@ -345,7 +392,7 @@ run_thread(Thread=#program_thread{program_id=ProgramId}, Message, ThreadId) ->
 
                     automate_logging:log_program_error(#user_program_log_entry{ program_id=ProgramId
                                                                               , thread_id=ThreadId
-                                                                              , owner=UserId
+                                                                              , owner=OwnerId
                                                                               , block_id=FailedBlockId
                                                                               , event_data=EventData
                                                                               , event_time=erlang:system_time(millisecond)
@@ -371,7 +418,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_SET_VARIABLE
 
     {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, Op),
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, Value, ?UTILS:get_block_id(Op)),
-    {ran_this_tick, increment_position(Thread2)};
+    {ran_this_tick, increment_position(Thread2), [VariableName, Value]};
 
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
@@ -394,7 +441,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CHANGE_VARIABLE
                                                  })
                      end,
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, VariableName, NewValue, ?UTILS:get_block_id(Op)),
-    {ran_this_tick, increment_position(Thread2)};
+    {ran_this_tick, increment_position(Thread2), [VariableName, NewValue]};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
                     , ?ARGUMENTS := [Argument]
@@ -423,12 +470,12 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT
             Thread5 = automate_bot_engine_variables:set_instruction_memory( Thread4
                                                                           , {Times, Value + 1}
                                                                           ),
-            {ran_this_tick, Thread5#program_thread{ position=Position ++ [1], direction=forward }};
+            {ran_this_tick, Thread5#program_thread{ position=Position ++ [1], direction=forward }, [Value]};
         false ->
             %% Note that the value of the block (by id) is NOT removed, so it
             %% can be used by subsequent blocks.
             Thread5 = automate_bot_engine_variables:unset_instruction_memory(Thread4),
-            {ran_this_tick, increment_position(Thread5)}
+            {ran_this_tick, increment_position(Thread5), [Value]}
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
@@ -439,10 +486,10 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPEAT_UNTIL
     case Value of
         false ->
             %% Condition not macthed, going in
-            {ran_this_tick, Thread2#program_thread{ position=Position ++ [1], direction=forward }};
+            {ran_this_tick, Thread2#program_thread{ position=Position ++ [1], direction=forward }, [Value]};
         _ ->
             %% Condition Matched, NOT going into the loop
-            {ran_this_tick, increment_position(Thread2)}
+            {ran_this_tick, increment_position(Thread2), [Value]}
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_IF
@@ -452,7 +499,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_IF
     case Direction of
         up ->
             %% Coming back from condition
-            {ran_this_tick, increment_position(Thread)};
+            {ran_this_tick, increment_position(Thread), [Direction]};
         forward ->
             %% Getting into the IF
             {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(
@@ -461,12 +508,12 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_IF
             case Value of
                 false ->
                     %% Not matching, skipping
-                    {ran_this_tick, increment_position(Thread2)};
+                    {ran_this_tick, increment_position(Thread2), [Direction, Value]};
                 _ ->
                     %% Matching, going in
                     Thread3 = automate_bot_engine_variables:set_instruction_memory(
                                 Thread2, {already_run, true}),
-                    {ran_this_tick, Thread3#program_thread{ position=Position ++ [1], direction=forward }}
+                    {ran_this_tick, Thread3#program_thread{ position=Position ++ [1], direction=forward }, [Direction, Value]}
             end
     end;
 
@@ -477,16 +524,16 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_IF_ELSE
     case Direction of
         up ->
             %% Coming back from condition
-            {ran_this_tick, increment_position(Thread)};
+            {ran_this_tick, increment_position(Thread), [Direction]};
         forward ->
             {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(Argument, Thread, Op),
             case Value of
                 false ->
                     %% Not matching, going for else
-                    {ran_this_tick, Thread2#program_thread{ position=Position ++ [2, 1], direction=forward }};
+                    {ran_this_tick, Thread2#program_thread{ position=Position ++ [2, 1], direction=forward }, [Direction, Value]};
                 _ ->
                     %% Matching, going for if
-                    {ran_this_tick, Thread2#program_thread{ position=Position ++ [1, 1], direction=forward }}
+                    {ran_this_tick, Thread2#program_thread{ position=Position ++ [1, 1], direction=forward }, [Direction, Value]}
             end
     end;
 
@@ -499,7 +546,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_UNTIL
         false ->
             {did_not_run, waiting};
         _ ->
-            {ran_this_tick, increment_position(Thread2)}
+            {ran_this_tick, increment_position(Thread2), [Value]}
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT
@@ -525,7 +572,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT
     case WaitFinished of
         true ->
             Thread3 = automate_bot_engine_variables:unset_instruction_memory(Thread2),
-            {ran_this_tick, increment_position(Thread3)};
+            {ran_this_tick, increment_position(Thread3), [WaitFinished]};
         false ->
             Thread3 = automate_bot_engine_variables:set_instruction_memory(Thread2, StartTime),
             {did_not_run, {new_state, Thread3}}
@@ -554,7 +601,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_ADD_TO_LIST
     ValueAfter = ValueBefore ++ [NewValue],
 
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter, ?UTILS:get_block_id(Op)),
-    {ran_this_tick, increment_position(Thread2)};
+    {ran_this_tick, increment_position(Thread2), [ListName, NewValue]};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
@@ -580,7 +627,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_OF_LIST
     ValueAfter = automate_bot_engine_naive_lists:remove_nth(ValueBefore, Index),
 
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter, ?UTILS:get_block_id(Op)),
-    {ran_this_tick, increment_position(Thread2)};
+    {ran_this_tick, increment_position(Thread2), [ListName, Index]};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
@@ -592,7 +639,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_DELETE_ALL_LIST
                , {?SIGNAL_PROGRAM_TICK, _}) ->
 
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, [], ?UTILS:get_block_id(Op)),
-    {ran_this_tick, increment_position(Thread)};
+    {ran_this_tick, increment_position(Thread), [ListName]};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
@@ -621,7 +668,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_INSERT_AT_LIST
     ValueAfter = automate_bot_engine_naive_lists:insert_nth(PaddedValue, Index, Value),
 
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter, ?UTILS:get_block_id(Op)),
-    {ran_this_tick, increment_position(Thread3)};
+    {ran_this_tick, increment_position(Thread3), [ListName, Index, Value]};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_SET_LIST
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
@@ -635,7 +682,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_SET_LIST
 
     {ok, Value, Thread2} = automate_bot_engine_variables:resolve_argument(ValueArgument, Thread, Op),
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, Value, ?UTILS:get_block_id(Op)),
-    {ran_this_tick, increment_position(Thread2)};
+    {ran_this_tick, increment_position(Thread2), [ListName, Value]};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
                     , ?ARGUMENTS := [ #{ ?TYPE := ?VARIABLE_LIST
@@ -663,7 +710,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_REPLACE_VALUE_AT_INDEX
     ValueAfter = automate_bot_engine_naive_lists:replace_nth(PaddedValue, Index, Value),
 
     ok = automate_bot_engine_variables:set_program_variable(ProgramId, ListName, ValueAfter, ?UTILS:get_block_id(Op)),
-    {ran_this_tick, increment_position(Thread3)};
+    {ran_this_tick, increment_position(Thread3), [ListName, Index, Value]};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
                     , ?ARGUMENTS := #{ ?SERVICE_ID := ServiceId
@@ -684,7 +731,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CALL_SERVICE
                           none -> Thread3;
                           BlockId -> automate_bot_engine_variables:set_instruction_memory(Thread3, Value, BlockId)
                       end,
-            {ran_this_tick, increment_position(Thread4)};
+            {ran_this_tick, increment_position(Thread4), [ServiceId, Action, Arguments]};
         {error, Reason} ->
             throw_bridge_call_error(Reason, ServiceId, Op, Action)
     end;
@@ -699,7 +746,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_SIGNAL_WAIT_FOR_PULSE
                   none -> Thread2;
                   BlockId -> automate_bot_engine_variables:set_instruction_memory(Thread2, Value, BlockId)
               end,
-    {ran_this_tick, increment_position(Thread3)};
+    {ran_this_tick, increment_position(Thread3), [Value]};
 
 run_instruction(#{ ?TYPE := ?COMMAND_BROADCAST_TO_ALL_USERS
                  }, Thread=#program_thread{ program_id=_ProgramId },
@@ -713,7 +760,7 @@ run_instruction(#{ ?TYPE := ?COMMAND_BROADCAST_TO_ALL_USERS
                   _ ->
                       Thread
               end,
-    {ran_this_tick, increment_position(Thread2)};
+    {ran_this_tick, increment_position(Thread2), []};
 
 
 run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
@@ -740,7 +787,7 @@ run_instruction(Operation=#{ ?TYPE := <<"services.ui.", UiElement/binary>>
             ok = automate_channel_engine:send_to_channel(ChannelId,  CommandData)
     end,
 
-    {ran_this_tick, increment_position(Thread2)};
+    {ran_this_tick, increment_position(Thread2), [UiElement, Values]};
 
 
 run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
@@ -770,7 +817,7 @@ run_instruction(Operation=#{ ?TYPE := <<"services.", ServiceCall/binary>>
                      _ ->
                          ok
                  end,
-            {ran_this_tick, increment_position(Thread3)};
+            {ran_this_tick, increment_position(Thread3), [Values]};
         {error, Reason} ->
             throw_bridge_call_error(Reason, ServiceId, Operation, Action)
     end;
@@ -791,9 +838,9 @@ run_instruction(Op=#{ ?TYPE := ?MATCH_TEMPLATE_STATEMENT
 
     case automate_template_engine:match(UserId, Thread2, TemplateId, InputValue) of
         {ok, NewThread, _Value} ->
-            {ran_this_tick, increment_position(NewThread)};
+            {ran_this_tick, increment_position(NewThread), [TemplateId, InputValue]};
         {error, not_found} ->
-            {ran_this_tick, finish_thread(Thread2)}
+            {ran_this_tick, finish_thread(Thread2), [TemplateId, InputValue]}
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_CUSTOM_SIGNAL
@@ -808,7 +855,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_CUSTOM_SIGNAL
 
     ok = automate_channel_engine:send_to_channel(ChannelId, SignalData),
 
-    {ran_this_tick, increment_position(Thread3)};
+    {ran_this_tick, increment_position(Thread3), [ChannelId, SignalData]};
 
 run_instruction(Op=#{ ?TYPE := ?CONTEXT_SELECT_CONNECTION
                     , ?ARGUMENTS := [ BridgeIdVal
@@ -824,13 +871,17 @@ run_instruction(Op=#{ ?TYPE := ?CONTEXT_SELECT_CONNECTION
         up ->
             %% Already here, exit the context
             Thread4 = automate_bot_engine_variables:unset_instruction_memory(Thread3),
-            {ran_this_tick, increment_position(Thread4)};
+            {ran_this_tick, increment_position(Thread4), [Direction, BridgeId, ConnectionId]};
         forward ->
             Thread4 = automate_bot_engine_variables:set_instruction_memory(
                         Thread3, [ { context_group
                                    , bridge_connection
-                                   , {BridgeId, ConnectionId} }]),
-            {ran_this_tick, Thread4#program_thread{ position=Position ++ [1], direction=forward }}
+                                   , {BridgeId, ConnectionId}
+                                   }]),
+            { ran_this_tick
+            , Thread4#program_thread{ position=Position ++ [1], direction=forward }
+            , [Direction, BridgeId, ConnectionId]
+            }
     end;
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_PRELOAD_GETTER
@@ -841,8 +892,8 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_PRELOAD_GETTER
                     }, Thread=#program_thread{ program_id=_ProgramId },
                 {?SIGNAL_PROGRAM_TICK, _}) ->
 
-    {ok, _Result, Thread2 } = automate_bot_engine_variables:resolve_argument(Arg, Thread, Op),
-    {ran_this_tick, increment_position(Thread2)};
+    {ok, Result, Thread2 } = automate_bot_engine_variables:resolve_argument(Arg, Thread, Op),
+    {ran_this_tick, increment_position(Thread2), [Result]};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_LOG_VALUE
                     , ?ARGUMENTS := [ Arg
@@ -867,7 +918,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_LOG_VALUE
                                                             event_time=os:system_time(millisecond)
                                                            }),
 
-    {ran_this_tick, increment_position(Thread2)};
+    {ran_this_tick, increment_position(Thread2), [Message]};
 
 run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
                     , ?ARGUMENTS := Arguments
@@ -904,7 +955,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
                                   }),
             %% Note that position is not incremented, so this instruction keeps
             %% executing until all the children end
-            {ran_this_tick, Thread4};
+            {ran_this_tick, Thread4, []};
         %% Parent keeps executing and periodically checks if children did finish
         {ok, #{ children := Children, already_run := true, continuation_type := ContinuationType } } ->
             {RemainingChildren, CompletedChildren} = lists:partition(
@@ -917,7 +968,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_FORK_EXECUTION
             case ForkDone of
                 true ->
                     Thread2 = automate_bot_engine_variables:unset_instruction_memory(Thread),
-                    {ran_this_tick, increment_position(Thread2)};
+                    {ran_this_tick, increment_position(Thread2), []};
                 false ->
                     Thread2 = automate_bot_engine_variables:set_instruction_memory(
                                 Thread, #{ already_run => true
@@ -973,7 +1024,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                                                                    CurrentValue,
                                                                                    Id)
                       end,
-            {ran_this_tick, increment_position(Thread2)}
+            {ran_this_tick, increment_position(Thread2), [VarName]}
     end;
 
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
@@ -1031,7 +1082,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                                   _ -> Thread
                               end,
 
-                    {ran_this_tick, increment_position(Thread2)};
+                    {ran_this_tick, increment_position(Thread2), [ServiceId, MonitorKey]};
                 false ->
                     automate_logging:log_platform(warning,
                                                   io_lib:format("Unexpected signal (key did't match) ~p for block: ~p",
@@ -1085,7 +1136,7 @@ run_instruction(Op=#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
                           _ -> Thread
                       end,
 
-            {ran_this_tick, increment_position(Thread2)}
+            {ran_this_tick, increment_position(Thread2), []}
     end;
 
 run_instruction(Op=#{ ?TYPE := ?WAIT_FOR_MONITOR
@@ -1118,7 +1169,7 @@ run_instruction(Op=#{ ?TYPE := ?WAIT_FOR_MONITOR
                                                                                    Id)
                       end,
 
-            {ran_this_tick, increment_position(Thread2)}
+            {ran_this_tick, increment_position(Thread2), [MonArgs]}
     end;
 
 run_instruction(#{ ?TYPE := ?COMMAND_WAIT_FOR_NEXT_VALUE
@@ -1140,7 +1191,7 @@ run_instruction(#{ ?TYPE := ?FLOW_JUMP_TO_POSITION
     %% The position head is not incremented, as the trigger is not present on
     %% the "Thread" structure anyway, so this gap is naturally skipped.
     ToInternalPosition = [ PosHead | lists:map(fun(SubPos) -> SubPos + 1 end, PosTail)],
-    {ran_this_tick, Thread#program_thread{position=ToInternalPosition, direction=forward}};
+    {ran_this_tick, Thread#program_thread{position=ToInternalPosition, direction=forward}, [ToInternalPosition]};
 
 run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
     automate_logging:log_platform(
@@ -1150,7 +1201,7 @@ run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
 
 run_instruction(#{ <<"contents">> := _Content }, Thread, _Message) ->
     %% Finished code block
-    {ran_this_tick, increment_position(Thread)}.
+    {ran_this_tick, increment_position(Thread), []}.
 
 increment_position(Thread = #program_thread{position=Position}) ->
     IncrementedInnermost = increment_innermost(Position),

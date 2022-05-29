@@ -43,6 +43,10 @@
 %%                                                      , url => <<"http://localhost:5000">> %% Your server URL
 %%                                                      }
 %%                          }
+%%                          %% Uncomment to allow the users to track program calls
+%%                        , { program_call_log_storage_endpoint, #{ type => raw
+%%                                                                , url => <<"http://localhost:5000">> %% Your server URL
+%%                                                                }
 %%                          %% ↓ Deprecated, is preferrable to allow the users to configure which bridges are to be recorded
 %%                          %% Uncomment this to send everything (except excluded bridges) to an ElasticSearch server.
 %%                        , { endpoint, [ #{ "type" => elasticsearch
