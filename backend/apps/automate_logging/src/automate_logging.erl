@@ -127,15 +127,22 @@ log_program_call_by_user(CallData, {OwnerType, OwnerId}) ->
          } ->
             Url = lists:flatten(io_lib:format("~s/~p_~s", [BaseURL, OwnerType, OwnerId])),
             Type = "application/json",
-            Body = list_to_binary([jiffy:encode(to_map(CallData))]),
-            Headers = [],
-            HTTPOptions = [],
-            Options = [],
-            case httpc:request(post, {Url, Headers, Type, Body}, HTTPOptions, Options) of
-                {ok, _} -> ok;
-                {error, Reason} ->
-                    log_platform(error, list_to_binary(io_lib:format("Error logging signal: ~p", [Reason])))
-            end;
+            try
+                list_to_binary([jiffy:encode(to_map(CallData))])
+            of
+                Body ->
+                    Headers = [],
+                    HTTPOptions = [],
+                    Options = [],
+                    case httpc:request(post, {Url, Headers, Type, Body}, HTTPOptions, Options) of
+                        {ok, _} -> ok;
+                        {error, Reason} ->
+                            log_platform(error, list_to_binary(io_lib:format("Error logging signal: ~p", [Reason])))
+                    end
+            catch
+                ErrType:ErrReason:ErrStack ->
+                    io:fwrite("[Error] Preparing data to log signal: ~p~n", [ErrType, ErrReason])
+                end;
         undefined ->
             io:fwrite("[Error] Signal logging configuration not set~n");
         none ->
