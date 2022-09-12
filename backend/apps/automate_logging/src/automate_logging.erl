@@ -140,8 +140,8 @@ log_program_call_by_user(CallData, {OwnerType, OwnerId}) ->
                             log_platform(error, list_to_binary(io_lib:format("Error logging signal: ~p", [Reason])))
                     end
             catch
-                ErrType:ErrReason:ErrStack ->
-                    io:fwrite("[Error] Preparing data to log signal: ~p~n", [ErrType, ErrReason])
+                ErrType:ErrReason:_ErrStack ->
+                    io:fwrite("[Error] Preparing data to log signal: ~p~n", [{ErrType, ErrReason}])
                 end;
         undefined ->
             io:fwrite("[Error] Signal logging configuration not set~n");
