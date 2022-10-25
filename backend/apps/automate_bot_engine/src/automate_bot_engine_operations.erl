@@ -1193,10 +1193,12 @@ run_instruction(#{ ?TYPE := ?FLOW_JUMP_TO_POSITION
     ToInternalPosition = [ PosHead | lists:map(fun(SubPos) -> SubPos + 1 end, PosTail)],
     {ran_this_tick, Thread#program_thread{position=ToInternalPosition, direction=forward}, [ToInternalPosition]};
 
-run_instruction(#{ ?TYPE := Instruction }, _Thread, Message) ->
+run_instruction(#{ ?TYPE := Instruction },
+                #program_thread{ program_id=ProgramId },
+                Message) ->
     automate_logging:log_platform(
       warning,
-      io_lib:format("Unhandled instruction/msg: ~p/~p", [Instruction, Message])),
+      io_lib:format("Unhandled instruction/msg [programId=~p]: ~p/~p", [ProgramId, Instruction, Message])),
     {did_not_run, waiting};
 
 run_instruction(#{ <<"contents">> := _Content }, Thread, _Message) ->
