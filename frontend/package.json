@@ -42,7 +42,7 @@
     "bootstrap": "^4.5.0",
     "cookie-parser": "^1.4.5",
     "core-js": "^2.6.11",
-    "express": "^4.15.2",
+    "express": "^4.17.3",
     "fuse.js": "^5.2.3",
     "huebee": "^2.1.0",
     "jstz": "^2.1.1",
