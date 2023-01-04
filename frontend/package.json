@@ -78,7 +78,7 @@
     "node-gyp": "^4.0.0",
     "nodemon": "^2.0.4",
     "protractor": "~7.0.0",
-    "scratch-blocks": "0.1.0-prerelease.20200512201140",
+    "scratch-blocks": "0.1.0-prerelease.20221207082607",
     "tar": "^4.4.13",
     "ts-node": "^8.10.1",
     "tslib": "^2.0.0",
